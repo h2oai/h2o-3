@@ -7,13 +7,15 @@ import hex.ModelMetricsUnsupervised;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.parser.Categorical;
 import water.util.TwoDimTable;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
   public static class GLRMParameters extends Model.Parameters {
     public int _k = 1;                            // Rank of resulting XY matrix
-    public Loss _loss = Loss.L2;                  // Loss function
+    public Loss _loss = Loss.L2;                  // Loss function for numeric cols
+    public MultiLoss _multi_loss = MultiLoss.Categorical;  // Loss function for categorical cols
     public Regularizer _regularization = Regularizer.L2;   // Regularization function
     public double _gamma = 0;                     // Regularization weight
     public int _max_iterations = 1000;            // Max iterations
@@ -28,6 +30,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     public enum Loss {
       L2, L1, Huber, Poisson, Hinge, Logistic
+    }
+
+    public enum MultiLoss {
+      Categorical, Ordinal
     }
 
     public enum Regularizer {
@@ -60,7 +66,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case L2:
           return 2*(u-a);
         case L1:
-          return -Math.signum(u-a);
+          return Math.signum(u-a);
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
         case Poisson:
@@ -71,6 +77,44 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return -a/(1+Math.exp(a*u));
         default:
           throw new RuntimeException("Unknown loss function " + _loss);
+      }
+    }
+
+    // L(u,a): Multidimensional loss function
+    public final double mloss(double[] u, int a) {
+      if(a < 0 || a > u.length-1)
+        throw new IllegalArgumentException("Index must be between 0 and " + String.valueOf(u.length-1));
+
+      double sum = 0;
+      switch(_multi_loss) {
+        case Categorical:
+          for (int i = 0; i < u.length; i++) sum += Math.max(1 + u[i], 0);
+          sum += Math.max(1 - u[a], 0) - Math.max(1 + u[a], 0);
+          return sum;
+        case Ordinal:
+          for (int i = 0; i < u.length-1; i++) sum += Math.max(a>i ? 1-u[i]:1, 0);
+          return sum;
+        default:
+          throw new RuntimeException("Unknown multidimensional loss function " + _multi_loss);
+      }
+    }
+
+    // \grad_u L(u,a): Gradient of multidimensional loss function with respect to u
+    public final double[] mlgrad(double[] u, int a) {
+      if(a < 0 || a > u.length-1)
+        throw new IllegalArgumentException("Index must be between 0 and " + String.valueOf(u.length-1));
+
+      double[] grad = new double[u.length];
+      switch(_multi_loss) {
+        case Categorical:
+          for (int i = 0; i < u.length; i++) grad[i] = (1+u[i] > 0) ? 1:0;
+          grad[a] = (1-u[a] > 0) ? -1:0;
+          return grad;
+        case Ordinal:
+          for (int i = 0; i < u.length-1; i++) grad[i] = (a>i && 1-u[i] > 0) ? -1:0;
+          return grad;
+        default:
+          throw new RuntimeException("Unknown multidimensional loss function " + _multi_loss);
       }
     }
 

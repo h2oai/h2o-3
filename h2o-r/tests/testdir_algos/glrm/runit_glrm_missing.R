@@ -4,7 +4,6 @@ source('../../h2o-runit.R')
 test.glrm.missing <- function(conn) {
   seed <- 1234
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
-  # missing_frac <- c(0.1, 0.2, 0.3, 0.4)
   
   obj_val   <- rep(0, length(missing_frac))
   obj_delta <- rep(0, length(missing_frac))
