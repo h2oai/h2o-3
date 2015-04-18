@@ -18,7 +18,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _gamma = 0;                     // Regularization weight
     public int _max_iterations = 1000;            // Max iterations
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
-    public double _min_step_size = 0.001;         // Min step size
+    public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
@@ -123,6 +123,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Mapping from training data to lower dimensional k-space (Y)
     public double[][] _archetypes;
+
+    // Final step size
+    public double _step_size;
 
     // PCA output on XY
     // Principal components (eigenvectors) of XY

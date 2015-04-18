@@ -34,7 +34,7 @@ import java.util.Arrays;
  */
 public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-8;
+  private final double TOLERANCE = 1e-6;
 
   // Number of columns in training set (p)
   private transient int _ncolA;
@@ -213,14 +213,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     // Stopping criteria
-    private boolean isDone(GLRMModel model, int steps_in_row, double alpha) {
+    private boolean isDone(GLRMModel model, int steps_in_row, double step) {
       if (!isRunning()) return true;  // Stopped/cancelled
 
       // Stopped for running out of iterations
       if (model._output._iterations > _parms._max_iterations) return true;
 
       // Stopped for falling below minimum step size
-      if (alpha <= _parms._min_step_size) return true;
+      if (step <= _parms._min_step_size) return true;
 
       // Stopped when enough steps and average decrease in objective per iteration < TOLERANCE
       if (model._output._iterations > 10 && steps_in_row > 3 &&
@@ -394,6 +394,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._loading_key = _parms._loading_key;
 
         model._output._archetypes = yt;
+        model._output._step_size = step;
         if (_parms._recover_pca) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?

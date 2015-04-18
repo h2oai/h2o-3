@@ -12,6 +12,12 @@ public class GLRMModelV3 extends ModelSchema<GLRMModel, GLRMModelV3, GLRMModel.G
     @API(help = "Objective value")
     public double objective;
 
+    @API(help = "Average change in objective value on final iteration")
+    public double avg_change_obj;
+
+    @API(help = "Final step size")
+    public double step_size;
+
     @API(help = "Mapping from training data to lower dimensional k-space")
     public double[][] archetypes;
 

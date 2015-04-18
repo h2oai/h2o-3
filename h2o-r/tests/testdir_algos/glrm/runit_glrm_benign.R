@@ -7,7 +7,7 @@ test.glrm.benign <- function(conn) {
   benign.sum <- summary(benign.hex)
   print(benign.sum)
 
-  for( i in 1:6 ) {
+  for( i in 8:14 ) {
     Log.info(paste("H2O GLRM with rank", i, "decomposition:\n"))
     benign.glrm <- h2o.glrm(training_frame = benign.hex, k = as.numeric(i), init = "PlusPlus", recover_pca = TRUE)
     print(benign.glrm)

@@ -31,6 +31,11 @@
 #' @param max_iterations The maximum number of iterations to run the optimization loop.
 #'        Each iteration consists of an update of the X matrix, followed by an update
 #'        of the Y matrix.
+#' @param init_step_size Initial step size. Divided by number of columns in the training
+#'        frame when calculating the proximal gradient update. The algorithm begins at
+#'        init_step_size and decreases the step size at each iteration until a
+#'        termination condition is reached.
+#' @param min_step_size Minimum step size upon which the algorithm is terminated.
 #' @param init A character string indicating how to select the initial Y matrix. 
 #'        Possible values are "PlusPlus": for initialization using the clusters
 #'        from k-means++ initialization, or "SVD": for initialization using the 
@@ -48,6 +53,8 @@ h2o.glrm <- function(training_frame, x, k,
                      regularization = c("L2", "L1"),
                      gamma = 0,
                      max_iterations = 1000,
+                     init_step_size = 1.0,
+                     min_step_size = 0.001,
                      init = c("PlusPlus", "SVD", "User"),
                      recover_pca = FALSE,
                      seed)
@@ -90,6 +97,10 @@ h2o.glrm <- function(training_frame, x, k,
     parms$gamma <- gamma
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
+  if(!missing(init_step_size))
+    parms$init_step_size <- init_step_size
+  if(!missing(min_step_size))
+    parms$min_step_size <- min_step_size
   if(!missing(init))
     parms$init <- init
   if(!missing(recover_pca))
