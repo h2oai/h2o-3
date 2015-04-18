@@ -212,6 +212,10 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  MetricsClass <- paste0("H2O", model_category, "Metrics")
+  # setup the metrics objects inside of model...
+  model$training_metrics    <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
@@ -263,7 +267,6 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-
   .newH2OObject(Class         = Class,
                 conn          = conn,
                 key           = json$key$name,

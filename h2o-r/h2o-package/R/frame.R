@@ -997,7 +997,6 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
   .byref.update.frame(x)
-
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if(n == 0L)

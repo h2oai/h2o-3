@@ -16,6 +16,7 @@ NULL
 #-----------------------------------------------------------------------------------------------------------------------
 
 setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
+setClassUnion("listOrNull", c("list", "NULL"))
 
 if (inherits(try(getRefClass("H2OConnectionMutableState"), silent = TRUE), "try-error")) {
 # TODO: Address issue below
@@ -316,13 +317,8 @@ setMethod("show", "H2OModel", function(object) {
   print(summary(o))
 
   # metrics
-  if( is(o, "H2OMultinomialModel") ) {
-    # Training Metrics
-    h2o.performance(o,train=TRUE)
-
-    # Validation Metrics
-    h2o.performance(o,valid=TRUE)
-  }
+  if( !is.null(m$training_metrics)   ) print(m$training_metrics)
+  if( !is.null(m$validation_metrics) ) print(m$validation_metrics)
 
   # History
   cat("\n")
@@ -340,18 +336,18 @@ setMethod("show", "H2OModel", function(object) {
 .showMultiMetrics <- function(o, train_or_valid="Training") {
   arg <- "train"
   if( train_or_valid != "Training" ) arg <- "validation"
-  tm <- o@model$training_metrics
-  if( arg == "validation" ) tm <- o@model$validation_metrics
+  tm <- o@metrics
   cat(train_or_valid, "Metrics: \n")
-  cat("=================\n")
+  cat("===================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
   if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n")
-  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE,"\n")
-  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n")
+  if( !is.null(tm$Gini)            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
+  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
+  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
   if( !is.null(tm$cm)              )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
   if( !is.null(tm$cm)              )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
   if( !is.null(tm$hit_ratio_table) )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); h2o.hit_ratio_table(o); }
+  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); h2o.hit_ratio_table(tm$hit_ratio_table); }
   invisible(tm)
 }
 
@@ -409,13 +405,18 @@ setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@mod
 #' @aliases H2OModelMetrics
 #' @export
 setClass("H2OModelMetrics",
-         representation(algorithm="character", metrics="list"),
+         representation(algorithm="character", on_train="logical", metrics="listOrNull"),
+         prototype(algorithm=NA_character_, on_train=FALSE, metrics=NULL),
          contains="VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2OModelMetrics", function(object) {
-    cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+    cat(class(object), ": ", object@algorithm, "\n", sep="")
+    if( object@on_train ) cat("** Reported on training data. **\n")
+    else                  cat("** Reported on validation data. **\n")
+    if( !is.null(object@metrics$description) ) cat("Description: ", object@metrics$description, "\n\n", sep="")
+    else                                       cat("\n")
 })
 
 #' @rdname H2OModelMetrics-class
@@ -427,8 +428,7 @@ setClass("H2OUnknownMetrics",     contains="H2OModelMetrics")
 setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2OBinomialMetrics", function(object) {
-    cat(class(object), ": ", object@algorithm, "\n\n", sep="")
-    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
+    callNextMethod(object)  # call to the super
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
     cat("MSE:  ", object@metrics$MSE, "\n", sep="")
@@ -448,12 +448,14 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2OMultinomialMetrics", function(object) {
-    cat(class(object), ": ", object@algorithm, "\n\n", sep="")
-    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
-    cat("LogLoss:  ", object@metrics$logloss, "\n\n", sep="")
-    print(h2o.confusionMatrix(object))
+    if( is.null(object@metrics) ) { print(NULL) }
+    else {
+      callNextMethod(object)  # call super
+      if( object@on_train ) .showMultiMetrics(object, "Training")
+      else                  .showMultiMetrics(object, "Validation")
+    }
 })
+
 #' @export
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @export
