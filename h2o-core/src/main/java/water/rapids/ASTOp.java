@@ -2147,7 +2147,7 @@ class ASTMatch extends ASTUniPrefixOp {
     // The `table` arg
     AST a = E.parse();
     if( a instanceof ASTString ) _matches = new String[]{((ASTString)a)._s};
-    else if( a instanceof ASTStringList ) _matches = ((ASTStringList)E.parse())._s;
+    else if( a instanceof ASTStringList ) _matches = ((ASTStringList)a)._s;
     else throw new IllegalArgumentException("`table` expected to be either a String or an slist. Got: " + a.getClass());
     Arrays.sort(_matches);
 

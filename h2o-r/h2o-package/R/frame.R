@@ -720,7 +720,7 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #' @export
 setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
   function(x, value) {
-    if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
+    if( length(value@mutable$col_names) != ncol(x) ) stop("Mismatched number of columns")
     colnames(x) <- value@mutable$col_names
     x@mutable$col_names <- NA_character_
     x
