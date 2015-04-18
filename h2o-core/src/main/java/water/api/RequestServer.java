@@ -201,8 +201,12 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict", new String[] {"model", "frame"},
       "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
 
-    register("/1/WaterMeterCpuTicks/(?<nodeidx>.*)"                         ,"GET"   ,WaterMeterCpuTicksHandler.class, "fetch", new String[] {"nodeidx"},
+    register("/3/WaterMeterCpuTicks/(?<nodeidx>.*)"                       ,"GET"   ,WaterMeterCpuTicksHandler.class, "fetch", new String[] {"nodeidx"},
       "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
+    register("/3/WaterMeterIo/(?<nodeidx>.*)"                             ,"GET"   ,WaterMeterIoHandler.class, "fetch", new String[] {"nodeidx"},
+            "Return IO usage snapshot of all nodes in the H2O cluster.");
+    register("/3/WaterMeterIo"                                            ,"GET"   ,WaterMeterIoHandler.class, "fetch_all",
+            "Return IO usage snapshot of all nodes in the H2O cluster.");
 
     // Node persistent storage
     register("/3/NodePersistentStorage/categories/(?<category>.*)/names/(?<name>.*)/exists", "GET", NodePersistentStorageHandler.class, "exists", new String[] {"category", "name"}, "Return true or false.");
