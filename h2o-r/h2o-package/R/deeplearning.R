@@ -6,15 +6,15 @@
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
 #' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
-#' @param key (Optional) The unique \code{character} hex key assigned to the resulting model. If
-#'        none is given, a key will automatically be generated.
+#' @param destination_key (Optional) The unique \code{character} hex key assigned to the resulting
+#'        model. If none is given, a key will automatically be generated.
 #' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best
 #'        model found during traning. Defaults to \code{TRUE}.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then
+#' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then
 #'        \code{validation} must remain empty.
-#' @param validation (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset
-#'        used to contruct the confusion matrix. If left blank, this defaults to the training data
-#'        when \code{nfolds = 0}
+#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation
+#'        dataset used to contruct the confusion matrix. If left blank, this defaults to the
+#'        training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -31,15 +31,17 @@
 #'        single threaded
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA)
 #' @param rho Adaptive learning rate time decay factor (similarity to prior updates)
+#' @param epsilon
 #' @param rate Learning rate (higher => less stable, lower => slower convergence)
 #' @param rate_annealing Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)}
 #' @param rate_decay Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1)})
 #' @param momentum_start Initial momentum at the beginning of traning (try 0.5)
 #' @param momentum_ramp Number of training samples for which momentum increases
 #' @param momentum_stable Final momentum after ther amp is over (try 0.99)
-#' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient
+#' @param nesterov_accelerated_gradient \code{Logical}. Use Nesterov accelerated gradient
 #'        (recommended)
-#' @param input_dropout_ratios Input layer dropout ration (can improve generalization) specify one
+#' @param input_dropout_ratio
+#' @param hidden_dropout_ratios Input layer dropout ration (can improve generalization) specify one
 #'        value per hidden layer, defaults to 0.5
 #' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to
 #'        become 0)
@@ -93,6 +95,7 @@
 #' @param reproducible Force reproducibility on small data (will be slow - only uses 1 thread)
 #' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O
 #'        Frames"
+#' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' library(h2o)
@@ -305,74 +308,6 @@ h2o.deeplearning <- function(x, y, training_frame,
   .h2o.createModel(training_frame@conn, 'deeplearning', parms)
 }
 
-# Function call for R sided cross validation of h2o objects
-#' @export
-h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
-                                key = "",
-                                override_with_best_model,
-                                checkpoint,
-                                autoencoder = FALSE,
-                                use_all_factor_levels = TRUE,
-                                activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
-                                hidden= c(200, 200),
-                                epochs = 10.0,
-                                train_samples_per_iteration = -2,
-                                seed,
-                                adaptive_rate = TRUE,
-                                rho = 0.99,
-                                epsilon = 1e-8,
-                                rate = 0.005,
-                                rate_annealing = 1e-6,
-                                rate_decay = 1.0,
-                                momentum_start = 0,
-                                momentum_ramp = 1e6,
-                                momentum_stable = 0,
-                                nesterov_accelerated_gradient = TRUE,
-                                input_dropout_ratio = 0,
-                                hidden_dropout_ratios,
-                                l1 = 0,
-                                l2 = 0,
-                                max_w2 = Inf,
-                                initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
-                                initial_weight_scale = 1,
-                                loss,
-                                score_interval = 5,
-                                score_training_samples,
-                                score_validation_samples,
-                                score_duty_cycle,
-                                classification_stop,
-                                regression_stop,
-                                quiet_mode,
-                                max_confusion_matrix_size,
-                                max_hit_ratio_k,
-                                balance_classes = FALSE,
-                                class_sampling_factors,
-                                max_after_balance_size,
-                                score_validation_sampling,
-                                diagnostics,
-                                variable_importances,
-                                fast_mode,
-                                ignore_const_cols,
-                                force_load_balance,
-                                replicate_training_data,
-                                single_node_mode,
-                                shuffle_training_data,
-                                sparse,
-                                col_major,
-                                average_activation,
-                                sparsity_beta,
-                                max_categorical_features,
-                                reproducible,
-                                export_weights_and_biases
-                            )
-{
-  env <- parent.frame()
-  parms <- lapply(as.list(match.call()[-1L]), eval, env)
-  parms$nfolds <- NULL
-
-  do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms))
-}
-
 #' Anomaly Detection via H2O Deep Learning Model
 #'
 #' Detect anomalies in a H2O dataset using a H2O deep learning model with
@@ -389,9 +324,9 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, data = prostate.hex, autoencoder = TRUE,
+#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex, autoencoder = TRUE,
 #'                                hidden = c(10, 10), epochs = 5)
-#' prostate.anon = h2o.anomaly(prostate.hex, prostate.dl)
+#' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
 #' head(prostate.anon)
 #' @export
 h2o.anomaly <- function(object, data) {
@@ -418,10 +353,10 @@ h2o.anomaly <- function(object, data) {
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, data = prostate.hex, hidden = c(100, 200),
-#'                                epochs = 5)
-#' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.hex, prostate.dl, layer = 1)
-#' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.hex, prostate.dl, layer = 2)
+#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex,
+#'                                hidden = c(100, 200), epochs = 5)
+#' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 1)
+#' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 2)
 #' head(prostate.deepfeatures_layer1)
 #' head(prostate.deepfeatures_layer2)
 #' @export

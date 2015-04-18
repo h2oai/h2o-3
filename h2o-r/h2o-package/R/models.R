@@ -240,53 +240,9 @@ predict.H2OModel <- function(object, newdata, ...) {
   # Grab info to make data frame
   .h2o.parsedPredData(newdata@conn, res)
 }
-
+#' @rdname predict.H2OModel
 #' @export
 h2o.predict <- predict.H2OModel
-
-#' Cross Validate an H2O Model
-#' @export
-h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
-{
-  output <- data.frame()
-
-  if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
-  if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
-  else if( missing(model) )
-  {
-    if(model.type == "gbm") model.type = "h2o.gbm"
-    else if(model.type == "glm") model.type = "h2o.glm"
-    else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
-
-    model <- do.call(model.type, c(params))
-  }
-  output[1, "fold_num"] <- -1
-  output[1, "model_key"] <- model@key
-  # output[1, "model"] <- model@model$mse_valid
-
-  data <- params$training_frame
-  data <- eval(data)
-  data.len <- nrow(data)
-
-  # nfold_vec <- h2o.sample(fr, 1:nfolds)
-  nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
-
-  fnum_id <- as.h2o(nfold_vec, model@conn)
-  fnum_id <- h2o.cbind(fnum_id, data)
-
-  xval <- lapply(1:nfolds, function(i) {
-      params$training_frame <- data[fnum_id$object != i, ]
-      params$validation_frame <- data[fnum_id$object != i, ]
-      fold <- do.call(model.type, c(params))
-      output[(i+1), "fold_num"] <<- i - 1
-      output[(i+1), "model_key"] <<- fold@key
-      # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
-      fold
-    })
-  print(output)
-
-  model
-}
 
 #' Model Performance Metrics in H2O
 #'
@@ -343,7 +299,8 @@ h2o.performance <- function(model, data=NULL) {
 #' Retrieves the AUC value from an \linkS4class{H2OBinomialMetrics}.
 #'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
-#' @param Extra arguments to be passed if `object` is of type \linkS4class{H2OModel} (e.g. train=TRUE)
+#' @param \dots extra arguments to be passed if `object` is of type
+#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
@@ -380,6 +337,8 @@ h2o.auc <- function(object, ...) {
 #' Retrieves the GINI coefficient from an \linkS4class{H2OBinomialMetrics}.
 #'
 #' @param object an \linkS4class{H2OBinomialMetrics} object.
+#' @param \dots extra arguments to be passed if `object` is of type
+#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.metric}} for the various. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
@@ -451,6 +410,8 @@ h2o.mse <- function(object, ...) {
 #' \linkS4class{H2OMultinomialMetrics} object
 #'
 #' @param object a \linkS4class{H2OModelMetrics} object of the correct type.
+#' @param \dots Extra arguments to be passed if `object` is of type
+#'        \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @export
 h2o.logloss <- function(object, ...) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics"))
@@ -496,7 +457,7 @@ h2o.logloss <- function(object, ...) {
 #' hex[,2] <- as.factor(hex[,2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
 #' perf <- h2o.performance(model, hex)
-#' h2o.F1(perf, c(0.3,0.4,0.5,0.6))
+#' h2o.F1(perf)
 #' @export
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
@@ -635,8 +596,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' h2o.confusionMatrix(model, hex)
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, hex)
-#' # 0.46 is the F1 maximum threshold, used as the default prediction threshold
-#' h2o.confusionMatrix(perf, 0.46)
+#' h2o.confusionMatrix(perf)
 #' @export
 setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
@@ -709,12 +669,12 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
 })
 
 #' @export
-plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
+plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc")) stop("type must be 'roc'")
   if(type == "roc") {
     xaxis = "False Positive Rate"; yaxis = "True Positive Rate"
-    plot(1 - object@metrics$thresholds_and_metric_scores$specificity, object@metrics$thresholds_and_metric_scores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
+    plot(1 - x@metrics$thresholds_and_metric_scores$specificity, x@metrics$thresholds_and_metric_scores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
 }

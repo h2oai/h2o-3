@@ -86,7 +86,7 @@ h2o.stopLogging <- function() {
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(localH2O, path = ausPath)
 #' h2o.stopLogging()
-#' h2o.clearLogs()
+#' h2o.clearLog()
 #' @export
 h2o.clearLog <- function() {
   file.remove(.h2o.getLogFileName())

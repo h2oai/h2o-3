@@ -17,8 +17,9 @@
 #' @param destination_key (Optional) The unique hex key assigned to the resulting model. Automatically generated
 #'        if none is provided.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
-#' @param min_sdev The minimum standard deviation to use for observations without enough data. Must be
+#' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
+#' @param eps A threshold cutoff to deal with numeric instability, must be positive.
 #' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)

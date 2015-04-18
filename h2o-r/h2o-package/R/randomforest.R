@@ -29,6 +29,7 @@
 #' @param max_after_balance_size
 #' @param seed Seed for random numbers (affects sampling) - Note: only
 #'        reproducible when running single threaded
+#' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export

@@ -485,7 +485,7 @@ h2o.shim <- function(enable = TRUE) {
       # Fix up parameters for H2ODev
       paramsDev <- .dep.params(paramsIn, .km.dep.map)
       paramsDev <- append(paramsDev, list(...))
-      m <- do.call("h2o.dev.kmeans", dots)
+      m <- do.call("h2o.dev.kmeans", list(...))
       m@model <- .dep.model(m)
       m
     },
