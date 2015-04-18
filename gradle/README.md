@@ -28,31 +28,36 @@ It publishes artifacts into:
   * Sonatype snapshot repository
   * Sonatype release repository
 
-> To upload artifacts into remote repository the file `~/.gradle/gradle.properties` has to contains your Sonatype credentials
->
-
->     nexusUsername=<your Sonatype username>
->     nexusPassword=<your Sonatype password>
->
-
-The published artifacts are available at https://oss.sonatype.org.
-
 ### Local Maven repository
-To publish artifacts into local Maven repository type:
+To publish artifacts into **local Maven** repository type:
 
 ```
 gradle install
 ```
 
-### Sonatype snapshot repository
-To publish artifacts into remote Sonatype repository type:
+### Local build repository
+To publish artifacts into **local Maven** repository stored under `build/repo`:
+
 ```
-gradle uploadArchives
+gradle publish
 ```
 
-### Sonatype release repository
+### Sonatype Release Repository
+To publish artifacts into remote **Sonatype Release** repository please type:
+```
+gradle -DdoRelease publish
+```
+
+#### Sonatype release repository configuration
+
+To upload artifacts into remote repository the file `~/.gradle/gradle.properties` has to contains your Sonatype credentials
+```
+oss-releases.username=<your Sonatype username>
+oss-releases.password=<your Sonatype password>
+```
+
 Sonatype release repository requires signed artifacts.
-Hence it is necassary to provide GNUPG key reference into`~/.gradle/gradle.properties`:
+Hence it is necessary to provide GNUPG key reference into`~/.gradle/gradle.properties` or via command line correspond `-P` options:
 
 ```
 signing.keyId=<Your Key Id>
@@ -65,40 +70,25 @@ To import H2O public key, please use:
 gpg2 --keyserver hkp://pool.sks-keyservers.net --recv-keys 539BAEFF
 ```
 
-To release H2O artifacts please type:
+The published artifacts are available at https://oss.sonatype.org. 
+They need manual approval and propagation to maven central. 
+Please use OSS credentials to log into OSS (http://oss.sonatype.org/), select _Staging Repositories_ item, select `ai.h2o` repository (verify open date), then close the repository and propagate into Maven Cenral.
+
+The artifacts should be available via Maven central in a few minutes.
+To check them please use the following search link: http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+
+#### Automatic release and propagation into Maven Central
+To release, approve and propagate H2O artifacts into Maven central automatically please type:
 ```
-gradle release
+gradle -PdoRelease release
 ``` 
 
-### Maven Central Repository
-
-To publish artifacts to Maven central repository, use instructions for publishing into
-Sonatype release repository. 
-Then go to http://oss.sonatype.org/ and publish the artifacts.
-
-They should be available via Maven central in a few minutes.
-To check them please use the following search link: http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+> The `release` task has the same requirements as `publish` task described above
 
 
 ## Jenkins Pipelines
+In release Jenkins job, please setup environment and call the `make-dist.sh` script.
 
-### Building
-
-### Publishing
-
-### Acceptence tests
-
-## Your ~/.gradle/gradle.properties
-If you are Mr. Jenkins or a person responsible for releasing you
-`~./.gradle/gradle.properties` file should contain following information:
-```
-nexusUsername=<your Sonatype username>
-nexusPassword=<your Sonatype password>
-
-signing.keyId=<Your Key Id>
-signing.password=<Your Public Key Password>
-signing.secretKeyRingFile=<Path To Your Key Ring File>
-```
 
 ## Gradle FAQ
 

@@ -8,8 +8,8 @@ import static java.nio.file.StandardCopyOption.*;
 defaultTasks 'build_rh2o'
 description = "H2O R Package"
 
-apply plugin: 'water.gradle.plugins.convertR2html'
-apply plugin: 'water.gradle.plugins.manageLocalClouds'
+//apply plugin: 'water.gradle.plugins.convertR2html'
+//apply plugin: 'water.gradle.plugins.manageLocalClouds'
 
 dependencies {
     compile project(":h2o-assembly")

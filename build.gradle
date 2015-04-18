@@ -9,7 +9,9 @@
 apply from: 'gradle/java.gradle'
 
 // For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
-apply from: 'gradle/release.gradle'
+if (project.hasProperty("doRelease")) {
+    apply from: 'gradle/release.gradle'
+}
 
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
@@ -92,6 +94,10 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
+
+    ext {
+        isRelease = rootProject.hasProperty("doRelease")
+    }
 }
 
 // Compute applyFindbugsPlugin property
