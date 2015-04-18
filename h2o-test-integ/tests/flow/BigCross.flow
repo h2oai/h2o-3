@@ -59,7 +59,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"destination_key\":\"gbm-e8bd2429-eb09-4e41-a25d-6a18a5d90c66\",\"training_frame\":\"BigCross1.hex\",\"dropNA20Cols\":false,\"response_column\":\"C1\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"loss\":\"AUTO\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+      "input": "buildModel 'gbm', {\"destination_key\":\"gbm-e8bd2429-eb09-4e41-a25d-6a18a5d90c66\",\"training_frame\":\"BigCross1.hex\",\"dropNA20Cols\":false,\"response_column\":\"C1\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
     },
     {
       "type": "cs",

@@ -66,7 +66,7 @@ IgnoreCols_1 <- c('Year','Month','DayofMonth','DepTime','DayOfWeek','ArrTime','T
 ## Then remove those cols from validX list
 myX1 <- which(!(names(data.hex) %in% IgnoreCols_1))
 
-air.gbm <- h2o.gbm(x = myX1, y = DepY, training_frame = data.hex, loss = "bernoulli", ntrees=50)
+air.gbm <- h2o.gbm(x = myX1, y = DepY, training_frame = data.hex, distribution = "bernoulli", ntrees=50)
 pred_gbm = predict(air.gbm, data.hex)
 perf_gbm <- h2o.performance(air.gbm, data.hex)
 auc_gbm <- h2o.auc(perf_gbm)

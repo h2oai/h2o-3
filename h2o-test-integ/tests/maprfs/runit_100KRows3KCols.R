@@ -32,7 +32,7 @@ data.glm <- h2o.glm(myX, myY, training_frame = data.hex, family = 'gaussian', so
 print(data.glm)
 
 # GBM Model
-data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, loss = 'gaussian')
+data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, distribution = 'gaussian')
 print(data.gbm)
 
 PASS_BANNER()
