@@ -52,7 +52,7 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
+0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `K-means` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 7 (the a priori known clusters for this dataset). 
@@ -69,7 +69,7 @@ Now, parse the imported data:
 0. Uncheck the **Standardize** checkbox to disable column standardization. 
 0. Click the **Build Model** button. 
 
-
+  ![K-Means Model Builder cell](../images/Kmeans_BuildModel)
 
 ### K-Means Output
 
@@ -80,6 +80,7 @@ K-Means randomly chooses starting points and converges on
 optimal centroids. The cluster number is arbitrary, and should
 be thought of as a factor.
 
+![K-Means Model Results](../images/Kmeans_ModelResults)
 
 
 
