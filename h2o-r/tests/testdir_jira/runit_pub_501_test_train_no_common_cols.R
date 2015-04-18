@@ -10,7 +10,7 @@ test.pub.501 <- function(conn) {
   myX <- setdiff(colnames(tr), c("Angaus", "Site"))
   myY <- "Angaus"
   Log.info(paste("Run GBM on ecology_model.csv with Y:", myY, "\tX:", paste(myX, collapse = ", ")))
-  tru.gbms <- h2o.gbm(x = myX, y = myY, training_frame = tr, loss = "gaussian", ntrees = 400, nbins = 20, min_rows = 1, max_depth = 4, learn_rate = 0.01, validation_frame = tr)
+  tru.gbms <- h2o.gbm(x = myX, y = myY, training_frame = tr, distribution = "gaussian", ntrees = 400, nbins = 20, min_rows = 1, max_depth = 4, learn_rate = 0.01, validation_frame = tr)
   
   Log.info("Predict on covtype.20k.data using GBM model")
   expect_error(predict(object = tru.gbms, newdata = train))

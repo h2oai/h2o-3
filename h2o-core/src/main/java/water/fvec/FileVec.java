@@ -89,7 +89,7 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
   // Touching the DVec will force the file load.
-  @Override protected Value chunkIdx( int cidx ) {
+  @Override public Value chunkIdx( int cidx ) {
     final long nchk = nChunks();
     assert 0 <= cidx && cidx < nchk;
     Key dkey = chunkKey(cidx);

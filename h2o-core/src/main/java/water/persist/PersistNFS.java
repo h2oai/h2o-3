@@ -37,6 +37,8 @@ public final class PersistNFS extends Persist {
     return new File(s);
   }
 
+  public void cleanUp() { }
+
   /**
    * InputStream from a NFS-based Key
    */
