@@ -73,12 +73,17 @@ Now, parse the imported data:
 
 ### K-Means Output
 
-Output is a matrix of the cluster assignments, and the
-coordinates of the cluster centers in terms of the originally
-chosen attributes. Your cluster centers may differ slightly.
 K-Means randomly chooses starting points and converges on
 optimal centroids. The cluster number is arbitrary, and should
 be thought of as a factor.
+
+The output for K-Means includes the following: 
+
+- Output (model category, validation metrics if applicable, and centers standard deviation)
+- Model summary (number of clusters, number of categorical columns, number of iterations, avg. within sum of squares, avg. sum of squares, avg. between sum of squares)
+- Scoring history (number of iterations, avg. change of standardized centroids, avg. within cluster sum of squares)
+- Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, avg. within sum of squares, avg. sum of squares, avg. between sum of squares) 
+- Cluster means (centroids by column) 
 
 ![K-Means Model Results](../images/Kmeans_ModelResults)
 
