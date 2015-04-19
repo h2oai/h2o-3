@@ -315,7 +315,6 @@ setMethod("show", "H2OModel", function(object) {
 
   # summary
   print(summary(o))
-
   # metrics
   if( !is.null(m$training_metrics)   ) print(m$training_metrics)
   if( !is.null(m$validation_metrics) ) print(m$validation_metrics)
@@ -448,25 +447,36 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2OMultinomialMetrics", function(object) {
-    if( is.null(object@metrics) ) { print(NULL) }
-    else {
-      callNextMethod(object)  # call super
-      if( object@on_train ) .showMultiMetrics(object, "Training")
-      else                  .showMultiMetrics(object, "Validation")
-    }
+  if( !is.null(object@metrics) ) {
+    callNextMethod(object)  # call super
+    if( object@on_train ) .showMultiMetrics(object, "Training")
+    else                  .showMultiMetrics(object, "Validation")
+  }
 })
 
 #' @export
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2ORegressionMetrics", function(object) {
-    cat(class(object), ": ", object@algorithm, "\n\n", sep="")
-    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
+  callNextMethod(object)
+  cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
 })
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+#' @export
+setMethod("show", "H2OClusteringMetrics", function(object) {
+  if( !is.null(object@metrics) ) {
+    callNextMethod(object)
+    m <- object@metrics
+    cat("\nAvg Within SS: ", m$avg_within_ss)
+    cat("\nAvg Between SS: ", m$avg_between_ss)
+    cat("\nAvg SS: ", m$avg_ss, "\n")
+    print(m$centroid_stats)
+  }
+})
+
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")

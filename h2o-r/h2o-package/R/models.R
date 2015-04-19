@@ -427,10 +427,16 @@ h2o.giniCoef <- function(object, ...) {
 h2o.mse <- function(object, ...) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$MSE
+  } else if( is(object, "H2OClusteringModel") ) {
+    l <- list(...)
+    l <- .trainOrValid(l)
+    if(      l$train ) { cat("\nTraining Within MSE: \n"); return(object@model$training_metrics@metrics$centroid_stats$within_sum_of_squares) }
+    else if( l$valid ) { cat("\nValidation Within MSE: \n"); return(object@model$validation_metrics@metrics$centroid_stats$within_sum_of_squares) }
+    else               return(NULL)
   } else if( is(object, "H2OModel") ) {
     l <- list(...)
     l <- .trainOrValid(l)
-    if( l$train )      { cat("\nTraining MSE: \n"); return(object@model$training_metrics$MSE) }
+    if(      l$train ) { cat("\nTraining MSE: \n"); return(object@model$training_metrics$MSE) }
     else if( l$valid ) { cat("\nValidation MSE: \n"); return(object@model$validation_metrics$MSE) }
     else               return(NULL)
   } else {
@@ -452,8 +458,8 @@ h2o.logloss <- function(object, ...) {
   else if( is(object, "H2OModel") ) {
     l <- list(...)
     l <- .trainOrValid(l)
-    if( l$train )      { cat("\nTraining logloss: \n"); return(object@model$training_metrics$logloss) }
-    else if( l$valid ) { cat("\nValidation logloss: \n"); return(object@model$validation_metrics$logloss) }
+    if(      l$train ) { cat("\nTraining logloss: \n"); return(object@model$training_metrics@metrics$logloss) }
+    else if( l$valid ) { cat("\nValidation logloss: \n"); return(object@model$validation_metrics@metrics$logloss) }
     else               return(NULL)
   } else  {
     warning(paste("No log loss for",class(object)))
@@ -522,11 +528,11 @@ h2o.hit_ratio_table <- function(object, ...) {
 
   # get the hrt if o is a model
   if( is(o, "H2OModel") ) {
-    hrt <- o@model$training_metrics$hit_ratio_table  # by default grab the training metrics hrt
+    hrt <- o@model$training_metrics@metrics$hit_ratio_table  # by default grab the training metrics hrt
     l <- list(...)
     if( length(l)!=0L ) {
       l <- .trainOrValid(l)
-      if( l$valid )  hrt <- o@model$validation_metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
+      if( l$valid )  hrt <- o@model$validation_metrics@metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
     }
 
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
@@ -681,6 +687,86 @@ h2o.find_row_by_threshold <- function(object, threshold) {
   res <- tmp[abs(as.numeric(tmp$thresholds) - threshold) < 1e-8,]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
+}
+
+#'
+#' Retrieve the Model Centers
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.centers <- function(object, ...) { as.data.frame(object@model$centers[,-1]) }
+
+#'
+#' Retrieve the Model Centers STD
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.centersSTD <- function(object, ...) { as.data.frame(object@model$centers_std)[,-1] }
+
+#'
+#' Get the Within MSE
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.within_mse <- function(object, ...) { h2o.mse(object, ...) }
+
+#'
+#' Get the average wtihin sum of squares.
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.avg_within_ss <- function(object,...) {
+  l <- list(...)
+  l <- .trainOrValid(l)
+  if(      l$train ) { cat("\nTraining Avg Within SS: \n"); return(object@model$training_metrics@metrics$avg_within_ss) }
+  else if( l$valid ) { cat("\nValidation Avg Within SS: \n"); return(object@model$validation_metrics@metrics$avg_within_ss) }
+  else               return(NULL)
+}
+
+#'
+#' Get the average between sum of squares.
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.avg_between_ss <- function(object,...) {
+  l <- list(...)
+  l <- .trainOrValid(l)
+  if(      l$train ) { cat("\nTraining Avg Between SS: \n"); return(object@model$training_metrics@metrics$avg_between_ss) }
+  else if( l$valid ) { cat("\nValidation Avg Between SS: \n"); return(object@model$validation_metrics@metrics$avg_between_ss) }
+  else               return(NULL)
+}
+
+#'
+#' Get the average sum of squares.
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.avg_ss <- function(object,...) {
+  l <- list(...)
+  l <- .trainOrValid(l)
+  if(      l$train ) { cat("\nTraining Avg SS: \n"); return(object@model$training_metrics@metrics$avg_ss) }
+  else if( l$valid ) { cat("\nValidation Avg SS: \n"); return(object@model$validation_metrics@metrics$avg_ss) }
+  else               return(NULL)
+}
+
+#'
+#' Retrieve the number of iterations.
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
+
+#'
+#' Retrieve the cluster sizes
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @export
+h2o.cluster_sizes <- function(object, ...) {
+  l <- list(...)
+  l <- .trainOrValid(l)
+  if(      l$train ) { cat("\nTraining cluster sizes: \n"); return(object@model$training_metrics@metrics$centroid_stats$size) }
+  else if( l$valid ) { cat("\nValidation cluster sizes: \n"); return(object@model$validation_metrics@metrics$centroid_stats$size) }
+  else               return(NULL)
 }
 
 #' Access H2O Confusion Matrices
