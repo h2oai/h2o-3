@@ -394,7 +394,7 @@ setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@mode
 setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_between_ss })
 setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_ss } )
 setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
-setMethod("getClusterSizes", "H2OClusteringModel", function(object) {object@model$training_metrics@metrics@centroid_stats$size })
+setMethod("getClusterSizes", "H2OClusteringModel", function(object) {object@model$training_metrics@metrics$centroid_stats$size })
 
 #'
 #' The H2OModelMetrics Object.
