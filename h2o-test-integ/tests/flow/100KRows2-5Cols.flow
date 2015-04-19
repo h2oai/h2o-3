@@ -83,7 +83,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"destination_key\":\"gbm-e2c0d98e-a6c2-4ea9-bb67-7c707334346f\",\"training_frame\":\"WU_100KRows2.hex\",\"dropNA20Cols\":false,\"response_column\":\"C1\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"loss\":\"gaussian\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+      "input": "buildModel 'gbm', {\"destination_key\":\"gbm-e2c0d98e-a6c2-4ea9-bb67-7c707334346f\",\"training_frame\":\"WU_100KRows2.hex\",\"dropNA20Cols\":false,\"response_column\":\"C1\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"distribution\":\"gaussian\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
     },
     {
       "type": "cs",

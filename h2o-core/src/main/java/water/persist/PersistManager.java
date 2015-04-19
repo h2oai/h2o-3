@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * on what is on the classpath.
  */
 public class PersistManager {
+  final static public int MAX_BACKENDS = 8;
+
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public static class Schemes {
     public static final String FILE = "file";
@@ -29,10 +31,25 @@ public class PersistManager {
     public static final String NFS  = "nfs";
   }
 
+  public static class PersistStatsEntry {
+    public PersistStatsEntry() {
+      storeCount = new AtomicLong();
+      storeBytes = new AtomicLong();
+      deleteCount = new AtomicLong();
+      loadCount = new AtomicLong();
+      loadBytes = new AtomicLong();
+    }
+
+    public AtomicLong storeCount;
+    public AtomicLong storeBytes;
+    public AtomicLong deleteCount;
+    public AtomicLong loadCount;
+    public AtomicLong loadBytes;
+  }
+
   private Persist[] I;
-  private AtomicLong storeCount;
-  private AtomicLong deleteCount;
-  private AtomicLong loadCount;
+  private PersistStatsEntry[] stats;
+  public PersistStatsEntry[] getStats() { return stats; }
 
   public static boolean isHdfsPath(String path) {
     String s = path.toLowerCase();
@@ -49,10 +66,11 @@ public class PersistManager {
   }
 
   public PersistManager(URI iceRoot) {
-    I = new Persist[8];
-    storeCount = new AtomicLong();
-    deleteCount = new AtomicLong();
-    loadCount = new AtomicLong();
+    I = new Persist[MAX_BACKENDS];
+    stats = new PersistStatsEntry[MAX_BACKENDS];
+    for (int i = 0; i < stats.length; i++) {
+      stats[i] = new PersistStatsEntry();
+    }
 
     if (iceRoot == null) {
       Log.err("ice_root must be specified.  Exiting.");
@@ -107,23 +125,20 @@ public class PersistManager {
     }
   }
 
-  long getStoreCount() { return storeCount.get(); }
-  long getDeleteCount() { return deleteCount.get(); }
-  long getLoadCount() { return loadCount.get(); }
-
   public void store(int backend, Value v) {
-    storeCount.incrementAndGet();
+    stats[backend].storeCount.incrementAndGet();
     I[backend].store(v);
   }
 
   public void delete(int backend, Value v) {
-    deleteCount.incrementAndGet();
+    stats[backend].deleteCount.incrementAndGet();
     I[backend].delete(v);
   }
 
   public byte[] load(int backend, Value v) throws IOException {
-    loadCount.incrementAndGet();
+    stats[backend].loadCount.incrementAndGet();
     byte[] arr = I[backend].load(v);
+    stats[backend].loadBytes.addAndGet(arr.length);
     return arr;
   }
 
