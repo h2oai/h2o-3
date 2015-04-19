@@ -390,12 +390,12 @@ setGeneric("getClusterSizes", function(object) { standardGeneric("getClusterSize
 
 setMethod("getCenters", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers)[,-1] })
 setMethod("getCentersStd", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers_std)[,-1] })
-setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics$centroid_stats$within_sum_of_squares })
-setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_within_ss })
-setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_between_ss })
-setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_ss } )
+setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$within_sum_of_squares })
+setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_within_ss })
+setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_between_ss })
+setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_ss } )
 setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
-setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@model$training_metrics$centroid_stats$size })
+setMethod("getClusterSizes", "H2OClusteringModel", function(object) {object@model$training_metrics@metrics@centroid_stats$size })
 
 #'
 #' The H2OModelMetrics Object.
