@@ -721,7 +721,7 @@ class H2OFrame:
     """
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (var %{} \"null\" %FALSE \"everything\"))".format(tmp_key,key)
+    expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
     h2o.rapids(expr)
     # Remove h2o temp frame after var
     h2o.remove(key)
