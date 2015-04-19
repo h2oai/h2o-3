@@ -5,24 +5,20 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
 
-# Check if we are running inside the 0xdata network by seeing if we can touch
-# the HDP2.1 namenode. Update if using other clusters.
-# Note this should fail on home networks, since 176 is not likely to exist
-# also should fail in ec2.
-running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=5)
+# Check if we are running inside the H2O network by seeing if we can touch
+# the namenode.
+running_inside_h2o = is.running.internal.to.h2o()
 
-if (running_inside_hexdata) {
-    # hdp2.1 cluster
-    hdfs_name_node = "mr-0xd6"    
-    hdfs_iris_file = "/datasets/iris_wheader.csv"
-    hdfs_iris_dir  = "/datasets/iris_test_train"
+if (running_inside_h2o) {
+    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+    hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
+    hdfs_iris_dir  = "/datasets/runit/iris_test_train"
 } else {
-    stop("Not running on 0xdata internal network.  No access to HDFS.")
+    stop("Not running on H2O internal network.  No access to HDFS.")
 }
 
 #----------------------------------------------------------------------
