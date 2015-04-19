@@ -80,31 +80,29 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
     @Override
-    public double[] perRow(double[] preds, float[] dataRow, Model m, double[] mean) {
+    public double[] perRow(double[] preds, float[] dataRow, Model m) {
       assert m instanceof ClusteringModel;
       assert !Double.isNaN(preds[0]);
 
       ClusteringModel clm = (ClusteringModel) m;
-      final TwoDimTable centers = ((ClusteringOutput) clm._output)._centers; // De-standardized centers
-      assert (dataRow.length == centers.getColDim());
-      final int clus = (int) preds[0];   // Assigned cluster index
-      assert 0 <= clus && clus < _within_sumsqe.length;
+      boolean standardize = ((((ClusteringOutput) clm._output)._centers_std_raw) != null);
+      double[][] centers = standardize ? ((ClusteringOutput) clm._output)._centers_std_raw: ((ClusteringOutput) clm._output)._centers_raw;
+      double[] sub = standardize ? ((ClusteringOutput) clm._output)._normSub : null;
+      double[] mul = standardize ? ((ClusteringOutput) clm._output)._normMul : null;
 
-      // Compute error
-      for (int i = 0; i < dataRow.length; ++i) {
-        // Impute missing dataRow[i] using mean of test column i if available
-        double d = Double.isNaN(dataRow[i]) && mean != null ? mean[i] : dataRow[i];
-        double err = (double) centers.get(clus, i) - d; // Error: distance from assigned cluster center
-        _sumsqe += err * err;       // Squared error
-        _within_sumsqe[clus] += err * err;
+      int clus = (int)preds[0];
+      double [] colSum = new double[_colSum.length];
+      double [] colSumSq = new double[_colSumSq.length];
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, clm._output._domains, sub, mul, colSum, colSumSq);
+      ArrayUtils.add(_colSum, colSum);
+      ArrayUtils.add(_colSumSq, colSumSq);
+      _count++;
+      _size[clus]++;
+      _sumsqe += sqr;
+      _within_sumsqe[clus] += sqr;
 
-        _colSum[i] += d;
-        _colSumSq[i] += d * d;
-      }
       if (Double.isNaN(_sumsqe))
         throw new H2OIllegalArgumentException("Sum of Squares is invalid (Double.NaN) - Check for missing values in the dataset.");
-      _size[clus]++;
-      _count++;
       return preds;                // Flow coding
     }
 
@@ -114,7 +112,6 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       super.reduce(mm);
       ArrayUtils.add(_size, mm._size);
       ArrayUtils.add(_within_sumsqe, mm._within_sumsqe);
-
       ArrayUtils.add(_colSum, mm._colSum);
       ArrayUtils.add(_colSumSq, mm._colSumSq);
     }
@@ -141,7 +138,6 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
         mm._avg_ss /= f.numRows();
       }
       mm._avg_between_ss = mm._avg_ss - mm._avg_within_ss;
-//      mm._centroid_stats = mm.createCentroidStatsTable();
       return m.addMetrics(mm);
     }
   }

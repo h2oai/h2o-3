@@ -15,6 +15,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FrameUtils;
 import water.util.Log;
 
 public class KMeansTest extends TestUtil {
@@ -352,6 +353,8 @@ public class KMeansTest extends TestUtil {
         fr2 = kmm.score(te);
         Assert.assertTrue(kmm.testJavaScoring(te,fr2,1e-15));
         fr2.delete();
+        tr .delete();
+        te .delete();
 
       } finally {
         if( fr  != null ) fr.delete();
@@ -364,30 +367,26 @@ public class KMeansTest extends TestUtil {
   }
 
   @Test public void testValidationSame() {
-    KMeansModel kmm = null;
-    for (boolean standardize : new boolean[]{true}) {
+    for (boolean standardize : new boolean[]{true,false}) {
+      KMeansModel kmm = null;
       Frame fr = null, fr2= null;
-      Frame test = null;
       try {
         fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
-        SplitFrame sf = new SplitFrame(Key.make());
-        sf.dataset = fr;
-        sf.ratios = new double[] { 0.02, 0.6 };
-        sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex"), Key.make() };
-        // Invoke the job
-        sf.exec().get();
-        Key[] ksplits = sf.dest_keys;
-        test = DKV.get(ksplits[0]).get();
+        // insert 10% missing values - check the math
+        FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(fr._key, 1234, 0.1f);
+        mi.execImpl();
+        fr = mi.get();
+        mi.remove();
 
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-        parms._train = test._key;
+        parms._train = fr._key;
+        parms._valid = fr._key;
 //        parms._ignored_columns = new String[]{fr._names[4]};
-        parms._valid = test._key;
         parms._k = 3;
         parms._standardize = standardize;
         parms._max_iterations = 10;
-        parms._init = KMeans.Initialization.Furthest;
+        parms._init = KMeans.Initialization.PlusPlus;
         kmm = doSeed(parms, 0);
 
 //        // Iris last column is categorical; make sure centers are ordered in the
@@ -399,32 +398,40 @@ public class KMeansTest extends TestUtil {
 //        }
 
         // Done building model; produce a score column with cluster choices
-        fr2 = kmm.score(test);
-        Log.info(fr2.toString(0,150));
-        Assert.assertTrue(kmm.testJavaScoring(test, fr2, 1e-15));
+        fr2 = kmm.score(fr);
+        Assert.assertTrue(kmm.testJavaScoring(fr, fr2, 1e-15));
+        fr.delete();
         fr2.delete();
 
-        test.delete();
-
-        ksplits[0].remove();
-        ksplits[1].remove();
-        ksplits[2].remove();
+        Assert.assertEquals(
+            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_ss,
+            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_ss,
+            1e-5
+        );
 
         Assert.assertEquals(
-                ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
-                ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_between_ss, 1e-5);
+            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
+            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_between_ss,
+            1e-5
+        );
+
+        Assert.assertEquals(
+            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_within_ss,
+            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_within_ss,
+            1e-5
+        );
 
         for (int i=0; i<parms._k; ++i) {
           Assert.assertEquals(
-                  ((ModelMetricsClustering) kmm._output._training_metrics)._within_mse[i],
-                  ((ModelMetricsClustering) kmm._output._validation_metrics)._within_mse[i], 1e-5
+              ((ModelMetricsClustering) kmm._output._training_metrics)._within_mse[i],
+              ((ModelMetricsClustering) kmm._output._validation_metrics)._within_mse[i],
+              1e-5
           );
           Assert.assertEquals(
-                  ((ModelMetricsClustering) kmm._output._training_metrics)._size[i],
-                  ((ModelMetricsClustering) kmm._output._validation_metrics)._size[i], 0
+              ((ModelMetricsClustering) kmm._output._training_metrics)._size[i],
+              ((ModelMetricsClustering) kmm._output._validation_metrics)._size[i]
           );
         }
-
       } finally {
         if( fr  != null ) fr .delete();
         if( fr2 != null ) fr2.delete();

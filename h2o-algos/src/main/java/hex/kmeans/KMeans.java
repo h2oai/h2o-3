@@ -169,20 +169,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
-      String[] rowHeaders = new String[_parms._k];
-      for(int i = 0; i < _parms._k; i++)
-        rowHeaders[i] = String.valueOf(i+1);
-      String[] colTypes = new String[_train.numCols()];
-      String[] colFormats = new String[_train.numCols()];
-      Arrays.fill(colTypes, "double");
-      Arrays.fill(colFormats, "%5f");
       if (model._parms._standardize) {
         model._output._centers_std_raw = centers;
-        model._output._centers_std = new TwoDimTable("Cluster means (standardized)", null, rowHeaders, _train.names(), colTypes, colFormats, "Centroid", new String[_parms._k][], model._output._centers_std_raw);
       }
       model._output._centers_raw = destandardize(centers, _isCats, means, mults);
-      model._output._centers = new TwoDimTable("Cluster means", null, rowHeaders, _train.names(), colTypes, colFormats, "Centroid", new String[_parms._k][], model._output._centers_raw);
-
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -284,8 +274,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
         // Final validation scoring, no need to gather scoring history
         if (_valid != null) {
-          model.score(_parms.valid()); //this appends a ModelMetrics
+          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics
           model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
+          pred.delete();
         }
         done();                 // Job done!
 
@@ -363,6 +354,19 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
       return table;
     }
+  }
+
+  static public TwoDimTable createCenterTable(KMeansModel.KMeansOutput output, boolean standardized) {
+    String[] rowHeaders = new String[output._avg_centroids_chg.length];
+    for(int i = 0; i < rowHeaders.length; i++)
+      rowHeaders[i] = String.valueOf(i+1);
+    String[] colTypes = new String[output._names.length];
+    String[] colFormats = new String[output._names.length];
+    Arrays.fill(colTypes, "double");
+    Arrays.fill(colFormats, "%5f");
+    String name = standardized ? "Cluster means (standardized)" : "Cluster means";
+    return new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid", new String[rowHeaders.length][],
+        standardized ? output._centers_std_raw : output._centers_raw);
   }
 
   // -------------------------------------------------------------------------
