@@ -405,7 +405,7 @@ class Expr(object):
       c = child._data[1]
       if isinstance(c, int): return "#" + str(c)
       if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
-      if c == (): return '()'
+      if c == "()": return '()'
     raise NotImplementedError
 
   def _do_it(self):
@@ -479,8 +479,8 @@ class Expr(object):
       #   [] = []
       if isinstance(rite._data, tuple): pass #   multi-dimensional slice
       elif left.is_local():    self._data = left._data[rite._data]
-      #   all rows / columns ([ %fr_key () ()) / ([ %fr_key () ())
-      else:                  __CMD__ += ' ()'
+      #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
+      else:                  __CMD__ += ' "null"'
 
     elif self._op == "=":
 
