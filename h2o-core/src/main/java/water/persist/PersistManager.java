@@ -1,7 +1,6 @@
 package water.persist;
 
 import water.H2O;
-import water.Iced;
 import water.Key;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
@@ -33,18 +32,18 @@ public class PersistManager {
 
   public static class PersistStatsEntry {
     public PersistStatsEntry() {
-      storeCount = new AtomicLong();
-      storeBytes = new AtomicLong();
-      deleteCount = new AtomicLong();
-      loadCount = new AtomicLong();
-      loadBytes = new AtomicLong();
+      store_count = new AtomicLong();
+      store_bytes = new AtomicLong();
+      delete_count = new AtomicLong();
+      load_count = new AtomicLong();
+      load_bytes = new AtomicLong();
     }
 
-    public AtomicLong storeCount;
-    public AtomicLong storeBytes;
-    public AtomicLong deleteCount;
-    public AtomicLong loadCount;
-    public AtomicLong loadBytes;
+    public AtomicLong store_count;
+    public AtomicLong store_bytes;
+    public AtomicLong delete_count;
+    public AtomicLong load_count;
+    public AtomicLong load_bytes;
   }
 
   private Persist[] I;
@@ -126,19 +125,19 @@ public class PersistManager {
   }
 
   public void store(int backend, Value v) {
-    stats[backend].storeCount.incrementAndGet();
+    stats[backend].store_count.incrementAndGet();
     I[backend].store(v);
   }
 
   public void delete(int backend, Value v) {
-    stats[backend].deleteCount.incrementAndGet();
+    stats[backend].delete_count.incrementAndGet();
     I[backend].delete(v);
   }
 
   public byte[] load(int backend, Value v) throws IOException {
-    stats[backend].loadCount.incrementAndGet();
+    stats[backend].load_count.incrementAndGet();
     byte[] arr = I[backend].load(v);
-    stats[backend].loadBytes.addAndGet(arr.length);
+    stats[backend].load_bytes.addAndGet(arr.length);
     return arr;
   }
 
