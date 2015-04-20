@@ -5,6 +5,7 @@ import hex.ClusteringModel.ClusteringParameters;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
