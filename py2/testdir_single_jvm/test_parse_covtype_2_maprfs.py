@@ -1,6 +1,5 @@
 import unittest, sys
 sys.path.extend(['.','..','../..','py'])
-import os
 
 import h2o2 as h2o
 import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
@@ -12,8 +11,6 @@ expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 55112
 559734, 580538, 578423, 579926, 580066, 465765, 550842, 555346, 528493, 535858, 579401, 
 579121, 580893, 580714, 565439, 567206, 572262, 0]
 
-CAUSE_FAIL = False
-
 def assertEqualMsg(a, b): assert a == b, "%s %s" % (a, b)
 
 def parseKeyIndexedCheck(frames_result, multiplyExpected):
@@ -23,7 +20,6 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
-        print "i:", i, "c:", c
         label = c['label']
         stype = c['type']
         missing = c['missing_count']
@@ -45,46 +41,43 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init()
+        h2o.init(1,
+            use_maprfs=True,
+            hdfs_version='mapr3.1.1',
+            hdfs_name_node='mr-0x2:7222')
 
     @classmethod
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_parse_covtype(self):
+    def test_parse_covtype_2_maprfs(self):
 
         tryList = [
             ('covtype.data', 1, 30),
-            ('covtype20x.data', 20, 120),
+            # ('covtype20x.data', 20, 120),
         ]
 
         for (csvFilename, multiplyExpected, timeoutSecs) in tryList:
-            # h2o-dev doesn't take ../.. type paths? make find_file return absolute pathj
-            a_node = h2o.nodes[0]
 
-            importFolderPath = os.path.expanduser("~/home-0xdiag-datasets/standard")
+            # import_result = a_node.import_files(path=find_file("smalldata/logreg/prostate.csv"))
+            importFolderPath = "standard"
+            hex_key = 'covtype.hex'
             csvPathname = importFolderPath + "/" + csvFilename
-            importResult = a_node.import_files(path=csvPathname)
-
-            # print "importResult:", dump_json(importResult)
-            hex_key = importResult['keys'][0]
-
-            if CAUSE_FAIL:
-                frames_result = a_node.frames(key=k, row_count=5, timeoutSecs=timeoutSecs)
-            # print "frames_result from the first importResult key", dump_json(frames_result)
-
-            parseResult = a_node.parse(key=hex_key, timeoutSecs=timeoutSecs, chunk_size=4194304*4)
+            parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, schema='maprfs', 
+                timeoutSecs=timeoutSecs, hex_key=hex_key,
+                chunk_size=4194304*2, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
-            iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=581012*multiplyExpected, 
-                expectedNumCols=55, expectedMissinglist=[])
+
+            iA = h2o_cmd.InspectObj(pA.parse_key)
             print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 
-            for i in range(0):
+            for i in range(1):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
 
             k = parseResult['frames'][0]['key']['name']
             # print "parseResult:", dump_json(parseResult)
+            a_node = h2o.nodes[0]
             frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
             
