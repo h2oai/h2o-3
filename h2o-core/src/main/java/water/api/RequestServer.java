@@ -58,6 +58,8 @@ import com.brsanthu.googleanalytics.ScreenViewHit;
  * @see #register(String, String, Class, String, String, String[], String) registers a specific handler method for the supplied URI pattern and HTTP method (GET, POST, DELETE, PUT)
  */
 public class RequestServer extends NanoHTTPD {
+  // Returned in REST API responses as X-h2o-rest-api-version
+  public static final int H2O_REST_API_VERSION = 3;
 
   static public RequestServer SERVER;
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
