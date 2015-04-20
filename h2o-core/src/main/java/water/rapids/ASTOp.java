@@ -1950,6 +1950,26 @@ class ASTMedian extends ASTReducerOp {
   }
 }
 
+// the mean absolute devation
+// mad = b * med(  |x_i - med(x)| )
+// b = 1.4826 for normally distributed data -- but this is used anyways..
+// looks like this: (mad %v #1.4826 %TRUE %FALSE %FALSE)
+// args are: column, constant, na.rm, lo, hi
+// lo: for even sample size, take the lo value for the median
+// hi: for even sample size, take the hi value for the median
+//class ASTMad extends ASTReducerOp {
+//  ASTMad() { super( 0 ); }
+//  @Override String opStr() { return "h2o.mad"; }
+//  @Override ASTOp make() { return new ASTMad(); }
+//  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
+//  ASTMad parse_impl(Exec E) {
+//
+//  }
+//  @Override void apply(Env e) {
+//
+//  }
+//}
+
 class ASTMax extends ASTReducerOp {
   ASTMax( ) { super( Double.NEGATIVE_INFINITY); }
   @Override String opStr(){ return "max";}
@@ -2383,8 +2403,9 @@ class ASTRepLen extends ASTUniPrefixOp {
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
   double[] _probs = null;  // if probs is null, pop the _probs frame etc.
+  String _combine_method  = null;
   @Override String opStr() { return "quantile"; }
-  public ASTQtile() { super(new String[]{"quantile","x","probs"}); }
+  public ASTQtile() { super(new String[]{"quantile","x","probs","combine_method"}); }
   @Override ASTQtile make() { return new ASTQtile(); }
   @Override ASTQtile parse_impl(Exec E) {
     // Get the ary
@@ -2393,6 +2414,7 @@ class ASTQtile extends ASTUniPrefixOp {
     AST seq = E.parse();
     if( seq instanceof ASTDoubleList ) { _probs = ((ASTDoubleList)seq)._d; seq=null; }
     else                               _probs = null;
+    _combine_method = E.nextStr().toUpperCase();
     E.eatEnd(); // eat the ending ')'
     ASTQtile res = (ASTQtile) clone();
     res._asts = seq == null ? new AST[]{ary} : new AST[]{ary, seq};
@@ -2419,7 +2441,7 @@ class ASTQtile extends ASTUniPrefixOp {
           throw new IllegalArgumentException("Quantile: probs must be in the range of [0, 1].");
       }
     }
-
+    parms._combine_method = QuantileModel.CombineMethod.valueOf(_combine_method);
     Frame x = env.popAry();
     Key tk=null;
     if( x._key == null ) { DKV.put(tk=Key.make(), x=new Frame(tk, x.names(),x.vecs())); }

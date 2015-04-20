@@ -12,5 +12,6 @@ public class QuantileV3 extends ModelBuilderSchema<Quantile,QuantileV3,QuantileV
 
     // Input fields
     @API(help="Probabilities for quantiles")  public double probs[];
+    @API(help="How to combine quantiles for even sample sizes") public QuantileModel.CombineMethod combine_method;
   } // QuantileParametersV2
 }
