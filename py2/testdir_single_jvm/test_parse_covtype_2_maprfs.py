@@ -45,6 +45,13 @@ class Basic(unittest.TestCase):
             use_maprfs=True,
             hdfs_version='mapr3.1.1',
             hdfs_name_node='mr-0x2:7222')
+        # mayb these aren't set correctly with -uc and above,. Let's just set them here
+        # the import below will use them to form the uri
+        h2o.nodes[0].use_maprfs = True
+        h2o.nodes[0].use_hdfs = False
+        h2o.nodes[0].hdfs_version = 'mapr3.1.1',
+        h2o.nodes[0].hdfs_name_node = 'mr-0x2:7222'
+
 
     @classmethod
     def tearDownClass(cls):
@@ -60,7 +67,7 @@ class Basic(unittest.TestCase):
         for (csvFilename, multiplyExpected, timeoutSecs) in tryList:
 
             # import_result = a_node.import_files(path=find_file("smalldata/logreg/prostate.csv"))
-            importFolderPath = "standard"
+            importFolderPath = "datasets"
             hex_key = 'covtype.hex'
             csvPathname = importFolderPath + "/" + csvFilename
             parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, schema='maprfs', 
