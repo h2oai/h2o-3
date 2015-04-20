@@ -30,7 +30,7 @@ dependencies {
   compile "org.reflections:reflections:0.9.9"
 
   // Jets3t is required by S3N support
-  compile 'net.java.dev.jets3t:jets3t:0.9.2'
+  compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
   testCompile "junit:junit:${junitVersion}"
 }

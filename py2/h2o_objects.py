@@ -172,7 +172,7 @@ class H2O(object):
 
     def do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
         cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, **kwargs):
-        # if url param is used, use it as full url. otherwise crate from the jsonRequest
+        # if url param is used, use it as full url. otherwise create from the jsonRequest
         if fullUrl:
             url = fullUrl
         else:
@@ -189,7 +189,7 @@ class H2O(object):
         else:
             paramsStr = ''
 
-        extraComment2 = " " + repr(postData)+";" if cmd=='post' else ""
+        extraComment2 = " " + str(postData)+";" if cmd=='post' else ""
         extraComment2 += extraComment if extraComment else ""
 
         if len(extraComment2) > 0:

@@ -93,7 +93,13 @@ class ModelBase(object):
     fr_key = H2OFrame.send_frame(test_data)
     res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
     h2o.remove(fr_key)
-    raw_metrics = res["model_metrics"][0]
+
+    # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+    raw_metrics = None
+    for mm in res["model_metrics"]:
+      if mm["frame"]["name"] == fr_key:
+        raw_metrics = mm
+        break
     return self._metrics_class(raw_metrics)
 
   def summary(self):

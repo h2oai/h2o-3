@@ -642,6 +642,7 @@ class ASTNull extends AST {
   @Override ASTNull make() { return new ASTNull(); }
   String opStr() { throw H2O.unimpl();}
   ASTNull() {}
+  ASTNull parse_impl(Exec E) { return this; }
   @Override void exec(Env e) { e.push(new ValNull());}
   @Override String value() { return null; }
   @Override int type() { return Env.NULL; }
@@ -901,7 +902,7 @@ class ASTAssign extends AST {
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
-        if (id.isGlobalSet()) vecs = f.deepSlice(null,null).vecs();
+        if (id.isGlobalSet()) vecs = f.deepCopy(null).vecs();
         Frame fr = new Frame(k, f.names(), vecs);
         if (id.isGlobalSet()) DKV.put(k, fr);
         e._locked.add(k);
@@ -1123,6 +1124,7 @@ class ASTSlice extends AST {
       case Env.SPAN: ((ASTSpan) rows).setSlice(true, false);     break;
       case Env.SERIES: ((ASTSeries) rows).setSlice(true, false); break;
       case Env.LIST: rows = new ASTSeries(((ASTLongList)rows)._l,null,((ASTLongList)rows)._spans); ((ASTSeries)rows).setSlice(true,false); break;
+      case Env.NULL: rows = new ASTNull(); break;
       default: //pass thru
     }
 
@@ -1137,6 +1139,7 @@ class ASTSlice extends AST {
         case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
         case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
         case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        case Env.NULL: rows = new ASTNull(); break;
         default: // pass thru
       }
     }
@@ -1390,6 +1393,21 @@ abstract class ASTList extends AST {
   ASTList() { spans=new ArrayList<>(); }
 }
 
+class ASTAry extends ASTList {
+  AST[] _a;
+  @Override String opStr() { return "list"; }
+  @Override ASTDoubleList make() { return new ASTDoubleList(); }
+  ASTAry parse_impl(Exec E) {
+    ArrayList<AST> asts = new ArrayList<>();
+    while( !E.isEnd() ) asts.add(E.parse());
+    E.eatEnd();
+    _a = asts.toArray(new AST[asts.size()]);
+    ASTAry res = (ASTAry) clone();
+    res._a = _a;
+    return res;
+  }
+}
+
 class ASTDoubleList extends ASTList {
   ASTDoubleList() {super();}
   double[] _d;
@@ -1410,7 +1428,7 @@ class ASTDoubleList extends ASTList {
 
     ASTDoubleList res = (ASTDoubleList) clone();
     res._d = _d; //probably useless
-   res._spans = _spans;
+    res._spans = _spans;
     return res;
   }
   @Override public Env treeWalk(Env e) { e.push(new ValDoubleList(_d,_spans)); return e; }
@@ -1448,8 +1466,12 @@ class ASTStringList extends ASTList {
   @Override ASTStringList make() { return new ASTStringList(); }
   ASTStringList parse_impl(Exec E) {
     ArrayList<String> strs = new ArrayList<>();
-    while( !E.isEnd() ) // read until we hit a ")"
-      strs.add(E.nextStr());
+    while( !E.isEnd() ) {// read until we hit a ")"
+      AST a = E.parse();
+      if( a instanceof ASTNull ) strs.add(null);
+      else if( a instanceof ASTString ) strs.add(((ASTString) a)._s);
+      else if( a instanceof ASTFrame  ) strs.add(((ASTFrame)a)._key);  // got screwed by the st00pid aststring hack for keys w/ spaces
+    }
     E.eatEnd();
     _s = new String[strs.size()];
     int i=0;

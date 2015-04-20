@@ -1,5 +1,6 @@
 package water;
 
+import water.api.RequestServer;
 import water.fvec.UploadFileVec;
 import water.util.Log;
 
@@ -764,6 +765,11 @@ public class NanoHTTPD
             pw.print( key + ": " + value + "\r\n");
           }
         }
+
+        // Add these three HTTP headers to every response no matter what.
+        pw.print("X-h2o-build-project-version" + ": " + H2O.ABV.projectVersion() + "\r\n");
+        pw.print("X-h2o-rest-api-version-max" + ": " + RequestServer.H2O_REST_API_VERSION + "\r\n");
+        pw.print("X-h2o-cluster-id" + ": " + H2O.CLUSTER_ID + "\r\n");
 
         pw.print("\r\n");
         pw.flush();

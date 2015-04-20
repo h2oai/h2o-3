@@ -810,6 +810,12 @@ final public class H2O {
   static final String DEBUG_ARG = "h2o.debug";
   static final boolean DEBUG = System.getProperty(DEBUG_ARG) != null;
 
+  // Returned in REST API responses as X-h2o-cluster-id.
+  //
+  // Currently this is unique per node.  Might make sense to distribute this
+  // as part of joining the cluster so all nodes have the same value.
+  public static final long CLUSTER_ID = System.currentTimeMillis();
+
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
@@ -1163,6 +1169,8 @@ final public class H2O {
 
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
+
+    Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
 
     // Register with GA
     if((new File(".h2o_no_collect")).exists()

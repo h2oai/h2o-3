@@ -214,7 +214,7 @@ class Expr(object):
       elif  isinstance(i, tuple): return self.eager()[i[0]][i[1]]
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     elif self.is_remote() or self.is_pending():
-      if    isinstance(i, int)  : return Expr("[", self, Expr(("null", i)))  # column slicing
+      if    isinstance(i, int)  : return Expr("[", self, Expr(("()", i)))  # column slicing
       elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
@@ -385,7 +385,7 @@ class Expr(object):
         for col in cols: cmd += " '" + str(col) + "'"
         cmd += ")"
         return cmd
-      if c == "null":
+      if c == "()":
         cmd = "(cbind"
         for col in self._left._data: cmd += " '" + str(col) + "'"
         cmd += ")"
@@ -396,16 +396,16 @@ class Expr(object):
     r = child._data[0]
     if isinstance(r, int): return "#" + str(r)
     if isinstance(r, slice): return "(: #"+str(r.start)+" #"+str(r.stop)+")"
-    if r == "null": return '"null"'
+    if r == "()": return '()'
     raise NotImplementedError
 
   def multi_dim_slice_cols_cmd(self, child):
-    if   isinstance(self._left._data, list): return '"null"'
+    if   isinstance(self._left._data, list): return '()'
     elif isinstance(self._left._data,unicode):
       c = child._data[1]
       if isinstance(c, int): return "#" + str(c)
       if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
-      if c == "null": return '"null"'
+      if c == "()": return '()'
     raise NotImplementedError
 
   def _do_it(self):
@@ -535,7 +535,7 @@ class Expr(object):
         num_obs = len(left._data)
         var = sum_of_sq / (num_obs - 1)
         self._data = var if self._op == "var" else var**0.5
-      else:                 __CMD__ += " \"null\" %TRUE \"everything\"" if self._op == "var" else " %TRUE"
+      else:                 __CMD__ += " () %TRUE \"everything\"" if self._op == "var" else " %TRUE"
 
     elif self._op == "is.factor":
       if left.is_local():   raise NotImplementedError

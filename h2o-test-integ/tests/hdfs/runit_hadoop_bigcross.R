@@ -34,7 +34,7 @@ data.glm <- h2o.glm(myX, myY, training_frame = data.hex, family = "gaussian", so
 data.glm
 
 # GBM Model
-data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, loss = 'AUTO')
+data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, distribution = 'AUTO')
 print(data.gbm)
 
 # DL Model

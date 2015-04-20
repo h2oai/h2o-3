@@ -33,7 +33,7 @@ predictors=c(3:ncol(data.hex))
 # Start modeling   
    
 # Gradient Boosted Trees
-mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, loss = "bernoulli")
+mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "bernoulli")
 mdl.gbm
   
 PASS_BANNER()

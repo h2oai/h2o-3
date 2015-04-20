@@ -40,7 +40,7 @@ check.deeplearning_missing <- function(conn) {
     hh=h2o.deeplearning(x=3:22,y=24,training_frame=train,validation=test,epochs=5,reproducible=T,seed=12345,
                         activation='RectifierWithDropout',l1=1e-5,input_dropout_ratio=0.2)
 
-    errors[i] = 1 - hh@model$training_metrics$thresholds_and_metric_scores$accuracy[hh@model$training_metrics$max_criteria_and_metric_scores[1,4]]
+    errors[i] = 1 - hh@model$training_metrics@metrics$thresholds_and_metric_scores$accuracy[hh@model$training_metrics@metrics$max_criteria_and_metric_scores[1,4]]
   }
 
   for(i in 1:length(missing_ratios)) {
