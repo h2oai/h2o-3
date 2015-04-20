@@ -813,8 +813,8 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, ...) {
   if( missing(newdata) ) {
     l <- list(...)
     l <- .trainOrValid(l)
-    if( l$train )      { cat("\nTraining Confusion Matrix: \n"); return(data.frame(object@model$training_metrics$cm$table)) }
-    else if( l$valid ) { cat("\nValidation Confusion Matrix: \n"); return( data.frame(object@model$validation_metrics$cm$table)) }
+    if( l$train )      { cat("\nTraining Confusion Matrix: \n"); return(   h2o.confusionMatrix(object@model$training_metrics) ) }
+    else if( l$valid ) { cat("\nValidation Confusion Matrix: \n"); return( h2o.confusionMatrix(object@model$validation_metrics) ) }
     else               return(NULL)
   }
   delete <- !.is.eval(newdata)
@@ -866,13 +866,10 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   n <- max_metrics[match("fps",max_metrics$Metric),3]
   m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
-    tps <- row$tps
-    fps <- row$fps
-    matrix(c(n-fps,fps,p-tps,tps),nrow=2,byrow=T)
+    mm <- matrix(c(row$tns, row$fns, row$fps, row$tps),nrow=2,byrow=T)
+    dimnames(mm) <- list(list("0","1"), list("0","1"))
+    mm
   })
-  names(m) <- "Actual/Predicted"
-  dimnames(m[[1]]) <- list(list("0","1"), list("0","1"))
-  print(m)
   m
 })
 

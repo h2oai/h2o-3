@@ -179,7 +179,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
   }
 
-  private static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
+  public static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
     private NonBlockingHashSet<T> _g;
 
     IcedNBHS() {_g=new NonBlockingHashSet<>();}
