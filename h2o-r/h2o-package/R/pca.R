@@ -61,7 +61,6 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
-
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
@@ -93,14 +92,14 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-      init <- as.h2o(init, training_frame@conn)
+      init <- as.h2o(init, training_frame@frame_id)
     }
     parms[["user_points"]] <- init
     # Set k
     if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
       warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
-    parms[["user_points"]] <- parms[["user_points"]]@key
+    parms[["user_points"]] <- parms[["user_points"]]@frame_id
     parms[["k"]] <- as.numeric(nrow(init))
   }
   else if ( is.character(init) ) { # PlusPlus

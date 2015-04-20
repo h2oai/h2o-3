@@ -208,10 +208,10 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__EXPORT_FILES <- function(frame,path,force) {
   tmp_data <- !.is.eval(frame)
   if( tmp_data ) {
-    key  <- frame@key
+    key  <- frame@frame_id
     .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, frame_id=key)
   }
-  paste0("Frames/",frame@key,"/export/",path,"/overwrite/",force)
+  paste0("Frames/",frame@frame_id,"/export/",path,"/overwrite/",force)
 }
 
 #' Model Endpoint

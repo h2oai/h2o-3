@@ -152,7 +152,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
     path <- file.path(dir, name)
 
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
+  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
 
 # path
 }

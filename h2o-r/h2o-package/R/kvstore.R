@@ -95,8 +95,8 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
-  if( is(keys, "H2OFrame") ) keys <- keys@frame_id
-  if(!is.character(keys)) stop("`keys` must be of class character")
+  if( is(ids, "H2OFrame") ) ids <- ids@frame_id
+  if(!is.character(ids)) stop("`ids` must be of class character")
 
   for(i in seq_len(length(ids)))
     .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
@@ -147,8 +147,8 @@ h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   t <- !.is.eval(data)
   if( t ) {
-    tk <- data@key
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = tk)
+    tk <- data@frame_id
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = tk)
   }
 
   .key.validate(key)
@@ -268,7 +268,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-  .newH2OModel(Class          = Class,
+  foo = .newH2OModel(Class          = Class,
                 conn          = conn,
                 model_id      = json$model_id$name,
                 algorithm     = json$algo,
@@ -276,4 +276,5 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
                 allparameters = allparams,
                 model         = model,
                 linkToGC      = linkToGC)
+  foo
 }

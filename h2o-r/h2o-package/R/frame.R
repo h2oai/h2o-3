@@ -1066,11 +1066,12 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
   nc <- ncol(x)
   if( n==0L && nc==0L ) { return(data.frame()) }
-  if(n == 0L)
+  if(n == 0L) {
     data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
-  else {
+  } else {
     tmp_head <- x[1:n,]  # seq_len unimpl
     x.slice <- as.data.frame(tmp_head)
+#    x.slice <- tmp_head
     h2o.rm(tmp_head@frame_id, tmp_head@conn)
     x.slice
   }
@@ -2256,7 +2257,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #  myVec <- paste0("c(", .seq_to_string(vec), ")")
 #  expr <- paste0("findInterval(", x@frame_id, ",", myVec, ",", as.numeric(rightmost.closed), ")")
 #  res <- .h2o.__exec2(x@conn, expr)
-#  new('H2OFrame', conn=x@conn, frame_id=res$dest_key, finalizers=x@finalizers)
+#  .newH2OFrame('H2OFrame', conn=x@conn, frame_id=res$dest_key, finalizers=x@finalizers)
 #})
 #
 ## setGeneric("histograms", function(object) { standardGeneric("histograms") })

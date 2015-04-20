@@ -243,7 +243,7 @@ setMethod("initialize", "H2OFrame", function(.Object, ...) {
   .Object
 })
 
-# TODO: make a mode frame-specific constructor
+# TODO: make a more frame-specific constructor
 .newH2OFrame <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
   if (linkToGC && !is.na(frame_id) && is(conn, "H2OConnection")) {
     envir <- new.env()
@@ -289,14 +289,25 @@ setMethod("show", "H2OFrame", function(object) {
 #' @slot key An object of class \code{"character"}, which is the name of the key assigned to the imported data.
 #' @aliases H2ORawData
 #' @export
-setClass("H2ORawData", contains="H2OObject")
+setClass("H2ORawData", contains="H2OFrame")
+
+.newH2ORawData <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  if (linkToGC && !is.na(frame_id) && is(conn, "H2OConnection")) {
+    envir <- new.env()
+    assign("frame_id", frame_id, envir)
+    assign("conn", conn, envir)
+    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
+    finalizers <- c(list(envir), finalizers)
+  }
+  new(Class, ..., conn = conn, frame_id = frame_id, finalizers = finalizers)
+}
 
 #' @rdname H2ORawData-class
 #' @param object a \code{H2ORawData} object.
 #' @export
 setMethod("show", "H2ORawData", function(object) {
   print(object@conn)
-  cat("Raw Data Destination Frame:", object@key, "\n")
+  cat("Raw Data Destination Frame:", object@frame_id, "\n")
 })
 
 # No show method for this type of object.
@@ -364,7 +375,7 @@ setMethod("show", "H2OModel", function(object) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@key, "\n")
+  cat("Model ID: ", o@model_id, "\n")
 
   # summary
   print(m$model_summary)
@@ -596,7 +607,7 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #' A class to contain the information for background model jobs.
 #' @slot conn an \linkS4class{H2OConnection}
 #' @slot job_key a character key representing the identification of the job process.
-#' @slot destination_key the final identifier for the model
+#' @slot model_id the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))
+setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", model_id="character"))

@@ -63,7 +63,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
     parseSetup.params <- list()
     # Prep srcs: must be of the form [src1,src2,src3,...]
-    parseSetup.params$source_frames = .collapse.char(data@key)
+    parseSetup.params$source_frames = .collapse.char(data@frame_id)
     if (nchar(sep) > 0) parseSetup.params$separator = sep
     if(is.na(header) && is.null(col.names)) {
       parseSetup.params$check_header = 0

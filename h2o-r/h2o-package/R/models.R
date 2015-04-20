@@ -183,7 +183,7 @@
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
+  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
@@ -193,6 +193,7 @@
     temp_train_key <- params$training_frame@frame_id
     .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, frame_id = temp_train_key)
  }
+
  if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
     tmp_valid <- !.is.eval(params$validation_frame)
@@ -201,12 +202,13 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, frame_id = temp_valid_key)
     }
   }
+
   h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
 }
 
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@model_id, object@h2o)
+  h2o.getModel(object@model_id, object@conn)
 }
 
 #' Predict on an H2O Model

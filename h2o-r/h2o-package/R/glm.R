@@ -83,7 +83,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if (!inherits(training_frame, "H2OFrame"))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
             error = function(err) {
-              stop("argument \"training_frame\" must be a valid H2OFrame or key")
+              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
             })
 
   # Parameter list to send to model builder
@@ -131,7 +131,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if(!missing(beta_constraints)){
     delete <- !.is.eval(beta_constraints)
     if (delete) {
-        temp_key <- beta_constraints@key
+        temp_key <- beta_constraints@frame_id
         .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, key = temp_key)
     }
     parms$beta_constraints <- beta_constraints
@@ -152,8 +152,8 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@key, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
-   m <- h2o.getModel(key=res$key$name)
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model_id=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
    m
@@ -199,7 +199,7 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
   if (!inherits(training_frame, "H2OFrame"))
       tryCatch(training_frame <- h2o.getFrame(training_frame),
                error = function(err) {
-                 stop("argument \"training_frame\" must be a valid H2OFrame or key")
+                 stop("argument \"training_frame\" must be a valid H2OFrame or model ID")
               })
 
     parms <- list()
