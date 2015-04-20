@@ -55,5 +55,12 @@ print(interaction.matrix)
 
 augmented_data_set <- h2o.assign(h2o.cbind(hex, interaction.matrix), "augmented")
 
+h2o.rm(interaction.matrix)
+
+h2o.rm( as.character(h2o.ls()[ grep("^l", h2o.ls()[,1]), 1]) ) 
+
 print(augmented_data_set)
+
+print( h2o.ls() )
+
 PASS_BANNER()

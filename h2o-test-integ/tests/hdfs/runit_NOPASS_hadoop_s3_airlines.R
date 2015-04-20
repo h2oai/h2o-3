@@ -43,7 +43,7 @@ data.glm <- h2o.glm(y = myY, x = myX, training_frame = airlines.hex,
 ## Simple GBM
 data.gbm <- h2o.gbm(y = myY, x = myX, balance_classes = T, 
                     training_frame = airlines.hex, ntrees = 20, max_depth = 5,
-                    loss = "bernoulli", learn_rate = .1, min_rows = 2)
+                    distribution = "bernoulli", learn_rate = .1, min_rows = 2)
 
 if(nrow(airlines.hex)==nrow(airlines_hdfs.hex)) stop("# rows are not equal!")
 if(ncol(airlines.hex)==ncol(airlines_hdfs.hex)) stop("# columns not equal!")

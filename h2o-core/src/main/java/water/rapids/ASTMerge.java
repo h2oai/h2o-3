@@ -27,24 +27,20 @@ public class ASTMerge extends ASTOp {
 
   @Override ASTMerge parse_impl(Exec E) {
     // get the frames to work with
-    AST left = E.parse();  if (left instanceof ASTId) left = Env.staticLookup((ASTId)left);
-    AST rite = E.parse();  if (rite instanceof ASTId) rite = Env.staticLookup((ASTId)rite);
+    AST left = E.parse();
+    AST rite = E.parse();
 
-    AST a = E.skipWS().parse();
-    if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
-    try {
-      _allLeft = ((ASTNum) a).dbl() == 1;
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Argument `allLeft` expected to be a boolean.");
-    }
+    AST a = E.parse();
+    if( a instanceof ASTId  ) a = E._env.lookup((ASTId)a);
+    if( a instanceof ASTNum ) _allLeft = ((ASTNum)a)._d==1;
+    else throw new IllegalArgumentException("Argument `allLeft` expected to be a boolean.");
 
-    a = E.skipWS().parse();
+    a = E.parse();
     if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
-    try {
-      _allRite = ((ASTNum) a).dbl() == 1;
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Argument `allRite` expected to be a boolean.");
-    }
+    if( a instanceof ASTNum ) _allRite = ((ASTNum)a)._d==1;
+    else throw new IllegalArgumentException("Argument `allRite` expected to be a boolean.");
+
+    E.eatEnd();
     // Finish the rest
     ASTMerge res = (ASTMerge) clone();
     res._asts = new AST[]{left,rite};

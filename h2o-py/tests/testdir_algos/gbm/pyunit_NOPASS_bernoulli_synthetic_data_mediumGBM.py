@@ -25,7 +25,7 @@ def bernoulli_synthetic_data_mediumGBM(ip,port):
 
     # Train scikit gbm
     # TODO: grid-search
-    loss = "bernoulli"
+    distribution = "bernoulli"
     ntrees = 150
     min_rows = 1
     max_depth = 2
@@ -52,7 +52,7 @@ def bernoulli_synthetic_data_mediumGBM(ip,port):
     train_h2o = H2OFrame(np.column_stack((y_train, X_train)).tolist())
     test_h2o = H2OFrame(np.column_stack((y_test, X_test)).tolist())
 
-    gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"], loss=loss, ntrees=ntrees, min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
+    gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"], distribution=distribution, ntrees=ntrees, min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
     gbm_perf = gbm_h2o.model_performance(test_h2o)
     auc_h2o = gbm_perf.auc()
 

@@ -176,6 +176,12 @@ function(op, ..., .args = list(...)) {
   .h2o.nary_frame_op(op, .args = .args, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names)
 }
 
+.h2o.raw_expr_op<-
+function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_expr_op"), linkToGC = TRUE) {
+  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=expr, method = "POST")
+  h2o.getFrame(key, h2o.getConnection(), linkToGC=linkToGC)
+}
+
 #'
 #' Ship AST to H2O for evaluation
 #'
@@ -211,7 +217,7 @@ function(conn, ast) {
     ret <- res$scalar
     if (ret == "NaN") ret <- NA_real_
   }
-
+  gc()
   ret
 }
 
@@ -224,7 +230,7 @@ function(conn, ast, key=.key.make(conn, "rapids"), linkToGC=FALSE) {
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-
+  gc()
   h2o.getFrame(key, conn, linkToGC=linkToGC)
 }
 
@@ -239,6 +245,7 @@ function(conn, ast, key, finalizers) {
 
   res <- h2o.getFrame(key, conn, linkToGC=FALSE)
   res@finalizers <- finalizers
+  gc()
   res
 }
 
@@ -279,6 +286,7 @@ function(x, scalarAsFrame = TRUE) {
 #' Convenient to have a POST function method.
 .h2o.post.function<-
 function(fun.ast) {
+  gc()
   expr <- .fun.visitor(fun.ast)
   .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, fun=expr$ast, method = "POST")
 }

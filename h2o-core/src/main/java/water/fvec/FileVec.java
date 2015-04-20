@@ -44,6 +44,20 @@ public abstract class FileVec extends ByteVec {
 
     //Now reset the chunk size on each node
     Futures fs = new Futures();
+    if (! (this instanceof UploadFileVec)) {
+      // Clear cached chunks
+      // Peeking into a file before the chunkSize has been set
+      // will load chunks of the file in DFLT_CHUNK_SIZE amounts.
+      // If this side-effect is not reversed when _chunkSize differs
+      // from the default value, parsing will either double read
+      // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
+      // (_chunkSize > DFLT_CHUNK_SIZE). This reverses this side-effect.
+      //
+      // Don't do this for UploadFileVec, because that will whack the data!
+      Keyed.remove(_key, fs);
+      fs.blockForPending();
+    }
+
     DKV.put(_key, this, fs);
     // also update Frame to invalidate local caches
     if (fr != null ) {
@@ -89,7 +103,7 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
   // Touching the DVec will force the file load.
-  @Override protected Value chunkIdx( int cidx ) {
+  @Override public Value chunkIdx( int cidx ) {
     final long nchk = nChunks();
     assert 0 <= cidx && cidx < nchk;
     Key dkey = chunkKey(cidx);
@@ -158,34 +172,5 @@ public abstract class FileVec extends ByteVec {
       chunkSize = 1 << MathUtils.log2((int) tmp); //closest power of 2
       return chunkSize;
     } else return DFLT_CHUNK_SIZE;
-  }
-
-  /**
-   * Removes a chunk from the DKV.
-   * <p>
-   * Peaking into a file before the chunkSize has been calculated
-   * will viewed chunks of the file to be DFLT_CHUNK_SIZE.
-   * If this side-effect is not reversed then when
-   * _chunkSize differs from the default value, parsing will either
-   * double read sections (_chunkSize < DFLT_CHUNK_SIZE) or skip
-   * data (_chunkSize > DFLT_CHUNK_SIZE).
-   * This method reverses this side-effect.
-   * </p>
-   * @param
-   */
-  public void clearAllCachedChunks() {
-    new MRTask() {
-      @Override public void map (Chunk[]cs){
-        Futures fs = new Futures();
-        int nChunks = cs.length;
-        for (int i=0; i < nChunks; i++) {
-          Key cckey = chunkKey(cs[i].cidx());
-          if (DKV.get(cckey) != null) {
-            DKV.remove(cckey, fs);
-          }
-        }
-        fs.blockForPending();
-      }
-    }.doAll(this);
   }
 }

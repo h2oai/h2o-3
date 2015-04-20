@@ -111,7 +111,7 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
-                  && _setup._na_strings.length < colIdx
+                  && _setup._na_strings.length < colIdx  // FIXME: < is suspicious PUBDEV-869
                   && _setup._na_strings[colIdx] != null
                   && str.equals(_setup._na_strings[colIdx]))
             dout.addInvalidCol(colIdx);

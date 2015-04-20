@@ -2,6 +2,7 @@ package water;
 
 import java.io.IOException;
 import water.init.NetworkInit;
+import water.persist.PersistManager;
 import water.util.Log;
 
 /**
@@ -61,10 +62,12 @@ class UDPRebooted extends UDP {
   }
 
   // Try to gracefully close/shutdown all i/o channels.
-  static void closeAll() {
+  private static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { NetworkInit._apiSocket.close(); } catch( IOException ignore ) { }
     try { TCPReceiverThread.SOCK.close(); } catch( IOException ignore ) { }
+    PersistManager PM = H2O.getPM();
+    if( PM != null ) PM.getIce().cleanUp();
   }
 
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum

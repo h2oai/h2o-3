@@ -7,7 +7,7 @@ def demo_citibike(ip,port):
     h2o.init(ip,port)
 
     # execute ipython notebook
-    h2o.ipy_notebook_exec(h2o.locate("h2o-py/demos/CitiBike_Demo.ipynb"))
+    h2o.ipy_notebook_exec(h2o.locate("h2o-py/demos/CitiBike_Demo.ipynb"),save_and_norun=False)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, demo_citibike)
