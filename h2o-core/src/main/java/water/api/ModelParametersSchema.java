@@ -58,7 +58,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Parameters common to all models:
-  @API(help="Destination key for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
+  @API(help="Destination id for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
   public ModelKeyV3 model_id;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)

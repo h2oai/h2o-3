@@ -5,7 +5,7 @@ test.levels.golden <- function(H2Oserver) {
 	
 
 irisPath <- system.file("extdata", "iris.csv", package="h2o")
-iris.hex <- h2o.importFile(H2Oserver, path = irisPath, key = "iris.hex")
+iris.hex <- h2o.importFile(H2Oserver, path = irisPath, destination_frame = "iris.hex")
 levels(iris.hex[,5])
 
 

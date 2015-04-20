@@ -65,7 +65,7 @@ print(p@metrics$AUC)
 # print(air.rf@model)
 
 #uploading test file to h2o
-air.test <- h2o.importFile(conn,testFilePath,key="air.test")
+air.test <- h2o.importFile(conn,testFilePath,destination_frame="air.test")
 
 model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
 

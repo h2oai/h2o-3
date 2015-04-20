@@ -186,7 +186,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Parse Endpoints
 .h2o.__PARSE_SETUP    <- "ParseSetup"    # Sample Usage: ParseSetup?source_keys=["nfs://asdfsdf...", "nfs://..."]
-.h2o.__PARSE          <- "Parse"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_key=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
+.h2o.__PARSE          <- "Parse"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
 
 #' Inspect/Summary Endpoints
 .h2o.__FRAMES         <- "Frames"        # Frames/<key>    example: http://localhost:54321/3/Frames/meow.hex
@@ -209,7 +209,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
   tmp_data <- !.is.eval(frame)
   if( tmp_data ) {
     key  <- frame@key
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, key=key)
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, frame_id=key)
   }
   paste0("Frames/",frame@key,"/export/",path,"/overwrite/",force)
 }

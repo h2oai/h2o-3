@@ -44,14 +44,14 @@ h2o.ls <- function(conn = h2o.getConnection()) {
   gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@key, fr@conn)
+  h2o.rm(fr@frame_id, fr@conn)
   ret
 }
 
 #'
-#' Remove All Keys on the H2O Cluster
+#' Remove All Objects on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
 #'
@@ -82,24 +82,24 @@ h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
 #
 #' Delete Objects In H2O
 #'
-#' Remove the h2o Big Data object(s) having the key name(s) from keys.
+#' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
-#' @param keys The hex key associated with the object to be removed.
+#' @param ids The hex key associated with the object to be removed.
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
-h2o.rm <- function(keys, conn = h2o.getConnection()) {
-  if (is(keys, "H2OConnection")) {
-    temp <- keys
-    keys <- conn
+h2o.rm <- function(ids, conn = h2o.getConnection()) {
+  if (is(ids, "H2OConnection")) {
+    temp <- ids
+    ids <- conn
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
-  if( is(keys, "H2OFrame") ) keys <- keys@key
+  if( is(keys, "H2OFrame") ) keys <- keys@frame_id
   if(!is.character(keys)) stop("`keys` must be of class character")
 
-  for(i in seq_len(length(keys)))
-    .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", keys[[i]]), method = "DELETE")
+  for(i in seq_len(length(ids)))
+    .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
 }
 
 #'
@@ -118,7 +118,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
-      if(is(o, "H2OFrame") || is(o, "H2OModel")) o@key
+      if(is(o, "H2OFrame")) o@frame_id else if(is(o, "H2OModel")) o@model_id
     })
     Filter(Negate(is.null), l)
   }
@@ -152,8 +152,8 @@ h2o.assign <- function(data, key) {
   }
 
   .key.validate(key)
-  if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  expr <- paste0("(= !", key, " %", data@key, ")")
+  if(key == data@frame_id) stop("Destination key must differ from input frame ", data@frame_id)
+  expr <- paste0("(= !", key, " %", data@frame_id, ")")
   res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
   .byref.update.frame(res)
 }
@@ -161,33 +161,34 @@ h2o.assign <- function(data, key) {
 #'
 #' Get an R Reference to an H2O Dataset
 #'
-#' Get the reference to a frame with the given key in the H2O instance.
+#' Get the reference to a frame with the given frame_id in the H2O instance.
 #'
-#' @param key A string indicating the unique hex key of the dataset to retrieve.
+#' @param frame_id A string indicating the unique frame of the dataset to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param linkToGC a logical value indicating whether to remove the underlying key
+#' @param linkToGC a logical value indicating whether to remove the underlying frame
 #'        from the H2O cluster when the R proxy object is garbage collected.
 #' @export
-h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
-  if (is(key, "H2OConnection")) {
-    temp <- key
-    key <- conn
+h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE) {
+  if (is(frame_id, "H2OConnection")) {
+    temp <- frame_id
+    frame_id <- conn
     conn <- temp
   }
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"), method = "POST")
+  # TODO: this should use /Frames.  It needs to be versioned, and we need to eat our own dogfood.
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", frame_id, ")"), method = "POST")
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
-  .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
+  .h2o.parsedData(conn, frame_id, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
 }
 
 #' Get an R reference to an H2O model
 #'
 #' Returns a reference to an existing model in the H2O instance.
 #'
-#' @param key A string indicating the unique hex key of the model to retrieve.
+#' @param model_id A string indicating the unique model_id of the model to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param linkToGC a logical value indicating whether to remove the underlying key
+#' @param linkToGC a logical value indicating whether to remove the underlying model
 #'        from the H2O cluster when the R proxy object is garbage collected.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
@@ -195,16 +196,16 @@ h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
 #' localH2O <- h2o.init()
 #'
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
-#' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
-#' model.retrieved <- h2o.getModel(key, localH2O)
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
+#' model.retrieved <- h2o.getModel(model_id, localH2O)
 #' @export
-h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
-  if (is(key, "H2OConnection")) {
-    temp <- key
-    key <- conn
+h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE) {
+  if (is(model_id, "H2OConnection")) {
+    temp <- model_id
+    model_id <- conn
     conn <- temp
   }
-  json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
+  json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
@@ -267,9 +268,9 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-  .newH2OObject(Class         = Class,
+  .newH2OModel(Class          = Class,
                 conn          = conn,
-                key           = json$key$name,
+                model_id      = json$model_id$name,
                 algorithm     = json$algo,
                 parameters    = parameters,
                 allparameters = allparams,

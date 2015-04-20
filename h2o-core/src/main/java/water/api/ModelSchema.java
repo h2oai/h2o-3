@@ -98,7 +98,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     ab.put1(',');
     ab.putJSONStr("algo_full_name", algo_full_name);
     ab.put1(',');
-    ab.putJSON("key", model_id);
+    ab.putJSON("model_id", model_id);
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array

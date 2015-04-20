@@ -25,7 +25,7 @@ test.pub.668 <- function(conn) {
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
     d0 <- apply(a.h2o, 2, sum)
     d <- ifelse(F, a.h2o[1,] , d0)
     dd <- ifelse(F, a[1,] , apply(a, 2, sum))
@@ -37,7 +37,7 @@ test.pub.668 <- function(conn) {
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
     d0 <- apply(a.h2o, 2, sum)
     d <- ifelse(F, a.h2o[1,] , apply(a.h2o, 2, sum))
     dd <- ifelse(F, a[1,] , apply(a, 2, sum))
@@ -49,7 +49,7 @@ test.pub.668 <- function(conn) {
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
     d <- ifelse(F, a.h2o[1,] , 0)
     dd <- ifelse(F, a[1,] , 0)
     a.h2o.R <- as.data.frame(a.h2o)
@@ -60,7 +60,7 @@ test.pub.668 <- function(conn) {
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
     d <- ifelse(FALSE, a.h2o[1,] , apply(a.h2o,2,sum)); g = ifelse(FALSE, 1.23<2.34 , min(1,2))
     dd <- ifelse(FALSE, a[1,] , apply(a,2,sum)); gg = ifelse(FALSE, 1.23<2.34, min(1,2))
     a.h2o.R <- as.data.frame(a.h2o)

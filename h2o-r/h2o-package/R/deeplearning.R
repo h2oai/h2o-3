@@ -6,15 +6,11 @@
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
 #' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
-#' @param destination_key (Optional) The unique \code{character} hex key assigned to the resulting
-#'        model. If none is given, a key will automatically be generated.
-#' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best
-#'        model found during traning. Defaults to \code{TRUE}.
-#' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then
-#'        \code{validation} must remain empty.
-#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation
-#'        dataset used to contruct the confusion matrix. If left blank, this defaults to the
-#'        training data when \code{nfolds = 0}
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#'        none is given, an id will automatically be generated.
+#' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best model found during traning. Defaults to \code{TRUE}.
+#' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param validation (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -108,7 +104,7 @@
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
-                             destination_key = "",
+                             model_id = "",
                              override_with_best_model,
                              n_folds = 0,
                              validation_frame,
@@ -190,8 +186,8 @@ h2o.deeplearning <- function(x, y, training_frame,
   colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
   parms$response_column <- colargs$y
   parms$ignored_columns <- colargs$x_ignore
-  if(!missing(destination_key))
-    parms$destination_key <- destination_key
+  if(!missing(model_id))
+    parms$model_id <- model_id
   if(!missing(override_with_best_model))
     parms$override_with_best_model <- override_with_best_model
   if(!missing(n_folds))
@@ -367,7 +363,7 @@ h2o.deepfeatures <- function(object, data, layer = 1) {
 
   url <- paste0('Predictions/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
-  key <- res$destination_key$name
+  key <- res$model_id$name
 
   h2o.getFrame(key)
 }

@@ -81,8 +81,8 @@ public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
         srcs_key[i] = source_frames[i].key();
       ab.href("Parse", "unknown", ParseV3.link(srcs_key, destination_frame, parse_type, separator, number_columns, check_header, single_quotes, column_names));
     }
-    ab.putA( "source_keys", source_frames);
-    ab.putStr( "destination_key", destination_frame);
+    ab.putA( "source_frames", source_frames);
+    ab.putStr( "destination_frame", destination_frame);
     ab.putEnum("parse_type",parse_type);
     ab.put1("separator",separator);
     ab.put4("number_columns",number_columns);

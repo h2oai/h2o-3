@@ -11,8 +11,8 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public DownloadDataV3 fetch(int version, DownloadDataV3 server) {
 
-    if (DKV.get(server.key.key()) == null) throw new H2OKeyNotFoundArgumentException("key", server.key.key());
-    Frame value = server.key.key().get();
+    if (DKV.get(server.frame_id.key()) == null) throw new H2OKeyNotFoundArgumentException("key", server.frame_id.key());
+    Frame value = server.frame_id.key().get();
 
     InputStream is = value.toCSV(true, server.hex_string);
     java.util.Scanner scanner = new java.util.Scanner(is).useDelimiter("\\A");
@@ -22,7 +22,7 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
     // the user's browser actually asks for what to do with the suggested
     // filename.  Without this code, my FireFox would claim something silly
     // like "no helper app installed", then fail the download.
-    String s = server.key.toString();
+    String s = server.frame_id.toString();
     int x = s.length()-1;
     boolean dot=false;
     for( ; x >= 0; x-- )

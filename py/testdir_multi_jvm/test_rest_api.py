@@ -143,7 +143,7 @@ def validate_model_exists(model_name, models=None):
         result = a_node.models()
         models = result['models']
 
-    models_dict = list_to_dict(models, 'key/name')
+    models_dict = list_to_dict(models, 'model_id/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
     return models_dict[model_name]
 
@@ -156,7 +156,7 @@ def validate_frame_exists(frame_name, frames=None):
         result = a_node.frames()
         frames = result['frames']
 
-    frames_dict = list_to_dict(frames, 'key/name')
+    frames_dict = list_to_dict(frames, 'frame_id/name')
     assert frame_name in frames_dict, "FAIL: Failed to find " + frame_name + " in frames list: " + repr(frames_dict.keys())
     return frames_dict[frame_name]
 
@@ -243,13 +243,13 @@ def validate_predictions(result, model_name, frame_key, expected_rows, predictio
     #assert 'auc' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an AUC."
     #assert 'cm' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a CM."
     assert 'predictions' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an predictions section."
-    assert 'key' in mm['predictions'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key."
-    assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
+    assert 'frame_id' in mm['predictions'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key."
+    assert 'name' in mm['predictions']['frame_id'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
 
-    predictions_key = mm['predictions']['key']['name']
+    predictions_key = mm['predictions']['frame_id']['name']
     f = a_node.frames(key=predictions_key, find_compatible_models=True, row_count=5)
     frames = f['frames']
-    frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+    frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
     assert predictions_key in frames_dict, "FAIL: Failed to find predictions key" + predictions_key + " in Frames list."
 
     predictions = mm['predictions']
@@ -284,7 +284,7 @@ def cleanup(a_node, models=None, frames=None):
     else:
         for model in models:
             for m in ms['models']:
-                assert m['key'] != model, 'FAIL: Found model that we tried to delete in the models list: ' + model
+                assert m['model_id'] != model, 'FAIL: Found model that we tried to delete in the models list: ' + model
 
     ###################
     # test delete_frame
@@ -295,7 +295,7 @@ def cleanup(a_node, models=None, frames=None):
 
             found = False;
             for m in ms['frames']:
-                assert m['key'] != frame, 'FAIL: Found frame that we tried to delete in the frames list: ' + frame
+                assert m['frame_id'] != frame, 'FAIL: Found frame that we tried to delete in the frames list: ' + frame
 
 
     # TODO
@@ -398,13 +398,13 @@ class DatasetSpec(dict):
         frames = a_node.frames(key=import_result['frame_ids'][0], row_count=5)['frames']
         assert frames[0]['is_text'], "FAIL: Raw imported Frame is not is_text: " + repr(frames[0])
         parse_result = a_node.parse(key=import_result['frame_ids'][0], dest_key=self['dest_key']) # TODO: handle multiple files
-        key = parse_result['frames'][0]['key']['name']
+        key = parse_result['frames'][0]['frame_id']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
         assert self['expected_rows'] == parse_result['frames'][0]['rows'], 'FAIL: Imported frame number of rows is wrong; expected: ' + str(self['expected_rows']) + ', got: ' + str(parse_result['frames'][0]['rows'])
 
         self['dataset'] = parse_result['frames'][0]  # save the imported dataset object
 
-        if verbose: print "Imported and validated key: " + self['dataset']['key']['name']
+        if verbose: print "Imported and validated key: " + self['dataset']['frame_id']['name']
         return self['dataset']
 
 
@@ -561,7 +561,7 @@ a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get Cr
 
 frames = a_node.frames(key='created')['frames']
 assert len(frames) == 1, "FAIL: expected to find 1 frame called 'created', found: " + str(len(frames))
-assert frames[0]['key']['name'] == 'created', "FAIL: expected to find 1 frame called 'created', found: " + repr(frames)
+assert frames[0]['frame_id']['name'] == 'created', "FAIL: expected to find 1 frame called 'created', found: " + repr(frames)
 
 created = frames[0]
 assert 'rows' in created, "FAIL: failed to find 'rows' field in CreateFrame result."
@@ -593,7 +593,7 @@ for dataset_spec in datasets_to_import:
 ################################################
 # Test /Frames for prostate.csv
 frames = a_node.frames(row_count=5)['frames']
-frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
 
 # TODO: remove:
 if h2o.H2O.verbose:
@@ -610,7 +610,7 @@ assert not frames_dict['prostate_binomial']['is_text'], "FAIL: Parsed Frame is i
 
 # Test /Frames/{key} for prostate.csv
 frames = a_node.frames(key='prostate_binomial', row_count=5)['frames']
-frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'CAPSULE' in columns_dict, "FAIL: Failed to find CAPSULE in Frames/prostate.hex."
@@ -666,7 +666,7 @@ bigger = a_node.frames(key='bigger')['frames'][0]
 smaller = a_node.frames(key='smaller')['frames'][0]
 assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
 assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
-# TODO: validate_job_exists(splits['key']['name'])
+# TODO: validate_job_exists(splits['frame_id']['name'])
 
 if verbose: print 'Testing SplitFrame with generated destination_frames. . .'
 splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
@@ -678,7 +678,7 @@ first = a_node.frames(key=splits['destination_frames'][0]['name'])['frames'][0]
 second = a_node.frames(key=splits['destination_frames'][1]['name'])['frames'][0]
 assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
 assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
-# TODO: validate_job_exists(splits['key']['name'])
+# TODO: validate_job_exists(splits['frame_id']['name'])
 
 ####################################################################################################
 # Build and do basic validation checks on models
@@ -902,11 +902,11 @@ assert 'prostate_binomial' in model['models'][0]['compatible_frames'], "FAIL: Fa
 # Now look for 'prostate_binomial' using the one-frame API and find_compatible_models, and check it
 result = a_node.frames(key='prostate_binomial', find_compatible_models=True, row_count=5)
 frames = result['frames']
-frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 
 compatible_models = result['compatible_models']
-models_dict = h2o_util.list_to_dict(compatible_models, 'key/name')
+models_dict = h2o_util.list_to_dict(compatible_models, 'model_id/name')
 assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list: " + repr(result)
 
 assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models'], "FAIL: failed to find deeplearning_prostate_binomial in compatible_models for prostate."

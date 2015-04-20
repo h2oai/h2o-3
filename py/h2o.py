@@ -638,7 +638,7 @@ class H2O(object):
         if training_frame is not None:
             frames = self.frames(key=training_frame)
             assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
-            assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+            assert frames['frames'][0]['frame_id']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['frame_id']['name'], training_frame)
             parameters['training_frame'] = training_frame
 
         # TODO: add parameter existence checks
@@ -669,7 +669,7 @@ class H2O(object):
         # Check for frame:
         frames = self.frames(key=training_frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
-        assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+        assert frames['frames'][0]['frame_id']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['frame_id']['name'], training_frame)
         parameters['training_frame'] = training_frame
 
         if model_id is not None:
@@ -701,12 +701,12 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['model_id']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['model_id']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
-        assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+        assert frames['frames'][0]['frame_id']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['frame_id']['name'], frame)
 
         result = self.__do_json_request('/3/ModelMetrics/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
 
@@ -721,12 +721,12 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['model_id']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['model_id']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
-        assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+        assert frames['frames'][0]['frame_id']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['frame_id']['name'], frame)
 
         postData = { 'predictions_name': predictions_name }
 

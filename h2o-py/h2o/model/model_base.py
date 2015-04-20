@@ -51,7 +51,7 @@ class ModelBase(object):
     # this job call is blocking
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
     # retrieve the prediction frame
-    prediction_frame_key = j["model_metrics"][0]["predictions"]["key"]["name"]
+    prediction_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     # get the actual frame meta dta
     pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
     # collect the vec_ids

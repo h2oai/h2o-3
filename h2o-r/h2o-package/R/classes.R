@@ -107,6 +107,8 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 
 .keyFinalizer <- function(envir) {
   try(h2o.rm(get("key", envir), get("conn", envir)), silent=TRUE)
+  try(h2o.rm(get("model_id", envir), get("conn", envir)), silent=TRUE)
+  try(h2o.rm(get("frame_id", envir), get("conn", envir)), silent=TRUE)
 }
 
 .newH2OObject <- function(Class, ..., conn = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
@@ -123,7 +125,6 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 #'
 #' The Node class.
 #'
-#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
 #' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
 #' has as its ancestor this class.
 #'
@@ -219,19 +220,40 @@ setRefClass("H2OFrameMutableState",
 #' The H2OFrame class
 #'
 #' @slot conn An \code{H2OConnection} object specifying the connection to an H2O cloud.
-#' @slot key A \code{character} string specifying the key for the frame in the H2O cloud's key-value store.
+#' @slot frame_id A \code{character} string specifying the identifier for the frame in the H2O cloud.
 #' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove keys from the H2O key-value store.
+#'                  remove objects from the H2O cloud.
 #' @slot mutable An \code{H2OFrameMutableState} object to hold the mutable state for the H2O frame.
 #' @aliases H2OFrame
 #' @export
 setClass("H2OFrame",
-         representation(mutable = "H2OFrameMutableState"),
+         representation(conn="H2OConnectionOrNULL", frame_id="character", finalizers="list", mutable = "H2OFrameMutableState"),
          prototype(conn       = NULL,
-                   key        = NA_character_,
+                   frame_id   = NA_character_,
                    finalizers = list(),
-                   mutable    = new("H2OFrameMutableState")),
-         contains ="H2OObject")
+                   mutable    = new("H2OFrameMutableState"))
+         )
+
+#' @rdname H2OFrame-class
+#' @export
+setMethod("initialize", "H2OFrame", function(.Object, ...) {
+  .Object <- callNextMethod()
+  .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
+                                                                     function(x) capture.output(print(x)))))]
+  .Object
+})
+
+# TODO: make a mode frame-specific constructor
+.newH2OFrame <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  if (linkToGC && !is.na(frame_id) && is(conn, "H2OConnection")) {
+    envir <- new.env()
+    assign("frame_id", frame_id, envir)
+    assign("conn", conn, envir)
+    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
+    finalizers <- c(list(envir), finalizers)
+  }
+  new(Class, ..., conn = conn, frame_id = frame_id, finalizers = finalizers)
+}
 
 #' @rdname H2OFrame-class
 #' @param object An \code{H2OConnection} object.
@@ -264,7 +286,7 @@ setMethod("show", "H2OFrame", function(object) {
 #'
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
 #' @slot conn An \code{H2OConnection} object containing the IP address and port number of the H2O server.
-#' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
+#' @slot key An object of class \code{"character"}, which is the name of the key assigned to the imported data.
 #' @aliases H2ORawData
 #' @export
 setClass("H2ORawData", contains="H2OObject")
@@ -274,7 +296,7 @@ setClass("H2ORawData", contains="H2OObject")
 #' @export
 setMethod("show", "H2ORawData", function(object) {
   print(object@conn)
-  cat("Raw Data Key:", object@key, "\n")
+  cat("Raw Data Destination Frame:", object@key, "\n")
 })
 
 # No show method for this type of object.
@@ -307,8 +329,31 @@ setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(algorithm="character", parameters="list", allparameters="list", model="list"),
-                        contains=c("VIRTUAL", "H2OObject"))
+         representation(conn="H2OConnectionOrNULL", model_id="character", algorithm="character", parameters="list", allparameters="list", model="list", finalizers="list"),
+                        prototype(conn=NULL, model_id=NA_character_, finalizers=list()),
+                        contains=c("VIRTUAL"))
+
+
+#' @rdname H2OModel-class
+#' @export
+setMethod("initialize", "H2OModel", function(.Object, ...) {
+  .Object <- callNextMethod()
+  .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
+                                                                     function(x) capture.output(print(x)))))]
+  .Object
+})
+
+# TODO: make a mode model-specific constructor
+.newH2OModel <- function(Class, ..., conn = NULL, model_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  if (linkToGC && !is.na(model_id) && is(conn, "H2OConnection")) {
+    envir <- new.env()
+    assign("model_id", model_id, envir)
+    assign("conn", conn, envir)
+    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
+    finalizers <- c(list(envir), finalizers)
+  }
+  new(Class, ..., conn = conn, model_id = model_id, finalizers = finalizers)
+}
 
 #' @rdname H2OModel-class
 #' @param object an \code{H2OModel} object.
@@ -554,4 +599,4 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #' @slot destination_key the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", destination_key="character"))
+setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))

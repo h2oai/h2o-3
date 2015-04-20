@@ -9,7 +9,7 @@ check.deeplearning_anomaly <- function(conn) {
   
   # set to FALSE for stand-alone demo
   if (TRUE) {
-    train_hex <- h2o.uploadFile(conn, locate(TRAIN), key = "train")
+    train_hex <- h2o.uploadFile(conn, locate(TRAIN), destination_frame = "train")
     test_hex <- h2o.uploadFile(conn, locate(TEST))
     print(train_hex)
   } else {

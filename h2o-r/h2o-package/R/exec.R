@@ -46,7 +46,7 @@ function(op, x, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_charact
 
   ast <- .h2o.unary_op_ast(op, x)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "unary_op"),
+  .newH2OFrame("H2OFrame", conn = x@conn, frame_id = .key.make(x@conn, "unary_op"),
                 finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 }
 
@@ -129,7 +129,7 @@ function(op, e1, e2, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_ch
   conn <- .h2o.binary_op_conn(e1, e2)
   ast  <- .h2o.binary_op_ast(op, e1, e2)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "binary_op"),
+  .newH2OFrame("H2OFrame", conn = conn, frame_id= .key.make(conn, "binary_op"),
                 finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 }
 
@@ -166,7 +166,7 @@ function(op, ..., .args = list(...), key = .key.make(h2o.getConnection(), "nary_
 
   ast <- .h2o.nary_op_ast(op, .args = .args)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OObject("H2OFrame", conn = h2o.getConnection(), key = key,
+  .newH2OFrame("H2OFrame", conn = h2o.getConnection(), frame_id = key,
                 finalizers = finalizers, linkToGC = linkToGC, mutable = mutable)
 }
 
@@ -222,20 +222,20 @@ function(conn, ast) {
 }
 
 .h2o.eval.frame<-
-function(conn, ast, key=.key.make(conn, "rapids"), linkToGC=FALSE) {
+function(conn, ast, frame_id=.key.make(conn, "rapids"), linkToGC=FALSE) {
   # Prepare the AST
-  ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
+  ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', frame_id), right=ast))
   ast <- .visitor(ast)
 
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
-  h2o.getFrame(key, conn, linkToGC=linkToGC)
+  h2o.getFrame(frame_id, conn, linkToGC=linkToGC)
 }
 
 .h2o.replace.frame<-
-function(conn, ast, key, finalizers) {
+function(conn, ast, frame_id, finalizers) {
   # Prepare the AST
   ast <- .visitor(ast)
 
@@ -243,7 +243,7 @@ function(conn, ast, key, finalizers) {
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
-  res <- h2o.getFrame(key, conn, linkToGC=FALSE)
+  res <- h2o.getFrame(frame_id, conn, linkToGC=FALSE)
   res@finalizers <- finalizers
   gc()
   res
@@ -268,13 +268,13 @@ function(x, scalarAsFrame = TRUE) {
     invisible(x)
   }
 
-  if (is.na(x@key)) {
+  if (is.na(x@frame_id)) {
     # Nothing to do
   } else if (!is.null(x@mutable$ast) && !.is.eval(x)) {
-    temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, key = x@key, linkToGC = FALSE)
+    temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, frame_id = x@frame_id, linkToGC = FALSE)
     .update_x(x, temp)
   } else if (is.na(x@mutable$nrows) || is.na(x@mutable$ncols) || is.na(x@mutable$col_names[1L])) {
-    temp <- h2o.getFrame(x@key, x@conn, linkToGC = FALSE)
+    temp <- h2o.getFrame(x@frame_id, x@conn, linkToGC = FALSE)
     .update_x(x, temp)
   }
   invisible(x)

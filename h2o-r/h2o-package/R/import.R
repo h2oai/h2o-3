@@ -53,7 +53,7 @@
 #' @name h2o.importFile
 #' @export
 h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
-                             key = "", parse = TRUE, header = NA, sep = "",
+                             destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL) {
   if (is(path, "H2OConnection")) {
     temp <- path
@@ -64,7 +64,7 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
-  .key.validate(key)
+  .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
@@ -76,12 +76,12 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
   # Return only the files that successfully imported
   if(length(res$files) > 0L) {
     if(parse) {
-      srcKey <- res$keys
+      srcKey <- res$frame_ids
       rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=FALSE)  # do not gc, H2O handles these nfs:// vecs
-      ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
+      ret <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names)
     } else {
-      myData <- lapply(res$keys, function(x) .newH2OObject("H2ORawData", conn=conn, key=x, linkToGC=FALSE))  # do not gc, H2O handles these nfs:// vecs
-      if(length(res$keys) == 1L)
+      myData <- lapply(res$frame_ids, function(x) .newH2OObject("H2ORawData", conn=conn, key=x, linkToGC=FALSE))  # do not gc, H2O handles these nfs:// vecs
+      if(length(res$frame_ids) == 1L)
         ret <- myData[[1L]]
       else
         ret <- myData
@@ -92,30 +92,30 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
 
 
 #' @export
-h2o.importFile <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header=NA, sep = "", col.names=NULL) {
-  h2o.importFolder(path, conn, pattern = "", key, parse, header, sep, col.names)
+h2o.importFile <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL) {
+  h2o.importFolder(path, conn, pattern = "", destination_frame, parse, header, sep, col.names)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.importURL <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
+h2o.importURL <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFile(path, conn, key, parse, header, sep, col.names)
+  h2o.importFile(path, conn, destination_frame, parse, header, sep, col.names)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", key = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
+h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFolder(path, conn, pattern, key, parse, header, sep, col.names)
+  h2o.importFolder(path, conn, pattern, destination_frame, parse, header, sep, col.names)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "",
+h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
                            col.types = NULL) {
   if (is(path, "H2OConnection")) {
@@ -126,20 +126,20 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "",
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
-  .key.validate(key)
+  .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
   path <- normalizePath(path, winslash = "/")
   srcKey <- .key.make(conn, path)
-  urlSuffix <- sprintf("PostFile?destination_key=%s",  curlEscape(srcKey))
+  urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)
 
   rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=FALSE)
   if (parse) {
-    h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names, col.types=col.types)
+    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types)
   } else {
     rawData
   }
