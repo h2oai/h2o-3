@@ -10,10 +10,7 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.RandomUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -289,12 +286,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           ModelMetricsClustering mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
           assert(Arrays.equals(mm._size, ((ModelMetricsClustering) model._output._training_metrics)._size));
           for (int i=0; i<_parms._k; ++i) {
-            assert(Math.abs(mm._within_mse[i] - ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i]) < 1e-4);
+            assert(MathUtils.compare(mm._within_mse[i], ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i], 1e-6, 1e-6));
           }
           //FIXME: Enable these
-//          assert(Math.abs(mm._avg_ss - ((ModelMetricsClustering) model._output._training_metrics)._avg_ss) < 1e-4);
-//          assert(Math.abs(mm._avg_between_ss - ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss) < 1e-4);
-//          assert(Math.abs(mm._avg_within_ss - ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss) < 1e-4);
+//          assert(MathUtils.compare(mm._avg_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_ss, 1e-6, 1e-6);
+//          assert(MathUtils.compare(mm._avg_between_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss, 1e-6, 1e-6);
+//          assert(MathUtils.compare(mm._avg_within_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss, 1e-6, 1e-6);
         }
         // At the end: validation scoring (no need to gather scoring history)
         if (_valid != null) {
