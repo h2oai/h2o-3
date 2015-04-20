@@ -8,15 +8,6 @@ Some of the parameters have been renamed for consistency. For each algorithm, a 
 
 For additional assistance within R, enter a question mark before the command (for example, `?h2o.glm`). 
 
-**Table of Contents**
-
-- [GBM](#GBM)
-- [GLM](#GLM)
-- [K-Means](#Kmeans)
-- [Deep Learning](#DL)
-- [Distributed Random Forest](#DRF)
-
-
 ##Changes from H2O to H2O-Dev
 
 ###`h2o.exec`
@@ -32,6 +23,14 @@ Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been
 
 Currently, the only known exception is when `factor` is used in conjunction with `h2o.exec`. For example, `h2o.exec(fr$myIntCol <- factor(fr$myIntCol))` would become `fr$myIntCol <- as.factor(fr$myIntCol)`
 
+Note also that an array is not inside a string:
+
+An int array is [1, 2, 3], *not* "[1, 2, 3]".
+
+A String array is ["f00", "b4r"], *not* "[\"f00\", \"b4r\"]"
+
+Only string values are enclosed in double quotation marks (`"`).  
+
 <a name="h2operf"></a>
 ###`h2o.performance`
 
@@ -44,6 +43,14 @@ If you specify a data frame as a second parameter, H2O will use the specified da
 The `xval` slot has been removed, as `nfolds` is not currently supported. 
 
 The `validation` slot has been merged with the `model` slot. 
+
+**Table of Contents**
+
+- [GBM](#GBM)
+- [GLM](#GLM)
+- [K-Means](#Kmeans)
+- [Deep Learning](#DL)
+- [Distributed Random Forest](#DRF)
 
 ###Principal Components Regression (PCR)
 
