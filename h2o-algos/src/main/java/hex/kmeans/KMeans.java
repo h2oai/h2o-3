@@ -5,7 +5,6 @@ import hex.Model;
 import hex.ModelMetricsClustering;
 import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
-import org.junit.Assert;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
@@ -281,21 +280,21 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // FIXME: Remove (most of) this code - once it passes...
         // PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
         if (true) {
-          Assert.assertTrue((ArrayUtils.sum(model._output._size) - _parms.train().numRows()) <= 1);
+          assert((ArrayUtils.sum(model._output._size) - _parms.train().numRows()) <= 1);
 
 //          Log.info(model._output._model_summary);
 //          Log.info(model._output._scoring_history);
 //          Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
           model.score(_parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
           ModelMetricsClustering mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          Assert.assertTrue(Arrays.equals(mm._size, ((ModelMetricsClustering) model._output._training_metrics)._size));
+          assert(Arrays.equals(mm._size, ((ModelMetricsClustering) model._output._training_metrics)._size));
           for (int i=0; i<_parms._k; ++i) {
-            Assert.assertEquals(mm._within_mse[i], ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i], 1e-4);
+            assert(Math.abs(mm._within_mse[i] - ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i]) < 1e-4);
           }
           //FIXME: Enable these
-//          Assert.assertEquals(mm._avg_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_ss, 1e-4);
-//          Assert.assertEquals(mm._avg_between_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss, 1e-4);
-//          Assert.assertEquals(mm._avg_within_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss, 1e-4);
+//          assert(Math.abs(mm._avg_ss - ((ModelMetricsClustering) model._output._training_metrics)._avg_ss) < 1e-4);
+//          assert(Math.abs(mm._avg_between_ss - ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss) < 1e-4);
+//          assert(Math.abs(mm._avg_within_ss - ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss) < 1e-4);
         }
         // At the end: validation scoring (no need to gather scoring history)
         if (_valid != null) {
