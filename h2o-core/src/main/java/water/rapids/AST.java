@@ -1,15 +1,17 @@
 package water.rapids;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
@@ -1248,7 +1250,7 @@ class ASTSlice extends AST {
   // Error to mix negatives & positive.  Negative list is sorted, with dups
   // removed.  Positive list can have dups (which replicates cols) and is
   // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
-  static Object select( long len, Val v, Env env, boolean isCol) {
+  static Object select( final long len, Val v, Env env, boolean isCol) {
     if( v.type() == Env.NULL ) return null; // Trivial "all"
     env.push(v);
     long cols[];
@@ -1321,15 +1323,40 @@ class ASTSlice extends AST {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+AtoS(ary.names()));
     Vec vec = ary.anyVec();
-    // Check for a matching column of bools.
-    if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
-      return ary;    // Boolean vector selection.
-    // Convert single vector to a list of longs selecting rows
-    if(ary.numRows() > 10000000) throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
-    cols = MemoryManager.malloc8((int)ary.numRows());
-    for(int i = 0; i < cols.length; ++i){
-      if(vec.isNA(i))throw new IllegalArgumentException("Can not use NA as index!");
-      cols[i] = vec.at8(i);
+
+    // got a frame as a column selector... it must be a boolean selector.
+    if( isCol ) {
+      if( vec.min() != 0 && vec.max() != 1 && !vec.isInt() )
+        throw new IllegalArgumentException("Vec selector must be a single columns of 1s and 0s.");
+      // passed in len is ncols of the frame to slice
+      final ASTGroupBy.IcedNBHS<IcedInt> hs = new ASTGroupBy.IcedNBHS();
+      // MRTask to fill cols in parallel
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          int start = (int)c.start();
+          for( int i=0;i<c._len;++i ) {
+            if( c.at8(i)==1 && len>(i+start) ) hs.add(new IcedInt(start+i));
+          }
+        }
+      }.doAll(ary);
+      cols = new long[(int)Math.min(hs.size(), len)];
+      Iterator<IcedInt> it = hs.iterator();
+      int j=0;
+      while( j<cols.length && it.hasNext() )
+        cols[j++] = it.next()._val;
+    } else {
+
+      // Check for a matching column of bools.
+      if (ary.numRows() == len && vec.min() >= 0 && vec.max() <= 1 && vec.isInt())
+        return ary;    // Boolean vector selection.
+      // Convert single vector to a list of longs selecting rows
+      if (ary.numRows() > 10000000)
+        throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
+      cols = MemoryManager.malloc8((int) ary.numRows());
+      for (int i = 0; i < cols.length; ++i) {
+        if (vec.isNA(i)) throw new IllegalArgumentException("Can not use NA as index!");
+        cols[i] = vec.at8(i);
+      }
     }
     return cols;
   }
