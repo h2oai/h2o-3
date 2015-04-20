@@ -379,7 +379,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   static public TwoDimTable createCenterTable(KMeansModel.KMeansOutput output, boolean standardized) {
-    String[] rowHeaders = new String[output._avg_centroids_chg.length];
+    String[] rowHeaders = new String[output._size.length];
     for(int i = 0; i < rowHeaders.length; i++)
       rowHeaders[i] = String.valueOf(i+1);
     String[] colTypes = new String[output._names.length];
