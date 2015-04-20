@@ -331,6 +331,8 @@ H2O  | H2O-Dev
 
 N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
+**Note**: If the results in the confusion matrix are incorrect, verify that `score_training_samples` is equal to 0. By default, only the first 10,000 rows are included. 
+
 ###Renamed Deep Learning Parameters
 
 The following parameters have been renamed, but retain the same functions: 
