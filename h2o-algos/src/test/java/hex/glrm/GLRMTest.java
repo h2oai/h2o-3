@@ -170,8 +170,8 @@ public class GLRMTest extends TestUtil {
       try {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        checkStddev(stddev, model._output._std_deviation);
-        checkEigvec(eigvec, model._output._eigenvectors_raw);
+        checkStddev(stddev, model._output._std_deviation, 1e-4);
+        checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-4);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
