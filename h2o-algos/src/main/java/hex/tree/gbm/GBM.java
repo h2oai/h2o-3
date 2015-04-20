@@ -359,7 +359,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( ktrees[i] != null )
           ktrees[i]._leaves = ktrees[i].len() - leafs[i];
       // DEBUG: Print the generated K trees
-      printGenerateTrees(ktrees);
+      //printGenerateTrees(ktrees);
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
     }
