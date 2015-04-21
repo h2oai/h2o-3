@@ -4,6 +4,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o2 as h2o
 import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
+import time
 
 def assertEqualMsg(a, b): assert a == b, "%s %s" % (a, b)
 
