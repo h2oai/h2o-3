@@ -26,12 +26,7 @@ public class DRFTest extends TestUtil {
     // the DRF should  use only subset of rows since it is using oob validation
     basicDRFTestOOBE_Classification(
             "./smalldata/iris/iris.csv", "iris.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.numCols() - 1;
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { return fr.numCols() - 1; } },
             1,
             a(a(25, 0, 0),
               a(0, 17, 1),
@@ -44,12 +39,7 @@ public class DRFTest extends TestUtil {
     // iris ntree=50
     basicDRFTestOOBE_Classification(
             "./smalldata/iris/iris.csv", "iris5.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.numCols() - 1;
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { return fr.numCols() - 1; } },
             5,
             a(a(41, 0, 0),
               a(1, 39, 2),
@@ -61,13 +51,7 @@ public class DRFTest extends TestUtil {
     // cars ntree=1
     basicDRFTestOOBE_Classification(
             "./smalldata/junit/cars.csv", "cars.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("name").remove();
-                return fr.find("cylinders");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); } },
             1,
             a(a(0, 0, 0, 0, 0),
               a(3,64, 0, 2, 0),
@@ -80,13 +64,7 @@ public class DRFTest extends TestUtil {
   @Test public void testClassCars5() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/junit/cars.csv", "cars5.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("name").remove();
-                return fr.find("cylinders");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); } },
             5,
             a(a(3,   0, 0,  0,  0),
               a(2, 177, 1,  4,  0),
@@ -100,15 +78,7 @@ public class DRFTest extends TestUtil {
     try {
       basicDRFTestOOBE_Classification(
               "./smalldata/poker/poker100", "poker.hex",
-              new PrepData() {
-                @Override
-                int prep(Frame fr) {
-                  for (int i = 0; i < 7; i++) {
-                    fr.remove(3).remove();
-                  }
-                  return 3;
-                }
-              },
+              new PrepData() { @Override int prep(Frame fr) { for (int i = 0; i < 7; i++) fr.remove(3).remove(); return 3; } },
               1,
               null,
               null);
@@ -128,17 +98,11 @@ public class DRFTest extends TestUtil {
             s("0", "1"));
   }
 
-  //@Test
+  @Test
   public void testCreditSample1() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/kaggle/creditsample-training.csv.gz", "credit.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("MonthlyIncome").remove();
-                return fr.find("SeriousDlqin2yrs");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { fr.remove("MonthlyIncome").remove(); return fr.find("SeriousDlqin2yrs"); } },
             1,
             a(a(46294, 202),
               a( 3187, 107)),
@@ -149,13 +113,7 @@ public class DRFTest extends TestUtil {
   @Test public void testCreditProstate1() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/logreg/prostate.csv", "prostate.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } },
             1,
             a(a(0, 81),
               a(0, 53)),
@@ -182,13 +140,7 @@ public class DRFTest extends TestUtil {
   @Test public void testCreditProstateRegression5() throws Throwable {
     basicDRFTestOOBE_Regression(
             "./smalldata/logreg/prostate.csv", "prostateRegression5.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("AGE"); } },
             5,
             62.34506879389341
     );
@@ -198,13 +150,7 @@ public class DRFTest extends TestUtil {
   @Test public void testCreditProstateRegression50() throws Throwable {
     basicDRFTestOOBE_Regression(
             "./smalldata/logreg/prostate.csv", "prostateRegression50.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("AGE");} },
             50,
             48.16452593965962
     );
@@ -221,7 +167,7 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(664, 0),
-              a(0, 702)),
+                    a(0, 702)),
             s("0", "1"));
   }
   @Test public void testAlphabetRegression() throws Throwable {
@@ -257,12 +203,11 @@ public class DRFTest extends TestUtil {
             },
             7,
             a(a(7958, 11707), //1-node
-              a(2709, 19024)),
+                    a(2709, 19024)),
 //          a(a(7841, 11822), //5-node
 //            a(2666, 19053)),
             s("NO", "YES"));
   }
-
 
 
   // Put response as the last vector in the frame and return possible frames to clean up later
@@ -480,6 +425,42 @@ public class DRFTest extends TestUtil {
     }
     for (int i=0; i<mses.length; ++i) {
       assertEquals(0.20462305452536414, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+    }
+  }
+
+  @Test public void testPerfectScore() throws Throwable {
+    try {
+      Frame fr = parse_test_file("./smalldata/junit/weights.csv");
+      fr.remove("f1").remove();
+      fr.remove("f2").remove();
+      fr.remove("f3").remove();
+      fr.remove("f4").remove();
+      DKV.put(fr);
+
+      DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
+      drf._response_column = "response";
+      drf._train = fr._key;
+      drf._valid = fr._key;
+      drf._ntrees = 1;
+      drf._min_rows = 1;
+      drf._mtries = -1;
+      drf._sample_rate = 1.0f;
+
+      // Invoke DRF and block till the end
+      DRF job = new DRF(drf);
+      // Get the model
+      DRFModel model = job.trainModel().get();
+      Log.info(model._output);
+      job.remove();
+
+      Frame pred = model.score(fr);
+      hex.ModelMetricsBinomial mm = (hex.ModelMetricsBinomial)hex.ModelMetrics.getFromDKV(model, fr);
+      assertEquals(1.0,mm._auc._auc,1e-20);
+      pred.remove();
+      fr.remove();
+      model.delete();
+
+    } finally {
     }
   }
 }
