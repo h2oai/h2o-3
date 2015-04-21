@@ -1936,9 +1936,7 @@ class ASTMedian extends ASTReducerOp {
 
   static double median(Frame fr, QuantileModel.CombineMethod combine_method) {
     if (fr.numCols() != 1) throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
-
     if (!fr.anyVec().isNumeric()) throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
-
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._probs = new double[]{0.5};
     parms._train = fr._key;
@@ -1970,24 +1968,19 @@ class ASTMad extends ASTReducerOp {
   ASTMad parse_impl(Exec E) {
     AST ary = E.parse();
     AST a = E.parse();
-
     // set the constant
     if( a instanceof ASTNum ) _const = ((ASTNum)a)._d;
     else throw new IllegalArgumentException("`constant` is expected to be a literal number. Got: " + a.getClass());
     a = E.parse();
-
     // set the narm
     if( a instanceof ASTId ) {
       AST b = E._env.lookup((ASTId)a);
       if( b instanceof ASTNum ) _narm = ((ASTNum)b)._d==1;
-      else throw new IllegalArgumentException("`narm` is expected to be oen of %TRUE, %FALSE, %T, %F. Got: " + ((ASTId) a)._id);
+      else throw new IllegalArgumentException("`na.rm` is expected to be oen of %TRUE, %FALSE, %T, %F. Got: " + ((ASTId) a)._id);
     }
-
     // set the combine method
     _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
-
     E.eatEnd();
-
     ASTMad res = (ASTMad)clone();
     res._asts = new AST[]{ary};
     return res;
