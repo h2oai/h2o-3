@@ -1,5 +1,7 @@
 package hex.kmeans;
 
+import hex.ModelMetricsClustering;
+import hex.SplitFrame;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -7,11 +9,16 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
 import org.junit.*;
+import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.ArrayUtils;
+import water.util.FrameUtils;
+import water.util.Log;
+import water.util.MathUtils;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -41,19 +48,26 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
       parms._max_iterations = 10;
       parms._init = KMeans.Initialization.Random;
       kmm = doSeed(parms,0);
 
+      // Iris last column is categorical; make sure centers are ordered in the
+      // same order as the iris columns.
+      double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
+      for( int k=0; k<parms._k; k++ ) {
+        double flower = centers[k][4];
+        Assert.assertTrue("categorical column expected",flower==(int)flower);
+      }
+
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
 
     } finally {
-      if( fr  != null ) fr .remove();
-      if( fr2 != null ) fr2.remove();
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
       if( kmm != null ) kmm.delete();
     }
   }
@@ -112,12 +126,14 @@ public class KMeansTest extends TestUtil {
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
       assertVecEquals(predR.vec(0), fr2.vec(0), threshold);
+      fr2.delete();
     } finally {
       init .delete();
       predR.delete();
-      if( fr  != null ) fr .remove();
-      if( fr2 != null ) fr2.remove();
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
       if( kmm != null ) kmm.delete();
     }
   }
@@ -142,7 +158,7 @@ public class KMeansTest extends TestUtil {
         doSeed(parms,System.nanoTime()).delete();
 
     } finally {
-      if( fr  != null ) fr .remove();
+      if( fr  != null ) fr.delete();
     }
   }
 
@@ -166,7 +182,7 @@ public class KMeansTest extends TestUtil {
         doSeed(parms,System.nanoTime()).delete();
 
     } finally {
-      if( fr  != null ) fr .remove();
+      if( fr  != null ) fr.delete();
     }
   }
 
@@ -182,6 +198,7 @@ public class KMeansTest extends TestUtil {
   @Test
   public void testCentroids(){
     Frame fr = frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
+    Frame fr2=null;
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -201,6 +218,9 @@ public class KMeansTest extends TestUtil {
         KMeansModel kmm = doSeed(parms, System.nanoTime());
         Assert.assertTrue(kmm._output._centers_raw.length == 3);
 
+        fr2=kmm.score(fr);
+        Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
+        fr2.delete();
         boolean gotit = false;
         for (int j = 0; j < parms._k; ++j) gotit |= close(exp1[j], kmm._output._centers_raw[j]);
         for (int j = 0; j < parms._k; ++j) gotit |= close(exp2[j], kmm._output._centers_raw[j]);
@@ -214,12 +234,13 @@ public class KMeansTest extends TestUtil {
       }
 
     } finally {
-      if( fr  != null ) fr.remove();
+      if( fr  != null ) fr.delete();
     }
   }
 
   @Test public void test1Dimension() {
     Frame fr = frame(ard(d(1,0),d(0,0),d(-1,0),d(4,0),d(1,0),d(2,0),d(0,0),d(0,0)));
+    Frame fr2=null;
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -231,17 +252,22 @@ public class KMeansTest extends TestUtil {
       for( int i=0; i<10; i++ ) {
         KMeansModel kmm = doSeed(parms, System.nanoTime());
         Assert.assertTrue(kmm._output._centers_raw.length == 2);
+        fr2=kmm.score(fr);
+        Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
+        fr2.delete();
         kmm.delete();
       }
 
     } finally {
-      if( fr  != null ) fr .remove();
+      if( fr  != null ) fr.delete();
+      if( fr2  != null) fr2.delete();
     }
   }
 
   // Negative test - expect to throw IllegalArgumentException
   @Test (expected = IllegalArgumentException.class) public void testTooManyK() {
     Frame fr = frame(ard(d(1,0),d(0,0),d(1,0),d(2,0),d(0,0),d(0,0)));
+    Frame fr2=null;
     KMeansModel kmm = null;
     KMeansModel.KMeansParameters parms;
     try {
@@ -250,9 +276,13 @@ public class KMeansTest extends TestUtil {
       parms._train = fr._key;
       parms._k = 10; //too high -> will throw
       kmm = doSeed(parms, System.nanoTime());
+      fr2=kmm.score(fr);
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
+      fr2.delete();
 
     } finally {
-      if( fr  != null) fr .remove();
+      if( fr  != null) fr.delete();
+      if( fr2  != null) fr2.delete();
       if( kmm != null) kmm.delete();
     }
   }
@@ -268,7 +298,6 @@ public class KMeansTest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
       parms._max_iterations = 10;
@@ -277,13 +306,165 @@ public class KMeansTest extends TestUtil {
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
-
-      Assert.assertTrue(kmm.testJavaScoring(fr,fr2));
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
+      fr2.delete();
 
     } finally {
-      if( fr  != null ) fr .remove();
-      if( fr2 != null ) fr2.remove();
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
       if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testValidation() {
+    KMeansModel kmm = null;
+      for (boolean standardize : new boolean[]{true,false}) {
+      Frame fr = null, fr2= null;
+      Frame tr = null, te= null;
+      try {
+        fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+
+        SplitFrame sf = new SplitFrame(Key.make());
+        sf.dataset = fr;
+        sf.ratios = new double[] { 0.5 };
+        sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+        // Invoke the job
+        sf.exec().get();
+        Key[] ksplits = sf.dest_keys;
+        tr = DKV.get(ksplits[0]).get();
+        te = DKV.get(ksplits[1]).get();
+
+        KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+        parms._train = ksplits[0];
+        parms._valid = ksplits[1];
+        parms._k = 3;
+        parms._standardize = standardize;
+        parms._max_iterations = 10;
+        parms._init = KMeans.Initialization.Random;
+        kmm = doSeed(parms, 0);
+
+        // Iris last column is categorical; make sure centers are ordered in the
+        // same order as the iris columns.
+        double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
+        for( int k=0; k<parms._k; k++ ) {
+          double flower = centers[k][4];
+          Assert.assertTrue("categorical column expected",flower==(int)flower);
+        }
+
+        // Done building model; produce a score column with cluster choices
+        fr2 = kmm.score(te);
+        Assert.assertTrue(kmm.testJavaScoring(te,fr2,1e-15));
+        fr2.delete();
+        tr .delete();
+        te .delete();
+
+      } finally {
+        if( fr  != null ) fr.delete();
+        if( fr2 != null ) fr2.delete();
+        if( tr  != null ) tr .delete();
+        if( te  != null ) te .delete();
+        if( kmm != null ) kmm.delete();
+      }
+    }
+  }
+
+  @Test public void testValidationSame() {
+    for (boolean categorical : new boolean[]{true,false}) {
+      for (boolean missing : new boolean[]{/*true,*/false}) { //FIXME: Enable missing PUBDEV-871
+        for (boolean standardize : new boolean[]{true,false}) {
+          Log.info("categorical: " + categorical);
+          Log.info("missing: " + missing);
+          Log.info("standardize: " + standardize);
+          KMeansModel kmm = null;
+          Frame fr = null, fr2= null;
+          Frame train = null, valid = null;
+          try {
+            fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+
+            if (missing) {
+              // insert 10% missing values - check the math
+              FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(fr._key, 1234, 0.1f);
+              mi.execImpl();
+              fr = mi.get();
+              mi.remove();
+            }
+            train = new Frame(Key.make("train"), fr.names(), fr.vecs());
+            DKV.put(train);
+            valid = new Frame(Key.make("valid"), fr.names(), fr.vecs());
+            DKV.put(valid);
+
+            KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+            parms._train = train._key;
+            parms._valid = valid._key;
+            if (!categorical) {
+              parms._ignored_columns = new String[]{fr._names[4]};
+            }
+            parms._k = 3;
+            parms._standardize = standardize;
+            parms._max_iterations = 10;
+            parms._init = KMeans.Initialization.PlusPlus;
+            kmm = doSeed(parms, 0);
+
+            if (categorical) {
+              // Iris last column is categorical; make sure centers are ordered in the
+              // same order as the iris columns.
+              double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
+              for( int k=0; k<parms._k; k++ ) {
+                double flower = centers[k][4];
+                Assert.assertTrue("categorical column expected",flower==(int)flower);
+              }
+            }
+
+            Assert.assertTrue(
+                    MathUtils.compare(
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_ss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_ss,
+                            1e-6, 1e-6)
+                );
+
+            Assert.assertTrue(
+                    MathUtils.compare(
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_between_ss,
+                            1e-6, 1e-6)
+            );
+
+            Assert.assertTrue(
+                    MathUtils.compare(
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_within_ss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_within_ss,
+                            1e-6, 1e-6)
+            );
+
+            for (int i=0; i<parms._k; ++i) {
+              Assert.assertTrue(
+                      MathUtils.compare(
+                              ((ModelMetricsClustering) kmm._output._training_metrics)._within_mse[i],
+                              ((ModelMetricsClustering) kmm._output._validation_metrics)._within_mse[i],
+                              1e-6, 1e-6)
+              );
+              Assert.assertEquals(
+                  ((ModelMetricsClustering) kmm._output._training_metrics)._size[i],
+                  ((ModelMetricsClustering) kmm._output._validation_metrics)._size[i]
+              );
+            }
+
+            // Done building model; produce a score column with cluster choices
+            fr2 = kmm.score(fr);
+            Assert.assertTrue(kmm.testJavaScoring(fr, fr2, 1e-15));
+            fr.delete();
+            fr2.delete();
+            train.delete();
+            valid.delete();
+          } finally {
+            if( fr  != null ) fr .delete();
+            if( fr2 != null ) fr2.delete();
+            if( train != null ) train.delete();
+            if( valid != null ) valid.delete();
+            if( kmm != null ) kmm.delete();
+          }
+        }
+      }
     }
   }
 }

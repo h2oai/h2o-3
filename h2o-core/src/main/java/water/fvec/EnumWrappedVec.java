@@ -26,11 +26,12 @@ public class EnumWrappedVec extends WrappedVec {
   /** List of values from underlying vector which this vector map to a new
    *  value in the union domain.  */
   int[] _map;
+  int _p=0;
 
   /** Main constructor: convert from one enum to another */
   public EnumWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
     super(key, espc, masterVecKey);
-    computeMap(masterVec().domain(),toDomain);
+    computeMap(masterVec().domain(),toDomain,masterVec().isBad());
     DKV.put(this);
   }
 
@@ -38,7 +39,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  mixing enum columns */
   public EnumWrappedVec(String[] from, String[] to) {
     super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
-    computeMap(from,to);
+    computeMap(from,to,false);
     DKV.put(this);
   }
 
@@ -52,7 +53,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  the 'from' domain not in the 'to' domain are mapped past the end of the
    *  'to' values.  Strings in the 'to' domain not in the 'from' domain
    *  simply do not appear in the mapping.  The returned map is always the same
-   *  length as the 'from' domain.  It's contents have values from both
+   *  length as the 'from' domain.  Its contents have values from both
    *  domains; the resulting domain is as big as the largest value in the map,
    *  and only has strings from the 'from' domain (which probably overlap
    *  somewhat with the 'to' domain).
@@ -66,7 +67,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  Extra values in the 'from' domain appear, in-order in the 'from' domain, at the end.
    *  @return mapping
    */
-  void computeMap( String[] from, String[] to ) {
+  void computeMap( String[] from, String[] to, boolean fromIsBad ) {
     // Identity? Build the cheapo non-map
     if( from==to || Arrays.equals(from,to) ) {
       _map = ArrayUtils.seq(0,to.length);
@@ -78,11 +79,27 @@ public class EnumWrappedVec extends WrappedVec {
     // The to[] mapping has the set of unique numbers, we need to map
     // from those numbers to the index to the numbers.
     if( from==null ) {
+      setDomain(to);
+      if( fromIsBad ) { _map = new int[0]; return; }
+
+      // FIXME this is a bit of a hack to allow adapTo calls to play nice with negative ints in the domain...
+      if( Integer.valueOf(to[0]) < 0 ) {
+        int min = Integer.valueOf(to[0]);
+        int max = Integer.valueOf(to[to.length-1]);
+        _p=Math.max(0,max);
+        _map = new int[(_p /*positive array of values*/) + (-1*min /*negative array of values*/) + 1 /*one more to store "max" value*/];
+        for(int i=0;i<to.length;++i) {
+          int v = Integer.valueOf(to[i]);
+          if( v < 0 ) v = -1*v+_p;
+          _map[v] = i;
+        }
+        return;
+      }
+
       int max = Integer.valueOf(to[to.length-1])+1;
       _map = new int[max];
       for( int i=0; i<to.length; i++ )
         _map[Integer.valueOf(to[i])] = i;
-      setDomain(to);
       return;
     }
 
@@ -117,11 +134,12 @@ public class EnumWrappedVec extends WrappedVec {
   public static class EnumWrappedChunk extends Chunk {
     public final Chunk _c;             // Test-set map
     final transient int[] _map;
+    final transient int   _p;
 
     EnumWrappedChunk(Chunk c, EnumWrappedVec vec) {
       _c  = c; set_len(_c._len);
       _start = _c._start; _vec = vec; _cidx = _c._cidx;
-      _map = vec._map;
+      _map = vec._map; _p = vec._p;
     }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
@@ -132,7 +150,11 @@ public class EnumWrappedVec extends WrappedVec {
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk throw
     // the normal missing-value exception when loading from the master.
-    @Override protected long at8_impl(int idx) { return _map[(int)_c.at8_impl(idx)]; }
+    @Override protected long at8_impl(int idx) {
+      int at8 = (int)_c.at8_impl(idx);
+      if( at8 >= 0 ) return _map[at8];
+      else return _map[-1*at8+_p];
+    }
 
     // Returns true if the masterVec is missing, false otherwise
     @Override protected boolean isNA_impl(int idx) { return _c.isNA_impl(idx); }

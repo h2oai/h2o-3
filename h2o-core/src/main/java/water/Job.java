@@ -14,7 +14,7 @@ import java.util.Arrays;
  *  <p>
  *  Jobs are {@link Keyed}, because they need to Key to control e.g. atomic updates.
  *  Jobs produce a {@link Keyed} result, such as a Frame (from Parsing), or a Model.
- *  NOTE: the Job class is parameterized on the type of its _dest field.
+ *  NOTE: the Job class is parametrized on the type of its _dest field.
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
@@ -29,14 +29,14 @@ public class Job<T extends Keyed> extends Keyed {
   /** The list of all Jobs, past and present.
    *  @return The list of all Jobs, past and present */
   public static Job[] jobs() {
-    Value val = DKV.get(LIST);
+    final Value val = DKV.get(LIST);
     if( val==null ) return new Job[0];
     JobList jl = val.get();
     Job[] jobs = new Job[jl._jobs.length];
     int j=0;
     for( int i=0; i<jl._jobs.length; i++ ) {
-      val = DKV.get(jl._jobs[i]);
-      if( val != null ) jobs[j++] = val.get();
+      final Value job = DKV.get(jl._jobs[i]);
+      if( job != null ) jobs[j++] = job.get();
     }
     if( j==jobs.length ) return jobs; // All jobs still exist
     jobs = Arrays.copyOf(jobs,j);     // Shrink out removed
@@ -65,13 +65,13 @@ public class Job<T extends Keyed> extends Keyed {
   /** Any exception thrown by this Job, or null if none */
   public String _exception;    // Unpacked exception & stack trace
 
-  /** Possible job states. */
-  public static enum JobState {
+  /** Possible job states.  These are ORDERED; state levels can increased but never decrease */
+  public enum JobState {
     CREATED,   // Job was created
     RUNNING,   // Job is running
+    DONE,      // Job was successfully finished
     CANCELLED, // Job was cancelled by user
     FAILED,    // Job crashed, error message/exception is available
-    DONE       // Job was successfully finished
   }
 
   public JobState _state;
@@ -106,7 +106,7 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  protected Job(Key<Job> jobKey, Key<T> dest, String desc) {
+  protected Job(Key<T> jobKey, Key<T> dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
@@ -178,31 +178,29 @@ public class Job<T extends Keyed> extends Keyed {
   /** Blocks and get result of this job.
    * <p>
    * This call blocks on working task which was passed via {@link #start}
-   * method and returns the result which is fetched from UKV based on job
+   * method and returns the result which is fetched from DKV based on job
    * destination key.
    * </p>
-   * @return result of this job fetched from UKV by destination key.
+   * @return result of this job fetched from DKV by destination key.
    * @see #start
    * @see DKV
    */
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
     _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
-    assert !isRunning();
+    assert !isRunning() : "Job state should not be running, but it is " + _state;
     return _dest.get();
   }
 
   /** Marks job as finished and records job end time. */
   public void done() {
-    cancel(null,JobState.DONE);
+    changeJobState(null, JobState.DONE);
   }
 
   /** Signal cancellation of this job.
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
    * the job was cancelled by a user. */
-  public void cancel() {
-    cancel(null, JobState.CANCELLED);
-  }
+  public void cancel() { changeJobState(null, JobState.CANCELLED); }
 
   /** Signal exceptional cancellation of this job.
    *  @param ex exception causing the termination of job. */
@@ -211,45 +209,43 @@ public class Job<T extends Keyed> extends Keyed {
     PrintWriter pw = new PrintWriter(sw);
     ex.printStackTrace(pw);
     String stackTrace = sw.toString();
-    cancel("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
+    changeJobState("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
     //if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
   }
 
   /** Signal exceptional cancellation of this job.
-   *  @param msg cancellation message explaining reason for cancelation */
-  public void cancel(final String msg) {
-    cancel(msg, msg == null ? JobState.CANCELLED : JobState.FAILED);
-  }
+   *  @param msg cancellation message explaining reason for cancellation */
+  public void cancel(final String msg) { changeJobState(msg, msg == null ? JobState.CANCELLED : JobState.FAILED); }
 
-  private void cancel(final String msg, final JobState resultingState ) {
+  private void changeJobState(final String msg, final JobState resultingState) {
     assert resultingState != JobState.RUNNING;
     if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
     if( _state == resultingState ) return; // No change if already done
     _finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
-
     final long done = System.currentTimeMillis();
-    _exception = msg;
-    _state = resultingState;
-    _end_time = done;
     // Atomically flag the job as canceled
     new TAtomic<Job>() {
       @Override public Job atomic(Job old) {
         if( old == null ) return null; // Job already removed
-        if( old._state == resultingState ) return null; // Job already canceled/crashed
-        if( !isCancelledOrCrashed() && old.isCancelledOrCrashed() ) return null;
-        // Atomically capture cancel/crash state, plus end time
+        // States monotonically increase; states can increase but not decrease
+        if( resultingState.ordinal() <= old._state.ordinal() ) return null;
+        // Atomically capture changeJobState/crash state, plus end time
         old._exception = msg;
         old._state = resultingState;
         old._end_time = done;
         return old;
       }
-      @Override void onSuccess( Job old ) {
-        // Run the onCancelled code synchronously, right now
-        if( isCancelledOrCrashed() )
-          onCancelled();
-      }
+      // Run the onCancelled code synchronously, right now
+      @Override void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
-    // Cleanup on a cancel (or remove)
+    // Also immediately update immediately a possibly cached local POJO (might
+    // be shared with the DKV cached job, might not).
+    if( this != DKV.getGet(_key) ) { 
+      _exception = msg;
+      _state = resultingState;
+      _end_time = done;
+    }
+    // Remove on cancel/fail/done, only used whilst Job is Running
     DKV.remove(_progressKey);
   }
 
@@ -287,17 +283,10 @@ public class Job<T extends Keyed> extends Keyed {
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
   /** Report new work done for this job */
-  public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey);  }
-  /** Report new work done for this job */
-  public final void update(final long newworked, String msg) { new ProgressUpdate(newworked, msg).fork(_progressKey); }
-
-  public static void update(final long newworked,  String msg, Key<Job> jobkey) {
-    jobkey.get().update(newworked,msg);
-  }
-  /** Report new work done for a given job key */
-  public static void update(final long newworked, Key<Job> jobkey) {
-    jobkey.get().update(newworked);
-  }
+  public final  void update(final long newworked) { update(newworked,(String)null); }
+  public final  void update(final long newworked, String msg) { new ProgressUpdate(newworked, msg).fork(_progressKey); }
+  public static void update(final long newworked, Key<Job> jobkey) { update(newworked, null, jobkey); }
+  public static void update(final long newworked, String msg, Key<Job> jobkey) { jobkey.get().update(newworked, msg); }
 
   /**
    * Helper class to store the job progress in the DKV
@@ -306,28 +295,18 @@ public class Job<T extends Keyed> extends Keyed {
     // Progress methodology 1:  Specify total work up front and periodically tell when new units of work complete.
     private final long _work;
     private long _worked;
+    public Progress() { _work = -1; _fraction_done = 0; _progress_msg = "Running..."; }
 
     // Progress methodology 2:  Client tells what fraction is total work is done every time.
     // In addition, a short one-line message can optionally be provided for a smart client like Flow.
     private float _fraction_done;
     private String _progress_msg;
-
-    // Methodology 1.
     public Progress(long total) { _work = total; _fraction_done = -1.0f; _progress_msg = "Running...";}
-
-    // Methodology 2.
-    public Progress() { _work = -1; _fraction_done = 0; _progress_msg = "Running..."; }
 
     /** Report Job progress from 0 to 1.  Completed jobs are always 1.0 */
     public float progress() {
-      if (_work >= 0) {
-        // Methodology 1.
-        return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float) _worked / (float) _work));
-      }
-      else {
-        // Methodology 2.
-        return _fraction_done;
-      }
+      if (_work >= 0) return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float) _worked / (float) _work));
+      return _fraction_done;
     }
 
     /** Report most recent progress message. */
@@ -336,91 +315,18 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  /**
-   * Helper class to atomically update the job progress in the DKV
-   */
+  /** Helper class to atomically update the job progress in the DKV */
   public static class ProgressUpdate extends TAtomic<Progress> {
-    // Methodology 1
     final long _newwork;
-
-    // Methodology 2
-    final float _fraction_done;
     final String _progress_msg;
+    public ProgressUpdate(long newwork, String progress_msg) {  _newwork = newwork; _progress_msg = progress_msg; }
+    public ProgressUpdate(String progress_msg) { this(0L,progress_msg); }
 
-    /** Methodology 1 */
-    public ProgressUpdate(long newwork) {
-      _newwork = newwork;
-      _fraction_done = -1.0f;
-      _progress_msg = null;
-    }
-
-    public ProgressUpdate(long newwork, String progress_msg) {
-      _newwork = newwork;
-      _fraction_done = -1.0f;
-      _progress_msg = progress_msg;
-    }
-
-    // Methodology 2
-    /**
-     * Update progress object.
-     * @param fraction_done A number between 0 and 1 (clamped if needed)
-     * @param progress_msg Short message to display to the user
-     */
-    public ProgressUpdate(float fraction_done, String progress_msg) {
-      if (fraction_done < 0.0f) {
-        fraction_done = 0.0f;
-      }
-      if (fraction_done > 1.0f) {
-        fraction_done = 1.0f;
-      }
-
-      _newwork = 0;
-      _fraction_done = fraction_done;
-      _progress_msg = progress_msg;
-    }
-
-    /**
-     * Update progress object.
-     * @param fraction_done A number between 0 and 1 (clamped if needed)
-     */
-    public ProgressUpdate(float fraction_done) {
-      if (fraction_done < 0.0f) {
-        fraction_done = 0.0f;
-      }
-      if (fraction_done > 1.0f) {
-        fraction_done = 1.0f;
-      }
-
-      _newwork = 0;
-      _fraction_done = fraction_done;
-      _progress_msg = null;
-    }
-
-    /**
-     * Update progress object.
-     * @param progress_msg Short message to display to the user
-     */
-    public ProgressUpdate(String progress_msg) {
-      _newwork = 0;
-      _fraction_done = -1.0f;
-      _progress_msg = progress_msg;
-    }
-
-    /** Update progress with new work */
+    /** Update progress with new work & message */
     @Override public Progress atomic(Progress old) {
-      if(old == null) return old;
-
-      // Methodology 1
+      if( old == null ) return old;
       old._worked += _newwork;
-
-      // Methodology 2
-      if (_fraction_done >= 0.0f) {
-        old._fraction_done = _fraction_done;
-      }
-      if (_progress_msg != null) {
-        old._progress_msg = _progress_msg;
-      }
-
+      if (_progress_msg != null) old._progress_msg = _progress_msg;
       return old;
     }
   }

@@ -54,7 +54,7 @@ def is_javascript_test_file(file_name):
     Return True if file_name matches a regexp for a javascript test.  False otherwise.
     """
 
-    if (re.match("^.*tests.js$", file_name)):
+    if (re.match("^.*test.*\.js$", file_name)):
         return True
 
     return False
@@ -588,10 +588,8 @@ class Test:
                    "--args",
                    self.ip + ":" + str(self.port)]
         elif (is_javascript_test_file(self.test_name)):
-            cmd = ["node",
+            cmd = ["phantomjs",
                    self.test_name,
-                   "-s",
-                   "--usecloud",
                    self.ip + ":" + str(self.port)]
         else:
             print("")
@@ -771,7 +769,8 @@ class TestRunner:
     def __init__(self,
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
-                 num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir, failed_output_dir):
+                 num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
+                 failed_output_dir, path_to_tar, produce_unit_reports, testreport_dir):
         """
         Create a runner.
 
@@ -787,6 +786,10 @@ class TestRunner:
         @param base_port: Base H2O port (e.g. 54321) to start choosing from.
         @param xmx: Java -Xmx parameter.
         @param output_dir: Directory for output files.
+        @param failed_output_dir: Directory to copy failed test output.
+        @param path_to_tar: NA
+        @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
+        @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
@@ -806,6 +809,8 @@ class TestRunner:
         self.base_port = base_port
         self.output_dir = output_dir
         self.failed_output_dir = failed_output_dir
+        self.produce_unit_reports = produce_unit_reports
+        self.testreport_dir = testreport_dir
 
         self.start_seconds = time.time()
         self.terminated = False
@@ -816,8 +821,11 @@ class TestRunner:
         self.regression_passed = False
         self._create_output_dir()
         self._create_failed_output_dir()
+        if produce_unit_reports: 
+            self._create_testreport_dir()
         self.nopass_counter = 0
         self.nofeature_counter = 0
+        self.path_to_tar = path_to_tar
 
         if (use_cloud):
             node_num = 0
@@ -1064,6 +1072,9 @@ class TestRunner:
                    "--quiet",
                    "-f",
                    runner_setup_package_r]
+            if self.path_to_tar is not None:
+                print "Using R TAR located at: " + self.path_to_tar
+                cmd += ["--args", self.path_to_tar]
             child = subprocess.Popen(args=cmd,
                                      stdout=out,
                                      stderr=subprocess.STDOUT)
@@ -1308,6 +1319,17 @@ class TestRunner:
             print("")
             sys.exit(1)
 
+    def _create_testreport_dir(self):
+        try:
+            if not os.path.exists(self.testreport_dir):
+                os.makedirs(self.testreport_dir)
+        except OSError as e:
+            print("")
+            print("mkdir failed (errno {0}): {1}".format(e.errno, e.strerror))
+            print("    " + self.testreport_dir)
+            print("")
+            sys.exit(1)
+
     def _start_next_test_on_ip_port(self, ip, port):
         test = self.tests_not_started.pop(0)
         self.tests_running.append(test)
@@ -1329,9 +1351,12 @@ class TestRunner:
         port = test.get_port()
         now = time.time()
         duration = now - test.start_seconds
+        test_name = test.get_test_name()
         if (test.get_passed()):
-            s = "PASS      %d %4ds %-60s" % (port, duration, test.get_test_name())
+            s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
+            if self.produce_unit_reports:
+                self._report_xunit_result("r_suite", test_name, duration, False)
         else:
             s = "     FAIL %d %4ds %-60s %s  %s" % \
                 (port, duration, test.get_test_name(), test.get_output_dir_file_name(), test.get_seed_used())
@@ -1339,9 +1364,38 @@ class TestRunner:
             f = self._get_failed_filehandle_for_appending()
             f.write(test.get_test_dir_file_name() + "\n")
             f.close()
+            # Report junit
+            if self.produce_unit_reports:
+                if not test.get_nopass(nopass):
+                    self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed", "See {}".format(test.get_output_dir_file_name()))
+                else:
+                    self._report_xunit_result("r_suite", test_name, duration, True)
             # Copy failed test output into directory failed
             if not test.get_nopass(nopass) and not test.get_nofeature(nopass):
                 shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
+
+    # XSD schema for xunit reports is here; http://windyroad.com.au/dl/Open%20Source/JUnit.xsd
+    def _report_xunit_result(self, testsuiteName, testcaseName, testcaseRuntime, skipped=False, failureType=None, failureMessage=None, failureDescription=None):
+        errors = 0
+        failures = 1 if failureType else 0
+        skip = 1 if skipped else 0
+        failure = "" if not failureType else """"<failure type="{}" message="{}">{}</failure>""".format(failureType, failureMessage, failureDescription)
+
+        xmlReport= """<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
+  <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
+  {failure}
+  </testcase>
+</testsuite>
+""".format(testsuiteName=testsuiteName, testcaseClassName=testcaseName, testcaseName=testcaseName, 
+        testcaseRuntime=testcaseRuntime, failure=failure,
+        errors=errors, failures=failures, skip=skip)
+        self._save_xunit_report(testsuiteName, testcaseName, xmlReport)
+
+    def _save_xunit_report(self, testsuite, testcase, report):
+        f = self._get_testreport_filehandle(testsuite, testcase)
+        f.write(report)
+        f.close()
 
     def _log(self, s):
         f = self._get_summary_filehandle_for_appending()
@@ -1358,6 +1412,11 @@ class TestRunner:
     def _get_failed_filehandle_for_appending(self):
         summary_file_name = os.path.join(self.output_dir, "failed.txt")
         f = open(summary_file_name, "a+")
+        return f
+
+    def _get_testreport_filehandle(self, testsuite, testcase):
+        testreport_file_name = os.path.join(self.testreport_dir, "TEST_{0}_{1}.xml".format(testsuite, testcase))
+        f = open(testreport_file_name, "w+")
         return f
 
     def __str__(self):
@@ -1409,7 +1468,9 @@ g_convenient = False
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
-
+g_path_to_tar = None
+g_produce_unit_reports = True
+g_testreport_dir = None
 
 def use(x):
     """ Hack to remove compiler warning. """
@@ -1486,6 +1547,10 @@ def usage():
     print("    --nopass      Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
     print("    --c           Start the JVMs in a _c_onvenient location h2o-dev.")
+    print("")
+    print("    --tar         Supply a path to the R TAR.")
+    print("")
+    print("    --noxunit     Do not produce xUnit reports.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
@@ -1564,6 +1629,7 @@ def parse_args(argv):
     global g_jvm_xmx
     global g_nopass
     global g_convenient
+    global g_path_to_tar
 
     i = 1
     while (i < len(argv)):
@@ -1645,6 +1711,9 @@ def parse_args(argv):
             g_nopass = True
         elif s == "--c":
             g_convenient = True
+        elif s == "--tar":
+            i += 1
+            g_path_to_tar = os.path.abspath(argv[i])
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
@@ -1652,6 +1721,8 @@ def parse_args(argv):
             g_jvm_xmx = argv[i]
         elif (s == "--norun"):
             g_no_run = True
+        elif (s == "--noxunit"):
+            g_produce_unit_reports = False
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:
@@ -1724,6 +1795,8 @@ def main(argv):
     global g_test_group
     global g_runner
     global g_nopass
+    global g_path_to_tar
+    global g_testreport_dir
 
     g_script_name = os.path.basename(argv[0])
 
@@ -1733,6 +1806,7 @@ def main(argv):
     # Calculate global variables.
     g_output_dir = os.path.join(test_root_dir, str("results"))
     g_failed_output_dir = os.path.join(g_output_dir, str("failed"))
+    g_testreport_dir = os.path.join(test_root_dir, str("../build/test-results"))
 
     # Look for h2o jar file.
     h2o_jar = None
@@ -1770,7 +1844,7 @@ def main(argv):
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
-                          g_output_dir, g_failed_output_dir)
+                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_produce_unit_reports, g_testreport_dir)
 
     # Build test list.
     if (g_test_to_run is not None):

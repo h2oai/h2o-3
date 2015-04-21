@@ -4,7 +4,7 @@ import water.init.NetworkTest;
 
 public class NetworkTestHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NetworkTestV2 fetch(int version, NetworkTestV2 js) {
+  public NetworkTestV3 fetch(int version, NetworkTestV3 js) {
     return js.fillFromImpl(new NetworkTest().execImpl());
   }
 }

@@ -10,45 +10,50 @@ class H2OClusteringModel(ModelBase):
   def __init__(self, dest_key, model_json):
     super(H2OClusteringModel, self).__init__(dest_key, model_json,H2OClusteringModelMetrics)
 
-  def summary(self):
-    """
-    This method prints out various relevant pieces of information for a clustering
-    model.
-    """
-    output = self._model_json["output"]
-    #centers = output["centers"]
-    print "Model Summary:"
-    print
-    print
-    print "Cluster Sizes: " + str(output["size"])
-    print
-    print "Within-Cluster MSE: " + str(output["within_mse"])
-    print
-    print "Average Between-Cluster SSE: " + str(output["avg_between_ss"])
-    print "Average Overall SSE: " + str(output["avg_ss"])
-    print
-
   def size(self):
-    return self._model_json["output"]["size"]
+    tm = H2OClusteringModel._get_metrics(self)
+    return [ v[2] for v in  tm["centroid_stats"].cell_values]
 
   def avg_between_ss(self):
-    return self._model_json["output"]["avg_between_ss"]
+    tm = H2OClusteringModel._get_metrics(self)
+    return tm["avg_between_ss"]
 
   def avg_ss(self):
-    return self._model_json["output"]["avg_ss"]
+    tm = H2OClusteringModel._get_metrics(self)
+    return tm["avg_ss"]
 
   def avg_within_ss(self):
-    return self._model_json["output"]["avg_within_ss"]
+    tm = H2OClusteringModel._get_metrics(self)
+    return tm["avg_within_ss"]
 
   def within_mse(self):
-    return self._model_json["output"]["within_mse"]
+    tm = H2OClusteringModel._get_metrics(self)
+    return [ v[-1] for v in  tm["centroid_stats"].cell_values]
 
   def centers(self):
-    centers_plus = self._model_json['output']['centers'].cell_values
-    centers_only = []
-    for cidx, cval in enumerate(centers_plus):
-      centers_only.append(list(centers_plus[cidx])[1:])
-    return centers_only
+    o = self._model_json["output"]
+    cvals = o["centers"].cell_values
+    centers = []
+    for cidx, cval in enumerate(cvals):
+      centers.append(list(cvals[cidx])[1:])
+    return centers
+
+  def centers_std(self):
+    o = self._model_json["output"]
+    cvals = o["centers_std"].cell_values
+    centers_std = []
+    for cidx, cval in enumerate(cvals):
+      centers_std.append(list(cvals[cidx])[1:])
+    return centers_std
+
+  def centroid_stats(self):
+    tm = H2OClusteringModel._get_metrics(self)
+    return tm["centroid_stats"]
+
+  # TODO: move this out to ModelBase
+  @staticmethod
+  def _get_metrics(o):
+    return o._model_json["output"]["training_metrics"]
 
 class H2OClusteringModelMetrics(object):
   def __init__(self, metric_json):

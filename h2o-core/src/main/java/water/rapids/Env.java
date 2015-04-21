@@ -1,10 +1,11 @@
 package water.rapids;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.EnumWrappedVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedHashMap;
 import water.util.IcedInt;
 import water.util.Log;
 
@@ -36,10 +37,11 @@ public class Env extends Iced {
   final static int LARY  =7;  // special value for arrays in _local_array
   final static int AST   =8;  // basically what we're calling RAFT objects...
   final static int VEC   =9;
+  final static int LIST  =10;
   final static int NULL  =99999;
 
   transient ExecStack _stack;            // The stack
-  transient IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
+  transient HashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
   transient final public StringBuilder _sb;    // Holder for print results
   transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
   transient final SymbolTable  _global;
@@ -48,6 +50,7 @@ public class Env extends Iced {
   final private boolean _isGlobal;
 
   transient HashSet<ValFrame> _trash;
+  transient HashSet<Frame>    _tmpFrames;  // cleanup any tmp frames made by new ASTString
 
   @Override public AutoBuffer write_impl(AutoBuffer ab) {
     // write _refcnt
@@ -57,7 +60,7 @@ public class Env extends Iced {
   }
 
   @Override public Env read_impl(AutoBuffer ab) {
-    _refcnt = new IcedHashMap<>();
+    _refcnt = new HashMap<>();
     _stack = new ExecStack();
     _trash = new HashSet<>();
     int len = ab.get4();
@@ -72,7 +75,7 @@ public class Env extends Iced {
   // global scope.
   Env(HashSet<Key> locked) {
     _stack  = new ExecStack();
-    _refcnt = new IcedHashMap<>();
+    _refcnt = new HashMap<>();
     _sb     = new StringBuilder();
     _locked = locked;
     _global = new SymbolTable();
@@ -80,6 +83,7 @@ public class Env extends Iced {
     _parent = null;
     _isGlobal = true;
     _trash = new HashSet<>();
+    _tmpFrames = new HashSet<>();
   }
 
   // Capture the current environment & return it (for some closure's future execution).
@@ -94,6 +98,21 @@ public class Env extends Iced {
     _parent = e;
     _isGlobal = false;
     _trash = e._trash;
+    _tmpFrames = new HashSet<>();
+  }
+
+  // makes a new "global" context -- useful for one off invocations
+  static Env make(HashSet<Key> locked) {
+    Env env = new Env(locked);
+    // some default items in the symbol table
+    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
+    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
+    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
+    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+    env.put("-Inf",Env.NUM, Double.toString(Double.NEGATIVE_INFINITY));
+    env.put("E",Env.NUM, Double.toString(Math.E));
+    env.put("PI",Env.NUM, Double.toString(Math.PI));
+    return env;
   }
 
   public boolean isGlobal() { return _isGlobal && _parent == null && _local == null; }
@@ -248,7 +267,7 @@ public class Env extends Iced {
   // MUST be called in conjunction w/ push(frame) or addRef
   void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
 
-  void addVec(Vec v) { _locked.add(v._key);  addRef(v); }
+  void addVec(Vec v) { /*_locked.add(v._key);*/  addRef(v); }
   static Futures removeVec(Vec v, Futures fs) {
     if (fs == null) {
       fs = new Futures();
@@ -299,6 +318,8 @@ public class Env extends Iced {
       }
     }
     fs.blockForPending();
+
+    for(Frame f: _tmpFrames) {if(f._key!=null) DKV.remove(f._key); } // top level removal only (Vecs may be live still)
   }
 
   public void unlock() {
@@ -391,7 +412,7 @@ public class Env extends Iced {
       case SERIES: return o.toString();
       case SPAN: return o.toString();
       case NULL: return "null";
-      default: throw H2O.fail("Bad value on the stack");
+      default: throw H2O.unimpl("Bad value on the stack: " + type);
     }
   }
 
@@ -487,15 +508,18 @@ public class Env extends Iced {
     @Override public int peekTypeAt(int i) { return getType(peekAt(i)); }
 
     private int getType(Val o) {
-      if (o instanceof ValNull   ) return NULL;
-      if (o instanceof ValId     ) return ID;
-      if (o instanceof ValFrame  ) return ARY;
-      if (o instanceof ValStr    ) return STR;
-      if (o instanceof ValNum    ) return NUM;
-      if (o instanceof ValSpan   ) return SPAN;
-      if (o instanceof ValSeries ) return SERIES;
+      if( o instanceof ValNull   )    return NULL;
+      if( o instanceof ValId     )    return ID;
+      if( o instanceof ValFrame  )    return ARY;
+      if( o instanceof ValStr    )    return STR;
+      if( o instanceof ValNum    )    return NUM;
+      if( o instanceof ValSpan   )    return SPAN;
+      if( o instanceof ValSeries )    return SERIES;
+      if( o instanceof ValLongList)   return LIST;
+      if( o instanceof ValStringList) return LIST;
+      if( o instanceof ValDoubleList) return LIST;
 //      if (o instanceof ASTFunc   ) return FUN;
-      throw H2O.fail("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Frame, String, Double, Fun, Span, or Series");
+      throw H2O.unimpl("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Frame, String, Double, Fun, Span, or Series");
     }
 
     /**
@@ -524,6 +548,14 @@ public class Env extends Iced {
     @Override public Val pop() {
       if (isEmpty()) return null;
       Val o = peek();
+      if( o instanceof ValStr ) {
+        AST f = staticLookup( new ASTString('\"', ((ValStr)o)._s));
+        if( f instanceof ASTFrame) {
+          _stack.remove(_head--);
+          f.exec(Env.this);
+          return pop();
+        }
+      }
       _stack.remove(_head--);
       if (o instanceof ValFrame) toss((ValFrame)o);
       return o;
@@ -678,7 +710,7 @@ public class Env extends Iced {
     if (res == NULL && _parent != null) res = _parent.getType(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-    if (res == NULL) throw H2O.fail("Failed lookup of variable: "+name);
+    if (res == NULL) throw new H2OIllegalArgumentException("Failed lookup of variable: " + name, "Failed lookup of variable: " + name + " in: " + this);
     return res;
   }
 
@@ -703,7 +735,7 @@ public class Env extends Iced {
     if (res == null && _parent!=null) res = _parent.getValue(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-//    if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
+//    if (res == null) throw H2O.unimpl("Failed lookup of variable: "+name);
     return res;
   }
 
@@ -713,7 +745,16 @@ public class Env extends Iced {
       case ARY: return new ASTFrame(id.value());
       case LARY:return new ASTFrame(get_local(id.value())); // pull the local frame out
       case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
-      default: throw H2O.fail("Could not find appropriate type for identifier "+id);
+      default: throw H2O.unimpl("Could not find appropriate type for identifier "+id);
+    }
+  }
+
+  boolean tryLookup(water.rapids.ASTId id) {
+    try {
+      lookup(id);
+      return true;
+    } catch(Exception e) {
+      return false;
     }
   }
 
@@ -755,7 +796,7 @@ class ValFrame extends Val {
   ValFrame(Frame fr, boolean isVec, boolean g) { _key = null; _fr = fr; _isVec = isVec; _g = g; }
   ValFrame(String key) {
     Key<Frame> k = Key.make(key);
-    if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    if (DKV.get(k) == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
     _fr = k.get();
     _g = true;
@@ -815,21 +856,28 @@ class ValSpan extends Val {
 class ValSeries extends Val {
   final long[] _idxs;
   final ASTSpan[] _spans;
+  final double[] _d;
   boolean _isCol;
   boolean _isRow;
   int[] _order;
 
   ValSeries(long[] idxs, ASTSpan[] spans) {
-    _idxs = idxs;
+    _idxs = idxs; _d=null;
+    if( _idxs!=null ) Arrays.sort(_idxs);
+    _spans = spans;
+  }
+  ValSeries(long[] idxs, double[] d, ASTSpan[] spans) {
+    _idxs = idxs; _d=d;
+    if( _idxs!=null ) Arrays.sort(_idxs);
     _spans = spans;
   }
 
-  boolean contains(long a) {
+  boolean contains(final long a) {
     if (_spans != null)
-      for (ASTSpan s : _spans) if (s.contains(a)) return true;
-    if (_idxs != null)
-      for (long l : _idxs) if (l == a) return true;
-    return false;
+      for (ASTSpan s : _spans)
+        if (s.contains(a))
+          return true;
+    return _idxs != null && Arrays.binarySearch(_idxs, a) >= 0;
   }
 
   boolean isColSelector() { return _isCol; }
@@ -840,17 +888,9 @@ class ValSeries extends Val {
     _isCol = col;
   }
 
-  @Override String value() {
-    return null;
-  }
-
-  @Override
-  int type() {
-    return Env.SERIES;
-  }
-
-  @Override
-  public String toString() {
+  @Override String value() { return null; }
+  @Override int type() { return Env.SERIES; }
+  @Override public String toString() {
     String res = "c(";
     if (_spans != null) {
       for (ASTSpan s : _spans) {
@@ -860,9 +900,12 @@ class ValSeries extends Val {
       if (_idxs == null) res = res.substring(0, res.length() - 1); // remove last comma?
     }
     if (_idxs != null) {
-      for (long l : _idxs) {
-        res += l;
-        res += ",";
+      if( _idxs.length > 20) res += "many ";
+      else {
+        for (long l : _idxs) {
+          res += l;
+          res += ",";
+        }
       }
       res = res.substring(0, res.length() - 1); // remove last comma.
     }
@@ -946,3 +989,27 @@ class ValId extends Val {
   boolean isValid() { return isSet() || isLookup(); }
 }
 
+class ValDoubleList extends Val {
+  final double[] _d;
+  final ASTSpan[] _spans;
+  ValDoubleList(double[] d, ASTSpan[] spans) { _d=d; _spans=spans; }
+  @Override public String toString() { return null; }
+  @Override int type() { return Env.LIST; }
+  @Override String value() { return null; }
+}
+
+class ValLongList extends Val {
+  final long[] _l;
+  final ASTSpan[] _spans;
+  ValLongList(long[] l, ASTSpan[] spans) { _l=l; _spans=spans; }
+  @Override public String toString() { return null; }
+  @Override int type() { return Env.LIST; }
+  @Override String value() { return null; }
+}
+class ValStringList extends Val {
+  final String[] _s;
+  ValStringList(String[] s) { _s=s; }
+  @Override public String toString() { return null; }
+  @Override int type() { return Env.LIST; }
+  @Override String value() { return null; }
+}

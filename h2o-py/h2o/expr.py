@@ -7,6 +7,7 @@ from math import sqrt, isnan, floor
 import h2o
 import frame
 import tabulate
+import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -52,7 +53,12 @@ class Expr(object):
     self._vecname = ""     # the name of the Vec, if any
     self._isslice = False  # if a slice, then return a new H2OVec from show
 
-    self._op, self._data = (op, None) if isinstance(op, str) else ("rawdata", op)
+    if isinstance(op, str):
+      self._op, self._data = (op, None)
+    elif not op and isinstance(left,str):
+      self._op, self._data = ("rawdata", left)
+    else:
+      self._op, self._data = ("rawdata", op)
     self._name = self._op  # Set an initial name, generally overwritten
 
     assert self._is_valid(), str(self._name) + str(self._data)
@@ -60,8 +66,8 @@ class Expr(object):
     self._left = left._expr if isinstance(left, frame.H2OVec) else left
     self._rite = rite._expr if isinstance(rite, frame.H2OVec) else rite
 
-    assert self._left is None or self._left._is_valid(), self._left.debug()
-    assert self._rite is None or self._rite._is_valid(), self._rite.debug()
+    assert self._left is None or isinstance(self._left, str) or self._left._is_valid(), self._left.debug()
+    assert self._rite is None or isinstance(self._rite, str) or self._rite._is_valid(), self._rite.debug()
 
     # Compute length eagerly
     if self.is_remote():   # Length must be provided for remote data
@@ -94,7 +100,7 @@ class Expr(object):
 
   def vecname(self): return self._vecname
 
-  def is_local(self): return isinstance(self._data, (list, int, float))
+  def is_local(self): return isinstance(self._data, (list, tuple, int, float, str))
 
   def is_remote(self): return isinstance(self._data, unicode)
 
@@ -107,12 +113,29 @@ class Expr(object):
   def _is_valid(self):
     return self.is_local() or self.is_remote() or self.is_pending() or self.is_slice()
 
+  def _is_key(self):
+    has_key = self._data is not None and isinstance(self._data, unicode)
+    if has_key:
+      return "py" == self._data[0:2]
+    return False
+
   def __len__(self):
     """
     The length of this H2OVec/H2OFrame (generally without triggering eager evaluation)
     :return: The number of columns/rows of the H2OFrame/H2OVec.
     """
     return self._len
+
+  def dim(self):
+    """
+    Eagerly evaluate the Expr. If it's an H2OFrame, return the number of rows and columns.
+    :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
+    """
+    self.eager()
+    if isinstance(self._data, unicode):
+      frame = h2o.frame(self._data)
+      return [frame['frames'][0]['rows'], len(frame['frames'][0]['columns'])]
+    raise ValueError("data must be a (unicode) key")
 
   def debug(self):
     """
@@ -139,15 +162,19 @@ class Expr(object):
     else:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = j['frames'][0]['columns'][0]['data'][0:10]
-      elif isinstance(self._data, int):
+        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+      elif isinstance(self._data, (int, float, str, list)):
         print self._data
+        print
         return
       else:
         data = [self._data]
-      header = self._vecname + " (first " + str(len(data)) + " row(s))"
-      rows = range(1, len(data) + 1, 1)
-      print tabulate.tabulate(zip(rows, data), headers=["Row ID", header])
+      t_data = map(list, zip(*data))
+      for didx,d in enumerate(t_data): t_data[didx].insert(0,didx)
+      headers = ["Row ID"]
+      for i in range(len(t_data[0])): headers.append('')
+      print "Displaying first " + str(len(t_data)) + " row(s)"
+      print tabulate.tabulate(t_data, headers=headers)
       print
 
 #  def __repr__(self):
@@ -176,26 +203,102 @@ class Expr(object):
       stddev = sqrt(ssq / (n - 1)) if t != 'enum' else None
       return {'type': t, 'mins': mins, 'maxs': maxs, 'mean': mean, 'sigma': stddev, 'zeros': zeros, 'missing': missing}
     if self._summary: return self._summary
-    j = h2o.frame(self._data)
+    j = h2o.frame_summary(self._data)
     self._summary = j['frames'][0]['columns'][0]
     return self._summary
 
   # Basic indexed or sliced lookup
   def __getitem__(self, i):
-    x = self.eager()
-    if self.is_local(): return x[i]
-    if not isinstance(i, int): raise NotImplementedError  # need a bigdata slice here
-    # ([ %vec #row #0)
-    #j = H2OCONN.Rapids("([ %"+str(self._data)+" #"+str(i)+" #0)")
-    #return j['scalar']
+    if   self.is_local():
+      if    isinstance(i, int)  : return self.eager()[i]
+      elif  isinstance(i, tuple): return self.eager()[i[0]][i[1]]
+      else                      : raise ValueError("Integer and 2-tuple slicing supported only")
+    elif self.is_remote() or self.is_pending():
+      if    isinstance(i, int)  : return Expr("[", self, Expr(("()", i)))  # column slicing
+      elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
+      else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
 
-  # Small-data add; result of a (lazy but small) Expr vs a plain int/float
-  def __add__(self, i):
-    return self.eager() + i
+  def _simple_expr_bin_op( self, i, op):
+    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_op(self,op)
+    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_op(self,op)
+    if isinstance(i, Expr)        :
+      e = self.eager()
+      return  Expr(op, Expr(e), i) if isinstance(e, (int,float)) else Expr(op, self, i)
+    if isinstance(i, (int, float)):  return Expr(op, self, Expr(i))
+    if isinstance(i, str)         :  return Expr(op, self, Expr(None,i))
+    raise NotImplementedError
 
-  def __radd__(self, i):
-    return self + i  # Add is commutative
+  def _simple_expr_bin_rop(self, i, op):
+    if isinstance(i, (int, float)):  return Expr(op, Expr(i), self)
+    raise NotImplementedError
+
+  def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
+  def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
+  def __and__(self, i):  return self._simple_expr_bin_op(i,"&" )
+  def __or__ (self, i):  return self._simple_expr_bin_op(i,"|" )
+  def __div__(self, i):  return self._simple_expr_bin_op(i,"/" )
+  def __mul__(self, i):  return self._simple_expr_bin_op(i,"*" )
+  def __eq__ (self, i):  return self._simple_expr_bin_op(i,"n")
+  def __ne__ (self, i):  return self._simple_expr_bin_op(i,"N")
+  def __pow__(self, i):  return self._simple_expr_bin_op(i,"^" )
+  def __ge__ (self, i):  return self._simple_expr_bin_op(i,"G")
+  def __gt__ (self, i):  return self._simple_expr_bin_op(i,"g" )
+  def __le__ (self, i):  return self._simple_expr_bin_op(i,"L")
+  def __lt__ (self, i):  return self._simple_expr_bin_op(i,"l" )
+
+  def __radd__(self, i): return self.__add__(i)
+  def __rsub__(self, i): return self._simple_expr_bin_rop(i,"-")
+  def __rand__(self, i): return self.__and__(i)
+  def __ror__ (self, i): return self.__or__ (i)
+  def __rdiv__(self, i): return self._simple_expr_bin_rop(i,"/")
+  def __rmul__(self, i): return self.__mul__(i)
+  def __rpow__(self, i): return self._simple_expr_bin_rop(i,"^")
+
+  def __abs__ (self): return h2o.abs(self)
+
+  # generic reducers (min, max, sum, sd, var, mean, median)
+  def min(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("min", self)
+
+  def max(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("max", self)
+
+  def sum(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("sum", self)
+
+  def sd(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("sd", self)
+
+  def var(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("var", self)
+
+  def mean(self):
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self)
+
+  def median(self):
+    """
+    :return: A lazy Expr representing the median of this H2OVec.
+    """
+    return Expr("median", self)
 
   def __del__(self):
     # Dead pending op or local data; nothing to delete
@@ -239,8 +342,12 @@ class Expr(object):
     if isinstance(self._data, unicode):
       pass  # Big Data Key is the result
     # Small data result pulled locally
+    elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
+      self._data = j['head']
+    elif j['result'] in [u'TRUE', u'FALSE']:
+      self._data = (j['result'] == u'TRUE')
     else:
-      self._data = j['head'] if j['num_rows'] else j['scalar']
+      self._data = j['scalar']
     return self._data
 
   def _do_child(self, child):
@@ -251,17 +358,55 @@ class Expr(object):
         child._do_it()
       elif isinstance(child._data, (int, float)):
         __CMD__ += "#" + str(child._data)
-      elif isinstance(child._data, unicode):
+      elif isinstance(child._data, (str,unicode)):
         __CMD__ += "'" + str(child._data) + "'"
       elif isinstance(child._data, slice):
-        __CMD__ += \
-            "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
-            + ")"
+        __CMD__ += "(: #"+str(child._data.start)+" #"+str(child._data.stop - 1)+")"
         child._data = None  # trigger GC now
-      else:
-        pass
+      elif self._op == "[" and isinstance(self._rite._data, tuple): # multi-dimensional slice
+        if not isinstance(child._data, tuple): return child         # doing left child.  just return.
+        __CMD__ += self.multi_dim_slice_cmd(child)                  # doing right child. generate slice string
+        return child
     __CMD__ += " "
     return child
+
+  def multi_dim_slice_cmd(self, child):
+    return self.multi_dim_slice_data_cmd(child) + ' ' + self.multi_dim_slice_rows_cmd(child) + ' ' + \
+           self.multi_dim_slice_cols_cmd(child)
+
+  def multi_dim_slice_data_cmd(self, child):
+    if    isinstance(self._left._data,unicode): return ""
+    elif  isinstance(self._left._data, list)  :
+      c = child._data[1]
+      if isinstance(c, int): return "'" + self._left._data[c] + "'"
+      if isinstance(c, slice):
+        cols = self._left._data[c]
+        cmd = "(cbind"
+        for col in cols: cmd += " '" + str(col) + "'"
+        cmd += ")"
+        return cmd
+      if c == "()":
+        cmd = "(cbind"
+        for col in self._left._data: cmd += " '" + str(col) + "'"
+        cmd += ")"
+        return cmd
+    raise NotImplementedError
+
+  def multi_dim_slice_rows_cmd(self, child):
+    r = child._data[0]
+    if isinstance(r, int): return "#" + str(r)
+    if isinstance(r, slice): return "(: #"+str(r.start)+" #"+str(r.stop)+")"
+    if r == "()": return '()'
+    raise NotImplementedError
+
+  def multi_dim_slice_cols_cmd(self, child):
+    if   isinstance(self._left._data, list): return '()'
+    elif isinstance(self._left._data,unicode):
+      c = child._data[1]
+      if isinstance(c, int): return "#" + str(c)
+      if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
+      if c == "()": return '()'
+    raise NotImplementedError
 
   def _do_it(self):
     """
@@ -284,13 +429,20 @@ class Expr(object):
     py_tmp = cnt != 4 and self._len > 1 and not assign_vec
 
     global __CMD__
+    skip=False
     if py_tmp:
-        self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
-        __CMD__ += "(= !" + self._data + " "
+      self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
+      __CMD__ += "(= !" + self._data + " "
     if self._op != ",":           # Comma ops curry in-place (just gather args)
       __CMD__ += "(" + self._op + " "
 
     left = self._do_child(self._left)  # down the left
+
+    # gross hack just to get the ")" in the right place after the (!= ... ending ")" strictly enforced by Rapids
+    if py_tmp and self._left._is_key() and self._op==",":
+      skip=True
+      __CMD__ += ")"
+
     rite = self._do_child(self._rite)  # down the right
 
     # eventually will need to create dedicated objects each overriding a "set_data" method
@@ -299,16 +451,19 @@ class Expr(object):
     # Do not try/catch NotImplementedError - it blows the original stack trace
     # so then you can't see what's not implemented
 
-    if self._op in ["+", "&", "-", "*", "/", "==", "<", ">", ">=", "<="]:   # in self.BINARY_INFIX_OPS:
+    if self._op in ["+", "&", "|", "-", "*", "/", "^", "n", "N", "g", "G", "l", "L"]:   # in self.BINARY_INFIX_OPS:
+      rapids_dict = {"+":"+", "&":"&", "|":"|", "-":"-", "*":"*", "/":"/", "^":"**", "n":"==", "N":"!=", "g":">", "G":">=", "l":"<",
+                     "L":"<="}
       #   num op num
       #   num op []
-      if isinstance(left._data, (int, float)):
-        if isinstance(rite._data, (int, float)):   self._data = eval("left " + self._op + " rite")
-        elif rite.is_local():                      self._data = eval("[left "+ self._op + " x for x in rite._data]")
+      if isinstance(left._data, (int, float,str)):
+        if isinstance(rite._data, (int, float,str)):   self._data = eval("left " + rapids_dict[self._op] + " rite")
+        elif rite.is_local():                      self._data = eval("[left "+ rapids_dict[self._op] +
+                                                                     " x for x in rite._data]")
         else:                                      pass
 
       #   [] op num
-      elif isinstance(rite._data, (int, float)):
+      elif isinstance(rite._data, (int, float,str)):
         if left.is_local():   self._data = eval("[x" + self._op + " rite for x in left._data]")
         else:                 pass
 
@@ -322,7 +477,8 @@ class Expr(object):
     elif self._op == "[":
 
       #   [] = []
-      if left.is_local():    self._data = left._data[rite._data]
+      if isinstance(rite._data, tuple): pass #   multi-dimensional slice
+      elif left.is_local():    self._data = left._data[rite._data]
       #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
       else:                  __CMD__ += ' "null"'
 
@@ -332,8 +488,28 @@ class Expr(object):
       else:
         if rite is None: __CMD__ += "#NaN"
 
-    elif self._op == "floor":
-      if left.is_local():   self._data = [floor(x) for x in left._data]
+    elif self._op in ["floor", "abs"]:
+      if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op == "sign":
+      if left.is_local():   self._data = [cmp(x,0) for x in left._data]
+      else:                 pass
+
+    elif self._op in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", "sinh", "tanh", "acosh", "asinh", "atanh", \
+                      "sqrt", "trunc", "log", "log10", "log1p", "exp", "expm1", "gamma", "lgamma"]:
+      if left.is_local():   self._data = eval("[math." + self._op + "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op in ["cospi", "sinpi", "tanpi", "ceiling", "log2", "digamma", "trigamma"]:
+      if left.is_local():
+        if self._op   == "cospi"   : self._data = eval("[math.cos(math.pi*x) for x in left._data]")
+        elif self._op == "sinpi"   : self._data = eval("[math.sin(math.pi*x) for x in left._data]")
+        elif self._op == "tanpi"   : self._data = eval("[math.tan(math.pi*x) for x in left._data]")
+        elif self._op == "ceiling" : self._data = eval("[math.ceil(x) for x in left._data]")
+        elif self._op == "log2"    : self._data = eval("[math.log(x,2) for x in left._data]")
+        elif self._op == "digamma" : self._data = eval("[scipy.special.polygamma(0,x) for x in left._data]")
+        elif self._op == "trigamma": self._data = eval("[scipy.special.polygamma(1,x) for x in left._data]")
       else:                 pass
 
     elif self._op == "month":
@@ -344,9 +520,26 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
+    elif self._op in ["min", "max", "sum", "median"]:
+      if left.is_local():   raise NotImplementedError
+      else:                 __CMD__ += "%FALSE"
+
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
+
+    elif self._op in ["var", "sd"]:
+      if left.is_local():
+        mean = sum(left._data) / len(left._data)
+        sum_of_sq = sum((x-mean)**2 for x in left._data)
+        num_obs = len(left._data)
+        var = sum_of_sq / (num_obs - 1)
+        self._data = var if self._op == "var" else var**0.5
+      else:                 __CMD__ += " () %TRUE \"everything\"" if self._op == "var" else " %TRUE"
+
+    elif self._op == "is.factor":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
 
     elif self._op in ["as.factor", "h2o.runif", "is.na"]:
       if left.is_local():   self._data = map(str, left._data)
@@ -355,8 +548,8 @@ class Expr(object):
     elif self._op == "quantile":
       if left.is_local():   raise NotImplementedError
       else:
-        rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
-        __CMD__ += rapids_series + " %FALSE #7"
+        rapids_series = "(dlist #"+" #".join([str(x) for x in rite._data])+")"
+        __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":
       if left.is_local():   raise NotImplementedError
@@ -371,7 +564,7 @@ class Expr(object):
     # End of expression... wrap up parens
     if self._op != ",":
       __CMD__ += ")"
-    if py_tmp:
+    if py_tmp and not skip:
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead

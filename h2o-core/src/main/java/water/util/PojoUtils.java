@@ -1,8 +1,8 @@
 package water.util;
 
 import water.*;
-import water.api.FrameV2;
-import water.api.KeyV1;
+import water.api.FrameV3;
+import water.api.KeyV3;
 import water.api.Schema;
 
 import java.lang.reflect.Array;
@@ -49,8 +49,24 @@ public class PojoUtils {
    * @param field_naming Are the fields named consistently, or does one side have underscores?
    * @param skip_fields Array of origin or destination field names to skip
    */
-  // TODO: support automagic key-name <-> Model / Frame / Vec translation.
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields) {
+    copyProperties(dest, origin, field_naming, skip_fields, null);
+  }
+
+  /**
+   * Copy properties "of the same name" from one POJO to the other.  If the fields are
+   * named consistently (both sides have fields named "_foo" and/or "bar") this acts like
+   * Apache Commons PojoUtils.copyProperties(). If one side has leading underscores and
+   * the other does not then the names are conformed according to the field_naming
+   * parameter.
+   *
+   * @param dest Destination POJO
+   * @param origin Origin POJO
+   * @param field_naming Are the fields named consistently, or does one side have underscores?
+   * @param skip_fields Array of origin or destination field names to skip
+   * @param only_fields Array of origin or destination field names to include; ones not in this list will be skipped
+   */
+  public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields, String[] only_fields) {
     if (null == dest || null == origin) return;
 
     Field[] dest_fields = Weaver.getWovenFields(dest  .getClass());
@@ -60,6 +76,9 @@ public class PojoUtils {
       String origin_name = orig_field.getName();
 
       if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
+        continue;
+
+      if (only_fields != null & !ArrayUtils.contains(only_fields, origin_name))
         continue;
 
       String dest_name = null;
@@ -72,6 +91,9 @@ public class PojoUtils {
       }
 
       if ( skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+        continue;
+
+      if (only_fields != null & !ArrayUtils.contains(only_fields, dest_name))
         continue;
 
       try {
@@ -162,28 +184,28 @@ public class PojoUtils {
             //
             Value v = DKV.get((Key) orig_field.get(origin));
             dest_field.set(dest, (null == v ? null : v.get()));
-          } else if (KeyV1.class.isAssignableFrom(dest_field.getType()) && Keyed.class.isAssignableFrom(orig_field.getType())) {
+          } else if (KeyV3.class.isAssignableFrom(dest_field.getType()) && Keyed.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a Keyed (e.g., a Frame or Model) to a KeyV1.
             //
-            dest_field.set(dest, KeyV1.make(((Class<? extends KeyV1>) dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
-          } else if (KeyV1.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, KeyV3.make(((Class<? extends KeyV3>) dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
+          } else if (KeyV3.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a KeyV1 (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
             //
-            KeyV1 k = (KeyV1)orig_field.get(origin);
+            KeyV3 k = (KeyV3)orig_field.get(origin);
             Value v = DKV.get(Key.make(k.name));
             dest_field.set(dest, (null == v ? null : v.get()));
-          } else if (KeyV1.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType())) {
+          } else if (KeyV3.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a Key to a KeyV1.
             //
-            dest_field.set(dest, KeyV1.make(((Class<? extends KeyV1>)dest_field.getType()), (Key)orig_field.get(origin)));
-          } else if (KeyV1.class.isAssignableFrom(orig_field.getType()) && Key.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, KeyV3.make(((Class<? extends KeyV3>) dest_field.getType()), (Key) orig_field.get(origin)));
+          } else if (KeyV3.class.isAssignableFrom(orig_field.getType()) && Key.class.isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a KeyV1 to a Key.
             //
-            KeyV1 k = (KeyV1)orig_field.get(origin);
+            KeyV3 k = (KeyV3)orig_field.get(origin);
             dest_field.set(dest, (null == k.name ? null : Key.make(k.name)));
           } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
@@ -195,16 +217,16 @@ public class PojoUtils {
             // We are assigning a Pattern to a String.
             //
             dest_field.set(dest, orig_field.get(origin).toString());
-          } else if (dest_field.getType() == FrameV2.ColSpecifierV2.class && String.class.isAssignableFrom(orig_field.getType())) {
+          } else if (dest_field.getType() == FrameV3.ColSpecifierV2.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String to a ColSpecifier.  Note that we currently support only the colname, not a frame name too.
             //
-            dest_field.set(dest, new FrameV2.ColSpecifierV2((String) orig_field.get(origin)));
-          } else if (orig_field.getType() == FrameV2.ColSpecifierV2.class && String.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, new FrameV3.ColSpecifierV2((String) orig_field.get(origin)));
+          } else if (orig_field.getType() == FrameV3.ColSpecifierV2.class && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // We are assigning a ColSpecifierV2 to a String.  The column_name gets copied.
             //
-            dest_field.set(dest, ((FrameV2.ColSpecifierV2)orig_field.get(origin)).column_name);
+            dest_field.set(dest, ((FrameV3.ColSpecifierV2)orig_field.get(origin)).column_name);
           } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String into an enum field.

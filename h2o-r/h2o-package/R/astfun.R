@@ -141,7 +141,7 @@ function(stmnt) {
   stmnt_list <- as.list(stmnt)
 
   # is null
-  if (is.atomic(stmnt_list[[1L]]) && is.null(stmnt_list[[1L]])) return(deparse("null"))
+  if (is.atomic(stmnt_list[[1L]]) && is.null(stmnt_list[[1L]])) return("()")
 
   if (is.atomic(stmnt_list[[1L]]))
     if (is.numeric(stmnt_list[[1L]])   ||  # Got atomic numeric
@@ -243,18 +243,18 @@ function(stmnt) {
     if (missing(i)) return("")
     if (length(i) > 1L) stop("`[[` can only select one column")
     if (!is.numeric(i)) stop("column selection within a function call must be numeric")
-    rows <- "\"null\""
+    rows <- "()"
     cols <- .eval(substitute(i), parent.frame())
   } else {
     j <- stmnt_list[[4L]]  # columns
     if (missing(i))
-      rows <- "\"null\""
+      rows <- "()"
     else if (is(i, "ASTNode"))
       rows <- eval(i, parent.frame())
     else
       rows <- .eval(substitute(i), parent.frame())
     if (missing(j))
-      cols <- "\"null\""
+      cols <- "()"
     else
       cols <- .eval(substitute(j), parent.frame())
   }
@@ -370,19 +370,19 @@ function(b, is.single = FALSE) {
 #'
 #'
 #' The result is something like the following:
-#' (def "f" {arg1;arg2;arg3} {(stmnt1);;(stmnt2);;(stmnt3);;(stmnt4)})
+#' (def "f" (slist arg1 arg2 arg3) (, (stmnt1) (stmnt2) (stmnt3) (stmnt4)))
 .fun.to.ast<-
 function(fun, name) {
-  args <- paste0('{', paste(names(formals(fun)), collapse = ";"), '}')
+  args <- paste0('(slist ', paste0(unlist(lapply(names(formals(fun)), deparse)), collapse=" "), ')')
   b <- body(fun)
   stmnts <- .process.body(b)
-  new("ASTFun", name = name, arguments = args, body = stmnts)
+  new("ASTFun", name = deparse(name), arguments = args, body = stmnts)
 }
 
 .fun.visitor<-
 function(astfun) {
-  body <- paste0(unlist(.body.visitor(astfun@body), use.names = FALSE), ";;", collapse = " ")
-  list(ast = paste0("(def ", astfun@name, " ", astfun@arguments, " ", body , ";)"))
+  body <- paste0("(,", unlist(.body.visitor(astfun@body), use.names = FALSE), ")", collapse = " ")
+  list(ast = paste0("(def ", astfun@name, " ", astfun@arguments, " ", body , ")"))
 }
 
 .body.visitor <- function(b) lapply(b@statements, .stmnt.visitor)

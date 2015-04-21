@@ -4,7 +4,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.NaiveBayesV2;
+import hex.schemas.NaiveBayesV3;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Vec;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
-    return new NaiveBayesV2();
+    return new NaiveBayesV3();
   }
 
   @Override
@@ -54,6 +54,9 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
     if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
     if (_parms._eps_prob < 0) error("_eps_prob", "Threshold for probability must be positive");
+    hide("_balance_classes", "Balance classes is not applicable to NaiveBayes.");
+    hide("_class_sampling_factors", "Class sampling factors is not applicable to NaiveBayes.");
+    hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
   }
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
@@ -87,7 +90,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         for(int i = 0; i < pcond[0].length; i++) {
           int cidx = dinfo._cats + col;
           double num = tsk._rescnt[i];
-          double pmean = (double)tsk._jntsum[col][i][0]/num;
+          double pmean = tsk._jntsum[col][i][0]/num;
 
           pcond[cidx][i][0] = pmean;
           // double pvar = tsk._jntsum[col][i][1]/num - pmean * pmean;
@@ -107,13 +110,13 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         String[] colFormats = new String[colNames.length];
         Arrays.fill(colTypes, "double");
         Arrays.fill(colFormats, "%5f");
-        model._output._pcond[col] = new TwoDimTable(_train.name(col), rowNames, colNames, colTypes, colFormats,
+        model._output._pcond[col] = new TwoDimTable(_train.name(col), null, rowNames, colNames, colTypes, colFormats,
                 "Y / " + _train.name(col), new String[rowNames.length][], pcond[col]);
       }
 
       for(int col = 0; col < dinfo._nums; col++) {
         int cidx = dinfo._cats + col;
-        model._output._pcond[cidx] = new TwoDimTable(_train.name(cidx), rowNames, new String[] {"Mean", "Std_Dev"},
+        model._output._pcond[cidx] = new TwoDimTable(_train.name(cidx), null, rowNames, new String[] {"Mean", "Std_Dev"},
                 new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "Y / " + _train.name(cidx),
                 new String[rowNames.length][], pcond[cidx]);
       }
@@ -123,7 +126,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       String[] colFormats = new String[_response.cardinality()];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-      model._output._apriori = new TwoDimTable("Y", new String[1], _response.domain(), colTypes, colFormats, "",
+      model._output._apriori = new TwoDimTable("Y", null, new String[1], _response.domain(), colTypes, colFormats, "",
               new String[1][], new double[][] {apriori});
     }
 
@@ -146,7 +149,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
-        model._output._parameters = _parms;
         model._output._levels = _response.domain();
         model._output._ncats = dinfo._cats;
         model.update(_key);

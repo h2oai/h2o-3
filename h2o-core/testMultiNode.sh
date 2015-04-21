@@ -37,7 +37,7 @@ trap cleanup SIGTERM SIGINT
 # classpath before the main classpath.
 # kbn: Rather than let it default heap to 1/4 of available dram,
 # make it consistent for test. It's 2G is h2o-algos. So mimic that.
-JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/test${SEP}build/classes/main${SEP}../lib/*"
+JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

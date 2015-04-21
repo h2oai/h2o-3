@@ -10,7 +10,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.*;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV2;
+import hex.schemas.PCAV3;
 import hex.gram.Gram.GramTask;
 import hex.FrameTask;
 import hex.gram.Gram.NonSPDMatrixException;
@@ -44,7 +44,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV2();
+    return new PCAV3();
   }
 
   @Override
@@ -71,7 +71,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
-    if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
+    if (_parms._gamma < 0) error("_gamma", "_gamma must be a non-negative number");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
@@ -85,10 +85,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       else if (_parms._user_points.get().numRows() != _parms._k)
         error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
     }
-    // Currently, does not work on categorical data
+
+    // PCA does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
-      if (!vecs[i].isNumeric()) throw H2O.unimpl();
+      if (!vecs[i].isNumeric()) {
+        // throw H2O.unimpl("PCA currently only works on numeric data");
+        error("_train", "_train must contain only numeric data");
+        break;
+      }
     }
   }
 
@@ -190,6 +195,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       else addedL2 *= 10;
       ++attempts;
       addDiag(gram, addedL2); // try to add L2 penalty to make the Gram SPD
+      Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Y' Gram matrix");
       chol = new CholeskyDecomposition(new Matrix(gram));
     }
     if(!chol.isSPD())
@@ -225,7 +231,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._dropNA20Cols = _parms._dropNA20Cols;
-        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
         parms._k = _parms._k;
@@ -258,6 +263,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         else addedL2 *= 10;
         ++attempts;
         gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of X Gram matrix");
         gram.cholesky(chol);
       }
       if(!chol.isSPD())
@@ -310,7 +316,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
       for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
-      model._output._eigenvectors = new TwoDimTable("Rotation", _train.names(),
+      model._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
               colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], model._output._eigenvectors_raw);
 
       // Calculate standard deviations from \Sigma
@@ -334,7 +340,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         prop_var[i] = pcvar[i] / tot_var;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
       }
-      model._output._pc_importance = new TwoDimTable("Importance of components",
+      model._output._pc_importance = new TwoDimTable("Importance of components", null,
               new String[] { "Standard deviation", "Proportion of Variance", "Cumulative Proportion" },
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][] { sdev, prop_var, cum_var });
     }
@@ -398,7 +404,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // Cholesky yychol_init = regularizedCholesky(ygram_init);
         double[][] ygram_init = formGram(yt);
         if(_parms._gamma > 0) addDiag(ygram_init, _parms._gamma);
-        CholeskyDecomposition yychol_init = PCA.regularizedCholesky(ygram_init);
+        // CholeskyDecomposition yychol_init = PCA.regularizedCholesky(ygram_init);
 
         CholMulTask cmtsk_init = new CholMulTask(dinfo, ygram_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
@@ -453,7 +459,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // 4) Save solution to model output
         model._output._archetypes = yt;
-        model._output._parameters = _parms;
         recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?

@@ -6,7 +6,6 @@ import water.H2O;
 import water.Futures;
 import water.DKV;
 import water.Iced;
-import water.api.ModelSchema;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -19,7 +18,7 @@ import water.util.Log;
 
 import hex.Model;
 import hex.word2vec.Word2VecModel.*;
-import hex.schemas.Word2VecModelV2;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,10 +41,10 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl("No Model Metrics for Word2Vec.");
   }
 
-  @Override public float[] score0(Chunk[] cs, int foo, double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override public double[] score0(Chunk[] cs, int foo, double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
 
@@ -273,7 +272,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       _trainFrameSize = getTrainFrameSize(_parameters.train());
 
       //initialize weights to random values
-      Random rand = new Random();
+      Random rand = RandomUtils.getRNG(0xDECAF, 0xDA7A);
       _syn1 = new float[_parameters._vecSize * _vocabSize];
       _syn0 = new float[_parameters._vecSize * _vocabSize];
       for (int i = 0; i < _parameters._vecSize * _vocabSize; i++) _syn0[i] = (rand.nextFloat() - 0.5f) / _parameters._vecSize;

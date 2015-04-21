@@ -55,20 +55,14 @@ public class Exec extends Iced {
     cluster_init();
     // Preload the global environment from existing Frames
     HashSet<Key> locked = new HashSet<>();
-    Env env = new Env(locked);
-
-    // Some global constants
-    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
-    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
-    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
-    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+    Env env = Env.make(locked);
 
     try {
       Exec ex = new Exec(str, env);
 
       // Parse
       AST ast = ex.parse();
-      if (ex.skipWS().hasNext()) throwErr("Note that only a single statement can be processed at a time. Junk at the end of the statement: ",ex);
+      if (!ex.allDone()) throwErr("Note that only a single statement can be processed at a time. Junk at the end of the statement: ",ex);
 
       // Execute
       env = ast.treeWalk(env);
@@ -89,13 +83,7 @@ public class Exec extends Iced {
     new MRTask() {
       @Override public void setupLocal() {
         HashSet<Key> locked = new HashSet<>();
-        Env env = new Env(locked);
-
-        // Some global constants
-        env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
-        env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
-        env.put("NA",  Env.NUM, Double.toString(Double.NaN));
-        env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+        Env env = Env.make(locked);
         Exec ex = new Exec(str, env);
         ex.parse_fun();
       }
@@ -105,9 +93,9 @@ public class Exec extends Iced {
   protected AST parse() {
     skipWS();
     // Parse a token --> look for a function or a special char.
-    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    if (!hasNext()) throw new IllegalASTException("End of input unexpected. Badly formed AST.");
     String tok = parseID();
-    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    if (!hasNext()) throw new IllegalASTException("End of input unexpected. Badly formed AST.");
     //lookup of the token
     AST ast = lookup(tok);
     return ast.parse_impl(this);
@@ -123,20 +111,24 @@ public class Exec extends Iced {
 
   private AST lookup(String tok) {
     AST sym = ASTOp.SYMBOLS.get(tok);
-    if (sym != null) return sym;
+    if (sym != null) return sym.make();
     sym = ASTOp.UDF_OPS.get(tok);
-    if (sym != null) return sym;
+    if (sym != null) return sym.make();
     throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
   }
 
   String parseID() {
     StringBuilder sb = new StringBuilder();
-    if (peek() == '(') {_x++; skipWS(); return parseID(); } // eat the '(' and any ws.
+    if (peek() == '(') { // eat the '(' and any ws.
+      _x++; skipWS();
+      if( peek() == ')' ) { sb.append((char)_ast[_x++]); return sb.toString(); } // handles the case where we have a lisp-like null: ()
+      return parseID();  // peel out the ID
+    }
     if ( isSpecial(peek())) { return sb.append((char)_ast[_x++]).toString(); } // if attached_token, then use parse_impl
-    while(_x < _ast.length && _ast[_x] != ' ' && _ast[_x] != ')' && _ast[_x] != ';') {  // while not WS...
+    while( _x < _ast.length && _ast[_x] != ' ' && _ast[_x] != ')' && _ast[_x] != ';' && _ast[_x]!= '\'' && _ast[_x]!='\"' ) {  // while not WS...
       sb.append((char)_ast[_x++]);
     }
-    _x++; // skip a WS
+    skipWS();
     return sb.toString();
   }
 
@@ -150,18 +142,27 @@ public class Exec extends Iced {
   }
 
   boolean hasNext() { return _x < _ast.length; }
-  boolean hasNextStmnt() {
-    if (hasNext()) {
-      if (_x+1 >= _ast.length) return false;
-      if (_x+2 >= _ast.length) return false;
-      if (_ast[_x] == ';' && _ast[_x+1] == ';' && _ast[_x+2] == ';') return false; // end of all statements == ;;;
-      return true;
+  boolean allDone() {
+    skipWS();
+    if( _x >= _ast.length ) return true;
+    while( isEnd() && _x < _ast.length ) {
+      _x++; skipWS();
     }
-    return false;
+    return _x >= _ast.length;
+  }
+  double nextDbl() {
+    AST a = parse();
+    if( a instanceof ASTNum) return ((ASTNum)a)._d;
+    else throw new IllegalArgumentException("Expected to parse a number, but got " + a.getClass());
   }
 
-  double nextDbl() { return ((ASTNum) this.skipWS().parse()).dbl(); }
-  String nextStr() { return ((ASTString) this.skipWS().parse())._s; }
+  String nextStr() {
+    AST a = parse();
+    // did it get caught by the horrible hack to auto-lookup strings?
+    if( a instanceof ASTFrame ) return ((ASTFrame)a)._key;
+    else if( a instanceof ASTString ) return ((ASTString)a)._s;
+    else throw new IllegalArgumentException("Expected to parse a String, but got " + a.getClass());
+  }
 
   Exec xpeek(char c) {
     assert _ast[_x] == c : "Expected '"+c+"'. Got: '"+(char)_ast[_x]+"'. unparsed: "+ unparsed() + " ; _x = "+_x;
@@ -170,37 +171,19 @@ public class Exec extends Iced {
 
   char ppeek() { return (char)_ast[_x-1];}  // past peek
   char peek() { return (char)_ast[_x]; }    // ppek ahead
-  char peekPlus() { return (char)_ast[_x++]; } // peek and move ahead
-
+  char peekPlus() { skipWS(); return (char)_ast[_x++]; } // peek and move ahead
+  boolean isEnd() { return _x >= _ast.length || (char) _ast[_x] == ')'; } // out of chars OR end of AST (signaled by ')' )
+  void eatEnd() {
+    skipWS();
+    if( !isEnd() ) throwErr("No end to eat!",this);
+      _x++;
+    skipWS();
+  }
   Exec skipWS() {
     while (true) {
       if (_x >= _ast.length) break;
-      if (peek() == ' ' || peek() == ')' || peek() == ';') {
+      if (peek() == ' ' || peek() == ';') {
         _x++;
-        continue;
-      }
-      break;
-    }
-    return this;
-  }
-
-  Exec skipEOS() {
-    while (true) {
-      if (_x >= _ast.length) break;
-      if (peek() == ';' || peek() == ' ' || peek() == ')') {
-        _x++;
-        continue;
-      }
-      break;
-    }
-    return this;
-  }
-
-  Exec rewind() {
-    while (true) {
-      if (_x <= 0) { _x = 0; break; }
-      if (!(ppeek() == ' ' || ppeek() == ')' || ppeek() == ';')) {
-        _x--;
         continue;
       }
       break;
@@ -209,7 +192,8 @@ public class Exec extends Iced {
   }
 
   boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '%' || c =='{'; }
-
+  boolean isQuoted(char c) { return c == '\"' || c == '\''; }
+  char getQuote() { return (char)_ast[_x++]; }
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
 
   static AST throwErr( String msg, Exec E) {
@@ -242,3 +226,6 @@ public class Exec extends Iced {
     _inited = true;
   }
 }
+
+
+class IllegalASTException extends IllegalArgumentException { IllegalASTException(String s) {super(s);} }

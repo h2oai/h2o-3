@@ -24,6 +24,22 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
   # Legacy.  Do nothing.
 }
 
+#' Start Writing H2O R Logs
+#'
+#' Begin logging H2o R POST commands and error responses to local disk. Used
+#' primarily for debuggin purposes.
+#'
+#' @param file a character string name for the file, automatically generated
+#' @seealso \code{\link{h2o.stopLogging}, \link{h2o.clearLog},
+#'          \link{h2o.openLog}}
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
+#' @export
 h2o.startLogging <- function(file) {
   if (missing(file)) {
     logFileName <- .h2o.calcLogFileName()
@@ -36,16 +52,70 @@ h2o.startLogging <- function(file) {
   cat("Appending REST API transactions to log file", logFileName, "\n")
 }
 
+#' Stop Writing H2O R Logs
+#'
+#' Halt logging of H2O R POST commands and error responses to local disk. Used
+#' primarily for debugging purposes.
+#'
+#' @seealso \code{\link{h2o.startLogging}, \link{h2o.clearLog},
+#'          \link{h2o.openLog}}
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
+#' @export
 h2o.stopLogging <- function() {
   assign("IS_LOGGING", FALSE, envir = .pkg.env)
   cat("Logging stopped\n")
 }
 
+#' Delete All H2O R Logs
+#'
+#' Clear all H2O R command and error response logs from the local disk. Used
+#' primarily for debugging purposes.
+#'
+#' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
+#'          \link{h2o.openLog}}
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
+#' h2o.clearLog()
+#' @export
 h2o.clearLog <- function() {
   file.remove(.h2o.getLogFileName())
   cat("Removed file ", .h2o.getLogFileName(), "\n")
 }
 
+#' View H2O R Logs
+#'
+#' Open existing logs of H2O R POST commands and error resposnes on local disk.
+#' Used primarily for debugging purposes.
+#'
+#' @param type Currently unimplemented.
+#' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
+#'          \link{h2o.clearLog}}
+#' @examples
+#' \donttest{
+#' # Skip running this to avoid windows being opened during R CMD check
+#' library(h2o)
+#' localH2O = h2o.init()
+#'
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
+#'
+#' h2o.openLog("Command")
+#' h2o.openLog("Error")
+#' }
+#' @export
 h2o.openLog <- function(type) {
   myFile <- .h2o.getLogFileName()
   if(!file.exists(myFile))
@@ -58,16 +128,17 @@ h2o.openLog <- function(type) {
 }
 
 #' Log a message on the server-side logs
-#' 
+#'
 #' This is helpful when running several pieces of work one after the other on a single H2O
 #' cluster and you want to make a notation in the H2O server side log where one piece of
 #' work ends and the next piece of work begins.
-#' 
+#'
 #' \code{h2o.logAndEcho} sends a message to H2O for logging. Generally used for debugging purposes.
-#' 
+#'
 #' @param message A character string with the message to write to the log.
 #' @param conn An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @seealso \code{\link{H2OConnection}}
+#' @export
 h2o.logAndEcho <- function(message, conn = h2o.getConnection()) {
   if (is(message, "H2OConnection")) {
     temp <- message
@@ -86,13 +157,14 @@ h2o.logAndEcho <- function(message, conn = h2o.getConnection()) {
 }
 
 #' Download H2O Log Files to Disk
-#' 
+#'
 #' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk. Generally used for debugging purposes.
-#' 
+#'
 #' @param conn An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param dirname (Optional) A character string indicating the directory that the log file should be saved in.
 #' @param filename (Optional) A character string indicating the name that the log file should be saved to.
 #' @seealso \code{\link{H2OConnection}}
+#' @export
 h2o.downloadAllLogs <- function(conn = h2o.getConnection(), dirname = ".", filename = NULL) {
   if(!is(conn, "H2OConnection"))
     stop("`conn` must be an H2OConnection object")

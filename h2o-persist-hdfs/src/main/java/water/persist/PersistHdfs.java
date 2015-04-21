@@ -15,8 +15,6 @@ import org.apache.hadoop.fs.*;
 import water.*;
 
 import water.api.HDFSIOException;
-import water.api.Schema;
-import water.api.TypeaheadV2;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
 import water.util.FileUtils;
@@ -62,6 +60,7 @@ public final class PersistHdfs extends Persist {
   
   // Loading HDFS files
   public PersistHdfs() { _iceRoot = null; }
+  public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
 
   // Loading/Writing ice to HDFS
   public PersistHdfs(URI uri) {
@@ -92,6 +91,37 @@ public final class PersistHdfs extends Persist {
   }*/
 
   @Override public byte[] load(final Value v) {
+    //
+    // !!! WARNING !!!
+    //
+    // tomk: Sun Apr 19 13:11:51 PDT 2015
+    //
+    //
+    // This load implementation behaved *HORRIBLY* with S3 when the libraries were updated.
+    //    Behaves well (and is the same set of libraries as H2O-1):
+    //        org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0
+    //        net.java.dev.jets3t:jets3t:0.6.1
+    //
+    //    Behaves abysmally:
+    //        org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0
+    //        net.java.dev.jets3t:jets3t:0.9.2
+    //
+    //
+    // I did some debugging.
+    //
+    // What happens in the new libraries is the connection type is a streaming connection, and
+    // the entire file gets read on close() even if you only wanted to read a chunk.  The result
+    // is the same data gets read over and over again by the underlying transport layer even
+    // though H2O only thinks it's asking for (and receiving) each piece of data once.
+    //
+    // I suspect this has something to do with the 'Range' HTTP header on the GET, but I'm not
+    // entirely sure.  Many layers of library need to be fought through to really figure it out.
+    //
+    // Anyway, this will need to be rewritten from the perspective of how to properly use the
+    // new library version.  Might make sense to go to straight to 's3a' which is a replacement
+    // for 's3n'.
+    //
+
     final byte[] b = MemoryManager.malloc1(v._max);
     Key k = v._key;
     long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
@@ -103,12 +133,21 @@ public final class PersistHdfs extends Persist {
         FSDataInputStream s = null;
         try {
           s = fs.open(p);
-          // NOTE:
-          // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
-          // Google API's simple seek has better performance
-          // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
-          ByteStreams.skipFully(s, skip_);
-          ByteStreams.readFully(s, b);
+          if (p.toString().toLowerCase().startsWith("maprfs:")) {
+            // MapR behaves really horribly with the google ByteStreams code below.
+            // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
+            // Use the HDFS API here directly instead.
+            s.seek(skip_);
+            s.readFully(b);
+          }
+          else {
+            // NOTE:
+            // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
+            // Google API's simple seek has better performance
+            // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
+            ByteStreams.skipFully(s, skip_);
+            ByteStreams.readFully(s, b);
+          }
           assert v.isPersisted();
         } finally {
           FileUtils.close(s);
@@ -116,7 +155,8 @@ public final class PersistHdfs extends Persist {
         return null;
       }
     }, true, v._max);
-  return b;
+
+    return b;
   }
 
   @Override public void store(Value v) {
@@ -314,6 +354,134 @@ public final class PersistHdfs extends Persist {
       // write barrier was here : DKV.write_barrier();
     } catch (IOException e) {
       throw new HDFSIOException(path, PersistHdfs.CONF.toString(), e);
+    }
+  }
+
+  // -------------------------------
+  // Node Persistent Storage helpers
+  // -------------------------------
+
+  @Override
+  public String getHomeDirectory() {
+    try {
+      FileSystem fs = FileSystem.get(CONF);
+      return fs.getHomeDirectory().toString();
+    }
+    catch (Exception e) {
+      return null;
+    }
+  }
+
+  @Override
+  public PersistEntry[] list(String path) {
+    try {
+      Path p = new Path(path);
+      URI uri = p.toUri();
+      FileSystem fs = FileSystem.get(uri, CONF);
+      FileStatus[] arr1 = fs.listStatus(p);
+      PersistEntry[] arr2 = new PersistEntry[arr1.length];
+      for (int i = 0; i < arr1.length; i++) {
+        arr2[i] = new PersistEntry();
+        arr2[i]._name = arr1[i].getPath().getName();
+        arr2[i]._size = arr1[i].getLen();
+        arr2[i]._timestamp_millis = arr1[i].getModificationTime();
+      }
+      return arr2;
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean exists(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.exists(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public long length(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.getFileStatus(p).getLen();
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public InputStream open(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.open(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean mkdirs(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.mkdirs(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean rename(String fromPath, String toPath) {
+    Path f = new Path(fromPath);
+    Path t = new Path(toPath);
+    URI uri = f.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.rename(f, t);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(toPath, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public OutputStream create(String path, boolean overwrite) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.create(p, overwrite);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean delete(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.delete(p, true);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
     }
   }
 }

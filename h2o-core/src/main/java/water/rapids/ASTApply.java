@@ -20,17 +20,14 @@ public class ASTApply extends ASTOp {
   @Override ASTOp make() {return new ASTApply();}
   @Override ASTApply parse_impl(Exec E) {
     AST ary = E.parse();
-    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     try {
-      _margin = (int) ((ASTNum) E.skipWS().parse())._d;
+      _margin = (int) ((ASTNum) E.parse())._d;
     } catch (ClassCastException e) {
       throw new IllegalArgumentException("`MARGIN` must be either 1 or 2, it cannot be both.");
     }
-    _fun = ((ASTId)E.skipWS().parse())._id;
+    _fun = ((ASTId)E.parse())._id;
     ArrayList<AST> fun_args = new ArrayList<>();
-    while(E.skipWS().hasNext()) {
-      fun_args.add(E.parse());
-    }
+    while( !E.isEnd() ) fun_args.add(E.parse());
     ASTApply res = (ASTApply)clone();
     res._asts = new AST[]{ary};
     if (fun_args.size() > 0) {
@@ -38,6 +35,7 @@ public class ASTApply extends ASTOp {
     } else {
       _fun_args = null;
     }
+    E.eatEnd();
     return res;
   }
   @Override void apply(Env env) {
@@ -94,17 +92,14 @@ public class ASTApply extends ASTOp {
       // Create the results frame.
       if (isRow) {
         Futures fs = new Futures();
-        Vec[] vecs = new Vec[row_result.length];
-        Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
-        for( int c = 0; c < vecs.length; c++ ) {
-          AppendableVec vec = new AppendableVec(keys[c]);
-          NewChunk chunk = new NewChunk(vec, 0);
-          chunk.addNum(row_result[c]);
-          chunk.close(0, fs);
-          vecs[c] = vec.close(fs);
-        }
+        Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+        AppendableVec v = new AppendableVec(key);
+        NewChunk chunk = new NewChunk(v, 0);
+        for (double aRow_result : row_result) chunk.addNum(aRow_result);
+        chunk.close(0, fs);
+        Vec vec = v.close(fs);
         fs.blockForPending();
-        fr2 = new Frame(fr.names(), vecs);
+        fr2 = new Frame(vec);
       } else {
         fr2 = new Frame(fr.names(), vecs_result);
       }

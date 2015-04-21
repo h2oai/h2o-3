@@ -10,7 +10,7 @@ public class H2OEnumLevelNotFoundArgumentException extends H2ONotFoundArgumentEx
   public H2OEnumLevelNotFoundArgumentException(String argument, String enum_level, String frame_name, String column_name) {
     super("Enum level: " + enum_level + " not found in column_name: " + column_name + " in frame: " + frame_name + " from argument: " + argument + ": " + argument.toString(),
           "Enum level: " + enum_level + " not found in column_name: " + column_name + " in frame: " + frame_name + " from argument: " + argument + ": " + argument.toString());
-    this.values = new IcedHashMap<String, Object>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("argument", argument);
     this.values.put("enum_level", enum_level);
     this.values.put("frame_name", frame_name);

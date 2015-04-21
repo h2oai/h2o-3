@@ -86,6 +86,7 @@ import java.util.regex.Pattern;
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
+  private static final int EXPERIMENTAL_VERSION = 99;
 
   public static final class Meta extends Iced {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,9 +192,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   public final static int getLatestVersion() {
     return latest_version;
   }
+
   // Bound the version search if we haven't yet registered all schemas
   public final static int getHighestSupportedVersion() {
     return HIGHEST_SUPPORTED_VERSION;
+  }
+
+  public final static int getExperimentalVersion() {
+    return EXPERIMENTAL_VERSION;
   }
 
   /** Register the given schema class. */
@@ -363,20 +369,23 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // Get passed-in fields, assign into Schema
 
     Map<String, Field> fields = new HashMap<>();
+    Field current = null; // declare here so we can print in catch{}
     try {
       Class clz = getClass();
       do {
         Field[] some_fields = clz.getDeclaredFields();
 
-        for (Field f : some_fields)
+        for (Field f : some_fields) {
+          current = f;
           if (null == fields.get(f.getName()))
             fields.put(f.getName(), f);
+        }
 
         clz = clz.getSuperclass();
       } while (Iced.class.isAssignableFrom(clz.getSuperclass()));
     }
     catch (SecurityException e) {
-        throw H2O.fail("Exception accessing fields: " + e);
+        throw H2O.fail("Exception accessing field: " + current + " in class: " + this.getClass() + ": " + e);
     }
 
     for( String key : parms.stringPropertyNames() ) {
@@ -388,14 +397,20 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         }
 
         int mods = f.getModifiers();
-        if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
+        if( Modifier.isTransient(mods) || Modifier.isStatic(mods) ) {
           // Attempting to set a transient or static; treat same as junk fieldname
-          throw H2O.fail("Unknown argument (transient or static): " + key);
+          throw new H2OIllegalArgumentException(
+                  "Bad parameter for field: " + key + " for class: " + this.getClass().toString(),
+                  "Bad parameter definition for field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was declared static or transient)");
+        }
         // Only support a single annotation which is an API, and is required
         API api = (API)f.getAnnotations()[0];
         // Must have one of these set to be an input field
-        if( api.direction() == API.Direction.OUTPUT )
-          throw H2O.fail("Attempting to set output field: " + key);
+        if( api.direction() == API.Direction.OUTPUT ) {
+          throw new H2OIllegalArgumentException(
+                  "Attempting to set output field: " + key + " for class: " + this.getClass().toString(),
+                  "Attempting to set output field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was annotated as API.Direction.OUTPUT)");
+        }
 
         // Primitive parse by field type
         Object parse_result = parse(key, parms.getProperty(key),f.getType(), api.required());
@@ -445,7 +460,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         API api = (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
         if (api.required()) {
           if (parms.getProperty(f.getName()) == null) {
-            IcedHashMap<String, Object> values = new IcedHashMap<>();
+            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             values.put("schema", this.getClass().getSimpleName());
             values.put("argument", f.getName());
             throw new H2OIllegalArgumentException("Required field " + f.getName() + " not specified",
@@ -474,12 +489,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
+
       String inside = s.substring(1,s.length() -1).trim();
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
       if (inside.length() == 0)
         splits = new String[] {};
       else
-          splits = inside.split(",");
+        splits = splitArgs(inside);
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
@@ -493,11 +509,24 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       }
 
       for( int i=0; i<splits.length; i++ ) {
-        if (String.class == afclz || KeyV1.class.isAssignableFrom(afclz)) {
+        if (String.class == afclz || KeyV3.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
-          if (stripped.length() >= 2)
-            stripped = stripped.substring(1, stripped.length() - 1);
+
+          if ("null".equals(stripped)) {
+            a[i] = null;
+          } else if (! stripped.startsWith("\"") || ! stripped.endsWith("\"")) {
+            String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
+
+            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
+            values.put("function", fclz.getSimpleName() + ".fillFromParms()");
+            values.put("argument", field_name);
+            values.put("value", stripped);
+
+            throw new H2OIllegalArgumentException(msg, msg, values);
+          }
+
+          stripped = stripped.substring(1, stripped.length() - 1);
           a[i] = (E) parse(field_name, stripped, afclz, required);
         } else {
           a[i] = (E) parse(field_name, splits[i].trim(), afclz, required);
@@ -511,41 +540,41 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       else if (!required && (s == null || s.length() == 0)) return null;
       else return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
 
-    if( KeyV1.class.isAssignableFrom(fclz) ) {
+    if( KeyV3.class.isAssignableFrom(fclz) ) {
       if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(field_name, s);
       if (!required && (s == null || s.length() == 0)) return null;
 
-      return KeyV1.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
+      return KeyV3.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);
 
     // TODO: these can be refactored into a single case using the facilities in Schema:
-    if( FrameV2.class.isAssignableFrom(fclz) )
+    if( FrameV3.class.isAssignableFrom(fclz) )
       if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(field_name, s);
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
         if (! v.isFrame()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Frame", v.get().getClass());
-        return new FrameV2((Frame) v.get()); // TODO: version!
+        return new FrameV3((Frame) v.get()); // TODO: version!
       }
 
-    if( JobV2.class.isAssignableFrom(fclz) )
+    if( JobV3.class.isAssignableFrom(fclz) )
       if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(s);
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
         if (! v.isJob()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Job", v.get().getClass());
-        return new JobV2().fillFromImpl((Job) v.get()); // TODO: version!
+        return new JobV3().fillFromImpl((Job) v.get()); // TODO: version!
       }
 
     // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
     // where the frame name is also specified.
-    if ( FrameV2.ColSpecifierV2.class.isAssignableFrom(fclz)) {
-        return new FrameV2.ColSpecifierV2(s);
+    if ( FrameV3.ColSpecifierV2.class.isAssignableFrom(fclz)) {
+        return new FrameV3.ColSpecifierV2(s);
     }
 
     if( ModelSchema.class.isAssignableFrom(fclz) )
@@ -569,6 +598,35 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
   private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
+  // Splits on commas, but ignores commas in double quotes.  Required
+  // since using a regex blow the stack on long column counts
+  // TODO: detect and complain about malformed JSON
+  private static String[] splitArgs(String argStr) {
+    StringBuffer sb = new StringBuffer (argStr);
+    StringBuffer arg = new StringBuffer ();
+    List<String> splitArgList = new ArrayList<String> ();
+    boolean inDoubleQuotes = false;
+
+    for (int i=0; i < sb.length(); i++) {
+      if (sb.charAt (i) == '"' && !inDoubleQuotes) {
+        inDoubleQuotes = true;
+        arg.append(sb.charAt(i));
+      } else if (sb.charAt(i) == '"' && inDoubleQuotes) {
+        inDoubleQuotes = false;
+        arg.append(sb.charAt(i));
+      } else if (sb.charAt(i) == ',' && !inDoubleQuotes) {
+        splitArgList.add(arg.toString());
+        // clear the field for next word
+        arg.setLength(0);
+      } else {
+        arg.append(sb.charAt(i));
+      }
+    }
+    if (arg.length() > 0)
+      splitArgList.add(arg.toString());
+
+    return splitArgList.toArray(new String[splitArgList.size()]);
+  }
 
   private static boolean schemas_registered = false;
   /**
@@ -595,7 +653,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       for (Class<? extends Schema> clz : clzs) {
         Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
         for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
-         if (!Modifier.isAbstract(schema_class.getModifiers()))
+//         if (!Modifier.isAbstract(schema_class.getModifiers()))
           Schema.register(schema_class);
       }
     }
@@ -805,7 +863,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       // TODO: render examples and other stuff, if it's passed in
     }
     catch (Exception e) {
-      IcedHashMap values = new IcedHashMap();
+      IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
       values.put("schema", this);
       // TODO: This isn't quite the right exception type:
       throw new H2OIllegalArgumentException("Caught exception using reflection on schema: " + this,

@@ -42,7 +42,8 @@ def user(ip, port):
 
     b = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
-    d = c + c + sum(a)
+    #d = c + c + sum(a) #Commented out because sum(a) returns an H2OVec. '+' on H2OFrames and H2OVecs of different
+    # dimensions is illegal
     e = c + a + 1
     e.show()
     # Note that "d=c+..." keeps the internal C expressions alive, until "d" goes
@@ -51,7 +52,9 @@ def user(ip, port):
     c = None
     # Internal "Expr(c=a+b)" not dead!
 
-    print 1 + (a[0] + b[1]).mean()
+    # column addition can be a big data operation, so the result should be an Expr.
+    # TODO: create custom 'mean' function to operate on Expr objects.
+    # print 1 + (a[0] + b[1]).mean()
 
     #import collections
 

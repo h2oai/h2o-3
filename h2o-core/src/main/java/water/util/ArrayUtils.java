@@ -6,7 +6,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
 
-import static water.util.RandomUtils.getDeterRNG;
+import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
 public class ArrayUtils {
@@ -166,6 +166,10 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) div(ds[i],n[i]);
     return ds;
   }
+  public static double[] div(double[] ds, long[] n) {
+    for (int i=0; i<ds.length; i++) ds[i]/=n[i];
+    return ds;
+  }
   public static float[] mult(float[] nums, float n) {
     assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
@@ -270,7 +274,7 @@ public class ArrayUtils {
       if (from[i]>from[result]) result = i;
     return result;
   }
-  public static int maxIndex(float[] from) {
+  public static int maxIndex(double[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
       if (from[i]>from[result]) result = i;
@@ -288,10 +292,13 @@ public class ArrayUtils {
       if (from[i]<from[result]) result = i;
     return result;
   }
-  public static double maxValue(double[] from) {
-    double result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
+  public static double maxValue(double[] ary) {
+    return maxValue(ary,0,ary.length);
+  }
+  public static double maxValue(double[] ary, int from, int to) {
+    double result = ary[from];
+    for (int i = from+1; i<to; ++i)
+      if (ary[i]>result) result = ary[i];
     return result;
   }
   public static float maxValue(float[] ary) {
@@ -403,7 +410,7 @@ public class ArrayUtils {
    */
   public static int[] shuffleArray(int[] a, int n, int result[], long seed, int startIndex) {
     if (n<=0) return result;
-    Random random = getDeterRNG(seed);
+    Random random = getRNG(seed);
     if (result == null || result.length != n)
       result = new int[n];
     result[0] = a[startIndex];
@@ -419,7 +426,7 @@ public class ArrayUtils {
 
   public static void shuffleArray(long[] a, long seed) {
     int n = a.length;
-    Random random = getDeterRNG(seed);
+    Random random = getRNG(seed);
     random.nextInt();
     for (int i = 0; i < n; i++) {
       int change = i + random.nextInt(n - i);
@@ -668,6 +675,13 @@ public class ArrayUtils {
       }
     }
     assert i == aIds.length && j == bIds.length;
+  }
+
+  public static String[] select(String[] ary, int[] idxs) {
+    String [] res  = new String[idxs.length];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
   }
 
   // Sort an indirection array (ints) without making zillions of Integers.

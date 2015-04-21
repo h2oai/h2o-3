@@ -3,6 +3,7 @@ package hex.deeplearning;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -38,11 +39,11 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._max_w2 = 10;
     p._train_samples_per_iteration = -1;
     p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
-    p._epochs = 2;
+    p._epochs = 0.2;
     p._force_load_balance = true;
     p._score_training_samples = 0;
     p._score_validation_samples = 0;
-//    p._reproducible = true;
+    p._reproducible = true;
 
     DeepLearning dl = new DeepLearning(p);
     DeepLearningModel mymodel = null;
@@ -83,6 +84,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     // Create reconstruction
     Log.info("Creating full reconstruction.");
     final Frame recon_train = mymodel.score(train);
+    Assert.assertTrue(mymodel.testJavaScoring(train,recon_train,1e-5));
 
     Frame df1 = mymodel.scoreDeepFeatures(train, 0);
     Assert.assertTrue(df1.numCols() == 10);

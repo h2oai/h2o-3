@@ -2,45 +2,42 @@
 #' H2O Data Parsing
 #'
 #' The second phase in the data ingestion step.
-
 #'
 #' Parse the Raw Data produced by the import phase.
-h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
-  if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
-  .key.validate(key)
-  if(!(missing(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
-  if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
-  if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))
+#'
+#' @param data An \linkS4class{H2ORawData} object to be parsed.
+#' @param key (Optional) The hex key assigned to the parsed file.
+#' @param header (Optional) A logical value indicating whether the first row is
+#'        the column header. If missing, H2O will automatically try to detect
+#'        the presence of a header.
+#' @param sep (Optional) The field separator character. Values on each line of
+#'        the file are separated by this character. If \code{sep = ""}, the
+#'        parser will automatically detect the separator.
+#' @param col.names (Optional) A \linkS4class{H2OFrame} object containing a
+#'        single delimited line with the column names for the file.
+#' @param col.types (Optional) A vector specifying the types to attempt to force
+#'        over columns.
+#' @export
+h2o.parseRaw <- function(data, key = "", header=NA, sep = "", col.names=NULL,
+                         col.types=NULL) {
+  parse.params <- h2o.parseSetup(data,key,header,sep,col.names,col.types)
 
-  # Prep srcs: must be of the form [src1,src2,src3,...]
-  srcs <- data@key
-  srcs <- .collapse.char(srcs)
-
-  # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, source_keys = srcs, method = "POST")
-  ncols <- parseSetup$number_columns
-  col.names <- parseSetup$column_names
-  col.types <- parseSetup$column_types
-  na.strings <- parseSetup$na_strings
-  parsedSrcs <- sapply(parseSetup$source_keys, function(asrc) asrc$name)
+  parse.params <- list(
+            source_keys = .collapse.char(parse.params$source_keys),
+            destination_key  = parse.params$destination_key,
+            separator = parse.params$separator,
+            parse_type = parse.params$parse_type,
+            single_quotes = parse.params$single_quotes,
+            check_header = parse.params$check_header,
+            number_columns = parse.params$number_columns,
+            column_names = .collapse.char(parse.params$column_names),
+            column_types = .collapse.char(parse.params$column_types),
+            na_strings = .collapse.char(parse.params$na_strings),
+            chunk_size = parse.params$chunk_size,
+            delete_on_done = parse.params$delete_on_done
+            )
 
   linkToGC <- !nzchar(key)
-  if (linkToGC)
-    key <- .key.make(data@conn, parseSetup$destination_key)
-  parse.params <- list(
-        source_keys = .collapse.char(parsedSrcs),
-        destination_key  = key,
-        separator = parseSetup$separator,
-        parse_type = parseSetup$parse_type,
-        single_quotes = parseSetup$single_quotes,
-        check_header = parseSetup$check_header,
-        number_columns = ncols,
-        column_names = .collapse.char(col.names),
-        column_types = .collapse.char(col.types), 
-        na_strings = .collapse.char(na.strings),
-        chunk_size = parseSetup$chunk_size,
-        delete_on_done = TRUE
-        )
 
   # Perform the parse
   res <- .h2o.__remoteSend(data@conn, .h2o.__PARSE, method = "POST", .params = parse.params)
@@ -48,8 +45,61 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Poll on job
   .h2o.__waitOnJob(data@conn, res$job$key$name)
+
   # Return a new H2OFrame object
   h2o.getFrame(data@conn,key=hex, linkToGC=linkToGC)
+}
+
+#'
+#' Get a parse setup back for the staged data.
+#' @inheritParams h2o.parseRaw
+#' @export
+h2o.parseSetup <- function(data, key = "", header=NA, sep = "", col.names=NULL, col.types=NULL) {
+  if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
+    .key.validate(key)
+    if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
+    if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
+  #  if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))
+
+    parseSetup.params <- list()
+    # Prep srcs: must be of the form [src1,src2,src3,...]
+    parseSetup.params$source_keys = .collapse.char(data@key)
+    if (nchar(sep) > 0) parseSetup.params$separator = sep
+    if(is.na(header) && is.null(col.names)) {
+      parseSetup.params$check_header = 0
+    } else if (!isTRUE(header)) {
+      parseSetup.params$check_header = -1
+    } else parseSetup.params$check_header = 1
+    if (!is.null(col.names)) {
+      if (is(col.names, "H2OFrame")) parseSetup.params$column_names = .collapse.char(colnames(col.names))
+      else parseSetup.params$column_names = .collapse.char(col.names)
+    }
+    if (!is.null(col.types)) parseSetup.params$column_types = .collapse.char(col.types)
+
+    # First go through ParseSetup
+    parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
+    ncols <- parseSetup$number_columns
+    col.names <- parseSetup$column_names
+    col.types <- parseSetup$column_types
+    na.strings <- parseSetup$na_strings
+    parsedSrcs <- sapply(parseSetup$source_keys, function(asrc) asrc$name)
+    linkToGC <- !nzchar(key)
+    if (linkToGC)
+        key <- .key.make(data@conn, parseSetup$destination_key)
+    parse.params <- list(
+          source_keys = parsedSrcs,
+          destination_key  = key,
+          separator = parseSetup$separator,
+          parse_type = parseSetup$parse_type,
+          single_quotes = parseSetup$single_quotes,
+          check_header = parseSetup$check_header,
+          number_columns = ncols,
+          column_names = col.names,
+          column_types = col.types,
+          na_strings = na.strings,
+          chunk_size = parseSetup$chunk_size,
+          delete_on_done = TRUE
+          )
 }
 
 #'
@@ -60,7 +110,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
-  .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows
+  .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", key))$frames[[1]]$rows
 }
 
 #'

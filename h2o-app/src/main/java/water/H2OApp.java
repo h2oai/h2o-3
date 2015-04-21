@@ -8,7 +8,6 @@ import hex.glm.GLM;
 import hex.kmeans.KMeans;
 import hex.naivebayes.NaiveBayes;
 import hex.pca.PCA;
-import hex.quantile.Quantile;
 import hex.tree.drf.DRF;
 import hex.tree.gbm.GBM;
 
@@ -35,31 +34,32 @@ public class H2OApp {
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
-    ModelBuilder.registerModelBuilder("gbm", GBM.class);
+    ModelBuilder.registerModelBuilder("gbm", "Gradient Boosting Machine", GBM.class);
     H2O.registerPOST("/3/ModelBuilders/gbm", GBMBuilderHandler.class, "train",                                                        "Train a GBM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/gbm/parameters", GBMBuilderHandler.class, "validate_parameters",                               "Validate a set of GBM model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("drf", DRF.class);
+    ModelBuilder.registerModelBuilder("drf", "Distributed RF", DRF.class);
     H2O.registerPOST("/3/ModelBuilders/drf", DRFBuilderHandler.class, "train",                                                        "Train a DRF model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/drf/parameters", DRFBuilderHandler.class, "validate_parameters",                               "Validate a set of DRF model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
+    ModelBuilder.registerModelBuilder("kmeans", "K-means", KMeans.class);
     H2O.registerPOST("/3/ModelBuilders/kmeans", KMeansBuilderHandler.class, "train",                                                  "Train a KMeans model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/kmeans/parameters", KMeansBuilderHandler.class, "validate_parameters",                         "Validate a set of KMeans model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("deeplearning", DeepLearning.class);
+    ModelBuilder.registerModelBuilder("deeplearning", "Deep Learning", DeepLearning.class);
     H2O.registerPOST("/3/ModelBuilders/deeplearning", DeepLearningBuilderHandler.class, "train",                                      "Train a Deep Learning model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/deeplearning/parameters", DeepLearningBuilderHandler.class, "validate_parameters",             "Validate a set of Deep Learning model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("glm", GLM.class);
+    ModelBuilder.registerModelBuilder("glm", "Generalized Linear Model", GLM.class);
     H2O.registerPOST("/3/ModelBuilders/glm", GLMBuilderHandler.class, "train",                                                        "Train a GLM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
+    H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model","make a new GLM model based on existing one");
 
-    ModelBuilder.registerModelBuilder("pca", PCA.class);
+    ModelBuilder.registerModelBuilder("pca", "Principal Component Analysis", PCA.class);
     H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/pca/parameters", PCABuilderHandler.class, "validate_parameters",                               "Validate a set of PCA model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("naivebayes", NaiveBayes.class);
+    ModelBuilder.registerModelBuilder("naivebayes", "Naive Bayes", NaiveBayes.class);
     H2O.registerPOST("/3/ModelBuilders/naivebayes", NaiveBayesBuilderHandler.class, "train",                                          "Train a Naive Bayes model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/naivebayes/parameters", NaiveBayesBuilderHandler.class, "validate_parameters",                 "Validate a set of Naive Bayes model builder parameters.");
 
@@ -70,10 +70,6 @@ public class H2OApp {
     // ModelBuilder.registerModelBuilder("example", Example.class);
     // H2O.registerPOST("/3/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
     // H2O.registerPOST("/3/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
-
-    ModelBuilder.registerModelBuilder("quantile", Quantile.class);
-    H2O.registerPOST("/3/ModelBuilders/quantile", QuantileBuilderHandler.class, "train",                                              "Train a Quantile model on the specified Frame.");
-    H2O.registerPOST("/3/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
 
     // ModelBuilder.registerModelBuilder("grep", Grep.class);
     // H2O.registerPOST("/3/ModelBuilders/grep", GrepBuilderHandler.class, "train",                                                      "Search a raw text file for matches");

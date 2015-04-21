@@ -23,8 +23,20 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
   public Model.ModelCategory model_category;
 
+  @API(help="Model summary")
+  TwoDimTableBase model_summary;
+
+  @API(help="Scoring history", direction=API.Direction.OUTPUT)
+  TwoDimTableBase scoring_history;
+
+  @API(help="Training data model metrics", direction=API.Direction.OUTPUT)
+  ModelMetricsBase training_metrics;
+
+  @API(help="Validation data model metrics", direction=API.Direction.OUTPUT)
+  ModelMetricsBase validation_metrics;
+
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
-  public IcedHashMap<String,String> help;
+  public IcedHashMap.IcedHashMapStringString help;
 
   public ModelOutputSchema() {
     super();
@@ -38,7 +50,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   }
 
   private void fillHelp() {
-    this.help = new IcedHashMap<>();
+    this.help = new IcedHashMap.IcedHashMapStringString();
     try {
       Field[] dest_fields = Weaver.getWovenFields(this.getClass());
       for (Field f : dest_fields) {

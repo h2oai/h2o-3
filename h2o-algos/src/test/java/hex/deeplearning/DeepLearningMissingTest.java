@@ -15,6 +15,8 @@ import water.util.Log;
 
 import java.util.*;
 
+import static water.util.FrameUtils.generateNumKeys;
+
 public class DeepLearningMissingTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
@@ -48,7 +50,7 @@ public class DeepLearningMissingTest extends TestUtil {
           data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
           Log.info("FrameSplitting");
           // Create holdout test data on clean data (before adding missing values)
-          FrameSplitter fs = new FrameSplitter(data, new double[]{0.75f});
+          FrameSplitter fs = new FrameSplitter(data, new double[]{0.75f}, generateNumKeys(data._key,2), null);
           H2O.submitTask(fs);//.join();
           Frame[] train_test = fs.getResult();
           train = train_test[0];
@@ -134,7 +136,7 @@ public class DeepLearningMissingTest extends TestUtil {
     }
     Log.info(sb.toString());
     Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip) > sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation));
-    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1);
+    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1.3);
   }
 }
 

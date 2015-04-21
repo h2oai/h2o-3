@@ -1,9 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
-import hex.FrameTask;
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
@@ -11,6 +9,8 @@ import water.fvec.Vec;
 import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
+import water.util.RandomUtils;
+
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -742,14 +742,14 @@ public abstract class Neurons {
           for (int i = 0; i < M; ++i) {
             for (int c = 0; c < numcat; ++c) {
               int j = cats[c];
-              Random rng = new Random(params._seed + i*N + j); //TODO: re-use same pool of random numbers with some hashing
+              Random rng = RandomUtils.getRNG(params._seed + i * N + j); //TODO: re-use same pool of random numbers with some hashing
               float val = 0;
               final float rnd = rng.nextFloat();
               if (rnd < 1. / 6.) val = (float) Math.sqrt(3);
               if (rnd > 5. / 6.) val = -(float) Math.sqrt(3);
               _a.add(i, 1f * val);
             }
-            Random rng = new Random(params._seed + i*N + _dinfo.numStart());
+            Random rng = RandomUtils.getRNG(params._seed + i*N + _dinfo.numStart());
             for (int n = 0; n < nums.length; ++n) {
               float val = 0;
               final float rnd = rng.nextFloat();

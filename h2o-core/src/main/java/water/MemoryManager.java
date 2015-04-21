@@ -117,7 +117,8 @@ abstract public class MemoryManager {
     while( (age-=5000) > 0 ) p = p-(p>>3); // Decay effective POJO by 1/8th every 5sec
     d -= 2*p - bytes; // Allow for the effective POJO, and again to throttle GC rate
     d = Math.max(d,MEM_MAX>>3); // Keep at least 1/8th heap
-    Cleaner.DESIRED = d;
+    if( Cleaner.DESIRED != -1 ) // Set to -1 only for OOM/Cleaner testing.  Never negative normally
+      Cleaner.DESIRED = d;
 
     String m="";
     if( cacheUsage > Cleaner.DESIRED ) {
@@ -196,18 +197,20 @@ abstract public class MemoryManager {
      * Limit to touching global vars in the Boot class.
      */
     @Override public void handleNotification(Notification notification, Object handback) {
-      String notifType = notification.getType();
-      if( notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
-        // Memory used after this FullGC
-        Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
-        Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
-        MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
-        if( Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 1))) { // emergency measure - really low on memory, stop allocations right now!
-          setMemLow();
-        } else // enable new allocations (even if cleaner is still running, we have enough RAM)
-          setMemGood();
-        Cleaner.kick_store_cleaner();
-      }
+      // TODO:  re-enable when this works.
+
+//      String notifType = notification.getType();
+//      if( notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
+//        // Memory used after this FullGC
+//        Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
+//        Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
+//        MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
+//        if( Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 1))) { // emergency measure - really low on memory, stop allocations right now!
+//          setMemLow();
+//        } else // enable new allocations (even if cleaner is still running, we have enough RAM)
+//          setMemGood();
+//        Cleaner.kick_store_cleaner();
+//      }
     }
   }
 

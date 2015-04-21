@@ -4,6 +4,7 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.IcedBitSet;
+import water.util.MathUtils;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -12,7 +13,7 @@ import water.util.IcedBitSet;
  *  @author Cliff Click
  */
 public class DRealHistogram extends DHistogram<DRealHistogram> {
-  private float _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
+  private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
   public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
     super(name,nbins,isInt,min,maxEx,nelems);
@@ -31,21 +32,21 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
 
   // Big allocation of arrays
   @Override void init0() {
-    _sums = MemoryManager.malloc4f(_nbin);
-    _ssqs = MemoryManager.malloc4f(_nbin);
+    _sums = MemoryManager.malloc8d(_nbin);
+    _ssqs = MemoryManager.malloc8d(_nbin);
   }
 
   // Add one row to a bin found via simple linear interpolation.
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
-  @Override void incr0( int b, float y ) {
-    AtomicUtils.FloatArray.add(_sums,b,y);
-    AtomicUtils.FloatArray.add(_ssqs,b,y*y);
+  @Override void incr0( int b, double y ) {
+    AtomicUtils.DoubleArray.add(_sums,b,y);
+    AtomicUtils.DoubleArray.add(_ssqs,b,y*y);
   }
   // Same, except square done by caller
-  void incr1( int b, float y, float yy ) {
-    AtomicUtils.FloatArray.add(_sums,b,y);
-    AtomicUtils.FloatArray.add(_ssqs,b,yy);
+  void incr1( int b, double y, double yy ) {
+    AtomicUtils.DoubleArray.add(_sums,b,y);
+    AtomicUtils.DoubleArray.add(_ssqs,b,yy);
   }
 
   // Merge two equal histograms together.
@@ -66,8 +67,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // Histogram arrays used for splitting, these are either the original bins
     // (for an ordered predictor), or sorted by the mean response (for an
     // unordered predictor, i.e. categorical predictor).
-    float[] sums = _sums;
-    float[] ssqs = _ssqs;
+    double[] sums = _sums;
+    double[] ssqs = _ssqs;
     int  [] bins = _bins;
     int idxs[] = null;          // and a reverse index mapping
 
@@ -87,8 +88,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         });
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
-      sums = MemoryManager.malloc4f(nbins);
-      ssqs = MemoryManager.malloc4f(nbins);
+      sums = MemoryManager.malloc8d(nbins);
+      ssqs = MemoryManager.malloc8d(nbins);
       bins = MemoryManager.malloc4 (nbins);
       for( int i=0; i<nbins; i++ ) {
         sums[i] = _sums[idxs[i]];
@@ -159,6 +160,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       //                    = ssqs - sum^2/N
       double se0 = ssqs0[b] - sums0[b]*sums0[b]/ns0[b];
       double se1 = ssqs1[b] - sums1[b]*sums1[b]/ns1[b];
+      if( se0 < 0 ) se0 = 0;    // Roundoff error; sometimes goes negative
+      if( se1 < 0 ) se1 = 0;    // Roundoff error; sometimes goes negative
       if( (se0+se1 < best_se0+best_se1) || // Strictly less error?
           // Or tied MSE, then pick split towards middle bins
           (se0+se1 == best_se0+best_se1 &&
@@ -179,6 +182,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
         double si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'
         double sx =    ssqs [b]  -sums[b]*sums[b]/bins[b]; // Just 'b'
+        if( si < 0 ) si = 0;    // Roundoff error; sometimes goes negative
+        if( sx < 0 ) sx = 0;    // Roundoff error; sometimes goes negative
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
           best_se0 = si;   best_se1 = sx;
           best = b;        equal = 1; // Equality check
@@ -192,22 +197,23 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( idxs != null ) {        // We sorted bins; need to build a bitset
       int min=Integer.MAX_VALUE;// Compute lower bound and span for bitset
       int max=Integer.MIN_VALUE;
-      for( int i=0; i<best; i++ ) { 
+      for( int i=best; i<nbins; i++ ) {
         min=Math.min(min,idxs[i]);
         max=Math.max(max,idxs[i]);
       }
-      bs = new IcedBitSet(max-min+1,min);
-      for( int i=0; i<best; i++ ) bs.set(idxs[i]);
-      equal = (byte)(bs.max() < 32 ? 2 : 3); // Flag for bitset split; also check max size
+      bs = new IcedBitSet(max-min+1,min); // Bitset with just enough span to cover the interesting bits
+      for( int i=best; i<nbins; i++ ) bs.set(idxs[i]); // Reverse the index then set bits
+      equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
     if( best==0 ) return null;  // No place to split
     double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
-    long  n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long  n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
-    double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
-    double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
+    long   n0 = equal != 1 ?   ns0[best] :   ns0[best]+  ns1[best+1];
+    long   n1 = equal != 1 ?   ns1[best] :  bins[best]              ;
+    double p0 = equal != 1 ? sums0[best] : sums0[best]+sums1[best+1];
+    double p1 = equal != 1 ? sums1[best] :  sums[best]              ;
+    if( MathUtils.equalsWithinOneSmallUlp((float)(p0/n0),(float)(p1/n1)) ) return null; // No difference in predictions, which are all at 1 float ULP
     return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 

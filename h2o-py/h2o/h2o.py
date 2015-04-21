@@ -3,11 +3,14 @@ This module implements the communication REST layer for the python <-> H2O conne
 """
 
 import os
+import os.path
 import re
 import urllib
+import json
 from connection import H2OConnection
 from job import H2OJob
-from frame import H2OFrame
+from frame import H2OFrame, H2OVec
+from expr import Expr
 import h2o_model_builder
 
 
@@ -87,7 +90,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
-    first_line_is_header = 0
+    first_line_is_header = setup["check_header"] 
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -149,6 +152,46 @@ def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
 
+def ipy_notebook_exec(path,save_and_norun=False):
+  notebook = json.load(open(path))
+  program = ''
+  for block in ipy_blocks(notebook):
+    prev_line_was_def_stmnt = False
+    for line in ipy_lines(block):
+      if "h2o.init" not in line:
+        if prev_line_was_def_stmnt:
+          program += ipy_get_leading_spaces(line) + 'import h2o\n'
+          prev_line_was_def_stmnt = False
+        program += line if '\n' in line else line + '\n'
+        if "def " in line: prev_line_was_def_stmnt = True
+  if save_and_norun:
+    with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
+      f.write(program)
+  else:
+    exec(program)
+
+def ipy_blocks(notebook):
+  if 'worksheets' in notebook.keys():
+    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+  elif 'cells' in notebook.keys():
+    return notebook['cells']
+  else:
+    raise NotImplementedError, "ipython notebook cell/block json format not handled"
+
+def ipy_lines(block):
+  if 'source' in block.keys():
+    return block['source']
+  elif 'input' in block.keys():
+    return block['input']
+  else:
+    raise NotImplementedError, "ipython notebook source/line json format not handled"
+
+def ipy_get_leading_spaces(line):
+  spaces = ''
+  for c in line:
+    if c in [' ', '\t']: spaces += c
+    else: return spaces
+
 def remove(key):
   """
   Remove key from H2O.
@@ -156,8 +199,10 @@ def remove(key):
   :param key: The key pointing to the object to be removed.
   :return: Void
   """
-  H2OConnection.delete("Remove", key=key)
+  if key is None:
+    raise ValueError("remove with no key is not supported, for your protection")
 
+  H2OConnection.delete("DKV/" + key)
 
 def rapids(expr):
   """
@@ -166,8 +211,10 @@ def rapids(expr):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
-
+  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
+  if result['error'] is not None:
+    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
+  return result
 
 def frame(key):
   """
@@ -177,6 +224,54 @@ def frame(key):
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + key)
+
+def frame_summary(key):
+  """
+  Retrieve metadata and summary information for a key that points to a Frame/Vec
+  :param key: A pointer to a Frame/Vec in H2O
+  :return: Meta and summary info on the frame
+  """
+  # frames_meta = H2OConnection.get_json("Frames/" + key)
+  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  return frame_summary
+
+# Non-Mutating cbind
+def cbind(left,right):
+  """
+  :param left: H2OFrame or H2OVec
+  :param right: H2OFrame or H2OVec
+  :return: new H2OFrame with left|right cbinded
+  """
+  # Check left and right data types
+  vecs = []
+  if isinstance(left,H2OFrame) and isinstance(right,H2OFrame):
+    vecs = left._vecs + right._vecs
+  elif isinstance(left,H2OFrame) and isinstance(right,H2OVec):
+    [vecs.append(vec) for vec in left._vecs]
+    vecs.append(right)
+  elif isinstance(left,H2OVec) and isinstance(right,H2OVec):
+    vecs = [left, right]
+  elif isinstance(left,H2OVec) and isinstance(right,H2OFrame):
+    vecs.append(left)
+    [vecs.append(vec) for vec in right._vecs]
+  else:
+    raise ValueError("left and right data must be H2OVec or H2OFrame")
+  names = [vec.name() for vec in vecs]
+
+  fr = H2OFrame.py_tmp_key()
+  cbind = "(= !" + fr + " (cbind %"
+  cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
+  rapids(cbind)
+
+  j = frame(fr)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_keys']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+  result.setNames(names)
+  return result
 
 
 def init(ip="localhost", port=54321):
@@ -190,6 +285,10 @@ def init(ip="localhost", port=54321):
   H2OConnection(ip=ip, port=port)
   return None
 
+def export_file(frame,path,force=False):
+  fr = H2OFrame.send_frame(frame)
+  f = "true" if force else "false"
+  H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
 
 def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):
@@ -226,6 +325,9 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 
+def group_by(frame,cols,aggregates):
+  return frame.group_by(cols,aggregates)
+
 def network_test():
   res = H2OConnection.get_json(url_suffix="NetworkTest")
   res["table"].show()
@@ -252,3 +354,89 @@ def locate(path):
 
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
+
+def as_list(data):
+  """
+  If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
+  environment an H2O Frame is represented as a list of lists (each element in the broader list represents a row).
+  Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
+  100 rows. This function is only intended to be used within the testing framework. More robust functionality must
+  be constructed for production conversion between H2O and python data types.
+  :return: List of list (Rows x Columns).
+  """
+  if isinstance(data, Expr):
+    x = data.eager()
+    if data.is_local():
+      return x
+    j = frame(data._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OVec):
+    x = data._expr.eager()
+    if data._expr.is_local():
+      return x
+    j = frame(data._expr._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OFrame):
+    vec_as_list = [as_list(v) for v in data._vecs]
+    frm = []
+    for row in range(len(vec_as_list[0])):
+      tmp = []
+      for col in range(len(vec_as_list)):
+        tmp.append(vec_as_list[col][row][0])
+      frm.append(tmp)
+    return frm
+
+
+def cos(data)     : return _simple_un_math_op("cos", data)
+def sin(data)     : return _simple_un_math_op("sin", data)
+def tan(data)     : return _simple_un_math_op("tan", data)
+def acos(data)    : return _simple_un_math_op("acos", data)
+def asin(data)    : return _simple_un_math_op("asin", data)
+def atan(data)    : return _simple_un_math_op("atan", data)
+def cosh(data)    : return _simple_un_math_op("cosh", data)
+def sinh(data)    : return _simple_un_math_op("sinh", data)
+def tanh(data)    : return _simple_un_math_op("tanh", data)
+def acosh(data)   : return _simple_un_math_op("acosh", data)
+def asinh(data)   : return _simple_un_math_op("asinh", data)
+def atanh(data)   : return _simple_un_math_op("atanh", data)
+def cospi(data)   : return _simple_un_math_op("cospi", data)
+def sinpi(data)   : return _simple_un_math_op("sinpi", data)
+def tanpi(data)   : return _simple_un_math_op("tanpi", data)
+def abs(data)     : return _simple_un_math_op("abs", data)
+def sign(data)    : return _simple_un_math_op("sign", data)
+def sqrt(data)    : return _simple_un_math_op("sqrt", data)
+def trunc(data)   : return _simple_un_math_op("trunc", data)
+def ceil(data)    : return _simple_un_math_op("ceiling", data)
+def floor(data)   : return _simple_un_math_op("floor", data)
+def log(data)     : return _simple_un_math_op("log", data)
+def log10(data)   : return _simple_un_math_op("log10", data)
+def log1p(data)   : return _simple_un_math_op("log1p", data)
+def log2(data)    : return _simple_un_math_op("log2", data)
+def exp(data)     : return _simple_un_math_op("exp", data)
+def expm1(data)   : return _simple_un_math_op("expm1", data)
+def gamma(data)   : return _simple_un_math_op("gamma", data)
+def lgamma(data)  : return _simple_un_math_op("lgamma", data)
+def digamma(data) : return _simple_un_math_op("digamma", data)
+def trigamma(data): return _simple_un_math_op("trigamma", data)
+
+def _simple_un_math_op(op, data):
+  """
+  Element-wise math operations on H2OFrame, H2OVec, and Expr objects.
+
+  :param op: the math operation
+  :param data: the H2OFrame, H2OVec, or Expr object to operate on.
+  :return: Expr'd data
+  """
+  if   isinstance(data, H2OFrame): return Expr(op, Expr(data.send_frame(), length=data.nrow()))
+  elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
+  elif isinstance(data, Expr)    : return Expr(op, data)
+  else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
+
+# generic reducers
+def min(data)   : return data.min()
+def max(data)   : return data.max()
+def sum(data)   : return data.sum()
+def sd(data)    : return data.sd()
+def var(data)   : return data.var()
+def mean(data)  : return data.mean()
+def median(data): return data.median()

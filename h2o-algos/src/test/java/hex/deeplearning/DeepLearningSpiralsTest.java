@@ -3,6 +3,7 @@ package hex.deeplearning;
 import hex.ModelMetricsBinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -34,7 +35,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         {
           DeepLearningParameters p = new DeepLearningParameters();
           p._seed = 0xbabe;
-          p._epochs = 10000;
+          p._epochs = 500;
           p._hidden = new int[]{100};
           p._sparse = sparse;
           p._col_major = col_major;
@@ -83,7 +84,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           DeepLearningModel mymodel = DKV.getGet(dest);
           Frame pred = mymodel.score(frame);
           ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
-          double error = mm._aucdata.err();
+          double error = mm._auc.defaultErr();
           Log.info("Error: " + error);
           if (error >= 0.025) {
             Assert.fail("Classification error is not less than 0.025, but " + error + ".");

@@ -1,6 +1,5 @@
 package hex;
 
-import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
 import water.Scope;
@@ -9,38 +8,19 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
-public class ConfusionMatrix extends Iced {
-  public TwoDimTable table;
-  public final long[][] confusion_matrix; // [actual][predicted]
-  public final double[] prediction_error_by_class;
-  public double prediction_error;
-  public String[] domain;
+import java.util.Arrays;
 
-//  public enum ErrMetric {
-//    MAXC, SUMC, TOTAL;
-//
-//    public double computeErr(ConfusionMatrix cm) {
-//      switch( this ) {
-//      case MAXC : return ArrayUtils.maxValue(cm.classErr());
-//      case SUMC : return ArrayUtils.sum(cm.classErr());
-//      case TOTAL: return cm.err();
-//      default   : throw water.H2O.unimpl();
-//      }
-//    }
-//  }
+public class ConfusionMatrix extends Iced {
+  private TwoDimTable _table;
+  public final long[][] _cm; // [actual][predicted]
+  public final String[] _domain;
 
   /**
    * Constructor for Confusion Matrix
    * @param value 2D square matrix with co-occurrence counts for actual vs predicted class membership
    * @param domain class labels (unified domain between actual and predicted class labels)
    */
-  public ConfusionMatrix(long[][] value, String[] domain) {
-    confusion_matrix = value;
-    prediction_error_by_class = classErr();
-    prediction_error = err();
-    this.domain = domain;
-    table = toTable();
-  }
+  public ConfusionMatrix(long[][] value, String[] domain) { _cm = value; _domain = domain; }
 
   /** Build the CM data from the actuals and predictions, using the default
    *  threshold.  Print to Log.info if the number of classes is below the
@@ -78,44 +58,24 @@ public class ConfusionMatrix extends Iced {
   }
 
 
-  public void add(int i, int j) {
-    confusion_matrix[i][j]++;
-  }
+  public void add(int i, int j) { _cm[i][j]++; }
 
-  public double[] classErr() {
-    double[] res = new double[confusion_matrix.length];
-    for( int i = 0; i < res.length; ++i )
-      res[i] = classErr(i);
-    return res;
-  }
+  public final int size() { return _cm.length; }
 
-  public final int size() {
-    return confusion_matrix.length;
-  }
-
-  public void reComputeErrors(){
-    for(int i = 0; i < confusion_matrix.length; ++i)
-      prediction_error_by_class[i] = classErr(i);
-    prediction_error = err();
-  }
-  public final long classErrCount(int c) {
-    long s = ArrayUtils.sum(confusion_matrix[c]);
-    return s - confusion_matrix[c][c];
-  }
   public final double classErr(int c) {
-    long s = ArrayUtils.sum(confusion_matrix[c]);
+    long s = ArrayUtils.sum(_cm[c]);
     if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer
-    return (double) (s - confusion_matrix[c][c]) / s;
+    return (double) (s - _cm[c][c]) / s;
   }
   public long totalRows() {
     long n = 0;
-    for (long[] a_arr : confusion_matrix)
+    for (long[] a_arr : _cm)
       n += ArrayUtils.sum(a_arr);
     return n;
   }
 
   public void add(ConfusionMatrix other) {
-    ArrayUtils.add(confusion_matrix, other.confusion_matrix);
+    ArrayUtils.add(_cm, other._cm);
   }
 
   /**
@@ -124,15 +84,14 @@ public class ConfusionMatrix extends Iced {
   public double err() {
     long n = totalRows();
     long err = n;
-    for( int d = 0; d < confusion_matrix.length; ++d )
-      err -= confusion_matrix[d][d];
+    for( int d = 0; d < _cm.length; ++d )
+      err -= _cm[d][d];
     return (double) err / n;
   }
   public long errCount() {
-    long n = totalRows();
-    long err = n;
-    for( int d = 0; d < confusion_matrix.length; ++d )
-      err -= confusion_matrix[d][d];
+    long err = totalRows();
+    for( int d = 0; d < _cm.length; ++d )
+      err -= _cm[d][d];
     return err;
   }
   /**
@@ -145,8 +104,8 @@ public class ConfusionMatrix extends Iced {
    */
   public double specificity() {
     if(!isBinary())throw new UnsupportedOperationException("specificity is only implemented for 2 class problems.");
-    double tn = confusion_matrix[0][0];
-    double fp = confusion_matrix[0][1];
+    double tn = _cm[0][0];
+    double fp = _cm[0][1];
     return tn / (tn + fp);
   }
   /**
@@ -155,8 +114,8 @@ public class ConfusionMatrix extends Iced {
    */
   public double recall() {
     if(!isBinary())throw new UnsupportedOperationException("recall is only implemented for 2 class problems.");
-    double tp = confusion_matrix[1][1];
-    double fn = confusion_matrix[1][0];
+    double tp = _cm[1][1];
+    double fn = _cm[1][0];
     return tp / (tp + fn);
   }
   /**
@@ -165,8 +124,8 @@ public class ConfusionMatrix extends Iced {
    */
   public double precision() {
     if(!isBinary())throw new UnsupportedOperationException("precision is only implemented for 2 class problems.");
-    double tp = confusion_matrix[1][1];
-    double fp = confusion_matrix[0][1];
+    double tp = _cm[1][1];
+    double fp = _cm[0][1];
     return tp / (tp + fp);
   }
   /**
@@ -177,16 +136,15 @@ public class ConfusionMatrix extends Iced {
    */
   public double mcc() {
     if(!isBinary())throw new UnsupportedOperationException("precision is only implemented for 2 class problems.");
-    double tn = confusion_matrix[0][0];
-    double fp = confusion_matrix[0][1];
-    double tp = confusion_matrix[1][1];
-    double fn = confusion_matrix[1][0];
-    double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
-    return mcc;
+    double tn = _cm[0][0];
+    double fp = _cm[0][1];
+    double tp = _cm[1][1];
+    double fn = _cm[1][0];
+    return (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
   }
   /**
    * The maximum per-class error
-   * @return max(classErr(i))
+   * @return max[classErr(i)]
    */
   public double max_per_class_error() {
     int n = nclasses();
@@ -197,7 +155,7 @@ public class ConfusionMatrix extends Iced {
     return res;
   }
 
-  public final int nclasses(){return confusion_matrix == null?0: confusion_matrix.length;}
+  public final int nclasses(){return _cm == null?0: _cm.length;}
   public final boolean isBinary(){return nclasses() == 2;}
 
   /**
@@ -232,8 +190,8 @@ public class ConfusionMatrix extends Iced {
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    for( long[] r : confusion_matrix)
-      sb.append(Arrays.toString(r) + "\n");
+    for( long[] r : _cm)
+      sb.append(Arrays.toString(r)).append('\n');
     return sb.toString();
   }
 
@@ -247,42 +205,37 @@ public class ConfusionMatrix extends Iced {
     return ss;
   }
 
-  public String toASCII() {
-    return (table=toTable()) != null ? table.toString() : "";
-  }
+  public String toASCII() { return table() == null ? "" : _table.toString(); }
 
-  /**
-   * Convert this ConfusionMatrix into a fully annotated TwoDimTable
-   * @return TwoDimTable
-   */
-  TwoDimTable toTable() {
-    if (confusion_matrix == null || domain == null) return null;
-    for (int i=0; i< confusion_matrix.length; ++i) assert(confusion_matrix.length == confusion_matrix[i].length);
+  /** Convert this ConfusionMatrix into a fully annotated TwoDimTable
+   *  @return TwoDimTable  */
+  public TwoDimTable table() { return _table == null ? (_table=toTable()) : _table; }
+
+  // Do the work making a TwoDimTable
+  private TwoDimTable toTable() {
+    if (_cm == null || _domain == null) return null;
+    for( long cm[] : _cm ) assert(_cm.length == cm.length);
     // Sum up predicted & actuals
-    long acts [] = new long[confusion_matrix.length];
-    long preds[] = new long[confusion_matrix[0].length];
-    for( int a=0; a< confusion_matrix.length; a++ ) {
+    long acts [] = new long[_cm.length];
+    long preds[] = new long[_cm[0].length];
+    for( int a=0; a< _cm.length; a++ ) {
       long sum=0;
-      for( int p=0; p< confusion_matrix[a].length; p++ ) {
-        sum += confusion_matrix[a][p];
-        preds[p] += confusion_matrix[a][p];
+      for( int p=0; p< _cm[a].length; p++ ) {
+        sum += _cm[a][p];
+        preds[p] += _cm[a][p];
       }
       acts[a] = sum;
     }
-    String adomain[] = createConfusionMatrixHeader(acts , domain);
-    String pdomain[] = createConfusionMatrixHeader(preds, domain);
+    String adomain[] = createConfusionMatrixHeader(acts , _domain);
+    String pdomain[] = createConfusionMatrixHeader(preds, _domain);
     assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
 
-    String[] rowHeader = new String[adomain.length+1];
-    for (int i=0; i<adomain.length; ++i)
-      rowHeader[i] = adomain[i];
+    String[] rowHeader = Arrays.copyOf(adomain,adomain.length+1);
     rowHeader[adomain.length] = "Totals";
 
-    String[] colHeader = new String[pdomain.length+2];
-    for (int i=0; i<pdomain.length; ++i)
-      colHeader[i] = pdomain[i];
+    String[] colHeader = Arrays.copyOf(pdomain,pdomain.length+2);
     colHeader[colHeader.length-2] = "Error";
-    colHeader[colHeader.length-1] = "";
+    colHeader[colHeader.length-1] = "Rate";
 
     String[] colType = new String[colHeader.length];
     String[] colFormat = new String[colHeader.length];
@@ -297,13 +250,13 @@ public class ConfusionMatrix extends Iced {
     // pass 1: compute width of last column
     long terr = 0;
     int width = 0;
-    for (int a = 0; a < confusion_matrix.length; a++) {
+    for (int a = 0; a < _cm.length; a++) {
       if (adomain[a] == null) continue;
       long correct = 0;
       for (int p = 0; p < pdomain.length; p++) {
         if (pdomain[p] == null) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
-        if (onDiag) correct = confusion_matrix[a][p];
+        if (onDiag) correct = _cm[a][p];
       }
       long err = acts[a] - correct;
       terr += err;
@@ -316,20 +269,19 @@ public class ConfusionMatrix extends Iced {
     // set format width
     colFormat[colFormat.length-1] = "= %" + width + "s";
 
-    TwoDimTable table = new TwoDimTable("Confusion Matrix", rowHeader, colHeader, colType, colFormat, "Act/Pred");
+    TwoDimTable table = new TwoDimTable("Confusion Matrix", null, rowHeader, colHeader, colType, colFormat, "Act/Pred");
 
     // Main CM Body
-    for (int a = 0; a < confusion_matrix.length; a++) {
+    for (int a = 0; a < _cm.length; a++) {
       if (adomain[a] == null) continue;
       long correct = 0;
       for (int p = 0; p < pdomain.length; p++) {
         if (pdomain[p] == null) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
-        if (onDiag) correct = confusion_matrix[a][p];
-        table.set(a, p, confusion_matrix[a][p]);
+        if (onDiag) correct = _cm[a][p];
+        table.set(a, p, _cm[a][p]);
       }
       long err = acts[a] - correct;
-      terr += err;
       table.set(a, pdomain.length, (double) err / acts[a]);
       table.set(a, pdomain.length + 1, String.format("%,d / %,d", err, acts[a]));
     }
@@ -339,7 +291,6 @@ public class ConfusionMatrix extends Iced {
       if (pdomain[p] == null) continue;
       table.set(adomain.length, p, preds[p]);
     }
-    for (long n : acts) nrows += n;
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
     table.set(adomain.length, pdomain.length + 1, String.format("%,d / %,d", terr, nrows));
     return table;

@@ -5,15 +5,13 @@ import h2o
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
 
 def ecologyGBM(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
     #Log.info("Importing ecology_model.csv data...\n")
-    ecology_train = h2o.import_frame(path=h2o_home_dir + "smalldata/gbm_test/ecology_model.csv")
+    ecology_train = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
     #Log.info("Summary of the ecology data from h2o: \n")
     #ecology.summary()
 
@@ -57,7 +55,7 @@ def ecologyGBM(ip,port):
 
     ecology_train["Angaus"] = ecology_train["Angaus"].asfactor()
     # Train H2O GBM Model:
-    gbm_h2o = h2o.gbm(x=ecology_train[2:], y=ecology_train["Angaus"], ntrees=ntrees, learn_rate=learn_rate, max_depth=max_depth, min_rows=min_rows, loss="bernoulli")
+    gbm_h2o = h2o.gbm(x=ecology_train[2:], y=ecology_train["Angaus"], ntrees=ntrees, learn_rate=learn_rate, max_depth=max_depth, min_rows=min_rows, distribution="bernoulli")
 
     # Train scikit GBM Model:
     gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learn_rate, n_estimators=ntrees, max_depth=max_depth, min_samples_leaf=min_rows, max_features=None)

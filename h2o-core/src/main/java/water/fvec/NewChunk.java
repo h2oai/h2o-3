@@ -202,7 +202,7 @@ public class NewChunk extends Chunk {
         assert _xs==null;
         for( int i = 0; i < sparseLen(); ++i) if( Double.isNaN(_ds[i]) ) nas++; else if( _ds[i]!=0 ) nzs++;
       } else {
-        if( _ls != null ) // Longs and enums?
+        if( _ls != null && _ls.length > 0) // Longs and enums?
           for( int i=0; i< sparseLen(); i++ )
             if( isNA2(i) ) nas++;
             else {
@@ -336,6 +336,16 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
 
+  public void addStr(Chunk c, long row) {
+    if( c.isNA_abs(row) ) addNA();
+    else addStr(c.atStr_abs(new ValueString(), row));
+  }
+
+  public void addStr(Chunk c, int row) {
+    if( c.isNA(row) ) addNA();
+    else addStr(c.atStr(new ValueString(), row));
+  }
+
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
     if( _ls==null || _ds== null || sparseLen() >= _ls.length )
@@ -384,7 +394,7 @@ public class NewChunk extends Chunk {
       cancel_sparse();
       nc.cancel_sparse();
     }
-    if( _ds != null ) throw H2O.unimpl();
+    if( _ds != null ) throw H2O.fail();
     while( sparseLen() + nc.sparseLen() >= _xs.length )
       _xs = MemoryManager.arrayCopyOf(_xs,_xs.length<<1);
     _ls = MemoryManager.arrayCopyOf(_ls,_xs.length);
@@ -736,30 +746,33 @@ public class NewChunk extends Chunk {
     // If the data is UUIDs there's not much compression going on
     if( _ds != null && _ls != null )
       return chunkUUID();
-
+    // cut out the easy all NaNs case
+    if(_naCnt == _len) return new C0DChunk(Double.NaN,_len);
     // If the data was set8 as doubles, we do a quick check to see if it's
     // plain longs.  If not, we give up and use doubles.
     if( _ds != null ) {
-      int i;
+      int i; // check if we can flip to ints
       for (i=0; i < sparseLen(); ++i)
         if (!Double.isNaN(_ds[i]) && (double) (long) _ds[i] != _ds[i])
           break;
       boolean isInteger = i == sparseLen();
-
-      boolean isConstant = (sparse && sparseLen() ==0);
-      if (!isConstant) //not yet declared constant - check every entry
-      for (i=0; i < sparseLen(); ++i)
-        if (_ds[i] != _ds[0])
-          break;
-      isConstant = i == sparseLen();
-
-      if (!isInteger) {
-        if (isConstant) return new C0DChunk(_ds[0], _len);
-        if (sparse) return new CXDChunk(_len, sparseLen(), 8, bufD(8));
-        else return chunkD();
+      boolean isConstant = !sparse || sparseLen() == 0;
+      double constVal = 0;
+      if (!sparse) { // check the values, sparse with some nonzeros can not be constant - has 0s and (at least 1) nonzero
+        double d = _ds[0];
+        constVal = _ds[0];
+        for(int j = 1; j < _len; ++j)
+          if(_ds[j] != d) {
+            isConstant = false;
+            break;
+          }
       }
-
-      _ls = new long[_ds.length]; // Else flip to longs
+      if(isConstant)
+        return isInteger? new C0LChunk((long)constVal, _len): new C0DChunk(constVal,_len);
+      if(!isInteger)
+        return  sparse? new CXDChunk(_len, sparseLen(), 8, bufD(8)): chunkD();
+      // Else flip to longs
+      _ls = new long[_ds.length];
       _xs = new int [_ds.length];
       double [] ds = _ds;
       _ds = null;
@@ -804,16 +817,14 @@ public class NewChunk extends Chunk {
       double d = l*PrettyPrint.pow10(x);
       if( d < min ) { min = d; llo=l; xlo=x; }
       if( d > max ) { max = d; lhi=l; xhi=x; }
-      floatOverflow = l < Integer.MIN_VALUE+1 && l > Integer.MAX_VALUE;
+      floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
     }
-
-    if(_len != sparseLen()){ // sparse?  then compare vs implied 0s
+    if(sparse){ // sparse?  then compare vs implied 0s
       if( min > 0 ) { min = 0; llo=0; xlo=0; }
       if( max < 0 ) { max = 0; lhi=0; xhi=0; }
       xmin = Math.min(xmin,0);
     }
-
     // Constant column?
     if( _naCnt==0 && (min==max)) {
       if (llo == lhi && xlo == 0 && xhi == 0)
@@ -879,10 +890,10 @@ public class NewChunk extends Chunk {
     if( fpoint ) {
       if( (int)lemin == lemin && (int)lemax == lemax ) {
         if(leRange < 255) // Fits in scaled biased byte?
-          return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
+          return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),lemin,PrettyPrint.pow10(xmin));
         if(leRange < 65535) { // we use signed 2B short, add -32k to the bias!
           long bias = 32767 + lemin;
-          return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),(int)bias,PrettyPrint.pow10(xmin));
+          return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),bias,PrettyPrint.pow10(xmin));
         }
       }
       if(leRange < 4294967295l) {
@@ -899,14 +910,14 @@ public class NewChunk extends Chunk {
     if( leRange < 255 ) {    // Span fits in a byte?
       if(0 <= min && max < 255 ) // Span fits in an unbiased byte?
         return new C1Chunk( bufX(0,0,C1Chunk._OFF,0));
-      return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
+      return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),lemin,PrettyPrint.pow10i(xmin));
     }
 
     // Compress column into a short
     if( leRange < 65535 ) {               // Span fits in a biased short?
       if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
         return new C2Chunk( bufX(0,0,C2Chunk._OFF,1));
-      int bias = (int)(lemin-(Short.MIN_VALUE+1));
+      long bias = (lemin-(Short.MIN_VALUE+1));
       return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),bias,PrettyPrint.pow10i(xmin));
     }
     // Compress column into ints
@@ -953,7 +964,7 @@ public class NewChunk extends Chunk {
           UnsafeUtils.set8(buf, off+ridsz, lval);
           break;
         default:
-          throw H2O.unimpl();
+          throw H2O.fail();
       }
     }
     assert off==buf.length;
@@ -983,7 +994,7 @@ public class NewChunk extends Chunk {
           UnsafeUtils.set8d(buf, off + ridsz, dval);
           break;
         default:
-          throw H2O.unimpl();
+          throw H2O.fail();
       }
     }
     assert off==buf.length;
@@ -1124,6 +1135,11 @@ public class NewChunk extends Chunk {
   @Override boolean set_impl(int i, float f) {  return set_impl(i,(double)f); }
 
   @Override boolean set_impl(int i, String str) {
+    if(_is == null && _len > 0) {
+      assert sparseLen() == 0;
+      alloc_str_indices(_len);
+      Arrays.fill(_is,-1);
+    }
     if(sparseLen() != _len){ // sparse?
       int idx = Arrays.binarySearch(_id,0, sparseLen(),i);
       if(idx >= 0)i = idx;

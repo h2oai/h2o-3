@@ -18,11 +18,11 @@ m <- h2o.glm(x = 3:8, y = 2, family = "binomial", training_frame = hex)
 pred <- predict(m, hex)
 
 # res <- .h2o.__remoteSend(conn, .h2o.__PAGE_CONFUSION, actual = hex@key, vactual = "CAPSULE", predict = pred@key, vpredict = "predict")
-res <- h2o.performance(m, hex)
+res <- h2o.performance(m)
 
 
-print(res$cm$table)
+print(h2o.confusionMatrix(res))
 
-h2o.confusionMatrix(hex$CAPSULE, pred$predict)
+h2o.confusionMatrix(m, hex)
 
 PASS_BANNER()

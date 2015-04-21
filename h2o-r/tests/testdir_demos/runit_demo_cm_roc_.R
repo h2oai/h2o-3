@@ -34,7 +34,7 @@ myY <- "IsDepDelayed"
 
 #gbm
 air.gbm <- h2o.gbm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
-                   loss = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
+                   distribution = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
 print(air.gbm@model)
 print(air.gbm@model$variableImportances[1:10,])
 
@@ -58,9 +58,9 @@ perf.glm <- h2o.performance(air.glm, air.test)
 print(perf.glm)
 
 #Building confusion matrix for test set
-CM.gbm <- h2o.confusionMatrices(perf.gbm, 0.5)
+CM.gbm <- h2o.confusionMatrix(perf.gbm)
 print(CM.gbm)
-CM.glm <- h2o.confusionMatrices(perf.glm, 0.5)
+CM.glm <- h2o.confusionMatrix(perf.glm)
 print(CM.glm)
 
 #Plot ROC for test set

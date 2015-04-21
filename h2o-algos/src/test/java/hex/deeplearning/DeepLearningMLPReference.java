@@ -1,7 +1,5 @@
 package hex.deeplearning;
 
-import static water.util.ModelUtils.getPrediction;
-
 import org.junit.Ignore;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
@@ -720,7 +718,7 @@ public class DeepLearningMLPReference {
         //int maxIndex = MaxIndex(yValues); // which cell in yValues has largest value?
 
         // convert to float and do the same tie-breaking as H2O
-        float[] preds = new float[yValues.length+1];
+        double[] preds = new double[yValues.length+1];
         for (int j=0; j<yValues.length; ++j) preds[j+1] = (float)yValues[j];
         preds[0] = hex.genmodel.GenModel.getPrediction(preds, xValues);
 

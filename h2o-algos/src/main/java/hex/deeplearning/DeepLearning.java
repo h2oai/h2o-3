@@ -5,9 +5,10 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
-import hex.schemas.DeepLearningV2;
+import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
@@ -46,7 +47,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     super("DeepLearning",parms); init(false);
   }
 
-  public ModelBuilderSchema schema() { return new DeepLearningV2(); }
+  public ModelBuilderSchema schema() { return new DeepLearningV3(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
@@ -72,7 +73,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         _parms.read_lock_frames(DeepLearning.this);
         init(true);
         if (error_count() > 0)
-          throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+          throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         buildModel();
         done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
@@ -136,7 +137,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
         new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
-        if (_parms._n_folds != 0)
+        if (_parms.getNumFolds() != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
         _parms._autoencoder = previous.model_info().get_params()._autoencoder;
         if (!_parms._autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
@@ -185,9 +186,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
               }
             }
           }
-          if (A._n_folds != 0) {
+          if (A.getNumFolds() != 0) {
             Log.warn("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
-            A._n_folds = 0;
+
+            H2O.unimpl("writing to n_folds field needs to be uncommented");
+            // A._n_folds = 0;
           }
           cp.update(self());
         } finally {
@@ -200,16 +203,18 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       List<Key> keep = new ArrayList<>();
       keep.add(dest());
       if (cp._output._model_metrics.length != 0) keep.add(cp._output._model_metrics[cp._output._model_metrics.length-1]);
-      for (Key k : Arrays.asList(cp._output.weights)) {
-        keep.add(k);
-        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
-          keep.add(vk._key);
+      if (cp._output.weights != null && cp._output.biases != null) {
+        for (Key k : Arrays.asList(cp._output.weights)) {
+          keep.add(k);
+          for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+            keep.add(vk._key);
+          }
         }
-      }
-      for (Key k : Arrays.asList(cp._output.biases)) {
-        keep.add(k);
-        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
-          keep.add(vk._key);
+        for (Key k : Arrays.asList(cp._output.biases)) {
+          keep.add(k);
+          for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+            keep.add(vk._key);
+          }
         }
       }
       Scope.exit(keep.toArray(new Key[0]));
@@ -311,7 +316,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
 
         // replace the model with the best model so far (if it's better)
-        if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms._n_folds == 0) {
+        if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             Log.info("Setting the model to be the best model so far (based on scoring history).");
@@ -326,10 +331,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           }
         }
 
-        Log.info("==============================================================================================");
+        Log.info("==============================================================================================================================================================================");
         Log.info("Finished training the Deep Learning model.");
         Log.info(model);
-        Log.info("==============================================================================================");
+        Log.info("==============================================================================================================================================================================");
       }
       catch(Throwable ex) {
         model = DKV.get(dest()).get();

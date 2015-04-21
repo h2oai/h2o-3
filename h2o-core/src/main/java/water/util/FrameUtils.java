@@ -36,13 +36,20 @@ public class FrameUtils {
     return ParseDataset.parse(okey, inKeys);
   }
 
+  /** Parse given set of URIs and produce a frame's key representing output.
+   *
+   * @param okey key for ouput frame. Can be null
+   * @param uris array of URI (file://, hdfs://, s3n://, s3://, ...) to parse
+   * @return a frame which is saved into DKV under okey
+   * @throws IOException in case of parse error.
+   */
   public static Frame parseFrame(Key okey, URI ...uris) throws IOException {
     if (uris == null || uris.length == 0) {
       throw new IllegalArgumentException("List of uris is empty!");
     }
+    if(okey == null) okey = Key.make(uris[0].toString());
     Key[] inKeys = new Key[uris.length];
     for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
-    if(okey == null) okey = Key.make(uris[0].toString());
     return ParseDataset.parse(okey, inKeys);
   }
 
@@ -120,6 +127,14 @@ public class FrameUtils {
     return ks;
   }
 
+  public static double sparseRatio(Frame fr) {
+    double reg = 1.0/fr.numCols();
+    double res = 0;
+    for(Vec v:fr.vecs())
+      res += v.sparseRatio();
+    return res * reg;
+  }
+
   /**
    * Helper to insert missing values into a Frame
    */
@@ -143,7 +158,7 @@ public class FrameUtils {
       protected void compute2() {
         new MRTask() {
           @Override public void map (Chunk[]cs){
-            final Random rng = new Random();
+            final Random rng = RandomUtils.getRNG(0);
             for (int c = 0; c < cs.length; c++) {
               for (int r = 0; r < cs[c]._len; r++) {
                 rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));

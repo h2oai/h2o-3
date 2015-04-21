@@ -14,7 +14,7 @@ abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends I
   def skipNA = true
 
   // Take all columns; they must be of type MapType
-  def doAll( fr : DataFrame ) : this.type = {
+  def doAll( fr : H2OFrame ) : this.type = {
     val jc = implicitly[ClassTag[MapType]].runtimeClass
     if( jc.isArray ) { // Array check: all Vecs are compatible with MapType's base type
       jc.getComponentType match {

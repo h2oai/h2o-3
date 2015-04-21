@@ -1,5 +1,9 @@
 package water;
 
+import water.api.CloudV3;
+import water.api.H2OErrorV3;
+import water.api.TutorialsV3;
+import water.api.TypeaheadV3;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -28,16 +32,28 @@ public class TypeMap {
     water.fvec.Vec.VectorGroup.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
-    water.api.CloudV1.class.getName(),
-    water.api.CloudV1.NodeV1.class.getName(),
+    CloudV3.class.getName(),
+    CloudV3.NodeV1.class.getName(),
     water.H2OError.class.getName(),
-    water.api.H2OErrorV1.class.getName(),
+    H2OErrorV3.class.getName(),
     water.util.IcedHashMap.class.getName(),
+    water.util.IcedHashMap.IcedHashMapStringString.class.getName(),
+    water.util.IcedHashMap.IcedHashMapStringObject.class.getName(),
+    hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
     water.api.Schema.class.getName(),
     water.api.Schema.Meta.class.getName(),
-    water.api.TutorialsV1.class.getName(),
-    water.api.TypeaheadV2.class.getName(),    // Allow typeahead without locking
+    TutorialsV3.class.getName(),
+    TypeaheadV3.class.getName(),    // Allow typeahead without locking
     water.Key.class.getName(),
+
+    water.api.AboutHandler.AboutV3.class.getName(),
+    water.api.AboutHandler.AboutEntryV3.class.getName(),
+    water.api.NodePersistentStorageV3.class.getName(),
+    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
+    water.api.DocsV3.class.getName(),
+    water.api.DocsBase.class.getName(),
+    water.api.RouteV3.class.getName(),
+    water.api.RouteBase.class.getName(),
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
@@ -132,7 +148,7 @@ public class TypeMap {
   // smaller type ids, and these will work fine in either old or new arrays.
   synchronized static private int install( String className, int id ) {
     assert !_check_no_locking : "Locking cloud to assign typeid to "+className;
-    Paxos.lockCloud();
+    Paxos.lockCloud(className);
     if( id == -1 ) {            // Leader requesting a new ID
       Integer i = MAP.get(className);
       if( i != null ) return i; // Check again under lock for already having an ID

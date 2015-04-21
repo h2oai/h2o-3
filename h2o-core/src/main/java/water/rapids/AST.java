@@ -1,10 +1,17 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
@@ -13,9 +20,11 @@ abstract public class AST extends Iced {
   String[] _arg_names;
   AST[] _asts;
   AST parse_impl(Exec e) { throw H2O.fail("Missing parse_impl for "+this.getClass()); }
+  abstract String opStr();
   abstract void exec(Env e);
   abstract String value();
   abstract int type();
+  abstract AST make();
   public int numChildren() { return _asts.length; } // Must "apply" each arg, then put the results into ASTOp/UDF
 
   /**
@@ -89,7 +98,8 @@ abstract public class AST extends Iced {
         e.put(((ASTId) this)._id, Env.ID, "");
         id.exec(e);
       } else {
-        throw H2O.fail("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.");
+        throw new H2OIllegalArgumentException("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.",
+                "Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'." + " AST: " + this);
       }
 
 
@@ -115,7 +125,7 @@ abstract public class AST extends Iced {
             this instanceof ASTDelete )
       { this.exec(e); }
 
-    else { throw H2O.fail("Unknown AST: " + this.getClass());}
+    else { throw H2O.fail("Unknown AST class: " + this.getClass());}
     return e;
   }
 
@@ -128,11 +138,22 @@ abstract public class AST extends Iced {
 }
 
 class ASTId extends AST {
+  String opStr() {
+    switch( _type ) {
+      case '$': return "$";
+      case '!': return "!";
+      case '&': return "&";
+      default:
+        throw new IllegalArgumentException("No such type for ID: " + _type);
+    }
+  }
   final String _id;
   final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
-  ASTId parse_impl(Exec E) {
-    return new ASTId(_type, E.parseID());
+  AST parse_impl(Exec E) {
+    String id = E.isQuoted(E.peek()) ? E.parseString(E.getQuote()) : E.parseID(); // allows for quoted ID here...
+    AST ast = Env.staticLookup(new ASTId(_type, id));
+    return ast;
   }
   @Override public String toString() { return _type+_id; }
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
@@ -142,9 +163,11 @@ class ASTId extends AST {
   boolean isGlobalSet() { return _type == '!'; }
   boolean isLookup() { return _type == '%'; }
   boolean isValid() { return isLocalSet() || isGlobalSet() || isLookup(); }
+  @Override ASTId make() { return new ASTId(_type, ""); }
 }
 
 class ASTKey extends AST {
+  String opStr() {throw H2O.unimpl("No such opStr for ASTKey."); }
   final String _key;
   ASTKey(String key) { _key = key; }
   ASTKey parse_impl(Exec E) {
@@ -155,9 +178,11 @@ class ASTKey extends AST {
   @Override void exec(Env e) { (new ASTFrame(_key)).exec(e); }
   @Override int type () { return Env.NULL; }
   @Override String value() { return _key; }
+  @Override ASTKey make() { return new ASTKey(""); }
 }
 
 class ASTFrame extends AST {
+  String opStr() {return "%";}
   final String _key;
   final Frame _fr;
   boolean isFrame;
@@ -167,9 +192,10 @@ class ASTFrame extends AST {
   ASTFrame(String key) {
     Key k = Key.make(key);
     Keyed val = DKV.getGet(k);
-    if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    if (val == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
-    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
+    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame(Key.make(), null, new Vec[]{(Vec)val});
+    if( !isFrame && _fr._key!=null && DKV.get(_fr._key)==null ) DKV.put(_fr._key,_fr);
     _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
@@ -179,16 +205,19 @@ class ASTFrame extends AST {
       if (e.isGlobal()) e._global._frames.put(_key, _fr);
       else e._local._frames.put(_key, _fr);
     }
+    if( !isFrame ) e._tmpFrames.add(_fr);
     e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
   boolean isGlobal() { return _g; }
+  @Override ASTFrame make() { throw H2O.unimpl(); }
 }
 
 class ASTNum extends AST {
   final double _d;
   ASTNum(double d) { _d = d; }
+  String opStr() {return "#";}
   ASTNum parse_impl(Exec E) {
     try {
       return new ASTNum(Double.valueOf(E.parseID()));
@@ -202,24 +231,38 @@ class ASTNum extends AST {
   @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
   double dbl() { return _d; }
+  @Override ASTNum make() { return new ASTNum(0); }
 }
 
 /**
  *  ASTSpan parses phrases like 1:10.
  */
 class ASTSpan extends AST {
+  String opStr() { return ":"; }
   final long _min;       final long _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
+  ASTSpan() {_min=0;_max=0;_ast_max=null;_ast_min=null;}
   ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d;
-    if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    if( _min <= 0 && _max <= 0) {
+      if (_max > _min)
+        throw new IllegalArgumentException("max>min: All negative, incorrect order.");
+    } else {
+        if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    }
   }
   ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;
-    if (_min > _max) throw new IllegalArgumentException("min > max for `:` operator.");
+    if( _min < 0 && _max < 0) {
+      if (_max > _min)
+        throw new IllegalArgumentException("max>min: All negative, incorrect order.");
+    } else {
+      if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    }
   }
   ASTSpan parse_impl(Exec E) {
     AST l = E.parse();
-    AST r = E.skipWS().parse();
+    AST r = E.parse();
+    E.eatEnd(); // eat ending ')'
     return new ASTSpan((ASTNum)l, (ASTNum)r);
   }
   boolean contains(long a) {
@@ -233,6 +276,7 @@ class ASTSpan extends AST {
   @Override String value() { return null; }
   @Override int type() { return Env.SPAN; }
   @Override public String toString() { return _min + ":" + _max; }
+  long length() { return _max - _min + 1; }
 
   long[] toArray() {
     long[] res = new long[(int)_max - (int)_min + 1];
@@ -240,7 +284,7 @@ class ASTSpan extends AST {
     for (int i = 0; i < res.length; ++i) res[i] = min++;
     return res;
   }
-  boolean all_neg() { return _min < 0; }
+  boolean all_neg() { return _min<0||_max<0; }
   boolean all_pos() { return !all_neg(); }
   boolean isNum() { return _min == _max; }
   long toNum() { return _min; }
@@ -252,17 +296,23 @@ class ASTSpan extends AST {
 //  @Override public ASTSpan read_impl(AutoBuffer ab) {
 //    return new ASTSpan(ab.get8(), ab.get8());
 //  }
+  @Override ASTSpan make() {return new ASTSpan(new ASTNum(0),new ASTNum(0)); }
 }
 
 class ASTSeries extends AST {
+  String opStr() { return "{";}
   final long[] _idxs;
   final ASTSpan[] _spans;
+  final double[] _d;
   boolean _isCol;
   boolean _isRow;
   int[] _order; // a sequence of 0s and 1s. 0 -> span; 1 -> index
 
+  ASTSeries(long[] idxs, double[] d, ASTSpan[] spans) {
+    _idxs=idxs; _d=d; _spans=spans;
+  }
   ASTSeries(long[] idxs, ASTSpan[] spans) {
-    _idxs = idxs;
+    _idxs = idxs; _d=null;
     _spans = spans;
   }
 
@@ -325,7 +375,7 @@ class ASTSeries extends AST {
 
   @Override
   void exec(Env e) {
-    ValSeries v = new ValSeries(_idxs, _spans);
+    ValSeries v = new ValSeries(_idxs, _d, _spans);
     v._order = _order;
     v.setSlice(_isRow, _isCol);
     e.push(v);
@@ -397,20 +447,21 @@ class ASTSeries extends AST {
 //    series._isRow = !isCol;
 //    return series;
 //  }
+  @Override ASTSeries make() { return new ASTSeries(null, null); }
 }
 
 class ASTStatement extends AST {
-
+  @Override ASTStatement make() { return new ASTStatement(); }
+  String opStr() {return ","; }
   // must parse all statements: {(ast);(ast);(ast);...;(ast)}
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
 
     // an ASTStatement is an array of ASTs. May have ASTStatements within ASTStatements.
-    while (E.hasNextStmnt()) {
-      AST ast = E.skipWS().parse();
-      ast_ary.add(ast);
-      E.skipEOS();  // skip EOS == End of Statement
-    }
+    while( !E.isEnd() )
+      ast_ary.add(E.parse());
+
+    E.eatEnd(); // eat the ending ')'
 
     ASTStatement res = (ASTStatement) clone();
     res._asts = ast_ary.toArray(new AST[ast_ary.size()]);
@@ -418,6 +469,7 @@ class ASTStatement extends AST {
   }
   @Override void exec(Env env) {
     ArrayList<Frame> cleanup = new ArrayList<>();
+    if( _asts.length==0 ) { env.push(new ValNull()); return; }
     for( int i=0; i<_asts.length-1; i++ ) {
       if (_asts[i] instanceof ASTReturn) {
        _asts[i].treeWalk(env);
@@ -447,7 +499,8 @@ class ASTReturn extends ASTStatement {
 
   @Override ASTReturn parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    AST stmnt = E.skipWS().parse();
+    AST stmnt = E.parse();
+    E.eatEnd(); // eat the ending ')'
     ASTReturn res = (ASTReturn) clone();
     res._stmnt = stmnt;
     return res;
@@ -466,14 +519,14 @@ class ASTIf extends ASTStatement {
   // (if pred body)
   @Override ASTIf parse_impl(Exec E) {
     // parse the predicate
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST pred = E.parse();
-    ASTStatement statement = super.parse_impl(E.skipWS());
+    ASTStatement statement = super.parse_impl(E);
     ArrayList<AST> ast_list = new ArrayList<>();
     for (int i = 0; i < statement._asts.length; ++i) {
       if (statement._asts[i] instanceof ASTElse) _else = (ASTElse)statement._asts[i];
       else ast_list.add(statement._asts[i]);
     }
+    E.eatEnd(); // eat the ending ')'
     ASTIf res = (ASTIf) clone();
     res._pred = pred;
     res._asts = ast_list.toArray(new AST[ast_list.size()]);
@@ -498,7 +551,8 @@ class ASTElse extends ASTStatement {
   ASTElse() {}
   @Override ASTElse parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    ASTStatement statements = super.parse_impl(E.skipWS());
+    ASTStatement statements = super.parse_impl(E);
+    E.eatEnd(); // eat the ending ')'
     ASTElse res = (ASTElse)clone();
     res._asts = statements._asts;
     return res;
@@ -570,6 +624,8 @@ class ASTWhile extends ASTStatement {
 //}
 
 class ASTString extends AST {
+  @Override ASTString make() { return new ASTString(_eq,""); }
+  String opStr() { return String.valueOf(_eq); }
   final String _s;
   final char _eq;
   ASTString(char eq, String s) { _eq = eq; _s = s; }
@@ -585,7 +641,10 @@ class ASTString extends AST {
 }
 
 class ASTNull extends AST {
+  @Override ASTNull make() { return new ASTNull(); }
+  String opStr() { throw H2O.unimpl();}
   ASTNull() {}
+  ASTNull parse_impl(Exec E) { return this; }
   @Override void exec(Env e) { e.push(new ValNull());}
   @Override String value() { return null; }
   @Override int type() { return Env.NULL; }
@@ -615,23 +674,46 @@ class ASTNull extends AST {
  *       If the vec is numeric, then the RHS must also be numeric (if enum, then produce NAs or throw IAE).
  */
 class ASTAssign extends AST {
+  @Override ASTAssign make() { return new ASTAssign(); }
+  String opStr() { return "="; }
   ASTAssign parse_impl(Exec E) {
-    E.skipWS();
     AST l;
-    if (E.isSpecial(E.peek())) {
+
+    // LHS parsing
+    // LHS can be one of six things:
+    //   !ID, &ID, "ID" / 'ID', %ID, ID, or (...)
+    // ! means do a dkv put -- essentially keep the result global for all the world
+    // & means do a local put -- do not keep result around
+    // " and ' mean parse and do local put (semantically an '&')
+    // nothing on the ID implies & semantics
+    // % on the LHS is semantically equivalent to & -- does not overwrite the global with the same ID
+    // ( implies that the LHS is a new AST -- result locality depends on the AST
+    if (E.isSpecial(E.peek())) {  // LHS is NOT an AST... no slice assignment
       boolean putkv = E.peek() == '!';
-      if (putkv) E._x++; // skip the !
+      E._x++; // skip the special char...
+      boolean skip1 = (E.peek() == '\'' || E.peek() == '\"');  // skip one more at the end if quoted ID...
+      if( skip1 ) E._x++; // skip beginning quote
       l = new ASTId(putkv ? '!' : '&', E.parseID()); // parse the ID on the left, or could be a column, or entire frame, or a row
-    } else l = E.parse();
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
+      if( skip1 ) E._x++; // skip ending quote
+    } else {
+      if( E.peek() == '(' ) l = E.parse();  // thing on the LHS is an AST => slot assign [<-
+      else l = new ASTId('&', E.parseID()); // else got plain old ID, assume local put
+    }
+
+    // RHS parsing
+    if (!E.hasNext()) throw new IllegalArgumentException("Missing RHS in ASTAssign.");
+    AST r = E.parse();   // parse double, String, or Frame on the right
+
+    E.eatEnd(); // eat ending ')'
+
+    // clone and return
     ASTAssign res = (ASTAssign)clone();
     res._asts = new AST[]{l,r};
     return res;
   }
 
-  @Override int type () { throw H2O.fail(); }
-  @Override String value() { throw H2O.fail(); }
+  @Override int type () { return -1; }
+  @Override String value() { throw H2O.unimpl("No value() for ASTAssign."); }
   private static boolean in(String s, String[] matches) { return Arrays.asList(matches).contains(s); }
 
   private static void replaceRow(Chunk[] chks, int row, double d0, String s0, long[] cols) {
@@ -822,7 +904,7 @@ class ASTAssign extends AST {
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
-        if (id.isGlobalSet()) vecs = f.deepSlice(null,null).vecs();
+        if (id.isGlobalSet()) vecs = f.deepCopy(null).vecs();
         Frame fr = new Frame(k, f.names(), vecs);
         if (id.isGlobalSet()) DKV.put(k, fr);
         e._locked.add(k);
@@ -1021,21 +1103,53 @@ class ASTAssign extends AST {
 
 // AST Slice
 class ASTSlice extends AST {
+  @Override ASTSlice make() { return new ASTSlice(); }
+  String opStr() { return "["; }
   ASTSlice() {}
 
   ASTSlice parse_impl(Exec E) {
-    AST hex = E.parse();
-    AST rows = E.skipWS().parse();
-    if (rows instanceof ASTString) rows = new ASTNull();
-    if (rows instanceof ASTSpan) ((ASTSpan) rows).setSlice(true, false);
-    if (rows instanceof ASTSeries) ((ASTSeries) rows).setSlice(true, false);
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    AST cols = E.skipWS().parse();
-    cols = (cols instanceof ASTString && cols.value().equals("null")) ? new ASTNull() : cols;
-    if (cols instanceof ASTSpan) ((ASTSpan) cols).setSlice(false, true);
-    if (cols instanceof ASTSeries) ((ASTSeries) cols).setSlice(false, true);
+    // ([ %fr rows cols)
+
+    // parse the frame, could be an AST...
+    AST fr = E.parse();
+
+    // parse the rows
+    // Five possibilties: AST, Vec/Frame, String, Span, Series
+    // AST and Vec/Frame must produce single column of booleans.
+    // String -- Automatically assume it's null (could also be "wakka wakka", or any string, but mapped automatically to null)
+    //           null means "all"
+    // Span   -- A span is a contiguous range of whole numbers specified like this (: #lo #hi)
+    // List   -- A list...
+    AST rows = E.parse();
+    switch( rows.type() ) {
+      case Env.STR: rows = new ASTNull();                        break;
+      case Env.SPAN: ((ASTSpan) rows).setSlice(true, false);     break;
+      case Env.SERIES: ((ASTSeries) rows).setSlice(true, false); break;
+      case Env.LIST: rows = new ASTSeries(((ASTLongList)rows)._l,null,((ASTLongList)rows)._spans); ((ASTSeries)rows).setSlice(true,false); break;
+      case Env.NULL: rows = new ASTNull(); break;
+      default: //pass thru
+    }
+
+    if (!E.hasNext())
+      throw new IllegalArgumentException("Slice expected 3 arguments (frame, rows, cols), but got 2");
+
+    // parse the cols
+    AST cols = E.parse();
+    if( !(cols instanceof ASTStringList) ) {
+      switch( cols.type() ) {
+        case Env.STR: cols = cols.value().equals("null") ? new ASTNull() : cols; break;
+        case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
+        case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
+        case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        case Env.NULL: rows = new ASTNull(); break;
+        default: // pass thru
+      }
+    }
+
+    E.eatEnd(); // eat ending ')'
+
     ASTSlice res = (ASTSlice) clone();
-    res._asts = new AST[]{hex,rows,cols};
+    res._asts = new AST[]{fr,rows,cols};
     return res;
   }
 
@@ -1050,6 +1164,16 @@ class ASTSlice extends AST {
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
     Val rows = env.pop();
+
+    if( cols_type == Env.LIST ) {
+      assert cols instanceof ValStringList : "Expected ValStringList. Got: " + cols.getClass();
+      String[] colnames = ((ValStringList)cols)._s;
+      long[] colz = new long[colnames.length];
+      for( int i=0;i<colz.length;++i) colz[i] = env.peekAry().find(colnames[i]);
+      cols = new ValSeries(colz,null);
+      ((ValSeries)cols).setSlice(false,true);
+    }
+
     if( cols_type == Env.STR ) {
       Frame ary = env.peekAry();
       int idx = ary.find(((ValStr)cols)._s);
@@ -1069,7 +1193,23 @@ class ASTSlice extends AST {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
         } else env.push(new ValNum(ary.vecs()[col].at(row)));
       } catch (ArrayIndexOutOfBoundsException e) {
-        if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
+        if( col < 0 ) {
+          int rm_col = -1*col - 1;  // 1 -> 0 idx...
+          // really want to do all columns BUT this one... so not a single scalar result => recurse
+          long[] columns = new long[ary.numCols()-1];
+          int v=0;
+          for(int i=0;i<columns.length;++i) {
+            if (i == rm_col) v++;
+            columns[i] = v++;
+          }
+          ValSeries vs = new ValSeries(columns,null);
+          vs.setSlice(false,true);  // make it a column selector...
+          env.pushAry(ary);
+          env.push(rows);
+          env.push(vs);
+          this.exec(env);
+          return;
+        }
         if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
       }
     } else {
@@ -1078,7 +1218,7 @@ class ASTSlice extends AST {
       // Eval cols before rows (R's eval order).
       Frame fr2,ary = env.peekAry(); // Get without popping
       if (rows_type == Env.ARY) env.addRef(((ValFrame)rows)._fr);
-      Object colSelect = select(ary.numCols(), cols, env, true);
+      Object colSelect = select(ary.numCols(),cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
       if( rowSelect == null && (colSelect==null || colSelect instanceof long[]) ) {
         if( colSelect == null ) {
@@ -1110,7 +1250,7 @@ class ASTSlice extends AST {
   // Error to mix negatives & positive.  Negative list is sorted, with dups
   // removed.  Positive list can have dups (which replicates cols) and is
   // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
-  static Object select( long len, Val v, Env env, boolean isCol) {
+  static Object select( final long len, Val v, Env env, boolean isCol) {
     if( v.type() == Env.NULL ) return null; // Trivial "all"
     env.push(v);
     long cols[];
@@ -1142,7 +1282,7 @@ class ASTSlice extends AST {
         ? new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(-i)) cs.set((int) (i - cs.start() - 1), 0); // -1 for indexing
+                if (a0.contains(-i)) cs.set((int) (i - cs.start()), 0);
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {
@@ -1183,15 +1323,40 @@ class ASTSlice extends AST {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+AtoS(ary.names()));
     Vec vec = ary.anyVec();
-    // Check for a matching column of bools.
-    if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
-      return ary;    // Boolean vector selection.
-    // Convert single vector to a list of longs selecting rows
-    if(ary.numRows() > 10000000) throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
-    cols = MemoryManager.malloc8((int)ary.numRows());
-    for(int i = 0; i < cols.length; ++i){
-      if(vec.isNA(i))throw new IllegalArgumentException("Can not use NA as index!");
-      cols[i] = vec.at8(i);
+
+    // got a frame as a column selector... it must be a boolean selector.
+    if( isCol ) {
+      if( vec.min() != 0 && vec.max() != 1 && !vec.isInt() )
+        throw new IllegalArgumentException("Vec selector must be a single columns of 1s and 0s.");
+      // passed in len is ncols of the frame to slice
+      final ASTGroupBy.IcedNBHS<IcedInt> hs = new ASTGroupBy.IcedNBHS();
+      // MRTask to fill cols in parallel
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          int start = (int)c.start();
+          for( int i=0;i<c._len;++i ) {
+            if( c.at8(i)==1 && len>(i+start) ) hs.add(new IcedInt(start+i));
+          }
+        }
+      }.doAll(ary);
+      cols = new long[(int)Math.min(hs.size(), len)];
+      Iterator<IcedInt> it = hs.iterator();
+      int j=0;
+      while( j<cols.length && it.hasNext() )
+        cols[j++] = it.next()._val;
+    } else {
+
+      // Check for a matching column of bools.
+      if (ary.numRows() == len && vec.min() >= 0 && vec.max() <= 1 && vec.isInt())
+        return ary;    // Boolean vector selection.
+      // Convert single vector to a list of longs selecting rows
+      if (ary.numRows() > 10000000)
+        throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
+      cols = MemoryManager.malloc8((int) ary.numRows());
+      for (int i = 0; i < cols.length; ++i) {
+        if (vec.isNA(i)) throw new IllegalArgumentException("Can not use NA as index!");
+        cols[i] = vec.at8(i);
+      }
     }
     return cols;
   }
@@ -1216,9 +1381,13 @@ class ASTSlice extends AST {
 
 //-----------------------------------------------------------------------------
 class ASTDelete extends AST {
+  @Override ASTDelete make() { return new ASTDelete(); }
+  String opStr() { return "del"; }
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
-    AST cols = E.skipWS().parse();
+    AST cols = null;
+    if( !E.isEnd() ) cols = E.parse();
+    E.eatEnd(); // eat ending ')'
     ASTDelete res = (ASTDelete) clone();
     res._asts = new AST[]{ary,cols};
     return res;
@@ -1229,9 +1398,229 @@ class ASTDelete extends AST {
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
     AST ast = _asts[0];
-    String s = ast instanceof ASTFrame ? ((ASTFrame)ast)._key :
-      (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
+    String s = ast instanceof ASTFrame
+            ? ((ASTFrame)ast)._key
+            : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
     DKV.remove(Key.make(s));
     env.push(new ValNum(0));
+  }
+}
+
+
+// typed lists
+// lists look like this
+// (list a1 a2 a3 ...)
+
+abstract class ASTList extends AST {
+  @Override void exec(Env e) { throw H2O.unimpl("Illegal: cannot do anything with " + getClass()); }
+  @Override String value() { return null; }
+  @Override int type() { return Env.LIST; }
+  ASTSpan[] _spans;
+  ArrayList<ASTSpan> spans;
+  ASTList() { spans=new ArrayList<>(); }
+}
+
+class ASTAry extends ASTList {
+  AST[] _a;
+  @Override String opStr() { return "list"; }
+  @Override ASTDoubleList make() { return new ASTDoubleList(); }
+  ASTAry parse_impl(Exec E) {
+    ArrayList<AST> asts = new ArrayList<>();
+    while( !E.isEnd() ) asts.add(E.parse());
+    E.eatEnd();
+    _a = asts.toArray(new AST[asts.size()]);
+    ASTAry res = (ASTAry) clone();
+    res._a = _a;
+    return res;
+  }
+}
+
+class ASTDoubleList extends ASTList {
+  ASTDoubleList() {super();}
+  double[] _d;
+  @Override String opStr() { return "dlist"; }
+  @Override ASTDoubleList make() { return new ASTDoubleList(); }
+  ASTDoubleList parse_impl(Exec E) {
+    ArrayList<Double> dbls = new ArrayList<>();
+    while( !E.isEnd() ) {
+      AST a = E.parse();
+      if( a instanceof ASTNum ) dbls.add(((ASTNum)a)._d);
+      else if( a instanceof ASTSpan ) spans.add((ASTSpan)a);
+    }
+    E.eatEnd();
+    _d = new double[dbls.size()];
+    int i=0;
+    for( double d:dbls ) _d[i++] = d;
+    if( spans.size()!=0 ) _spans = spans.toArray(new ASTSpan[spans.size()]);
+
+    ASTDoubleList res = (ASTDoubleList) clone();
+    res._d = _d; //probably useless
+    res._spans = _spans;
+    return res;
+  }
+  @Override public Env treeWalk(Env e) { e.push(new ValDoubleList(_d,_spans)); return e; }
+}
+
+class ASTLongList extends ASTList {
+  ASTLongList() {super();}
+  long[] _l;
+  @Override String opStr() { return "llist"; }
+  @Override ASTLongList make() { return new ASTLongList(); }
+  ASTLongList parse_impl(Exec E) {
+    ArrayList<Long> longs = new ArrayList<>();
+    while( !E.isEnd() ) {
+      AST a = E.parse();
+      if( a instanceof ASTNum ) longs.add((long)((ASTNum)a)._d);
+      else if( a instanceof ASTSpan ) spans.add((ASTSpan)a);
+    }
+    E.eatEnd();
+    _l = new long[longs.size()];
+    int i=0;
+    for( long l:longs ) _l[i++] = l;
+    if( spans.size()!=0 ) _spans = spans.toArray(new ASTSpan[spans.size()]);
+
+    ASTLongList res = (ASTLongList) clone();
+    res._l = _l; //probably useless
+    res._spans = _spans;
+    return res;
+  }
+  @Override public Env treeWalk(Env e) { e.push(new ValLongList(_l,_spans)); return e; }
+}
+
+class ASTStringList extends ASTList {
+  String[] _s;
+  @Override String opStr() { return "slist"; }
+  @Override ASTStringList make() { return new ASTStringList(); }
+  ASTStringList parse_impl(Exec E) {
+    ArrayList<String> strs = new ArrayList<>();
+    while( !E.isEnd() ) {// read until we hit a ")"
+      AST a = E.parse();
+      if( a instanceof ASTNull ) strs.add(null);
+      else if( a instanceof ASTString ) strs.add(((ASTString) a)._s);
+      else if( a instanceof ASTFrame  ) strs.add(((ASTFrame)a)._key);  // got screwed by the st00pid aststring hack for keys w/ spaces
+    }
+    E.eatEnd();
+    _s = new String[strs.size()];
+    int i=0;
+    for( String s:strs ) _s[i++] = s;
+
+    ASTStringList res = (ASTStringList) clone();
+    res._s = _s; //probably useless
+    return res;
+  }
+  @Override public Env treeWalk(Env e) { e.push(new ValStringList(_s)); return e; }
+}
+
+class ASTShortList extends ASTList {
+  short[] _s;
+  @Override String opStr() { return "shortlist"; }
+  @Override ASTShortList make() { return new ASTShortList(); }
+  ASTShortList parse_impl(Exec E) {
+    ArrayList<Short> shorts = new ArrayList<>();
+    while( !E.isEnd() ) // read until we hit a ")"
+      shorts.add((short)E.nextDbl());
+    E.eatEnd();
+    _s = new short[shorts.size()];
+    int i=0;
+    for( short s:shorts ) _s[i++] = s;
+
+    ASTShortList res = (ASTShortList) clone();
+    res._s = _s; //probably useless
+    return res;
+  }
+}
+
+class ASTFloatList extends ASTList {
+  float[] _f;
+  @Override String opStr() { return "flist"; }
+  @Override ASTFloatList make() { return new ASTFloatList(); }
+  ASTFloatList parse_impl(Exec E) {
+    ArrayList<Float> flts = new ArrayList<>();
+    while( !E.isEnd() ) // read until we hit a ")"
+      flts.add((float)E.nextDbl());
+    E.eatEnd();
+    _f = new float[flts.size()];
+    int i=0;
+    for( float f:flts ) _f[i++] = f;
+
+    ASTFloatList res = (ASTFloatList) clone();
+    res._f = _f; //probably useless
+    return res;
+  }
+}
+
+class ASTIntList extends ASTList {
+  int[] _i;
+  @Override String opStr() { return "ilist"; }
+  @Override ASTIntList make() { return new ASTIntList(); }
+  ASTIntList parse_impl(Exec E) {
+    ArrayList<Integer> ints = new ArrayList<>();
+    while( !E.isEnd() ) // read until we hit a ")"
+      ints.add((int)E.nextDbl());
+    E.eatEnd();
+    _i = new int[ints.size()];
+    int j=0;
+    for( int i:ints ) _i[j++] = i;
+
+    ASTIntList res = (ASTIntList) clone();
+    res._i = _i; //probably useless
+    return res;
+  }
+}
+
+class ASTBoolList extends ASTList {
+  boolean[] _b;
+  @Override String opStr() { return "blist"; }
+  @Override ASTBoolList make() { return new ASTBoolList(); }
+  ASTBoolList parse_impl(Exec E) {
+    ArrayList<Boolean> bools = new ArrayList<>();
+    while( !E.isEnd() ) // read until we hit a ")"
+      bools.add((int)E.nextDbl()==1?true:false);
+    E.eatEnd();
+    _b = new boolean[bools.size()];
+    int j=0;
+    for( boolean b:bools ) _b[j++] = b;
+
+    ASTBoolList res = (ASTBoolList) clone();
+    res._b = _b; //probably useless
+    return res;
+  }
+}
+
+class ASTByteList extends ASTList {
+  byte[] _b;
+  @Override String opStr() { return "bytelist"; }
+  @Override ASTByteList make() { return new ASTByteList(); }
+  ASTByteList parse_impl(Exec E) {
+    ArrayList<Byte> bytes = new ArrayList<>();
+    while( !E.isEnd() ) // read until we hit a ")"
+      bytes.add((byte)E.nextDbl());
+    E.eatEnd();
+    _b = new byte[bytes.size()];
+    int j=0;
+    for( byte b:bytes ) _b[j++] = b;
+
+    ASTByteList res = (ASTByteList) clone();
+    res._b = _b; //probably useless
+    return res;
+  }
+}
+
+class ASTCharList extends ASTList {
+  char[] _c;
+  @Override String opStr() { return "clist"; }
+  @Override ASTCharList make() { return new ASTCharList(); }
+  ASTCharList parse_impl(Exec E) {
+    ArrayList<Character> chars = new ArrayList<>();
+    while( !E.isEnd() ) // read until we hit a ")"
+      chars.add(E.nextStr().charAt(0));
+    E.eatEnd();
+    _c = new char[chars.size()];
+    int j=0;
+    for( char c:chars ) _c[j++] = c;
+
+    ASTCharList res = (ASTCharList) clone();
+    res._c = _c; //probably useless
+    return res;
   }
 }

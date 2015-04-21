@@ -44,6 +44,43 @@ class ModelBase(object):
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
 
+  def confusionMatrix(self, test_data):
+    """
+    Returns a confusion matrix based of H2O's default prediction threshold for a dataset
+    """
+    # cbind the test_data vecs together and produce a temp key
+    test_data_key = H2OFrame.send_frame(test_data)
+    # get the predictions
+    # this job call is blocking
+    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
+    # retrieve the confusion matrix
+    cm = j["model_metrics"][0]["cm"]["table"]
+    return cm
+
+  def deepfeatures(self, test_data, layer):
+    """
+    Return hidden layer details
+    :param test_data: Data to create a feature space on
+    :param layer: 0 index hidden layer
+    """
+    if not test_data: raise ValueError("Must specify test data")
+    # create test_data by cbinding vecs
+    test_data_key = H2OFrame.send_frame(test_data)
+    # get the deepfeatures of the dataset
+    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key, deep_features_hidden_layer=layer)
+    # retreive the frame data
+    deepfeatures_frame_key = j["destination_key"]["name"]
+    df_frame_meta = h2o.frame(deepfeatures_frame_key)["frames"][0]
+    # create vecs by extracting vec_keys, col length, and col names
+    vec_keys = df_frame_meta["vec_keys"]
+    rows = df_frame_meta["rows"]
+    cols = [col["label"] for col in df_frame_meta["columns"]]
+    vecs = H2OVec.new_vecs(zip(cols, vec_keys), rows)
+    # remove test data from kv
+    h2o.remove(test_data_key)
+    # finally return frame
+    return H2OFrame(vecs=vecs)
+
   def model_performance(self, test_data):
     """
     Generate model metrics for this model on test_data.
@@ -56,7 +93,13 @@ class ModelBase(object):
     fr_key = H2OFrame.send_frame(test_data)
     res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
     h2o.remove(fr_key)
-    raw_metrics = res["model_metrics"][0]
+
+    # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+    raw_metrics = None
+    for mm in res["model_metrics"]:
+      if mm["frame"]["name"] == fr_key:
+        raw_metrics = mm
+        break
     return self._metrics_class(raw_metrics)
 
   def summary(self):
@@ -64,7 +107,11 @@ class ModelBase(object):
     Print a detailed summary of the model.
     :return:
     """
-    raise NotImplementedError
+    model = self._model_json["output"]
+    if model["model_summary"]:
+      print
+      model["model_summary"].show()  # H2OTwoDimTable object
+
 
   def show(self):
     """
@@ -72,20 +119,41 @@ class ModelBase(object):
     :return: None
     """
     model = self._model_json["output"]
-    sub = [k for k in model.keys() if k in model["help"].keys() and not k.startswith("_") and k != "help"]
-    val = [[model[k]] for k in sub if not isinstance(model[k], H2OTwoDimTable)]
-    lab = [model["help"][k] + ":" for k in sub if k != "help"]
+    print "Model Details"
+    print "============="
 
-    two_dim_tables = [model[k] for k in sub if isinstance(model[k], H2OTwoDimTable)]
+    print self.__class__.__name__, ": ", self._model_json["algo_full_name"]
+    print "Model Key: ", self._key
 
-    for i in range(len(val)):
-      val[i].insert(0, lab[i])
+    self.summary()
 
     print
-    print "Model Details:"
+    if self.__class__.__name__ == "H2OMultinomialModel":
+      # training metrics
+      tm = model["training_metrics"]
+      if tm: ModelBase._show_multi_metrics(tm)
+      vm = model["validation_metrics"]
+      if vm: ModelBase._show_multi_metrics(vm)
+
     print
-    for v in two_dim_tables:
-      v.show()
+    if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
+    if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
+
+
+  @staticmethod
+  def _show_multi_metrics(metrics, train_or_valid="Training"):
+    tm = metrics
+    print train_or_valid, " Metrics: "
+    print "==================="
+    print
+    if tm["description"]:     print tm["description"]
+    if tm["frame"]:           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
+    if tm["MSE"]:             print "MSE on ", train_or_valid, ": ", tm["MSE"]
+    if tm["logloss"]:         print "logloss on ", train_or_valid, ": ", tm["logloss"]
+    if tm["cm"]:              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
+    if tm["hit_ratio_table"]: print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
+
+
 
   # Delete from cluster as model goes out of scope
   def __del__(self):

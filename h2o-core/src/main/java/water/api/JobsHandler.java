@@ -14,7 +14,7 @@ public class JobsHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema list(int version, JobsV2 s) {
+  public Schema list(int version, JobsV3 s) {
     Jobs j = new Jobs();
     j._jobs = Job.jobs();
     PojoUtils.copyProperties(s, j, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
@@ -22,7 +22,7 @@ public class JobsHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema fetch(int version, JobsV2 s) {
+  public Schema fetch(int version, JobsV3 s) {
     Key key = s.key.key();
     Value val = DKV.get(key);
     if( null == val ) throw new IllegalArgumentException("Job is missing");
@@ -32,12 +32,12 @@ public class JobsHandler extends Handler {
     Jobs jobs = new Jobs();
     jobs._jobs = new Job[1];
     jobs._jobs[0] = (Job) ice;
-    s.jobs = new JobV2[0]; // Give PojoUtils.copyProperties the destination type.
+    s.jobs = new JobV3[0]; // Give PojoUtils.copyProperties the destination type.
     s.fillFromImpl(jobs);
     return s;
   }
 
-  public Schema cancel(int version, JobsV2 c) {
+  public Schema cancel(int version, JobsV3 c) {
     Job j = DKV.getGet(c.key.key());
     if (j == null) {
       throw new IllegalArgumentException("No job with key " + c.key.key());

@@ -38,6 +38,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     /** The maximum number (top K) of predictions to use for hit ratio
      *  computation (for multi-class only, 0 to disable) */
     public int _max_hit_ratio_k = 10;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
   }
 
   /** Output from all Supervised Models, includes class distribution
@@ -45,8 +50,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
   public abstract static class SupervisedOutput extends Model.Output {
     // Includes the class distribution for all supervised models
     public long [/*nclass*/] _distribution;  // Count of rows-per-class
-    public float[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
-    public float[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
+    public double[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
+    public double[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
 
     public SupervisedOutput() { this(null); }
 
@@ -72,7 +77,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
         _priorClassDist = cdmt.rel_dist();
       } else {                    // Regression; only 1 "class"
         _distribution   = new long[] { b._train.numRows() };
-        _priorClassDist = new float[] { 1.0f };
+        _priorClassDist = new double[] { 1.0f };
       }
       _modelClassDist = _priorClassDist;
     }
@@ -96,14 +101,14 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length; // Last chunk is for the response
-    for( int i=0; i<_output._names.length-1; i++ ) // Do not include last value since it can contains a response
+    for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    float[] scored = score0(tmp,preds);
+    double[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {
+    if( _output.isClassifier() && _output._priorClassDist !=_output._modelClassDist ) {
       ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
       scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp);
@@ -115,18 +120,6 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     JCodeGen.toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
     JCodeGen.toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
     return sb;
-  }
-  /** Fill preds[0] based on already filled and unified preds[1,..NCLASSES]. */
-  protected void toJavaFillPreds0(SB bodySb) {
-    // Pick max index as a prediction
-    if (_output.isClassifier()) {
-      if (_output._priorClassDist!=null && _output._modelClassDist!=null) {
-        bodySb.i().p("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      }
-      bodySb.i().p("preds[0] = water.util.ModelUtils.getPrediction(preds,data);").nl();
-    } else {
-      bodySb.i().p("preds[0] = preds[1];").nl();
-    }
   }
 }
 

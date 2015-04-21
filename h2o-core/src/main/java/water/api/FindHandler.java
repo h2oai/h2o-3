@@ -14,13 +14,13 @@ import water.util.IcedHashMap;
 class FindHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FindV2 find(int version, FindV2 find) {
+  public FindV3 find(int version, FindV3 find) {
     Frame frame = find.key.createAndFillImpl();
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
       Vec vec = frame.vec(find.column);
       if( vec==null ) throw new H2OColumnNotFoundArgumentException("column", frame, find.column);
-      find.key = new FrameV2(new Frame(new String[]{find.column}, new Vec[]{vec}));
+      find.key = new FrameV3(new Frame(new String[]{find.column}, new Vec[]{vec}));
     }
 
     // Convert the search string into a column-specific flavor
@@ -43,7 +43,7 @@ class FindHandler extends Handler {
         } catch( NumberFormatException e ) {
           if( vecs.length==1 ) {
             // There's only one Vec and it's a numeric Vec and our search string isn't a number
-            IcedHashMap<String, Object> values = new IcedHashMap<>();
+            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             String msg = "Frame: " + frame._key.toString() + " as only one column, it is numeric, and the find pattern is not numeric: " + find.match;
             values.put("frame_name", frame._key.toString());
             values.put("column_name", frame.name(i));

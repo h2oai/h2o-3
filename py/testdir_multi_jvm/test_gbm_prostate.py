@@ -55,6 +55,6 @@ gbm = h2o.gbm(           y=train["CAPSULE"],
               ntrees=50,
               max_depth=5,
               learn_rate=0.1,
-			  loss="bernoulli")
+			  distribution="bernoulli")
 mm = gbm.model_performance(test)
 mm.show()

@@ -143,7 +143,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                         p._override_with_best_model = override_with_best_model;
                                         p._epochs = epochs;
                                         p._loss = loss;
-                                        p._n_folds = n_folds;
+                                        if (n_folds > 0) {
+                                          H2O.unimpl();
+                                          // p._n_folds = n_folds;
+                                        }
                                         p._keep_cross_validation_splits = keep_cv_splits;
                                         p._seed = seed;
                                         p._train_samples_per_iteration = train_samples_per_iteration;
@@ -194,7 +197,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._destination_key = Key.make();
                                       dest = p._destination_key;
                                       p._checkpoint = dest_tmp;
-                                      p._n_folds = 0;
+                                      // p._n_folds = 0;
 
                                       p._valid = valid == null ? null : valid._key;
                                       p._response_column = frame._names[resp];
@@ -223,19 +226,21 @@ public class DeepLearningProstateTest extends TestUtil {
                                         Frame pred = null, pred2 = null;
                                         try {
                                           pred = model2.score(valid);
+                                          // Build a POJO, validate same results
+                                          Assert.assertTrue(model2.testJavaScoring(valid,pred,1e-2));
+
                                           hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model2, valid);
                                           double error = 0;
                                           // binary
                                           if (model2._output.nclasses() == 2) {
                                             assert (resp == 1);
-                                            threshold = mm.auc().threshold();
-                                            error = mm.auc().err();
+                                            threshold = mm.auc().defaultThreshold();
+                                            error = mm.auc().defaultErr();
                                             // check that auc.cm() is the right CM
-                                            Assert.assertEquals(new ConfusionMatrix(mm.auc().cm(), new String[]{"0", "1"}).err(), error, 1e-15);
+                                            Assert.assertEquals(new ConfusionMatrix(mm.auc().defaultCM(), new String[]{"0", "1"}).err(), error, 1e-15);
                                             // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                             Assert.assertEquals(mm.cm().err(), error, 1e-15);
                                           }
-                                          double CMerrorOrig = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum()).err();
 
                                           // confirm that orig CM was made with threshold 0.5
                                           // put pred2 into DKV, and allow access
@@ -244,23 +249,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                           pred2.unlock(null);
 
                                           if (model2._output.nclasses() == 2) {
-                                            // make labels with 0.5 threshold for binary classifier
-                                            // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
-                                            String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+0.5+"))";
+                                            // manually make labels with AUC-given threshold for best F1
+                                            String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
                                             Env ev = Exec.exec(ast);
-                                            try {
-                                              pred2 = ev.popAry(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                            } finally {
-                                              if (ev!=null) ev.remove_and_unlock();
-                                            }
-
-                                            double threshErr = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
-                                            Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
-
-                                            // make labels with AUC-given threshold for best F1
-                                            // similar ast to the above
-                                            ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
-                                            ev = Exec.exec(ast);
                                             try {
                                               pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                             } finally {
@@ -275,6 +266,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                           if (pred2 != null) pred2.delete();
                                         }
                                       } //classifier
+                                      else {
+                                        Frame pred = model2.score(valid);
+                                        // Build a POJO, validate same results
+                                        Assert.assertTrue(model1.testJavaScoring(frame,pred,1e-2));
+                                        pred.delete();
+                                      }
                                       Log.info("Parameters combination " + count + ": PASS");
                                       testcount++;
                                     } catch (Throwable t) {

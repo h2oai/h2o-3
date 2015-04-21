@@ -14,11 +14,26 @@ public final class SB {
   public SB(String s) { _sb = new StringBuilder(s); }
   public SB ps( String s ) { _sb.append("\""); pj(s); _sb.append("\""); return this;  }
   public SB p( String s ) { _sb.append(s); return this; }
-  public SB p( float  s ) { if(  Float.isNaN(s) ) _sb.append( "Float.NaN"); else _sb.append(s); return this; }
-  public SB p( double s ) { if( Double.isNaN(s) ) _sb.append("Double.NaN"); else _sb.append(s); return this; }
+  public SB p( float  s ) {
+    if( Float.isNaN(s) )
+      _sb.append( "Float.NaN");
+    else if( Float.isInfinite(s) ) {
+      _sb.append(s > 0 ? "Float.POSITIVE_INFINITY" : "Float.NEGATIVE_INFINITY");
+    } else _sb.append(s);
+    return this;
+  }
+  public SB p( double s ) {
+    if( Double.isNaN(s) )
+      _sb.append("Double.NaN");
+    else if( Double.isInfinite(s) ) {
+      _sb.append(s > 0 ? "Double.POSITIVE_INFINITY" : "Double.NEGATIVE_INFINITY");
+    } else _sb.append(s);
+    return this;
+  }
   public SB p( char   s ) { _sb.append(s); return this; }
   public SB p( int    s ) { _sb.append(s); return this; }
   public SB p( long   s ) { _sb.append(s); return this; }
+  public SB p( boolean s) { _sb.append(s); return this; }
   // Not spelled "p" on purpose: too easy to accidentally say "p(1.0)" and
   // suddenly call the the autoboxed version.
   public SB pobj( Object s ) { _sb.append(s.toString()); return this; }

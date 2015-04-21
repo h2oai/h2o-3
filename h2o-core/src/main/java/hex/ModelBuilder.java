@@ -2,6 +2,7 @@ package hex;
 
 import hex.schemas.ModelBuilderSchema;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -41,17 +42,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Map the Model class (e.g., DeepLearningModel.class) to the algo name (e.g., "deeplearning"):
   private static final Map<Class<? extends Model>, String> _model_class_to_algo = new HashMap<>();
 
+  // Map the simple algo name (e.g., deeplearning) to the full algo name (e.g., "Deep Learning"):
+  private static final Map<String, String> _algo_to_algo_full_name = new HashMap<>();
+
   // Map the algo name (e.g., "deeplearning") to the Model class (e.g., DeepLearningModel.class):
   private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
 
   /**
    * Register a ModelBuilder, assigning it an algo name.
    */
-  public static void registerModelBuilder(String name, Class<? extends ModelBuilder> clz) {
+  public static void registerModelBuilder(String name, String full_name, Class<? extends ModelBuilder> clz) {
     _builders.put(name, clz);
 
     Class<? extends Model> model_class = (Class<? extends Model>)ReflectionUtils.findActualClassParameter(clz, 0);
     _model_class_to_algo.put(model_class, name);
+    _algo_to_algo_full_name.put(name, full_name);
     _algo_to_model_class.put(name, model_class);
   }
 
@@ -73,16 +78,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return _model_class_to_algo.get(model.getClass());
   }
 
+  /** Get the algo full name for the given algo. */
+  public static String getAlgoFullName(String algo) {
+    return _algo_to_algo_full_name.get(algo);
+  }
 
-  public static String getModelBuilderName(Class<? extends ModelBuilder> clz) {
+  public String getAlgo() {
+    return getAlgo(this.getClass());
+  }
+
+  public static String getAlgo(Class<? extends ModelBuilder> clz) {
+    // Check for unknown algo names, but if none are registered keep going; we're probably in JUnit.
+    if (_builders.isEmpty())
+      return "Unknown algo (should only happen under JUnit)";
+
     if (! _builders.containsValue(clz))
-      throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
+      throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
 
     for (Map.Entry<String, Class<? extends ModelBuilder>> entry : _builders.entrySet())
       if (entry.getValue().equals(clz))
         return entry.getKey();
     // Note: unreachable:
-    throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
+    throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
   }
 
   /**
@@ -95,7 +112,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P ignore) {
     super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.");
-    throw H2O.unimpl("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
+    throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
   /** Constructor making a default destination key */
@@ -172,7 +189,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // NOTE: allow re-init:
     clearInitState();
     assert _parms != null;      // Parms must already be set in
-    if( _parms._train == null ) { error("_train","Missing training frame"); return; }
+    if( _parms._train == null ) {
+      if (expensive)
+        error("_train","Missing training frame");
+      return;
+    }
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
@@ -214,7 +235,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
       String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
-      if( expensive ) for( String s : msgs ) Log.info(s);
+      if( expensive ) {
+        for( String s : msgs ) {
+          Log.info(s);
+          info("_valid", s);
+        }
+      }
     } catch( IllegalArgumentException iae ) {
       error("_valid",iae.getMessage());
     }
@@ -284,6 +310,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       this.message_type = message_type;
       this.field_name = field_name;
       this.message = message;
+      switch (message_type) {
+        case INFO: Log.info(field_name + ": " + message); break;
+        case WARN: Log.warn(field_name + ": " + message); break;
+        case ERROR: Log.err(field_name + ": " + message); break;
+      }
     }
 
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }

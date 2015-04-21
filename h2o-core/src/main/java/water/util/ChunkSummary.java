@@ -67,7 +67,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       for( j = 0; j < chunkTypes.length; ++j )
         if( sname.equals(chunkTypes[j]) )
           break;
-      if( j==chunkTypes.length ) throw H2O.unimpl("Unknown Chunk Type: " + sname);
+      if( j==chunkTypes.length ) throw H2O.fail("Unknown Chunk Type: " + sname);
       chunk_counts[j]++;
       chunk_byte_sizes[j] += c.byteSize();
       byte_size_per_node[H2O.SELF.index()] += c.byteSize();
@@ -132,7 +132,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     final String[] colTypes = new String[]{"string", "integer", "float", "string", "float"};
     final String[] colFormats = new String[]{"%8s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
     final String colHeaderForRowHeaders = "";
-    TwoDimTable table = new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+    TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     int row = 0;
     for (int j = 0; j < chunkTypes.length; ++j) {

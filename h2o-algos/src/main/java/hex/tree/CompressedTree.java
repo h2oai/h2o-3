@@ -29,7 +29,7 @@ public class CompressedTree extends Keyed {
   }
 
   /** Highly efficient (critical path) tree scoring */
-  public float score( final double row[] ) {
+  public double score( final double row[] ) {
     AutoBuffer ab = new AutoBuffer(_bits);
     IcedBitSet ibs = null;      // Lazily set on hitting first group test
     while(true) {
@@ -43,7 +43,6 @@ public class CompressedTree extends Keyed {
 
       // Extract value or group to split on
       float splitVal = -1;
-      boolean grpContains = false;
       if(equal == 0 || equal == 1) { // Standard float-compare test (either < or ==)
         splitVal = ab.get4f();       // Get the float to compare
       } else {                       // Bitset test
@@ -70,13 +69,11 @@ public class CompressedTree extends Keyed {
       //   - Double.NaN <  3.7f => return false => BUT left branch has to be selected (i.e., ab.position())
       //   - Double.NaN != 3.7f => return true  => left branch has to be select selected (i.e., ab.position())
       double d = row[colId];
-//      if( !Double.isNaN(d) ) {  // NaNs always go to bin 0
-        if( ( equal==0 && ((float)d) >= splitVal) ||
-            ( equal==1 && ((float)d) == splitVal) ||
+        if( ( equal==0 && d >= splitVal) ||
+            ( equal==1 && d == splitVal) ||
             ( (equal==2 || equal==3) && ibs.contains((int)d) )) { //if Double.isNaN(d), then (int)d == 0, which means that NA is treated like enum level 0
           ab.skip(skip);        // Skip to the right subtree
           lmask = rmask;        // And set the leaf bits into common place
-//        }
       } /* else Double.isNaN() is true => use left branch */
       if( (lmask&16)==16 ) return scoreLeaf(ab);
     }

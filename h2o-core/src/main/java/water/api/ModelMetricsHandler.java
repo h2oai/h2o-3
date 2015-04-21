@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -71,14 +72,14 @@ class ModelMetricsHandler extends Handler {
    *  This should be common across all versions of ModelMetrics schemas, so it lives here.   */
   public static final class ModelMetricsListSchemaV3 extends Schema<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
-    @API(help = "Key of Model of interest (optional)", json = false)
-    public KeyV1.ModelKeyV1 model;
+    @API(help = "Key of Model of interest (optional)", json = true)
+    public KeyV3.ModelKeyV3 model;
 
-    @API(help = "Key of Frame of interest (optional)", json = false)
-    public KeyV1.FrameKeyV1 frame;
+    @API(help = "Key of Frame of interest (optional)", json = true)
+    public KeyV3.FrameKeyV3 frame;
 
     @API(help = "Key of predictions frame, if predictions are requested (optional)", json = true, required = false, direction = API.Direction.INOUT)
-    public KeyV1.FrameKeyV1 destination_key;
+    public KeyV3.FrameKeyV3 destination_key;
 
     @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
     public boolean reconstruction_error;
@@ -111,9 +112,9 @@ class ModelMetricsHandler extends Handler {
       // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
-      this.model = (mml._model == null ? null : new KeyV1.ModelKeyV1(mml._model._key));
-      this.frame = (mml._frame == null ? null : new KeyV1.FrameKeyV1(mml._frame._key));
-      this.destination_key = (mml._destination_key == null ? null : new KeyV1.FrameKeyV1(Key.make(mml._destination_key)));
+      this.model = (mml._model == null ? null : new KeyV3.ModelKeyV3(mml._model._key));
+      this.frame = (mml._frame == null ? null : new KeyV3.FrameKeyV3(mml._frame._key));
+      this.destination_key = (mml._destination_key == null ? null : new KeyV3.FrameKeyV3(Key.make(mml._destination_key)));
       this.reconstruction_error = mml._reconstruction_error;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 
@@ -164,10 +165,18 @@ class ModelMetricsHandler extends Handler {
 
   /**
    * Score a frame with the given model and return just the metrics.
+   * <p>
+   * NOTE: ModelMetrics are now always being created by model.score. . .
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
-    // NOTE: ModelMetrics are now always being created by model.score. . .
+    // parameters checking:
+    if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
+    if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
+
+    if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
+    if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+
     ModelMetricsList parms = s.createAndFillImpl();
     Frame fr = parms._model.score(parms._frame, parms._destination_key); // throw away predictions
     DKV.remove(fr._key);
@@ -190,7 +199,13 @@ class ModelMetricsHandler extends Handler {
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
-    // No caching for predict()
+    // parameters checking:
+    if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
+    if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
+
+    if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
+    if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+
     ModelMetricsList parms = s.createAndFillImpl();
 
     Frame predictions;
@@ -226,12 +241,12 @@ class ModelMetricsHandler extends Handler {
     if (null == mm)
       mm = new ModelMetricsListSchemaV3();
 
-    mm.destination_key = new KeyV1.FrameKeyV1(predictions._key);
+    mm.destination_key = new KeyV3.FrameKeyV3(predictions._key);
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
     } else {
-      mm.model_metrics[0].predictions = new FrameV2(predictions, 0, 100); // TODO: Should call schema(version)
+      mm.model_metrics[0].predictions = new FrameV3(predictions, 0, 100); // TODO: Should call schema(version)
     }
     return mm;
   }

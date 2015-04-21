@@ -4,22 +4,19 @@ import water.H2O;
 import water.fvec.Frame;
 
 public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
-  public final double _mse;
   public ModelMetricsAutoEncoder(Model model, Frame frame) {
-    super(model, frame);
-    _mse = Double.NaN;
+    super(model, frame, Double.NaN);
   }
   public ModelMetricsAutoEncoder(Model model, Frame frame, double mse) {
-    super(model, frame);
-    _mse = mse;
+    super(model, frame, mse);
   }
 
   public static class MetricBuilderAutoEncoder extends MetricBuilderUnsupervised {
     public MetricBuilderAutoEncoder(int dims) {
-      _work = new float[dims];
+      _work = new double[dims];
     }
 
-    @Override public float[] perRow( float ds[], float yact[], Model m) {
+    @Override public double[] perRow(double ds[], float yact[], Model m) {
       throw H2O.unimpl();
     }
 

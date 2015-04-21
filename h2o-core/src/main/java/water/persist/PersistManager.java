@@ -6,9 +6,9 @@ import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.UploadFileVec;
 import water.util.Log;
+import water.persist.Persist.PersistEntry;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * on what is on the classpath.
  */
 public class PersistManager {
+  final static public int MAX_BACKENDS = 8;
+
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public static class Schemes {
     public static final String FILE = "file";
@@ -28,16 +30,46 @@ public class PersistManager {
     public static final String NFS  = "nfs";
   }
 
+  public static class PersistStatsEntry {
+    public PersistStatsEntry() {
+      store_count = new AtomicLong();
+      store_bytes = new AtomicLong();
+      delete_count = new AtomicLong();
+      load_count = new AtomicLong();
+      load_bytes = new AtomicLong();
+    }
+
+    public AtomicLong store_count;
+    public AtomicLong store_bytes;
+    public AtomicLong delete_count;
+    public AtomicLong load_count;
+    public AtomicLong load_bytes;
+  }
+
   private Persist[] I;
-  private AtomicLong storeCount;
-  private AtomicLong deleteCount;
-  private AtomicLong loadCount;
+  private PersistStatsEntry[] stats;
+  public PersistStatsEntry[] getStats() { return stats; }
+
+  public static boolean isHdfsPath(String path) {
+    String s = path.toLowerCase();
+    if (s.startsWith("hdfs:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+      return true;
+    }
+    return false;
+  }
+
+  private void validateHdfsConfigured() {
+    if (I[Value.HDFS] == null) {
+      throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
+    }
+  }
 
   public PersistManager(URI iceRoot) {
-    I = new Persist[8];
-    storeCount = new AtomicLong();
-    deleteCount = new AtomicLong();
-    loadCount = new AtomicLong();
+    I = new Persist[MAX_BACKENDS];
+    stats = new PersistStatsEntry[MAX_BACKENDS];
+    for (int i = 0; i < stats.length; i++) {
+      stats[i] = new PersistStatsEntry();
+    }
 
     if (iceRoot == null) {
       Log.err("ice_root must be specified.  Exiting.");
@@ -92,29 +124,40 @@ public class PersistManager {
     }
   }
 
-  long getStoreCount() { return storeCount.get(); }
-  long getDeleteCount() { return deleteCount.get(); }
-  long getLoadCount() { return loadCount.get(); }
-
   public void store(int backend, Value v) {
-    storeCount.incrementAndGet();
+    stats[backend].store_count.incrementAndGet();
     I[backend].store(v);
   }
 
   public void delete(int backend, Value v) {
-    deleteCount.incrementAndGet();
+    stats[backend].delete_count.incrementAndGet();
     I[backend].delete(v);
   }
 
   public byte[] load(int backend, Value v) throws IOException {
-    loadCount.incrementAndGet();
+    stats[backend].load_count.incrementAndGet();
     byte[] arr = I[backend].load(v);
+    stats[backend].load_bytes.addAndGet(arr.length);
     return arr;
   }
 
   /** Get the current Persist flavor for user-mode swapping. */
   public Persist getIce() { return I[Value.ICE]; }
 
+  /** Convert given URI into a specific H2O key representation.
+   *
+   * The representation depends on persistent backend, since it will
+   * deduce file location from the key content.
+   *
+   * The method will look at scheme of URI and based on it, it will
+   * ask a backend to provide a conversion to a key (i.e., URI with scheme
+   * 'hdfs' will be forwared to HDFS backend).
+   *
+   * @param uri file location
+   * @return a key encoding URI
+   * @throws IOException in the case of uri conversion problem
+   * @throws water.exceptions.H2OIllegalArgumentException in case of unsupported scheme
+   */
   public final Key anyURIToKey(URI uri) throws IOException {
     Key ikey = null;
     String scheme = uri.getScheme();
@@ -122,8 +165,10 @@ public class PersistManager {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("s3n".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("files".equals(scheme) || scheme == null) {
+    } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
+    } else {
+      throw new H2OIllegalArgumentException("Unsupported schema '" + scheme + "' for given uri " + uri);
     }
     return ikey;
   }
@@ -199,5 +244,152 @@ public class PersistManager {
     }
 
     I[Value.NFS].importFiles(path, files, keys, fails, dels);
+  }
+
+
+  // -------------------------------
+  // Node Persistent Storage helpers
+  // -------------------------------
+
+  // Reads
+
+  public String getHdfsHomeDirectory() {
+    if (I[Value.HDFS] == null) {
+      return null;
+    }
+
+    return I[Value.HDFS].getHomeDirectory();
+  }
+
+  public PersistEntry[] list(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      PersistEntry[] arr = I[Value.HDFS].list(path);
+      return arr;
+    }
+
+    File dir = new File(path);
+    File[] files = dir.listFiles();
+    if (files == null) {
+      return new PersistEntry[0];
+    }
+
+    ArrayList<PersistEntry> arr = new ArrayList<>();
+    for (File f : files) {
+      PersistEntry entry = new PersistEntry();
+      entry._name = f.getName();
+      entry._size = f.length();
+      entry._timestamp_millis = f.lastModified();
+      arr.add(entry);
+    }
+
+    return arr.toArray(new PersistEntry[arr.size()]);
+  }
+
+  public boolean exists(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].exists(path);
+      return b;
+    }
+
+    File f = new File(path);
+    return f.exists();
+  }
+
+  public long length(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      long l = I[Value.HDFS].length(path);
+      return l;
+    }
+
+    File f = new File(path);
+    if (! f.exists()) {
+      throw new IllegalArgumentException("File not found (" + path + ")");
+    }
+
+    return f.length();
+  }
+
+  public InputStream open(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      InputStream os = I[Value.HDFS].open(path);
+      return os;
+    }
+
+    try {
+      File f = new File(path);
+      return new FileInputStream(f);
+    }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("File not found (" + path + ")");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // Writes
+
+  public boolean mkdirs(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].mkdirs(path);
+      return b;
+    }
+
+    File f = new File(path);
+    boolean b = f.mkdirs();
+    return b;
+  }
+
+  public boolean rename(String fromPath, String toPath) {
+    if (isHdfsPath(fromPath) || isHdfsPath(toPath)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].rename(fromPath, toPath);
+      return b;
+    }
+
+    File f = new File(fromPath);
+    File t = new File(toPath);
+    boolean b = f.renameTo(t);
+    return b;
+  }
+
+  public OutputStream create(String path, boolean overwrite) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      return I[Value.HDFS].create(path, overwrite);
+    }
+
+    try {
+      if (! overwrite) {
+        File f = new File(path);
+        if (f.exists()) {
+          throw new IllegalArgumentException("File already exists (" + path + ")");
+        }
+      }
+
+      FileOutputStream fos;
+      fos = new FileOutputStream(path);
+      return fos;
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public boolean delete(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].delete(path);
+      return b;
+    }
+
+    File f = new File(path);
+    boolean b = f.delete();
+    return b;
   }
 }

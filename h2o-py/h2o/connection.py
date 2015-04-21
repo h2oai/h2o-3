@@ -13,6 +13,7 @@ import tempfile
 import tabulate
 import subprocess
 import atexit
+import h2o
 from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
@@ -31,7 +32,7 @@ class H2OConnection(object):
   """
 
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None):
+               license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
     """
         Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -95,6 +96,20 @@ class H2OConnection(object):
     print
     print tabulate.tabulate(cluster_info)
     print
+
+    ver_h2o = cld['version']
+    try:
+      ver_pkg = h2o.__version__
+    except AttributeError:
+      ver_pkg = "PKG_SOURCE"
+
+    if ver_h2o != ver_pkg and ver_pkg != "PKG_SOURCE":
+      message = \
+        "Version mismatch! H2O is running version {0} but python package is version {1}".format(ver_h2o, str(ver_pkg))
+      if strict_version_check:
+        raise EnvironmentError, message
+      else:
+        print "Warning: {0}".format(message)
 
   def _connect(self, size, max_retries=5, print_dots=False):
     """
@@ -337,7 +352,7 @@ class H2OConnection(object):
   def _do_raw_rest(self, url_suffix, method, file_upload_info, **kwargs):
     if not url_suffix:
       raise ValueError("No url suffix supplied.")
-    url = "http://{}:{}/{}/{}".format(self._ip,self._port,self._rest_version,url_suffix + ".json")
+    url = "http://{}:{}/{}/{}".format(self._ip,self._port,self._rest_version,url_suffix)
 
     query_string = ""
     for k,v in kwargs.iteritems():
@@ -368,8 +383,19 @@ class H2OConnection(object):
     elapsed_time_seconds = end_time_seconds - begin_time_seconds
     elapsed_time_millis = elapsed_time_seconds * 1000
     if not http_result.ok:
-      raise EnvironmentError("h2o-py got an unexpected HTTP status code:\n {} {} (method = {}; url = {})"
-                             .format(http_result.status_code,http_result.reason,method,url))
+      detailed_error_msgs = []
+      try:
+        result = http_result.json()
+        if 'validation_messages' in result.keys():
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['validation_messages'] if m['message_type'] in \
+                                          ['ERROR']])
+        elif 'exception_msg' in result.keys():
+          detailed_error_msgs = result['exception_msg']
+      except ValueError:
+        pass
+      raise EnvironmentError(("h2o-py got an unexpected HTTP status code:\n {} {} (method = {}; url = {}). \n"+ \
+                              "detailed error messages: {}")
+                             .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
     # TODO: is.logging? -> write to logs
     # print "Time to perform REST call (millis): " + str(elapsed_time_millis)
@@ -414,7 +440,7 @@ class H2OConnection(object):
 
         have_table = has_schema_type and x["__meta"]["schema_type"] == "TwoDimTable"
         have_tableV1 = have_table and x["__meta"]["schema_name"] == "TwoDimTableV1"
-        if have_tableV1:
+        if have_table:
           col_formats = [c["format"] for c in x["columns"]]
           table_header = x["name"]
           col_types = [c["type"] for c in x["columns"]]

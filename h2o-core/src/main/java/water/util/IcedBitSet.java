@@ -27,7 +27,7 @@ public class IcedBitSet extends Iced {
   public IcedBitSet(int nbits) { this(nbits, 0); }
   public IcedBitSet(int nbits, int bitoff) {
     // For small bitsets, just use a no-offset fixed-length format
-    if( bitoff+nbits < 32 ) {  bitoff = 0;  nbits = 32;  }
+    if( bitoff+nbits <= 32 ) {  bitoff = 0;  nbits = 32;  }
     fill(nbits <= 0 ? null : new byte[bytes(nbits)], 0, nbits, bitoff);
   }
 
@@ -51,20 +51,20 @@ public class IcedBitSet extends Iced {
     idx -= _bitoff;
     if(idx < 0 || idx >= _nbits)
       throw new IndexOutOfBoundsException("Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx);
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
+    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     _val[idx >> 3] |= ((byte)1 << (idx & 7));
   }
   public void clear(int idx) {
-    if( _bitoff != 0 ) throw H2O.unimpl(); // TODO
+    idx -= _bitoff;
     if(idx < 0 || idx >= _nbits)
       throw new IndexOutOfBoundsException("Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx);
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
+    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     _val[idx >> 3] &= ~((byte)1 << (idx & 7));
   }
   public int cardinality() {
     int nbits = 0;
     int bytes = numBytes();
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
+    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     for(int i = 0; i < bytes; i++)
       nbits += Integer.bitCount(_val[i]);
     return nbits;
@@ -77,7 +77,7 @@ public class IcedBitSet extends Iced {
 
   // Smaller compression format: just exactly 4 bytes
   public void compress2( AutoBuffer ab ) {
-    assert max() < 32;          // Expect a larger format
+    assert max() <= 32;          // Expect a larger format
     assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
     assert _val.length==4;
     ab.putA1(_val,4);
@@ -89,7 +89,7 @@ public class IcedBitSet extends Iced {
 
   // Larger compression format: dump down bytes into the AutoBuffer.
   public void compress3( AutoBuffer ab ) {
-    assert max() >= 32;         // Expect a larger format
+    assert max() > 32;         // Expect a larger format
     assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
     assert _val.length==numBytes();
     ab.put2((char)_bitoff);
@@ -114,7 +114,7 @@ public class IcedBitSet extends Iced {
     for(int i = 0; i < bytes; i++) {
       if( i>0 ) sb.p(' ');
       for( int j=0; j<8; j++ )
-        sb.p((_val[i]>>j)&1);
+        sb.p((_val[_byteoff+i]>>j)&1);
     }
     return sb.p("}");
   }

@@ -118,9 +118,22 @@ function(ROOT.PATH) {
 #'
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
+  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
+
+#'
+#' HDFS helpers
+#'
+H2O_INTERNAL_HDFS_NAME_NODE <- "172.16.2.176"
+
+is.running.internal.to.h2o <- function() {
+    url <- sprintf("http://%s:50070", H2O_INTERNAL_HDFS_NAME_NODE);
+    internal <- url.exists(url, timeout = 5)
+    return(internal)
+}
+
+# ----------------------------------------------------------------------
 
 root.path  <- locate("h2o-package/R/", "h2o-r")
 utils.path <- locate("tests/Utils/", "h2o-r")
@@ -147,7 +160,7 @@ h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort))
+h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort), timeout_secs=120)
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {
@@ -156,4 +169,5 @@ if (exists("TEST_ROOT_DIR")) {
 
 # Clean up any temporary variables to avoid polluting the user's workspace.
 options(echo=.origEchoValue)
+options(scipen=999)
 rm(list=c(".origEchoValue"))

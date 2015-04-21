@@ -73,7 +73,7 @@ public abstract class UDP {
     return udp.UDPS[(int)(lo&0xFF)]._udp.print16(new AutoBuffer(pbuf));
   }
   private static class IO_record extends UDP {
-    AutoBuffer call(AutoBuffer ab) { throw H2O.unimpl(); }
+    AutoBuffer call(AutoBuffer ab) { throw H2O.fail(); }
     String print16( AutoBuffer ab ) {
       int flavor = ab.get1U(3);
       int iotime = ab.get4 (4);

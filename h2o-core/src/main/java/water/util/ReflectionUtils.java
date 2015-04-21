@@ -55,14 +55,11 @@ public class ReflectionUtils {
   /**
    * Reflection helper which returns the actual class for a method's parameter.
    */
-  public static Class findMethodOutputClass(Method method) {
-    Class clz = method.getReturnType();
-    return clz;
-  }
+  public static Class findMethodOutputClass(Method method) { return method.getReturnType(); }
 
   /**
    * Reflection helper which returns the actual class for a field which has a parameterized type.
-   * E.g., DeepLearningV2's "parameters" class is in parter ModelBuilderSchema, and is parameterized
+   * E.g., DeepLearningV2's "parameters" class is in parent ModelBuilderSchema, and is parameterized
    * by type parameter P.
    */
   public static Class findActualFieldClass(Class clz, Field f) {
@@ -91,9 +88,21 @@ public class ReflectionUtils {
 
     ParameterizedType generic_super = (ParameterizedType)clz.getGenericSuperclass();
 
-    // NOTE: only handles a single level of parameterization right now:
-    Class field_clz = (Class)generic_super.getActualTypeArguments()[which_tv];
-    return field_clz;
+    if (generic_super.getActualTypeArguments()[which_tv] instanceof Class)
+      return (Class)generic_super.getActualTypeArguments()[which_tv];
+    return findActualFieldClass(clz.getSuperclass(), f);
   }
-}
 
+  // Best effort conversion from an Object to a double
+  public static double asDouble( Object o ) {
+    if( o == null ) return Double.NaN;
+    if( o instanceof Integer ) return ((Integer)o);
+    if( o instanceof Long ) return ((Long)o);
+    if( o instanceof Float ) return ((Float)o);
+    if( o instanceof Double ) return ((Double)o);
+    if( o instanceof Enum ) return ((Enum)o).ordinal();
+    System.out.println("Do not know how to convert a "+o.getClass()+" to a double");
+    throw H2O.fail();
+  }
+
+}

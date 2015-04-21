@@ -2,93 +2,75 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.ModelUtils;
 
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
-  public final AUCData _aucdata;
-  public final ConfusionMatrix _cm;
+  public final AUC2 _auc;
+  public final double _logloss;
 
-  public ModelMetricsBinomial(Model model, Frame frame) {
-    super(model, frame);
-    _aucdata = null;
-    _cm = null;
-  }
-
-  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, double sigma, double mse) {
-    super(model, frame);
-    _aucdata = aucdata;
-    _cm = aucdata.CM();
-    _sigma = sigma;
-    _mse = mse;
-  }
-
-  @Override public ConfusionMatrix cm() {
-    return _cm;
-  }
-  @Override public AUCData auc() {
-    return _aucdata;
+  public ModelMetricsBinomial(Model model, Frame frame, double mse, String[] domain, double sigma, AUC2 auc, double logloss) {
+    super(model, frame, mse, domain, sigma);
+    _auc = auc;
+    _logloss = logloss;
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
-
-    if (! (mm instanceof ModelMetricsBinomial))
+    if( !(mm instanceof ModelMetricsBinomial) )
       throw new H2OIllegalArgumentException("Expected to find a Binomial ModelMetrics for model: " + model._key.toString() + " and frame: " + frame._key.toString(),
               "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
-
     return (ModelMetricsBinomial) mm;
   }
 
-  public static class MetricBuilderBinomial extends MetricBuilderSupervised {
-    protected final float[] _thresholds;
-    protected long[/*nthreshes*/][/*nclasses*/][/*nclasses*/] _cms; // Confusion Matric(es)
-    public MetricBuilderBinomial( String[] domain, float[] thresholds ) {
-      super(2,domain);
-      _thresholds = thresholds;
-      // Thresholds are only for binomial classes
-      assert (_nclasses==2 && thresholds.length>0) || (_nclasses!=2 && thresholds.length==1);
-      _cms = new long[thresholds.length][_nclasses][_nclasses];
-    }
+  @Override public AUC2 auc() { return _auc; }
+  @Override public ConfusionMatrix cm() {
+    if( _auc == null ) return null;
+    long[][] cm = _auc.defaultCM();
+    return cm == null ? null : new ConfusionMatrix(cm, _domain);
+  }
+
+
+  public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
+    double _logloss;
+    protected AUC2.AUCBuilder _auc;
+    public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public float[] perRow( float ds[], float[] yact, Model m ) {
-      if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Float.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+    @Override public double[] perRow(double ds[], float[] yact, Model m) {
+      if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+      if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+      _count++;
       final int iact = (int)yact[0];
 
       // Compute error
-      float sum = 0;          // Check for sane class distribution
-      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
-//      assert Math.abs(sum-1.0f) < 1e-6;
-      float err = 1.0f-ds[iact+1];  // Error: distance from predicting ycls as 1.0
+      double err = 1-ds[iact+1];  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
 
-      // Binomial classification -> compute AUC, draw ROC
-      float snd = ds[2];      // Probability of a TRUE
-      // TODO: Optimize this: just keep deltas from one CM to the next
-      for(int i = 0; i < ModelUtils.DEFAULT_THRESHOLDS.length; i++) {
-        int p = snd >= ModelUtils.DEFAULT_THRESHOLDS[i] ? 1 : 0; // Compute prediction based on threshold
-        _cms[i][iact][p]++;   // Increase matrix
-      }
-      _count++;
+      // Compute log loss
+      final double eps = 1e-15;
+      _logloss += -Math.log(Math.max(eps,ds[iact+1]));
+
+      _auc.perRow(ds[2],iact);
+
       return ds;                // Flow coding
     }
 
-    @Override public void reduce( MetricBuilder mb ) {
-      super.reduce(mb);
-      ArrayUtils.add(_cms, ((MetricBuilderBinomial)mb)._cms);
+    @Override public void reduce( T mb ) {
+      super.reduce(mb); // sumseq, count
+      _logloss += mb._logloss;
+      _auc.reduce(mb._auc);
     }
 
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
-      for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
-
-      AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
-      double mse = _sumsqe / _count;
-      return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata, sigma, mse));
+    @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      if (sigma != 0.0 && _count > 0 ) {
+        double mse = _sumsqe / _count;
+        double logloss = _logloss / _count;
+        AUC2 auc = new AUC2(_auc);
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc, logloss));
+      } else {
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, Double.NaN, null, Double.NaN, null, Double.NaN));
+      }
     }
   }
 }

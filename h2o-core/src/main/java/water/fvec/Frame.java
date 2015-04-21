@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -876,7 +877,8 @@ public class Frame extends Lockable<Frame> {
               last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
           }
           for (int c = 0; c < vecs.length; c++)
-            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c],r);
+            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c], r);
+            else if( vecs[c].isString() ) ncs[c].addStr(last_cs[c],r);
             else                   ncs[c].addNum (last_cs[c].at_abs(r));
         }
       }
@@ -947,7 +949,7 @@ public class Frame extends Lockable<Frame> {
       }
     }
 
-    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
   }
 
 
@@ -1010,6 +1012,55 @@ public class Frame extends Lockable<Frame> {
   }
 
   /**
+   * Create a copy of the input Frame and return that copied Frame. All Vecs in this are copied in parallel.
+   * Caller mut do the DKV.put
+   * @param keyName Key for resulting frame. If null, no key will be given.
+   * @return The fresh copy of fr.
+   */
+  public Frame deepCopy(String keyName) {
+    ParallelVecCopy t;
+    H2O.submitTask(t=new ParallelVecCopy(this)).join();
+    return keyName==null ? new Frame(names(),t._vecs) : new Frame(Key.make(keyName),names(),t._vecs);
+  }
+
+  private static class VecCopyTask extends H2O.H2OCountedCompleter<VecCopyTask> {
+    private final Vec _from;
+    private final Vec[] _vecs;
+    private final int _i;
+    VecCopyTask(H2O.H2OCountedCompleter cc, Vec from, Vec[] vecs, int i) { super(cc); _from=from; _vecs=vecs; _i=i; }
+
+    @Override protected void compute2() {
+      _vecs[_i] = _from.makeCopy(_from.domain());
+      tryComplete();
+    }
+  }
+
+  private static class ParallelVecCopy extends H2O.H2OCountedCompleter<ParallelVecCopy> {
+    private final Frame _fr;
+    private final AtomicInteger _ctr;
+    private final int _maxP=1000;
+
+    //out
+    private Vec[] _vecs;
+    ParallelVecCopy(Frame fr) { _fr=fr; _ctr=new AtomicInteger(_maxP-1); }
+
+    @Override protected void compute2() {
+      addToPendingCount(_fr.numCols()-1);
+      _vecs = new Vec[_fr.numCols()];
+      for( int i=0;i<Math.min(_maxP,_fr.numCols());++i) forkVecTask(i);
+    }
+    private void forkVecTask(final int i) { new VecCopyTask(new Callback(), _fr.vec(i), _vecs, i).fork(); }
+    private class Callback extends H2O.H2OCallback {
+      public Callback(){super(ParallelVecCopy.this);}
+      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
+        int i = _ctr.incrementAndGet();
+        if(i < _vecs.length)
+          forkVecTask(i);
+      }
+    }
+  }
+
+  /**
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   private static class DeepSelect extends MRTask<DeepSelect> {
@@ -1019,8 +1070,8 @@ public class Frame extends Lockable<Frame> {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
-            if( chk._vec.isUUID() ) nchks[j].addUUID(chk, i);
-            else if(chk._vec.isString()) nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            if( chk instanceof C16Chunk ) nchks[j].addUUID(chk, i);
+            else if(chk instanceof CStrChunk) nchks[j].addStr((chk.atStr(new ValueString(), i)));
             else nchks[j].addNum(chk.atd(i));
           }
         }

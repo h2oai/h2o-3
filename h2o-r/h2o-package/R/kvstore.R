@@ -39,7 +39,9 @@
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' h2o.ls(localH2O)
+#' @export
 h2o.ls <- function(conn = h2o.getConnection()) {
+  gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
@@ -55,6 +57,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #'
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
+#' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' library(h2o)
@@ -64,9 +67,16 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.ls(localH2O)
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
-h2o.removeAll<-
-function(conn = h2o.getConnection()) {
-  invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE"))
+#' @export
+h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
+  tryCatch(
+    invisible(.h2o.__remoteSend(conn, .h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    error = function(e) {
+      print("Timeout on DELETE /DKV from R")
+      print("Attempt thread dump...")
+      h2o.killMinus3(conn)
+      stop(e)
+    })
 }
 
 #
@@ -77,6 +87,7 @@ function(conn = h2o.getConnection()) {
 #' @param keys The hex key associated with the object to be removed.
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
+#' @export
 h2o.rm <- function(keys, conn = h2o.getConnection()) {
   if (is(keys, "H2OConnection")) {
     temp <- keys
@@ -84,10 +95,11 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
+  if( is(keys, "H2OFrame") ) keys <- keys@key
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
-    .h2o.__remoteSend(conn, .h2o.__REMOVE, key=keys[[i]], method = "DELETE")
+    .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", keys[[i]]), method = "DELETE")
 }
 
 #'
@@ -130,11 +142,19 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #' @param data An \linkS4class{H2OFrame} object
 #' @param key The hex key to be associated with the H2O parsed data object
 #'
+#' @export
 h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
+  t <- !.is.eval(data)
+  if( t ) {
+    tk <- data@key
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = tk)
+  }
+
   .key.validate(key)
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  res <- .h2o.nary_frame_op("rename", data, key, key = key, linkToGC = FALSE)
+  expr <- paste0("(= !", key, " %", data@key, ")")
+  res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
   .byref.update.frame(res)
 }
 
@@ -148,6 +168,7 @@ h2o.assign <- function(data, key) {
 #'             of the server running H2O.
 #' @param linkToGC a logical value indicating whether to remove the underlying key
 #'        from the H2O cluster when the R proxy object is garbage collected.
+#' @export
 h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(key, "H2OConnection")) {
     temp <- key
@@ -176,6 +197,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
 #' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
 #' model.retrieved <- h2o.getModel(key, localH2O)
+#' @export
 h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(key, "H2OConnection")) {
     temp <- key
@@ -190,52 +212,67 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  MetricsClass <- paste0("H2O", model_category, "Metrics")
+  # setup the metrics objects inside of model...
+  model$training_metrics    <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
   parameters <- list()
+  allparams  <- list()
   lapply(json$parameters, function(param) {
     if (!is.null(param$actual_value)) {
       name <- param$name
-      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
-      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
-        value <- param$actual_value
-        mapping <- .type.map[param$type,]
-        type    <- mapping[1L, 1L]
-        scalar  <- mapping[1L, 2L]
+      value <- param$actual_value
+      mapping <- .type.map[param$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
 
-        if (type == "numeric" && value == "Infinity")
-          value <- Inf
-        else if (type == "numeric" && value == "-Infinity")
-          value <- -Inf
+      if (type == "numeric" && value == "Infinity")
+        value <- Inf
+      else if (type == "numeric" && value == "-Infinity")
+        value <- -Inf
 
-        # Prase frame information to a key
-        if (type == "H2OFrame")
-          value <- value$name
-
-        # Response column needs to be parsed
-        if (name == "response_column")
-          value <- value$column_name
-        parameters[[name]] <<- value
+      # Parse frame information to a key
+      if (type == "H2OFrame")
+        value <- value$name
+      # Parse model information to a key
+      if (type == "H2OModel") {
+        value <- value$name
       }
+
+      # Response column needs to be parsed
+      if (name == "response_column")
+        value <- value$column_name
+      allparams[[name]] <<- value
+      # Store only user changed parameters into parameters
+      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value))
+        parameters[[name]] <<- value
     }
   })
 
   # Convert ignored_columns/response_column to valid R x/y
   cols <- colnames(h2o.getFrame(conn, parameters$training_frame))
-  
+
   parameters$x <- setdiff(cols, parameters$ignored_columns)
+  allparams$x <- setdiff(cols, allparams$ignored_columns)
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
+    allparams$y <- allparams$response_column
     parameters$x <- setdiff(parameters$x, parameters$y)
+    allparams$x <- setdiff(allparams$x, allparams$y)
   }
 
+  allparams$ignored_columns <- NULL
+  allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-
-  .newH2OObject(Class      = Class,
-                conn       = conn,
-                key        = json$key$name,
-                algorithm  = json$algo,
-                parameters = parameters,
-                model      = model,
-                linkToGC   = linkToGC)
+  .newH2OObject(Class         = Class,
+                conn          = conn,
+                key           = json$key$name,
+                algorithm     = json$algo,
+                parameters    = parameters,
+                allparameters = allparams,
+                model         = model,
+                linkToGC      = linkToGC)
 }

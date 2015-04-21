@@ -2,6 +2,7 @@ package water.parser;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OParseException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
@@ -25,7 +27,7 @@ public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
-  public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, false,0/*guess header*/); }
+  public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, false, ParseSetup.GUESS_HEADER); }
 
   // Guess setup from inspecting the first Key only, then parse.
   // Suitable for e.g. testing setups, where the data is known to be sane.
@@ -90,25 +92,17 @@ public final class ParseDataset extends Job<Frame> {
       totalParseSize += getByteVec(k).length();
     }
 
-    Vec update;
-    Iced ice;
-    Futures fs = new Futures();
-    Log.info("Parse chunk size " + setup._chunk_size);
+    // set the parse chunk size for files
     for( int i = 0; i < keys.length; ++i ) {
-      ice = DKV.getGet(keys[i]);
-      update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
-      if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update).setChunkSize(setup._chunk_size);
-        DKV.put(update._key, update, fs);
-        fs.blockForPending();
-        // also update Frame to invalidate local caches
-        if (ice instanceof Frame) {
-          ((Frame) ice).reloadVecs();
-          DKV.put(((Frame)ice)._key, ice, fs);
-        }
+      Iced ice = DKV.getGet(keys[i]);
+      if(ice instanceof FileVec) {
+        ((FileVec) ice).setChunkSize(setup._chunk_size);
+        Log.info("Parse chunk size " + setup._chunk_size);
+      } else if(ice instanceof Frame && ((Frame)ice).vec(0) instanceof FileVec) {
+        ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
+        Log.info("Parse chunk size " + setup._chunk_size);
       }
     }
-    fs.blockForPending();
 
     long memsz = H2O.CLOUD.memsz();
     if( totalParseSize > memsz*4 )
@@ -143,13 +137,19 @@ public final class ParseDataset extends Job<Frame> {
       _delete_on_done = delete_on_done;
     }
     @Override public void compute2() {
-      parse_impl(_job, _keys, _setup, _delete_on_done);
+      parseAllKeys(_job, _keys, _setup, _delete_on_done);
       tryComplete();
     }
 
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-      if( _job != null ) _job.failed(ex);
+      if( _job != null ) {
+        if (ex instanceof H2OParseException) {
+          _job.cancel();
+          throw (H2OParseException) ex;
+        }
+        else _job.failed(ex);
+      }
       return true;
     }
     @Override public void onCompletion(CountedCompleter caller) { _job.done(); }
@@ -161,12 +161,13 @@ public final class ParseDataset extends Job<Frame> {
   }
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
+  private static void parseAllKeys(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._number_columns > 0;
     if( setup._column_names != null &&
         ( (setup._column_names.length == 0) ||
           (setup._column_names.length == 1 && setup._column_names[0].isEmpty())) )
       setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
+    if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
@@ -347,7 +348,12 @@ public final class ParseDataset extends Job<Frame> {
       } else if (etk._gEnums != null) {
         for( int i : _ecols ) {
           if( _gEnums[i] == null ) _gEnums[i] = etk._gEnums[i];
-          else if( etk._gEnums[i] != null ) _gEnums[i].merge(etk._gEnums[i]);
+          else if( etk._gEnums[i] != null ) {
+            _gEnums[i].merge(etk._gEnums[i]);
+            if (_gEnums[i].isMapFull())
+              throw new H2OParseException("Column contains over "+Categorical.MAX_ENUM_SIZE
+              +" unique values and exceeds limits.  Consider parsing this column as string values.");
+          }
         }
         for( int i = 0; i < _lEnums.length; ++i )
           if( _lEnums[i] == null ) _lEnums[i] = etk._lEnums[i];
@@ -424,7 +430,7 @@ public final class ParseDataset extends Job<Frame> {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    private final ParseSetup _gblSetup; // The expected column layout
+    private final ParseSetup _parseSetup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
@@ -448,8 +454,8 @@ public final class ParseDataset extends Job<Frame> {
 
     int _reservedKeys;
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
-      _vg = vg; _gblSetup = setup;
-      _vecIdStart = _vg.reserveKeys(_reservedKeys = _gblSetup._parse_type == ParserType.SVMLight ? 100000000 : setup._number_columns);
+      _vg = vg; _parseSetup = setup;
+      _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type == ParserType.SVMLight ? 100000000 : setup._number_columns);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
 
@@ -542,51 +548,27 @@ public final class ParseDataset extends Job<Frame> {
       for(int i = 0; i < avs.length; ++i)
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._parse_type == ParserType.SVMLight
-        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._number_columns), _gblSetup._chunk_size, avs)
-        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._number_columns), localSetup._column_types, _gblSetup._chunk_size, avs);
+        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._number_columns), _parseSetup._chunk_size, avs)
+        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
     }
 
     // Called once per file
     @Override public void map( Key key ) {
-      // Get parser setup info for this chunk
+      ParseSetup localSetup = new ParseSetup(_parseSetup);
       ByteVec vec = getByteVec(key);
       final int chunkStartIdx = _fileChunkOffsets[_lo];
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      byte[] bits = ZipUtil.unzipBytes(zips,cpr, _gblSetup._chunk_size);
-      ParseSetup localSetup = _gblSetup.guessSetup(bits, 0/*guess header in each file*/);
 
-      localSetup._chunk_size = _gblSetup._chunk_size;
-
-      //check local setup info
-      if( !localSetup._is_valid) {
-        _errors = localSetup._errors;
-        chunksAreLocal(vec,chunkStartIdx,key);
-        return;
-      } else if (!localSetup.isCompatible(_gblSetup)) {
-        // Local setup should be nearly the same as the global all-files setup,
-        // with maybe the header-flag changed.
-        //TODO throw error "Conflicting file layouts, expecting: " + _setup + " but found " + localSetup;
-        return;
-      }
-
-      // Allow dup headers, if they are equals-ignoring-case
-      boolean has_hdr = false;
-      if (_gblSetup._check_header == 1 && localSetup._check_header == 1) has_hdr = true;
-      if( has_hdr ) {           // Both have headers?
-        for( int i = 0; has_hdr && i < localSetup._column_names.length; ++i )
-          has_hdr = localSetup._column_names[i].equalsIgnoreCase(_gblSetup._column_names[i]);
-        if( !has_hdr )          // Headers not compatible?
-          // Then treat as no-headers, i.e., parse it as a normal row
-          localSetup._check_header = -1;
-      }
+      if (localSetup._check_header == ParseSetup.HAS_HEADER) //check for header on local file
+        localSetup._check_header = localSetup.parser().fileHasHeader(ZipUtil.unzipBytes(zips,cpr, localSetup._chunk_size), localSetup);
 
       // Parse the file
       try {
         switch( cpr ) {
         case NONE:
-          if( localSetup._parse_type._parallelParseSupported ) {
+          if( _parseSetup._parse_type._parallelParseSupported ) {
             DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
             addToPendingCount(1);
             dp.setCompleter(this);
@@ -607,6 +589,11 @@ public final class ParseDataset extends Job<Frame> {
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup,makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            // check for more files in archive
+            ZipEntry ze2 = zis.getNextEntry();
+            if (ze2 != null && !ze.isDirectory()) {
+              Log.warn("Only single file zip archives are currently supported, only file: "+ze.getName()+" has been parsed.  Remaining files have been ignored.");
+            }
           else zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
@@ -622,6 +609,8 @@ public final class ParseDataset extends Job<Frame> {
         }
       } catch( IOException ioe ) {
         throw new RuntimeException(ioe);
+      } catch (H2OParseException pe) {
+        throw new H2OParseException(key,pe);
       }
     }
 
@@ -713,7 +702,7 @@ public final class ParseDataset extends Job<Frame> {
         default:
           throw H2O.unimpl();
         }
-        p.parallelParse(in.cidx(),din,dout);
+        p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);
         Job.update(in._len,_job_key); // Record bytes parsed
 
@@ -752,7 +741,7 @@ public final class ParseDataset extends Job<Frame> {
     // Find & remove all partially built output chunks & vecs
     private Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2Enum.length;
-      int ncols = _gblSetup._number_columns;
+      int ncols = _parseSetup._number_columns;
       for( int i = 0; i < ncols; ++i ) {
         Key vkey = _vg.vecKey(_vecIdStart + i);
         Keyed.remove(vkey,fs);
