@@ -281,7 +281,9 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' @param data An \linkS4class{H2OFrame}. The model will make predictions
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
-#'        column names, types, and dimensions.
+#'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
+#' @param train A logical value indicating whether to return the training metrics (constructed during training).
+#' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
 #' @param ... Extra args passed in for use by other functions.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
@@ -293,43 +295,47 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, data=prostate.hex)
 #' @export
-h2o.performance <- function(model, data=NULL, ...) {
+h2o.performance <- function(model, data=NULL, train=FALSE, valid=FALSE, ...) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
   if(!is.null(data) && !is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
 
-  l <- list(...)
-  if( length(l)!=0 ) {  # basically only do this if the args are legit passed in... otherwise, always compute from scratch...
-    l <- .trainOrValid(l)
-    if(      l$train )  return(model@model$training_metrics)
-    else if( l$valid )  return(model@model$validation_metrics)
-    else                return(NULL)
+  missingData <- missing(data) || is.null(data)
+  trainingFrame <- model@parameters$training_frame
+  data.key <- if( missingData ) trainingFrame else data@key
+  if( !missingData && data.key == trainingFrame ) {
+    warning("Given data is same as the training data. Returning the training metrics.")
+    return(model@model$training_metrics)
   }
-  parms <- list()
-  parms[["model"]] <- model@key
-  if(!is.null(data))
-    parms[["frame"]] <- data@key
+  else if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
+  else if( missingData &&  valid ) {
+    if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
+    else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
+  }
+  else if( !missingData ) {
+    parms <- list()
+    parms[["model"]] <- model@key
+    parms[["frame"]] <- data.key
+    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@key,data.key), .params = parms)
 
-  if( missing(data) ) res <- .h2o.__remoteSend(model@conn, method = "GET", .h2o.__MODEL_METRICS(model@key))
-  else                res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@key,data@key), .params = parms)
-
-  algo <- model@algorithm
-
-  ####
-  # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
-  data.key <- if( missing(data) || is.null(data) ) model@parameters$training_frame else data@key
-  model_metrics <- Filter(function(mm) { mm$frame$name==data.key}, res$model_metrics)[[1]]   # filter on data.key, R's builtin Filter function
-  #
-  ####
-  metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
-  model_category <- model_metrics$model_category
-  Class <- paste0("H2O", model_category, "Metrics")
-  metrics$frame <- list()
-  metrics$frame$name <- data.key
-  new(Class     = Class,
-      algorithm = algo,
-      on_train  = missing(data),
-      metrics   = metrics)
+    ####
+    # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+    model_metrics <- Filter(function(mm) { mm$frame$name==data.key}, res$model_metrics)[[1]]   # filter on data.key, R's builtin Filter function
+    #
+    ####
+    metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
+    model_category <- model_metrics$model_category
+    Class <- paste0("H2O", model_category, "Metrics")
+    metrics$frame <- list()
+    metrics$frame$name <- data.key
+    new(Class     = Class,
+        algorithm = model@algorithm,
+        on_train  = missingData,
+        metrics   = metrics)
+  } else {
+    warning("Shouldn't be here, returning NULL")
+    return(NULL)
+  }
 }
 
 #' Retrieve an H2O AUC metric

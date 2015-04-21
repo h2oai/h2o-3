@@ -451,7 +451,7 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
     callNextMethod(object)  # call super
     if( object@on_train ) .showMultiMetrics(object, "Training")
     else                  .showMultiMetrics(object, "Validation")
-  }
+  } else print(NULL)
 })
 
 #' @export
@@ -474,7 +474,7 @@ setMethod("show", "H2OClusteringMetrics", function(object) {
     cat("\nAvg Between SS: ", m$avg_between_ss)
     cat("\nAvg SS: ", m$avg_ss, "\n")
     print(m$centroid_stats)
-  }
+  } else print(NULL)
 })
 
 #' @rdname H2OModelMetrics-class
