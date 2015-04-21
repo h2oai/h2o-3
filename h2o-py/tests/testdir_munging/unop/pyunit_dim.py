@@ -31,13 +31,13 @@ def dim_checks(ip,port):
   h2o_slice = h2o_data[4]
   np_slice = np_data[:,4]
 
-  h2o_rows = len(h2o_slice)
-  np_rows= np_slice.shape[0]
+  h2o_rows, h2o_cols = h2o_slice.dim()
+  np_rows = np_slice.shape[0]
 
-  print 'The dimension of h2o column slice is: {0} rows'.format(h2o_rows)
-  print 'The dimension of numpy array column slice is: {0} rows'.format(np_rows)
+  print 'The dimensions of h2o column slice is: {0} x {1}'.format(h2o_rows, h2o_cols)
+  print 'The dimensions of numpy array column slice is: {0} x 1'.format(np_rows)
 
-  assert h2o_rows == np_rows, "expected equal number of rows"
+  assert [h2o_rows, h2o_cols] == [np_rows, 1], "expected equal number of columns and rows"
 
   # Log.info("OK, now try an operator, e.g. '&', and then check dimensions agao...")
 
