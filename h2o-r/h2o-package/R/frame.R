@@ -386,28 +386,31 @@ as.Date.H2OFrame <- function(x, format, ...) {
 }
 
 #' @export
-h2o.setTimezone <- function(client, tz) {
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
-  if (!is.character(tz)) stop('tz must be a string')
-
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_SETTIMEZONE, tz = tz)
-  res$tz
+h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
+  expr <- paste0("(setTimeZone \"", tz, "\"")
+  ret <- .h2o.raw_expr_op(expr,  key = .key.make(conn, "setTimeZone"))
+  h2o.rm(ret@key, ret@conn)
+  ret
 }
 
 #' @export
-h2o.getTimezone <- function(client) {
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
-
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_GETTIMEZONE)
-  res$tz
+h2o.getTimezone <- function(conn=h2o.getConnection()) {
+  ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
+  mutable <- new("H2OFrameMutableState", ast = ast)
+  fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "getTimeZone"), linkToGC = TRUE, mutable = mutable)
+  ret <- as.data.frame(fr)
+  h2o.rm(fr@key, fr@conn)
+  ret
 }
 
 #' @export
-h2o.listTimezones <- function(client) {
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
-
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_LISTTIMEZONES)
-  cat(res$tzlist)
+h2o.listTimezones <- function(conn=h2o.getConnection()) {
+  ast <- new("ASTNode", root = new("ASTApply", op = "listTimeZones"))
+  mutable <- new("H2OFrameMutableState", ast = ast)
+  fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "listTimeZones"), linkToGC = TRUE, mutable = mutable)
+  ret <- as.data.frame(fr)
+  h2o.rm(fr@key, fr@conn)
+  ret
 }
 #
 #diff.H2OFrame <- function(x, lag = 1, differences = 1, ...) {
