@@ -269,7 +269,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
 #'
 #' Uses the cross-classifying factors to build a table of counts at each combination of factor levels.
 #'
-#' @param x An \linkS4class{H2OFrame} object with at most two integer or factor columns.
+#' @param x An \linkS4class{H2OFrame} object with at most two columns.
 #' @param y An \linkS4class{H2OFrame} similar to x, or \code{NULL}.
 #' @return Returns a tabulated \linkS4class{H2OFrame} object.
 #' @examples
