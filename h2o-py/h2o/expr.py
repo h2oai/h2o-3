@@ -203,7 +203,7 @@ class Expr(object):
       stddev = sqrt(ssq / (n - 1)) if t != 'enum' else None
       return {'type': t, 'mins': mins, 'maxs': maxs, 'mean': mean, 'sigma': stddev, 'zeros': zeros, 'missing': missing}
     if self._summary: return self._summary
-    j = h2o.frame(self._data)
+    j = h2o.frame_summary(self._data)
     self._summary = j['frames'][0]['columns'][0]
     return self._summary
 

@@ -225,6 +225,15 @@ def frame(key):
   """
   return H2OConnection.get_json("Frames/" + key)
 
+def frame_summary(key):
+  """
+  Retrieve metadata and summary information for a key that points to a Frame/Vec
+  :param key: A pointer to a Frame/Vec in H2O
+  :return: Meta and summary info on the frame
+  """
+  # frames_meta = H2OConnection.get_json("Frames/" + key)
+  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  return frame_summary
 
 # Non-Mutating cbind
 def cbind(left,right):
