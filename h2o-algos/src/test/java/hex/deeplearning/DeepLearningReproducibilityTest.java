@@ -106,8 +106,11 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // check reproducibility
           for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
-          // exposes bug: no work gets done on remote if frame has only 1 chunk and is homed remotely.
           for (Frame f : preds) {
+            if (!TestUtil.isBitIdentical(f, preds[0])) {
+              Log.info(f.toString(0, (int)f.numRows()));
+              Log.info(preds[0].toString(0, (int)f.numRows()));
+            }
             assertTrue(TestUtil.isBitIdentical(f, preds[0]));
           }
           repro_error = repeatErrs.get(0);
