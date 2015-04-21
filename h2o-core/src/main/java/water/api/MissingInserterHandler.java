@@ -4,9 +4,9 @@ import water.util.FrameUtils;
 
 public class MissingInserterHandler extends Handler {
 
-  public MissingInserterV2 run(int version, MissingInserterV2 mis) {
+  public MissingInserterV3 run(int version, MissingInserterV3 mis) {
     FrameUtils.MissingInserter mi = mis.createAndFillImpl();
     mi.execImpl();
-    return (MissingInserterV2)Schema.schema(version, FrameUtils.MissingInserter.class).fillFromImpl(mi);
+    return (MissingInserterV3)Schema.schema(version, FrameUtils.MissingInserter.class).fillFromImpl(mi);
   }
 }

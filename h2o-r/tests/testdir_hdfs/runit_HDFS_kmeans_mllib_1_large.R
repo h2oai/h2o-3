@@ -8,17 +8,16 @@ source('../h2o-runit.R')
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-# Check if we are running inside the 0xdata network by seeing if we can touch
-# the HDP2.1 namenode. Update if using other clusters.
-# Note this should fail on home networks, since 186 is not likely to exist.
-running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=5)
 
-if (running_inside_hexdata) {
-    # hdp2.1 cluster
-    hdfs_name_node = "mr-0xd6"
-    hdfs_cross_file = "/datasets/BigCross.data"
+# Check if we are running inside the H2O network by seeing if we can touch
+# the namenode.
+running_inside_h2o = is.running.internal.to.h2o()
+
+if (running_inside_h2o) {
+    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+    hdfs_cross_file = "/datasets/runit/BigCross.data"
 } else {
-    stop("Not running on 0xdata internal network.  No access to HDFS.")
+    stop("Not running on H2O internal network.  No access to HDFS.")
 }
 
 #----------------------------------------------------------------------
@@ -47,7 +46,7 @@ for(k in ncent) {
 
   path <- paste("smalldata/mllib_bench/bigcross_centers_", k, ".csv", sep = "")
   clust.mllib <- read.csv(locate(path), header = FALSE)
-  clust.h2o <- as.data.frame(as.matrix(cross.km@model$centers))
+  clust.h2o <- getCenters(cross.km)
   
   # Sort in ascending order by first dimension for comparison purposes
   clust.mllib <- clust.mllib[order(clust.mllib[,1]),]
@@ -61,10 +60,10 @@ for(k in ncent) {
   # expect_equal(t(clust.h2o), t(clust.mllib), tolerance = 0.3)
   
   wcsse.mllib <- err.mllib[which(err.mllib[,1] == k),2]
-  wcsse.mllib <- cross.km@model$avg_within_ss
+  wcsse.mllib <- getAvgWithinSS(cross.km)
   cat("\nMLlib Average Within-Cluster SSE: ", wcsse.mllib, "\n")
   cat("H2O Average Within-Cluster SSE: ", wcsse.mllib, "\n")
-  expect_equal(cross.km@model$avg_within_ss, wcsse.mllib)
+  expect_equal(getAvgWithinSS(cross.km), wcsse.mllib)
 }
 
 PASS_BANNER()

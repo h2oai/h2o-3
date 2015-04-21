@@ -1,7 +1,7 @@
 package water.parser;
 
 import water.*;
-import water.api.ParseSetupV2;
+import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OInternalParseException;
 import water.exceptions.H2OParseException;
@@ -11,7 +11,6 @@ import water.fvec.Vec;
 import water.fvec.UploadFileVec;
 import water.fvec.FileVec;
 import water.fvec.ByteVec;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -76,7 +75,7 @@ public final class ParseSetup extends Iced {
    *
    * @param ps Parse setup settings from client
    */
-  public ParseSetup(ParseSetupV2 ps) {
+  public ParseSetup(ParseSetupV3 ps) {
     this(false, 0, null, ps.parse_type, ps.separator, ps.single_quotes,
             ps.check_header, GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
             null, ps.na_strings, null, ps.chunk_size);
@@ -315,10 +314,6 @@ public final class ParseSetup extends Iced {
                   "Remaining files have been ignored.";
         }
       }
-
-      // guesser chunk uses default
-      if (bv instanceof FileVec && !(bv instanceof UploadFileVec))
-        ((FileVec) bv).clearCachedChunk(0);
     }
 
     /**
@@ -328,99 +323,99 @@ public final class ParseSetup extends Iced {
     public void reduce(GuessSetupTsk other) {
       if (other._empty) return;
 
-      if (_gblSetup == null || !_gblSetup._is_valid) {
+      if (_gblSetup == null) {
         _empty = false;
         _gblSetup = other._gblSetup;
         assert (_gblSetup != null);
-/*        try {
-          _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;
-          _gblSetup._setupFromFile = other._gblSetup._setupFromFile;
-//        }
-        } catch (Throwable t) {
-          t.printStackTrace();
-        }*/
+        return;
       }
 
-      if (other._gblSetup._is_valid && !_gblSetup.isCompatible(other._gblSetup)) {
-        //   if (_conflicts.contains(_gblSetup._setupFromFile) && !other._conflicts.contains(other._gblSetup._setupFromFile)) {
-        //     _gblSetup = other._gblSetup; // setups are not compatible, select random setup to send up (thus, the most common setup should make it to the top)
-        //     _gblSetup._setupFromFile = other._gblSetup._setupFromFile;
-        //     _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;
-        //   } else if (!other._conflicts.contains(other._gblSetup._setupFromFile)) {
-        //     _conflicts.add(_gblSetup._setupFromFile);
-        //    _conflicts.add(other._gblSetup._setupFromFile);
-        //  }
-
-        // unify column names
-        if (other._gblSetup._column_names != null) {
-          if (_gblSetup._column_names == null) {
-            _gblSetup._column_names = other._gblSetup._column_names;
-          } else {
-            for (int i = 0; i < _gblSetup._column_names.length; i++) {
-              if (i > other._gblSetup._column_names.length || !_gblSetup._column_names[i].equals(other._gblSetup._column_names[i])) {
-                //TODO throw something more serious
-                Log.warn("Column names do not match between files");
-                _gblSetup._is_valid = false;
-                other._gblSetup._is_valid = false;
-                break;
-              }
-            }
-          }
-        }
-      } else if (other._gblSetup._is_valid) { // merge the two setups
-        //merge ARFF and CSV
-        if (_gblSetup._parse_type == ParserType.CSV && other._gblSetup._parse_type == ParserType.ARFF) {
+      ParseSetup setupA = _gblSetup, setupB = other._gblSetup;
+      if (setupA._is_valid && setupB._is_valid) {
+        _gblSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
+        _gblSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
+        _gblSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
+        _gblSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
+        if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
+          ;// do nothing parse_type and col_types are already set correctly
+        else if (setupA._parse_type == ParserType.CSV && setupB._parse_type == ParserType.ARFF) {
           _gblSetup._parse_type = ParserType.ARFF;
-          _gblSetup._column_types = other._gblSetup._column_types;
-        }
-
-        // ARFF header files won't know the separator, pull from other file
-        if (_gblSetup._separator == GUESS_SEP && other._gblSetup._separator != GUESS_SEP)
-          _gblSetup._separator = other._gblSetup._separator;
-
-        //merge header settings
-        if (_gblSetup._check_header == NO_HEADER && other._gblSetup._check_header == HAS_HEADER)
-          _gblSetup._check_header = HAS_HEADER;
-        else if (_gblSetup._check_header == GUESS_HEADER) Log.err("Header guess failed.");
-
-        // merge column names
-        if (other._gblSetup._column_names != null) {
-          if (_gblSetup._column_names == null) {
-            _gblSetup._column_names = other._gblSetup._column_names;
-          } else {
-            for (int i = 0; i < _gblSetup._column_names.length; i++) {
-              if (!_gblSetup._column_names[i].equals(other._gblSetup._column_names[i]))
-                //TODO throw something more serious
-                Log.warn("Column names do not match between files");
-            }
-          }
-
-          //merge column types
-          if (_gblSetup._column_types == null) _gblSetup._column_types = other._gblSetup._column_types;
-          else if (other._gblSetup._column_types != null) {
-            for (int i = 0; i < _gblSetup._column_types.length; ++i)
-              if (_gblSetup._column_types[i] != other._gblSetup._column_types[i])
-                if (_gblSetup._column_types[i] == Vec.T_BAD)
-                  _gblSetup._column_types[i] = other._gblSetup._column_types[i];
-          }
-        }
-
-        if (_gblSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
-          int n = _gblSetup._data.length;
-          int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
-          _gblSetup._data = Arrays.copyOf(_gblSetup._data, m);
-          System.arraycopy(other._gblSetup._data,1,_gblSetup._data,n,m-n);
-        }
-        _totalParseSize += other._totalParseSize;
+          _gblSetup._column_types = setupB._column_types;
+        } else if (setupA._parse_type == setupB._parse_type) {
+          _gblSetup._column_types = unifyColumnTypes(setupA._column_types, setupB._column_types);
+        } else
+          throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
+                  + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
+      } else {  // one of the setups is invalid, fail
+        // TODO: Point out which file is problem
+        throw new H2OParseSetupException("Cannot determine parse parameters for file.");
       }
-      // merge failures
-/*      if (_failedSetup == null) {
-        _failedSetup = other._failedSetup;
-        _conflicts = other._conflicts;
-      } else {
-        _failedSetup.addAll(other._failedSetup);
-        _conflicts.addAll(other._conflicts);
-      } */
+
+      if (_gblSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
+        int n = _gblSetup._data.length;
+        int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
+        _gblSetup._data = Arrays.copyOf(_gblSetup._data, m);
+        System.arraycopy(other._gblSetup._data, 1, _gblSetup._data, n, m - n);
+      }
+      _totalParseSize += other._totalParseSize;
+    }
+
+    private static int unifyCheckHeader(int chkHdrA, int chkHdrB){
+      if (chkHdrA == GUESS_HEADER || chkHdrB == GUESS_HEADER)
+        throw new H2OParseSetupException("Unable to determine header on a file. Not expected.");
+      if (chkHdrA == HAS_HEADER || chkHdrB == HAS_HEADER) return HAS_HEADER;
+      else return NO_HEADER;
+
+    }
+
+    private static byte unifyColumnSeparators(byte sepA, byte sepB) {
+      if( sepA == sepB) return sepA;
+      else if (sepA == GUESS_SEP) return sepB;
+      else if (sepB == GUESS_SEP) return sepA;
+      // TODO: Point out which file is problem
+      throw new H2OParseSetupException("Column separator mismatch. One file seems to use "
+              + (char) sepA + " and the other uses " + (char) sepB + ".");
+    }
+
+    private static int unifyColumnCount(int cntA, int cntB) {
+      if (cntA == cntB) return cntA;
+      else if (cntA == 0) return cntB;
+      else if (cntB == 0) return cntA;
+      else { // files contain different numbers of columns
+        // TODO: Point out which file is problem
+        throw new H2OParseSetupException("Files conflict in number of columns. " + cntA
+                + " vs. " + cntB + ".");
+      }
+    }
+
+    private static String[] unifyColumnNames(String[] namesA, String[] namesB){
+      if (namesA == null) return namesB;
+      else if (namesB == null) return namesA;
+      else {
+        for (int i = 0; i < namesA.length; i++) {
+          if (i > namesB.length || !namesA[i].equals(namesB[i])) {
+            // TODO improvement: if files match except for blanks, merge?
+            throw new H2OParseSetupException("Column names do not match between files.");
+          }
+        }
+        return namesA;
+      }
+    }
+
+    private static byte[] unifyColumnTypes(byte[] typesA, byte[] typesB){
+      if (typesA == null) return typesB;
+      else if (typesB == null) return typesA;
+      else {
+        for (int i = 0; i < typesA.length; i++) {
+          if (i > typesB.length || typesA[i] != typesB[i]) {
+            if (typesA[i] == Vec.T_BAD)
+              typesA[i] = typesB[i];
+            // TODO improvement: add file names
+            else throw new H2OParseSetupException("Column " + (i+1) + " type mismatched for at least two files. Got types: " + Vec.TYPE_STR[typesA[i]] + " and " + Vec.TYPE_STR[typesB[i]]);
+          }
+        }
+        return typesA;
+      }
     }
   }
 
@@ -452,21 +447,6 @@ public final class ParseSetup extends Iced {
         }
     }
     return new ParseSetup( false, 0, new String[]{"Cannot determine file type"}, pType, sep, singleQuotes, checkHeader, ncols, columnNames, null, domains, naStrings, null, FileVec.DFLT_CHUNK_SIZE);
-  }
-
-  public boolean isCompatible(ParseSetup other){
-    // incompatible file types
-    if ((_parse_type != other._parse_type)
-            && !(_parse_type == ParserType.ARFF && other._parse_type == ParserType.CSV )
-              && !(_parse_type == ParserType.CSV && other._parse_type == ParserType.ARFF ))
-      throw new H2OParseSetupException("Cannot parse files of type "+_parse_type+" and "+
-              other._parse_type+" as one dataset","File type mismatch: "+_parse_type+", "+other._parse_type);
-
-    //different separators or col counts
-    if( other._separator != _separator && other._separator != GUESS_SEP )
-      return false;
-    // compatible column count
-    return _number_columns == other._number_columns || other._number_columns == 0 || _number_columns == 0;
   }
 
   public static String hex( String n ) {

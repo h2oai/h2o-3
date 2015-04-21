@@ -37,6 +37,29 @@ public class NewChunkTest extends TestUtil {
     vec.remove();
   }
 
+  @Test public void testSparseDoubles(){
+    NewChunk nc = new NewChunk(new double[]{Math.PI});
+    int N = 1000;
+    nc.addZeros(N);
+    nc.addNum(Math.PI);
+    Chunk c = nc.compress();
+    assertEquals(Math.PI,c.atd(0),1e-16);
+    for(int i = 1; i <= N; ++i)
+      assertEquals(0,c.atd(i),1e-16);
+    assertEquals(Math.PI,c.atd(N+1),1e-16);
+  }
+  @Test public void testSparseDoubles2(){
+    NewChunk nc = new NewChunk(null, 0, true);
+    int N = 1000;
+    nc.addZeros(N);
+    nc.addNum(Math.PI);
+    nc.addZeros(N);
+    Chunk c = nc.compress();
+    int i=0;
+    for(;i<N;)     assertEquals(0,c.atd(i++),1e-16);
+    assertEquals(         Math.PI,c.atd(i++),1e-16);
+    for(;i<2*N+1;) assertEquals(0,c.atd(i++),1e-16);
+  }
   /**
    * Constant Double Chunk - C0DChunk
    */

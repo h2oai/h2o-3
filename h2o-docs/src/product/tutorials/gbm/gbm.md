@@ -41,7 +41,7 @@ Now, parse the imported data:
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
+  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
 
 
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  
@@ -55,12 +55,11 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
+0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `Gradient Boosting Machine` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. 
 0. From the drop-down **Response** list, select column 1 (`C1`).  
-0. Verify the **Do_classification** checkbox is checked. 
 0. In the **Ntrees** field, specify the number of trees to build  (for this example, `20`). 
 0. In the **Max_depth** field, specify the maximum number of edges between the top node and the furthest node as a stopping criteria (for this example, use the default value of `5`). 
 0. In the **Min_rows** field, specify the minimum number of observations (rows) to include in any terminal node as a stopping criteria (for this example, `25`). 
@@ -74,21 +73,13 @@ Now, parse the imported data:
 
 ### Viewing GBM Results
 
-To view the results, click the **View** button. GBM output for classification returns the output as a graph: 
+The output for GBM includes the following: 
 
-
-![GBM Results](../images/GBM_Output.png)
-
-
-A graph of the variable importances is also included: 
-
- ![GBM Variable Importances](../images/GBM_VarImp.png)
-
-
-
-To view a confusion matrix showing the mean squared error (MSE) values for each tree, click the **Inspect** button, then click the **output** link. 
-  
-  ![GBM MSE values](../images/GBM_MSE.png)
+- Output (model category, validation metrics if applicable, and initf)
+- Model summary (number of trees, min. depth, max. depth, mean depth, min. leaves, max. leaves, mean leaves)
+- Scoring history (number of the trees with training MSE for each tree)
+- Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, and R2)
+- Variable importances (variables, relative importance, scaled importance, and percentage)
 
 For classification models, the MSE is based on the classification error within the tree. For regression models, MSE is calculated from the squared deviances, as it is in standard regressions.
 
@@ -96,9 +87,6 @@ For classification models, the MSE is based on the classification error within t
 ###Viewing Predictions
 
 To view predictions, click the **Predict** button. From the drop-down **Frame** list, select the arrhythmia.hex file and click the **Predict** button. 
-
-  ![GBM Predictions](../images/GBM_Predict.png)
-  
 
 To view more prediction data, click the **View Prediction Frame** button.
 

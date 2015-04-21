@@ -1,5 +1,5 @@
 #options(echo=F)
-options(repos = "http://cran.stat.ucla.edu")
+options(repos = "http://cran.cnr.berkeley.edu/")
 
 usePackage<-
 function(p) {
@@ -21,7 +21,11 @@ invisible(lapply(packages, usePackage))
 library(R.utils)
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
-if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+if( "h2o" %in% rownames(installed.packages()) ) {
+  lapply(.libPaths(), function(p) {
+    tryCatch(remove.packages("h2o", p), error=function(e) { paste0("No h2o package in libPath: ", p) })
+  })
+}
 failed <<- F
 tryCatch(library(h2o), error = function(e) {failed <<- T})
 if (! failed) {

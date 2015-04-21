@@ -4,13 +4,14 @@
 description = "H2O Core"
 
 dependencies {
+  // Dependency on shared model support
+  compile project (':h2o-genmodel')
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"
   compile "gov.nist.math:jama:1.0.3"
   compile "org.apache.commons:commons-math3:3.3"
   compile "org.apache.directory.studio:org.apache.commons.lang:2.6"
-  //compile "com.brsanthu:google-analytics-java:1.1.1"
-  //compile "org.slf4j:slf4j-nop:1.7.5"
+  compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
@@ -29,7 +30,7 @@ dependencies {
   compile "org.reflections:reflections:0.9.9"
 
   // Jets3t is required by S3N support
-  compile 'net.java.dev.jets3t:jets3t:0.9.2'
+  compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
   testCompile "junit:junit:${junitVersion}"
 }

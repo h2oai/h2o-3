@@ -1,14 +1,13 @@
 package water
 
 import java.io.File
-import org.junit.{Test,BeforeClass,Ignore}
-import water.fvec.{DataFrame,MapReduce}
-import scala.reflect.ClassTag
+import org.junit.{Test,BeforeClass,Ignore, Assert}
+import water.fvec.{H2OFrame, MapReduce}
 
 class BasicTest extends TestUtil {
   @Test def basicTest() = {
     //val fr = new DataFrame(new File("../smalldata/iris/iris_wheader.csv"))
-    val fr = DataFrame(new File("../smalldata/junit/cars_nice_header.csv"))
+    val fr = H2OFrame(new File("../smalldata/junit/cars_nice_header.csv"))
     val fr2 = fr('cylinders,'displacement)   // Predict delay from year alone
     //val fr = new DataFrame(new File("../smalldata/airlines/allyears2k_headers.zip"))
     try {
@@ -70,7 +69,7 @@ class BasicTest extends TestUtil {
   // test is off because of its size
   @Test @Ignore def biggerTest() = {
     //val fr = new DataFrame(new File("../smalldata/junit/cars_nice_header.csv"))
-    val fr = DataFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
+    val fr = H2OFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
     val fr2 = fr('C1,'C2)
     try {
       val iters = 100
@@ -95,6 +94,35 @@ class BasicTest extends TestUtil {
     }
   }
 
+  @Test def testDataFrameLoadAPI(): Unit = {
+    val filename1 = "../smalldata/iris/iris_wheader.csv"
+    val filename2 = "../smalldata/iris/iris.csv"
+    val file1 = new File(filename1)
+    val file2 = new File(filename2)
+    val uri1 = file1.toURI
+    val uri2 = file2.toURI
+    // Create frames
+    val fr1 = new H2OFrame(file1)
+    val fr2 = new H2OFrame(uri1)
+    val fr3 = new H2OFrame(uri1, uri2)
+    val fr4 = new H2OFrame(fr1)
+    val fr5 = new H2OFrame("iris_wheader.hex")
+
+    Assert.assertEquals(5, fr1.numCols())
+    Assert.assertEquals(150, fr1.numRows())
+    Assert.assertEquals(fr1.numCols(), fr2.numCols())
+    Assert.assertEquals(fr1.numCols(), fr3.numCols())
+    Assert.assertEquals(fr1.numCols(), fr4.numCols())
+    Assert.assertEquals(fr1.numCols(), fr5.numCols())
+    Assert.assertEquals(fr1.numRows(), fr2.numRows())
+    Assert.assertEquals(2*fr1.numRows(), fr3.numRows())
+    Assert.assertEquals(fr1.numRows(), fr5.numRows())
+    // Cleanup
+    fr1.delete()
+    fr2.delete()
+    fr3.delete()
+    // We do not need cleanup fr4,fr5 since they are just referencing fr1
+  }
 }
 
 object BasicTest extends TestUtil {

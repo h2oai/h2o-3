@@ -1,7 +1,6 @@
 package water.persist;
 
 import water.H2O;
-import water.Iced;
 import water.Key;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
@@ -21,6 +20,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * on what is on the classpath.
  */
 public class PersistManager {
+  final static public int MAX_BACKENDS = 8;
+
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public static class Schemes {
     public static final String FILE = "file";
@@ -29,10 +30,25 @@ public class PersistManager {
     public static final String NFS  = "nfs";
   }
 
+  public static class PersistStatsEntry {
+    public PersistStatsEntry() {
+      store_count = new AtomicLong();
+      store_bytes = new AtomicLong();
+      delete_count = new AtomicLong();
+      load_count = new AtomicLong();
+      load_bytes = new AtomicLong();
+    }
+
+    public AtomicLong store_count;
+    public AtomicLong store_bytes;
+    public AtomicLong delete_count;
+    public AtomicLong load_count;
+    public AtomicLong load_bytes;
+  }
+
   private Persist[] I;
-  private AtomicLong storeCount;
-  private AtomicLong deleteCount;
-  private AtomicLong loadCount;
+  private PersistStatsEntry[] stats;
+  public PersistStatsEntry[] getStats() { return stats; }
 
   public static boolean isHdfsPath(String path) {
     String s = path.toLowerCase();
@@ -49,10 +65,11 @@ public class PersistManager {
   }
 
   public PersistManager(URI iceRoot) {
-    I = new Persist[8];
-    storeCount = new AtomicLong();
-    deleteCount = new AtomicLong();
-    loadCount = new AtomicLong();
+    I = new Persist[MAX_BACKENDS];
+    stats = new PersistStatsEntry[MAX_BACKENDS];
+    for (int i = 0; i < stats.length; i++) {
+      stats[i] = new PersistStatsEntry();
+    }
 
     if (iceRoot == null) {
       Log.err("ice_root must be specified.  Exiting.");
@@ -107,29 +124,40 @@ public class PersistManager {
     }
   }
 
-  long getStoreCount() { return storeCount.get(); }
-  long getDeleteCount() { return deleteCount.get(); }
-  long getLoadCount() { return loadCount.get(); }
-
   public void store(int backend, Value v) {
-    storeCount.incrementAndGet();
+    stats[backend].store_count.incrementAndGet();
     I[backend].store(v);
   }
 
   public void delete(int backend, Value v) {
-    deleteCount.incrementAndGet();
+    stats[backend].delete_count.incrementAndGet();
     I[backend].delete(v);
   }
 
   public byte[] load(int backend, Value v) throws IOException {
-    loadCount.incrementAndGet();
+    stats[backend].load_count.incrementAndGet();
     byte[] arr = I[backend].load(v);
+    stats[backend].load_bytes.addAndGet(arr.length);
     return arr;
   }
 
   /** Get the current Persist flavor for user-mode swapping. */
   public Persist getIce() { return I[Value.ICE]; }
 
+  /** Convert given URI into a specific H2O key representation.
+   *
+   * The representation depends on persistent backend, since it will
+   * deduce file location from the key content.
+   *
+   * The method will look at scheme of URI and based on it, it will
+   * ask a backend to provide a conversion to a key (i.e., URI with scheme
+   * 'hdfs' will be forwared to HDFS backend).
+   *
+   * @param uri file location
+   * @return a key encoding URI
+   * @throws IOException in the case of uri conversion problem
+   * @throws water.exceptions.H2OIllegalArgumentException in case of unsupported scheme
+   */
   public final Key anyURIToKey(URI uri) throws IOException {
     Key ikey = null;
     String scheme = uri.getScheme();
@@ -137,8 +165,10 @@ public class PersistManager {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("s3n".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("files".equals(scheme) || scheme == null) {
+    } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
+    } else {
+      throw new H2OIllegalArgumentException("Unsupported schema '" + scheme + "' for given uri " + uri);
     }
     return ikey;
   }

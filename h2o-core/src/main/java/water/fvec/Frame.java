@@ -877,7 +877,8 @@ public class Frame extends Lockable<Frame> {
               last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
           }
           for (int c = 0; c < vecs.length; c++)
-            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c],r);
+            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c], r);
+            else if( vecs[c].isString() ) ncs[c].addStr(last_cs[c],r);
             else                   ncs[c].addNum (last_cs[c].at_abs(r));
         }
       }
@@ -1069,8 +1070,8 @@ public class Frame extends Lockable<Frame> {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
-            if( chk._vec.isUUID() ) nchks[j].addUUID(chk, i);
-            else if(chk._vec.isString()) nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            if( chk instanceof C16Chunk ) nchks[j].addUUID(chk, i);
+            else if(chk instanceof CStrChunk) nchks[j].addStr((chk.atStr(new ValueString(), i)));
             else nchks[j].addNum(chk.atd(i));
           }
         }

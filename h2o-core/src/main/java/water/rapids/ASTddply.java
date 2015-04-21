@@ -18,9 +18,9 @@ import java.util.HashSet;
  *  Third arg is the function to apply to each group.
  */
 public class ASTddply extends ASTOp {
-  protected static long[] _cols;
-  protected static String _fun;
-  protected static AST[] _fun_args;
+  long[] _cols;
+  String _fun;
+  AST[] _fun_args;
   static final String VARS[] = new String[]{ "ary", "{cols}", "FUN"};
   public ASTddply( ) { super(VARS); }
 
@@ -30,49 +30,37 @@ public class ASTddply extends ASTOp {
   @Override ASTddply parse_impl(Exec E) {
     // get the frame to work
     AST ary = E.parse();
-    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
 
     // Get the col ids
-    AST s=null;
-    try {
-      s = E.skipWS().parse(); // this jumps out to le squiggly du parse
-      _cols = ((ASTSeries)s).toArray(); // do the dump to array here -- no worry about efficiency or speed
-
-      // SANITY CHECK COLS:
-      if (_cols.length > 1000) throw new IllegalArgumentException("Too many columns selected. Please select < 1000 columns.");
-
-    } catch (ClassCastException e) {
-
-      assert s != null;
-      try {
-        _cols = new long[]{(long)((ASTNum)s).dbl()};
-      } catch (ClassCastException e2) {
-        throw new IllegalArgumentException("Badly formed AST. Columns argument must be a ASTSeries or ASTNum");
-      }
-    }
+    AST s=E.parse();
+    if( s instanceof ASTLongList) _cols = ((ASTLongList)s)._l;
+    else if( s instanceof ASTNum) _cols = new long[]{(long)((ASTNum)s)._d};
+    else throw new IllegalArgumentException("Columns expected to be a llist or number. Got: " + s.getClass());
 
     // get the fun
-    _fun = ((ASTId)E.skipWS().parse())._id;
+    _fun = ((ASTId)E.parse())._id;
 
     // get any fun args
     ArrayList<AST> fun_args = new ArrayList<>();
-    while(E.skipWS().hasNext()) {
+    while( !E.isEnd() )
       fun_args.add(E.parse());
-    }
-    ASTddply res = (ASTddply)clone();
-    res._asts = new AST[]{ary};
+
     if (fun_args.size() > 0) {
       _fun_args = fun_args.toArray(new AST[fun_args.size()]);
     } else {
       _fun_args = null;
     }
+
+    E.eatEnd();
+    ASTddply res = (ASTddply)clone();
+    res._asts = new AST[]{ary};
     return res;
   }
 
   @Override void apply(Env env) {
     Frame fr = env.popAry();    // The Frame to work on
 
-    // sanity check cols some moar
+    // sanity check cols
     for (long l : _cols) {
       if (l > fr.numCols() || l < 0) throw new IllegalArgumentException("Column "+(l+1)+" out of range for frame columns "+fr.numCols());
     }
@@ -139,7 +127,7 @@ public class ASTddply extends ASTOp {
       }
     }
 
-    // single-threaded result folding -- could be made distrubted/|| for moar speed
+    // single-threaded result folding
     for (Group g: p1._groups.keySet()) {
       int c = 0;
       for (double d : g._ds) nchks.get(c++).addNum(d);
@@ -229,10 +217,11 @@ public class ASTddply extends ASTOp {
     public Group(int len) { _ds = new double[len]; }
     public Group( double ds[] ) { _ds = ds; _hash=hash(); }
     // Efficiently allow groups to be hashed & hash-probed
-    public void fill(int row, Chunk chks[], long cols[]) {
+    public Group fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
+      return this;
     }
     private int hash() {
       long h=0;                 // hash is sum of field bits

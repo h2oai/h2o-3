@@ -416,7 +416,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes']
+algos = ['kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -454,11 +454,11 @@ if verboser:
 
 ####################################
 # test schemas individual GET
-if verbose: print 'Testing /Metadata/schemas/FrameV2. . .'
-schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
-assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
-assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
-assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV2 has an unexpected length: " + repr(schemas)
+if verbose: print 'Testing /Metadata/schemas/FrameV3. . .'
+schemas = a_node.schema(schemaname='FrameV3', timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV3: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV3 is not a list: " + repr(schemas)
+assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV3 has an unexpected length: " + repr(schemas)
 
 if verboser:
     print 'Schemas: '
@@ -557,7 +557,7 @@ assert 'fields' in schemas['schemas'][0], "FAIL: schemas[0] in the schemas resul
 if verbose: print 'Testing CreateFrame. . .'
 created_job = a_node.create_frame(dest='created') # call with defaults
 
-a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV2 instance (aka the Job)
+a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV3 instance (aka the Job)
 
 frames = a_node.frames(key='created')['frames']
 assert len(frames) == 1, "FAIL: expected to find 1 frame called 'created', found: " + str(len(frames))
@@ -697,10 +697,10 @@ models_to_build = [
     ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10], 'loss': 'CrossEntropy' } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1, 'loss': 'CrossEntropy' } ),
 
-    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5, 'loss': 'gaussian' } ),
-# TODO: add toEnum of the response column and put back:        ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
-    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
-    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5, 'distribution': 'gaussian' } ),
+# TODO: add toEnum of the response column and put back:        ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
 ]
 
 built_models = {}
@@ -928,11 +928,11 @@ if verboser:
 
 ####################################
 # test schemas individual GET again
-if verbose: print 'Testing /Metadata/schemas/FrameV2 again. . .'
-schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
-assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
-assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
-assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV2 has an unexpected length: " + repr(schemas)
+if verbose: print 'Testing /Metadata/schemas/FrameV3 again. . .'
+schemas = a_node.schema(schemaname='FrameV3', timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV3: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV3 is not a list: " + repr(schemas)
+assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV3 has an unexpected length: " + repr(schemas)
 
 if verboser:
     print 'Schemas: '

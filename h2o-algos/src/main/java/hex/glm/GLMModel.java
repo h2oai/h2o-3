@@ -9,6 +9,8 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.JCodeGen;
+import water.util.SB;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
@@ -117,37 +119,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final int noff = _dinfo.numStart() - _dinfo._cats;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*chks[i].atd(row_in_chunk);
-    eta += b[b.length-1]; // add intercept
-    double mu = _parms.linkInv(eta);
-    preds[0] = mu;
-    if( _parms._family == Family.binomial ) { // threshold for prediction
-      if(Double.isNaN(mu)){
-        preds[0] = Double.NaN;
-        preds[1] = Double.NaN;
-        preds[2] = Double.NaN;
-      } else {
-        preds[0] = (mu >= _output._threshold ? 1 : 0);
-        preds[1] = 1.0 - mu; // class 0
-        preds[2] =       mu; // class 1
-      }
-    }
-    return preds;
-  }
-
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-    double eta = 0.0;
-    final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(data[i] != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(data[i]-1)];
-    } else { // do not good any levels!
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
-        eta += b[_dinfo._catOffsets[i] + (int)data[i]];
-    }
-    final int noff = _dinfo.numStart() - _dinfo._cats;
-    for(int i = _dinfo._cats; i < data.length; ++i)
-      eta += b[noff+i]*data[i];
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
     preds[0] = mu;
@@ -619,8 +590,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double 		  _null_deviance = Double.NaN;
     double 		  _residual_degrees_of_freedom = Double.NaN;
     double		  _null_degrees_of_freedom = Double.NaN;
-    double      _aic = Double.NaN;
-    double      _auc = Double.NaN;
+    double      _AIC = Double.NaN;
+    double      _AUC = Double.NaN;
     public boolean     _binomial;
     public int rank() { return _submodels[_best_lambda_idx].rank; }
     public boolean isNormalized(){
@@ -699,7 +670,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         for (int i = 1; i < _submodels.length; ++i) {
           GLMValidation val = xval ? _submodels[i].xVal : hval?_submodels[i].holdOutVal:_submodels[i].trainVal;
           if (val == null || val == bestVal) continue;
-          if ((useAuc && val.auc() > bestVal.auc()) || val.residual_deviance < bestVal.residual_deviance) {
+          if ((useAuc && val.AUC() > bestVal.AUC()) || val.residual_deviance < bestVal.residual_deviance) {
             bestVal = val;
             bestId = i;
           }
@@ -715,16 +686,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _null_deviance = Double.NaN;
         _residual_degrees_of_freedom = Double.NaN;
         _null_degrees_of_freedom = Double.NaN;
-        _aic = Double.NaN;
-        _auc = Double.NaN;
+        _AIC = Double.NaN;
+        _AUC = Double.NaN;
       } else {
         _threshold = _submodels[l].trainVal.bestThreshold();
         _residual_deviance = _submodels[l].trainVal.residualDeviance();
         _null_deviance = _submodels[l].trainVal.nullDeviance();
         _residual_degrees_of_freedom = _submodels[l].trainVal.resDOF();
         _null_degrees_of_freedom = _submodels[l].trainVal.nullDOF();
-        _aic = _submodels[l].trainVal.aic();
-        _auc = _submodels[l].trainVal.auc();
+        _AIC = _submodels[l].trainVal.AIC();
+        _AUC = _submodels[l].trainVal.AUC();
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
@@ -783,5 +754,73 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
       glmModel.unlock(_jobKey);
     }
+  }
+
+  @Override protected double[] score0(double[] data, double[] preds) {
+    double eta = 0.0;
+    final double [] b = beta();
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
+      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(data[i] != 0)
+        eta += b[_dinfo._catOffsets[i] + (int)(data[i]-1)];
+    } else { // do not good any levels!
+      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
+        eta += b[_dinfo._catOffsets[i] + (int)data[i]];
+    }
+    final int noff = _dinfo.numStart() - _dinfo._cats;
+    for(int i = _dinfo._cats; i < data.length; ++i)
+      eta += b[noff+i]*data[i];
+    eta += b[b.length-1]; // add intercept
+    double mu = _parms.linkInv(eta);
+    preds[0] = mu;
+    if( _parms._family == Family.binomial ) { // threshold for prediction
+      if(Double.isNaN(mu)){
+        preds[0] = Double.NaN;
+        preds[1] = Double.NaN;
+        preds[2] = Double.NaN;
+      } else {
+        preds[0] = (mu >= _output._threshold ? 1 : 0);
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] =       mu; // class 1
+      }
+    }
+    return preds;
+  }
+
+  @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
+    final int nclass = _output.nclasses();
+    String mname = JCodeGen.toJavaId(_key.toString());
+    JCodeGen.toStaticVar(classCtx,"BETA",beta(),"The Coefficients");
+    JCodeGen.toStaticVar(classCtx,"CATOFFS",_dinfo._catOffsets,"Categorical Offsets");
+    body.ip("double eta = 0.0;").nl();
+    body.ip("final double [] b = BETA;").nl();
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
+      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0)").nl();
+      body.ip("  eta += b[CATOFFS[i] + (int)(data[i]-1)];").nl();
+    } else { // do not good any levels!
+      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i)").nl();
+      body.ip("  eta += b[CATOFFS[i] + (int)(data[i])];").nl();
+    }
+    final int noff = _dinfo.numStart() - _dinfo._cats;
+    body.ip("for(int i = ").p(_dinfo._cats).p("; i < data.length; ++i)").nl();
+    body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
+    body.ip("eta += b[b.length-1]; // add intercept").nl();
+    body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
+    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
+    body.p(");").nl();
+    body.ip("preds[0] = mu;").nl();
+    if( _parms._family == Family.binomial ) { // threshold for prediction
+      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0);").nl();
+      body.ip("preds[1] = 1.0 - mu; // class 0").nl();
+      body.ip("preds[2] =       mu; // class 1").nl();
+    }
+  }
+
+  @Override protected SB toJavaInit(SB sb, SB fileContext) {
+    sb.nl();
+    sb.ip("public boolean isSupervised() { return true; }").nl();
+    sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
+    sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
+    sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
+    return sb;
   }
 }

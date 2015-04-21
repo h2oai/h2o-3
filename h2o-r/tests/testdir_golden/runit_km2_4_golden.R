@@ -31,8 +31,8 @@ test.kmsplit.golden <- function(conn) {
   fitH2O <- h2o.kmeans(trainH2O, init = trainH2O[startIdx,], standardize = FALSE)
   
   Log.info("R Final Clusters:"); print(fitR@centers)
-  Log.info("H2O Final Clusters:"); print(fitH2O@model$centers)
-  expect_equivalent(as.matrix(fitH2O@model$centers), fitR@centers)
+  Log.info("H2O Final Clusters:"); print(getCenters(fitH2O))
+  expect_equivalent(as.matrix(getCenters(fitH2O)), fitR@centers)
   
   Log.info("Compare Predicted Classes on Test Data between R and H2O\n")
   classR <- predict(fitR, testR)

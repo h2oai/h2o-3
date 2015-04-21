@@ -56,11 +56,8 @@ public class ASTFunc extends ASTFuncDef {
   @Override ASTFunc parse_impl(Exec E) {
     int nargs = _arg_names.length;
     AST[] args = new AST[nargs];
-    for (int i = 0; i < nargs; ++i) {
-      args[i] = E.skipWS().parse();
-      if (args[i] instanceof ASTId) args[i] = Env.staticLookup((ASTId)args[i]);
-    }
-
+    for (int i = 0; i < nargs; ++i) args[i] = E.parse();
+    E.eatEnd();
     ASTFunc res = (ASTFunc)clone();
     res._args = args;
     res._asts = _asts;
@@ -174,34 +171,38 @@ public class ASTFunc extends ASTFuncDef {
 }
 
 class ASTFuncDef extends ASTOp {
-  protected static String _name;
-  protected static String[] _arg_names;
-  protected static Env.SymbolTable _table;
-  protected ASTStatement _body;
+  String _name;
+  String[] _arg_names;
+  Env.SymbolTable _table;
+  ASTStatement _body;
   public ASTFuncDef() { super(null); }   // super(null) => _vars[] = null
 
   void parse_func(Exec E) {
-    String name = E.parseID();
-    _name = name;
+    String l;
+    if( E.isSpecial(E.peek()) ) l = E.nextStr();
+    else                        l = E.parseID();
+    _name=l;
 
     // parse the function args: these are just arg names -> will do _local.put(name, Env.NULL, null) (local ST put)
     Env.SymbolTable table = E._env.newTable(); // grab a new SymbolTable
-    String[] args = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-    for (int i = 0; i < args.length;++i) args[i] = args[i].replaceAll("\\s+","");
-    _arg_names = args;
-    if (args == null) table.put(null, Env.NULL, null);
-    else for (String arg : args) table.put(arg, Env.NULL, null);
+    AST arggs = E.parse();
+    if( arggs instanceof ASTStringList ) _arg_names = ((ASTStringList)arggs)._s;
+    else if( arggs instanceof ASTString) _arg_names = new String[]{((ASTString)arggs)._s};
+    else throw new IllegalArgumentException("Expected args to be either a slist or a string (for a single argument). Got: " + arggs.getClass());
+
+    if (_arg_names == null) table.put(null, Env.NULL, null);
+    else for (String arg : _arg_names) table.put(arg, Env.NULL, null);
     _table = table;
 
     // parse the function body
-    _body = new ASTStatement().parse_impl(E.skipWS());
-
+    _body = new ASTStatement().parse_impl(E);
+    E.eatEnd();
     ASTFunc res = new ASTFunc(_name, _arg_names, _table, _body);
     res._asts = null;
-    putUDF(res, name);  // not all nodes get this...
+    putUDF(res, _name);  // not all nodes get this...
   }
 
   @Override String opStr() { return "def"; }
   @Override ASTOp make() { return new ASTFuncDef(); }
-  @Override void apply(Env e) { throw H2O.fail(); }
+  @Override void apply(Env e) { throw H2O.unimpl("No `apply` call for ASTFuncDef"); }
 }

@@ -168,6 +168,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._gamma = 0;
       parms._transform = DataInfo.TransformType.NONE;
+      parms._user_points = yinit._key;
 
       try {
         job = new PCA(parms);

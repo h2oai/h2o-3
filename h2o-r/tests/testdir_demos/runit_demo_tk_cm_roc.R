@@ -49,7 +49,7 @@ myX = c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", 
 myY="IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "multinomial", training_frame = air.train, ntrees = 10,
+air.gbm <- h2o.gbm(x = myX, y = myY, distribution = "multinomial", training_frame = air.train, ntrees = 10,
                    max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
 
 print(air.gbm@model)
@@ -75,13 +75,17 @@ head(pred)
 
 perf <- h2o.performance(model_object,air.test)
 #Building confusion matrix for test set
-perf@metrics$cm$table
+
+# FIXME - these require work
+h2o.confusionMatrix(perf)
+h2o.auc(perf)
+h2o.precision(perf)
+h2o.accuracy(perf)
+
+#perf@metrics$AUC
 
 #Plot ROC for test set
-
-perf@metrics$auc$precision
-perf@metrics$auc$accuracy
-# perf@auc$auc
+#FIXME
 plot(perf,type="roc")
 
 PASS_BANNER()

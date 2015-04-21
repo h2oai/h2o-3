@@ -423,8 +423,8 @@ public class Vec extends Keyed<Vec> {
   /** A Vec from an array of doubles
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec makeCon(double ...rows) { 
-    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+  public static Vec makeCon(Key k, double ...rows) {
+    k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k);
     NewChunk chunk = new NewChunk(avec, 0);
@@ -666,7 +666,7 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
    *  on every Chunk index on the same node will probably trigger an OOM!  */
-  Value chunkIdx( int cidx ) {
+  public Value chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
     assert checkMissing(cidx,val);
     return val;
@@ -967,8 +967,9 @@ public class Vec extends Keyed<Vec> {
     private final long[] _domain;
     CPTask(long[] domain) { _domain = domain;}
     @Override public void map(Chunk c, NewChunk nc) {
-      for(int i=0;i<c._len;++i)
-        if( _domain==null )
+      for(int i=0;i<c._len;++i) {
+        if( c.isNA(i) ) { nc.addNA(); continue; }
+        if( _domain == null )
           nc.addNum(c.at8(i));
         else {
           long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
@@ -976,6 +977,7 @@ public class Vec extends Keyed<Vec> {
             throw new IllegalArgumentException("Could not find the enum value!");
           nc.addNum(num);
         }
+      }
     }
   }
 

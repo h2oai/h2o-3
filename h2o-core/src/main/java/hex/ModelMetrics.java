@@ -15,6 +15,7 @@ import java.util.Comparator;
  *  Frame to be scored.
  */
 public class ModelMetrics extends Keyed<ModelMetrics> {
+  public String _description;
   final Key _modelKey;
   final Key _frameKey;
   final Model.ModelCategory _model_category;
@@ -22,11 +23,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   final long _frame_checksum;
   transient Model _model;
   transient Frame _frame;
+  public final long _scoring_time;
+  public long _duration_in_ms;
 
-  public final double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
+  public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
-  public ModelMetrics(Model model, Frame frame, double mse) {
+  public ModelMetrics(Model model, Frame frame, double MSE, String desc) {
     super(buildKey(model, frame));
+    _description = desc;
     _modelKey = model._key;
     _frameKey = frame._key;
     _model_category = model._output.getModelCategory();
@@ -34,15 +38,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _frame = frame;
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
-    _mse = mse;
-
+    _MSE = MSE;
+    _scoring_time = System.currentTimeMillis();
     DKV.put(this);
   }
 
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
-  public double mse() { return _mse; }
+  public double mse() { return _MSE; }
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUC2 auc() { return null; }

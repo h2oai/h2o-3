@@ -38,6 +38,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     /** The maximum number (top K) of predictions to use for hit ratio
      *  computation (for multi-class only, 0 to disable) */
     public int _max_hit_ratio_k = 10;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
   }
 
   /** Output from all Supervised Models, includes class distribution
@@ -103,7 +108,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     double[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {
+    if( _output.isClassifier() && _output._priorClassDist !=_output._modelClassDist ) {
       ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
       scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp);

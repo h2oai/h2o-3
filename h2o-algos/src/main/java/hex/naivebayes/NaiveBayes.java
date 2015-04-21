@@ -4,7 +4,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.NaiveBayesV2;
+import hex.schemas.NaiveBayesV3;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Vec;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
-    return new NaiveBayesV2();
+    return new NaiveBayesV3();
   }
 
   @Override
@@ -54,6 +54,9 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
     if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
     if (_parms._eps_prob < 0) error("_eps_prob", "Threshold for probability must be positive");
+    hide("_balance_classes", "Balance classes is not applicable to NaiveBayes.");
+    hide("_class_sampling_factors", "Class sampling factors is not applicable to NaiveBayes.");
+    hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
   }
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
@@ -146,7 +149,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
-        model._output._parameters = _parms;
         model._output._levels = _response.domain();
         model._output._ncats = dinfo._cats;
         model.update(_key);

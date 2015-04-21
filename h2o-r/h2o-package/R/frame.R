@@ -181,7 +181,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   if(!missing(seed))
     parms$seed <- seed
 
-  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter.json', .params = parms)
+  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter', .params = parms)
   .h2o.__waitOnJob(data@conn, json$key$name)
   # TODO: uncomment once job key progress is functional
   res <- json$dataset$name
@@ -222,9 +222,9 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   params$dataset <- data@key
   params$ratios <- .collapse(ratios)
   if (!missing(destination_keys))
-    params$destKeys <- .collapse(destination_keys)
+    params$dest_keys <- .collapse.char(destination_keys)
 
-  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
+  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(data@conn, job_key)
 
@@ -499,7 +499,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 
   if (missingI) {
     nrows <- x@mutable$nrows
-    rows <- "\"null\""
+    rows <- "()"
   } else {
     nrows <- NA_integer_
     if (is(i, "H2OFrame")) {
@@ -514,7 +514,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missingJ) {
     ncols <- x@mutable$ncols
     col_names <- x@mutable$col_names
-    cols <- "\"null\""
+    cols <- "\"null\""  # TODO: investigate why changing this to "()" borks the object
   } else {
     ncols <- NA_integer_
     col_names <- NA_character_
@@ -527,7 +527,6 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     }
     cols <- .eval(substitute(j), parent.frame())
   }
-
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
@@ -628,7 +627,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       }
       j <- .eval(idx,parent.frame())
       op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), deparse("null"), j))
+      ast <- new("ASTNode", root = op, children = list(.get(x), "()", j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
       finalizers <- x@finalizers
       sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
@@ -720,7 +719,7 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #' @export
 setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
   function(x, value) {
-    if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
+    if( length(value@mutable$col_names) != ncol(x) ) stop("Mismatched number of columns")
     colnames(x) <- value@mutable$col_names
     x@mutable$col_names <- NA_character_
     x
@@ -852,7 +851,8 @@ setMethod("nrow", "H2OFrame", function(x) {
 #' @export
 setMethod("ncol", "H2OFrame", function(x) {
   .byref.update.frame(x)
-  x@mutable$ncols
+  if( x@mutable$nrows==0L ) 0L
+  else x@mutable$ncols
 })
 
 #'
@@ -979,6 +979,8 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
+  nc <- ncol(x)
+  if( n==0L && nc==0L ) { return(data.frame()) }
   if(n == 0L)
     data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   else {
@@ -995,7 +997,6 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
   .byref.update.frame(x)
-
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if(n == 0L)
@@ -1060,7 +1061,7 @@ quantile.H2OFrame <- function(x,
 {
   # verify input parameters
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
-  if(ncol(x) != 1L) stop("quantile only operates on a single column")
+#  if(ncol(x) != 1L) stop("quantile only operates on a single column") # pointless check?
   if(is.factor(x)) stop("factors are not allowed")
   #if(!na.rm && .h2o.__unary_op("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
   if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
@@ -1326,7 +1327,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   use_hex_string <- getRversion() >= "3.1"
 
   url <- paste0('http://', x@conn@ip, ':', x@conn@port,
-                '/2/DownloadDataset',
+                '/3/DownloadDataset',
                 '?key=', URLencode(x@key),
                 '&hex_string=', as.numeric(use_hex_string))
 
@@ -1552,7 +1553,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
   if(is.character(by)) {
     vars <- match(by, colnames(data))
     if (any(is.na(vars)))
-      stop('No column named ', columns, ' in ', substitute(data), '.')
+      stop('No column named ', by, ' in ', substitute(data), '.')
   } else if(is.integer(by)) {
     vars <- by
   } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)
@@ -1649,7 +1650,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
   # create the AGG AST
   op <- new("ASTApply", op="agg")
-  children <- list( c(paste0('#',nAggs), unlist( .args.to.ast(.args=aggs) ) ) )
+  children <- list( unlist( .args.to.ast(.args=aggs) ) )
   AGG <- new("ASTNode", root=op, children=children)
 
   # create the group by AST

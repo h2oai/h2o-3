@@ -24,7 +24,7 @@ enum RequestType {
    *  Unknown type defaults to JSON. */
   static RequestType requestType(String url) {
     int i = url.indexOf('.');
-    if(  i == -1 ) return html; // Default for no extension
+    if(  i == -1 ) return json; // Default for no extension
     String s = url.substring(i+1);
     int idx = s.indexOf('/');
     if (idx >= 0) {

@@ -51,14 +51,14 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
     public TwoDimTable _pc_importance;
 
-    // Model parameters
-    PCAParameters _parameters;
-
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 
     // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
+
+    // Frame key for loading matrix (X)
+    public Key<Frame> _loading_key;
 
     public PCAOutput(PCA b) { super(b); }
 
@@ -81,7 +81,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   public static class ModelMetricsPCA extends ModelMetricsUnsupervised {
     public ModelMetricsPCA(Model model, Frame frame) {
-      super(model, frame);
+      super(model, frame, Double.NaN);
     }
 
     // PCA currently does not have any model metrics to compute during scoring

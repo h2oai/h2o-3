@@ -10,12 +10,13 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.*;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV2;
+import hex.schemas.PCAV3;
 import hex.gram.Gram.GramTask;
 import hex.FrameTask;
 import hex.gram.Gram.NonSPDMatrixException;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -44,7 +45,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV2();
+    return new PCAV3();
   }
 
   @Override
@@ -58,7 +59,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   public enum Initialization {
-    PlusPlus, User
+    SVD, PlusPlus, User
   }
 
   // Called from an http request
@@ -85,6 +86,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       else if (_parms._user_points.get().numRows() != _parms._k)
         error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
     }
+    // Currently, SVD initialization is unimplemented
+    if (_parms._init == Initialization.SVD) throw H2O.unimpl();
 
     // PCA does not work on categorical data
     Vec[] vecs = _train.vecs();
@@ -207,16 +210,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return regularizedCholesky(gram, 10);
   }
 
-
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 
     // Initialize Y to be the k centers from k-means++
     double[][] initialY(DataInfo dinfo) {
       double[][] centers;
+      int numCenters = _parms._k;
+      int numCols = _train.numCols();
 
       if (null != _parms._user_points) { // User-specified starting points
-        int numCenters = _parms._k;
-        int numCols = _parms._user_points.get().numCols();
         centers = new double[numCenters][numCols];
         Vec[] centersVecs = _parms._user_points.get().vecs();
 
@@ -225,13 +227,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           for (int c = 0; c < numCols; c++)
             centers[r][c] = centersVecs[c].at(r);
         }
+        if(frobenius2(centers) == 0)
+          throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._dropNA20Cols = _parms._dropNA20Cols;
-        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
         parms._k = _parms._k;
@@ -251,6 +254,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // K-means automatically destandardizes centers! Need the original standardized version
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
+        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(numCenters, numCols);
       }
       return centers;
     }
@@ -460,7 +464,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // 4) Save solution to model output
         model._output._archetypes = yt;
-        model._output._parameters = _parms;
+        if(_parms._keep_loading) model._output._loading_key = _parms._loading_key;
         recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
@@ -546,7 +550,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   private static class BMulTask extends FrameTask<BMulTask> {
     double[][] _yt;   // _yt = Y' (transpose of Y)
 
-    BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
+    public BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
       super(jobKey, dinfo);
       _yt = yt;
     }
@@ -602,8 +606,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
-      double[] xrow = new double[_ncolX];
       assert (_ncolX + _ncolA) == cs.length;
+      double[] xrow = new double[_ncolX];
       CholeskyDecomposition _chol = PCA.regularizedCholesky(_ygram_init);
 
       for(int row = 0; row < cs[0]._len; row++) {

@@ -19,8 +19,8 @@ public class GLMValidation extends Iced {
   long nobs;
   AUC2 _auc;
   private AUC2.AUCBuilder _auc_bldr;
-  double aic;// internal aic used only for poisson family!
-  private double _aic2;// internal aic used only for poisson family!
+  double aic;// internal AIC used only for poisson family!
+  private double _aic2;// internal AIC used only for poisson family!
   final Key dataKey;
   final GLMModel.GLMParameters _glm;
   final private int _rank;
@@ -40,7 +40,7 @@ public class GLMValidation extends Iced {
     ++nobs;
     if( _auc_bldr != null ) _auc_bldr.perRow(ymodel, (int) yreal);
 
-    if( _glm._family == Family.poisson ) { // aic for poisson
+    if( _glm._family == Family.poisson ) { // AIC for poisson
       long y = Math.round(yreal);
       double logfactorial = 0;
       for( long i = 2; i <= y; ++i )
@@ -59,9 +59,9 @@ public class GLMValidation extends Iced {
   public final double residualDeviance(){return residual_deviance;}
   public final long nullDOF(){return nobs-1;}
   public final long resDOF(){return nobs - _rank;}
-  public double auc(){ return (_auc==null) ? Double.NaN : _auc._auc; }
+  public double AUC(){ return (_auc==null) ? Double.NaN : _auc._auc; }
   public double bestThreshold(){ return _auc==null ? Double.NaN : _auc.defaultThreshold();}
-  public double aic(){return aic;}
+  public double AIC(){return aic;}
   protected void computeAIC(){
     aic = 0;
     switch( _glm._family) {
@@ -73,7 +73,7 @@ public class GLMValidation extends Iced {
         break;
       case poisson:
         aic = -2*_aic2;
-        break; // aic is set during the validation task
+        break; // AIC is set during the validation task
       case gamma:
       case tweedie:
         aic = Double.NaN;
@@ -90,6 +90,6 @@ public class GLMValidation extends Iced {
   }
   @Override
   public String toString(){
-    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + ", auc = " + auc();
+    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + ", auc = " + AUC();
   }
 }

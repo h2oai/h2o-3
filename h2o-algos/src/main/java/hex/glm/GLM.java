@@ -16,7 +16,7 @@ import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS;
 import hex.optimization.L_BFGS.*;
-import hex.schemas.GLMV2;
+import hex.schemas.GLMV3;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -66,6 +66,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
+    hide("_score_each_iteration", "Not used by GLM.");
+    hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
+    hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
+    hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
     if (expensive) {
       if (_parms._link == Link.family_default)
@@ -264,7 +268,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   }
   @Override
   public ModelBuilderSchema schema() {
-    return new GLMV2();
+    return new GLMV3();
   }
 
 
@@ -667,7 +671,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 //            new GLMTask.GLMGradientTask(_dinfo,_parms,_parms._lambda[_lambdaId],)
           } else
             setSubmodel(newBeta, glrt._val, null, cmp);
-          System.out.println("haha, cmp.pending = " + cmp.getPendingCount());
         }
       }).setValidate(_taskInfo._ymu, true).asyncExec(_dinfo._adaptedFrame);
 

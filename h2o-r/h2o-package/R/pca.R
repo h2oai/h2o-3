@@ -17,12 +17,10 @@
 #'        resulting model. Automatically generated if none is provided.
 #' @param max_iterations The maximum number of iterations to run alternating
 #'        minimization. Must be between 0 and 1e6 inclusive.
-#' @param transform A character string that indicates how the training data
-#'        should be transformed before running PCA. Possible values are "NONE":
-#'        for no transformation, "DEMEAN": for subtracting the mean of each
-#'        column, "DESCALE": for dividing by the standard deviation of each
-#'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
-#'        for demeaning and dividing each column by its range (max - min).
+#' @param center A logical value indicating whether to subtract the mean from 
+#'        each column so it is zero-centered.
+#' @param scale. A logical value indicating whether to divide each column by
+#'        the standard deviation so it has unit variance.
 #' @param init A character string that selects the initial set of k cluster
 #'        centers. Possible values are "PlusPlus": for k-means++ initialization,
 #'        or a user-specified initial Y as a matrix, data.frame, H2OFrame, or list
@@ -55,13 +53,29 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
-  .pca.map <- c("x" = "ignored_columns")
 
   # Gather user input
-  parms <- as.list(match.call()[-1L])
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.pca.map) ) i <- .pca.map[[i]]; i })
-
-  if( !(missing(x)) ) parms[["ignored_columns"]] <- .verify_datacols(training_frame, x)$cols_ignore
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+  if(!missing(k))
+    parms$k <- as.numeric(k)
+  # TODO: These are dummy parameters to get transform, should this be changed?
+  # if(!missing(center))
+  #   parms$center <- center
+  # if(!missing(scale.))
+  #   parms$scale. <- scale.
+  if(!missing(destination_key))
+    parms$destination_key <- destination_key
+  if(!missing(gamma))
+    parms$gamma <- gamma
+  if(!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if(!missing(init))
+    parms$init <- init
+  if(!missing(seed))
+    parms$seed <- seed
 
   # Check if init is an acceptable set of user-specified starting points
   if( is.data.frame(init) || is.matrix(init) || is.list(init) || inherits(init, "H2OFrame") ) {
@@ -77,11 +91,11 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
       warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
     parms[["user_points"]] <- parms[["user_points"]]@key
-    parms[["k"]] <- as.integer(nrow(init))
+    parms[["k"]] <- as.numeric(nrow(init))
   }
   else if ( is.character(init) ) { # PlusPlus
     parms[["user_points"]] <- NULL
-    if (missing(k)) parms[["k"]] <- as.integer(min(dim(training_frame)))
+    if (missing(k)) parms[["k"]] <- as.numeric(min(dim(training_frame)))
   }
   else{
     stop ("argument init must be set to PlusPlus, or a valid set of user-defined starting points.")
@@ -99,5 +113,5 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   parms[["scale."]] <- NULL
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'pca', parms, parent.frame())
+  .h2o.createModel(training_frame@conn, 'pca', parms)
 }

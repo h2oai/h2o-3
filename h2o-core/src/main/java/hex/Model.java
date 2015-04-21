@@ -1,5 +1,6 @@
 package hex;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
@@ -66,11 +67,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // costs to less than 10% of the build time.  This flag forces scoring for
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
-
-    /** For classification models, the maximum size (in terms of classes) of
-     *  the confusion matrix for it to be printed. This option is meant to
-     *  avoid printing extremely large confusion matrices.  */
-    public int _max_confusion_matrix_size = 20;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _dropNA20Cols = defaultDropNA20Cols();
@@ -209,6 +205,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (run-time, etc) but that has to wait until Job is split from
      *  ModelBuilder. */
     public Job.JobState _state;
+
+    /**
+     * Training set metrics obtained during model training
+     */
+    public ModelMetrics _training_metrics;
+
+    /**
+     * Validation set metrics obtained during model training (if a validation data set was specified)
+     */
+    public ModelMetrics _validation_metrics;
+
+    /**
+     * User-facing model summary - Display model type, complexity, size and other useful stats
+     */
+    public TwoDimTable _model_summary;
+
+    /**
+     * User-facing model scoring history - 2D table with modeling accuracy as a function of time/trees/epochs/iterations, etc.
+     */
+    public TwoDimTable _scoring_history;
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
@@ -449,8 +465,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-          water.util.Log.info(cm.table().toString(1));
+        if( cm._cm.length < ((SupervisedModel.SupervisedParameters)_parms)._max_confusion_matrix_size/*Print size limitation*/ ) {
+          Log.info(cm.table().toString(1));
+        }
+      if (mm.hr() != null) {
+        Log.info(getHitRatioTable(mm.hr()));
+      }
 
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
@@ -490,7 +510,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       names[i] = _output.classNames()[i-1];
     domains[0] = nc==1 ? null : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means()).doAll(ncols,adaptFrm);
     bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
     Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
     DKV.put(res);
@@ -501,7 +521,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String[] _domain; // Prediction domain; union of test and train classes
     final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
-    BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
+    final double[] _mean;  // Column means of test frame
+
+    BigScore( String[] domain, int ncols, double[] mean ) { _domain = domain; _npredcols = ncols; _mean = mean; }
+
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       double[] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
@@ -574,8 +597,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *    }
    *  </pre>
    */
-  public final String toJava() { return toJava(new SB()).toString(); }
-  public SB toJava( SB sb ) {
+  public final String toJava(boolean preview) { return toJava(new SB(), preview).toString(); }
+  public SB toJava( SB sb, boolean preview ) {
     SB fileContext = new SB();  // preserve file context
     String modelName = JCodeGen.toJavaId(_key.toString());
     // HEADER
@@ -587,12 +610,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("// How to download, compile and execute:").nl();
     sb.p("//     mkdir tmpdir").nl();
     sb.p("//     cd tmpdir").nl();
-    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/h2o-model.jar > h2o-model.jar").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/h2o-genmodel.jar > h2o-genmodel.jar").nl();
     sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/Models.java/").pobj(_key).p(" > ").p(modelName).p(".java").nl();
-    sb.p("//     javac -cp h2o-model.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
-    sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
+    sb.p("//     javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
+    // Intentionally disabled since there is no main method in generated code
+    // sb.p("//     java -cp h2o-genmodel.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
+    if (preview && toJavaCheckTooBig()) {
+      sb.nl();
+      sb.nl();
+      sb.p("//").nl();
+      sb.p("// NOTE:  Java model is too large to preview, please download as shown above.").nl();
+      sb.p("//").nl();
+      return sb;
+    }
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
     sb.nl();
@@ -612,7 +644,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected SB toJavaSuper( String modelName, SB sb ) {
     return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
   }
-  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names,_output.nfeatures()), "Names of columns used by model."); }
+  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names, _output.nfeatures()), "Names of columns used by model."); }
   protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     String modelName = JCodeGen.toJavaId(_key.toString());
@@ -632,6 +664,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return sb.ip("};").nl();
   }
   protected SB toJavaPROB( SB sb) { return sb; }
+  protected boolean toJavaCheckTooBig() {
+    Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
+    return true;
+  }
   // Override in subclasses to provide some top-level model-specific goodness
   protected SB toJavaInit(SB sb, SB fileContext) { return sb; }
   // Override in subclasses to provide some inside 'predict' call goodness
@@ -684,7 +720,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
 
       String modelName = JCodeGen.toJavaId(_key.toString());
-      String java_text = toJava();
+      boolean preview = false;
+      String java_text = toJava(preview);
       //System.out.println(java_text);
       GenModel genmodel;
       try { 

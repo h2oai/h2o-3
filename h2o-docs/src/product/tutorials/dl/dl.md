@@ -6,6 +6,8 @@ Those who have never used H2O before should refer to <a href="https://github.com
 
 For more details on the math behind H2O's implementation of Deep Learning, refer to <a href="http://docs.h2o.ai/datascience/deeplearning.html" target="_blank">Deep Learning Data Science</a>. 
 
+For tips on improving the performance and results of your Deep Learning model, refer to our <a href="http://h2o.ai/blog/2015/02/deep-learning-performance/" target="_blank">Definintive Performance Tuning Guide for Deep Learning</a>.
+
 ###Using Deep Learning
 
 H2O’s Deep Learning functionalities include:
@@ -63,7 +65,7 @@ Now, parse the imported data:
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
+  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  
 
@@ -73,7 +75,7 @@ Now, parse the imported data:
 
 ##Building a Model
 
-0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
+0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `Deep Learning` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed training data is not already listed in the **Training_frame** drop-down list, select it. 
 

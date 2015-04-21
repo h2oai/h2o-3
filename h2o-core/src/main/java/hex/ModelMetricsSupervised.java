@@ -8,13 +8,13 @@ public class ModelMetricsSupervised extends ModelMetrics {
   public final double _sigma;   // stddev of the response (if any)
 
   public ModelMetricsSupervised(Model model, Frame frame, double mse, String[] domain, double sigma) {
-    super(model, frame, mse);
+    super(model, frame, mse, null);
     _domain = domain;
     _sigma = sigma;
   }
   public final double r2() {
     double var = _sigma*_sigma;
-    return 1.0-(_mse/var);
+    return 1.0-(_MSE /var);
   }
 
   public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {

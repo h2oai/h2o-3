@@ -3,7 +3,7 @@ package hex.quantile;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.QuantileV2;
+import hex.schemas.QuantileV3;
 import water.DKV;
 import water.H2O.H2OCountedCompleter;
 import water.Job;
@@ -24,7 +24,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super("Quantile",parms); init(false); }
 
-  public ModelBuilderSchema schema() { return new QuantileV2(); }
+  public ModelBuilderSchema schema() { return new QuantileV3(); }
 
   @Override public Quantile trainModel() {
     return (Quantile)start(new QuantileDriver(), train().numCols()*_parms._probs.length);
@@ -134,10 +134,11 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     double _maxs[/*nbins*/];     // Largest  element in bin
 
     private Histo( double lb, double ub, long start_row, long nrows, boolean isInt  ) {
-      _nbins = NBINS;
+      boolean is_int = (isInt && (ub-lb < NBINS));
+      _nbins = is_int ? (int)(ub-lb+1) : NBINS;
       _lb = lb;
       double ulp = Math.ulp(Math.max(Math.abs(lb),Math.abs(ub)));
-      _step = (ub+ulp-lb)/_nbins;
+      _step = is_int ? 1 : (ub+ulp-lb)/_nbins;
       _start_row = start_row;
       _nrows = nrows;
       _isInt = isInt;
@@ -147,17 +148,21 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       long   bins[] = _bins = new long  [_nbins];
       double mins[] = _mins = new double[_nbins];
       double maxs[] = _maxs = new double[_nbins];
+      Arrays.fill(_mins, Double.MAX_VALUE);
+      Arrays.fill(_maxs,-Double.MAX_VALUE);
+      double d;
       for( int row=0; row<chk._len; row++ ) {
-        double d = chk.atd(row);
-        double idx = (d-_lb)/_step;
-        if( !(0.0 <= idx && idx < bins.length) ) continue;
-        int i = (int)idx;
-        if( bins[i]==0 ) mins[i] = maxs[i] = d; // Capture unique value
-        else {
-          if( d < mins[i] ) mins[i] = d;
-          if( d > maxs[i] ) maxs[i] = d;
+        if (!Double.isNaN(d = chk.atd(row))) {  // na.rm=true
+          double idx = (d - _lb) / _step;
+          if (!(0.0 <= idx && idx < bins.length)) continue;
+          int i = (int) idx;
+          if (bins[i] == 0) mins[i] = maxs[i] = d; // Capture unique value
+          else {
+            if (d < mins[i]) mins[i] = d;
+            if (d > maxs[i]) maxs[i] = d;
+          }
+          bins[i]++;               // Bump row counts
         }
-        bins[i]++;               // Bump row counts
       }
     }
     @Override public void reduce( Histo h ) {
@@ -167,7 +172,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       }
       ArrayUtils.add(_bins,h._bins);
     }
-
 
     /** @return Quantile for probability prob, or NaN if another pass is needed. */
     double findQuantile( double prob ) {

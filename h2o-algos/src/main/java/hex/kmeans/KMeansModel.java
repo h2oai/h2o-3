@@ -16,24 +16,25 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
-    Key<Frame> _user_points;
+    public Key<Frame> _user_points;
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
-    /** Cluster centers built on standardized data. Null if standardize = false.
-     *  During model init, might be null or might have a "k" which is oversampled a lot. */
-    public TwoDimTable _centers_std;    // Row = cluster ID, Column = feature
-    public double[/*k*/][/*features*/] _centers_std_raw;
-    public double[/*k*/][/*features*/] _centers_raw;
-
     // Iterations executed
     public int _iterations;
+
+    // Compute average change in standardized cluster centers
+    public double[/*iterations*/] _avg_centroids_chg = new double[]{Double.NaN};
 
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _within_mse;   // Within-cluster MSE, variance
 
+    // Cluster size. Defined as the number of rows in each cluster.
+    public long[/*k*/] _size;
+
     // Sum squared distance between each point and its cluster center, divided by total number of observations.
     public double _avg_within_ss;      // Average within-cluster sum-of-square error
+    public double[/*iterations*/] _history_avg_within_ss = new double[0];
 
     // Sum squared distance between each point and grand mean, divided by total number of observations.
     public double _avg_ss;            // Total MSE to grand mean centroid
@@ -41,9 +42,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
     public double _avg_between_ss;    // Total between-cluster MSE (avgss - avgwithinss)
 
-    // For internal use only: means and 1/(std dev) of each training col
-    public double[] _normSub;
-    public double[] _normMul;
+    // Number of categorical columns trained on
+    public int _categorical_column_count;
 
     public KMeansOutput( KMeans b ) { super(b); }
   }
