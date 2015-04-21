@@ -8,7 +8,7 @@
 #' @import RCurl
 #' @importFrom graphics barplot lines
 #' @importFrom rjson fromJSON
-#' @importFrom stats binomial Gamma gaussian poisson runif
+#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
@@ -21,8 +21,8 @@
 .skip_if_not_developer <- function() {
   # TODO: Verify this function serves a useful purpose
   if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
-    stop("Not a developer")
-  invisible(NULL)
+    return(TRUE)
+  FALSE
 }
 
 .h2o.calcBaseURL <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix) {
@@ -490,6 +490,7 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
 #'
 #' A poor man's profiler, but effective.
 #'
+#' @param conn an \linkS4class{H2OConnection} class object.
 #' @export
 h2o.killMinus3 <- function(conn = h2o.getConnection()) {
   rv <- .h2o.doSafeGET(conn=conn, urlSuffix="KillMinus3")

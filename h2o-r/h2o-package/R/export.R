@@ -15,13 +15,13 @@ NULL
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
-#' @param An \linkS4class{H2OFrame} data frame.
+#' @param data An \linkS4class{H2OFrame} data frame.
 #' @param path The path to write the file to. Must include the directory and
 #'        filename. May be prefaced with hdfs:// or s3n://. Each row of data
 #'        appears as line of the file.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @examples
-#'
+#'\dontrun{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
@@ -30,6 +30,7 @@ NULL
 #' h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
 #' h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
 #' h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
+#' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE) {
   if (!is(data, "H2OFrame"))
@@ -52,6 +53,7 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 #' @param object an \linkS4class{H2OModel} class object.
 #' @param path The path to write the model to. Must include the driectory and
 #'        filename.
+#' @param force logical, indicates how to deal with files that already exist.
 #' @export
 h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,force) }
 
@@ -61,7 +63,7 @@ h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,
 #'
 #' @section Warning: Files located on the H2O server may be very large! Make
 #'        sure you have enough hard drive psace to accomoadet the entire file.
-#' @param an \linkS4class{H2OFrame} object to be downloaded.
+#' @param data an \linkS4class{H2OFrame} object to be downloaded.
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
@@ -111,6 +113,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @param dir string indicating the directory the model will be written to.
 #' @param name string name of the file.
+#' @param filename the full path to the file.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
@@ -148,7 +151,8 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   else
     path <- file.path(dir, name)
 
-  res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
+  stop("Currently not implemented", call. = FALSE)
+  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
 
-  path
+# path
 }

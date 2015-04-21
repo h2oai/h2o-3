@@ -71,6 +71,8 @@ setClass("H2OConnection",
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
+#' @param object an \code{H2OConnection} object.
+#' @export
 setMethod("show", "H2OConnection", function(object) {
   cat("IP Address:", object@ip,                 "\n")
   cat("Port      :", object@port,               "\n")
@@ -93,6 +95,8 @@ setClass("H2OObject",
          contains="VIRTUAL")
 
 #' @rdname H2OObject-class
+#' @param .Object an \code{H2OObject}
+#' @param \dots additional parameters to pass on to functions
 #' @export
 setMethod("initialize", "H2OObject", function(.Object, ...) {
   .Object <- callNextMethod()
@@ -145,6 +149,7 @@ setClass("ASTNode", representation(root="Node", children="list"), contains="Node
 setClassUnion("ASTNodeOrNULL", c("ASTNode", "NULL"))
 
 #' @rdname ASTNode-class
+#' @param object An \code{ASTNode} class object.
 #' @export
 setMethod("show", "ASTNode", function(object) cat(.visitor(object), "\n") )
 
@@ -229,6 +234,7 @@ setClass("H2OFrame",
          contains ="H2OObject")
 
 #' @rdname H2OFrame-class
+#' @param object An \code{H2OConnection} object.
 #' @export
 setMethod("show", "H2OFrame", function(object) {
   .byref.update.frame(object)
@@ -264,6 +270,7 @@ setMethod("show", "H2OFrame", function(object) {
 setClass("H2ORawData", contains="H2OObject")
 
 #' @rdname H2ORawData-class
+#' @param object a \code{H2ORawData} object.
 #' @export
 setMethod("show", "H2ORawData", function(object) {
   print(object@conn)
@@ -304,6 +311,7 @@ setClass("H2OModel",
                         contains=c("VIRTUAL", "H2OObject"))
 
 #' @rdname H2OModel-class
+#' @param object an \code{H2OModel} object.
 #' @export
 setMethod("show", "H2OModel", function(object) {
   o <- object
@@ -374,27 +382,69 @@ setClass("H2ODimReductionModel", contains="H2OModel")
 
 #'
 #' Accessor Methods for H2OModel Object
-#' 
+#'
+#' Function accessor methods for various H2O output fields.
+#'
+#' @param object an \linkS4class{H2OModel} class object.
+#' @name ModelAccessors
+NULL
+
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getParms", function(object) { standardGeneric("getParms") })
+#' @rdname ModelAccessors
+#' @export
 setMethod("getParms", "H2OModel", function(object) { object@parameters })
 
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getCenters", function(object) { standardGeneric("getCenters") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getCentersStd", function(object) { standardGeneric("getCentersStd") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getWithinMSE", function(object) { standardGeneric("getWithinMSE") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getAvgWithinSS", function(object) { standardGeneric("getAvgWithinSS") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getAvgBetweenSS", function(object) { standardGeneric("getAvgBetweenSS") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getAvgSS", function(object) { standardGeneric("getAvgSS") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getIterations", function(object) { standardGeneric("getIterations") })
+#' @rdname ModelAccessors
+#' @export
 setGeneric("getClusterSizes", function(object) { standardGeneric("getClusterSizes") })
 
+#' @rdname ModelAccessors
+#' @export
 setMethod("getCenters", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers)[,-1] })
+#' @rdname ModelAccessors
+#' @export
 setMethod("getCentersStd", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers_std)[,-1] })
+#' @rdname ModelAccessors
+#' @export
 setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$within_sum_of_squares })
+#' @rdname ModelAccessors
+#' @export
 setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_within_ss })
+#' @rdname ModelAccessors
+#' @export
 setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_between_ss })
+#' @rdname ModelAccessors
+#' @export
 setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_ss } )
+#' @rdname ModelAccessors
+#' @export
 setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
-setMethod("getClusterSizes", "H2OClusteringModel", function(object) {object@model$training_metrics@metrics$centroid_stats$size })
+#' @rdname ModelAccessors
+#' @export
+setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$size })
 
 #'
 #' The H2OModelMetrics Object.
@@ -409,6 +459,7 @@ setClass("H2OModelMetrics",
          contains="VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
+#' @param object An \code{H2OModelMetrics} object
 #' @export
 setMethod("show", "H2OModelMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n", sep="")
@@ -425,6 +476,7 @@ setClass("H2OUnknownMetrics",     contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2OBinomialMetrics", function(object) {
     callNextMethod(object)  # call to the super
@@ -453,9 +505,10 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
     else                  .showMultiMetrics(object, "Validation")
   } else print(NULL)
 })
-
+#' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2ORegressionMetrics", function(object) {
   callNextMethod(object)
@@ -484,5 +537,12 @@ setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
 #' @export
 setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 
+#' H2O Future Model
+#'
+#' A class to contain the information for background model jobs.
+#' @slot conn an \linkS4class{H2OConnection}
+#' @slot job_key a character key representing the identification of the job process.
+#' @slot destination_key the final identifier for the model
+#' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))
+setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", destination_key="character"))
