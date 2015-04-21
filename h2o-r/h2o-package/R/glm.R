@@ -44,8 +44,6 @@
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
 #'        coefficients.
-#' @param nfolds (Currently Unimplemented)
-#' @param ... (Currently Unimplemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @param n_folds (Currently Unimplemented)
 #' @param ...
