@@ -43,6 +43,7 @@ public final class ParseSetup extends Iced {
   String[] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
+  PreviewParseWriter _column_previews = null;
 
   public ParseSetup(ParseSetup ps) {
     this(ps._is_valid, ps._invalid_lines, ps._errors, ps._parse_type,
@@ -351,9 +352,9 @@ public final class ParseSetup extends Iced {
         throw new H2OParseSetupException("Cannot determine parse parameters for file.");
       }
 
-      if (_gblSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
+      if (_gblSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
         int n = _gblSetup._data.length;
-        int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
+        int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
         _gblSetup._data = Arrays.copyOf(_gblSetup._data, m);
         System.arraycopy(other._gblSetup._data, 1, _gblSetup._data, n, m - n);
       }
