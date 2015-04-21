@@ -145,7 +145,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f, sigma):_metrics;
     if (_glm._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
-      metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, aic, residualDeviance(), nullDeviance(), nullDOF(), resDOF());
+      metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     } else {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
       metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());

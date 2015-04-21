@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.*;
-import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.*;
 import water.DTask.DKeyTask;
@@ -9,9 +8,10 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.MathUtils;
 import water.util.JCodeGen;
 import water.util.SB;
+import water.util.TwoDimTable;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
@@ -105,10 +105,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public boolean _standardize = true;
     public Family _family;
     public Link _link = Link.family_default;
-    public Solver _solver = Solver.ADMM;
+    public Solver _solver = Solver.IRLSM;
     public final double _tweedie_variance_power;
     public final double _tweedie_link_power;
-    public double [] _alpha;
+    public double [] _alpha = null;
     public double [] _lambda = null;
     public double _prior = -1;
     public boolean _lambda_search = false;
@@ -195,7 +195,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       assert _link == Link.family_default;
     }
     public GLMParameters(Family f){this(f,f.defaultLink);}
-    public GLMParameters(Family f, Link l){this(f,l,null,new double[]{.5});}
+    public GLMParameters(Family f, Link l){this(f,l,null, null);}
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
       this._family = f;
       this._lambda = lambda;
@@ -439,7 +439,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     public static enum Link {family_default, identity, logit, log,inverse,/* tweedie*/}
 
-    public static enum Solver {ADMM, L_BFGS, COORDINATE_DESCENT}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -572,8 +572,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       _binomial = binomial;
     }
 
-    public GLMOutput() {
-    }
+    public GLMOutput() { }
 
     public GLMOutput(GLM glm) {
       super(glm);
@@ -677,6 +676,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       int j = 0;
       for(int i:_submodels[l].idxs)
         _global_beta[i] = _submodels[l].beta[j++];
+//      public TwoDimTable(String tableHeader, String tableDescription, String[] rowHeaders, String[] colHeaders, String[] colTypes,
+//        String[] colFormats, String colHeaderForRowHeaders) {
+//      _model_summary = new TwoDimTable("Model Summary","Summary", new String[]{"Degrees Of Freedom", "Deviance"});
     }
 
     public double [] beta() { return _global_beta;}
@@ -726,10 +728,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       Frame tFrame = DKV.getGet(_trainFrame);
       Frame vFrame = (_validFrame != null)?
         DKV.get(_validFrame).<Frame>get():null;
-      glmModel._output.pickBestModel(false, glmModel, tFrame, vFrame);
+      glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       glmModel.update(_jobKey);
-      if(vFrame != null)
-        glmModel.score(vFrame);
       glmModel.unlock(_jobKey);
     }
   }
