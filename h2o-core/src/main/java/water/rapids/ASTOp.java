@@ -2645,15 +2645,21 @@ class ASTSetColNames extends ASTUniPrefixOp {
     E.eatEnd(); // eat the ending ')'
     ASTSetColNames res = (ASTSetColNames)clone();
     res._asts = new AST[]{ary};
+    res._idxs = _idxs; res._names = _names;
     return res;
   }
 
   @Override void apply(Env env) {
-    Frame f = env.popAry();
-    for (int i=0; i < _names.length; ++i)
-      f._names[(int)_idxs[i]] = _names[i];
-    if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
-    env.pushAry(f);
+    try {
+      Frame f = env.popAry();
+      for (int i = 0; i < _names.length; ++i)
+        f._names[(int) _idxs[i]] = _names[i];
+      if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
+      env.pushAry(f);
+    } catch (ArrayIndexOutOfBoundsException e) {
+      Log.info("AIOOBE!!! _idxs.length="+_idxs.length+ "; _names.length="+_names.length);
+      throw e; //rethrow
+    }
   }
 }
 
