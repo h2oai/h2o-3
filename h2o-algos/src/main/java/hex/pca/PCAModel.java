@@ -57,6 +57,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
 
+    // Frame key for loading matrix (X)
+    public Key<Frame> _loading_key;
+
     public PCAOutput(PCA b) { super(b); }
 
     /** Override because base class implements ncols-1 for features with the
