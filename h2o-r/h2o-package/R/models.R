@@ -533,7 +533,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, ...) {
   if( is(o, "H2OModel") ) {
     hrt <- o@model$training_metrics@metrics$hit_ratio_table  # by default grab the training metrics hrt
     l <- list(...)
-    if( length(l)==0 && (train || valid) {
+    if( length(l)==0 && (train || valid) ) {
       l$train <- train
       l$valid <- valid
     }
