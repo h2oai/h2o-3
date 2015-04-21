@@ -276,7 +276,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
         // FIXME: Remove (most of) this code - once it passes...
         // PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
-        if (true) {
+        if (false) {
           assert((ArrayUtils.sum(model._output._size) - _parms.train().numRows()) <= 1);
 
 //          Log.info(model._output._model_summary);
@@ -288,10 +288,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           for (int i=0; i<_parms._k; ++i) {
             assert(MathUtils.compare(mm._within_mse[i], ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i], 1e-6, 1e-6));
           }
-          //FIXME: Enable these
-//          assert(MathUtils.compare(mm._avg_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_ss, 1e-6, 1e-6);
-//          assert(MathUtils.compare(mm._avg_between_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss, 1e-6, 1e-6);
-//          assert(MathUtils.compare(mm._avg_within_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss, 1e-6, 1e-6);
+          assert(MathUtils.compare(mm._avg_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_ss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._avg_between_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._avg_within_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss, 1e-6, 1e-6));
         }
         // At the end: validation scoring (no need to gather scoring history)
         if (_valid != null) {
@@ -409,16 +408,19 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
 
     @Override public void map(Chunk[] cs) {
+      // de-standardize the cluster means
+      double[] means = Arrays.copyOf(_means, _means.length);
+
+      if (_mults!=null)
+        for (int i=0; i<means.length; ++i)
+          means[i] = (means[i] - _means[i])/_mults[i];
+
       for( int row = 0; row < cs[0]._len; row++ ) {
         double[] values = new double[cs.length];
+        // fetch the data - using consistent NA and categorical data handling (same as for training)
         data(values, cs, row, _means, _mults);
-        _tss += hex.genmodel.GenModel.KMeans_distance(_means, values, _isCats, null, null);
-//        for( int i = 0; i < cs.length; i++ ) {
-//          double d = cs[i].atd(row);
-//          if(Double.isNaN(d)) continue;
-//          d = (d - _means[i]) * (_mults == null ? 1 : _mults[i]);
-//          _tss += d * d;
-//        }
+        // compute the distance from the (standardized) cluster centroids
+        _tss += hex.genmodel.GenModel.KMeans_distance(means, values, _isCats, null, null);
       }
     }
 

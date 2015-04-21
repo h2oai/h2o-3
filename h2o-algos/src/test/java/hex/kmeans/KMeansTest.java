@@ -367,11 +367,10 @@ public class KMeansTest extends TestUtil {
     }
   }
 
-  //PUBDEV-871
   @Test public void testValidationSame() {
     for (boolean categorical : new boolean[]{true,false}) {
       for (boolean missing : new boolean[]{/*true,*/false}) { //FIXME: Enable missing PUBDEV-871
-        for (boolean standardize : new boolean[]{/*true,*/false}) { //FIXME: Enable standardization PUBDEV-871
+        for (boolean standardize : new boolean[]{true,false}) {
           Log.info("categorical: " + categorical);
           Log.info("missing: " + missing);
           Log.info("standardize: " + standardize);
