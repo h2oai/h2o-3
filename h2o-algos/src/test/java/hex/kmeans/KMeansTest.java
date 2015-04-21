@@ -18,6 +18,7 @@ import water.parser.ParseDataset;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
+import water.util.MathUtils;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -414,29 +415,33 @@ public class KMeansTest extends TestUtil {
               }
             }
 
-            Assert.assertEquals(
-                ((ModelMetricsClustering) kmm._output._training_metrics)._avg_ss,
-                ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_ss,
-                1e-5
+            Assert.assertTrue(
+                    MathUtils.compare(
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_ss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_ss,
+                            1e-6, 1e-6)
+                );
+
+            Assert.assertTrue(
+                    MathUtils.compare(
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_between_ss,
+                            1e-6, 1e-6)
             );
 
-            Assert.assertEquals(
-                ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
-                ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_between_ss,
-                1e-5
-            );
-
-            Assert.assertEquals(
-                ((ModelMetricsClustering) kmm._output._training_metrics)._avg_within_ss,
-                ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_within_ss,
-                1e-5
+            Assert.assertTrue(
+                    MathUtils.compare(
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_within_ss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_within_ss,
+                            1e-6, 1e-6)
             );
 
             for (int i=0; i<parms._k; ++i) {
-              Assert.assertEquals(
-                  ((ModelMetricsClustering) kmm._output._training_metrics)._within_mse[i],
-                  ((ModelMetricsClustering) kmm._output._validation_metrics)._within_mse[i],
-                  1e-5
+              Assert.assertTrue(
+                      MathUtils.compare(
+                              ((ModelMetricsClustering) kmm._output._training_metrics)._within_mse[i],
+                              ((ModelMetricsClustering) kmm._output._validation_metrics)._within_mse[i],
+                              1e-6, 1e-6)
               );
               Assert.assertEquals(
                   ((ModelMetricsClustering) kmm._output._training_metrics)._size[i],
