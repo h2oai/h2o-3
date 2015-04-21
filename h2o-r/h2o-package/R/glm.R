@@ -45,8 +45,8 @@
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
 #'        coefficients.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
-#' @param n_folds (Currently Unimplemented)
-#' @param ...
+#' @param nfolds (Currently Unimplemented)
+#' @param ... (Currently Unimplemented)
 #' @export
 h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     max_iterations = 50,
