@@ -240,9 +240,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     if( lo==hi ) return lo;     // Equal; pick either
     switch( method ) {
       case INTERPOLATE: return linearInterpolate(lo,hi,row,nrows,prob);
-      case AVG:         return 0.5*(hi+lo);
-      case LO:          return lo;
-      case HI:          return hi;
+      case AVERAGE:     return 0.5*(hi+lo);
+      case LOW:         return lo;
+      case HIGH:        return hi;
       default:
         Log.info("Unknown even sample size quantile combination type: " + method + ". Doing linear interpolation.");
         return linearInterpolate(lo,hi,row,nrows,prob);
