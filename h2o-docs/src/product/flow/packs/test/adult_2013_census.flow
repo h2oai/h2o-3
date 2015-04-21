@@ -11,11 +11,11 @@
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"https://s3.amazonaws.com/h2o-public-test-data/bigdata/server/flow-tests/adult_2013_train.csv\" ]"
+      "input": "importFiles [ \"hdfs://mr-0x6/datasets/adult_2013_train.csv\" ]"
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"https://s3.amazonaws.com/h2o-public-test-data/bigdata/server/flow-tests/adult_2013_train.csv\" ]"
+      "input": "setupParse paths: [ \"hdfs://mr-0x6/datasets/adult_2013_train.csv\" ]"
     },
     {
       "type": "cs",
