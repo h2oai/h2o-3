@@ -102,7 +102,7 @@ class Basic(unittest.TestCase):
             l = '{!s} jvms, {!s}GB heap, {:s} {:s} {:6.2f}MB {:6.2f} MB/sec for {:.2f} secs'.format(
                 len(h2o.nodes), h2o.nodes[0].java_heap_GB, 'Parse', csvPathname, (totalBytes+0.0)/1e6, fileMBS, elapsed)
             print "\n"+l
-            h2o.cloudPerfH2O.message(l)
+            # h2o.cloudPerfH2O.message(l)
 
             # chunk_size=4194304*2
             pA = h2o_cmd.ParseObj(parseResult)
