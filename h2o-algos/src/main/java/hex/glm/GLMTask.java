@@ -259,7 +259,7 @@ public abstract class GLMTask  {
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
         if(_validate)
-          _val.add(row.response(0),eta, mu);
+          _val.add(row.response(0), mu);
         _likelihood += _params.likelihood(row.response(0), eta, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
@@ -280,7 +280,6 @@ public abstract class GLMTask  {
     public void postGlobal(){
       if(_validate) {
         _val.computeAIC();
-        _val.computeAUC();
       }
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
         _gradient[j] = _gradient[j]*_reg + _currentLambda * _beta[j];
@@ -357,7 +356,7 @@ public abstract class GLMTask  {
         double offset = off;
         double mu = _params.linkInv(eta[r] + offset);
         if(_validate)
-          _val.add(y,eta[r] + offset, mu);
+          _val.add(y, mu);
         _likelihood += _params.likelihood(y,eta[r],mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
@@ -417,13 +416,16 @@ public abstract class GLMTask  {
       _forceRows = true;
       return this;
     }
+
+    private String [] _domain = new String[]{"0","1"};
+
     public void map(Chunk [] chks){
       int rank = 0;
       for(int i = 0; i < _beta.length; ++i)
         if(_beta[i] != 0)
           ++rank;
       if(_validate)
-        _val = new GLMValidation(_dinfo._key,_ymu,_params,rank);
+        _val = new GLMValidation(_domain, _ymu,_params,rank, .5);
       _gradient = MemoryManager.malloc8d(_beta.length);
 
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
@@ -442,7 +444,7 @@ public abstract class GLMTask  {
       _likelihood += grt._likelihood;
       _nobs += grt._nobs;
       if(_validate)
-        _val.add(grt._val);
+        _val.reduce(grt._val);
       ArrayUtils.add(_gradient, grt._gradient);
     }
   }
@@ -672,6 +674,7 @@ public abstract class GLMTask  {
       _rowFilter = rowFilter;
     }
 
+    private String [] _domain = new String[]{"0","1"}; // todo pass correct domain
     @Override
     public void map(Chunk [] chks) {
       if(_jobKey != null && !Job.isRunning(_jobKey))
@@ -683,7 +686,7 @@ public abstract class GLMTask  {
       if(_validate) {
         int rank = 0;
         if(_beta != null)for(double d:_beta)if(d != 0)++rank;
-        _val = new GLMValidation(null, _ymu, _glm, rank);
+        _val = new GLMValidation(_domain, _ymu, _glm, rank,.5); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){
@@ -733,7 +736,7 @@ public abstract class GLMTask  {
         w = 1.0/(var*d*d);
       }
       if(_validate) {
-        _val.add(y, eta, mu);
+        _val.add(y, mu);
       }
       _likelihood += _glm.likelihood(y,eta,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
@@ -759,7 +762,7 @@ public abstract class GLMTask  {
         _gram.add(git._gram);
         _yy += git._yy;
         _nobs += git._nobs;
-        if (_validate) _val.add(git._val);
+        if (_validate) _val.reduce(git._val);
         _likelihood += git._likelihood;
         super.reduce(git);
       }
@@ -786,7 +789,6 @@ public abstract class GLMTask  {
       }
       if(_val != null){
         _val.computeAIC();
-        _val.computeAUC();
       }
     }
 

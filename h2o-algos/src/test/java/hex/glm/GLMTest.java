@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.ModelMetrics;
+import hex.ModelMetricsRegressionGLM;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.GLMIterationTask;
@@ -620,7 +621,7 @@ public class GLMTest  extends TestUtil {
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test public void testAirlines() {
     GLM job = null;
-    GLMModel model1 = null, model2 = null, model3, model4;
+    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file("smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"),"smalldata/airlines/gram_std.csv", true);
     Vec xy = frG.remove("xy");
@@ -641,14 +642,14 @@ public class GLMTest  extends TestUtil {
       job = new GLM(Key.make("airlines_cat_nostd"),"Airlines with auto-expanded categoricals, no standardization",params);
       model1 = job.trainModel().get();
       Frame score1 = model1.score(fr);
-      ModelMetrics mm = ModelMetrics.getFromDKV(model1, fr);
-      Assert.assertEquals(5336.918,mm._MSE * score1.numRows(),1);
-
+      ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
+      Assert.assertEquals(model1.validation().residual_deviance, mm._resDev, 1e-4);
+      System.out.println("NDOF = " + model1.validation().nullDOF() + ", numRows = " + score1.numRows());
+      Assert.assertEquals(model1.validation().residual_deviance, mm._MSE * score1.numRows(), 1e-4);
+      mm.remove();
       res = model1.score(fr);
       // Build a POJO, validate same results
       Assert.assertTrue(model1.testJavaScoring(fr, res, 1e-15));
-
-
 
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
@@ -697,7 +698,7 @@ public class GLMTest  extends TestUtil {
       }
       assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
       assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
-      assertEquals(val1.AIC(), val2.AIC(),1e-2);
+      assertEquals(val1.aic, val2.aic,1e-2);
       // compare result against glmnet
       assertEquals(5336.918,val1.residualDeviance(),1);
       assertEquals(6051.613,val1.nullDeviance(),1);
@@ -729,9 +730,11 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       frMM.delete();
-      res.delete();
+      if(res != null)res.delete();
       if(model1 != null)model1.delete();
       if(model2 != null)model2.delete();
+      if(model3 != null)model3.delete();
+      if(model4 != null)model4.delete();
 //      if(score != null)score.delete();
       if( job != null ) job.remove();
       Scope.exit();
@@ -779,13 +782,12 @@ public class GLMTest  extends TestUtil {
       assertEquals(512.3, val.nullDeviance(),1e-1);
       assertEquals(378.3, val.residualDeviance(),1e-1);
       assertEquals(371,val.resDOF());
-      assertEquals(396.3, val.AIC(),1e-1);
+      assertEquals(396.3, val.aic,1e-1);
       score = model.score(fr);
-
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
-      assertEquals(val.AUC(), adata._auc, 1e-2);
-
+      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-2);
+      assertEquals(val.computeAUC(model,fr), adata._auc, 1e-2);
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
 //      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
 //      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
@@ -817,15 +819,15 @@ public class GLMTest  extends TestUtil {
       model = job.trainModel().get();
       double [] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
-      assertEquals(model.validation().AUC(), 1, 1e-4);
+      assertEquals(model.validation().computeAUC(model,fr), 1, 1e-4);
       GLMValidation val = model.validation();
-      assertEquals(1,val.AUC(),1e-2);
+      assertEquals(1,val.computeAUC(model, fr),1e-2);
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
 
       hex.AUC2 adata = mm._auc;
-      assertEquals(val.AUC(), adata._auc, 1e-2);
+      assertEquals(val.computeAUC(model, fr), adata._auc, 1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();
@@ -884,7 +886,7 @@ public class GLMTest  extends TestUtil {
         assertEquals(params._nlambdas, model._output._submodels.length);
         GLMValidation val = model.validation();
         // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
-        model._output.setSubmodelIdx(model._output._submodels.length - 1);
+        model._output.setSubmodelIdx(model._output._submodels.length - 1, model, fr, null);
         Submodel sm = model._output._submodels[model._output._best_lambda_idx];
         double l1norm = 0;
         for (double d : sm.norm_beta) l1norm += Math.abs(d);
@@ -897,7 +899,7 @@ public class GLMTest  extends TestUtil {
         assertEquals(val.residualDeviance(), mse._resDev, 1e-6);
         score.remove();
         // try scoring another model
-        model._output.setSubmodelIdx(model._output._submodels.length >> 1);
+        model._output.setSubmodelIdx(model._output._submodels.length >> 1, model, fr, null);
         sm = model._output._submodels[model._output._best_lambda_idx];
         val = model._output._submodels[model._output._best_lambda_idx].trainVal;
         m = new GetScoringModelTask(null, model._key, sm.lambda_value).invokeTask()._res;

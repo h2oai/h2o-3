@@ -30,7 +30,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
-    double _logloss;
+    protected double _logloss;
     protected AUC2.AUCBuilder _auc;
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 

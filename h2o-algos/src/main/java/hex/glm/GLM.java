@@ -488,7 +488,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new RemoveCall(null, _dest).invokeTask();
           return true;
         }
-      }, _dest, _key, _valid != null ? _valid._key : null));
+      }, _dest, _key, _train._key, _valid != null ? _valid._key : null));
     }
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
@@ -578,7 +578,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       newBetaDeNorm[newBetaDeNorm.length - 1] -= norm;
     } else
       newBetaDeNorm = null;
-    GLMModel.setSubmodel(cmp, dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta,iter, System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, trainVal, holdOutVal);
+    GLMModel.setSubmodel(cmp, dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta,iter, System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, trainVal, holdOutVal, _train, _valid);
   }
 
 
@@ -897,7 +897,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override
       public void callback(final GLMIterationTask glmt) {
         double objVal = objVal(glmt._likelihood, glmt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
-        LogInfo(" beta = " + Arrays.toString(glmt._beta) +", objval = " + objVal);
         if (!isRunning(GLM.this._key)) throw new JobCancelledException();
         assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs + ", got row filter?" + (glmt._rowFilter != null);
         assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
