@@ -127,6 +127,8 @@ class Basic(unittest.TestCase):
             
             # FIX! switch this to look at the summary result
             parseKeyIndexedCheck(frames_result, multiplyExpected)
+            # don't want to spill keys
+            h2o.nodes[0].remove_all_keys()
 
 if __name__ == '__main__':
     h2o.unit_main()
