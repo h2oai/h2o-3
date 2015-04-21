@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source('../../h2o-runit.R')
 
 test.pca.score <- function(H2Oserver) {
   Log.info("Importing arrests.csv data...") 

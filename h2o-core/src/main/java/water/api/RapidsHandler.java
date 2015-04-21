@@ -47,11 +47,15 @@ class RapidsHandler extends Handler {
           rapids.num_rows = 0;
           rapids.num_cols = 0;
           if (fr.anyVec().isEnum()) {
-            rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
+            rapids.string = fr.anyVec().domain()[(int) fr.anyVec().at(0)];
             sb.append(rapids.string);
             rapids.result_type = RapidsV3.ARYSTR;
           } else if (fr.anyVec().isString()) {
             rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
+            sb.append(rapids.string);
+            rapids.result_type = RapidsV3.ARYSTR;
+          } else if (fr.anyVec().isUUID()) {
+            rapids.string = PrettyPrint.UUID(fr.anyVec().at16l(0), fr.anyVec().at16h(0));
             sb.append(rapids.string);
             rapids.result_type = RapidsV3.ARYSTR;
           } else {
