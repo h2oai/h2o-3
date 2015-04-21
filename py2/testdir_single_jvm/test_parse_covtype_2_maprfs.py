@@ -53,7 +53,7 @@ class Basic(unittest.TestCase):
     def test_parse_covtype_2_maprfs(self):
         csvFilenameAll = [
             # this was from a hdfs dfs -ls /datasets. ..bytes
-            ("3G_poker_shuffle", 3145728000),
+            ("covtype.data", 75169317),
             ("TEST-poker1000.csv", 23582),
             ("WU_100KRows3KCols.csv", 1120591148),
             ("airlines_all.05p.csv", 607774430),
@@ -65,9 +65,7 @@ class Basic(unittest.TestCase):
             ("billion_rows.csv.gz", 1758523515),
             ("covtype.13x.data", 977210917),
             ("covtype.13x.shuffle.data", 977210917),
-            ("covtype.169x.data", 12703751717),
             ("covtype.4x.shuffle.data", 300678693),
-            ("covtype.data", 75169317),
             ("covtype4x.shuffle.data", 300678693),
             ("hhp.unbalanced.012.1x11.data.gz", 6566953),
             ("hhp.unbalanced.012.data.gz", 4233715),
@@ -76,6 +74,8 @@ class Basic(unittest.TestCase):
             ("hhp2.os.noisy.9_4.data", 48397103),
             ("leads.csv", 2755),
             ("prostate_long_1G.csv", 1115287100),
+            ("3G_poker_shuffle", 3145728000),
+            ("covtype.169x.data", 12703751717),
         ]
 
         # pick 8 randomly!
@@ -87,7 +87,7 @@ class Basic(unittest.TestCase):
 
         for (csvFilename, totalBytes) in csvFilenameList:
             totalBytes = float(totalBytes)
-            timeoutSecs = 300
+            timeoutSecs = 900
             multiplyExpected = 1
 
             # import_result = a_node.import_files(path=find_file("smalldata/logreg/prostate.csv"))
