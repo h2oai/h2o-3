@@ -172,6 +172,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
     putPrefix(new ASTMedian());
+    putPrefix(new ASTMad());
 
     // Misc
     putPrefix(new ASTSetLevel());
@@ -1953,7 +1954,8 @@ class ASTMedian extends ASTReducerOp {
 // mad = b * med(  |x_i - med(x)| )
 // b = 1.4826 for normally distributed data -- but this is used anyways..
 // looks like this: (h2o.mad %v #1.4826 %TRUE "interpolate")
-// args are: column, constant, na.rm, lo, hi
+// args are: column, constant, na.rm, combine_method
+// possible combine_method values:
 // lo: for even sample size, take the lo value for the median
 // hi: for even sample size, take the hi value for the median
 // interpolate: interpolate lo & hi

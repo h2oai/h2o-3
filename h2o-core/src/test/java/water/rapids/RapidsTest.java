@@ -137,7 +137,7 @@ public class RapidsTest extends TestUtil {
                          ard(3.383532e-04), 
                          ard(2.561221e-05)));
     Frame pr = frame(ard(ard(0.001), ard(0.005), ard(.01), ard(.02), ard(.05), ard(.10), ard(.50), ard(.8883), ard(.99), ard(.90)));
-    String x = String.format("(quantile %%%s %%%s )",fr._key,pr._key);
+    String x = String.format("(quantile %%%s %%%s \"interpolate\")",fr._key,pr._key);
     Env env = Exec.exec(x);
     System.out.println(env.toString());
     Frame f = env.popAry();
