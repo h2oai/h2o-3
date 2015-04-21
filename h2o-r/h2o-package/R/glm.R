@@ -257,9 +257,4 @@ h2o.getGLMModel <- function(keys, conn) {
   dest_key <- keys[[1]]
   .h2o.__waitOnJob(conn, job_key)
   model <- h2o.getModel(dest_key, conn)
-  # if (delete_train)
-  #   h2o.rm(temp_train_key)
-  # if (!is.null(params$validation_frame))
-  #   if (delete_valid)
-  #     h2o.rm(temp_valid_key)
 }

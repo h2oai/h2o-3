@@ -182,15 +182,15 @@
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
  params$training_frame <- get("training_frame", parent.frame())
- delete_train <- !.is.eval(params$training_frame)
- if (delete_train) {
+ tmp_train <- !.is.eval(params$training_frame)
+ if( tmp_train ) {
     temp_train_key <- params$training_frame@key
     .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, key = temp_train_key)
  }
  if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
-    delete_valid <- !.is.eval(params$validation_frame)
-    if (delete_valid) {
+    tmp_valid <- !.is.eval(params$validation_frame)
+    if( tmp_valid ) {
       temp_valid_key <- params$validation_frame@key
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
@@ -811,17 +811,14 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, ...) {
     else if( l$valid ) { cat("\nValidation Confusion Matrix: \n"); return( h2o.confusionMatrix(object@model$validation_metrics) ) }
     else               return(NULL)
   }
-  delete <- !.is.eval(newdata)
-  if(delete) {
+  tmp <- !.is.eval(newdata)
+  if( tmp ) {
     temp_key <- newdata@key
     .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, key = temp_key)
   }
 
   url <- paste0("Predictions/models/",object@key, "/frames/", newdata@key)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")
-
-  if(delete)
-    h2o.rm(temp_key)
 
   # Make the correct class of metrics object
   metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])

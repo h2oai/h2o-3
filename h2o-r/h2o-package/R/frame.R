@@ -145,8 +145,8 @@ h2o.rep_len <- function(x, length.out) {
 
 #' Inserting Missing Values to an H2O DataFrame
 #'
-#' Randomly replaces a user-specified fraction of entries in a H2O dataset with
-#' missing values.
+#' *This is primarily used for testing*. Randomly replaces a user-specified fraction of
+#' entries in a H2O dataset with missing values.
 #'
 #' @param data An \linkS4class{H2OFrame} object representing the dataset.
 #' @param fraction A number between 0 and 1 indicating the fraction of entries
@@ -168,8 +168,8 @@ h2o.rep_len <- function(x, length.out) {
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if (delete) {
+  tmp <- !.is.eval(data)
+  if( tmp ) {
     temp_key <- data@key
     .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = temp_key)
   }
@@ -212,8 +212,8 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if( delete ) {
+  tmp <- !.is.eval(data)
+  if( tmp ) {
     temp_key <- data@key
     .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = temp_key)
   }
@@ -227,9 +227,6 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(data@conn, job_key)
-
-  if( delete )
-    h2o.rm(temp_key)
 
   splits <- lapply(res$dest_keys, function(s) h2o.getFrame(s$name))
 }
