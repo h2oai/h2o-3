@@ -2041,7 +2041,7 @@ class ASTMedian extends ASTReducerOp {
   @Override double op(double d0, double d1) { throw H2O.unimpl(); }
   @Override void apply(Env env) {
     Frame fr = env.popAry();
-    double median = median(fr, null); // does linear interpolation for even sample sizes by default
+    double median = median(fr, QuantileModel.CombineMethod.INTERPOLATE); // does linear interpolation for even sample sizes by default
     env.push(new ValNum(median));
   }
 
