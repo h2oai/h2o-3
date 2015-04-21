@@ -340,14 +340,14 @@ setMethod("show", "H2OModel", function(object) {
   }
 })
 
-.showMultiMetrics <- function(o, train_or_valid="Training") {
+.showMultiMetrics <- function(o, which="Training") {
   arg <- "train"
-  if( train_or_valid != "Training" ) arg <- "validation"
+  if( which == "Validation" ) arg <- "valid"
   tm <- o@metrics
-  cat(train_or_valid, "Metrics: \n")
+  cat(which, "Set Metrics: \n")
   cat("===================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
-  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n")
+  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n")
   if( !is.null(tm$Gini)            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
   if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
