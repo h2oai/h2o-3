@@ -133,12 +133,21 @@ public final class PersistHdfs extends Persist {
         FSDataInputStream s = null;
         try {
           s = fs.open(p);
-          // NOTE:
-          // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
-          // Google API's simple seek has better performance
-          // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
-          ByteStreams.skipFully(s, skip_);
-          ByteStreams.readFully(s, b);
+          if (p.toString().toLowerCase().startsWith("maprfs:")) {
+            // MapR behaves really horribly with the google ByteStreams code below.
+            // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
+            // Use the HDFS API here directly instead.
+            s.seek(skip_);
+            s.readFully(b);
+          }
+          else {
+            // NOTE:
+            // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
+            // Google API's simple seek has better performance
+            // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
+            ByteStreams.skipFully(s, skip_);
+            ByteStreams.readFully(s, b);
+          }
           assert v.isPersisted();
         } finally {
           FileUtils.close(s);
