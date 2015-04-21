@@ -244,7 +244,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       case LO:          return lo;
       case HI:          return hi;
       default:
-        throw new IllegalArgumentException("Unknown even sample size quantile combination type: " + method);
+        Log.info("Unknown even sample size quantile combination type: " + method + ". Doing linear interpolation.");
+        return linearInterpolate(lo,hi,row,nrows,prob);
     }
   }
 
