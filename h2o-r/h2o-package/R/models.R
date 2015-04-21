@@ -865,12 +865,24 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
 })
 
 #' @export
+plot.H2OModel <- function(x) {
+  if( is(x, "H2OBinomialModel") ) {
+    if( !is.null(x@model$validation_metrics@metrics) ) metrics <- x@model$validation_metrics
+    else                                               metrics <- x@model$training_metrics
+    plot.H2OBinomialMetrics(metrics)
+  } else NULL
+}
+
+#' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc")) stop("type must be 'roc'")
   if(type == "roc") {
-    xaxis = "False Positive Rate"; yaxis = "True Positive Rate"
-    plot(1 - x@metrics$thresholds_and_metric_scores$specificity, x@metrics$thresholds_and_metric_scores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
+    xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
+    main <- paste(yaxis, "vs", xaxis)
+    if( x@on_train ) main <- paste(main, "(on train)")
+    else             main <- paste(main, "(on valid)")
+    plot(1 - x@metrics$thresholds_and_metric_scores$specificity, x@metrics$thresholds_and_metric_scores$recall, main = main, xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
 }
