@@ -4,6 +4,8 @@ import hex.AUC2;
 import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
+
 public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>> extends ModelMetricsBase<I,S> {
 //  @API(help="The standard deviation of the training response.", direction=API.Direction.OUTPUT)
 //  public double sigma; // Belongs in a mythical ModelMetricsSupervisedV3
@@ -68,7 +70,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
 
       // Fill TwoDimTable
-      TwoDimTable maxMetrics = new TwoDimTable("Maximum Metric", null, colHeaders,
+      TwoDimTable maxMetrics = new TwoDimTable("Maximum Metric", null, Arrays.copyOf(colHeaders, crits.length),
               new String[]{"Threshold","Value","idx"},
               new String[]{"double",   "double","long"},
               new String[]{"%f",       "%f",    "%d"},
