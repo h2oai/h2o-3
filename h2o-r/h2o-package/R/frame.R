@@ -82,11 +82,13 @@ NULL
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
-#' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1, factors = 5, integer_fraction = 0.5, integer_range = 1, has_response = TRUE)
+#' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1,
+#'            factors = 5, integer_fraction = 0.5, integer_range = 1, has_response = TRUE)
 #' head(hex)
 #' summary(hex)
 #'
-#' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5, categorical_fraction = 0, integer_fraction = 0)
+#' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5,
+#'                         categorical_fraction = 0, integer_fraction = 0)
 #' summary(hex2)
 #' @export
 h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE,
@@ -350,6 +352,9 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 #-----------------------------------------------------------------------------------------------------------------------
 
 # TODO: s4 year, month impls as well?
+#' Extract the Year from the H2OFrame
+#'
+#' @param x An H2OFrame object.
 #' @export
 h2o.year <- function(x){
   if( missing(x) ) stop('must specify x')
@@ -358,21 +363,45 @@ h2o.year <- function(x){
   .h2o.binary_frame_op("-", res1, 1900)
 }
 
+#' Extract the Month from the H2OFrame
+#'
+#' @param x An H2OFrame object.
 #' @export
 h2o.month <- function(x){
   if( missing(x) ) stop('must specify x')
   if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
   .h2o.unary_frame_op('month', x)
 }
+
+#' Extract the Year from the H2OFrame
+#'
+#' @param x An H2OFrame object.
 #' @export
 year <- function(x) UseMethod('year', x)
+
+#' Extract the Year from the H2OFrame
+#'
+#' @param x An H2OFrame object.
 #' @export
 year.H2OFrame <- h2o.year
+
+#' Extract the Month from the H2OFrame
+#'
+#' @param x An H2OFrame object.
 #' @export
 month <- function(x) UseMethod('month', x)
+
+#' Extract the Month from the H2OFrame
+#'
+#' @param x An H2OFrame object.
 #' @export
 month.H2OFrame <- h2o.month
 
+#' Coerce a column into a DateTime column.
+#'
+#' @param x An H2OFrame object.
+#' @param format A string specifiying how the dates should be represented
+#' @param ... Extra args passed to/from other methods
 #' @export
 as.Date.H2OFrame <- function(x, format, ...) {
   if(!is.character(format)) stop("format must be a string")
@@ -385,6 +414,10 @@ as.Date.H2OFrame <- function(x, format, ...) {
   #return(res)
 }
 
+#' Set the Time Zone on the H2O Cloud
+#'
+#' @param tz The desired timezone.
+#' @param conn An H2OConnection object.
 #' @export
 h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
   expr <- paste0("(setTimeZone \"", tz, "\"")
@@ -393,6 +426,9 @@ h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
   ret
 }
 
+#' Get the Time Zone on the H2O Cloud
+#'
+#' @param conn An H2OConnection object.
 #' @export
 h2o.getTimezone <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
@@ -403,6 +439,9 @@ h2o.getTimezone <- function(conn=h2o.getConnection()) {
   ret
 }
 
+#' List all of the Time Zones Acceptable by the H2O Cloud.
+#'
+#' @param conn An H2OConnection object.
 #' @export
 h2o.listTimezones <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "listTimeZones"))
@@ -430,14 +469,6 @@ h2o.runif <- function(x, seed = -1) {
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   .h2o.nary_row_op("h2o.runif", x, seed)
 }
-
-
-# runif <- function(n, min=0, max=1, seed=-1) {
-#  if(!is.numeric(min)) stop("min must be a single number")
-#  if(!is.numeric(max)) stop("max must be a single number")
-#  if(length(min) > 1 || length(max) > 1) stop("Unimplemented")
-#  if(min > max) stop("min must be a number less than or equal to max")
-
 
 #' Check H2OFrame columns for factors
 #'
