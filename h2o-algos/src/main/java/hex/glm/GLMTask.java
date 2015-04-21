@@ -98,6 +98,7 @@ public abstract class GLMTask  {
     final GLMParameters _params;
     final double _reg;
     Vec _rowFilter;
+    boolean _useFasterMetrics = false;
 
     public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter){this(dinfo, params, reg, beta, direction, step, nsteps, rowFilter, null);}
     public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
@@ -111,7 +112,10 @@ public abstract class GLMTask  {
       _params = params;
       _rowFilter = rowFilter;
     }
-
+    public GLMLineSearchTask setFasterMetrics(boolean b){
+      _useFasterMetrics = b;
+      return this;
+    }
     long _nobs;
     double [] _likelihoods; // result
 
@@ -197,7 +201,7 @@ public abstract class GLMTask  {
         double yy = -1 + 2*y;
         for(int i = 0; i < _nSteps; ++i) {
           double e = eta[r][i] + off[i];
-          if(_params._family == Family.binomial) {
+          if(_params._family == Family.binomial && _useFasterMetrics) {
             _likelihoods[i] += Math.log(1 + Math.exp(-yy * e));
           } else {
             double mu = _params.linkInv(e);
@@ -651,9 +655,7 @@ public abstract class GLMTask  {
     final boolean _validate;
     int [] _ti;
     public double _likelihood;
-
     final double _lambda;
-    double _zsum;
     final boolean _sparse;
     Vec _rowFilter;
 
@@ -730,7 +732,6 @@ public abstract class GLMTask  {
         z = eta + (y-mu)*d;
         w = 1.0/(var*d*d);
       }
-      _zsum += w*z;
       if(_validate) {
         _val.add(y, eta, mu);
       }
@@ -753,7 +754,6 @@ public abstract class GLMTask  {
 
     @Override
     public void reduce(GLMIterationTask git){
-      _zsum += git._zsum;
       if(_jobKey == null || Job.isRunning(_jobKey)) {
         ArrayUtils.add(_xy, git._xy);
         _gram.add(git._gram);

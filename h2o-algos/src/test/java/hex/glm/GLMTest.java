@@ -26,10 +26,7 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
@@ -534,13 +531,9 @@ public class GLMTest  extends TestUtil {
       DKV.put(fr._key,fr);
       // now check the gradient
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
-      // todo: remove, result from h2o.1
-      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model._dinfo.coefNames();
-      System.out.println("coefs = " + Arrays.toString(names));
-      System.out.println("grad = " + Arrays.toString(grad));
       ValueString vs = new ValueString();
       outer:
       for(int i = 0; i < names.length; ++i){
@@ -613,7 +606,7 @@ public class GLMTest  extends TestUtil {
       new GLMGradientTask(dinfo,params,0,beta_1,1.0/380, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       for(int i = 0; i < beta_1.length; ++i)
-        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
+        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
     } finally {
       for(Vec v:betaConstraints.vecs())
         v.remove();
@@ -841,6 +834,7 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
+
 
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).

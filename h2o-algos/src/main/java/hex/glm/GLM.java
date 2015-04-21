@@ -148,18 +148,18 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if (_dinfo._normMul != null) {
           double normG = 0, normS = 0;
           for (int i = numoff; i < _dinfo.fullN(); ++i) {
-            double dd = _dinfo._normMul[i - numoff];
-            double d = 1.0 / dd;
+            double s = _dinfo._normSub[i - numoff];
+            double d = 1.0 / _dinfo._normMul[i - numoff];
             if (betaUB != null && !Double.isInfinite(betaUB[i]))
               betaUB[i] *= d;
             if (betaLB != null && !Double.isInfinite(betaUB[i]))
               betaLB[i] *= d;
             if (betaGiven != null) {
-              normG += betaGiven[i] * dd;
+              normG += betaGiven[i] * s;
               betaGiven[i] *= d;
             }
             if (betaStart != null) {
-              normS += betaStart[i] * dd;
+              normS += betaStart[i] * s;
               betaStart[i] *= d;
             }
           }
@@ -169,6 +169,18 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               betaGiven[n] -= normG;
             if (betaStart != null)
               betaStart[n] -= normS;
+          }
+        }
+        if(betaStart == null && betaGiven != null)
+          betaStart = betaGiven.clone();
+        if(betaStart != null) {
+          if (betaLB != null || betaUB != null) {
+            for (int i = 0; i < betaStart.length; ++i) {
+              if (betaLB != null && betaLB[i] > betaStart[i])
+                betaStart[i] = betaLB[i];
+              if (betaUB != null && betaUB[i] < betaStart[i])
+                betaStart[i] = betaUB[i];
+            }
           }
         }
         _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho);
@@ -296,10 +308,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   }
 
   static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.
-  static final int MAX_ITERATIONS_PER_LAMBDA = 10;
-  private static final int MAX_ITER = 50;
   static final int sparseCoefThreshold = 750;
-  private static final double beta_epsilon = 1e-4;
+  ;
 
   public static class BetaConstraint extends Iced {
     double [] _betaStart;
@@ -316,6 +326,16 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       return this;
     }
 
+    public String toString(){
+      double [][] ary = new double[_betaGiven.length][3];
+
+      for(int i = 0; i < _betaGiven.length; ++i) {
+        ary[i][0] = _betaGiven[i];
+        ary[i][1] = _betaLB[i];
+        ary[i][2] = _betaUB[i];
+      }
+      return ArrayUtils.pprint(ary);
+    }
     public boolean hasBounds(){
       if(_betaLB != null)
         for(double d:_betaLB)
@@ -876,6 +896,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
       @Override
       public void callback(final GLMIterationTask glmt) {
+        double objVal = objVal(glmt._likelihood, glmt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
+        LogInfo(" beta = " + Arrays.toString(glmt._beta) +", objval = " + objVal);
         if (!isRunning(GLM.this._key)) throw new JobCancelledException();
         assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs + ", got row filter?" + (glmt._rowFilter != null);
         assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
@@ -885,7 +907,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         ArrayUtils.mult(glmt._xy, reg);
         if (_countIteration) ++_taskInfo._iter;
         long callbackStart = System.currentTimeMillis();
-        double objVal = objVal(glmt._likelihood, glmt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
+
         double lastObjVal = _taskInfo._objVal;
         LogInfo("gram computed in " + (callbackStart - _iterationStartTime) + "ms");
         double logl = glmt._likelihood;
@@ -1161,8 +1183,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
       } else _ginfo = s.getGradient(result);
 
-      L_BFGS.Result r  = new L_BFGS().solve(s,result.clone(),_ginfo,new ProgressMonitor(){
-          public boolean progress(double [] beta, GradientInfo ginfo){return _jobKey == null || Job.isRunning(_jobKey);}
+      L_BFGS.Result r  = new L_BFGS().solve(s, result.clone(), _ginfo, new ProgressMonitor() {
+        public boolean progress(double[] beta, GradientInfo ginfo) {
+          return _jobKey == null || Job.isRunning(_jobKey);
+        }
       });
       _ginfo = r.ginfo;
       _beta = r.coefs;
@@ -1269,14 +1293,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public GradientInfo getGradient(double[] beta) {
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter ).doAll(_dinfo._adaptedFrame)
-        : new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter).doAll(_dinfo._adaptedFrame);
+        :
+      /*GLMGradientTask gt = */new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter).doAll(_dinfo._adaptedFrame);
       return new GradientInfo(gt._likelihood/gt._nobs + .5 * _lambda * ArrayUtils.l2norm2(beta,_dinfo._intercept), gt._gradient);
     }
 
     @Override
     public double[] getObjVals(double[] beta, double[] direction, int nSteps, double stepDec) {
       double reg = 1.0 / _nobs;
-      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, stepDec, nSteps, _rowFilter).doAll(_dinfo._adaptedFrame)._likelihoods;
+      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, stepDec, nSteps, _rowFilter).setFasterMetrics(true).doAll(_dinfo._adaptedFrame)._likelihoods;
       double step = 1;
       for (int i = 0; i < objs.length; ++i, step *= stepDec) {
         objs[i] *= reg;

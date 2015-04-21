@@ -141,7 +141,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
-    public Link _link;
+    public Link _link = Link.family_default;
     public Solver _solver = Solver.ADMM;
     public final double _tweedie_variance_power;
     public final double _tweedie_link_power;
@@ -207,7 +207,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
             break;
           case binomial:
             if (_link != Link.logit && _link != Link.log)
-              throw new IllegalArgumentException("Incompatible link function for selected family. Only logit and log links are allowed for family=binomial.");
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only logit and log links are allowed for family=binomial. Got " + _link);
             break;
           case poisson:
             if (_link != Link.log && _link != Link.identity)
@@ -363,7 +363,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return .5 * (yr - ym) * (yr - ym);
         case binomial:
           if(yr == ym) return 0;
-          return Math.log(1 + Math.exp((1 - 2*yr) * eta));
+          return .5 * deviance(yr, eta, ym);
+//          double res = Math.log(1 + Math.exp((1 - 2*yr) * eta));
+//          assert Math.abs(res - .5 * deviance(yr,eta,ym)) < 1e-8:res + " != " + .5*deviance(yr,eta,ym) +" yr = "  + yr + ", ym = " + ym + ", eta = " + eta;
+//          return res;
 //
 //          double res = -yr * eta - Math.log(1 - ym);
 //          return res;
