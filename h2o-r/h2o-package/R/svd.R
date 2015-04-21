@@ -72,6 +72,4 @@ h2o.svd <- function(training_frame, x, nv, center = FALSE, scale. = FALSE,
   
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'svd', parms)
-  # h2o.getFrame of the U frame key
-  # Also need to return frame key in output or check it is filled properly
 }
