@@ -28,25 +28,23 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 - `-ice_root <fileSystemPath>`: Specify a directory for H2O to spill temporary data to disk (where `<fileSystemPath>` is the file path). 
 - `-flow_dir <server-side or HDFS directory>`: Specify a directory for saved flows. The default is `/Users/h2o-<H2OUserName>/h2oflows` (where `<H2OUserName>` is your user name). 
 - `nthreads <#ofThreads>`: Specify the maximum number of threads in the low-priority batch work queue (where `<#ofThreads>` is the number of threads). The default is 99. 
-- `-md5skip`: Cancel comparison of MD5 of jar path while joining cloud. 
-- `-client`: Launch H2O node in client mode. 
+- `-client`: Launch H2O node in client mode. This is used mostly for running Sparkling Water. 
 
 
 ##Cloud Formation Behavior
 
 New H2O nodes join to form a cloud during launch. After a job has started on the cloud, it  prevents new members from joining. 
 
-To start an H2O node with 4GB of memory and a default cloud name: 
-`java -Xmx4g -jar h2o.jar`
+- To start an H2O node with 4GB of memory and a default cloud name: 
+  `java -Xmx4g -jar h2o.jar`
 
-To start an H2O node with 6GB of memory and a specific cloud name: 
-`java -Xmx6g -jar h2o.jar -name MyCloud`
+- To start an H2O node with 6GB of memory and a specific cloud name: 
+  `java -Xmx6g -jar h2o.jar -name MyCloud`
 
-To start an H2O cloud with three 2GB nodes using the default cloud names: 
-
-`java -Xmx2g -jar h2o.jar &`
-`java -Xmx2g -jar h2o.jar &`
-`java -Xmx2g -jar h2o.jar &`
+- To start an H2O cloud with three 2GB nodes using the default cloud names: 
+  `java -Xmx2g -jar h2o.jar &`
+  `java -Xmx2g -jar h2o.jar &`
+  `java -Xmx2g -jar h2o.jar &`
 
 Wait for the `INFO: Registered: # schemas in: #mS` output before entering the above command again to add another node (the number for # will vary).
 
