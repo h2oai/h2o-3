@@ -259,15 +259,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _tInfos[0]._iVec = _dinfo._adaptedFrame.anyVec().makeCon(1);
       }
       if(_parms._max_iterations == -1) {
-        if(_parms._solver == Solver.IRLSM)
-          _parms._max_iterations = _parms._lambda_search ? 10 * _parms._nlambdas : 50;
+        if(_parms._solver == Solver.IRLSM) {
+          _tInfos[0]._iterationsPerLambda = 10;
+          _parms._max_iterations = _parms._lambda_search ? _tInfos[0]._iterationsPerLambda * _parms._nlambdas : 50;
+        }
         else if(_parms._solver == Solver.L_BFGS) {
-          _parms._max_iterations = _dinfo.fullN();
-          if(_parms._lambda_search)
-            _parms._max_iterations *= 5;
+          _parms._max_iterations = _dinfo.fullN() >> 1;
+          if(_parms._lambda_search) {
+            _tInfos[0]._iterationsPerLambda = _parms._max_iterations / 20;
+            _parms._max_iterations *= _parms._nlambdas*_tInfos[0]._iterationsPerLambda;
+          }
         }
       }
-      _tInfos[0]._workPerIteration = (int)(WORK_TOTAL / (0.5*_parms._max_iterations));
+      _tInfos[0]._workPerIteration = (int)(WORK_TOTAL /_parms._max_iterations);
     }
   }
 
@@ -311,7 +315,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   }
 
 
-  private static final long WORK_TOTAL = 1000000000;
+  private static final long WORK_TOTAL = 1000000;
   @Override
   public Job<GLMModel> trainModel() {
     _parms.read_lock_frames(this);
@@ -393,6 +397,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double          _objVal;     // full objective value including L1 pen
     int             _iter;
     int             _workPerIteration;
+    int             _iterationsPerLambda;
+    int             _worked;     // total number of worked units
     // these are not strictly state variables
     // I put them here to have all needed info in state object (so I only need to keep State[] info when doing xval)
     final Key             _dstKey;
@@ -498,10 +504,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         @Override
         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
           doCleanup();
+          failed(ex);
           new RemoveCall(null, _dest).invokeTask();
           return true;
         }
-      }, _dest, _key, _train._key, _valid != null ? _valid._key : null));
+      }, _dest, _key, _parms._train, _parms._valid));
     }
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
@@ -536,6 +543,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override
       public void callback(H2OCountedCompleter h2OCountedCompleter) {
         assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN()+(_dinfo._intercept?1:0);
+        int workDiff = (_lambdaId+1)*_tInfos[0]._iterationsPerLambda*_tInfos[0]._workPerIteration - _tInfos[0]._worked;
+        if(workDiff > 0) {
+          update(workDiff,"lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter);
+          _tInfos[0]._worked += workDiff;
+        }
+
         Log.info("Gradient err at lambda = " + _parms._lambda[_lambdaId] + " = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
         int rank = 0;
         for(int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept?1:0); ++i)
@@ -729,7 +742,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               @Override
               public boolean progress(double[] beta, GradientInfo ginfo) {
                 if ((_taskInfo._iter & 7) == 0) {
-                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal, GLM.this._key);
+                  _taskInfo._worked += _taskInfo._workPerIteration*8;
+                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal + ", gradient norm = " + ArrayUtils.l2norm2(ginfo._gradient,false), GLM.this._key);
                   LogInfo("LBFGS: objval = " + ginfo._objVal);
                 }
                 ++_taskInfo._iter;
@@ -839,11 +853,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               int[] newCols = Arrays.copyOf(_taskInfo._activeCols, _taskInfo._activeCols.length + fcnt);
               for (int i = 0; i < fcnt; ++i)
                 newCols[n + i] = failedCols[i];
-              Arrays.sort(_taskInfo._activeCols);
+              Arrays.sort(newCols);
               _taskInfo._beta = resizeVec(gt1._beta, newCols, _taskInfo._activeCols, _dinfo.fullN() + 1);
               _taskInfo._activeCols = newCols;
               LogInfo(fcnt + " variables failed KKT conditions check! Adding them to the model and continuing computation.(grad_eps = " + err + ", activeCols = " + (_taskInfo._activeCols.length > 100 ? "lost" : Arrays.toString(_taskInfo._activeCols)));
               _activeData = _dinfo.filterExpandedColumns(_taskInfo._activeCols);
+              assert newCols == null || _activeData.fullN() == _taskInfo._activeCols.length;
               // NOTE: tricky completer game here:
               // We expect 0 pending in this method since this is the end-point, ( actually it's racy, can be 1 with pending 1 decrement from the original Iteration callback, end result is 0 though)
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
@@ -891,6 +906,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1], _taskInfo._ginfo._gradient);
       _taskInfo._activeCols = activeCols;
       _activeData = _dinfo.filterExpandedColumns(activeCols);
+      assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
+      System.out.println("activeCols = " + Arrays.toString(_taskInfo._activeCols));;
       _taskInfo._ginfo = new GradientInfo(_taskInfo._ginfo._objVal,contractVec(_taskInfo._ginfo._gradient,activeCols));
       _taskInfo._beta = contractVec(_taskInfo._beta,activeCols);
       assert  activeCols == null || _activeData.fullN() == activeCols.length : LogInfo("mismatched number of cols, got " + activeCols.length + " active cols, but data info claims " + _activeData.fullN());
@@ -919,6 +936,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if (!isRunning(GLM.this._key)) throw new JobCancelledException();
         assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs + ", got row filter?" + (glmt._rowFilter != null);
         assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
+        if(!(_taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN()))
+          System.out.println("haha");
         assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
         double reg = 1.0 / _taskInfo._nobs;
         glmt._gram.mul(reg);
@@ -955,6 +974,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           LogInfo("IRLSM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + (tx - ty) + "ms");
         } else
           new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen /*, 0*/, l1pen, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB).solve(null, newBeta);
+        _taskInfo._worked += _taskInfo._workPerIteration;
         update(_taskInfo._workPerIteration, "lambdaId = " + _lambdaId + ", iteration = " + _taskInfo._iter + ", objective value = " + objVal);
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
