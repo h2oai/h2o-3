@@ -131,6 +131,49 @@ public abstract class GenModel {
     return min;
   }
 
+  // only used for metric builder - uses float[] and fills up colSum & colSumSq arrays, otherwise the same as method below.
+  // WARNING - if changing this code - also change the code below
+  public static double KMeans_distance(double[] center, float[] point, String[][] domains, double[] means, double[] mults,
+                                       double[] colSum, double[] colSumSq) {
+    double sqr = 0;             // Sum of dimensional distances
+    int pts = point.length;     // Count of valid points
+
+    for(int column = 0; column < center.length; column++) {
+      float d = point[column];
+      if( Float.isNaN(d) ) { pts--; continue; }
+      if( domains[column] != null ) { // Categorical?
+        if( d != center[column] ) {
+          sqr += 1.0;           // Manhattan distance
+        }
+      } else {                  // Euclidean distance
+        if( mults != null ) {   // Standardize if requested
+          d -= means[column];
+          d *= mults[column];
+        }
+        double delta = d - center[column];
+        sqr += delta * delta;
+      }
+      colSum[column] += d;
+      colSumSq[column] += d*d;
+    }
+    // Scale distance by ratio of valid dimensions to all dimensions - since
+    // we did not add any error term for the missing point, the sum of errors
+    // is small - ratio up "as if" the missing error term is equal to the
+    // average of other error terms.  Same math another way:
+    //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
+    //   sqr = sqr * point.length;    // Total dist is average*#dimensions
+    if( 0 < pts && pts < point.length ) {
+      double scale = point.length / pts;
+      sqr *= scale;
+//      for (int i=0; i<colSum.length; ++i) {
+//        colSum[i] *= Math.sqrt(scale);
+//        colSumSq[i] *= scale;
+//      }
+    }
+    return sqr;
+  }
+
+  // WARNING - if changing this code - also change the code above
   public static double KMeans_distance(double[] center, double[] point, String[][] domains, double[] means, double[] mults) {
     double sqr = 0;             // Sum of dimensional distances
     int pts = point.length;     // Count of valid points
