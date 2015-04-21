@@ -1495,6 +1495,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 || rms_weight[y] > thresh  || isNaN(rms_weight[y]);
       }
     }
+
+    // unique identifier for this model's state
+    protected long checksum_impl() {
+      long cs = parameters._seed;
+      cs ^= size() * get_processed_total();
+      cs ^= (long)(2234.3424*ArrayUtils.sum(mean_bias));
+      cs *= (long)(9234.1343*ArrayUtils.sum(rms_bias));
+      cs ^= (long)(9723.9734*ArrayUtils.sum(mean_weight));
+      cs *= (long)(9234.1783*ArrayUtils.sum(rms_weight));
+      cs ^= (long)(4273.2344*ArrayUtils.sum(mean_rate));
+      cs *= (long)(3378.1999*ArrayUtils.sum(rms_rate));
+      return cs;
+    }
   }
 
   /**
@@ -2390,5 +2403,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           + "\nTry a different initial distribution, a bounded activation function or adding"
           + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.";
 
+  @Override protected long checksum_impl() {
+    return super.checksum_impl() * model_info.checksum_impl();
+  }
 }
 
