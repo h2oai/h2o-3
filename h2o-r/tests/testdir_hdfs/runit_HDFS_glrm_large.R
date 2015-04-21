@@ -38,6 +38,7 @@ print(paste("Imported n =", n, "rows"))
 heading("Running GLRM on BigCross.data")
 cross.glrm = h2o.glrm(training_frame = cross.hex, k = 3, max_iterations = 100)
 print(cross.glrm)
+h2o.rm(cross.glrm@model$loading_key$name)   # Remove loading matrix to free memory
 
 PASS_BANNER()
 
