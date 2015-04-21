@@ -408,12 +408,16 @@ public final class ParseSetup extends Iced {
       else if (typesB == null) return typesA;
       else {
         for (int i = 0; i < typesA.length; i++) {
-          if (i > typesB.length || typesA[i] != typesB[i]) {
+/*          if (i > typesB.length || typesA[i] != typesB[i]) {
             if (typesA[i] == Vec.T_BAD)
               typesA[i] = typesB[i];
             // TODO improvement: add file names
             else throw new H2OParseSetupException("Column " + (i+1) + " type mismatched for at least two files. Got types: " + Vec.TYPE_STR[typesA[i]] + " and " + Vec.TYPE_STR[typesB[i]]);
-          }
+          }*/
+          // FIXME crap merge for now
+          if (typesA[i] != typesB[i])
+            if (typesA[i] == Vec.T_BAD)
+              typesA[i] = typesB[i];
         }
         return typesA;
       }
