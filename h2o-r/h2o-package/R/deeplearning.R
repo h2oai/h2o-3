@@ -31,7 +31,8 @@
 #'        single threaded
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA)
 #' @param rho Adaptive learning rate time decay factor (similarity to prior updates)
-#' @param epsilon
+#' @param epsilon Adaptive learning rate parameter, similar to learn rate annealing during initial
+#'        training phase. Typical values are between \code{1.0e-10} and \code{1.0e-4}
 #' @param rate Learning rate (higher => less stable, lower => slower convergence)
 #' @param rate_annealing Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)}
 #' @param rate_decay Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1)})
@@ -40,7 +41,8 @@
 #' @param momentum_stable Final momentum after ther amp is over (try 0.99)
 #' @param nesterov_accelerated_gradient \code{Logical}. Use Nesterov accelerated gradient
 #'        (recommended)
-#' @param input_dropout_ratio
+#' @param input_dropout_ratio A fraction of the features for each training row to be omitted from
+#'        training in order to improve generalization (dimension sampling).
 #' @param hidden_dropout_ratios Input layer dropout ration (can improve generalization) specify one
 #'        value per hidden layer, defaults to 0.5
 #' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to

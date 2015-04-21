@@ -25,7 +25,7 @@
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
-#' @seealso \href{http://docs.h2o.ai/Ruser/top.html}{H2O R package documentation} for more details, or type \code{\link{h2o}} in the R console. \code{\link{h2o.shutdown}} for shutting down from R.
+#' @seealso \href{http://docs.h2o.ai/Ruser/top.html}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
 #' \donttest{
 #' # Try to connect to a local H2O instance that is already running.
@@ -230,7 +230,7 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 #'
 #' @param conn the \linkS4class{H2OConnection} object containing the IP address
 #'        and port of the server running H2O.
-#' @seealso \linkS4class{H2OClient}, \code{\link{h2o.init}}
+#' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
 #' localH2O <- h2o.init()
 #' h2o.clusterStatus(localH2O)

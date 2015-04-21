@@ -487,6 +487,7 @@ setClass("H2OUnknownMetrics",     contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2OBinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
@@ -519,6 +520,7 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
 #' @export
 setMethod("show", "H2ORegressionMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
@@ -535,6 +537,12 @@ setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
 #' @export
 setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 
-
+#' H2O Future Model
+#'
+#' A class to contain the information for background model jobs.
+#' @slot conn an \linkS4class{H2OConnection}
+#' @slot job_key a character key representing the identification of the job process.
+#' @slot destination_key the final identifier for the model
+#' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))
+setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", destination_key="character"))

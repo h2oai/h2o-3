@@ -1,9 +1,9 @@
-##''
-##'' Data Import
-##''
-##'' Importing data is a _lazy_ parse of the data. It adds an extra step so that a user may specify a variety of options
-##'' including a header file, separator type, and in the future column type. Additionally, the import phase provides
-##'' feedback on whether or not a folder or group of files may be imported together.
+##`'
+##`' Data Import
+##`'
+##`' Importing data is a _lazy_ parse of the data. It adds an extra step so that a user may specify a variety of options
+##`' including a header file, separator type, and in the future column type. Additionally, the import phase provides
+##`' feedback on whether or not a folder or group of files may be imported together.
 
 #'
 #' Import Files into H2O
@@ -154,8 +154,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "",
 #'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
 #'         built.
-#' @seealso \code{\link{h2o.saveModel},\link{h2o.saveAll}, \link{h2o.loadAll},
-#'          \linkS4class{H2OModel}}
+#' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
 #' \donttest{
 #' library(h2o)

@@ -1,39 +1,39 @@
-##'
-##' Overview:
-##' ---------
-##'
-##' R operators mixed with H2OFrame objects.
-##'
-##' Operating on an object of type H2OFrame triggers the rollup of the
-##' expression _to be executed_ : the expression itself is not evaluated. Instead,
-##' an AST is built up from the R expression using R's built-in parser (which handles
-##' operator precedence), and, in the case of assignment, is stashed into the variable
-##' in the assignment.
-##'
-##' The AST is bound to an R variable as a promise to evaluate the expression on demand.
-##' When evaluation is forced, the AST is walked, converted to JSON, and shipped over to H2O.
-##' The result returned by H2O is a key pointing to the newly created frame.
-##'
-##' Methods may have a non-H2OFrame return type. Any extra preprocessing of data returned by H2O
-##' is discussed in each instance, as it varies from method to method.
-##'
-##'
-##' What's implemented?
-##' --------------------
-##'
-##' Many of R's generic S3 methods may be mixed with H2OFrame objects wherein the result
-##' is coerced to the appropraitely typed object (typically an H2OFrame object).
-##'
-##' A list of R's generic methods may be found by calling `getGenerics()`. Likewise, a call to
-##' `h2o.getGenerics()` will list the operations that are permissible with H2OFrame objects.
-##'
-##' S3 methods are divided into four groups: Math, Ops, Complex, and Summary.
-##' H2OFrame methods follow these divisions as well, with the exception of Complex, which are
-##' unimplemented.
-##'
-##' More precicely, the group divisions follow the S4 divisions: Ops, Math, Math2, Summary.
-##'
-##' See also groupGeneric.
+##"
+##" Overview:
+##" ---------
+##"
+##" R operators mixed with H2OFrame objects.
+##"
+##" Operating on an object of type H2OFrame triggers the rollup of the
+##" expression _to be executed_ : the expression itself is not evaluated. Instead,
+##" an AST is built up from the R expression using R's built-in parser (which handles
+##" operator precedence), and, in the case of assignment, is stashed into the variable
+##" in the assignment.
+##"
+##" The AST is bound to an R variable as a promise to evaluate the expression on demand.
+##" When evaluation is forced, the AST is walked, converted to JSON, and shipped over to H2O.
+##" The result returned by H2O is a key pointing to the newly created frame.
+##"
+##" Methods may have a non-H2OFrame return type. Any extra preprocessing of data returned by H2O
+##" is discussed in each instance, as it varies from method to method.
+##"
+##"
+##" What's implemented?
+##" --------------------
+##"
+##" Many of R's generic S3 methods may be mixed with H2OFrame objects wherein the result
+##" is coerced to the appropraitely typed object (typically an H2OFrame object).
+##"
+##" A list of R's generic methods may be found by calling `getGenerics()`. Likewise, a call to
+##" `h2o.getGenerics()` will list the operations that are permissible with H2OFrame objects.
+##"
+##" S3 methods are divided into four groups: Math, Ops, Complex, and Summary.
+##" H2OFrame methods follow these divisions as well, with the exception of Complex, which are
+##" unimplemented.
+##"
+##" More precicely, the group divisions follow the S4 divisions: Ops, Math, Math2, Summary.
+##"
+##" See also groupGeneric.
 
 
 # Ops Generic:
@@ -115,12 +115,12 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
   .h2o.nary_scalar_op(.Generic, x, ..., na.rm)
 })
 
-##'
-##' Methods that don't fit into the S4 group generics:
-##'
-##' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
-##'
-##' ‘"!"’, ‘"is.na"’, ‘"t"’, ‘"trunc"’
+##`
+##` Methods that don't fit into the S4 group generics:
+##`
+##` This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
+##`
+##` ‘"!"’, ‘"is.na"’, ‘"t"’, ‘"trunc"’
 
 #' @rdname H2OS4groupGeneric
 #' @export

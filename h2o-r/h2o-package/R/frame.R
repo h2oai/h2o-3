@@ -1,59 +1,59 @@
-##'
-##' A Mix of H2O-specific and Overloaded R methods.
-##'
-##' Below we have a mix of h2o and overloaded R methods according to the following ToC:
-##'
-##'  H2O Methods:
-##'  ------------
-##'
-##'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
-##'
-##'  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
-##'  ------------
-##'
-##'      year.H2O*, month.H2O*, diff.H2O*
-##'
-##'
-##'
-##' Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
-##' and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
-##'
-##' Important Developer Notes on the Lazy Evaluators:
-##' -------------------------------------------------
-##'
-##' The H2OFrame "lazy" evaluators: Evaulate an AST.
-##'
-##' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
-##' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
-##' calling scope). If you *absolutely* need to nest calls like this, you _MUST_ correctly track the names all the way down,
-##' and then all the way back up the scopes.
-##' Here's the example pattern: Number of columns
-##'
-##' Num Columns of an AST.
-##'
-##' Evaluate the AST and produce the ncol of the eval'ed AST.
-##'
-##'       ncol.H2OFrame <- function(x) {
-##'         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
-##'         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
-##'         .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')           # call the force eval
-##'         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
-##'         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
-##'         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
-##'       }
-##'
-##' Take this line-by-line:
-##'    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
-##'    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
-##'    Line 3:
-##'          1. Get a handle to h2o (h2o.getConnection())
-##'          2. x is the ast we want to eval
-##'          3. ID is the identifier we want the eventual object to have at the end of the day
-##'          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
-##'    Line 4: The identifier in the parent scope will either be Last.value, or the key of the H2OFrame
-##'             *NB: x is _guaranteed_ to be an H2OFrame object at this point (this is post .force.eval)
-##'    Line 5: assign from *this* scope, into the parent scope
-##'    Line 6: Do
+##`
+##` A Mix of H2O-specific and Overloaded R methods.
+##`
+##` Below we have a mix of h2o and overloaded R methods according to the following ToC:
+##`
+##`  H2O Methods:
+##`  ------------
+##`
+##`      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
+##`
+##`  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
+##`  ------------
+##`
+##`      year.H2O*, month.H2O*, diff.H2O*
+##`
+##`
+##`
+##` Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
+##` and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
+##`
+##` Important Developer Notes on the Lazy Evaluators:
+##` -------------------------------------------------
+##`
+##` The H2OFrame "lazy" evaluators: Evaulate an AST.
+##`
+##` The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
+##` and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
+##` calling scope). If you *absolutely* need to nest calls like this, you _MUST_ correctly track the names all the way down,
+##` and then all the way back up the scopes.
+##` Here's the example pattern: Number of columns
+##`
+##` Num Columns of an AST.
+##`
+##` Evaluate the AST and produce the ncol of the eval'ed AST.
+##`
+##`       ncol.H2OFrame <- function(x) {
+##`         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
+##`         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
+##`         .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')           # call the force eval
+##`         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
+##`         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
+##`         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
+##`       }
+##`
+##` Take this line-by-line:
+##`    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
+##`    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
+##`    Line 3:
+##`          1. Get a handle to h2o (h2o.getConnection())
+##`          2. x is the ast we want to eval
+##`          3. ID is the identifier we want the eventual object to have at the end of the day
+##`          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
+##`    Line 4: The identifier in the parent scope will either be Last.value, or the key of the H2OFrame
+##`             *NB: x is _guaranteed_ to be an H2OFrame object at this point (this is post .force.eval)
+##`    Line 5: assign from *this* scope, into the parent scope
+##`    Line 6: Do
 
 
 #' Data Frame Creation in H2O
@@ -295,6 +295,16 @@ h2o.table <- function(x, y = NULL) {
   .h2o.nary_frame_op("table", x, y)
 }
 
+#' H2O Median
+#'
+#' Compute the airthmetic mean of a \linkS4class{H2OFrame}.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param na.rm a logical, indicating whether na's are omitted.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, key = "prostate.hex")
 #' @export
 setMethod("median", "H2OFrame", function(x, na.rm = TRUE) {
   .h2o.nary_frame_op("median", x, na.rm)
@@ -1081,13 +1091,13 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   }
 })
 
-##'
-##' The H2OFrame "lazy" evaluators: Evaulate an AST.
-##'
-##' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
-##' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
-##' calling scope).
-##'
+##`
+##` The H2OFrame "lazy" evaluators: Evaulate an AST.
+##`
+##` The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
+##` and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
+##` calling scope).
+##`
 
 
 #'
@@ -1467,6 +1477,19 @@ NULL # TODO: possibly find cleaner method to show 'as.matrix' base is usable wit
 #' @export
 as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
+#' Convert H2O Data to an R Enviornment
+#'
+#' Converts an \linkS4class{H2OFrame} to an environment.
+#'
+#' @param x an \linkS4class{H2OFrame} class object.
+#' @return Returns an \code{R} environment object based on the
+#'         \linkS4class{H2OFrame}.
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' names(as.environment)
+#' aa <- as.environment(prostate.hex)
+#' ls(aa)
 #' @export
 setMethod("as.environment", "H2OFrame", function(x) {
   env <- new.env()
@@ -1476,14 +1499,38 @@ setMethod("as.environment", "H2OFrame", function(x) {
 })
 
 #' Convert H2O Data to Factors
+#'
+#' Convert a column into a factor column.
+#' @param x a column from an \linkS4class{H2OFrame} data set.
+#' @seealso \code{\link{is.factor}}.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
+#' summary(prostate.hex)
 #' @export
 setMethod("as.factor",    "H2OFrame", function(x)
   .h2o.unary_frame_op("as.factor", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
 #' Convert H2O Data to Characters
+#'
+#' Converts an H2O column into character columns.
+#' @param x a column from an \linkS4class{H2OFrame} data set.
+#' localH2O <- h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' iris.hex[,5] <- as.character(iris.hex[,5])
 #' @export
 setMethod("as.character", "H2OFrame", function(x)
   .h2o.unary_frame_op("as.character", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
 #' Convert H2O Data to Numeric
+#'
+#' Converts an H2O column into a numeric value column.
+#' @param x a column from an \linkS4class{H2OFrame} data set.
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
+#' prostate.hex[,2] <- as.numeric(prostat.hex[,2])
 #' @export
 setMethod("as.numeric", "H2OFrame", function(x)
   .h2o.unary_frame_op("as.numeric", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
@@ -1498,10 +1545,33 @@ setMethod("as.numeric", "H2OFrame", function(x)
 # Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
 
+#' H2O Apply Conditional Statement
+#'
+#' Applies conditional statements to numeric vectors in H2O parsed data objects when the data are
+#' numeric.
+#'
+#' Only numeric values can be tested, and only numeric results can be returned for either condition.
+#' Categorical data is not currently supported for this funciton and returned values cannot be
+#' categorical in nature.
+#'
+#' @name h2o.ifelse
+#' @param test A logical description of the condition to be met (>, <, =, etc...)
+#' @param yes The value to return if the condition is TRUE.
+#' @param no The value to return if the condition is FALSE.
+#' @return Returns a vector of new values matching the conditions stated in the ifelse call.
+#' @examples
+#' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
+#' summary(australia.hex)
+NULL
+#' @rdname h2o.ifelse
 #' @export
 setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no)
   .h2o.nary_row_op("ifelse", test, yes, no))
 
+#' @rdname h2o.ifelse
 #' @export
 setMethod("ifelse", signature(test="ANY",yes="H2OFrame", no="H2OFrame"), function(test,yes,no)
   .h2o.nary_frame_op("ifelse", test, yes, no))
@@ -1625,6 +1695,25 @@ h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
   out
 }
 
+#' Group and Apply by Column
+#'
+#' Performs a group by and apply similar to ddply.
+#'
+#' In the case of \code{na.methods} within \code{gb.control}, there are three possible settings.
+#' \code{"all"} will include \code{NAs} in computation of functions. \code{"rm"} will completely
+#' remove all \code{NA} fields. \code{"ignore"} will remove \code{NAs} from the numerator but keep
+#' the rows for computational purposes. If a list smaller than the number of columns groups is
+#' supplied, the list will be padded by \code{"ignore"}.
+#'
+#' Similar to \code{na.methods}, \code{col.names} will pad the list with the default column names if
+#' the length is less than the number of colums groups supplied.
+#' @param data an \linkS4class{H2OFrame} object.
+#' @param by a list of column names
+#' @param \dots any supported aggregate function.
+#' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
+#'        output columns. See \code{Details:} for more help.
+#' @return Returns a new \linkS4class{H2OFrame} object with columns equivalent to the number of
+#'         groups created
 #' @export
 h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.names=NULL)) {
   if( !is(data, "H2OFrame") )
@@ -1961,22 +2050,22 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #unique.H2OFrame <- h2o.unique
 
 
-##'
-##' Overloaded `apply` method from base::
-##'
-##' `apply` operates on H2OFrames (ASTs or H2OFrame objects) and returns an object of type H2OFrame.
-##'
-##'
-##' Overall Plan:
-##'
-##'  passes an AST of the format
-##'
-##'   (apply $X #MARGIN $FUN a1 a2 ...)
-##'
-##'   ASTApply will parse additional arguments to an AST[] _args. This array must be 1 less the number of args passed to
-##'   FUN. Otherwise, throw an exception.
-##'
-##'   Pass the additional by calling _fun.exec(env, _args)
+##`
+##` Overloaded `apply` method from base::
+##`
+##` `apply` operates on H2OFrames (ASTs or H2OFrame objects) and returns an object of type H2OFrame.
+##`
+##`
+##` Overall Plan:
+##`
+##`  passes an AST of the format
+##`
+##`   (apply $X #MARGIN $FUN a1 a2 ...)
+##`
+##`   ASTApply will parse additional arguments to an AST[] _args. This array must be 1 less the number of args passed to
+##`   FUN. Otherwise, throw an exception.
+##`
+##`   Pass the additional by calling _fun.exec(env, _args)
 
 
 
@@ -2056,7 +2145,15 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
     .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
-#' @export
+#' Apply Over a List in H2O
+#'
+#' Functions equivalent to the default \code{R} sapply
+#' @param X an \linkS4class{H2OFrame} object on which \code{apply} will operate.
+#' @param FUN the function to be applied.
+#' @param \dots optional arguments to \code{FUN}.
+#' @param simplify,USE.NAMES ignored parameters from base funciton
+#' @seealso \code{link[base]{sapply}} for the base implementation.
+#' export
 setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
   if(missing(FUN) || !is.function(FUN))
     stop("FUN must be an R function")

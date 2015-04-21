@@ -21,8 +21,8 @@
 .skip_if_not_developer <- function() {
   # TODO: Verify this function serves a useful purpose
   if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
-    stop("Not a developer")
-  invisible(NULL)
+    return(TRUE)
+  FALSE
 }
 
 .h2o.calcBaseURL <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix) {

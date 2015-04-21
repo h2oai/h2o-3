@@ -177,7 +177,7 @@
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
+  new("H2OModelFuture",conn=conn, job_key=job_key, destination_key=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
@@ -199,8 +199,8 @@
 }
 
 h2o.getFutureModel <- function(object) {
-  .h2o.__waitOnJob(object@h2o, object@job_key)
-  h2o.getModel(object@destination_key, object@h2o)
+  .h2o.__waitOnJob(object@conn, object@job_key)
+  h2o.getModel(object@destination_key, object@conn)
 }
 
 #' Predict on an H2O Model

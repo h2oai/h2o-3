@@ -23,10 +23,12 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param nbins Number of bins to use in building histogram.
-#' @param validation_frame
+#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the
+#'        model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
-#' @param max_after_balance_size
+#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
+#'        than 1.0)
 #' @param seed Seed for random numbers (affects sampling) - Note: only
 #'        reproducible when running single threaded
 #' @param ... (Currently Unimplemented)
