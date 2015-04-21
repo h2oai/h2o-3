@@ -3,14 +3,6 @@
   "cells": [
     {
       "type": "cs",
-      "input": ""
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
-    },
-    {
-      "type": "cs",
       "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/adult_2013_train.csv\" ]"
     },
     {
@@ -19,15 +11,19 @@
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/adult_2013_train.csv\"]\n  destination_key: \"adult_2013_train.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 19\n  single_quotes: false\n  column_names: [\"AGEP\",\"COW\",\"SCHL\",\"MAR\",\"INDP\",\"RELP\",\"RAC1P\",\"SEX\",\"WKHP\",\"POBP\",\"WAGP\",\"CAPGAIN\",\"CAPLOSS\",\"LOG_CAPGAIN\",\"LOG_CAPLOSS\",\"LOG_WAGP\",\"CENT_WAGP\",\"TOP2_WAGP\",\"RELP_SCHL\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/adult_2013_train.csv\"]\n  destination_key: \"adult_2013_train1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 19\n  single_quotes: false\n  column_names: [\"AGEP\",\"COW\",\"SCHL\",\"MAR\",\"INDP\",\"RELP\",\"RAC1P\",\"SEX\",\"WKHP\",\"POBP\",\"WAGP\",\"CAPGAIN\",\"CAPLOSS\",\"LOG_CAPGAIN\",\"LOG_CAPLOSS\",\"LOG_WAGP\",\"CENT_WAGP\",\"TOP2_WAGP\",\"RELP_SCHL\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 524288"
     },
     {
       "type": "cs",
-      "input": "getFrame \"adult_2013_train.hex\""
+      "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/adult_2013_test.csv\"]\n"
     },
     {
       "type": "cs",
-      "input": "assist buildModel, null, training_frame: \"adult_2013_train.hex\""
+      "input": "setupParse paths: [ \"hdfs://mr-0x6.0xdata.loc/datasets/adult_2013_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/adult_2013_test.csv\"]\n  destination_key: \"adult_2013_test.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 19\n  single_quotes: false\n  column_names: [\"AGEP\",\"COW\",\"SCHL\",\"MAR\",\"INDP\",\"RELP\",\"RAC1P\",\"SEX\",\"WKHP\",\"POBP\",\"WAGP\",\"CAPGAIN\",\"CAPLOSS\",\"LOG_CAPGAIN\",\"LOG_CAPLOSS\",\"LOG_WAGP\",\"CENT_WAGP\",\"TOP2_WAGP\",\"RELP_SCHL\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 131072"
     },
     {
       "type": "cs",
@@ -43,15 +39,7 @@
     },
     {
       "type": "cs",
-      "input": "predict model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\", destination_key: \"prediction-aebd017c-0feb-4f45-8e94-2579077c3aea\""
-    },
-    {
-      "type": "cs",
-      "input": "inspect getPrediction model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\""
-    },
-    {
-      "type": "cs",
-      "input": "grid inspect \"Prediction\", getPrediction model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\""
+      "input": "predict model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\", destination_key: \"prediction-2b7c627c-ac9b-4cf2-9281-90b004161c89\""
     }
   ]
 }
