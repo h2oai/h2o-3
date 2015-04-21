@@ -449,6 +449,7 @@ h2o.logloss <- function(object, ...) {
 #' Retrieve the variable importance.
 #'
 #' @param object An \linkS4class{H2OModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.varimp <- function(object, ...) {
   o <- object
@@ -474,6 +475,7 @@ h2o.varimp <- function(object, ...) {
 #' Retrieve Model Score History
 #'
 #' @param object An \linkS4class{H2OModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.scoreHistory <- function(object, ...) {
   o <- object
@@ -499,6 +501,7 @@ h2o.scoreHistory <- function(object, ...) {
 #' Retrieve the Hit Ratios
 #'
 #' @param object An \linkS4class{H2OModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.hit_ratio_table <- function(object, ...) {
   o <- object
@@ -671,6 +674,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' Retrieve the Model Centers
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.centers <- function(object, ...) { as.data.frame(object@model$centers[,-1]) }
 
@@ -678,6 +682,7 @@ h2o.centers <- function(object, ...) { as.data.frame(object@model$centers[,-1]) 
 #' Retrieve the Model Centers STD
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.centersSTD <- function(object, ...) { as.data.frame(object@model$centers_std)[,-1] }
 
@@ -685,6 +690,7 @@ h2o.centersSTD <- function(object, ...) { as.data.frame(object@model$centers_std
 #' Get the Within MSE
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.within_mse <- function(object, ...) { h2o.mse(object, ...) }
 
@@ -692,6 +698,7 @@ h2o.within_mse <- function(object, ...) { h2o.mse(object, ...) }
 #' Get the average wtihin sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.avg_within_ss <- function(object,...) {
   l <- list(...)
@@ -705,6 +712,7 @@ h2o.avg_within_ss <- function(object,...) {
 #' Get the average between sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.avg_between_ss <- function(object,...) {
   l <- list(...)
@@ -718,6 +726,7 @@ h2o.avg_between_ss <- function(object,...) {
 #' Get the average sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.avg_ss <- function(object,...) {
   l <- list(...)
@@ -731,6 +740,7 @@ h2o.avg_ss <- function(object,...) {
 #' Retrieve the number of iterations.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
 
@@ -738,6 +748,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' Retrieve the cluster sizes
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.cluster_sizes <- function(object, ...) {
   l <- list(...)
