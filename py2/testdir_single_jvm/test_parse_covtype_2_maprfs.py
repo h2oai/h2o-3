@@ -70,8 +70,7 @@ class Basic(unittest.TestCase):
             importFolderPath = "datasets"
             hex_key = 'covtype.hex'
             csvPathname = importFolderPath + "/" + csvFilename
-            parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, schema='maprfs', 
-                timeoutSecs=timeoutSecs, hex_key=hex_key,
+            parseResult  = h2i.import_parse(path=csvPathname, schema='maprfs', timeoutSecs=timeoutSecs, hex_key=hex_key,
                 chunk_size=4194304*2, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
 
