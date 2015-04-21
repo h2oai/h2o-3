@@ -27,7 +27,7 @@ def deepLearningDemo(ip, port):
                 validation_x= test_data [1:] ,
                 validation_y= test_data ['Angaus'],
                 ntrees=100,
-                loss="bernoulli")
+                distribution="bernoulli")
 
   gbm.show()
 

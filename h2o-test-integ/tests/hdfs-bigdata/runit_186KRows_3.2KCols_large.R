@@ -50,7 +50,7 @@ data1.glm
 
 #GBM on original dataset
 data1.gbm = h2o.gbm(x = myX, y = myY, training_frame = data.hex,
-                    ntrees = 50, max_depth = 10, loss = "multinomial")
+                    ntrees = 50, max_depth = 10, distribution = "multinomial")
 data1.gbm 
 
 #Deep Learning

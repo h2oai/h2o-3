@@ -72,10 +72,10 @@ class ModelMetricsHandler extends Handler {
    *  This should be common across all versions of ModelMetrics schemas, so it lives here.   */
   public static final class ModelMetricsListSchemaV3 extends Schema<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
-    @API(help = "Key of Model of interest (optional)", json = false)
+    @API(help = "Key of Model of interest (optional)", json = true)
     public KeyV3.ModelKeyV3 model;
 
-    @API(help = "Key of Frame of interest (optional)", json = false)
+    @API(help = "Key of Frame of interest (optional)", json = true)
     public KeyV3.FrameKeyV3 frame;
 
     @API(help = "Key of predictions frame, if predictions are requested (optional)", json = true, required = false, direction = API.Direction.INOUT)

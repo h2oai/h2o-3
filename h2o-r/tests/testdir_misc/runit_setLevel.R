@@ -33,7 +33,7 @@ test.setLevel <- function(conn) {
 
   # ---------------------------------------------------------------------------
   # 2. fit a gbm model
-  fit.gbm <- h2o.gbm(y = 1, x = 2:8, loss= "bernoulli", ntrees = 100,
+  fit.gbm <- h2o.gbm(y = 1, x = 2:8, distribution= "bernoulli", ntrees = 100,
                      training_frame= data.hex, max_depth=4, learn_rate= 0.03
                      )
   

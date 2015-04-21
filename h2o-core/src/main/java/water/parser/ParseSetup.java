@@ -411,7 +411,7 @@ public final class ParseSetup extends Iced {
             if (typesA[i] == Vec.T_BAD)
               typesA[i] = typesB[i];
             // TODO improvement: add file names
-            else throw new H2OParseSetupException("Column types do not match between files.");
+            else throw new H2OParseSetupException("Column " + (i+1) + " type mismatched for at least two files. Got types: " + Vec.TYPE_STR[typesA[i]] + " and " + Vec.TYPE_STR[typesB[i]]);
           }
         }
         return typesA;

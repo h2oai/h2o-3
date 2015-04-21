@@ -68,7 +68,7 @@ class H2OBinomialModelMetrics(object):
     return self.metric("absolute_MCC", thresholds=thresholds)
 
   def max_per_class_error(self, thresholds=None):
-    return 1-self.metric("min_per_class_correct", thresholds=thresholds)
+    return 1-self.metric("min_per_class_accuracy", thresholds=thresholds)
 
   def metric(self, metric, thresholds=None):
     if not thresholds: thresholds=[self.find_threshold_by_max_metric(metric)]

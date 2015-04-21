@@ -3,6 +3,7 @@ This module implements the communication REST layer for the python <-> H2O conne
 """
 
 import os
+import os.path
 import re
 import urllib
 import json
@@ -151,18 +152,45 @@ def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
 
-def ipy_notebook_exec(path):
+def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
-  for block in notebook["cells"]:
-    cmd = ''
-    for line in block["source"]:
+  program = ''
+  for block in ipy_blocks(notebook):
+    prev_line_was_def_stmnt = False
+    for line in ipy_lines(block):
       if "h2o.init" not in line:
-        if "def " in line:
-          cmd += line
-          cmd += "  import h2o\n" # this is a hack for the citiBike ipython notebook, unless we enforce this def spacing
-          # standard in future notebooks
-        else: cmd += line
-    exec(cmd)
+        if prev_line_was_def_stmnt:
+          program += ipy_get_leading_spaces(line) + 'import h2o\n'
+          prev_line_was_def_stmnt = False
+        program += line if '\n' in line else line + '\n'
+        if "def " in line: prev_line_was_def_stmnt = True
+  if save_and_norun:
+    with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
+      f.write(program)
+  else:
+    exec(program)
+
+def ipy_blocks(notebook):
+  if 'worksheets' in notebook.keys():
+    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+  elif 'cells' in notebook.keys():
+    return notebook['cells']
+  else:
+    raise NotImplementedError, "ipython notebook cell/block json format not handled"
+
+def ipy_lines(block):
+  if 'source' in block.keys():
+    return block['source']
+  elif 'input' in block.keys():
+    return block['input']
+  else:
+    raise NotImplementedError, "ipython notebook source/line json format not handled"
+
+def ipy_get_leading_spaces(line):
+  spaces = ''
+  for c in line:
+    if c in [' ', '\t']: spaces += c
+    else: return spaces
 
 def remove(key):
   """
@@ -197,6 +225,15 @@ def frame(key):
   """
   return H2OConnection.get_json("Frames/" + key)
 
+def frame_summary(key):
+  """
+  Retrieve metadata and summary information for a key that points to a Frame/Vec
+  :param key: A pointer to a Frame/Vec in H2O
+  :return: Meta and summary info on the frame
+  """
+  # frames_meta = H2OConnection.get_json("Frames/" + key)
+  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  return frame_summary
 
 # Non-Mutating cbind
 def cbind(left,right):

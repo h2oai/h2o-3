@@ -29,8 +29,8 @@ def bernoulliGBM(ip,port):
   depth = 5
   min_rows = 10
   # Build H2O GBM classification model:
-  #Log.info(paste("H2O GBM with parameters:\nloss = 'bernoulli', ntrees = ", ntrees, ", max_depth = 5, min_rows = 10, learn_rate = 0.1\n", sep = ""))
-  gbm_h2o = h2o.gbm(x=prostate_train[1:], y=prostate_train["CAPSULE"], ntrees=ntrees, learn_rate=learning_rate, max_depth=depth, min_rows=min_rows, loss="bernoulli")
+  #Log.info(paste("H2O GBM with parameters:\ndistribution = 'bernoulli', ntrees = ", ntrees, ", max_depth = 5, min_rows = 10, learn_rate = 0.1\n", sep = ""))
+  gbm_h2o = h2o.gbm(x=prostate_train[1:], y=prostate_train["CAPSULE"], ntrees=ntrees, learn_rate=learning_rate, max_depth=depth, min_rows=min_rows, distribution="bernoulli")
 
   # Build scikit GBM classification model
   #Log.info("scikit GBM with same parameters\n")

@@ -34,7 +34,7 @@ myY <- "IsDepDelayed"
 
 #gbm
 air.gbm <- h2o.gbm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
-                   loss = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
+                   distribution = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
 print(air.gbm@model)
 print(air.gbm@model$variableImportances[1:10,])
 
