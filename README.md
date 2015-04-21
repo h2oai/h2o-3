@@ -414,6 +414,54 @@ You need to:
 3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
 4.  Add the new hadoop version to wget list in h2o-dist/index.html
 
+### Debugging HDFS
+
+These are the required steps to debug HDFS in IDEA as a standalone H2O process.
+
+Debugging H2O on Hadoop as a `hadoop jar` hadoop mapreduce job is a non-trivial thing to do (read: I've never been able to do it and have no idea how; the obvious thing to try of attaching a remote debugger has never worked for me).
+
+However, what you can do relatively easily is tweak the gradle settings for the project so that H2OApp has HDFS as a dependency.  Here are the steps:
+
+1.  Make the following changes to gradle build files below
+    *  Change hadoop-client version in h2o-persist-hdfs to the desired version     
+    *  Add h2o-persist-hdfs as a dependency to h2o-app
+1.  Close IDEA
+1.  ./gradlew cleanIdea
+1.  ./gradlew idea
+1.  Re-open IDEA
+1.  Run or debug H2OApp, and you will now be able to read from HDFS inside the IDE debugger
+
+h2o-persist-hdfs is normally only a dependency of the assembly modules, since those are not used by any downstream modules.  We want the final module to define its own version of hdfs if any is desired.
+
+Note this example is for MapR 4, which requires the additional org.json dependency to work properly.
+
+```
+$ git diff
+diff --git a/h2o-app/build.gradle b/h2o-app/build.gradle
+index af3b929..097af85 100644
+--- a/h2o-app/build.gradle
++++ b/h2o-app/build.gradle
+@@ -8,5 +8,6 @@ dependencies {
+   compile project(":h2o-algos")
+   compile project(":h2o-core")
+   compile project(":h2o-genmodel")
++  compile project(":h2o-persist-hdfs")
+ }
+ 
+diff --git a/h2o-persist-hdfs/build.gradle b/h2o-persist-hdfs/build.gradle
+index 41b96b2..6368ea9 100644
+--- a/h2o-persist-hdfs/build.gradle
++++ b/h2o-persist-hdfs/build.gradle
+@@ -2,5 +2,6 @@ description = "H2O Persist HDFS"
+ 
+ dependencies {
+   compile project(":h2o-core")
+-  compile("org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0")
++  compile("org.apache.hadoop:hadoop-client:2.4.1-mapr-1408")
++  compile("org.json:org.json:chargebee-1.0")
+ }
+```
+
 -----
 
 <a name="Sparkling"></a>
