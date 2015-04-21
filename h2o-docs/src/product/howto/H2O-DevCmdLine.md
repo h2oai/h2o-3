@@ -58,8 +58,12 @@ To configure H2O-Dev on a multi-node cluster:
 0. [Download](www.h2o.ai/download) the appropriate version of H2O-Dev for your environment. 
 0. Verify that the same h2o.jar file is available on all hosts. 
 0. Create a flatfile (a plain text file with the IP and port numbers of the hosts). Use one entry per line. For example:
-   `192.168.1.163:54321`
-   `192.168.1.164:54321`   
+   ```
+   
+   192.168.1.163:54321
+   192.168.1.164:54321   
+   
+   ```
 0. Copy the flatfile.txt to each node in the cluster. 
 0. Use the `-Xmx` option to specify the amount of memory for each node. The cluster's memory capacity is the sum of all H2O nodes in the cluster. 
 
