@@ -22,8 +22,8 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     for i,c in enumerate(columns):
         label = c['label']
         stype = c['type']
-        missing = c['missing']
-        zeros = c['zeros']
+        missing = c['missing_count']
+        zeros = c['zero_count']
         domain = c['domain']
         print "column: %s label: %s type: %s missing: %s zeros: %s domain: %s" %\
             (i,label,stype,missing,zeros,domain)

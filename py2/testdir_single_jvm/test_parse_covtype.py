@@ -23,6 +23,7 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
+        print "i:", i, "c:", c
         label = c['label']
         stype = c['type']
         missing = c['missing_count']

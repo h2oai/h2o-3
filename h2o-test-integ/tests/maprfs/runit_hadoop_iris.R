@@ -34,7 +34,7 @@ myX = 1:4
 myY = 5
 
 # GBM Model
-iris.gbm <- h2o.gbm(myX, myY, training_frame = iris.hex, loss = 'multinomial')
+iris.gbm <- h2o.gbm(myX, myY, training_frame = iris.hex, distribution = 'multinomial')
 print(iris.gbm)
 
 # GLM Model

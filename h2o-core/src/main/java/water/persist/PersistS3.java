@@ -55,7 +55,8 @@ public final class PersistS3 extends Persist {
     }
     return _s3;
   }
-  
+  public void cleanUp() { throw H2O.fail(); /*not expected to user-mode swap on S3*/}
+
   //public static final class H2OS3InputStream extends RIStream {
   //  Key _k;
   //  long _to;

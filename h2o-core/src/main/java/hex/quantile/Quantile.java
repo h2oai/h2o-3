@@ -150,17 +150,19 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       double maxs[] = _maxs = new double[_nbins];
       Arrays.fill(_mins, Double.MAX_VALUE);
       Arrays.fill(_maxs,-Double.MAX_VALUE);
+      double d;
       for( int row=0; row<chk._len; row++ ) {
-        double d = chk.atd(row);
-        double idx = (d-_lb)/_step;
-        if( !(0.0 <= idx && idx < bins.length) ) continue;
-        int i = (int)idx;
-        if( bins[i]==0 ) mins[i] = maxs[i] = d; // Capture unique value
-        else {
-          if( d < mins[i] ) mins[i] = d;
-          if( d > maxs[i] ) maxs[i] = d;
+        if (!Double.isNaN(d = chk.atd(row))) {  // na.rm=true
+          double idx = (d - _lb) / _step;
+          if (!(0.0 <= idx && idx < bins.length)) continue;
+          int i = (int) idx;
+          if (bins[i] == 0) mins[i] = maxs[i] = d; // Capture unique value
+          else {
+            if (d < mins[i]) mins[i] = d;
+            if (d > maxs[i]) maxs[i] = d;
+          }
+          bins[i]++;               // Bump row counts
         }
-        bins[i]++;               // Bump row counts
       }
     }
     @Override public void reduce( Histo h ) {
@@ -170,7 +172,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       }
       ArrayUtils.add(_bins,h._bins);
     }
-
 
     /** @return Quantile for probability prob, or NaN if another pass is needed. */
     double findQuantile( double prob ) {

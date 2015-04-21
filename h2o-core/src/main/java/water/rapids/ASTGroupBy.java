@@ -11,10 +11,7 @@ import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.util.Log;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -53,6 +50,8 @@ import java.util.concurrent.atomic.AtomicInteger;
   //      (GB %k {#1;#3} (AGGS #2 "min" #4 "mean" #6))
   private long[] _gbCols; // group by columns
   private AGG[] _agg;
+  private AST[] _gbColsDelayed;
+  private String[] _gbColsDelayedByName;
   ASTGroupBy() { super(null); }
   @Override String opStr() { return "GB"; }
   @Override ASTOp make() {return new ASTGroupBy();}
@@ -62,6 +61,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     AST s = E.parse();
     if( s instanceof ASTLongList ) _gbCols = ((ASTLongList)s)._l;
     else if( s instanceof ASTNum ) _gbCols = new long[]{(long)((ASTNum)s)._d};
+    else if( s instanceof ASTAry ) _gbColsDelayed = ((ASTAry)s)._a;
+    else if( s instanceof  ASTStringList) _gbColsDelayedByName = ((ASTStringList)s)._s;
     else throw new IllegalArgumentException("Badly formed AST. Columns argument must be a llist or number. Got: " +s.getClass());
 
     //parse AGGs
@@ -74,6 +75,12 @@ import java.util.concurrent.atomic.AtomicInteger;
   @Override void apply(Env e) {
     // only allow reductions on time and numeric columns
     Frame fr = e.popAry();
+
+    // for delayed column lookups
+    if( _gbCols==null ) _gbCols = _gbColsDelayed==null? findCols(fr, _gbColsDelayedByName): findCols(fr, _gbColsDelayed);
+    computeCols(_agg,fr); // delayed column set
+
+    // do the group by work now
     long s = System.currentTimeMillis();
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
@@ -132,7 +139,47 @@ import java.util.concurrent.atomic.AtomicInteger;
     e.pushAry(f);
   }
 
-  private static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
+  private long[] findCols(Frame f, String[] names) {
+    long[] res = new long[names.length];
+    int i=0;
+    for( String name:names ) {
+      long c = f.find(name);
+      if( c == -1 ) throw new IllegalArgumentException("Column not found: " + name);
+      res[i++] = c;
+    }
+    return res;
+  }
+
+  private long[] findCols(Frame f, AST[] asts) {
+    long[] res = new long[asts.length];
+    int i=0;
+    for( AST ast:asts ) {
+      Env e = treeWalk(new Env(new HashSet<Key>()));
+      if( e.isAry()      ) res[i++] = f.find(e.popAry().anyVec());
+      else if( e.isNum() ) res[i++] = (int)e.popDbl();
+      else if( e.isStr() ) res[i++] = f.find(e.popStr());
+      else throw new IllegalArgumentException("Don't know what to do with: " + ast.getClass() + "; " + e.pop());
+    }
+    return res;
+  }
+
+  private void computeCols(AGG[] aggs, Frame f) {
+    for(AGG a:aggs ) {
+      if( a._c == null ) {
+        if( a._delayedColByName!=null ) a._c = f.find(a._delayedColByName);
+        else if( a._delayedCol!=null  ) {
+          Env e = treeWalk(new Env(new HashSet<Key>()));
+          if( e.isAry() ) a._c = f.find(e.popAry().anyVec());
+          else if( e.isNum() ) a._c = (int)e.popDbl();
+          else if( e.isStr() ) a._c = f.find(e.popStr());
+          else throw new IllegalArgumentException("No column found for: " + e.pop());
+        }
+        else throw new IllegalArgumentException("Missing column for aggregate: " + a._name);
+      }
+    }
+  }
+
+  public static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
     private NonBlockingHashSet<T> _g;
 
     IcedNBHS() {_g=new NonBlockingHashSet<>();}
@@ -468,17 +515,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 
   static class AGG extends AST {
     @Override AGG make() { return new AGG(); }
-    // (AGG #N "agg" #col "na"  "agg" #col "na"   => string num string   string num string
+    // (AGG "agg" #col "na"  "agg" #col "na"   => string num string   string num string
     String opStr() { return "agg";  }
     private AGG[] _aggs;
     AGG parse_impl(Exec E) {
       ArrayList<AGG> aggs = new ArrayList<>();
       while( !E.isEnd() ) {
         String type = E.parseString(E.peekPlus());
-        int     col = (int)((ASTNum)E.parse()).dbl();
+        AST colast = E.parse();
+        Integer col=null;
+        AST delayedCol=null;
+        String delayedColByName=null;
+        if( colast instanceof ASTNum ) col = (int)((ASTNum)colast)._d;
+        else if( colast instanceof ASTString ) delayedColByName = ((ASTString)colast)._s;
+        else delayedCol = colast; // check for badness sometime later...
         String   na = E.parseString(E.peekPlus());
         String name = E.parseString(E.peekPlus());
-        aggs.add(new AGG(type,col,na,name));
+        aggs.add(new AGG(type,col,na,name,delayedColByName,delayedCol));
       }
       _aggs = aggs.toArray(new AGG[aggs.size()]);
       return this;
@@ -525,13 +578,17 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     private final byte _type;
-    private final int _c;
+    private Integer _c;
     private final String _name;
     private final byte _na_handle;
+    private AST _delayedCol;
+    private String _delayedColByName;
     AGG() {_type=0;_c=-1;_name=null;_na_handle=0;}
-    AGG(String s, int c, String na, String name) {
+    AGG(String s, Integer c, String na, String name, String delayedColByName, AST delayedCol) {  // big I Integer allows for nullness
       _type=TM.get(s.toLowerCase());
       _c=c;
+      _delayedCol = delayedCol;
+      _delayedColByName = delayedColByName;
       _name=(name==null || name.equals(""))?s+"_C"+(c+1):name;
       if( !TM.keySet().contains(na) ) {
         Log.info("Unknown NA handle type given: `" + na + "`. Switching to \"ignore\" method.");

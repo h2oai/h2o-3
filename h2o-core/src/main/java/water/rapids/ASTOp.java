@@ -73,8 +73,9 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("x", new ASTMMult());
     SYMBOLS.put("t", new ASTTranspose());
     SYMBOLS.put("agg",new ASTGroupBy.AGG());
+    SYMBOLS.put(")", new ASTNull());
     //lists
-    SYMBOLS.put("list", new ASTDoubleList());
+    SYMBOLS.put("list", new ASTAry());
     SYMBOLS.put("dlist", new ASTDoubleList());
     SYMBOLS.put("llist", new ASTLongList());
     SYMBOLS.put("flist", new ASTFloatList());
@@ -141,7 +142,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRound());
     putPrefix(new ASTSignif());
     putPrefix(new ASTTrun());
-
+    putPrefix(new ASTLPut());
+    putPrefix(new ASTGPut());
     putPrefix(new ASTTranspose());
 
     // Trigonometric functions
@@ -402,17 +404,16 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
 }
 
 class ASTasDate extends ASTUniPrefixOp {
-  protected String _format;
+  String _format;
   ASTasDate() { super(new String[]{"as.Date", "x", "format"}); }
   @Override String opStr() { return "as.Date"; }
   @Override ASTOp make() {return new ASTasDate();}
   @Override ASTasDate parse_impl(Exec E) {
     AST ast = E.parse();
-    try {
-      _format = ((ASTString)E.parse())._s;
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("`format` must be a string.");
-    }
+    AST a = E.parse();
+    if( a instanceof ASTString ) _format = ((ASTString)a)._s;
+    else throw new IllegalArgumentException("`format` must be a string.");
+
     E.eatEnd(); // eat ending ')'
     ASTasDate res = (ASTasDate) clone();
     res._asts = new AST[]{ast};
@@ -455,7 +456,7 @@ class ASTasDate extends ASTUniPrefixOp {
 
 // pass thru directly to Joda -- as.Date is because R is a special snowflake
 class ASTToDate extends ASTUniPrefixOp {
-  protected String _format;
+  String _format;
   ASTToDate() { super(new String[]{"toDate", "x", "format"}); }
   @Override String opStr() { return "toDate"; }
   @Override ASTOp make() {return new ASTToDate();}
@@ -1510,9 +1511,9 @@ class ASTFoldCombine extends ASTUniPrefixOp {
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
-  protected double _init;
-  protected boolean _narm;        // na.rm in R
-  protected int _argcnt;
+  double _init;
+  boolean _narm;        // na.rm in R
+  int _argcnt;
   ASTReducerOp( double init) {
     super(new String[]{"","dblary","...", "na.rm"});
     _init = init;
@@ -1522,23 +1523,24 @@ abstract class ASTReducerOp extends ASTOp {
     ArrayList<AST> dblarys = new ArrayList<>();
     AST a;
 
-    while( true ) {  // rely on breaks
+    do {  // rely on breaks
       a = E.parse();
       if( a instanceof ASTId ) {
         if( Env.staticLookup((ASTId) a ) instanceof ASTFrame) dblarys.add(a); // kv lookup
         if( E._env.tryLookup((ASTId)a) ) break;
         else dblarys.add(a);
-      } else if( a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
+      } else if( a instanceof ASTAssign || a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
       else break;
-    }
+    } while( !E.isEnd() );
 
     // Get the na.rm last
-    try {
-      a = E._env.lookup((ASTId) a);
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Expected the na.rm value to be one of $TRUE, $FALSE, $T, $F");
-    }
-    _narm = ((ASTNum)a).dbl() == 1;
+    if( !E.isEnd() ) {
+      a = E.parse();
+      if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
+      else throw new IllegalArgumentException("Expected the na.rm value to be one of %TRUE, %FALSE, %T, %F");
+      _narm = ((ASTNum)a).dbl() == 1;
+    } else { _narm=true; }
+
     E.eatEnd(); // eat ending ')'
     AST[] arys = new AST[_argcnt = dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
@@ -1658,7 +1660,7 @@ class ASTSum extends ASTReducerOp {
 
 
 class ASTRbind extends ASTUniPrefixOp {
-  protected int argcnt;
+  int argcnt;
   @Override String opStr() { return "rbind"; }
   public ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
   @Override ASTOp make() { return new ASTRbind(); }
@@ -1851,7 +1853,7 @@ class ASTRbind extends ASTUniPrefixOp {
 }
 
 class ASTCbind extends ASTUniPrefixOp {
-  protected int argcnt;
+  int argcnt;
   @Override String opStr() { return "cbind"; }
   public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
@@ -2011,7 +2013,7 @@ class ASTAND extends ASTBinOp {
 }
 
 class ASTRename extends ASTUniPrefixOp {
-  protected String _newname;
+  String _newname;
   @Override String opStr() { return "rename"; }
   ASTRename() { super(new String[] {"", "ary", "new_name"}); }
   @Override ASTOp make() { return new ASTRename(); }
@@ -2029,6 +2031,73 @@ class ASTRename extends ASTUniPrefixOp {
     Frame fr2 = fr.deepCopy(_newname);
     DKV.put(fr2._key, fr2);
     e.pushAry(fr2);
+  }
+}
+
+// non-copying DKV put...
+class ASTGPut extends ASTUniPrefixOp {
+  @Override String opStr() { return "gput"; }
+  ASTGPut() { super(new String[] {"lhs_name","rhs"}); }
+  ASTGPut(String[] s) { super(s); }
+  @Override ASTOp make() { return new ASTGPut(); }
+  ASTGPut parse_impl(Exec E) {
+    String l;
+    if( E.isSpecial(E.peek()) ) l = E.nextStr();
+    else                        l = E.parseID();
+    AST lhs = new ASTString('\"',l);
+    AST rhs = E.parse();
+    E.eatEnd();
+    ASTGPut res = (ASTGPut)clone();
+    res._asts = new AST[]{rhs,lhs};
+    return res;
+  }
+  @Override void apply(Env e) {
+    // stack is [ ..., rhs, lhs ]
+    Key k = Key.make(e.popStr());
+    Frame fr;
+    if( e.isAry() ) {
+      Frame f = e.popAry();
+      fr = new Frame(k, f.names(), f.vecs());
+    } else if( e.isNum() ) fr = new Frame(k, null, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
+    else if( e.isStr() ) {
+      Vec v = Vec.makeZero(1);
+      v.setDomain(new String[]{e.popStr()});
+      fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
+    } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
+    DKV.put(k, fr);
+    e._locked.add(k);
+    e.addKeys(fr);
+    e._global._frames.put(k.toString(), fr);
+    e.push(new ValFrame(fr, true /*isGlobalSet*/));
+    e.put(k.toString(), Env.ARY, k.toString());
+  }
+}
+
+// non-copying local put...
+class ASTLPut extends ASTGPut {
+  @Override String opStr() { return "lput"; }
+  ASTLPut() { super(new String[] {"lhs_name","rhs"}); }
+  @Override ASTOp make() { return new ASTLPut(); }
+  // rely on ASTGPut parse impl...
+  @Override void apply(Env e) {
+    // stack is [ ..., rhs, lhs ]
+    Key k = Key.make(e.popStr());
+    Frame fr;
+    if( e.isAry() ) {
+      Frame f = e.popAry();
+      fr = new Frame(k, f.names(), f.vecs());
+    } else if( e.isNum() ) fr = new Frame(k, null, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
+    else if( e.isStr() ) {
+      Vec v = Vec.makeZero(1);
+      v.setDomain(new String[]{e.popStr()});
+      fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
+    } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
+    e._locked.add(k);
+    e.addKeys(fr);
+    e._local._frames.put(k.toString(), fr);
+    e._global._frames.put(k.toString(), fr);
+    e.push(new ValFrame(fr, false /*isGlobalSet*/));
+    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -2076,13 +2145,16 @@ class ASTMatch extends ASTUniPrefixOp {
     AST ary = E.parse();
 
     // The `table` arg
-    _matches = ((ASTStringList)E.parse())._s;
+    AST a = E.parse();
+    if( a instanceof ASTString ) _matches = new String[]{((ASTString)a)._s};
+    else if( a instanceof ASTStringList ) _matches = ((ASTStringList)a)._s;
+    else throw new IllegalArgumentException("`table` expected to be either a String or an slist. Got: " + a.getClass());
     Arrays.sort(_matches);
 
     // `nomatch` is just a number in case no match
     AST nm = E.parse();
     if( nm instanceof ASTNum ) _nomatch = ((ASTNum)nm)._d;
-    else throw new IllegalArgumentException("Argument `nomatch` expected a number.");
+    else throw new IllegalArgumentException("Argument `nomatch` expected a number. Got: " + nm.getClass());
 
     // drop the incomparables arg for now ...
     AST incomp = E.parse();
@@ -2140,7 +2212,7 @@ class ASTOR extends ASTBinOp {
 
 // Similar to R's seq_len
 class ASTSeqLen extends ASTUniPrefixOp {
-  protected double _length;
+  double _length;
   @Override String opStr() { return "seq_len"; }
   ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
   @Override ASTOp make() { return new ASTSeqLen(); }
@@ -2168,9 +2240,9 @@ class ASTSeqLen extends ASTUniPrefixOp {
 
 // Same logic as R's generic seq method
 class ASTSeq extends ASTUniPrefixOp {
-  protected double _from;
-  protected double _to;
-  protected double _by;
+  double _from;
+  double _to;
+  double _by;
 
   @Override String opStr() { return "seq"; }
   ASTSeq() { super(new String[]{"seq", "from", "to", "by"}); }
@@ -2245,18 +2317,14 @@ class ASTSeq extends ASTUniPrefixOp {
 }
 
 class ASTRepLen extends ASTUniPrefixOp {
-  protected double _length;
+  double _length;
   @Override String opStr() { return "rep_len"; }
   public ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
   ASTRepLen parse_impl(Exec E) {
     AST ary = E.parse();
-    try {
-      _length = E.nextDbl();
-    } catch(ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `length` expected to be a number.");
-    }
+    AST a = E.parse();
+    _length = a.treeWalk(new Env(new HashSet<Key>())).popDbl();
     E.eatEnd(); // eat the ending ')'
     ASTRepLen res = (ASTRepLen) clone();
     res._asts = new AST[]{ary};
@@ -2353,9 +2421,11 @@ class ASTQtile extends ASTUniPrefixOp {
     }
 
     Frame x = env.popAry();
+    Key tk=null;
+    if( x._key == null ) { DKV.put(tk=Key.make(), x=new Frame(tk, x.names(),x.vecs())); }
     parms._train = x._key;
     QuantileModel q = new Quantile(parms).trainModel().get();
-
+    if( tk!=null ) { DKV.remove(tk); }
     Vec shape = Vec.makeZero(parms._probs.length);
     Key[] keys = shape.group().addVecs(1 /*1 more for the probs themselves*/ + x.numCols());
     Vec[] vecs = new Vec[keys.length];
@@ -2377,8 +2447,8 @@ class ASTQtile extends ASTUniPrefixOp {
 }
 
 class ASTSetColNames extends ASTUniPrefixOp {
-  protected long[] _idxs;
-  protected String[] _names;
+  long[] _idxs;
+  String[] _names;
   @Override String opStr() { return "colnames="; }
   public ASTSetColNames() { super(new String[]{}); }
   @Override ASTSetColNames make() { return new ASTSetColNames(); }
@@ -2422,7 +2492,7 @@ class ASTSetColNames extends ASTUniPrefixOp {
 }
 
 class ASTRunif extends ASTUniPrefixOp {
-  protected long   _seed;
+  long   _seed;
   @Override String opStr() { return "h2o.runif"; }
   public ASTRunif() { super(new String[]{"h2o.runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
@@ -2430,12 +2500,7 @@ class ASTRunif extends ASTUniPrefixOp {
     // peel off the ary
     AST ary = E.parse();
     // parse the seed
-    try {
-      _seed = (long) E.parse().treeWalk(new Env(null)).popDbl();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `seed` expected to be a number.");
-    }
+    _seed = (long) E.parse().treeWalk(new Env(new HashSet<Key>())).popDbl();
     E.eatEnd(); // eat the ending ')'
     ASTRunif res = (ASTRunif) clone();
     res._asts = new AST[]{ary};
@@ -2493,7 +2558,7 @@ class ASTVar extends ASTUniPrefixOp {
     AST ary = E.parse();
     // Get the trim
     AST y = E.parse();
-    if (y instanceof ASTString && ((ASTString)y)._s.equals("null")) {_ynull = true; y = ary; }
+    if( y instanceof ASTNull ) { _ynull=true; y=ary; }
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.parse());
     try {
@@ -2504,12 +2569,11 @@ class ASTVar extends ASTUniPrefixOp {
     }
     // Get the `use`
     ASTString use;
-    try {
-      use = (ASTString) E.skipWS().parse();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `use` expected to be a string.");
-    }
+    AST u = E.parse();
+    if( u instanceof ASTNull ) use = new ASTString('\"', "null");
+    else if( u instanceof ASTString ) use = (ASTString)u;
+    else throw new IllegalArgumentException("Argument `use` expected to be a string.");
+
     E.eatEnd(); // eat the ending ')'
     // Finish the rest
     ASTVar res = (ASTVar) clone();
@@ -2784,30 +2848,28 @@ class ASTTable extends ASTUniPrefixOp {
     final int ncol;
     if ((ncol = fr.vecs().length) > 2)
       throw new IllegalArgumentException("table does not apply to more than two cols.");
-    for (int i = 0; i < ncol; i++)
-      if (!fr.vecs()[i].isInt())
-        throw new IllegalArgumentException("table only applies to integer vectors.");
     Vec dataLayoutVec;
     Frame fr2;
     String colnames[];
     String[][] d = new String[ncol+1][];
 
-    if (ncol == 1) {
-      final int min = (int)fr.anyVec().min();
-      final int max = (int)fr.anyVec().max();
+    if (ncol == 1 && fr.anyVec().isInt()) {  // fast path for int vecs
+      final int min = (int) fr.anyVec().min();
+      final int max = (int) fr.anyVec().max();
       colnames = new String[]{fr.name(0), "Count"};
       d[0] = fr.anyVec().domain(); // should always be null for all neg values!
       d[1] = null;
 
       // all pos
       if (min >= 0) {
-        UniqueColumnCountTask t = new UniqueColumnCountTask(max,false,false,0).doAll(fr.anyVec());
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max, false, false, 0).doAll(fr.anyVec());
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
 
         // second pass to build the result frame
         fr2 = new MRTask() {
-          @Override public void map(Chunk[] c, NewChunk[] cs) {
+          @Override
+          public void map(Chunk[] c, NewChunk[] cs) {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
@@ -2819,13 +2881,14 @@ class ASTTable extends ASTUniPrefixOp {
 
         // all neg  -- flip the sign and count...
       } else if (min <= 0 && max <= 0) {
-        UniqueColumnCountTask t = new UniqueColumnCountTask(-1*min,true,false,0).doAll(fr.anyVec());
+        UniqueColumnCountTask t = new UniqueColumnCountTask(-1 * min, true, false, 0).doAll(fr.anyVec());
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
 
         // second pass to build the result frame
         fr2 = new MRTask() {
-          @Override public void map(Chunk[] c, NewChunk[] cs) {
+          @Override
+          public void map(Chunk[] c, NewChunk[] cs) {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
@@ -2837,37 +2900,33 @@ class ASTTable extends ASTUniPrefixOp {
 
         // mixed
       } else {
-        UniqueColumnCountTask t = new UniqueColumnCountTask(max+-1*min,false,true,max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max + -1 * min, false, true, max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
 
         // second pass to build the result frame
         fr2 = new MRTask() {
-          @Override public void map(Chunk[] c, NewChunk[] cs) {
+          @Override
+          public void map(Chunk[] c, NewChunk[] cs) {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
-              cs[0].addNum(idx > max ? (idx-max)*-1 : idx);
+              cs[0].addNum(idx > max ? (idx - max) * -1 : idx);
               cs[1].addNum(cts[idx]);
             }
           }
         }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
       }
-
     } else {
-
-      // 2 COLUMN CASE
-      colnames = new String[]{fr.name(0), fr.name(1), "count"};
+      // Build a NBHS of all groups
+      // Create a dense array (1 index per group) of counts, updated atomically
+      colnames = ncol==1? new String[]{fr.name(0), "count"} : new String[]{fr.name(0), fr.name(1), "count"};
       long s = System.currentTimeMillis();
 
-      // Strategy: Avoid doing NBHM reduces (which is way too slow).
-      //  1. Build NBHS of Groups (useful for
       Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
       Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
-      final long[] pairs = new long[u._s.size()];
-      int i=0;
-      for (Object o : u._s) pairs[i++] = (long) o;
+      final ASTddply.Group[] pairs = u._s.toArray(new ASTddply.Group[u._s.size()]);
       dataLayoutVec = Vec.makeCon(0, pairs.length);
 
       s = System.currentTimeMillis();
@@ -2879,17 +2938,21 @@ class ASTTable extends ASTUniPrefixOp {
       Log.info("Finished gathering counts in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
       d[0] = fr.vec(0).domain();
-      d[1] = fr.vec(1).domain();
+      if( ncol==2 ) d[1] = fr.vec(1).domain();
 
       fr2 = new MRTask() {
         @Override
         public void map(Chunk[] c, NewChunk[] cs) {
           int start = (int)c[0].start();
           for (int i = 0; i < c[0]._len; ++i) {
-            long[] g = unmix(pairs[i+start]);
+            double[] g = pairs[i+start]._ds;
             cs[0].addNum(g[0]);
-            cs[1].addNum(g[1]);
-            cs[2].addNum(cnts[i+start]);
+            if( ncol==2) {
+              cs[1].addNum(g[1]);
+              cs[2].addNum(cnts[i+start]);
+            } else {
+              cs[1].addNum(cnts[i+start]);
+            }
           }
         }
       }.doAll(ncol + 1, dataLayoutVec).outputFrame(colnames, d);
@@ -2934,18 +2997,26 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
-    NonBlockingHashSet<Long> _s;
-    @Override public void setupLocal() { _s = new NonBlockingHashSet<>(); }
+    NonBlockingHashSet<ASTddply.Group> _s;
+    private long[] _cols;
+    @Override public void setupLocal() {
+      _s = new NonBlockingHashSet<>();
+      _cols = new long[_fr.numCols()];
+      for(int i=0;i<_cols.length;++i) _cols[i]=i;
+    }
     @Override public void map(Chunk[] c) {
+      ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0;i<c[0]._len;++i)
-        _s.add(mix(c[0].at8(i), c[1].at8(i)));
+        if( _s.add(g.fill(i,c,_cols))) {
+          g = new ASTddply.Group(_cols.length);
+        }
     }
     @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
 
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _s == null ) return ab.put4(0);
       ab.put4(_s.size());
-      for( Long g : _s ) {ab.put8(g); }
+      for( ASTddply.Group g : _s ) {ab.put(g); }
       return ab;
     }
 
@@ -2953,33 +3024,33 @@ class ASTTable extends ASTUniPrefixOp {
       int len = ab.get4();
       if( len == 0 ) return this;
       _s = new NonBlockingHashSet<>();
-      for( int i=0; i<len; i++ ) { _s.add(ab.get8());}
+      for( int i=0; i<len; i++ ) { _s.add(ab.get(ASTddply.Group.class));}
       return this;
     }
   }
 
   /** http://szudzik.com/ElegantPairing.pdf */
-  private static long mix(long A, long B) {
-    long a=A,b=B;
-    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
-    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
-    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
-    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
-  }
-
-  // always returns a long[] of length 2;
-  // long[0] -> A, long[1] -> B
-  private static long[] unmix(long z) {
-    long rflr = (long)Math.floor(Math.sqrt(z));
-    long rflr2=rflr*rflr;
-    long z_rflr2 = z-rflr2;
-    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
-  }
+//  private static long mix(long A, long B) {
+//    long a=A,b=B;
+//    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
+//    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
+//    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
+//    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
+//  }
+//
+//  // always returns a long[] of length 2;
+//  // long[0] -> A, long[1] -> B
+//  private static long[] unmix(long z) {
+//    long rflr = (long)Math.floor(Math.sqrt(z));
+//    long rflr2=rflr*rflr;
+//    long z_rflr2 = z-rflr2;
+//    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
+//  }
 
   private static class NewHashMap extends MRTask<NewHashMap> {
-    NonBlockingHashMap<Long, Integer> _s;
-    final long[] _m;
-    NewHashMap(long[] m) { _m = m; }
+    NonBlockingHashMap<ASTddply.Group, Integer> _s;
+    final ASTddply.Group[] _m;
+    NewHashMap(ASTddply.Group[] m) { _m = m; }
     @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
@@ -2991,7 +3062,7 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _s == null ) return ab.put4(0);
       ab.put4(_s.size());
-      for( Long l : _s.keySet() ) {ab.put8(l); ab.put4(_s.get(l)); }
+      for( ASTddply.Group l : _s.keySet() ) {ab.put(l); ab.put4(_s.get(l)); }
       return ab;
     }
 
@@ -2999,25 +3070,31 @@ class ASTTable extends ASTUniPrefixOp {
       int len = ab.get4();
       if( len == 0 ) return this;
       _s = new NonBlockingHashMap<>();
-      for( int i=0;i<len;i++ ) _s.put(ab.get8(), ab.get4());
+      for( int i=0;i<len;i++ ) _s.put(ab.get(ASTddply.Group.class), ab.get4());
       return this;
     }
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    final NonBlockingHashMap<Long, Integer> _m;
+    final NonBlockingHashMap<ASTddply.Group, Integer> _m;
+    private long[] _cols;
     // out
     long[] _cnts;
     private static final int _b = _unsafe.arrayBaseOffset(long[].class);
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
-    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) {_m = s; }
-    @Override public void setupLocal() { _cnts = MemoryManager.malloc8(_m.size()); }
+    CountUniq2ColTsk(NonBlockingHashMap<ASTddply.Group, Integer> s) {_m = s; }
+    @Override public void setupLocal() {
+      _cnts = MemoryManager.malloc8(_m.size());
+      _cols = new long[_fr.numCols()];
+      for(int i=0;i<_cols.length;++i) _cols[i]=i;
+    }
     @Override public void map(Chunk[] cs) {
+      ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0; i < cs[0]._len; ++i) {
-        int h = _m.get(mix(cs[0].at8(i), cs[1].at8(i)));
+        int h = _m.get(g.fill(i,cs,_cols));
         long offset = ssid(h);
         long c = _cnts[h];
         while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
@@ -3215,11 +3292,12 @@ class ASTCut extends ASTUniPrefixOp {
     if( labels instanceof ASTStringList ) _labels = ((ASTStringList)labels)._s;
     else if( labels instanceof ASTString) _labels = new String[]{((ASTString)labels)._s};
     else if( labels instanceof ASTFrame ) _labels = new String[]{((ASTFrame)labels)._key};
+    else if( labels instanceof ASTNull  ) _labels = null;
     else throw new IllegalArgumentException("`labels` argument expected to be a slist or String. Got: " + labels.getClass());
 
     // cleanup _labels
-    for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
-    if (_labels.length==1 && _labels[0].equals("null")) _labels = null;
+    if( _labels!=null )
+      for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
 
     //include.lowest
     AST inc_lowest = E.parse();
@@ -3450,24 +3528,32 @@ class ASTCat extends ASTUniPrefixOp {
     ArrayList<Double> dbls = new ArrayList<>();
     ArrayList<ASTSpan> spans = new ArrayList<>();
     ArrayList<Long> cnts = new ArrayList<>();
+    boolean strs=false;
     long cnt=0;
     AST a;
     while( !E.isEnd() ) {
       a = E.parse();
-      if( a instanceof ASTDoubleList ) { cnt += addAll(dbls,((ASTDoubleList)a)._d); }
-      else if( a instanceof ASTNum)    { dbls.add(((ASTNum)a)._d); cnt++; }
-      else if( a instanceof ASTSpan)   { spans.add((ASTSpan)a); cnts.add(cnt); cnt=0; cnts.add(cnt); }
+      if( a instanceof ASTStringList ) strs = true;
+      else if( a instanceof ASTDoubleList ) { cnt += addAll(dbls,((ASTDoubleList)a)._d); }
+      else if( a instanceof ASTNum   ) { dbls.add(((ASTNum)a)._d); cnt++; }
+      else if( a instanceof ASTSpan  ) { spans.add((ASTSpan)a); cnts.add(cnt); cnt=0; cnts.add(cnt); }
       else throw new IllegalArgumentException("'c' expected a dlist, a number, or a span. Got: " + a.getClass());
     }
-    cnts.add(cnt);
-    _tilNext = new long[cnts.size()];
-    int i = 0;
-    for (long l : cnts) _tilNext[i++] = l;
-    ASTSeries s = new ASTSeries(null, toArray(dbls), spans.toArray(new ASTSpan[spans.size()]));
-    E.eatEnd(); // eat ending ')'
-    ASTCat res = (ASTCat) clone();
-    res._asts = new AST[]{s};
-    return res;
+    if( strs ) {
+      // buildin an Enum Vec
+
+    } else {
+      cnts.add(cnt);
+      _tilNext = new long[cnts.size()];
+      int i = 0;
+      for (long l : cnts) _tilNext[i++] = l;
+      ASTSeries s = new ASTSeries(null, toArray(dbls), spans.toArray(new ASTSpan[spans.size()]));
+      E.eatEnd(); // eat ending ')'
+      ASTCat res = (ASTCat) clone();
+      res._asts = new AST[]{s};
+      return res;
+    }
+    return new ASTCat();
   }
 
   @Override void apply(Env env) {
