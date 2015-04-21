@@ -5,6 +5,7 @@ import org.junit.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+@Ignore
 public class OOMTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 

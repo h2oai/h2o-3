@@ -258,7 +258,6 @@ h2o.shim <- function(enable = TRUE) {
       # Map for supported deprecated parameters
       .gbm.dep.map <- c("data"                    = "training_frame",
                         "key"                     = "destination_key",
-                        "distribution"            = "loss",
                         "n.trees"                 = "ntrees",
                         "interaction.depth"       = "max_depth",
                         "n.minobsinnode"          = "min_rows",

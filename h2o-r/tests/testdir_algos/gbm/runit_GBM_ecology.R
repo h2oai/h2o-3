@@ -50,11 +50,11 @@ test.GBM.ecology <- function(conn) {
                 max_depth = 5,
                  min_rows = 10,
                learn_rate = 0.1,
-                     loss = "gaussian")
+                     distribution = "gaussian")
 
   print(ecology.h2o)
   
-  #Train R GBM Model: Using Gaussian loss function for binary outcome OK... Also more comparable to H2O, which uses MSE
+  #Train R GBM Model: Using Gaussian distribution family for binary outcome OK... Also more comparable to H2O, which uses MSE
   ecology.r <- gbm(Angaus ~ ., data = ecology.data[,-1], distribution = "gaussian", 
                   n.trees = n.trees,
                   interaction.depth = 5, 

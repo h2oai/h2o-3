@@ -22,7 +22,7 @@ test.logloss <- function(H2Oserver) {
   predictors = 3:9
   response = 2
   train[,response] <- as.factor(train[,response])
-  model = h2o.gbm(x=predictors,y=response,loss = "bernoulli",training_frame=train,
+  model = h2o.gbm(x=predictors,y=response,distribution = "bernoulli",training_frame=train,
                   ntrees=2,max_depth=3,min_rows=1,learn_rate=0.01,nbins=20)
 
   ## Get LogLoss from the model on training set
@@ -51,7 +51,7 @@ test.logloss <- function(H2Oserver) {
   predictors = c(2:3,5:9)
   response = 4
   train[,response] <- as.factor(train[,response])
-  model = h2o.gbm(x=predictors,y=response,loss = "multinomial",training_frame=train,
+  model = h2o.gbm(x=predictors,y=response,distribution = "multinomial",training_frame=train,
                   ntrees=2,max_depth=3,min_rows=1,learn_rate=0.01,nbins=20)
 
   ## Get LogLoss from the model on training set

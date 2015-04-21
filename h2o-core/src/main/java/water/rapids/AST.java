@@ -1,15 +1,17 @@
 package water.rapids;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
@@ -642,6 +644,7 @@ class ASTNull extends AST {
   @Override ASTNull make() { return new ASTNull(); }
   String opStr() { throw H2O.unimpl();}
   ASTNull() {}
+  ASTNull parse_impl(Exec E) { return this; }
   @Override void exec(Env e) { e.push(new ValNull());}
   @Override String value() { return null; }
   @Override int type() { return Env.NULL; }
@@ -901,7 +904,7 @@ class ASTAssign extends AST {
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
-        if (id.isGlobalSet()) vecs = f.deepSlice(null,null).vecs();
+        if (id.isGlobalSet()) vecs = f.deepCopy(null).vecs();
         Frame fr = new Frame(k, f.names(), vecs);
         if (id.isGlobalSet()) DKV.put(k, fr);
         e._locked.add(k);
@@ -1123,6 +1126,7 @@ class ASTSlice extends AST {
       case Env.SPAN: ((ASTSpan) rows).setSlice(true, false);     break;
       case Env.SERIES: ((ASTSeries) rows).setSlice(true, false); break;
       case Env.LIST: rows = new ASTSeries(((ASTLongList)rows)._l,null,((ASTLongList)rows)._spans); ((ASTSeries)rows).setSlice(true,false); break;
+      case Env.NULL: rows = new ASTNull(); break;
       default: //pass thru
     }
 
@@ -1137,6 +1141,7 @@ class ASTSlice extends AST {
         case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
         case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
         case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        case Env.NULL: rows = new ASTNull(); break;
         default: // pass thru
       }
     }
@@ -1245,7 +1250,7 @@ class ASTSlice extends AST {
   // Error to mix negatives & positive.  Negative list is sorted, with dups
   // removed.  Positive list can have dups (which replicates cols) and is
   // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
-  static Object select( long len, Val v, Env env, boolean isCol) {
+  static Object select( final long len, Val v, Env env, boolean isCol) {
     if( v.type() == Env.NULL ) return null; // Trivial "all"
     env.push(v);
     long cols[];
@@ -1318,15 +1323,40 @@ class ASTSlice extends AST {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+AtoS(ary.names()));
     Vec vec = ary.anyVec();
-    // Check for a matching column of bools.
-    if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
-      return ary;    // Boolean vector selection.
-    // Convert single vector to a list of longs selecting rows
-    if(ary.numRows() > 10000000) throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
-    cols = MemoryManager.malloc8((int)ary.numRows());
-    for(int i = 0; i < cols.length; ++i){
-      if(vec.isNA(i))throw new IllegalArgumentException("Can not use NA as index!");
-      cols[i] = vec.at8(i);
+
+    // got a frame as a column selector... it must be a boolean selector.
+    if( isCol ) {
+      if( vec.min() != 0 && vec.max() != 1 && !vec.isInt() )
+        throw new IllegalArgumentException("Vec selector must be a single columns of 1s and 0s.");
+      // passed in len is ncols of the frame to slice
+      final ASTGroupBy.IcedNBHS<IcedInt> hs = new ASTGroupBy.IcedNBHS();
+      // MRTask to fill cols in parallel
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          int start = (int)c.start();
+          for( int i=0;i<c._len;++i ) {
+            if( c.at8(i)==1 && len>(i+start) ) hs.add(new IcedInt(start+i));
+          }
+        }
+      }.doAll(ary);
+      cols = new long[(int)Math.min(hs.size(), len)];
+      Iterator<IcedInt> it = hs.iterator();
+      int j=0;
+      while( j<cols.length && it.hasNext() )
+        cols[j++] = it.next()._val;
+    } else {
+
+      // Check for a matching column of bools.
+      if (ary.numRows() == len && vec.min() >= 0 && vec.max() <= 1 && vec.isInt())
+        return ary;    // Boolean vector selection.
+      // Convert single vector to a list of longs selecting rows
+      if (ary.numRows() > 10000000)
+        throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
+      cols = MemoryManager.malloc8((int) ary.numRows());
+      for (int i = 0; i < cols.length; ++i) {
+        if (vec.isNA(i)) throw new IllegalArgumentException("Can not use NA as index!");
+        cols[i] = vec.at8(i);
+      }
     }
     return cols;
   }
@@ -1390,6 +1420,21 @@ abstract class ASTList extends AST {
   ASTList() { spans=new ArrayList<>(); }
 }
 
+class ASTAry extends ASTList {
+  AST[] _a;
+  @Override String opStr() { return "list"; }
+  @Override ASTDoubleList make() { return new ASTDoubleList(); }
+  ASTAry parse_impl(Exec E) {
+    ArrayList<AST> asts = new ArrayList<>();
+    while( !E.isEnd() ) asts.add(E.parse());
+    E.eatEnd();
+    _a = asts.toArray(new AST[asts.size()]);
+    ASTAry res = (ASTAry) clone();
+    res._a = _a;
+    return res;
+  }
+}
+
 class ASTDoubleList extends ASTList {
   ASTDoubleList() {super();}
   double[] _d;
@@ -1410,7 +1455,7 @@ class ASTDoubleList extends ASTList {
 
     ASTDoubleList res = (ASTDoubleList) clone();
     res._d = _d; //probably useless
-   res._spans = _spans;
+    res._spans = _spans;
     return res;
   }
   @Override public Env treeWalk(Env e) { e.push(new ValDoubleList(_d,_spans)); return e; }
@@ -1448,8 +1493,12 @@ class ASTStringList extends ASTList {
   @Override ASTStringList make() { return new ASTStringList(); }
   ASTStringList parse_impl(Exec E) {
     ArrayList<String> strs = new ArrayList<>();
-    while( !E.isEnd() ) // read until we hit a ")"
-      strs.add(E.nextStr());
+    while( !E.isEnd() ) {// read until we hit a ")"
+      AST a = E.parse();
+      if( a instanceof ASTNull ) strs.add(null);
+      else if( a instanceof ASTString ) strs.add(((ASTString) a)._s);
+      else if( a instanceof ASTFrame  ) strs.add(((ASTFrame)a)._key);  // got screwed by the st00pid aststring hack for keys w/ spaces
+    }
     E.eatEnd();
     _s = new String[strs.size()];
     int i=0;

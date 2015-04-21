@@ -18,11 +18,11 @@ test.h2o.gbm <- function(conn) {
 
   myX <- setdiff(colnames(prostate.hex), "CAPSULE")
   Log.info(paste("Run GBM with y = CAPSULE, x =", paste(myX, collapse=",")))
-  prostate.gbm <- h2o.gbm(x = setdiff(colnames(prostate.hex), "CAPSULE"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 5, learn_rate = 0.1, loss = "bernoulli")
+  prostate.gbm <- h2o.gbm(x = setdiff(colnames(prostate.hex), "CAPSULE"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 5, learn_rate = 0.1, distribution = "bernoulli")
   print(prostate.gbm)
 
   Log.info("Run GBM with y = CAPSULE, x = AGE, RACE, PSA, VOL, GLEASON")
-  prostate.gbm2 <- h2o.gbm(x = c("AGE", "RACE", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 8, min_rows = 10, learn_rate = 0.2, loss = "bernoulli")
+  prostate.gbm2 <- h2o.gbm(x = c("AGE", "RACE", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 8, min_rows = 10, learn_rate = 0.2, distribution = "bernoulli")
   print(prostate.gbm2)
 
   irisPath <- system.file("extdata", "iris.csv", package="h2o")
@@ -33,7 +33,7 @@ test.h2o.gbm <- function(conn) {
   print(summary(iris.hex))
 
   Log.info("Run GBM with y = column 5, x = columns 1:4")
-  iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex, loss = "multinomial")
+  iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex, distribution = "multinomial")
   print(iris.gbm)
 
   testEnd()

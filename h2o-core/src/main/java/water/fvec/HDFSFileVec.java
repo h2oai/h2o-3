@@ -31,9 +31,4 @@ public class HDFSFileVec extends FileVec {
     fr.unlock(null);
     return k;
   }
-
-  @Override public int setChunkSize(Frame fr, int chunkSize) {
-    clearAllCachedChunks();
-    return super.setChunkSize(fr, chunkSize);
-  }
 }

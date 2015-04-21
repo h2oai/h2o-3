@@ -42,6 +42,6 @@ myX = setdiff(names(data.hex), myY)
 data_admm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "ADMM")
 data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "L_BFGS")
 
-data.gbm <- h2o.gbm(x = myX1, y = DepY, training_frame = data.hex, loss = "AUTO")
+data.gbm <- h2o.gbm(x = myX1, y = DepY, training_frame = data.hex, distribution = "AUTO")
 
 PASS_BANNER()
