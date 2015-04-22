@@ -520,7 +520,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
               old._output._submodels[id] = sm;
           }
         }
-        old._output.pickBestModel(false, old, tFrame, vFrame);
+//        can not call pickBestSubmodel now, pickBestSubmodel will call makeModelMEtrics which in turns calls Frame.checksum
+//        which will request RollupStats and taht will hit assertion error since we are in TAtomic and would thus be blocking on task with the same prioriry
+//        should be ok to pickBestModel only at the very end, may need to revisit if showing incremental results...
+//        old._output.pickBestModel(false, old, tFrame, vFrame);
         old._run_time = Math.max(old._run_time,sm.run_time);
         return old;
       }
