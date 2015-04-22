@@ -61,7 +61,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         formats   [i+1] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
       colHeaders[i+1] = "idx"; types[i+1] = "integer"; formats[i+1] = "%d";
-      TwoDimTable thresholdsByMetrics = new TwoDimTable("thresholds_x_metric_scores", "Metrics for Thresholds", new String[auc._nBins], colHeaders, types, formats, null );
+      TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Binomial metrics as a function of classification thresholds", new String[auc._nBins], colHeaders, types, formats, null );
       for( i=0; i<auc._nBins; i++ ) {
         int j=0;
         thresholdsByMetrics.set(i, j, thresholds[i]);
@@ -74,7 +74,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
 
       // Fill TwoDimTable
-      TwoDimTable maxMetrics = new TwoDimTable("maximum_metric", "Maximum Metrics", Arrays.copyOfRange(colHeaders, 1, crits.length+1),
+      TwoDimTable maxMetrics = new TwoDimTable("Maximum Metrics", "Maximum metrics at their respective thresholds", Arrays.copyOfRange(colHeaders, 1, crits.length+1),
               new String[]{"Threshold","Value","idx"},
               new String[]{"double",   "double","long"},
               new String[]{"%f",       "%f",    "%d"},
