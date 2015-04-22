@@ -55,8 +55,8 @@ test.linkFunctions <- function(conn) {
 	model.R.gamma.identity <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")
-	deviance.h2o.identity = model.h2o.gamma.identity@model$residual_deviance / model.h2o.gamma.identity@model$null_deviance
-	deviance.R.identity = deviance(model.R.gamma.identity)  / model.h2o.gamma.identity@model$null_deviance
+	deviance.h2o.identity = model.h2o.gamma.identity@model$training_metrics@metrics$residual_deviance / model.h2o.gamma.identity@model$training_metrics@metrics$null_deviance
+	deviance.R.identity = deviance(model.R.gamma.identity)  / model.h2o.gamma.identity@model$training_metrics@metrics$null_deviance
 	difference = deviance.R.identity - deviance.h2o.identity
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.identity))
