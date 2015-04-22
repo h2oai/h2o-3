@@ -3,10 +3,7 @@ package water.rapids;
 
 import sun.misc.Unsafe;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.util.Log;

@@ -177,9 +177,9 @@ class Expr(object):
       print tabulate.tabulate(t_data, headers=headers)
       print
 
-#  def __repr__(self):
-#    self.show()
-#    return ""
+  # def __repr__(self):
+  #    self.show()
+  #    return ""
 
   # Compute summary data
   def summary(self):
