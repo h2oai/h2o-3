@@ -716,8 +716,7 @@ MAIN_LOOP:
       PreviewParseWriter dout = new PreviewParseWriter(resSetup._number_columns);
       try {
         p.streamParse(is, dout);
-        resSetup._column_types = dout.guessTypes();
-        resSetup._na_strings = dout.guessNAStrings(resSetup._column_types);
+        resSetup._column_previews = dout;
       } catch (Throwable e) {
         throw new RuntimeException(e);
       }
