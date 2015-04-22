@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import java.util.*;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -18,7 +19,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
   @Test
   public void run() {
-    long seed = new Random().nextLong();
+    NFSFileVec ff = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
+    Frame golden = ParseDataset.parse(Key.make("golden.hex"), ff._key);
 
     DeepLearningModel mymodel = null;
     Frame train = null;
@@ -38,6 +40,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), file._key);
+          Assert.assertTrue(isBitIdentical(data, golden)); //test parser consistency
 
           // Create holdout test data on clean data (before adding missing values)
           train = data;
@@ -140,5 +143,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       }
       Scope.exit();
     }
+    golden.delete();
   }
 }
