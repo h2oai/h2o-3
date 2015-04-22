@@ -56,7 +56,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
     columns = new ColumnSpecsBase[cols];
     columns[0] = new ColumnSpecsBase();
     columns[0].name = pythonify(t.getColHeaderForRowHeaders());
-    columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
+    columns[0].type = "string";
     columns[0].format = "%s";
     columns[0].description = t.getColHeaderForRowHeaders();
     for (int c=1; c<cols; ++c) {
@@ -87,6 +87,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
    * @return
    */
   private String pythonify(String name) {
+    if (name == null) return null;
     StringBuilder sb = new StringBuilder();
     String [] modified = name.split("[\\s_]+");
     for (int i=0; i<modified.length; ++i) {
