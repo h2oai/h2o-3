@@ -741,7 +741,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Train","Number of Predictors"}, new String[]{"String","String","String","integer"},new String[]{"%s","%s","%s","%d"},"");
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Training Frame","Number of Predictors"}, new String[]{"string","string","string","integer"},new String[]{"%s","%s","%s","%d"},"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
       glmModel._output._model_summary.set(0,2,_trainFrame.toString());

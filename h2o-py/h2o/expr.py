@@ -233,6 +233,8 @@ class Expr(object):
     if isinstance(i, (int, float)):  return Expr(op, Expr(i), self)
     raise NotImplementedError
 
+  def logical_negation(self):  return Expr("not", self)
+
   def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_expr_bin_op(i,"&" )
@@ -490,6 +492,10 @@ class Expr(object):
 
     elif self._op in ["floor", "abs"]:
       if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op == "not":
+      if left.is_local():   self._data = [not x for x in left._data]
       else:                 pass
 
     elif self._op == "sign":

@@ -7,7 +7,7 @@ def rf_balance_classes(ip,port):
     h2o.init(ip,port)
 
     # execute ipython notebook
-    h2o.ipy_notebook_exec(h2o.locate("h2o-py/demos/rf_balance_classes_demo.ipynb"),save_and_norun=False)
+    h2o.ipy_notebook_exec(h2o.locate("h2o-py/demos/rf_balance_classes.ipynb"),save_and_norun=False)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, rf_balance_classes)

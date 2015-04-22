@@ -259,7 +259,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
 
                                             double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
-                                            Assert.assertEquals(threshErr2, error, 1e-15);
+                                            Assert.assertEquals(threshErr2, error, 1e-2); //AUC-given F1-optimal threshold might not reproduce AUC-given CM-error identically, but should match up to 1%
                                           }
                                         } finally {
                                           if (pred != null) pred.delete();
