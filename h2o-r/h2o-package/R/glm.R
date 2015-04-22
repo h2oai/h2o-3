@@ -7,8 +7,8 @@
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param destination_key (Optional) An unique hex key assigned to the resulting model. If none is given, a key will automatically be generated.
 #' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
-#' @param max_iter A non-negative integer specifying the maximum number of iterations.
-#' @param beta_eps A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
+#' @param max_iterations A non-negative integer specifying the maximum number of iterations.
+#' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
 #'        Defines the convergence criterion for \code{h2o.glm}.
 #' @param solver A character string specifying the solver used: ADMM (supports more features), L_BFGS (scales better for datasets with many columns)
 #' @param standardize A logical value indicating whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to
@@ -29,7 +29,7 @@
 #'                making \code{alpha = 1} the lasso penalty and \code{alpha = 0} the ridge penalty.
 #' @param lambda A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta)} in the objective function.
 #'               When \code{lambda = 0}, no elastic-net penalty is applied and ordinary generalized linear models are fit.
-#' @param prior1 (Optional) A numeric specifying the prior probability of class 1 in the response when \code{family = "binomial"}.
+#' @param prior (Optional) A numeric specifying the prior probability of class 1 in the response when \code{family = "binomial"}.
 #'               The default prior is the observational frequency of class 1.
 #' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
 #'                      \code{lambda} is interpreted as lambda min.
@@ -39,15 +39,18 @@
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
 #' @param use_all_factor_levels A logical value indicating whether dummy variables should be used for all factor levels of the categorical predictors.
 #'                              When \code{TRUE}, results in an over parameterized models.
-#' @param n_folds (Currently Unimplemented)
-#' @param ...
+#' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
+#'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
+#'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
+#'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
+#'        coefficients.
+#' @param nfolds (Currently Unimplemented)
+#' @param ... (Currently Unimplemented)
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
 h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     max_iterations = 50,
                     beta_epsilon = 0,
-                    balance_classes = FALSE,
-                    class_sampling_factors,
-                    max_after_balance_size = 5.0,
                     solver = c("ADMM", "L_BFGS"),
                     standardize = TRUE,
                     family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
@@ -93,10 +96,6 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
     parms$max_iterations <- max_iterations
   if(!missing(beta_epsilon))
     parms$beta_epsilon <- beta_epsilon
-  if(!missing(class_sampling_factors))
-    parms$class_sampling_factors <- class_sampling_factors
-  if(!missing(max_after_balance_size))
-    parms$max_after_balance_size <- max_after_balance_size
   if(!missing(solver))
     parms$solver <- solver
   if(!missing(standardize))
@@ -138,6 +137,13 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
   m
 }
 
+#TODO Rename this function for clarity
+#' Remake an H2O GLM Model
+#'
+#' This function allows the usage of new beta constraints to create an GLM model, from an existing
+#' model.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param beta a new set of beta_constraints
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
@@ -148,14 +154,17 @@ h2o.makeGLMModel <- function(model,beta) {
    m
 }
 
+#' Start an H2O Generalized Linear Model Job
+#'
+#' Creates a background H2O GLM job.
+#' @inheritParams h2o.glm
+#' @return Returns a \linkS4class{H2OModelFuture} class object.
+#' @seealso \code{\link{h2o.getGLMModel}} for resolving the \code{H2OModelFuture} object.
 #' @export
 h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_frame,
                     #AUTOGENERATED Params
                     max_iterations = 50,
                     beta_epsilon = 0,
-                    balance_classes = FALSE,
-                    class_sampling_factors,
-                    max_after_balance_size = 5.0,
                     solver = c("ADMM", "L_BFGS"),
                     standardize = TRUE,
                     family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
@@ -202,12 +211,6 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
       parms$max_iterations <- max_iterations
     if(!missing(beta_epsilon))
       parms$beta_epsilon <- beta_epsilon
-    if(!missing(balance_classes))
-      parms$balance_classes <- balance_classes
-    if(!missing(class_sampling_factors))
-      parms$class_sampling_factors <- class_sampling_factors
-    if(!missing(max_after_balance_size))
-      parms$max_after_balance_size <- max_after_balance_size
     if(!missing(solver))
       parms$solver <- solver
     if(!missing(standardize))
@@ -240,16 +243,18 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
     .h2o.startModelJob(training_frame@conn, 'glm', parms)
 }
 
+# TODO: make this possible for all model types
+#' Resolve a GLM H2O Futures Model
+#'
+#' Turns an \linkS4class{H2OModelFuture} into a model of the correct type.
+#' @param keys an \linkS4class{H2OModelFuture} or correct job key.
+#' @param conn a corresponding \linkS4class{H2OConnection} class object.
+#' @return Returns the correct \linkS4class{H2OModel} for the created model.
 #' @export
-h2o.getGLMModel <- function(keys) {
+h2o.getGLMModel <- function(keys, conn) {
+  if(missing(conn)) conn <- h2o.getConnection()
   job_key  <- keys[[1]]
   dest_key <- keys[[1]]
   .h2o.__waitOnJob(conn, job_key)
   model <- h2o.getModel(dest_key, conn)
-  if (delete_train)
-    h2o.rm(temp_train_key)
-  if (!is.null(params$validation_frame))
-    if (delete_valid)
-      h2o.rm(temp_valid_key)
-  model
 }

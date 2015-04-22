@@ -96,6 +96,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
         hide("_max_confusion_matrix_size", "Max confusion matrix size is only applicable to classification problems.");
       }
       if (_nclass <= 2) hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
+      if (_nclass <= 2) hide("_max_confusion_matrix_size", "Only for multi-class classification problems.");
     }
   }    
 }

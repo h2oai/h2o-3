@@ -54,6 +54,9 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
     if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
     if (_parms._eps_prob < 0) error("_eps_prob", "Threshold for probability must be positive");
+    hide("_balance_classes", "Balance classes is not applicable to NaiveBayes.");
+    hide("_class_sampling_factors", "Class sampling factors is not applicable to NaiveBayes.");
+    hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
   }
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
