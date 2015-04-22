@@ -1900,9 +1900,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
       if (model_info().data_info()._normRespMul != null)
-        preds[0] = (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+        preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
-        preds[0] = out[0];
+        preds[0] = (double)out[0];
       if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
