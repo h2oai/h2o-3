@@ -236,7 +236,7 @@ public class AUC2 extends Iced {
       else         { _tps[idx]=1; _fps[idx]=0; }
       _n++;
       if( _n > _nBins )         // Merge as needed back down to nBins
-        mergeOneBin();
+        mergeOneBin(true);
     }
 
     public void reduce( AUCBuilder bldr ) {
@@ -262,9 +262,7 @@ public class AUC2 extends Iced {
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.
-      boolean dups = true;
-      while( (dups && _n > 1) || _n > _nBins )
-        dups = mergeOneBin();
+      while( mergeOneBin(_n > _nBins) ) ;
     }
 
 //    private boolean sorted() {
@@ -277,10 +275,12 @@ public class AUC2 extends Iced {
 //      return true;
 //    }
 
-    private boolean mergeOneBin() {
+    private boolean mergeOneBin( boolean merge ) {
+      // Search for the bins with the smallest increase in error to merge, or
+      // zero delta.  Returns -1 if no dups and not 'merge'.  Never returns -1
+      // if 'merge' is true, always reports valid index to merge at.
       // Too many bins; must merge bins.  Merge into bins with least total
       // squared error.  Horrible slowness linear scan.  
-      boolean dups = false;
       double minSQE = Double.MAX_VALUE;
       int minI = -1;
       for( int i=0; i<_n-1; i++ ) {
@@ -288,11 +288,12 @@ public class AUC2 extends Iced {
         long k1 = _tps[i+1]+_fps[i+1];
         double delta = _ths[i+1]-_ths[i];
         double sqe0 = _sqe[i]+_sqe[i+1]+delta*delta*k0*k1 / (k0+k1);
-        if( sqe0 < minSQE || delta==0 ) {  
-          minI = i;  minSQE = sqe0; 
-          if( delta==0 ) { dups = true; break; }
+        if( sqe0 < minSQE || delta==0 ) {
+          minI = i;  minSQE = sqe0;
+          if( delta == 0 ) { merge = true; break; } // Must merge dup/equal thresholds, stop searching and do merge
         }
       }
+      if( !merge ) return false; // if 'merge' is false, then no merge
 
       // Here is code for merging bins with keeping the bins balanced in
       // size, but this leads to bad errors if the probabilities are sorted.
@@ -325,7 +326,7 @@ public class AUC2 extends Iced {
       System.arraycopy(_tps,minI+2,_tps,minI+1,_n-minI-2);
       System.arraycopy(_fps,minI+2,_fps,minI+1,_n-minI-2);
       _n--;
-      return dups;
+      return true;
     }
   }
 }

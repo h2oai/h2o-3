@@ -69,9 +69,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols))
         error("_mtries","Computed mtries should be -1 or in interval <1,#cols> but it is " + _parms._mtries);
     }
-    if (_parms._sample_rate == 1f && _valid != null) {
-      error("_sample_rate", "Sample rate is 100% {nd no validation dataset is specified. There are no OOB data to compute out-of-bag error estimation!");
-    }
+    if (_parms._sample_rate == 1f && _valid == null)
+      error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
   }
 
   // A standard DTree with a few more bits.  Support for sampling during

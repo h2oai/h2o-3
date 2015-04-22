@@ -691,7 +691,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
-  res <- tmp[abs(as.numeric(tmp$thresholds) - threshold) < 1e-8,]
+  res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
 }
@@ -787,7 +787,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param train Retrieve the training metric.
-#' @param valid Retreive the validation metric.
+#' @param valid Retrieve the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
@@ -798,6 +798,40 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
   if(      l$train ) { cat("\nTraining cluster sizes: \n"); return(object@model$training_metrics@metrics$centroid_stats$size) }
   else if( l$valid ) { cat("\nValidation cluster sizes: \n"); return(object@model$validation_metrics@metrics$centroid_stats$size) }
   else               return(NULL)
+}
+
+#'
+#' Print the Model Summary
+#'
+#' @export
+summary.H2OModel <- function(object) {
+  o <- object
+  m <- o@model
+  cat("Model Details:\n")
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model Key: ", o@key, "\n")
+
+  # summary
+  print(m$model_summary)
+
+  # metrics
+  cat("\n")
+  if( !is.null(m$training_metrics) && !is.null(m$training_metrics@metrics) ) print(m$training_metrics)
+  cat("\n")
+  if( !is.null(m$validation_metrics) && !is.null(m$validation_metrics@metrics) ) print(m$validation_metrics)
+
+  # History
+  cat("\n")
+  h2o.scoreHistory(o)
+
+  # Varimp
+  cat("\n")
+  if( !is.null( m$variable_importances ) ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    h2o.varimp(o)
+  }
 }
 
 #' Access H2O Confusion Matrices
@@ -905,11 +939,11 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
 })
 
 #' @export
-plot.H2OModel <- function(x) {
+plot.H2OModel <- function(x, ...) {
   if( is(x, "H2OBinomialModel") ) {
     if( !is.null(x@model$validation_metrics@metrics) ) metrics <- x@model$validation_metrics
     else                                               metrics <- x@model$training_metrics
-    plot.H2OBinomialMetrics(metrics)
+    plot.H2OBinomialMetrics(metrics, ...)
   } else NULL
 }
 
