@@ -191,17 +191,31 @@ public class ArrayUtils {
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
+
   public static double[] multArrVec(double[][] ary, double[] nums) {
     if(ary == null || nums == null) return null;
+    assert ary[0].length == nums.length : "Inner dimensions must match: Got " + ary[0].length + " != " + nums.length;
     double[] res = new double[ary.length];
     for(int i = 0; i < ary.length; i++)
       res[i] = innerProduct(ary[i], nums);
     return res;
   }
 
+  public static double[] multVecArr(double[] nums, double[][] ary) {
+    if(ary == null || nums == null) return null;
+    assert nums.length == ary.length : "Inner dimensions must match: Got " + nums.length + " != " + ary.length;
+    double[] res = new double[ary[0].length];
+    for(int j = 0; j < ary[0].length; j++) {
+      res[j] = 0;
+      for(int i = 0; i < ary.length; i++)
+        res[j] += nums[i] * ary[i][j];
+    }
+    return res;
+  }
+
   public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
     if(ary1 == null || ary2 == null) return null;
-    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + "!=" + ary2.length;   // Inner dimensions must match
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;   // Inner dimensions must match
     double[][] res = new double[ary1.length][ary2[0].length];
 
     for(int i = 0; i < ary1.length; i++) {

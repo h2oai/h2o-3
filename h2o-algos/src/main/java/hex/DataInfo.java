@@ -75,7 +75,7 @@ public class DataInfo extends Keyed {
   public boolean _intercept = true;
   public boolean _offset = false;
   final boolean _skipMissing;
-  final int [][] _catLvls;
+  public final int [][] _catLvls;
 
 
   public double _etaOffset;
