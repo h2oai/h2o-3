@@ -57,16 +57,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   static class TooManyPredictorsException extends RuntimeException {}
 
   private BetaConstraint _bc = new BetaConstraint();
-  private GLMValidation _nullValidation;
-  private GradientInfo _nullGradient;
   DataInfo _dinfo;
   private Vec _rowFilter;
   private transient GLMTaskInfo [] _tInfos;
   private int _lambdaId;
   private transient DataInfo _validDinfo;
-  private transient ArrayList<Integer> _scoring_iters = new ArrayList<Integer>();
-  private transient ArrayList<Double> _likelihoods = new ArrayList<Double>();
-  private transient ArrayList<Double> _objectives = new ArrayList<Double>();
+  private transient ArrayList<Integer> _scoring_iters = new ArrayList<>();
+  private transient ArrayList<Double> _likelihoods = new ArrayList<>();
+  private transient ArrayList<Double> _objectives = new ArrayList<>();
 
   @Override public void init(boolean expensive) {
     super.init(expensive);

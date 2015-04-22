@@ -245,7 +245,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case poisson:
           return _link == Link.log;
         case gamma:
-          return false; //return link == Link.inverse;
+          return _link == Link.inverse;
 //        case tweedie:
 //          return false;
         default:
