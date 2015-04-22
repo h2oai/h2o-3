@@ -9,6 +9,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FrameUtils;
 import water.util.Log;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -82,6 +83,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Extract the scoring on validation set from the model
           mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
+          Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.error());
 
