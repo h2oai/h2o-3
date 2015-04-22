@@ -41,8 +41,8 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       :new MetricBuilderRegression();
   }
 
-  @Override public double[] perRow(double ds[], float[] yact, Model m, double[] mean) {
-    _metricBuilder.perRow(ds,yact,m,mean);
+  @Override public double[] perRow(double ds[], float[] yact, Model m) {
+    _metricBuilder.perRow(ds,yact,m);
     if(_glm._family == Family.binomial)
       add2(ds[2],yact[0]);
     else
@@ -72,7 +72,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     _ds[0] = ymodel > _threshold ? 1 : 0;
     _ds[1] = 1 - ymodel;
     _ds[2] = ymodel;
-    _metricBuilder.perRow(_ds, _yact, null, _ymu);
+    _metricBuilder.perRow(_ds, _yact, null);
     add2(yreal, ymodel);
   }
   private void add2(double yreal, double ymodel) {
