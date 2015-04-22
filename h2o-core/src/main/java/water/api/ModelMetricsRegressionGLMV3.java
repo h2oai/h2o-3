@@ -1,16 +1,20 @@
 package water.api;
 
-import hex.ModelMetricsBinomialGLM;
+import hex.ModelMetricsRegressionGLM;
 import water.api.API.Direction;
 
-public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialV3<ModelMetricsBinomialGLM, ModelMetricsBinomialGLMV3> {
-  @API(help="residual deviance",direction = Direction.OUTPUT)
+/**
+ * Created by tomasnykodym on 4/20/15.
+ */
+public class ModelMetricsRegressionGLMV3 extends ModelMetricsRegressionV3<ModelMetricsRegressionGLM, ModelMetricsRegressionGLMV3> {
+
+  @API(help = "residual deviance", direction = Direction.OUTPUT)
   public double residual_deviance;
 
-  @API(help="null deviance",direction = Direction.OUTPUT)
+  @API(help = "null deviance", direction = Direction.OUTPUT)
   public double null_deviance;
 
-  @API(help="AIC",direction = Direction.OUTPUT)
+  @API(help = "AIC", direction = Direction.OUTPUT)
   public double AIC;
 
   @API(help="null DOF", direction= Direction.OUTPUT)
@@ -21,7 +25,7 @@ public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialV3<ModelMetri
 
 
   @Override
-  public ModelMetricsBinomialGLMV3 fillFromImpl(ModelMetricsBinomialGLM modelMetrics) {
+  public ModelMetricsRegressionGLMV3 fillFromImpl(ModelMetricsRegressionGLM modelMetrics) {
     super.fillFromImpl(modelMetrics);
     this.AIC = modelMetrics._AIC;
     this.residual_deviance = modelMetrics._resDev;
