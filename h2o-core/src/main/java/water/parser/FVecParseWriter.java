@@ -1,0 +1,210 @@
+package water.parser;
+
+// ------------------------------------------------------------------------
+
+import water.Futures;
+import water.Iced;
+import water.fvec.AppendableVec;
+import water.fvec.C16Chunk;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+
+/** Parsed data output specialized for fluid vecs.
+ * @author tomasnykodym
+ */
+public class FVecParseWriter extends Iced implements StreamParseWriter {
+  protected transient NewChunk[] _nvs;
+  protected AppendableVec[]_vecs;
+  protected final Categorical [] _enums;
+  protected transient byte[] _ctypes;
+  long _nLines;
+  int _nCols;
+  int _col = -1;
+  final int _cidx;
+  final int _chunkSize;
+  boolean _closedVecs = false;
+  int _nChunks;
+  private final Vec.VectorGroup _vg;
+
+  public int nChunks(){return _nChunks;}
+
+  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] enums, byte[] ctypes, int chunkSize, AppendableVec[] avs){
+    if (ctypes != null) _ctypes = ctypes;
+    else _ctypes = new byte[avs.length];
+    _vecs = avs;
+    _nvs = new NewChunk[avs.length];
+    for(int i = 0; i < avs.length; ++i)
+      _nvs[i] = _vecs[i].chunkForChunkIdx(cidx);
+    _enums = enums;
+    _nCols = avs.length;
+    _cidx = cidx;
+    _vg = vg;
+    _chunkSize = chunkSize;
+  }
+
+  @Override public FVecParseWriter reduce(StreamParseWriter sdout){
+    FVecParseWriter dout = (FVecParseWriter)sdout;
+    if( dout == null ) return this;
+    _nCols = Math.max(_nCols,dout._nCols);
+    _nChunks += dout._nChunks;
+    if( dout!=null && _vecs != dout._vecs) {
+      if(dout._vecs.length > _vecs.length) {
+        AppendableVec [] v = _vecs;
+        _vecs = dout._vecs;
+        for(int i = 1; i < _vecs.length; ++i)
+          _vecs[i]._espc = _vecs[0]._espc;
+        dout._vecs = v;
+      }
+      for(int i = 0; i < dout._vecs.length; ++i) {
+        // unify string and enum chunks
+        if (_vecs[i].isString() && !dout._vecs[i].isString())
+          dout.enumCol2StrCol(i);
+        else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
+          enumCol2StrCol(i);
+          _ctypes[i] = Vec.T_STR;
+        }
+
+        _vecs[i].reduce(dout._vecs[i]);
+      }
+    }
+
+    return this;
+  }
+  @Override public FVecParseWriter close(){
+    Futures fs = new Futures();
+    close(fs);
+    fs.blockForPending();
+    return this;
+  }
+  @Override public FVecParseWriter close(Futures fs){
+    ++_nChunks;
+    if( _nvs == null ) return this; // Might call close twice
+    for(NewChunk nv:_nvs) nv.close(_cidx, fs);
+    _nvs = null;  // Free for GC
+    return this;
+  }
+  @Override public FVecParseWriter nextChunk(){
+    return  new FVecParseWriter(_vg, _cidx+1, _enums, _ctypes, _chunkSize, _vecs);
+  }
+
+  private Vec [] closeVecs(){
+    Futures fs = new Futures();
+    _closedVecs = true;
+    Vec [] res = new Vec[_vecs.length];
+    for(int i = 0; i < _vecs[0]._espc.length; ++i){
+      int j = 0;
+      while(j < _vecs.length && _vecs[j]._espc[i] == 0)++j;
+      if(j == _vecs.length)break;
+      final long clines = _vecs[j]._espc[i];
+      for(AppendableVec v:_vecs) {
+        if(v._espc[i] == 0)v._espc[i] = clines;
+        else assert v._espc[i] == clines:"incompatible number of lines: " +  v._espc[i] +  " != " + clines;
+      }
+    }
+    for(int i = 0; i < _vecs.length; ++i)
+      res[i] = _vecs[i].close(fs);
+    _vecs = null;  // Free for GC
+    fs.blockForPending();
+    return res;
+  }
+
+  @Override public void newLine() {
+    if(_col >= 0){
+      ++_nLines;
+      for(int i = _col+1; i < _nCols; ++i)
+        addInvalidCol(i);
+    }
+    _col = -1;
+  }
+  @Override public void addNumCol(int colIdx, long number, int exp) {
+    if( colIdx < _nCols ) {
+      _nvs[_col = colIdx].addNum(number, exp);
+      if(_ctypes[colIdx] == Vec.T_BAD ) _ctypes[colIdx] = Vec.T_NUM;
+    }
+  }
+
+  @Override public final void addInvalidCol(int colIdx) {
+    if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
+  }
+  @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_ENUM || _ctypes[colIdx] == Vec.T_STR);}
+
+  @Override public void addStrCol(int colIdx, ValueString str) {
+    if(colIdx < _nvs.length){
+      if(_ctypes[colIdx] == Vec.T_NUM){ // support enforced types
+        addInvalidCol(colIdx);
+        return;
+      }
+      if(_ctypes[colIdx] == Vec.T_BAD && ParseTime.attemptTimeParse(str) > 0)
+        _ctypes[colIdx] = Vec.T_TIME;
+      if( _ctypes[colIdx] == Vec.T_BAD ) { // Attempt UUID parse
+        int old = str.get_off();
+        ParseTime.attemptUUIDParse0(str);
+        ParseTime.attemptUUIDParse1(str);
+        if( str.get_off() != -1 ) _ctypes[colIdx] = Vec.T_UUID;
+        str.setOff(old);
+      }
+
+      if( _ctypes[colIdx] == Vec.T_TIME ) {
+        long l = ParseTime.attemptTimeParse(str);
+        if( l == Long.MIN_VALUE ) addInvalidCol(colIdx);
+        else {
+          int time_pat = ParseTime.decodePat(l); // Get time pattern
+          l = ParseTime.decodeTime(l);           // Get time
+          addNumCol(colIdx, l, 0);               // Record time in msec
+          _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
+        }
+      } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
+        long lo = ParseTime.attemptUUIDParse0(str);
+        long hi = ParseTime.attemptUUIDParse1(str);
+        if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
+        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
+      } else if( _ctypes[colIdx] == Vec.T_STR ) {
+        _nvs[_col = colIdx].addStr(str);
+      } else { // Enums
+        if(!_enums[colIdx].isMapFull()) {
+          int id = _enums[_col = colIdx].addKey(str);
+          if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;
+          _nvs[colIdx].addEnum(id);
+        } else { // maxed out enum map, convert col to string chunk
+          _ctypes[_col = colIdx] = Vec.T_STR;
+          enumCol2StrCol(colIdx);
+          _nvs[colIdx].addStr(str);
+        }
+      }
+    }
+  }
+
+  private void enumCol2StrCol(int colIdx) {
+    //build local value2key map for enums
+    Categorical enums = _enums[colIdx].deepCopy();
+    ValueString emap[] = new ValueString[enums.maxId()+1];
+    ValueString keys[] = enums._map.keySet().toArray(new ValueString[enums.size()]);
+    for (ValueString str:keys)
+      // adjust for enum ids using 1-based indexing
+      emap[enums._map.get(str)-1] = str;
+
+    //swap in string NewChunk in place of enum NewChunk
+    _nvs[colIdx] = _nvs[colIdx].convertEnum2Str(emap);
+    //Log.info("enumCol2StrCol");
+  }
+
+  /** Adds double value to the column. */
+  @Override public void addNumCol(int colIdx, double value) {
+    if (Double.isNaN(value)) {
+      addInvalidCol(colIdx);
+    } else {
+      double d= value;
+      int exp = 0;
+      long number = (long)d;
+      while (number != d) {
+        d = d * 10;
+        --exp;
+        number = (long)d;
+      }
+      addNumCol(colIdx, number, exp);
+    }
+  }
+  @Override public void setColumnNames(String [] names){}
+  @Override public final void rollbackLine() {}
+  @Override public void invalidLine(String err) { newLine(); }
+}

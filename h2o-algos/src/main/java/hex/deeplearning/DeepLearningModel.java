@@ -821,11 +821,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-    return createScoringHistoryTable(errors, 20);
-  }
-
-  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors, final int size_limit) {
-    assert (size_limit >= 10);
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -893,18 +888,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
     }
 
-    List<Integer> which = new ArrayList<>();
-    if (errors.length > size_limit) {
-      // always show first and last
-      which.add(0);
-      which.add(errors.length-1);
-      // pick the remaining scoring points from the middle section
-      final float step = (float)(errors.length-which.size())/(size_limit-which.size());
-      for (float i=5; i<errors.length-5; i+=step) {
-        if (which.size() < size_limit) which.add((int)i);
-      }
-    }
-    final int rows = Math.min(size_limit, errors.length);
+    final int rows = errors.length;
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
             new String[rows],
@@ -914,7 +898,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             "");
     int row = 0;
     for( int i = 0; i<errors.length ; i++ ) {
-      if (errors.length > size_limit && !which.contains(new Integer(i))) continue;
       final DeepLearningScoring e = errors[i];
       int col = 0;
       assert(row < table.getRowDim());
@@ -1495,6 +1478,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 || rms_weight[y] > thresh  || isNaN(rms_weight[y]);
       }
     }
+
+    // unique identifier for this model's state
+    protected long checksum_impl() {
+      long cs = parameters._seed;
+      cs ^= size() * get_processed_total();
+      cs ^= (long)(2234.3424*ArrayUtils.sum(mean_bias));
+      cs *= (long)(9234.1343*ArrayUtils.sum(rms_bias));
+      cs ^= (long)(9723.9734*ArrayUtils.sum(mean_weight));
+      cs *= (long)(9234.1783*ArrayUtils.sum(rms_weight));
+      cs ^= (long)(4273.2344*ArrayUtils.sum(mean_rate));
+      cs *= (long)(3378.1999*ArrayUtils.sum(rms_rate));
+      return cs;
+    }
   }
 
   /**
@@ -1904,9 +1900,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
       if (model_info().data_info()._normRespMul != null)
-        preds[0] = (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+        preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
-        preds[0] = out[0];
+        preds[0] = (double)out[0];
       if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
@@ -2390,5 +2386,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           + "\nTry a different initial distribution, a bounded activation function or adding"
           + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.";
 
+  @Override protected long checksum_impl() {
+    return super.checksum_impl() * model_info.checksum_impl();
+  }
 }
 

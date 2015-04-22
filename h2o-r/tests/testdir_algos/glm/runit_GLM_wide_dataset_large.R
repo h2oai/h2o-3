@@ -21,7 +21,7 @@ test <- function(conn) {
         arcene.valid = h2o.uploadFile(conn, locate("smalldata/arcene/arcene_valid.data"), key="arcene.valid", header=FALSE)
         arcene.label = h2o.uploadFile(conn, locate("smalldata/arcene/arcene_valid_labels.labels"), key="arcene.label", header=FALSE)
         arcene.valid.label = h2o.assign(data=ifelse(arcene.label==1,1,0), key="arcene.valid.label")
-        colnames(arcene.valid.label) <- 'arcene.valid.label'
+        colnames(arcene.valid.label) <- 'arcene.train.label' # have to have the same name as reponse in training!
         arcene.valid.full = h2o.assign(data=h2o.cbind(arcene.valid,arcene.valid.label),key="arcene.valid.full")
     
     print("Run model on 3250 columns of Arcene with strong rules off.")

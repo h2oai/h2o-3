@@ -180,22 +180,18 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   public static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
-    private NonBlockingHashSet<T> _g;
-
+    NonBlockingHashSet<T> _g;
     IcedNBHS() {_g=new NonBlockingHashSet<>();}
     boolean add(T t) { return _g.add(t); }
     boolean addAll(NonBlockingHashSet<T> g) { return _g.addAll(g); }
     T get(T g) { return _g.get(g); }
     int size() { return _g.size(); }
-
-
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _g == null ) return ab.put4(0);
       ab.put4(_g.size());
       for( T g: _g) ab.put(g);
       return ab;
     }
-
     @Override public IcedNBHS read_impl(AutoBuffer ab) {
       int len = ab.get4();
       if( len == 0 ) return this;
@@ -203,11 +199,10 @@ import java.util.concurrent.atomic.AtomicInteger;
       for( int i=0;i<len;++i) _g.add((T)ab.get());
       return this;
     }
-
     @Override public Iterator<T> iterator() {return _g.iterator(); }
   }
 
-  private static class GBTask extends MRTask<GBTask> {
+  public static class GBTask extends MRTask<GBTask> {
     IcedNBHS<G> _g;
     private long[] _gbCols;
     private AGG[] _agg;
@@ -405,8 +400,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
   }
 
-  private static class G extends Iced {
-
+  public static class G extends Iced {
     public double _ds[];  // Array is final; contents change with the "fill"
     public int _hash;           // Hash is not final; changes with the "fill"
     public void fill(int row, Chunk chks[], long cols[]) {
@@ -490,6 +484,8 @@ import java.util.concurrent.atomic.AtomicInteger;
       for( int i=0; i<_min.length; ++i) _min[i]=Double.POSITIVE_INFINITY;
       for( int i=0; i<_max.length; ++i) _max[i]=Double.NEGATIVE_INFINITY;
     }
+
+    G(int len) {_ds=new double[len];}
 
     private void close() {
       for( int i=0;i<_NAMethod.length;++i ) {
