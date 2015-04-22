@@ -787,7 +787,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param train Retrieve the training metric.
-#' @param valid Retreive the validation metric.
+#' @param valid Retrieve the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
@@ -805,9 +805,33 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
 #'
 #' @export
 summary.H2OModel <- function(object) {
-  cat("\nModel Summary:\n")
-  cat("==============\n")
-  print(object@model$model_summary)
+  o <- object
+  m <- o@model
+  cat("Model Details:\n")
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model Key: ", o@key, "\n")
+
+  # summary
+  print(m$model_summary)
+
+  # metrics
+  cat("\n")
+  if( !is.null(m$training_metrics) && !is.null(m$training_metrics@metrics) ) print(m$training_metrics)
+  cat("\n")
+  if( !is.null(m$validation_metrics) && !is.null(m$validation_metrics@metrics) ) print(m$validation_metrics)
+
+  # History
+  cat("\n")
+  h2o.scoreHistory(o)
+
+  # Varimp
+  cat("\n")
+  if( !is.null( m$variable_importances ) ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    h2o.varimp(o)
+  }
 }
 
 #' Access H2O Confusion Matrices
