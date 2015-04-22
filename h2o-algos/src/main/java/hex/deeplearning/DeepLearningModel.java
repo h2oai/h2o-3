@@ -821,11 +821,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-    return createScoringHistoryTable(errors, 20);
-  }
-
-  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors, final int size_limit) {
-    assert (size_limit >= 10);
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -893,18 +888,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
     }
 
-    List<Integer> which = new ArrayList<>();
-    if (errors.length > size_limit) {
-      // always show first and last
-      which.add(0);
-      which.add(errors.length-1);
-      // pick the remaining scoring points from the middle section
-      final float step = (float)(errors.length-which.size())/(size_limit-which.size());
-      for (float i=5; i<errors.length-5; i+=step) {
-        if (which.size() < size_limit) which.add((int)i);
-      }
-    }
-    final int rows = Math.min(size_limit, errors.length);
+    final int rows = errors.length;
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
             new String[rows],
@@ -914,7 +898,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             "");
     int row = 0;
     for( int i = 0; i<errors.length ; i++ ) {
-      if (errors.length > size_limit && !which.contains(new Integer(i))) continue;
       final DeepLearningScoring e = errors[i];
       int col = 0;
       assert(row < table.getRowDim());

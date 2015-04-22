@@ -11,7 +11,8 @@ import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
   XlsParser( ParseSetup ps ) { super(ps); }
-  @Override DataOut parseChunk(int cidx, final DataIn din, final DataOut dout) { throw H2O.unimpl(); }
+  @Override
+  ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) { throw H2O.unimpl(); }
 
   // A Stream, might be a Zip stream
   private InputStream _is;
@@ -80,7 +81,7 @@ class XlsParser extends Parser {
                                 ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null));
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
-    InspectDataOut dout = new InspectDataOut();
+    PreviewParseWriter dout = new PreviewParseWriter();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
                                  dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetup.GUESS_SEP,
@@ -139,7 +140,7 @@ class XlsParser extends Parser {
   }
   private Props _wrkbook, _rootentry;
 
-  @Override public DataOut streamParse( final InputStream is, final DataOut dout) throws IOException {
+  @Override public ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
     _is = is;
     // Check for magic first
     readAtLeast(IDENTIFIER_OLE.length);
@@ -371,7 +372,7 @@ class XlsParser extends Parser {
   /**
    * Parse a workbook
    */
-  private boolean parseWorkbook(Buf data, final DataOut dout) {
+  private boolean parseWorkbook(Buf data, final ParseWriter dout) {
     int pos = 0;
 
     int code = data.get2(pos);
@@ -555,14 +556,14 @@ class XlsParser extends Parser {
     final String _name;
     final Buf _data;
     final int _offset;
-    final DataOut _dout;
+    final ParseWriter _dout;
     
     int _numRows, _numCols;
     String[] _labels;
     int _currow = 0;
     double[] _ds;
 
-    Sheet( Buf data, DataOut dout, String name, int offset ) { _data = data; _dout = dout; _name = name; _offset = offset; }
+    Sheet( Buf data, ParseWriter dout, String name, int offset ) { _data = data; _dout = dout; _name = name; _offset = offset; }
 
     // Get the next row spec - and thus cleanup the prior row
     int row(int spos) {
