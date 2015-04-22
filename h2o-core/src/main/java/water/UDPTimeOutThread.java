@@ -1,4 +1,6 @@
 package water;
+import water.util.Log;
+
 import java.util.concurrent.DelayQueue;
 
 /**
@@ -27,7 +29,11 @@ public class UDPTimeOutThread extends Thread {
         if( H2O.CLOUD.contains(t._target) ||
             // Also retry clients who do not appear to be shutdown
             (t._target._heartbeat._client && t._retry <  HeartBeatThread.CLIENT_TIMEOUT) ) {
-          if( !t.isDone() && !t._nack ) t.call();
+          if( !t.isDone() && !t._nack ) {
+            if(++t._resendsCnt % 50 == 0)
+              Log.warn("Got " + t._resendsCnt + " resends on task " + t._dt.getClass().getSimpleName());
+            t.call();
+          }
         } else {                // Target is dead, nobody to retry to
           t.cancel(true);
         }
