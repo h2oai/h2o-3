@@ -27,8 +27,8 @@ test.linkFunctions <- function(conn) {
 	model.R.gamma.inverse <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=inverse), na.action=na.omit)
 	
 	print("Compare model deviances for link function inverse")
-	deviance.h2o.inverse = model.h2o.gamma.inverse@model$residual_deviance / model.h2o.gamma.inverse@model$null_deviance
-	deviance.R.inverse = deviance(model.R.gamma.inverse)  / model.h2o.gamma.inverse@model$null_deviance
+	deviance.h2o.inverse = model.h2o.gamma.inverse@model$training_metrics$residual_deviance / model.h2o.gamma.inverse@model$training_metrics$null_deviance
+	deviance.R.inverse = deviance(model.R.gamma.inverse)  / model.h2o.gamma.inverse@model$training_metrics$null_deviance
 	difference = deviance.R.inverse - deviance.h2o.inverse
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.inverse))
@@ -41,8 +41,8 @@ test.linkFunctions <- function(conn) {
 	model.R.gamma.log <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=log), na.action=na.omit)
 	
 	print("Compare model deviances for link function log")
-	deviance.h2o.log = model.h2o.gamma.log@model$residual_deviance / model.h2o.gamma.log@model$null_deviance
-	deviance.R.log = deviance(model.R.gamma.log)  / model.h2o.gamma.log@model$null_deviance
+	deviance.h2o.log = model.h2o.gamma.log@model$training_metrics$residual_deviance / model.h2o.gamma.log@model$training_metrics$null_deviance
+	deviance.R.log = deviance(model.R.gamma.log)  / model.h2o.gamma.log@model$training_metrics$null_deviance
 	difference = deviance.R.log - deviance.h2o.log
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.log))

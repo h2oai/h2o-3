@@ -67,11 +67,11 @@ expect_equal(H2Ocoeffs[5,1], RTcoeffs[5], tolerance = 0.1)
 expect_equal(H2Ocoeffs[6,1], RTcoeffs[6], tolerance = 0.1)
 
 
-H2Oratio<- 1-(fitH2O@model$residual_deviance/fitH2O@model$null_deviance)
-Log.info(paste("H2O Deviance  : ", fitH2O@model$residual_deviance,      "\t\t\t", "R Deviance   : ", fitRglmnet$deviance))
-Log.info(paste("H2O Null Dev  : ", fitH2O@model$null_deviance, "\t\t", "R Null Dev   : ", fitRglmnet$nulldev))
+H2Oratio<- 1-(fitH2O@model$training_metrics$residual_deviance/fitH2O@model$training_metrics$null_deviance)
+Log.info(paste("H2O Deviance  : ", fitH2O@model$training_metrics$residual_deviance,      "\t\t\t", "R Deviance   : ", fitRglmnet$deviance))
+Log.info(paste("H2O Null Dev  : ", fitH2O@model$training_metrics$null_deviance, "\t\t", "R Null Dev   : ", fitRglmnet$nulldev))
 Log.info(paste("H2O Dev Ratio  : ", H2Oratio, "\t\t", "R Dev Ratio   : ", fitRglmnet$dev.ratio))
-expect_equal(fitH2O@model$null_deviance, fitRglmnet$nulldev, tolerance = 0.01)
+expect_equal(fitH2O@model$training_metrics$null_deviance, fitRglmnet$nulldev, tolerance = 0.01)
 expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
 
 
