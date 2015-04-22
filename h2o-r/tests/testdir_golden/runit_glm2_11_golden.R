@@ -20,7 +20,7 @@ function(conn) {
     #H2O GLM model  
     hh=h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",nfolds=0, alpha = alpha, lambda = lambda)
 
-    res_dev = hh@model$training_metrics$residual_deviance
+    res_dev = hh@model$training_metrics@metrics$residual_deviance
     obs = nrow(mfrmr)
     # lambda = hh@model$params$lambda
     alpha = hh@parameters$alpha
@@ -36,7 +36,7 @@ function(conn) {
 
 	# Sanity Check whether comparing models built on the same dataset
 	expect_equal( nrow(mfrmr), nrow(rr))
-	expect_true(abs(gg$nulldev-hh@model$training_metrics$null_deviance) < 1e-8*gg$nulldev)
+	expect_true(abs(gg$nulldev-hh@model$training_metrics@metrics$null_deviance) < 1e-8*gg$nulldev)
 	res_dev_R = deviance(gg)
 	obs = nrow(mfrmr)
 	cof_R = coef(gg,s= lambda)

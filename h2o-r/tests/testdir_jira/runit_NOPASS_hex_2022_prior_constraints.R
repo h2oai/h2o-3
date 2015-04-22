@@ -76,9 +76,9 @@ test.Priors.BetaConstraints <- function(conn) {
     glmnet_test_auc <- glm_auc(pred_test.r, test.df[,depVars])
     glmnet_train_auc <- glm_auc(pred_train.r, train.df[,depVars])
     glmnet_deviance <- deviance(glm.r)
-    h2o_deviance <- glm.h2o@model$training_metrics$residual_deviance
+    h2o_deviance <- glm.h2o@model$training_metrics@metrics$residual_deviance
 
-    print(paste0("AUC of H2O model on training set:  ", glm.h2o@model$training_metrics$AUC))
+    print(paste0("AUC of H2O model on training set:  ", glm.h2o@model$training_metrics@metrics$AUC))
     print(paste0("AUC of H2O model on testing set:  ", h2o_auc))
     print(paste0("AUC of GLMnet model on training set:  ", glmnet_train_auc))
     print(paste0("AUC of GLMnet model on testing set:  ", glmnet_test_auc))
