@@ -181,21 +181,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
   public static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
     NonBlockingHashSet<T> _g;
-
     IcedNBHS() {_g=new NonBlockingHashSet<>();}
     boolean add(T t) { return _g.add(t); }
     boolean addAll(NonBlockingHashSet<T> g) { return _g.addAll(g); }
     T get(T g) { return _g.get(g); }
     int size() { return _g.size(); }
-
-
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _g == null ) return ab.put4(0);
       ab.put4(_g.size());
       for( T g: _g) ab.put(g);
       return ab;
     }
-
     @Override public IcedNBHS read_impl(AutoBuffer ab) {
       int len = ab.get4();
       if( len == 0 ) return this;
@@ -203,7 +199,6 @@ import java.util.concurrent.atomic.AtomicInteger;
       for( int i=0;i<len;++i) _g.add((T)ab.get());
       return this;
     }
-
     @Override public Iterator<T> iterator() {return _g.iterator(); }
   }
 

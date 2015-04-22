@@ -2,12 +2,14 @@ package hex.deeplearning;
 
 import java.util.*;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FrameUtils;
 import water.util.Log;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -18,7 +20,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
   @Test
   public void run() {
-    long seed = new Random().nextLong();
+    NFSFileVec ff = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
+    Frame golden = ParseDataset.parse(Key.make("golden.hex"), ff._key);
 
     DeepLearningModel mymodel = null;
     Frame train = null;
@@ -38,6 +41,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), file._key);
+          Assert.assertTrue(isBitIdentical(data, golden)); //test parser consistency
 
           // Create holdout test data on clean data (before adding missing values)
           train = data;
@@ -79,6 +83,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Extract the scoring on validation set from the model
           mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
+          Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.error());
 
@@ -140,5 +145,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       }
       Scope.exit();
     }
+    golden.delete();
   }
 }
