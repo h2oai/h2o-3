@@ -323,9 +323,12 @@ setMethod("show", "H2OModel", function(object) {
 
   # summary
   print(summary(o))
+
   # metrics
-  if( !is.null(m$training_metrics)   ) print(m$training_metrics)
-  if( !is.null(m$validation_metrics) ) print(m$validation_metrics)
+  cat("\n")
+  if( !is.null(m$training_metrics) && !is.null(m$training_metrics@metrics) ) print(m$training_metrics)
+  cat("\n")
+  if( !is.null(m$validation_metrics) && !is.null(m$validation_metrics@metrics) ) print(m$validation_metrics)
 
   # History
   cat("\n")
@@ -345,16 +348,17 @@ setMethod("show", "H2OModel", function(object) {
   if( which == "Validation" ) arg <- "valid"
   tm <- o@metrics
   cat(which, "Set Metrics: \n")
-  cat("===================\n")
+  cat("=====================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
-  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n")
-  if( !is.null(tm$Gini)            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
-  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
-  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
-  if( !is.null(tm$cm)              )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
-  if( !is.null(tm$cm)              )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
-  if( !is.null(tm$hit_ratio_table) )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); h2o.hit_ratio_table(tm$hit_ratio_table); }
+  if( !is.null(tm$frame) && !is.null(tm$frame$name) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
+  if( !is.null(tm$Gini)                             )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
+  if( !is.null(tm$MSE)                              )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
+  if( !is.null(tm$logloss)                          )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
+  if( !is.null(tm$cm)                               )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
+  if( !is.null(tm$cm)                               )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
+  if( !is.null(tm$hit_ratio_table)                  )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
+  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); h2o.hit_ratio_table(tm$hit_ratio_table); }
+  cat("\n")
   invisible(tm)
 }
 
@@ -533,6 +537,16 @@ setMethod("show", "H2OClusteringMetrics", function(object) {
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
+#'
+#'
+setMethod("show", "H2OAutoEncoderMetrics", function(object) {
+  if( !is.null(object@metrics) ) {
+    callNextMethod(object)  # call super
+    object@metrics$frame$name <- NULL
+    if( object@on_train ) .showMultiMetrics(object, "Training")
+    else                  .showMultiMetrics(object, "Validation")
+  } else print(NULL)
+})
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")

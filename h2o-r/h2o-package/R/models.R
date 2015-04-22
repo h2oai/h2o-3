@@ -800,6 +800,16 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
   else               return(NULL)
 }
 
+#'
+#' Print the Model Summary
+#'
+#' @export
+summary.H2OModel <- function(object) {
+  cat("\nModel Summary:\n")
+  cat("==============\n")
+  print(object@model$model_summary)
+}
+
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
