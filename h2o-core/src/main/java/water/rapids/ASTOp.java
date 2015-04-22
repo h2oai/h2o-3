@@ -7,6 +7,7 @@ import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -218,7 +219,10 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSecond());
     putPrefix(new ASTMillis());
     putPrefix(new ASTMktime());
+    putPrefix(new ASTListTimeZones());
+    putPrefix(new ASTGetTimeZone());
     putPrefix(new ASTFoldCombine());
+    putPrefix(new ASTSetTimeZone());
     putPrefix(new COp());
     putPrefix(new ROp());
     putPrefix(new O());
@@ -2641,15 +2645,21 @@ class ASTSetColNames extends ASTUniPrefixOp {
     E.eatEnd(); // eat the ending ')'
     ASTSetColNames res = (ASTSetColNames)clone();
     res._asts = new AST[]{ary};
+    res._idxs = _idxs; res._names = _names;
     return res;
   }
 
   @Override void apply(Env env) {
-    Frame f = env.popAry();
-    for (int i=0; i < _names.length; ++i)
-      f._names[(int)_idxs[i]] = _names[i];
-    if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
-    env.pushAry(f);
+    try {
+      Frame f = env.popAry();
+      for (int i = 0; i < _names.length; ++i)
+        f._names[(int) _idxs[i]] = _names[i];
+      if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
+      env.pushAry(f);
+    } catch (ArrayIndexOutOfBoundsException e) {
+      Log.info("AIOOBE!!! _idxs.length="+_idxs.length+ "; _names.length="+_names.length);
+      throw e; //rethrow
+    }
   }
 }
 
@@ -3675,6 +3685,70 @@ class ASTLs extends ASTOp {
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
+  }
+}
+
+class ASTGetTimeZone extends ASTOp {
+  ASTGetTimeZone() { super(null); }
+  @Override String opStr() { return "getTimeZone"; }
+  @Override ASTOp make() { return new ASTGetTimeZone(); }
+  ASTGetTimeZone parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTGetTimeZone) clone();
+  }
+  @Override void apply(Env env) {
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk tz = new NewChunk(av,0);
+    String domain[] = new String[]{ParseTime.getTimezone().toString()};
+    tz.addEnum(0);
+    tz.close(fs);
+    Vec v = av.close(fs);
+    v.setDomain(domain);
+    env.pushAry(new Frame(null, new String[]{"TimeZone"}, new Vec[]{v}));
+  }
+}
+
+class ASTListTimeZones extends ASTOp {
+  ASTListTimeZones() { super(null); }
+  @Override String opStr() { return "listTimeZones"; }
+  @Override ASTOp make() { return new ASTListTimeZones(); }
+  ASTListTimeZones parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTListTimeZones) clone();
+  }
+  @Override void apply(Env e) {
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk tz = new NewChunk(av,0);
+    String[] domain = ParseTime.listTimezones().split("\n");
+    for(int i=0;i<domain.length;++i)
+      tz.addEnum(i);
+    tz.close(fs);
+    Vec v = av.close(fs);
+    v.setDomain(domain);
+    e.pushAry(new Frame(null, new String[]{"ListTimeZones"}, new Vec[]{v}));
+  }
+}
+
+class ASTSetTimeZone extends ASTOp {
+  String _tz;
+  ASTSetTimeZone() { super(new String[]{"tz"}); }
+  @Override String opStr() { return "setTimeZone"; }
+  @Override ASTOp make() { return new ASTSetTimeZone(); }
+  ASTSetTimeZone parse_impl(Exec E) {
+    _tz = E.nextStr();
+    E.eatEnd();
+    return (ASTSetTimeZone)clone();
+  }
+  @Override void apply(Env e) {
+    Set<String> idSet = DateTimeZone.getAvailableIDs();
+    if(!idSet.contains(_tz))
+      throw new IllegalArgumentException("Unacceptable timezone name given.  For a list of acceptable names, use listTimezone().");
+    new MRTask() {
+      @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
+    }.doAllNodes();
+    e.pushAry(null);
   }
 }
 

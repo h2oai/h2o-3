@@ -800,6 +800,16 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
   else               return(NULL)
 }
 
+#'
+#' Print the Model Summary
+#'
+#' @export
+summary.H2OModel <- function(object) {
+  cat("\nModel Summary:\n")
+  cat("==============\n")
+  print(object@model$model_summary)
+}
+
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
@@ -905,11 +915,11 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
 })
 
 #' @export
-plot.H2OModel <- function(x) {
+plot.H2OModel <- function(x, ...) {
   if( is(x, "H2OBinomialModel") ) {
     if( !is.null(x@model$validation_metrics@metrics) ) metrics <- x@model$validation_metrics
     else                                               metrics <- x@model$training_metrics
-    plot.H2OBinomialMetrics(metrics)
+    plot.H2OBinomialMetrics(metrics, ...)
   } else NULL
 }
 
