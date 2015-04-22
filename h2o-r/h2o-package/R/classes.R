@@ -537,8 +537,9 @@ setMethod("show", "H2OClusteringMetrics", function(object) {
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
-#'
-#'
+
+#' @rdname H2OModelMetrics-class
+#' @export
 setMethod("show", "H2OAutoEncoderMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)  # call super
