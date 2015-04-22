@@ -759,10 +759,9 @@ public class NewChunk extends Chunk {
       boolean isConstant = !sparse || sparseLen() == 0;
       double constVal = 0;
       if (!sparse) { // check the values, sparse with some nonzeros can not be constant - has 0s and (at least 1) nonzero
-        double d = _ds[0];
         constVal = _ds[0];
         for(int j = 1; j < _len; ++j)
-          if(_ds[j] != d) {
+          if(_ds[j] != constVal) {
             isConstant = false;
             break;
           }

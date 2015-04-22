@@ -67,6 +67,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   final long _started;
   long _retry;                  // When we should attempt a retry
 
+  int _resendsCnt;
+
   // A list of CountedCompleters we will call tryComplete on when the RPC
   // finally completes.  Frequently null/zero.
   ArrayList<H2OCountedCompleter> _fjtasks;
