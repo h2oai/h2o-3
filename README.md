@@ -182,7 +182,7 @@ Syncing smalldata is not strictly required after each pull, but if tests fail du
 ### 5.3. Setup on Windows
 
 ##### Step 1: Download and install [WinPython](https://winpython.github.io). 
-  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the WinPython path.
+  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://github.com/winpython/winpython/wiki/Environment) with the WinPython path.
   
 ###### Step 2: Install required Python packages:
 
