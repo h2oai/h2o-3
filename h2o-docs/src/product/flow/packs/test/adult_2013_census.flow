@@ -67,7 +67,7 @@
     },
     {
       "type": "cs",
-      "input": "grid inspect \"prediction\", getPrediction model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\""
+      "input": "grid inspect \"Prediction\", getPrediction model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\""
     }
   ]
 }
