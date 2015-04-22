@@ -379,8 +379,8 @@ public final class ParseSetup extends Iced {
       else if (sepA == GUESS_SEP) return sepB;
       else if (sepB == GUESS_SEP) return sepA;
       // TODO: Point out which file is problem
-      throw new H2OParseSetupException("Column separator mismatch. One file seems to use "
-              + (char) sepA + " and the other uses " + (char) sepB + ".");
+      throw new H2OParseSetupException("Column separator mismatch. One file seems to use \""
+              + (char) sepA + "\" and the other uses \"" + (char) sepB + "\".");
     }
 
     private static int unifyColumnCount(int cntA, int cntB) {
