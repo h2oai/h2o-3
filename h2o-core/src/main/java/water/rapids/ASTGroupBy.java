@@ -203,11 +203,11 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   public static class GBTask extends MRTask<GBTask> {
-    IcedNBHS<G> _g;
+    NonBlockingHashSet<G> _g;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedNBHS<>(); }
+    @Override public void setupLocal() { _g = new NonBlockingHashSet<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
@@ -223,8 +223,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        IcedNBHS<G> l = _g;
-        IcedNBHS<G> r = t._g;
+        NonBlockingHashSet<G> l = _g;
+        NonBlockingHashSet<G> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
         for( G rg:r ) {
@@ -240,6 +240,19 @@ import java.util.concurrent.atomic.AtomicInteger;
         _g=l;
         t._g=null;
       }
+    }
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _g == null ) return ab.put4(0);
+      ab.put4(_g.size());
+      for( G g: _g) ab.put(g);
+      return ab;
+    }
+    @Override public GBTask read_impl(AutoBuffer ab) {
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _g = new NonBlockingHashSet<>();
+      for( int i=0;i<len;++i) _g.add(ab.get(G.class));
+      return this;
     }
     // task helper functions
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g) { perRow(agg,chkRow,rowOffset,c,g,null); }
