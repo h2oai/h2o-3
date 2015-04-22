@@ -312,7 +312,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // The model to be built
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_key);
-        _train.read_lock(_key);
 
         // 0) a) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
@@ -407,18 +406,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           throw t;
         }
       } finally {
-        _train.unlock(_key);
+        _parms.read_unlock_frames(GLRM.this);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
-
+        // if (x != null && !_parms._keep_loading) x.delete();
         // Clean up old copy of X matrix
         if (fr != null) {
           for(int i = 0; i < _ncolX; i++)
             fr.vec(idx_xold(i, _ncolA)).remove();
         }
-        // if (x != null && !_parms._keep_loading) x.delete();
-        _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
     }

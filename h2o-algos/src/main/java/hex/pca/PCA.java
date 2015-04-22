@@ -365,7 +365,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // The model to be built
         model = new PCAModel(dest(), _parms, new PCAModel.PCAOutput(PCA.this));
         model.delete_and_lock(_key);
-        _train.read_lock(_key);
 
         // Jam A and X into a single frame [A,X] for distributed computation
         // A is read-only training data, X will be modified in place every iteration
@@ -481,12 +480,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           throw t;
         }
       } finally {
-        _train.unlock(_key);
+        _parms.read_unlock_frames(PCA.this);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
         if (x != null && !_parms._keep_loading) x.delete();
-        _parms.read_unlock_frames(PCA.this);
       }
       tryComplete();
     }
