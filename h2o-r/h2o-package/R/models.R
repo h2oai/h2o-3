@@ -691,7 +691,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
-  res <- tmp[abs(as.numeric(tmp$thresholds) - threshold) < 1e-8,]
+  res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
 }
@@ -800,6 +800,16 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
   else               return(NULL)
 }
 
+#'
+#' Print the Model Summary
+#'
+#' @export
+summary.H2OModel <- function(object) {
+  cat("\nModel Summary:\n")
+  cat("==============\n")
+  print(object@model$model_summary)
+}
+
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
@@ -905,11 +915,11 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
 })
 
 #' @export
-plot.H2OModel <- function(x) {
+plot.H2OModel <- function(x, ...) {
   if( is(x, "H2OBinomialModel") ) {
     if( !is.null(x@model$validation_metrics@metrics) ) metrics <- x@model$validation_metrics
     else                                               metrics <- x@model$training_metrics
-    plot.H2OBinomialMetrics(metrics)
+    plot.H2OBinomialMetrics(metrics, ...)
   } else NULL
 }
 
