@@ -19,11 +19,6 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 
     // Submodel [] _submodels;
 
-    @API(help="bets lambda if doing lambda search")
-    int         best_lambda_idx;
-
-    @API(help="The decision threshold to be used in classification; defaults to maximum_F1")
-    double      threshold;
 
 //    @API(help="fill me in GLMModelOutputV2")
 //    double   [] global_beta;
@@ -37,23 +32,6 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
     @API(help="Coefficient magnitudes")
     TwoDimTableBase coefficients_magnitude;
 
-    @API(help="Residual Deviance - Training")
-    double      residual_deviance;
-      
-    @API(help="Null Deviance - Training")
-    double      null_deviance;
-      
-    @API(help="Residual Degrees of Freedom - Training")
-    double      residual_degrees_of_freedom;
-      
-    @API(help="Null Degrees of Freedom - Training")
-    double      null_degrees_of_freedom;
-
-    @API(help="AIC - Training")
-    double      AIC;
-
-    @API(help="AUC - Training")
-    double      AUC;
 
 //    @API(help="Residual Deviance - Validation")
 //    double      validation_residual_deviance;
@@ -67,19 +45,12 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 //    @API(help="Null Degrees of Freedom - Validation")
 //    double      validation_null_degrees_of_freedom;
 
-    @API(help="fill me in GLMModelOutputV2; I think I'm redundant")
-    boolean binomial; // TODO: isn't this redundant, given model_category?
-
-    @API(help="fill me in GLMModelOutputV2")
-    int rank;
 
     @Override
     public GLMModelOutputV3 fillFromImpl(GLMModel.GLMOutput impl) {
       super.fillFromImpl(impl);
-      this.rank = impl.rank();
       GLMModel.Submodel sm = impl.bestSubmodel();
       String [] cnames = impl.coefficientNames();
-      System.out.println("CNAMES = " + Arrays.toString(cnames));
       String [] names = sm.idxs == null?impl.coefficientNames().clone():ArrayUtils.select(impl.coefficientNames(), sm.idxs);
       coefficients_table = new TwoDimTableBase();
       coefficients_magnitude = new TwoDimTableBase();
