@@ -198,7 +198,7 @@ public class TwoDimTableTest extends TestUtil {
             "Mixed", "description",
             new String[]{"R0", "R1", "R2", "R3"},
             new String[]{"C0", "C1", "C2", "C3"},
-            new String[]{"double", "float", "integer", "long"},
+            new String[]{"double", "float", "int", "long"},
             new String[]{"%f", "%f", "%d", "%d"},
             "");
     table.set(0, 0, Double.NEGATIVE_INFINITY);
