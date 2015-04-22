@@ -787,7 +787,7 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param train Retrieve the training metric.
-#' @param valid Retreive the validation metric.
+#' @param valid Retrieve the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
