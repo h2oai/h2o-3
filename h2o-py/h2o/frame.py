@@ -424,6 +424,8 @@ class H2OFrame:
     elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
     else: raise NotImplementedError
 
+  def logical_negation(self):  return Expr("not", Expr(self.send_frame(), length=self.nrow()))
+
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
   def __and__(self, i): return self._simple_frames_bin_op(i, "&")
@@ -898,13 +900,14 @@ class H2OVec:
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
-    if op == "n" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
+    if op == "n" and i is None    :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
   def _simple_vec_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
     raise NotImplementedError
 
+  def logical_negation(self):  return H2OVec(self._name, Expr("not", self))
 
   def __add__(self, i):  return self._simple_vec_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_vec_bin_op(i,"-" )
@@ -935,6 +938,8 @@ class H2OVec:
     :return: The length of this H2OVec
     """
     return len(self._expr)
+
+  def dim(self): return len(self), 1
 
   def floor(self):
     """

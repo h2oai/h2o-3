@@ -656,36 +656,37 @@ public class GBMTest extends TestUtil {
   // Test uses big data and is too slow for a pre-push
   @Test @Ignore public void testCUST_A() {
     Frame tfr=null;
+    GBMModel gbm=null;
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file("../standard/test_rev2.zip");
-      tfr.remove("device_ip").remove();
-      tfr.remove("device_id").remove();
-      int idx = tfr.find("C24");
-      Vec old = tfr.vecs()[idx];
-      tfr.replace(idx,old.toEnum());
-      old.remove();
+      tfr = parse_test_file("./smalldata/ad.csv");
+      int idx = tfr.find("label");
+      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toEnum())._key);
       DKV.put(tfr);
 
       // Same parms for all
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;
       parms._valid = null;
-      parms._response_column = "C24";
-      parms._ntrees = 600;
-      parms._max_depth = 3;
+      parms._response_column = "label";
+      parms._ntrees = 1;
+      parms._max_depth = 5;
       parms._nbins = 20;
-      parms._min_rows = 20;
-      parms._learn_rate = 0.01f;
-      parms._distribution = Family.multinomial;
+      parms._min_rows = 10;
+      parms._learn_rate = 1f;
+      parms._distribution = Family.AUTO;
       GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
-
+      gbm = job.trainModel().get();
       job.remove();
-      gbm.delete();
+
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,tfr);
+      double auc = mm._auc._auc;
+      Assert.assertEquals(1.0,auc,1e-8);
+
     } finally {
       if (tfr  != null) tfr.remove();
+      if (gbm  != null) gbm.delete();
       Scope.exit();
     }
   }
