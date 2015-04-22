@@ -29,7 +29,7 @@
 #'        is an initial center. For lists of vectors, each vector is an
 #'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
-#' @return Returns an object of class \linkS4class{H2OKMeansModel}.
+#' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()

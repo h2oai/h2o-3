@@ -15,12 +15,12 @@ test.h2o.prcomp <- function(conn) {
   Log.info("Print out summary of australia.csv")
   print(summary(australia.hex))
   
-  Log.info("Run PCA with k = 8, gamma = 0, center = TRUE, scale. = FALSE")
-  australia.pca = h2o.prcomp(australia.hex, k = 8)
+  Log.info("Run PCA with k = 8, gamma = 0, transform = 'DEMEAN'")
+  australia.pca = h2o.prcomp(australia.hex, k = 8, transform = "DEMEAN")
   print(australia.pca)
   
-  Log.info("Run PCA with k = 4, gamma = 0.5, center = TRUE, scale. = TRUE")
-  australia.pca2 = h2o.prcomp(australia.hex, k = 4, gamma = 0.5, center = TRUE, scale. = TRUE)
+  Log.info("Run PCA with k = 4, gamma = 0.5, transform = 'STANDARDIZE'")
+  australia.pca2 = h2o.prcomp(australia.hex, k = 4, gamma = 0.5, transform = "STANDARDIZE")
   print(australia.pca2)
   
   testEnd()
