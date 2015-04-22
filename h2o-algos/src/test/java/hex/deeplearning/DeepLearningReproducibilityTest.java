@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import java.util.*;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -18,7 +19,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
   @Test
   public void run() {
-    long seed = new Random().nextLong();
+    NFSFileVec ff = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
+    Frame golden = ParseDataset.parse(Key.make("golden.hex"), ff._key);
 
     DeepLearningModel mymodel = null;
     Frame train = null;
@@ -33,10 +35,12 @@ public class DeepLearningReproducibilityTest extends TestUtil {
     for (boolean repro : new boolean[]{true, false}) {
       Scope.enter();
       Frame[] preds = new Frame[N];
+      long[] checksums = new long[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), file._key);
+          Assert.assertTrue(isBitIdentical(data, golden)); //test parser consistency
 
           // Create holdout test data on clean data (before adding missing values)
           train = data;
@@ -78,6 +82,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Extract the scoring on validation set from the model
           mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
+          checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.error());
 
         } catch (Throwable t) {
@@ -106,7 +111,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // check reproducibility
           for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
-          // exposes bug: no work gets done on remote if frame has only 1 chunk and is homed remotely.
+          for (long cs : checksums)
+            assertTrue(cs == checksums[0]);
           for (Frame f : preds) {
             assertTrue(TestUtil.isBitIdentical(f, preds[0]));
           }
@@ -137,5 +143,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       }
       Scope.exit();
     }
+    golden.delete();
   }
 }

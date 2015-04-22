@@ -8,9 +8,10 @@ import water.api.ModelParametersSchema;
 public class QuantileV3 extends ModelBuilderSchema<Quantile,QuantileV3,QuantileV3.QuantileParametersV2> {
 
   public static final class QuantileParametersV2 extends ModelParametersSchema<QuantileModel.QuantileParameters, QuantileParametersV2> {
-    static public String[] own_fields = new String[] {"probs"};
+    static public String[] own_fields = new String[] {"probs", "combine_method"};
 
     // Input fields
     @API(help="Probabilities for quantiles")  public double probs[];
+    @API(help="How to combine quantiles for even sample sizes", values={"INTERPOLATE", "AVG", "LO", "HI"}) public QuantileModel.CombineMethod combine_method;
   } // QuantileParametersV2
 }

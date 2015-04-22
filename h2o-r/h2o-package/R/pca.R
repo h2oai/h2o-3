@@ -1,3 +1,12 @@
+# TODO: Describe this in details for scale center, or get this back
+# A character string that indicates how the training data
+# should be transformed before running PCA. Possible values are "NONE":
+# for no transformation, "DEMEAN": for subtracting the mean of each
+# column, "DESCALE": for dividing by the standard deviation of each
+# column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+# for demeaning and dividing each column by its range (max - min).
+
+
 #'
 #' Quadratically Regularized PCA Model in H2O
 #'
@@ -16,13 +25,10 @@
 #' @param destination_key (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
 #' @param max_iterations The maximum number of iterations to run alternating
-#'        minimization. Must be between 0 and 1e6 inclusive.
-#' @param transform A character string that indicates how the training data
-#'        should be transformed before running PCA. Possible values are "NONE":
-#'        for no transformation, "DEMEAN": for subtracting the mean of each
-#'        column, "DESCALE": for dividing by the standard deviation of each
-#'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
-#'        for demeaning and dividing each column by its range (max - min).
+#'        minimization. Must be between 0 and \code{1e6} inclusive.
+#' @param center logical, indicating whether variables should be shifted or zero centered
+#' @param scale. logical, indicating whether or not to scale to unit variance
+#' @param gamma Quadratic regularization weight, should be greater than \code{0}.
 #' @param init A character string that selects the initial set of k cluster
 #'        centers. Possible values are "PlusPlus": for k-means++ initialization,
 #'        or a user-specified initial Y as a matrix, data.frame, H2OFrame, or list

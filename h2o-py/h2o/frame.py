@@ -559,14 +559,17 @@ class H2OFrame:
     return self._vecs[0]._len_check(x)
 
   # Quantiles
-  def quantile(self, prob=None):
+  def quantile(self, prob=None, combine_method="interpolate"):
     if len(self) == 0: return self
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
     if not isinstance(prob, list): raise ValueError("prob must be a list")
     probs = "(dlist #"+" #".join([str(p) for p in prob])+")"
+    if combine_method not in ["interpolate","average","low","high"]:
+      raise ValueError("combine_method must be one of: [" + ",".join(["interpolate","average","low","high"])+"]")
+
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (quantile '{}' {}".format(tmp_key, key, probs)
+    expr = "(= !{} (quantile '{}' {} '{}'".format(tmp_key,key,probs,combine_method)
     h2o.rapids(expr)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -982,12 +985,12 @@ class H2OVec:
     """
     return Expr("median", self._expr)
 
-  def quantile(self,prob=None):
+  def quantile(self,prob=None,combine_method="interpolate"):
     """
     :return: A lazy Expr representing the quantiles of this H2OVec.
     """
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    return H2OFrame(vecs=[self]).quantile(prob)
+    return H2OFrame(vecs=[self]).quantile(prob,combine_method)
 
   def asfactor(self):
     """

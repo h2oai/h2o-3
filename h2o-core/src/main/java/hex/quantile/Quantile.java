@@ -86,7 +86,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             double prob = _parms._probs[p];
             Histo h = h1;  // Start from the first global histogram
 
-            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob)) )
+            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) )
               h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
 
             // Update the model
@@ -174,7 +174,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
     /** @return Quantile for probability prob, or NaN if another pass is needed. */
-    double findQuantile( double prob ) {
+    double findQuantile( double prob, QuantileModel.CombineMethod method ) {
       double p2 = prob*(_nrows-1); // Desired fractional row number for this probability
       long r2 = (long)p2;       // Lower integral row number
       int loidx = findBin(r2);  // Find bin holding low value
@@ -188,7 +188,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         return (lo==hi) ? lo : Double.NaN; // Only if bin is constant, otherwise must refine the bin
       // Split across bins - the interpolate between the hi of the lo bin, and
       // the lo of the hi bin
-      return computeQuantile(lo,hi,r2,_nrows,prob);
+      return computeQuantile(lo,hi,r2,_nrows,prob,method);
     }
 
     private double binEdge( int idx ) { return _lb+_step*idx; }
@@ -236,13 +236,24 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
    *  @param hi  the lowest  element greater than or equal to the desired quantile
    *  @param row row number (zero based) of the lo element; high element is +1
    *  @return desired quantile. */
-  static double computeQuantile( double lo, double hi, long row, long nrows, double prob ) {
+  static double computeQuantile( double lo, double hi, long row, long nrows, double prob, QuantileModel.CombineMethod method ) {
     if( lo==hi ) return lo;     // Equal; pick either
+    switch( method ) {
+      case INTERPOLATE: return linearInterpolate(lo,hi,row,nrows,prob);
+      case AVERAGE:     return 0.5*(hi+lo);
+      case LOW:         return lo;
+      case HIGH:        return hi;
+      default:
+        Log.info("Unknown even sample size quantile combination type: " + method + ". Doing linear interpolation.");
+        return linearInterpolate(lo,hi,row,nrows,prob);
+    }
+  }
+
+  private static double linearInterpolate(double lo, double hi, long row, long nrows, double prob) {
     // Unequal, linear interpolation
     double plo = (double)(row+0)/(nrows-1); // Note that row numbers are inclusive on the end point, means we need a -1
     double phi = (double)(row+1)/(nrows-1); // Passed in the row number for the low value, high is the next row, so +1
     assert plo <= prob && prob < phi;
     return lo + (hi-lo)*(prob-plo)/(phi-plo); // Classic linear interpolation
   }
-
 }
