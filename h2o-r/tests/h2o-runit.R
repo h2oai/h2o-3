@@ -118,7 +118,7 @@ function(ROOT.PATH) {
 #'
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
+  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 
@@ -160,7 +160,7 @@ h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort))
+h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort), timeout_secs=120)
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {

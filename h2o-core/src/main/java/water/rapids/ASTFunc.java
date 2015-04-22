@@ -178,10 +178,10 @@ class ASTFuncDef extends ASTOp {
   public ASTFuncDef() { super(null); }   // super(null) => _vars[] = null
 
   void parse_func(Exec E) {
-    AST name = E.parse();
-    if( name instanceof ASTId ) _name = ((ASTId)name)._id;
-    else if( name instanceof ASTString ) _name = ((ASTString)name)._s;
-    else throw new IllegalArgumentException("function name expected to be an ID or String. Got: " + name.getClass());
+    String l;
+    if( E.isSpecial(E.peek()) ) l = E.nextStr();
+    else                        l = E.parseID();
+    _name=l;
 
     // parse the function args: these are just arg names -> will do _local.put(name, Env.NULL, null) (local ST put)
     Env.SymbolTable table = E._env.newTable(); // grab a new SymbolTable

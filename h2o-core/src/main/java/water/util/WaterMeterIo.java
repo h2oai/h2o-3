@@ -6,11 +6,11 @@ import water.persist.PersistManager;
 public class WaterMeterIo extends Iced {
   public static class IoStatsEntry extends Iced {
     String backend;
-    public long storeCount;
-    public long storeBytes;
-    public long deleteCount;
-    public long loadCount;
-    public long loadBytes;
+    public long store_count;
+    public long store_bytes;
+    public long delete_count;
+    public long load_count;
+    public long load_bytes;
   }
 
   // Input
@@ -37,11 +37,11 @@ public class WaterMeterIo extends Iced {
       }
 
       for (int j = 0; j < persist_stats.length; j++) {
-        persist_stats[j].storeCount  += io.persist_stats[j].storeCount;
-        persist_stats[j].storeBytes  += io.persist_stats[j].storeBytes;
-        persist_stats[j].deleteCount += io.persist_stats[j].deleteCount;
-        persist_stats[j].loadCount   += io.persist_stats[j].loadCount;
-        persist_stats[j].loadBytes   += io.persist_stats[j].loadBytes;
+        persist_stats[j].store_count += io.persist_stats[j].store_count;
+        persist_stats[j].store_bytes += io.persist_stats[j].store_bytes;
+        persist_stats[j].delete_count += io.persist_stats[j].delete_count;
+        persist_stats[j].load_count += io.persist_stats[j].load_count;
+        persist_stats[j].load_bytes += io.persist_stats[j].load_bytes;
       }
     }
   }
@@ -89,21 +89,21 @@ public class WaterMeterIo extends Iced {
             throw H2O.fail();
         }
         PersistManager.PersistStatsEntry src_e = s[j];
-        dest_e.storeCount  = src_e.storeCount.get();
-        dest_e.storeBytes  = src_e.storeBytes.get();
-        dest_e.deleteCount = src_e.deleteCount.get();
-        dest_e.loadCount   = src_e.loadCount.get();
-        dest_e.loadBytes   = src_e.loadBytes.get();
+        dest_e.store_count = src_e.store_count.get();
+        dest_e.store_bytes = src_e.store_bytes.get();
+        dest_e.delete_count = src_e.delete_count.get();
+        dest_e.load_count = src_e.load_count.get();
+        dest_e.load_bytes = src_e.load_bytes.get();
       }
 
       int[] backendsToZeroCheck = new int[] {0, 5, 6, 7};
       for (int j : backendsToZeroCheck) {
         PersistManager.PersistStatsEntry src_e = s[j];
-        assert(src_e.storeCount.get() == 0);
-        assert(src_e.storeBytes.get() == 0);
-        assert(src_e.deleteCount.get() == 0);
-        assert(src_e.loadCount.get() == 0);
-        assert(src_e.loadBytes.get() == 0);
+        assert(src_e.store_count.get() == 0);
+        assert(src_e.store_bytes.get() == 0);
+        assert(src_e.delete_count.get() == 0);
+        assert(src_e.load_count.get() == 0);
+        assert(src_e.load_bytes.get() == 0);
       }
 
       tryComplete();

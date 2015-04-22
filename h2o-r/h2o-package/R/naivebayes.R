@@ -3,6 +3,13 @@
 #'
 #' Compute naive Bayes probabilities on an H2O dataset.
 #'
+#' The naive Bayes classifier assumes independence between predictor variables conditional
+#' on the response, and a Gaussian distribution of numeric predictors with mean and standard
+#' deviation computed from the training dataset. When building a naive Bayes classifier,
+#' every row in the training dataset that contains at least one NA will be skipped completely.
+#' If the test dataset has missing values, then those predictors are omitted in the probability
+#' calculation during prediction.
+#'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
 #'        column index number starting at 0, and increasing from left to right.
@@ -10,15 +17,10 @@
 #' @param destination_key (Optional) The unique hex key assigned to the resulting model. Automatically generated
 #'        if none is provided.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
-#' @param min_sdev The minimum standard deviation to use for observations without enough data. Must be
+#' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
-#' @details The naive Bayes classifier assumes independence between predictor variables conditional
-#'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
-#'        deviation computed from the training dataset. When building a naive Bayes classifier,
-#'        every row in the training dataset that contains at least one NA will be skipped completely.
-#'        If the test dataset has missing values, then those predictors are omitted in the probability
-#'        calculation during prediction.
-#' @return Returns an object of class \linkS4class{H2ONaiveBayesModel}.
+#' @param eps A threshold cutoff to deal with numeric instability, must be positive.
+#' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()

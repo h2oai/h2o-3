@@ -141,7 +141,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public double _sumsqe;      // Sum-squared-error
     public long _count;
 
-    abstract public double[] perRow(double ds[], float yact[], Model m, double[] mean);
+    abstract public double[] perRow(double ds[], float yact[], Model m);
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
