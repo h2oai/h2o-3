@@ -181,11 +181,9 @@ Syncing smalldata is not strictly required after each pull, but if tests fail du
 
 ### 5.3. Setup on Windows
 
-##### Step 1: Download and install [Python](https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi) for Windows. 
-  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the Python path.
+##### Step 1: Download and install [WinPython](https://winpython.github.io). 
+  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the WinPython path.
   
-  `C:\Python27\;C:\Python27\Scripts\`
-
 ###### Step 2: Install required Python packages:
 
     `pip install grip`
@@ -528,7 +526,6 @@ Viraj Parmar
 Kendall Harris
 Anand Avati
 Jessica Lanford
-Yan Zou
 Alex Tellez
 Allison Washburn
 Amy Wang
@@ -538,6 +535,9 @@ Neeraja Madabhushi
 Sebastian Vidrio
 Ben Sabrin
 Matt Dowle
+Mark Landry
+Tony D'Amato
+Erin LeDell
 
 ```
 
