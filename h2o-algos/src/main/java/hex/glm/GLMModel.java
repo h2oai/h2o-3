@@ -716,12 +716,20 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final Key _jobKey;
     final Key _validFrame;
     final Key _trainFrame;
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame){
+    final double [] _likelihoods;
+    final double [] _objectives;
+    final int [] _scoring_iters;
+
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int [] scoring_iters, double [] likelihoods, double [] objectives){
       super(cmp, modelKey);
       _jobKey = jobKey;
       _validFrame = validFrame;
       _trainFrame = trainFrame;
+      _scoring_iters = scoring_iters;
+      _likelihoods = likelihoods;
+      _objectives = objectives;
     }
+
     @Override
     protected void map(GLMModel glmModel) {
       Frame tFrame = DKV.getGet(_trainFrame);
@@ -735,6 +743,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
       glmModel._output._model_summary.set(0,2,_trainFrame.toString());
       glmModel._output._model_summary.set(0,3,Integer.toString(glmModel.beta().length));
+      if(_scoring_iters != null) {
+        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "likelihood", "objective"}, new String[]{"integer", "double", "double"}, new String[]{"%d", "%.5f", "%.5f"}, "");
+        for (int i = 0; i < _scoring_iters.length; ++i) {
+          glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
+          glmModel._output._scoring_history.set(i,1,_likelihoods[i]);
+          glmModel._output._scoring_history.set(i,2,_objectives[i]);
+        }
+      }
       glmModel.update(_jobKey);
       glmModel.unlock(_jobKey);
     }
