@@ -577,6 +577,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     static{
       // aggregates
       TM.put("count",       (byte)0);
+      TM.put("nrow",        (byte)0);
       TM.put("count_unique",(byte)1);
       TM.put("first",       (byte)2);
       TM.put("last",        (byte)3);
