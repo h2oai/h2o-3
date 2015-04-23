@@ -9,8 +9,9 @@
     stop('`data` must be an H2OFrame object')
   if(!is.character(x) && !is.numeric(x))
     stop('`x` must be column names or indices')
-  if(!is.character(y) && !is.numeric(y))
-    stop('`y` must be a column name or index')
+  if( !autoencoder )
+    if(!is.character(y) && !is.numeric(y))
+      stop('`y` must be a column name or index')
 
   cc <- colnames(data)
 
@@ -25,25 +26,30 @@
     x <- cc[x_i]
   }
 
-  if(is.character(y)){
-    if(!(y %in% cc))
-      stop(y, ' is not a column name')
-    y_i <- which(y == cc)
+  x_ignore <- c()
+  if( !autoencoder ) {
+    if(is.character(y)){
+      if(!(y %in% cc))
+        stop(y, ' is not a column name')
+      y_i <- which(y == cc)
+    } else {
+      if(y < 1L || y > length(cc))
+        stop('response variable index ', y, ' is out of range')
+      y_i <- y
+      y <- cc[y]
+    }
+
+    if(!autoencoder && (y %in% x)) {
+      warning('removing response variable from the explanatory variables')
+      x <- setdiff(x,y)
+    }
+    x_ignore <- setdiff(setdiff(cc, x), y)
+    if( length(x_ignore) == 0L ) x_ignore <- ''
+    return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
   } else {
-    if(y < 1L || y > length(cc))
-      stop('response variable index ', y, ' is out of range')
-    y_i <- y
-    y <- cc[y]
+    if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
+    return(list(x=x,x_i=x_i,x_ignore=x_ignore))
   }
-
-  if(!autoencoder && (y %in% x)) {
-    warning('removing response variable from the explanatory variables')
-    x <- setdiff(x,y)
-  }
-
-  x_ignore <- setdiff(setdiff(cc, x), y)
-  if(length(x_ignore) == 0L) x_ignore <- ''
-  list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i)
 }
 
 .verify_datacols <- function(data, cols) {
