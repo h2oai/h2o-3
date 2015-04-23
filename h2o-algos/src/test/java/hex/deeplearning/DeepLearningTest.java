@@ -441,6 +441,7 @@ public class DeepLearningTest extends TestUtil {
       dl._reproducible = true;
       dl._epochs = epochs;
       dl._activation = activation;
+      dl._export_weights_and_biases = true;
       dl._hidden = hidden;
       dl._l1 = l1;
 
