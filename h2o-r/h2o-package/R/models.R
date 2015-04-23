@@ -674,14 +674,56 @@ h2o.precision <- function(object, thresholds){
 
 #' @rdname h2o.metric
 #' @export
+h2o.tpr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "tpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.fpr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.fnr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fnr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.tnr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "tnr")
+}
+
+#' @rdname h2o.metric
+#' @export
 h2o.recall <- function(object, thresholds){
-  h2o.metric(object, thresholds, "recall")
+  h2o.metric(object, thresholds, "tpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.sensitivity <- function(object, thresholds){
+  h2o.metric(object, thresholds, "tpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.fallout <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.missrate <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fnr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.specificity <- function(object, thresholds){
-  h2o.metric(object, thresholds, "specificity")
+  h2o.metric(object, thresholds, "tnr")
 }
 
 #
@@ -962,7 +1004,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
     main <- paste(yaxis, "vs", xaxis)
     if( x@on_train ) main <- paste(main, "(on train)")
     else             main <- paste(main, "(on valid)")
-    plot(1 - x@metrics$thresholds_and_metric_scores$specificity, x@metrics$thresholds_and_metric_scores$recall, main = main, xlab = xaxis, ylab = yaxis, ...)
+    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
 }
