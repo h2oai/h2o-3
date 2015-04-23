@@ -58,11 +58,32 @@ class H2OBinomialModelMetrics(object):
   def precision(self, thresholds=None):
     return self.metric("precision", thresholds=thresholds)
 
+  def tpr(self, thresholds=None):
+    return self.metric("tpr", thresholds=thresholds)
+
+  def tnr(self, thresholds=None):
+    return self.metric("tnr", thresholds=thresholds)
+
+  def fnr(self, thresholds=None):
+    return self.metric("fnr", thresholds=thresholds)
+
+  def fpr(self, thresholds=None):
+    return self.metric("fpr", thresholds=thresholds)
+
   def recall(self, thresholds=None):
-    return self.metric("recall", thresholds=thresholds)
+    return self.metric("tpr", thresholds=thresholds)
+
+  def sensitivity(self, thresholds=None):
+    return self.metric("tpr", thresholds=thresholds)
+
+  def fallout(self, thresholds=None):
+    return self.metric("fpr", thresholds=thresholds)
+
+  def missrate(self, thresholds=None):
+    return self.metric("fnr", thresholds=thresholds)
 
   def specificity(self, thresholds=None):
-    return self.metric("specificity", thresholds=thresholds)
+    return self.metric("tnr", thresholds=thresholds)
 
   def mcc(self, thresholds=None):
     return self.metric("absolute_MCC", thresholds=thresholds)
