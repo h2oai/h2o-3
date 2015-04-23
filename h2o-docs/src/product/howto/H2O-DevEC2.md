@@ -129,7 +129,7 @@ allocate more memory to H2O by using `-Xmx4g` instead of the default `-Xmx1g`, w
 		03-23 14:57:53.234 172.16.2.39:54321     1932   main      INFO: S3 subsystem successfully initialized
 		03-23 14:57:53.235 172.16.2.39:54321     1932   main      INFO: Flow dir: '/Users/H2O-Dev-User/h2oflows'
 		03-23 14:57:53.248 172.16.2.39:54321     1932   main      INFO: Cloud of size 1 formed [/172.16.2.39:54321]
-		03-23 14:57:53.776 172.16.2.39:54321     1932   main      WARN: Found schema field which violates the naming convention; name has mixed lowercase and uppercase characters: ModelParametersSchema.dropNA20Cols
+		03-23 14:57:53.776 172.16.2.39:54321     1932   main      WARN: Found schema field which violates the naming convention; name has mixed lowercase and uppercase characters: ModelParametersSchema.drop_na20_cols
 		03-23 14:57:53.935 172.16.2.39:54321     1932   main      INFO: Registered: 142 schemas in: 605mS
 
 5. Point your web browser to `http://localhost:54321/` 
