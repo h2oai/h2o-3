@@ -198,8 +198,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(frame, s.row_offset, s.row_count, force_summary);  // TODO: Refactor with FrameBase
-
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, force_summary);  // TODO: Refactor with FrameBase
+    
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
       s.compatible_models = new ModelSchema[compatible.length];
