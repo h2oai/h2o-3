@@ -270,6 +270,22 @@ public final class ParseSetup extends Iced {
 
     /**
      * Runs once on each file to guess that file's ParseSetup
+     *
+     * For ByteVecs, UploadFileVecs, compressed files and small files,
+     * the ParseSetup is guessed from a single DFLT_CHUNK_SIZE chunk from
+     * the start of the file.  This is because UploadFileVecs and compressed
+     * files don't allow random sampling, small files don't need it, and
+     * ByteVecs tend to be small.
+     *
+     * For larger NSFFileVecs and HDFSFileVecs 1M samples are taken at the
+     * beginning of every 100M, and an additional sample is taken from the
+     * last chunk of the file.  The results of these samples are merged
+     * together (and compared for consistency).
+     *
+     * Sampling more than the first bytes is preferred, since large data sets
+     * with sorted columns may have all the same value in their first bytes,
+     * making for poor type guesses.
+     *
      */
     @Override public void map(Key key) {
       Iced ice = DKV.getGet(key);
@@ -277,22 +293,8 @@ public final class ParseSetup extends Iced {
       ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
       byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
 
-      // guess setup
       if(bits.length > 0) {
         _empty = false;
-//        _failedSetup = new IcedArrayList<Key>();
-//        _conflicts = new IcedArrayList<Key>();
-        try {
-          _gblSetup = guessSetup(bits, _userSetup);
-        } catch (H2OParseException pse) {
-          throw new H2OParseSetupException(key, pse);
-        }
-//        if (_gblSetup == null || !_gblSetup._is_valid)
-//          _failedSetup.add(key);
-//        else {
-          //  _gblSetup._setupFromFile = key;
-          //  if (_check_header && _gblSetup._setup._header)
-          //    _gblSetup._hdrFromFile = key;
 
           // get file size
           float decompRatio = ZipUtil.decompressionRatio(bv);
@@ -301,6 +303,45 @@ public final class ParseSetup extends Iced {
           else  // avoid numerical distortion of file size when not compressed
             _totalParseSize += bv.length();
 
+        // only preview 1 DFLT_CHUNK_SIZE for ByteVecs, UploadFileVecs, compressed, and small files
+        if (ice instanceof ByteVec
+                || ((Frame)ice).vecs()[0] instanceof UploadFileVec
+                || bv.length() <= FileVec.DFLT_CHUNK_SIZE
+                || decompRatio > 1.0) {
+          try {
+            _gblSetup = guessSetup(bits, _userSetup);
+          } catch (H2OParseException pse) {
+            throw new H2OParseSetupException(key, pse);
+          }
+        } else { // file is aun uncompressed NFSFileVec or HDFSFileVec & larger than the DFLT_CHUNK_SIZE
+          FileVec fv = (FileVec) ((Frame) ice).vecs()[0];
+          // reset chunk size to 1M (uncompressed)
+          int chkSize = (int) ((1<<20) /decompRatio);
+          fv.setChunkSize((Frame) ice, chkSize);
+
+          // guessSetup from first chunk
+          _gblSetup = guessSetup(fv.getPreviewChunkBytes(0), _userSetup);
+          _userSetup._check_header = -1; // remaining chunks shouldn't check for header
+          _userSetup._parse_type = _gblSetup._parse_type; // or guess parse type
+
+          //preview 1M data every 100M
+          int numChunks = fv.nChunks();
+          for (int i=100; i < numChunks;i += 100) {
+            bits = fv.getPreviewChunkBytes(i);
+            if (bits != null)
+              _gblSetup = mergeSetups(_gblSetup, guessSetup(bits, _userSetup));
+          }
+
+          // grab sample at end of file (if not done by prev loop)
+          if (numChunks % 100 > 1){
+            bits = fv.getPreviewChunkBytes(numChunks - 1);
+            if (bits != null)
+              _gblSetup = mergeSetups(_gblSetup, guessSetup(bits, _userSetup));
+          }
+
+          // return chunk size to DFLT
+          fv.setChunkSize((Frame) ice, FileVec.DFLT_CHUNK_SIZE);
+        }
         // report if multiple files exist in zip archive
         if (ZipUtil.getFileCount(bv) > 1) {
           if (_gblSetup._errors != null)
@@ -329,33 +370,7 @@ public final class ParseSetup extends Iced {
         return;
       }
 
-      ParseSetup setupA = _gblSetup, setupB = other._gblSetup;
-      if (setupA._is_valid && setupB._is_valid) {
-        _gblSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
-        _gblSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
-        _gblSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
-        _gblSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
-        if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
-          ;// do nothing parse_type and col_types are already set correctly
-        else if (setupA._parse_type == ParserType.CSV && setupB._parse_type == ParserType.ARFF) {
-          _gblSetup._parse_type = ParserType.ARFF;
-          _gblSetup._column_types = setupB._column_types;
-        } else if (setupA._parse_type == setupB._parse_type) {
-          _gblSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
-        } else
-          throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
-                  + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
-      } else {  // one of the setups is invalid, fail
-        // TODO: Point out which file is problem
-        throw new H2OParseSetupException("Cannot determine parse parameters for file.");
-      }
-
-      if (_gblSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
-        int n = _gblSetup._data.length;
-        int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
-        _gblSetup._data = Arrays.copyOf(_gblSetup._data, m);
-        System.arraycopy(other._gblSetup._data, 1, _gblSetup._data, n, m - n);
-      }
+      _gblSetup = mergeSetups(_gblSetup, other._gblSetup);
       _totalParseSize += other._totalParseSize;
     }
 
@@ -364,6 +379,39 @@ public final class ParseSetup extends Iced {
         _gblSetup._column_types = _gblSetup._column_previews.guessTypes();
         _gblSetup._na_strings = _gblSetup._column_previews.guessNAStrings(_gblSetup._column_types);
       }
+    }
+
+    private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB) {
+      if (setupA == null) return setupB;
+
+      ParseSetup mergedSetup = setupA;
+      if (setupA._is_valid && setupB._is_valid) {
+        mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
+        mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
+        mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
+        mergedSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
+        if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
+          ;// do nothing parse_type and col_types are already set correctly
+        else if (setupA._parse_type == ParserType.CSV && setupB._parse_type == ParserType.ARFF) {
+          mergedSetup._parse_type = ParserType.ARFF;
+          mergedSetup._column_types = setupB._column_types;
+        } else if (setupA._parse_type == setupB._parse_type) {
+          mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
+        } else
+          throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
+                  + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
+      } else {  // one of the setups is invalid, fail
+        // TODO: Point out which file is problem
+        throw new H2OParseSetupException("Cannot determine parse parameters for file.");
+      }
+
+      if (mergedSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
+        int n = mergedSetup._data.length;
+        int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + setupB._data.length - 1);
+        mergedSetup._data = Arrays.copyOf(mergedSetup._data, m);
+        System.arraycopy(setupB._data, 1, mergedSetup._data, n, m - n);
+      }
+      return mergedSetup;
     }
 
     private static int unifyCheckHeader(int chkHdrA, int chkHdrB){

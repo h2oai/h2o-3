@@ -6,7 +6,6 @@ import water.fvec.Vec;
 import water.util.IcedHashMap;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 /** Class implementing ParseWriter, on behalf ParseSetup
  * to examine the contents of a file for guess the column types.
