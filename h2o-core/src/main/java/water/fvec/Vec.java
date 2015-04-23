@@ -354,17 +354,7 @@ public class Vec extends Keyed<Vec> {
       }
     }.doAllNodes();
     DKV.put(v0._key,v0);        // Header last
-    Vec v=v0;
-    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
-    if( v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
-      Key newKey = Key.make(".makeConRebalance" + chunks);
-      RebalanceDataSet rb = new RebalanceDataSet(new Frame(v0), newKey, chunks);
-      H2O.submitTask(rb);
-      rb.join();
-      Keyed.remove(v0._key);
-      v = ((Frame)DKV.getGet(newKey)).anyVec();
-    }
-    return v;
+    return v0;
   }
 
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){

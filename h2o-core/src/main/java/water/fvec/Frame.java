@@ -401,6 +401,7 @@ public class Frame extends Lockable<Frame> {
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
+    vec = makeCompatible(new Frame(vec)).anyVec();
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
     _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
@@ -830,7 +831,7 @@ public class Frame extends Lockable<Frame> {
       return fr2;
     }
     Frame frows = (Frame)orows;
-    Vec vrows = frows.anyVec();
+    Vec vrows = makeCompatible(new Frame(frows.anyVec())).anyVec();
     // It's a compatible Vec; use it as boolean selector.
     // Build column names for the result.
     Vec [] vecs = new Vec[c2.length+1];
