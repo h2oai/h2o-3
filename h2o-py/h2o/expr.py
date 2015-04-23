@@ -170,6 +170,7 @@ class Expr(object):
       else:
         data = [self._data]
       t_data = map(list, zip(*data))
+      t_data = t_data[0:min(10,len(t_data))]
       for didx,d in enumerate(t_data): t_data[didx].insert(0,didx)
       headers = ["Row ID"]
       for i in range(len(t_data[0])): headers.append('')
