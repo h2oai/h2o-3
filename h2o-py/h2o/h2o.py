@@ -513,7 +513,7 @@ def _simple_un_math_op(op, data):
   elif isinstance(data, Expr)    : return Expr(op, data)
   else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
 
-# generic reducers
+# generic reducers: these are eager
 def min(data)   : return data.min()
 def max(data)   : return data.max()
 def sum(data)   : return data.sum()
