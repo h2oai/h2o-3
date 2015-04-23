@@ -144,8 +144,11 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         continue;
       }
 
-      // All same string, declare enum
-      if (_domains[i].size() <= 1
+      // All same string, but not obvious NA, declare enum
+      if (_domains[i].size() == 1
+              && !_domains[i].containsKey("NA")
+              && !_domains[i].containsKey("na")
+              && !_domains[i].containsKey("Na")
               &&  _nstrings[i] >= nonemptyLines) {
         types[i] = Vec.T_ENUM;
         continue;

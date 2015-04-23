@@ -41,12 +41,13 @@ public class ByteVec extends Vec {
       throw new H2OIllegalArgumentException("Asked for chunk index beyond the number of chunks.");
     if (chkIdx == 0)
       return chunkForChunkIdx(chkIdx)._mem;
-    else { //must eat partial line
+    else { //must eat partial lines
       // FIXME: a hack to consume partial lines since each preview chunk is seen as cidx=0
-      int i = 0;
       byte[] mem = chunkForChunkIdx(chkIdx)._mem;
+      int i = 0, j = mem.length-1;
       while (i < mem.length && mem[i] != CHAR_CR && mem[i] != CHAR_LF) i++;
-      if (mem.length-i > 1) return Arrays.copyOfRange(mem,i,mem.length);
+      while (j > i && mem[j] != CHAR_CR && mem[j] != CHAR_LF) j--;
+      if (j-i > 1) return Arrays.copyOfRange(mem,i,j);
       else return null;
     }
   }
