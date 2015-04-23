@@ -43,7 +43,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'kmeans', {\"destination_key\":\"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\",\"training_frame\":\"seeds_dataset.hex\",\"ignored_columns\":[\"C7\"],\"dropNA20Cols\":false,\"k\":\"3\",\"max_iterations\":\"100\",\"init\":\"PlusPlus\",\"standardize\":false,\"seed\":1425597869002366000}"
+      "input": "buildModel 'kmeans', {\"destination_key\":\"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\",\"training_frame\":\"seeds_dataset.hex\",\"ignored_columns\":[\"C7\"],\"drop_na20_cols\":false,\"k\":\"3\",\"max_iterations\":\"100\",\"init\":\"PlusPlus\",\"standardize\":false,\"seed\":1425597869002366000}"
     },
     {
       "type": "md",
