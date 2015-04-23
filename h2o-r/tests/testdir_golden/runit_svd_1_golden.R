@@ -7,9 +7,9 @@ test.svd.golden <- function(H2Oserver) {
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
   arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), key = "arrestsH2O")
   
-  Log.info("Compare with SVD when center = FALSE, scale. = FALSE")
+  Log.info("Compare with SVD")
   fitR <- svd(arrestsR, nv = 4)
-  fitH2O <- h2o.svd(arrestsH2O, nv = 4, center = FALSE, scale. = FALSE)
+  fitH2O <- h2o.svd(arrestsH2O, nv = 4, transform = "NONE")
   
   Log.info("Compare singular values (D)")
   Log.info(paste("R Singular Values:", paste(fitR$d, collapse = ", ")))
