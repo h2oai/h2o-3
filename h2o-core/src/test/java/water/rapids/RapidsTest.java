@@ -87,13 +87,15 @@ public class RapidsTest extends TestUtil {
     DKV.put(ahex, fr);
     Env env = Exec.exec(tree);
     System.out.println(env.toString());
-    if (env.isAry()) {
-      Frame f2 = env.popAry();
-      for (int i = 0; i < f2.numCols(); ++i) System.out.println(f2.vecs()[i].at(0));
-      f2.delete();
-    } else if (env.isNum()) {
-      double d = env.popDbl();
-      System.out.println(d);
+    if( !env.isEmpty() ) {
+      if (env.isAry()) {
+        Frame f2 = env.popAry();
+        for (int i = 0; i < f2.numCols(); ++i) System.out.println(f2.vecs()[i].at(0));
+        f2.delete();
+      } else if (env.isNum()) {
+        double d = env.popDbl();
+        System.out.println(d);
+      }
     }
     fr.delete();
     r.delete();

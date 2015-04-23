@@ -1715,11 +1715,11 @@ class ASTImpute extends ASTUniPrefixOp {
       if(  _method==ImputeMethod.MEDIAN ) throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
       ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean",0,"rm","_avg",null,null) };
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
-      final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s = t._g;
+      final NonBlockingHashSet<ASTGroupBy.G> s = t._g;
       final long[] cols = _by;
       f2 = new MRTask() {
         transient NonBlockingHashSet<ASTGroupBy.G> _s;
-        @Override public void setupLocal() { _s = s._g; }
+        @Override public void setupLocal() { _s = s; }
         @Override public void map(Chunk[] c, NewChunk n) {
           ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
           double impute_value;
@@ -2397,7 +2397,7 @@ class ASTSeqLen extends ASTUniPrefixOp {
     int len = (int) Math.ceil(_length);
     if (len <= 0)
       throw new IllegalArgumentException("Error in seq_len(" +len+"): argument must be coercible to positive integer");
-    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len)});
+    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len,true)});
     env.pushAry(fr);
   }
 }

@@ -3,13 +3,14 @@ package water.fvec;
 import hex.CreateFrame;
 import jsr166y.CountedCompleter;
 import water.*;
-import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
+
+import static water.fvec.Vec.makeCon;
 
 /**
  * Helper to make up a Frame from scratch, with random content
@@ -66,7 +67,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     }
     // All columns together fill one chunk
     final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int)Math.floor(Math.log(_createFrame.cols)/Math.log(2.)));
-    _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk);
+    _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk,false);
   }
 
   transient Vec _v;

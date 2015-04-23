@@ -3,10 +3,7 @@ package water.rapids;
 
 import sun.misc.Unsafe;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.util.Log;
@@ -85,7 +82,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
     final int nGrps = p1._g.size();
-    final G[] grps = p1._g._g.toArray(new G[nGrps]);
+    final G[] grps = p1._g.toArray(new G[nGrps]);
     H2O.submitTask(new ParallelPostGlobal(grps)).join();
 
     // build the output
@@ -203,11 +200,11 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   public static class GBTask extends MRTask<GBTask> {
-    IcedNBHS<G> _g;
+    NonBlockingHashSet<G> _g;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedNBHS<>(); }
+    @Override public void setupLocal() { _g = new NonBlockingHashSet<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
@@ -223,8 +220,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        IcedNBHS<G> l = _g;
-        IcedNBHS<G> r = t._g;
+        NonBlockingHashSet<G> l = _g;
+        NonBlockingHashSet<G> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
         for( G rg:r ) {
@@ -240,6 +237,31 @@ import java.util.concurrent.atomic.AtomicInteger;
         _g=l;
         t._g=null;
       }
+    }
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _agg == null ) ab.put4(0);
+      else {
+        ab.put4(_agg.length);
+        for(AGG a:_agg) ab.put(a);
+      }
+      ab.putA8(_gbCols);
+      if( _g == null ) return ab.put4(0);
+      ab.put4(_g.size());
+      for( G g: _g) ab.put(g);
+      return ab;
+    }
+    @Override public GBTask read_impl(AutoBuffer ab) {
+      int naggs = ab.get4();
+      if( naggs!=0 ) {
+        _agg = new AGG[naggs];
+        for(int i=0;i<naggs;++i) _agg[i] = ab.get(AGG.class);
+      }
+      _gbCols = ab.getA8();
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _g = new NonBlockingHashSet<>();
+      for( int i=0;i<len;++i) _g.add(ab.get(G.class));
+      return this;
     }
     // task helper functions
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g) { perRow(agg,chkRow,rowOffset,c,g,null); }
@@ -600,6 +622,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     private static byte[] naMethods(AGG[] agg) {
+
       byte[] methods = new byte[agg.length];
       for(int i=0;i<agg.length;++i)
         methods[i]=agg[i]._na_handle;

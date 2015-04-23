@@ -16,7 +16,7 @@ def user(ip, port):
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()
-    a["sepal_len"].mean().show()
+    print a["sepal_len"].mean()
 
     print
     print "Rows 50 through 77 in the `sepal_len` column"
@@ -29,7 +29,7 @@ def user(ip, port):
 
     a.show()
 
-    colmeans = [v.mean().eager() for v in a]
+    colmeans = [v.mean() for v in a]
 
     print "The column means: "
     print colmeans

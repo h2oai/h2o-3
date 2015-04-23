@@ -66,3 +66,12 @@ smalldata/
 # Stuff created by 'gradle dist'
 h2o-dist/tmp
 target
+
+# stuff created by sphinx-build (python docs)
+./h2o-py/docs/docs/_static
+./h2o-py/docs/docs/_sources/
+./h2o-py/docs/docs/searchindex.js
+./h2o-py/docs/docs/search*
+./h2o-py/docs/docs/py-modindex.html
+./h2o-py/docs/docs/*html
+./h2o-py/docs/docs/*js

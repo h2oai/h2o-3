@@ -253,7 +253,19 @@ def remove(key):
   if key is None:
     raise ValueError("remove with no key is not supported, for your protection")
 
-  H2OConnection.delete("DKV/" + key)
+  if isinstance(key, H2OFrame):
+    key._vecs=[]
+
+  elif isinstance(key, H2OVec):
+    H2OConnection.delete("DKV/"+str(key.key()))
+    key._expr=None
+    key=None
+
+  else:
+    H2OConnection.delete("DKV/" + key)
+  #
+  # else:
+  #   raise ValueError("Can't remove objects of type: " + key.__class__)
 
 def rapids(expr):
   """
@@ -325,15 +337,23 @@ def cbind(left,right):
   return result
 
 
-def init(ip="localhost", port=54321):
+def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
+         license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
   """
   Initiate an H2O connection to the specified ip and port.
 
-  :param ip: A IP address, default is "localhost".
-  :param port: A port, default is 54321.
+  :param ip: An IP address, default is "localhost"
+  :param port: A port, default is 54321
+  :param size: THe expected number of h2o instances (ignored if start_h2o is True)
+  :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
+  :param enable_assertions: If start_h2o, pass `-ea` as a VM option.s
+  :param license: If not None, is a path to a license file.
+  :param max_mem_size_GB: Maximum heap size (jvm option Xmx) in gigabytes.
+  :param min_mem_size_GB: Minimum heap size (jvm option Xms) in gigabytes.
+  :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
   :return: None
   """
-  H2OConnection(ip=ip, port=port)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check)
   return None
 
 def export_file(frame,path,force=False):
@@ -342,11 +362,20 @@ def export_file(frame,path,force=False):
   H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
 
-def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):
+def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
   Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
+
+def autoencoder(x,**kwargs):
+  """
+  Build an Autoencoder
+  :param x: Columns with which to build an autoencoder
+  :param kwargs: Additional arguments to pass to the autoencoder.
+  :return: A new autoencoder model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,None,"autoencoder",kwargs)
 
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
@@ -484,7 +513,7 @@ def _simple_un_math_op(op, data):
   elif isinstance(data, Expr)    : return Expr(op, data)
   else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
 
-# generic reducers
+# generic reducers: these are eager
 def min(data)   : return data.min()
 def max(data)   : return data.max()
 def sum(data)   : return data.sum()
