@@ -904,7 +904,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@key, "\n")
+  cat("Model Key: ", o@model_id, "\n")
 
   # summary
   print(m$model_summary)
