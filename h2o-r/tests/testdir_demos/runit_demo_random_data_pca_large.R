@@ -47,7 +47,7 @@ for(i in 1:length(rows)){ # changing number of rows
     #str(myframe) 
    
     #warmup
-    myframe.pca<-h2o.prcomp(training_frame=myframe, k = 3)
+    #myframe.pca<-h2o.prcomp(training_frame=myframe, k = 3)
 
     aat <- system.time(myframe.pca<-h2o.prcomp(training_frame=myframe, k=3))
     algo_run_time[i,j] <- aat[3] 
