@@ -568,7 +568,7 @@ public final class ParseDataset extends Job<Frame> {
         switch( cpr ) {
         case NONE:
           if( _parseSetup._parse_type._parallelParseSupported ) {
-            DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
+            DistributedParse dp = new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
             addToPendingCount(1);
             dp.setCompleter(this);
             dp.asyncExec(vec);
@@ -648,7 +648,7 @@ public final class ParseDataset extends Job<Frame> {
     }
 
     // ------------------------------------------------------------------------
-    private static class DParse extends MRTask<DParse> {
+    private static class DistributedParse extends MRTask<DistributedParse> {
       private final ParseSetup _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
@@ -662,7 +662,7 @@ public final class ParseDataset extends Job<Frame> {
       private transient long [] _espc;
       final int _nchunks;
 
-      DParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey,int nchunks) {
+      DistributedParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(mfpt);
         _vg = vg;
         _setup = setup;
@@ -718,7 +718,7 @@ public final class ParseDataset extends Job<Frame> {
         v.freePOJO();           // Eagerly toss from memory
         v.freeMem();
       }
-      @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
+      @Override public void reduce(DistributedParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
