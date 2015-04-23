@@ -177,7 +177,7 @@ public class NetworkTest extends Iced {
     }
     String[] colHeaders = new String[msg_sizes.length];
     for (int i = 0; i < colHeaders.length; ++i) {
-      colHeaders[i] = PrettyPrint.bytes(msg_sizes[i]);
+      colHeaders[i] = msg_sizes[i] + " bytes";
     }
     String[] colTypes = new String[msg_sizes.length];
     for (int i = 0; i < colTypes.length; ++i) {
@@ -187,7 +187,7 @@ public class NetworkTest extends Iced {
     for (int i = 0; i < colTypes.length; ++i) {
       colFormats[i] = "%s";
     }
-    String colHeaderForRowHeaders = "Destination / Message size";
+    String colHeaderForRowHeaders = "Destination";
 
     table = new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
