@@ -239,12 +239,24 @@ import java.util.concurrent.atomic.AtomicInteger;
       }
     }
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _agg == null ) ab.put4(0);
+      else {
+        ab.put4(_agg.length);
+        for(AGG a:_agg) ab.put(a);
+      }
+      ab.putA8(_gbCols);
       if( _g == null ) return ab.put4(0);
       ab.put4(_g.size());
       for( G g: _g) ab.put(g);
       return ab;
     }
     @Override public GBTask read_impl(AutoBuffer ab) {
+      int naggs = ab.get4();
+      if( naggs!=0 ) {
+        _agg = new AGG[naggs];
+        for(int i=0;i<naggs;++i) _agg[i] = ab.get(AGG.class);
+      }
+      _gbCols = ab.getA8();
       int len = ab.get4();
       if( len == 0 ) return this;
       _g = new NonBlockingHashSet<>();
@@ -610,6 +622,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     private static byte[] naMethods(AGG[] agg) {
+
       byte[] methods = new byte[agg.length];
       for(int i=0;i<agg.length;++i)
         methods[i]=agg[i]._na_handle;

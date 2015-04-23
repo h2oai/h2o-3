@@ -11,15 +11,15 @@
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"hdfs://mr-0xd6.0xdata.loc/datasets/covtype.data\" ]"
+      "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/covtype.data\" ]"
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"hdfs://mr-0xd6.0xdata.loc/datasets/covtype.data\" ]"
+      "input": "setupParse paths: [ \"hdfs://mr-0x6.0xdata.loc/datasets/covtype.data\" ]"
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"hdfs://mr-0xd6.0xdata.loc/datasets/covtype.data\"]\n  destination_key: \"covtype.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 55\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 131072"
+      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/covtype.data\"]\n  destination_key: \"covtype.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 55\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 131072"
     },
     {
       "type": "cs",
@@ -31,7 +31,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"destination_key\":\"glm-0e5d9a55-e702-474f-9af8-ba27bad8c5a0\",\"training_frame\":\"covtype.hex\",\"drop_na20_cols\":false,\"response_column\":\"C55\",\"solver\":\"ADMM\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "buildModel 'glm', {\"destination_key\":\"glm-0e5d9a55-e702-474f-9af8-ba27bad8c5a0\",\"training_frame\":\"covtype.hex\",\"drop_na20_cols\":false,\"response_column\":\"C55\",\"solver\":\"ADMM\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":false,\"link\":\"family_default\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
     },
     {
       "type": "cs",

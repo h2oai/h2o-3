@@ -15,15 +15,15 @@
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"hdfs://mr-0xd6.0xdata.loc/datasets/BigCross.data\" ]"
+      "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/BigCross.data\" ]"
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"hdfs://mr-0xd6.0xdata.loc/datasets/BigCross.data\" ]"
+      "input": "setupParse paths: [ \"hdfs://mr-0x6.0xdata.loc/datasets/BigCross.data\" ]"
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"hdfs://mr-0xd6.0xdata.loc/datasets/BigCross.data\"]\n  destination_key: \"BigCross1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 57\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 2097152"
+      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/BigCross.data\"]\n  destination_key: \"BigCross1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 57\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 2097152"
     },
     {
       "type": "cs",
@@ -35,7 +35,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"destination_key\":\"glm-62983aab-d0ea-4fdb-af4a-3a254f47bd98\",\"training_frame\":\"BigCross1.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1\",\"solver\":\"L_BFGS\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":true,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "buildModel 'glm', {\"destination_key\":\"glm-62983aab-d0ea-4fdb-af4a-3a254f47bd98\",\"training_frame\":\"BigCross1.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1\",\"solver\":\"L_BFGS\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":true,\"link\":\"family_default\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
     },
     {
       "type": "cs",

@@ -10,6 +10,7 @@ include 'h2o-py'
 include 'h2o-assembly'
 include 'h2o-persist-hdfs'
 include 'h2o-docs'
+include 'h2o-hadoop:h2o-mapreduce-generic'
 include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
 
