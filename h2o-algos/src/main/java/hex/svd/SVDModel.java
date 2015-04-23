@@ -6,6 +6,7 @@ import hex.ModelMetrics;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.util.TwoDimTable;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
@@ -15,6 +16,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public long _seed = System.nanoTime();        // RNG seed
     public Key<Frame> _ukey;
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
+    public boolean _recover_pca = false;   // Recover principal components of Gram matrix at the end?
   }
 
   public static class SVDOutput extends Model.Output {
@@ -26,6 +28,11 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
     // Frame key for left singular vectors (U)
     public Key<Frame> _ukey;
+
+    // PCA output
+    public double[] _std_deviation;
+    public TwoDimTable _eigenvectors;
+    public TwoDimTable _pc_importance;
 
     // If standardized, mean of each numeric data column
     public double[] _normSub;

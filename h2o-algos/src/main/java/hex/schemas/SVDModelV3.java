@@ -1,10 +1,7 @@
 package hex.schemas;
 
 import hex.svd.SVDModel;
-import water.api.API;
-import water.api.KeyV3;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
+import water.api.*;
 
 public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDParameters, SVDV3.SVDParametersV3, SVDModel.SVDOutput, SVDModelV3.SVDModelOutputV3> {
   public static final class SVDModelOutputV3 extends ModelOutputSchema<SVDModel.SVDOutput, SVDModelOutputV3> {
@@ -17,6 +14,15 @@ public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDPa
 
     @API(help = "Frame key of left singular vectors")
     public KeyV3.FrameKeyV3 ukey;
+
+    @API(help = "Standard deviation of each principal component")
+    public double[] std_deviation;
+
+    @API(help = "Principal components matrix")
+    public TwoDimTableBase eigenvectors;
+
+    @API(help = "Importance of each principal component")
+    public TwoDimTableBase pc_importance;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
