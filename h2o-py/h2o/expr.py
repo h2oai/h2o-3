@@ -177,9 +177,9 @@ class Expr(object):
       print tabulate.tabulate(t_data, headers=headers)
       print
 
-#  def __repr__(self):
-#    self.show()
-#    return ""
+  # def __repr__(self):
+  #    self.show()
+  #    return ""
 
   # Compute summary data
   def summary(self):
@@ -203,7 +203,7 @@ class Expr(object):
       stddev = sqrt(ssq / (n - 1)) if t != 'enum' else None
       return {'type': t, 'mins': mins, 'maxs': maxs, 'mean': mean, 'sigma': stddev, 'zeros': zeros, 'missing': missing}
     if self._summary: return self._summary
-    j = h2o.frame(self._data)
+    j = h2o.frame_summary(self._data)
     self._summary = j['frames'][0]['columns'][0]
     return self._summary
 
@@ -214,7 +214,7 @@ class Expr(object):
       elif  isinstance(i, tuple): return self.eager()[i[0]][i[1]]
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     elif self.is_remote() or self.is_pending():
-      if    isinstance(i, int)  : return Expr("[", self, Expr(("null", i)))  # column slicing
+      if    isinstance(i, int)  : return Expr("[", self, Expr(("()", i)))  # column slicing
       elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
@@ -232,6 +232,8 @@ class Expr(object):
   def _simple_expr_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return Expr(op, Expr(i), self)
     raise NotImplementedError
+
+  def logical_negation(self):  return Expr("not", self)
 
   def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
@@ -385,7 +387,7 @@ class Expr(object):
         for col in cols: cmd += " '" + str(col) + "'"
         cmd += ")"
         return cmd
-      if c == "null":
+      if c == "()":
         cmd = "(cbind"
         for col in self._left._data: cmd += " '" + str(col) + "'"
         cmd += ")"
@@ -396,16 +398,16 @@ class Expr(object):
     r = child._data[0]
     if isinstance(r, int): return "#" + str(r)
     if isinstance(r, slice): return "(: #"+str(r.start)+" #"+str(r.stop)+")"
-    if r == "null": return '"null"'
+    if r == "()": return '()'
     raise NotImplementedError
 
   def multi_dim_slice_cols_cmd(self, child):
-    if   isinstance(self._left._data, list): return '"null"'
+    if   isinstance(self._left._data, list): return '()'
     elif isinstance(self._left._data,unicode):
       c = child._data[1]
       if isinstance(c, int): return "#" + str(c)
       if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
-      if c == "null": return '"null"'
+      if c == "()": return '()'
     raise NotImplementedError
 
   def _do_it(self):
@@ -492,6 +494,10 @@ class Expr(object):
       if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
       else:                 pass
 
+    elif self._op == "not":
+      if left.is_local():   self._data = [not x for x in left._data]
+      else:                 pass
+
     elif self._op == "sign":
       if left.is_local():   self._data = [cmp(x,0) for x in left._data]
       else:                 pass
@@ -535,7 +541,7 @@ class Expr(object):
         num_obs = len(left._data)
         var = sum_of_sq / (num_obs - 1)
         self._data = var if self._op == "var" else var**0.5
-      else:                 __CMD__ += " \"null\" %TRUE \"everything\"" if self._op == "var" else " %TRUE"
+      else:                 __CMD__ += " () %TRUE \"everything\"" if self._op == "var" else " %TRUE"
 
     elif self._op == "is.factor":
       if left.is_local():   raise NotImplementedError

@@ -30,11 +30,11 @@ myY = "C1"
 myX = setdiff(names(data.hex), myY)
 
 # GLM
-data.glm <- h2o.glm(myX, myY, training_frame = data.hex, family = "gaussian", solver = "L_BFGS", balance_classes = TRUE)
+data.glm <- h2o.glm(myX, myY, training_frame = data.hex, family = "gaussian", solver = "L_BFGS")
 data.glm
 
 # GBM Model
-data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, loss = 'AUTO')
+data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, distribution = 'AUTO')
 print(data.gbm)
 
 # DL Model

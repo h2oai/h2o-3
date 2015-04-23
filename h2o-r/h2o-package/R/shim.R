@@ -258,7 +258,6 @@ h2o.shim <- function(enable = TRUE) {
       # Map for supported deprecated parameters
       .gbm.dep.map <- c("data"                    = "training_frame",
                         "key"                     = "destination_key",
-                        "distribution"            = "loss",
                         "n.trees"                 = "ntrees",
                         "interaction.depth"       = "max_depth",
                         "n.minobsinnode"          = "min_rows",
@@ -485,7 +484,7 @@ h2o.shim <- function(enable = TRUE) {
       # Fix up parameters for H2ODev
       paramsDev <- .dep.params(paramsIn, .km.dep.map)
       paramsDev <- append(paramsDev, list(...))
-      m <- do.call("h2o.dev.kmeans", dots)
+      m <- do.call("h2o.dev.kmeans", list(...))
       m@model <- .dep.model(m)
       m
     },
@@ -670,7 +669,7 @@ h2o.shim <- function(enable = TRUE) {
           model$precision <- scores$precision
           model$recall <- scores$recall
           model$mcc <- scores$absolute_MCC
-          model$max_per_class_error <- 1 - scores$min_per_class_correct
+          model$max_per_class_error <- 1 - scores$min_per_class_accuracy
         }
       }
     } else

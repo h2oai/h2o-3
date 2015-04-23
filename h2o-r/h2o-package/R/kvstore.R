@@ -41,6 +41,7 @@
 #' h2o.ls(localH2O)
 #' @export
 h2o.ls <- function(conn = h2o.getConnection()) {
+  gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
@@ -56,7 +57,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #'
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
-#' @param timeout_secs Timeout in seconds. Default is 5 minutes (300s).
+#' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' library(h2o)
@@ -67,7 +68,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
 #' @export
-h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=120) {
+h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
   tryCatch(
     invisible(.h2o.__remoteSend(conn, .h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
     error = function(e) {
@@ -94,6 +95,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
+  if( is(keys, "H2OFrame") ) keys <- keys@key
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
@@ -143,9 +145,16 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #' @export
 h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
+  t <- !.is.eval(data)
+  if( t ) {
+    tk <- data@key
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = tk)
+  }
+
   .key.validate(key)
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  res <- .h2o.nary_frame_op("rename", data, key, key = key, linkToGC = FALSE)
+  expr <- paste0("(= !", key, " %", data@key, ")")
+  res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
   .byref.update.frame(res)
 }
 
@@ -203,6 +212,10 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  MetricsClass <- paste0("H2O", model_category, "Metrics")
+  # setup the metrics objects inside of model...
+  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
@@ -254,7 +267,6 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-
   .newH2OObject(Class         = Class,
                 conn          = conn,
                 key           = json$key$name,

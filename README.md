@@ -2,7 +2,19 @@
 
 H2O makes Hadoop do math! H2O scales statistics, machine learning and math over BigData. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Excel & JSON so that BigData enthusiasts & experts can explore, munge, model and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O has a vision of online scoring and modeling in a single platform.
 
-## 1. Product Vision for first cut
+* [Product Vision for First Cut](#Vision)
+* [Downloading H2O Dev](#Downloading)
+* [Open Source Resources](#Resources)
+* [Using H2O Dev Artifacts](#Artifacts)
+* [Building H2O Dev](#Building)
+* [Launching H2O after Building](#Launching)
+* [Building H2O on Hadoop](#BuildingHadoop)
+* [Sparkling Water](#Sparkling)
+* [Documentation](#Documentation)
+* [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
+
+<a name="Vision"></a>
+## 1. Product Vision for First Cut
 
 H2O product, the Analytics Engine will scale Classification and Regression.
 - RandomForest, Gradient Boosted Methods (GBM), Generalized Linear Modeling (GLM), Deep Learning and K-Means available over R / REST / JSON-API
@@ -39,6 +51,7 @@ Users will use JSON/REST-api via H2O.R through connects the Analytics Engine int
 
 -----
 
+<a name="Downloading"></a>
 ## 2. Downloading H2O Dev
 
 While most of this README is oriented towards developers who do their own builds, most H2O users just download and use a pre-built version.  If that's you, just follow these steps:
@@ -48,7 +61,30 @@ While most of this README is oriented towards developers who do their own builds
 1.  Scroll down to find the section for H2O Dev
 1.  Click on the version you want (generally the latest numbered release)
 
-## 3. Using H2O Dev Artifacts
+<a name="Resources"></a>
+## 3. Open Source Resources
+
+*  Github
+    * <https://github.com/h2oai/h2o-dev>
+*  JIRA (PUBDEV contains issues for the current H2O Dev project; PUB contains issues for the legacy H2O project)
+    * <http://jira.h2o.ai>
+*  h2ostream community forum (this is where to ask a question)
+    * Web: <https://groups.google.com/d/forum/h2ostream>
+    * Mail to: [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com)
+*  Documentation
+    * Bleeding edge nightly build page: <http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html>
+    * FAQ: <http://h2o.ai/product/faq/>
+*  Download (pre-built packages)
+    * <http://h2o.ai/download>
+*  Jenkins
+    * <http://test.h2o.ai>
+*  Website
+    * <http://h2o.ai>
+*  Follow us on Twitter, [@h2oai](https://twitter.com/h2oai)
+
+
+<a name="Artifacts"></a>
+## 4. Using H2O Dev Artifacts
 
 Every nightly build publishes R, python, java and scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
 
@@ -75,7 +111,7 @@ dependencies {
 }
 ```
 
-See the latest H2O Dev [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html) for information about installing nightly build artifacts.
+See the latest H2O Dev bleeding edge [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html) for information about installing nightly build artifacts.
 
 See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use java artifacts with gradle.
 
@@ -83,13 +119,14 @@ See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) 
 
 -----
 
-## 4. Building H2O Dev
+<a name="Building"></a>
+## 5. Building H2O Dev
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
-### 4.1. Building from the command line (Quick Start)
+### 5.1. Building from the command line (Quick Start)
 
-The assumption is the setup steps described in section 4.2 and beyond have been followed.
+The assumption is the setup steps described in section 5.2 and beyond have been followed.
 
 #### Recipe 1:  Fresh clone and build, skipping tests, and run h2o
 
@@ -134,7 +171,7 @@ Skip tests by putting '-x test' at the end the gradle build command line.  Tests
 
 Syncing smalldata is not strictly required after each pull, but if tests fail due to missing data files then this is the first troubleshooting step to try.  Syncing smalldata grabs data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check these files in.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
 
-### 4.2. Setup on all Platforms
+### 5.2. Setup on all Platforms
 
 ##### Install required python packages (using `sudo` if necessary)
 
@@ -142,13 +179,11 @@ Syncing smalldata is not strictly required after each pull, but if tests fail du
     `pip install tabulate`
     `pip install wheel`
 
-### 4.3. Setup on Windows
+### 5.3. Setup on Windows
 
-##### Step 1: Download and install [Python](https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi) for Windows. 
-  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the Python path.
+##### Step 1: Download and install [WinPython](https://winpython.github.io). 
+  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://github.com/winpython/winpython/wiki/Environment) with the WinPython path.
   
-  `C:\Python27\;C:\Python27\Scripts\`
-
 ###### Step 2: Install required Python packages:
 
     `pip install grip`
@@ -224,7 +259,7 @@ Download and update h2o-dev source codes:
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
 
-### 4.4. Setup on OS X
+### 5.4. Setup on OS X
 
 If you don't have [Homebrew](http://brew.sh/), we recommend installing it.  It makes package management for OS X easy.
 
@@ -282,7 +317,7 @@ OS X should have with Git installed. To download and update h2o-dev source codes
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
-### 4.5. Setup on Ubuntu 14.04
+### 5.5. Setup on Ubuntu 14.04
 
 ##### Step 1. Install Node.js, npm, and bower:
 
@@ -321,7 +356,7 @@ Download and update h2o-dev source codes:
 
 > Make sure that you are not running as root, since `bower` will reject such a run.
 
-### 4.6. Setup on Ubuntu 13.10
+### 5.6. Setup on Ubuntu 13.10
 
 ##### Step 1. Install Node.js, npm, and bower
 
@@ -336,7 +371,7 @@ On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default n
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
-### 4.7. Setting up your preferred IDE environment
+### 5.7. Setting up your preferred IDE environment
 
 For users of Intellij's IDEA, generate project files with:
 
@@ -347,12 +382,14 @@ For users of Eclipse, generate project files with:
     ./gradlew eclipse
 
 
-## 5. Launching H2O after building
+<a name="Launching"></a>
+## 6. Launching H2O after Building
 
     java -jar build/h2o.jar
 
 
-## 6. Building H2O on Hadoop
+<a name="BuildingHadoop"></a>
+## 7. Building H2O on Hadoop
 
 Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-dev.
 
@@ -375,9 +412,58 @@ You need to:
 3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
 4.  Add the new hadoop version to wget list in h2o-dist/index.html
 
+### Debugging HDFS
+
+These are the required steps to debug HDFS in IDEA as a standalone H2O process.
+
+Debugging H2O on Hadoop as a `hadoop jar` hadoop mapreduce job is a non-trivial thing to do (read: I've never been able to do it and have no idea how; the obvious thing to try of attaching a remote debugger has never worked for me).
+
+However, what you can do relatively easily is tweak the gradle settings for the project so that H2OApp has HDFS as a dependency.  Here are the steps:
+
+1.  Make the following changes to gradle build files below
+    *  Change hadoop-client version in h2o-persist-hdfs to the desired version     
+    *  Add h2o-persist-hdfs as a dependency to h2o-app
+1.  Close IDEA
+1.  ./gradlew cleanIdea
+1.  ./gradlew idea
+1.  Re-open IDEA
+1.  Run or debug H2OApp, and you will now be able to read from HDFS inside the IDE debugger
+
+h2o-persist-hdfs is normally only a dependency of the assembly modules, since those are not used by any downstream modules.  We want the final module to define its own version of hdfs if any is desired.
+
+Note this example is for MapR 4, which requires the additional org.json dependency to work properly.
+
+```
+$ git diff
+diff --git a/h2o-app/build.gradle b/h2o-app/build.gradle
+index af3b929..097af85 100644
+--- a/h2o-app/build.gradle
++++ b/h2o-app/build.gradle
+@@ -8,5 +8,6 @@ dependencies {
+   compile project(":h2o-algos")
+   compile project(":h2o-core")
+   compile project(":h2o-genmodel")
++  compile project(":h2o-persist-hdfs")
+ }
+ 
+diff --git a/h2o-persist-hdfs/build.gradle b/h2o-persist-hdfs/build.gradle
+index 41b96b2..6368ea9 100644
+--- a/h2o-persist-hdfs/build.gradle
++++ b/h2o-persist-hdfs/build.gradle
+@@ -2,5 +2,6 @@ description = "H2O Persist HDFS"
+ 
+ dependencies {
+   compile project(":h2o-core")
+-  compile("org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0")
++  compile("org.apache.hadoop:hadoop-client:2.4.1-mapr-1408")
++  compile("org.json:org.json:chargebee-1.0")
+ }
+```
+
 -----
 
-## 7. Sparkling Water
+<a name="Sparkling"></a>
+## 8. Sparkling Water
 
 Sparkling Water combines two open source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest, accessible from Spark workflows. Spark users are provided with options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
 
@@ -388,7 +474,8 @@ Here are links to resources for Sparkling Water:
 * [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
 * [Developer documentaton](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
 
-## 8. Documentation
+<a name="Documentation"></a>
+## 9. Documentation
 
 ### Generate REST API documentation 
 
@@ -401,9 +488,14 @@ To generate the REST API documentation, use the following commands:
 
 The default location for the generated documentation is `build/docs/REST`. 
 
+### Bleeding edge build documentation
+
+Documentation for each bleeding edge nightly build is reachable from the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html).
+
 -----
 -----
 
+<a name="Community"></a>
 ## Community
 
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
@@ -434,7 +526,6 @@ Viraj Parmar
 Kendall Harris
 Anand Avati
 Jessica Lanford
-Yan Zou
 Alex Tellez
 Allison Washburn
 Amy Wang
@@ -444,9 +535,13 @@ Neeraja Madabhushi
 Sebastian Vidrio
 Ben Sabrin
 Matt Dowle
+Mark Landry
+Tony D'Amato
+Erin LeDell
 
 ```
 
+<a name="Advisors"></a>
 ## Advisors
 
 Scientific Advisory Council
@@ -465,6 +560,7 @@ Chris Pouliot
 Dhruba Borthakur
 ```
 
+<a name="Investors"></a>
 ## Investors
 
 ```

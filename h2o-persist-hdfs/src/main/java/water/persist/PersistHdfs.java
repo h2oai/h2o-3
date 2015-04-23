@@ -60,6 +60,7 @@ public final class PersistHdfs extends Persist {
   
   // Loading HDFS files
   public PersistHdfs() { _iceRoot = null; }
+  public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
 
   // Loading/Writing ice to HDFS
   public PersistHdfs(URI uri) {
@@ -90,6 +91,37 @@ public final class PersistHdfs extends Persist {
   }*/
 
   @Override public byte[] load(final Value v) {
+    //
+    // !!! WARNING !!!
+    //
+    // tomk: Sun Apr 19 13:11:51 PDT 2015
+    //
+    //
+    // This load implementation behaved *HORRIBLY* with S3 when the libraries were updated.
+    //    Behaves well (and is the same set of libraries as H2O-1):
+    //        org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0
+    //        net.java.dev.jets3t:jets3t:0.6.1
+    //
+    //    Behaves abysmally:
+    //        org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0
+    //        net.java.dev.jets3t:jets3t:0.9.2
+    //
+    //
+    // I did some debugging.
+    //
+    // What happens in the new libraries is the connection type is a streaming connection, and
+    // the entire file gets read on close() even if you only wanted to read a chunk.  The result
+    // is the same data gets read over and over again by the underlying transport layer even
+    // though H2O only thinks it's asking for (and receiving) each piece of data once.
+    //
+    // I suspect this has something to do with the 'Range' HTTP header on the GET, but I'm not
+    // entirely sure.  Many layers of library need to be fought through to really figure it out.
+    //
+    // Anyway, this will need to be rewritten from the perspective of how to properly use the
+    // new library version.  Might make sense to go to straight to 's3a' which is a replacement
+    // for 's3n'.
+    //
+
     final byte[] b = MemoryManager.malloc1(v._max);
     Key k = v._key;
     long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
@@ -101,12 +133,21 @@ public final class PersistHdfs extends Persist {
         FSDataInputStream s = null;
         try {
           s = fs.open(p);
-          // NOTE:
-          // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
-          // Google API's simple seek has better performance
-          // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
-          ByteStreams.skipFully(s, skip_);
-          ByteStreams.readFully(s, b);
+          if (p.toString().toLowerCase().startsWith("maprfs:")) {
+            // MapR behaves really horribly with the google ByteStreams code below.
+            // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
+            // Use the HDFS API here directly instead.
+            s.seek(skip_);
+            s.readFully(b);
+          }
+          else {
+            // NOTE:
+            // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
+            // Google API's simple seek has better performance
+            // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
+            ByteStreams.skipFully(s, skip_);
+            ByteStreams.readFully(s, b);
+          }
           assert v.isPersisted();
         } finally {
           FileUtils.close(s);
@@ -114,7 +155,8 @@ public final class PersistHdfs extends Persist {
         return null;
       }
     }, true, v._max);
-  return b;
+
+    return b;
   }
 
   @Override public void store(Value v) {

@@ -1,5 +1,5 @@
 #options(echo=F)
-options(repos = "http://cran.stat.ucla.edu")
+options(repos = "http://cran.cnr.berkeley.edu/")
 
 usePackage<-
 function(p) {

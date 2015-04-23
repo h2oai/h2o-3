@@ -18,10 +18,10 @@ test.GBM.bernoulli <- function(conn) {
   
   # Train H2O GBM Model:
   ntrees <- 100
-  Log.info(paste("H2O GBM with parameters:\nloss = 'bernoulli', ntrees = ", ntrees, ", max_depth = 5, min_rows = 10, learn_rate = 0.1\n", sep = ""))
-  prostate.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, loss = "bernoulli", ntrees = ntrees, max_depth = 5, min_rows = 10, learn_rate = 0.1)
+  Log.info(paste("H2O GBM with parameters:\ndistribution = 'bernoulli', ntrees = ", ntrees, ", max_depth = 5, min_rows = 10, learn_rate = 0.1\n", sep = ""))
+  prostate.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, distribution = "bernoulli", ntrees = ntrees, max_depth = 5, min_rows = 10, learn_rate = 0.1)
 
-  # Train R GBM Model: Using Gaussian loss function for binary outcome OK... Also more comparable to H2O, which uses MSE
+  # Train R GBM Model: Using Gaussian distribution family for binary outcome OK... Also more comparable to H2O, which uses MSE
   Log.info("R GBM with same parameters and bag.fraction = 1\n")
   prostate.r <- gbm(CAPSULE ~ ., data = prostate.data[,-1], distribution = "bernoulli", 
                    n.trees = ntrees, interaction.depth = 5, n.minobsinnode = 10, shrinkage = 0.1, bag.fraction = 1)
@@ -50,8 +50,8 @@ test.GBM.bernoulli <- function(conn) {
   # PUBDEV-515
   f0 = log(mean(prostate.data$CAPSULE)/(1-mean(prostate.data$CAPSULE)))
   print(f0)
-  print(prostate.h2o@model$initF)
-  expect_equal(prostate.h2o@model$initF, f0, tolerance=1e-4) ## check the intercept term
+  print(prostate.h2o@model$init_f)
+  expect_equal(prostate.h2o@model$init_f, f0, tolerance=1e-4) ## check the intercept term
 
   testEnd()
 }

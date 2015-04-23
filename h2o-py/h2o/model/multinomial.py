@@ -13,4 +13,3 @@ class H2OMultinomialModel(ModelBase):
 class H2OMultinomialModelMetrics(object):
   def __init__(self, metric_json):
     self._metric_json = metric_json
-    

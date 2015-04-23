@@ -9,7 +9,7 @@ smtreesH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/gbm_test/smtrees.csv")
 smtreesR <- read.csv(locate("smalldata/gbm_test/smtrees.csv"))
 
 Log.info("Test H2O generation of MSE for GBM")
-fith2o <- h2o.gbm(x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, loss="gaussian", min_rows=2, learn_rate=.1, training_frame=smtreesH2O)
+fith2o <- h2o.gbm(x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, distribution="gaussian", min_rows=2, learn_rate=.1, training_frame=smtreesH2O)
 
 #Reported MSE from H2O through R
 err <- as.data.frame(fith2o@model$scoring_history$training_MSE)
@@ -27,7 +27,7 @@ Log.info(paste("H2O Reported MSE  : ", REPMSE, "\t\t", "R Expected MSE   : ", EX
 
 Log.info("Compare model statistics in R to model statistics in H2O")
 expect_equal(length(fith2o@model$scoring_history$training_MSE), 3)
-expect_equal(fith2o@model$initF, mean(smtreesH2O$vol), tolerance=1e-4) ## check the intercept term
+expect_equal(fith2o@model$init_f, mean(smtreesH2O$vol), tolerance=1e-4) ## check the intercept term
 expect_equal(REPMSE, EXPMSE, tolerance=1e-4)
 expect_equal(REPMSE>0, TRUE);
 

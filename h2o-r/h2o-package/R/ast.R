@@ -205,7 +205,7 @@ function(a, name=NULL) {
   } else {
     res <- eval(a)
     if (is.null(res)) {
-      "\"null\""
+      "()"
     } else if (is.vector(res)) {
       if (length(res) > 1L) {
         if (is.numeric(res)) res <- as.numeric(res)

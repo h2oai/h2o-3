@@ -3,9 +3,12 @@ This module implements the communication REST layer for the python <-> H2O conne
 """
 
 import os
+import os.path
 import re
 import urllib
 import json
+import random
+import numpy as np
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -147,22 +150,98 @@ if __name__ == "__main__":
 
 So each test must have an ip and port
 """
+def dim_check(data1, data2):
+  """
+  Check that the dimensions of the data1 and data2 are the same
+  :param data1: an H2OFrame, H2OVec or Expr
+  :param data2: an H2OFrame, H2OVec or Expr
+  :return: None
+  """
+  data1_rows, data1_cols = data1.dim()
+  data2_rows, data2_cols = data2.dim()
+  assert data1_rows == data2_rows and data1_cols == data2_cols, \
+    "failed dim check! data1_rows:{0} data2_rows:{1} data1_cols:{2} data2_cols:{3}".format(data1_rows, data2_rows,
+                                                                                           data1_cols, data2_cols)
+def np_comparison_check(h2o_data, np_data, num_elements):
+  """
+  Check values achieved by h2o against values achieved by numpy
+  :param h2o_data: an H2OFrame, H2OVec or Expr
+  :param np_data: a numpy array
+  :param num_elements: number of elements to compare
+  :return: None
+  """
+  rows, cols = h2o_data.dim()
+  for i in range(num_elements):
+    r = random.randint(0,rows-1)
+    c = random.randint(0,cols-1)
+    h2o_val = as_list(h2o_data[r,c])
+    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
+    np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
+    assert np.absolute(h2o_val - np_val) < 1e-6, \
+      "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
+
+def value_check(h2o_data, local_data, num_elements, col=None):
+  """
+  Check that the values of h2o_data and local_data are the same. In a testing context, this could be used to check
+  that an operation did not alter the original h2o_data.
+  :param h2o_data: an H2OFrame, H2OVec or Expr
+  :param local_data: a list of lists (row x col format)
+  :param num_elements: number of elements to check
+  :param col: an optional integer that specifies the particular column to check
+  :return: None
+  """
+  rows, cols = h2o_data.dim()
+  for i in range(num_elements):
+    r = random.randint(0,np.minimum(99,rows-1))
+    c = random.randint(0,cols-1) if not col else col
+    h2o_val = as_list(h2o_data[r,c])
+    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
+    local_val = local_data[r][c]
+    assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
+
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
 
-def ipy_notebook_exec(path):
+def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
-  for block in notebook["cells"]:
-    cmd = ''
-    for line in block["source"]:
+  program = ''
+  for block in ipy_blocks(notebook):
+    prev_line_was_def_stmnt = False
+    for line in ipy_lines(block):
       if "h2o.init" not in line:
-        if "def " in line:
-          cmd += line
-          cmd += "  import h2o\n" # this is a hack for the citiBike ipython notebook, unless we enforce this def spacing
-          # standard in future notebooks
-        else: cmd += line
-    exec(cmd)
+        if prev_line_was_def_stmnt:
+          program += ipy_get_leading_spaces(line) + 'import h2o\n'
+          prev_line_was_def_stmnt = False
+        program += line if '\n' in line else line + '\n'
+        if "def " in line: prev_line_was_def_stmnt = True
+  if save_and_norun:
+    with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
+      f.write(program)
+  else:
+    exec(program)
+
+def ipy_blocks(notebook):
+  if 'worksheets' in notebook.keys():
+    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+  elif 'cells' in notebook.keys():
+    return notebook['cells']
+  else:
+    raise NotImplementedError, "ipython notebook cell/block json format not handled"
+
+def ipy_lines(block):
+  if 'source' in block.keys():
+    return block['source']
+  elif 'input' in block.keys():
+    return block['input']
+  else:
+    raise NotImplementedError, "ipython notebook source/line json format not handled"
+
+def ipy_get_leading_spaces(line):
+  spaces = ''
+  for c in line:
+    if c in [' ', '\t']: spaces += c
+    else: return spaces
 
 def remove(key):
   """
@@ -174,7 +253,19 @@ def remove(key):
   if key is None:
     raise ValueError("remove with no key is not supported, for your protection")
 
-  H2OConnection.delete("DKV/" + key)
+  if isinstance(key, H2OFrame):
+    key._vecs=[]
+
+  elif isinstance(key, H2OVec):
+    H2OConnection.delete("DKV/"+str(key.key()))
+    key._expr=None
+    key=None
+
+  else:
+    H2OConnection.delete("DKV/" + key)
+  #
+  # else:
+  #   raise ValueError("Can't remove objects of type: " + key.__class__)
 
 def rapids(expr):
   """
@@ -197,6 +288,15 @@ def frame(key):
   """
   return H2OConnection.get_json("Frames/" + key)
 
+def frame_summary(key):
+  """
+  Retrieve metadata and summary information for a key that points to a Frame/Vec
+  :param key: A pointer to a Frame/Vec in H2O
+  :return: Meta and summary info on the frame
+  """
+  # frames_meta = H2OConnection.get_json("Frames/" + key)
+  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  return frame_summary
 
 # Non-Mutating cbind
 def cbind(left,right):
@@ -237,15 +337,23 @@ def cbind(left,right):
   return result
 
 
-def init(ip="localhost", port=54321):
+def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
+         license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
   """
   Initiate an H2O connection to the specified ip and port.
 
-  :param ip: A IP address, default is "localhost".
-  :param port: A port, default is 54321.
+  :param ip: An IP address, default is "localhost"
+  :param port: A port, default is 54321
+  :param size: THe expected number of h2o instances (ignored if start_h2o is True)
+  :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
+  :param enable_assertions: If start_h2o, pass `-ea` as a VM option.s
+  :param license: If not None, is a path to a license file.
+  :param max_mem_size_GB: Maximum heap size (jvm option Xmx) in gigabytes.
+  :param min_mem_size_GB: Minimum heap size (jvm option Xms) in gigabytes.
+  :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
   :return: None
   """
-  H2OConnection(ip=ip, port=port)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check)
   return None
 
 def export_file(frame,path,force=False):
@@ -349,6 +457,7 @@ def as_list(data):
       frm.append(tmp)
     return frm
 
+def logical_negation(data) : return data.logical_negation()
 
 def cos(data)     : return _simple_un_math_op("cos", data)
 def sin(data)     : return _simple_un_math_op("sin", data)

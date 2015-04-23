@@ -48,7 +48,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      *  mean((yi-p)^2)
      *  This is what is stored in _mse_train[0]
      * */
-    public double _initF;
+    public double _init_f;
 
     /** Number of trees actually in the model (as opposed to requested) */
     public int _ntrees;

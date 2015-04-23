@@ -1,6 +1,7 @@
 ext {
   hadoopVersion = 'mapr3.1.1'
   hadoopMavenArtifactVersion = '2.4.1-mapr-1408'
+  maprExtraDependency = 'org.json:org.json:chargebee-1.0'
 }
 
 apply from: '../assemblyjar.gradle'
