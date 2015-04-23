@@ -1514,7 +1514,10 @@ public abstract class Neurons {
     private int _rows;
     DenseRowMatrix(int rows, int cols) { this(new float[cols*rows], rows, cols); }
     DenseRowMatrix(float[] v, int rows, int cols) { _data = v; _rows = rows; _cols = cols; }
-    @Override public float get(int row, int col) { assert(row<_rows && col<_cols); return _data[row*_cols + col]; }
+    @Override public float get(int row, int col) {
+      assert(row<_rows && col<_cols) : "checking: " + row + " < " + _rows + " && " + col + " < " + _cols;
+      return _data[row*_cols + col];
+    }
     @Override public void set(int row, int col, float val) { assert(row<_rows && col<_cols); _data[row*_cols + col] = val; }
     @Override public void add(int row, int col, float val) { assert(row<_rows && col<_cols); _data[row*_cols + col] += val; }
     @Override public int cols() { return _cols; }
