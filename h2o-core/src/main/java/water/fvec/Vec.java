@@ -306,18 +306,18 @@ public class Vec extends Keyed<Vec> {
       espc[i] = ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
-    Vec v=v0;
     int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
     if( v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
       Key newKey = Key.make(".makeConRebalance" + chunks);
-      RebalanceDataSet rb = new RebalanceDataSet(new Frame(v0), newKey, chunks);
+      Frame f = new Frame(v0);
+      RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
       H2O.submitTask(rb);
       rb.join();
       Keyed.remove(v0._key);
-      v = ((Frame)DKV.getGet(newKey)).anyVec();
+      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(null); // this is gross.
+      Keyed.remove(newKey);
     }
-    DKV.put(v._key,v);
-    return v;
+    return v0;
   }
 
   /** Make a new vector with the same size and data layout as the current one,
