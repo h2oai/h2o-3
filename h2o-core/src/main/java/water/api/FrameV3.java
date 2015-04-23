@@ -200,7 +200,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
 
   /** TODO: refactor together with fillFromImpl(). */
   FrameV3(Frame fr, long off2, int len2) {
-    if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
+    // if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
     key = new FrameKeyV3(fr._key);
     _fr = fr;
@@ -236,7 +236,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   public FrameV3 fillFromImpl(Frame f, long off2, int len2, boolean force_summary) {
     // TODO: pass in offset and column from Inspect page
     // if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
-    if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
+    // if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
     this._fr = f;
     this.key = new FrameKeyV3(f._key);
