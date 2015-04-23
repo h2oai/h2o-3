@@ -4,6 +4,9 @@ Setup and Installation
 Prerequisites:
     
     - Python 2.7
+    - Numpy 1.9.2
+
+  For windows users, please grab a .whl from http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
 
 This module depends on *requests* and *tabulate* modules. Both of which are available on pypi.
 
