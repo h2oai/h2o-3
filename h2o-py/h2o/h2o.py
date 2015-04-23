@@ -207,19 +207,14 @@ def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
   program = ''
   for block in ipy_blocks(notebook):
-    prev_line_was_def_stmnt = False
     for line in ipy_lines(block):
       if "h2o.init" not in line:
-        if prev_line_was_def_stmnt:
-          program += ipy_get_leading_spaces(line) + 'import h2o\n'
-          prev_line_was_def_stmnt = False
         program += line if '\n' in line else line + '\n'
-        if "def " in line: prev_line_was_def_stmnt = True
   if save_and_norun:
     with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
       f.write(program)
   else:
-    exec(program)
+    exec(program, globals())
 
 def ipy_blocks(notebook):
   if 'worksheets' in notebook.keys():
@@ -236,12 +231,6 @@ def ipy_lines(block):
     return block['input']
   else:
     raise NotImplementedError, "ipython notebook source/line json format not handled"
-
-def ipy_get_leading_spaces(line):
-  spaces = ''
-  for c in line:
-    if c in [' ', '\t']: spaces += c
-    else: return spaces
 
 def remove(key):
   """
