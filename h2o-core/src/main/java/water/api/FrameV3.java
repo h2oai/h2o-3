@@ -204,7 +204,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     if( len2==0 ) len2=100;     // Default length if zero passed
     key = new FrameKeyV3(fr._key);
     _fr = fr;
-    row_offset = off2-1;
+    row_offset = off2;
     rows = fr.numRows();
     row_count = (int)Math.min(len2,rows);
     byte_size = fr.byteSize();
@@ -229,22 +229,21 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   // Custom adapters go here
 
   @Override public FrameV3 fillFromImpl(Frame f) {
-    return fillFromImpl(f, ColV2.NO_SUMMARY);
+    return fillFromImpl(f, 1, (int)f.numRows(), ColV2.NO_SUMMARY);
   }
 
   // Version&Schema-specific filling from the impl
-  public FrameV3 fillFromImpl(Frame f, boolean force_summary) {
+  public FrameV3 fillFromImpl(Frame f, long off2, int len2, boolean force_summary) {
+    // TODO: pass in offset and column from Inspect page
+    // if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
+    if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
+    if( len2==0 ) len2=100;     // Default length if zero passed
     this._fr = f;
     this.key = new FrameKeyV3(f._key);
     this.checksum = _fr.checksum();
-    row_offset = 0;
+    row_offset = off2;
     rows = _fr.numRows();
-    // TODO: pass in offset and column from Inspect page
-    // if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
-    if( row_offset == 0 ) row_offset = 1;     // 1-based row-numbering from REST, so default offset is 1
-    if( row_count == 0 ) row_count = 100;
-    row_offset = row_offset -1;                // 0-based row-numbering
-    row_count = (int)Math.min(row_count,rows);
+    row_count = (int)Math.min(len2,rows);
     byte_size = _fr.byteSize();
     columns = new ColV2[_fr.numCols()];
     Key[] keys = _fr.keys();
