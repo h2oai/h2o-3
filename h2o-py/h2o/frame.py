@@ -336,9 +336,7 @@ class H2OFrame:
 
     # multi-dimensional slicing via 2-tuple
     if isinstance(i, tuple):
-      j = h2o.frame(self.send_frame())
-      fr = j['frames'][0]
-      veckeys = [str(v['name']) for v in fr['vec_keys']]
+      veckeys = [str(v._expr._data) for v in self._vecs]
       left = Expr(veckeys)
       rite = Expr((i[0], i[1]))
       return Expr("[", left, rite, length=2)
@@ -408,23 +406,27 @@ class H2OFrame:
 
   def _simple_frames_bin_op(self, data, op):
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data.send_frame(), length=data.nrow()))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
-    elif isinstance(data, Expr)        : return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
-    elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
-    elif isinstance(data, str)         : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr("cbind", Expr(data._vecs)))
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr("cbind", Expr([data])))
+    elif isinstance(data, Expr)        : return Expr(op, Expr("cbind",Expr(self._vecs)),data)
+    elif isinstance(data, (int, float)): return Expr(op, Expr("cbind",Expr(self._vecs)),Expr(data))
+    elif isinstance(data, str)         : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr(None, data))
     else: raise NotImplementedError
 
   def _simple_frames_bin_rop(self, data, op):
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, Expr)        : return Expr(op, data, Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), length=self.nrow())
-    elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr("cbind",Expr(data._vecs)), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr("cbind",Expr([data])), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
+    elif isinstance(data, Expr)        : return Expr(op, data, Expr("cbind",Expr(self._vecs)), length=self.nrow())
+    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr("cbind",Expr(self._vecs)), length=self.nrow())
+    elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
     else: raise NotImplementedError
 
-  def logical_negation(self):  return Expr("not", Expr(self.send_frame(), length=self.nrow()))
+  def logical_negation(self):  return Expr("not", Expr("cbind",Expr(self._vecs)),
+                                           length=self.nrow())
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
@@ -706,19 +708,19 @@ class H2OFrame:
     """
     :return: The minimum value of all frame entries
     """
-    return Expr("min", Expr(self.send_frame(), length=self.nrow()))
+    return Expr("min", Expr("cbind",Expr(self._vecs)))
 
   def max(self):
     """
     :return: The minimum value of all frame entries
     """
-    return Expr("max", Expr(self.send_frame(), length=self.nrow()))
+    return Expr("max", Expr("cbind",Expr(self._vecs)))
 
   def sum(self):
     """
     :return: The minimum value of all frame entries
     """
-    return Expr("sum", Expr(self.send_frame(), length=self.nrow()))
+    return Expr("sum", Expr("cbind",Expr(self._vecs)))
 
   def var(self):
     """

@@ -530,6 +530,11 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 __CMD__ += "%FALSE"
 
+    elif self._op == "cbind":
+      if left.is_local():
+        for v in left._data: __CMD__ += "'" + str(v._expr._data) + "'"
+      else:                 pass
+
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
