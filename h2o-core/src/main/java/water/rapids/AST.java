@@ -470,13 +470,15 @@ class ASTStatement extends AST {
   @Override void exec(Env env) {
     ArrayList<Frame> cleanup = new ArrayList<>();
     if( _asts.length==0 ) { env.push(new ValNull()); return; }
+    boolean lastIsDelete = _asts[_asts.length-1] instanceof ASTDelete;
     for( int i=0; i<_asts.length-1; i++ ) {
       if (_asts[i] instanceof ASTReturn) {
        _asts[i].treeWalk(env);
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      env.pop();
+      if( i < _asts.length - 2 ) env.pop();
+      if( !lastIsDelete ) env.pop();
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
