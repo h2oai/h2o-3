@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# Purpose:  Create random data and run 20 iterations of GLM on it.
+# Purpose:  Create random data and run 20 iterations of PCA on it.
 # Compared to timings for R's pca on same data (#R#)
 #----------------------------------------------------------------------
 
@@ -11,10 +11,8 @@ heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size 
-rows <- c(1e3,1e4) 
-cols <- c(1e1,1e2) 
-#rows = c(1e4,1e6) 
-#cols = c(1e1,1e2,300,400,1e3) 
+rows = c(1e4,1e6)
+cols = c(1e1,1e2,300,400,1e3)
 rows 
 cols 
 
@@ -73,7 +71,7 @@ h2o.rm(conn,"myframe")
 #create_frm_time 
 #algo_run_time 
 frm_size/2^20 #MB 
-plot(frm_size[1:3]) 
+#plot(frm_size[1:3])
 #col_grid 
 #row_grid 
 
