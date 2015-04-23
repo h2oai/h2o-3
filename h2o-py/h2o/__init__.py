@@ -13,7 +13,8 @@ The H2O JVM sports a web server such that all communication occurs on a socket (
 by an IP address and a port) via a series of REST calls (see connection.py for the REST
 layer implementation and details). There is a single active connection to the H2O JVM at
 any one time, and this handle is stashed away out of sight in a singleton instance of
-:class:`H2OConnection` (this is the global  :envvar:`__H2OConn__`).
+:class:`H2OConnection` (this is the global  :envvar:`__H2OConn__`). In other words,
+this package does not rely on Jython, and there is no direct manipulation of the JVM.
 
 The H2O python module is not intended as a replacement for other popular machine learning
 modules such as scikit-learn, pylearn2, and their ilk. This module is a complementary
@@ -22,7 +23,10 @@ to production as seamless as possible. Additionally, it is designed to bring H2O
 wider audience of data and machine learning devotees that work exclusively with Python
 (rather than R or scala or Java -- which are other popular interfaces that H2O supports),
 and are wanting another tool for building applications or doing data munging in a fast,
-scalable environment without any extra mental anguish about threads and parallelism.
+scalable environment without any extra mental anguish about threads and parallelism. There
+are additional treasures that H2O incorporates meant to alleviate the pain of doing some
+basic feature manipulation (e.g. automatic categorical handling and not having to one-hot
+encode).
 
 
 What is H2O?
@@ -121,22 +125,22 @@ with lazy expressions to compute the column means for all columns in the H2OFram
 
   >>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
-  >>> colmeans = [v.mean().eager() for v in a]                     # compute column means eagerly
+  >>> colmeans = [v.mean() for v in df]                            # compute column means
   >>>
   >>> colmeans                                                     # print the results
   [5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
 
-Lazy expressions will be discussed in detail in the coming sections, but their primary
+Lazy expressions will be discussed lightly in the coming sections, as they are not
+necessarily going to be front-and-center to the practicing data scientist, but their primary
 purpose is to cut down on the chatter between the client (a.k.a this python interface) and
-H2O. Lazy expressions are
-`Katamari'd <http://www.urbandictionary.com/define.php?term=Katamari>`_ together and only
+H2O. Lazy expressions are `Katamari'd <http://www.urbandictionary.com/define.php?term=Katamari>`_ together and only
 ever evaluated when some piece of output is requested (e.g. print-to-screen).
 
 The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
 performed on an R data.frame. This includes all manner of slicing (with complex
 conditionals), broadcasting operations, and a slew of math operations for transforming and
-mutating a Frame (the actual Big Data sitting in the H2O cloud). The semantics for
+mutating a Frame (all the while the actual Big Data is sitting in the H2O cloud). The semantics for
 modifying a Frame closely resembles R's copy-on-modify semantics, except when it comes
 to mutating a Frame in place. For example, it's possible to assign all occurrences of the
 number `0` in a column to missing (or `NA` in R parlance) as demonstrated in the following
@@ -154,11 +158,44 @@ After this operation, `vol` has been permanently mutated in place (it is not a c
 H2OVec
 ++++++
 An H2OVec is a single column of data that is uniformly typed and possibly lazily computed.
+As with H2OFrame, an H2OVec is a pointer to a distributed java object residing in the H2O
+cloud (and truthfully, an H2OFrame is simply a collection of H2OVec pointers along with
+some metadata and various member methods).
 
 Expr
 ++++
+Deep in the guts of this module is the Expr class, which defines those objects holding
+the cumulative, unevaluated expressions that may become H2OFrame/H2OVec objects.
+For example:
 
-* Lazy expressions...
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> a = fr + 3.14159                                             # "a" is now an Expr
+  >>>
+  >>> type(a)                                                      # <class 'h2o.expr.Expr'>
+
+These objects are not too important to distinguish at the user level, and all operations
+can be performed with the mental model of operating on 2D frames (i.e. everything is an
+H2OFrame), but it is worth mentioning them here for completeness, as they will not discussed
+elsewhere.
+
+In the previous snippet, `a` has not yet triggered any big data evaluation and is, in
+fact, a pending computation. Once `a` is evaluated, it stays evaluated. Additionally,
+if all dependent subparts composing `a` are also evaluated.
+
+It is worthwhile mentioning at this point that this module relies on reference counting
+of python objects to dispose of out-of-scope objects. The Expr class destroys objects
+and their big data counterparts in the H2O cloud by way of a remove call:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> h2o.remove(fr)                                               # remove prostate data
+  >>> fr                                                           # attempting to use fr results in a ValueError
+
+Notice that when attempting to use the object after a remove call has been issued, it will
+result in a ValueError. Therefore, any working reference is not necessarily cleaned up,
+but it will no longer be functional. Note that deleting an unevaluated expression will not
+delete all subparts!
 
 Models
 ++++++
@@ -203,3 +240,9 @@ from frame import H2OVec
 from two_dim_table import H2OTwoDimTable
 
 __all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]
+
+
+
+###
+# inspect.getcallargs(h2o.init)
+###
