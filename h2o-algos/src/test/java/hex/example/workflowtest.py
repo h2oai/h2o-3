@@ -101,7 +101,7 @@ def split_fit_predict(data):
                 y           =train     ["bikes"],
                 validation_x=test .drop("bikes"),
                 validation_y=test      ["bikes"],
-                dropNA20Cols=True)
+                drop_na20_cols=True)
   #glm.show()
   
   
