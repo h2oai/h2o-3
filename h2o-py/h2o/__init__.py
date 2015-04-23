@@ -201,19 +201,27 @@ Models
 ++++++
 
 The model-building experience with this module is unique, and is not the same experience
-for those coming from a background in scikit-learn.
-
-Rather than have each model define its own class, each model will belong to one of the following
-categories:
+for those coming from a background in scikit-learn. Instead of using objects to build the
+model, builder functions are provided in the top-level module, and the result of a call
+is an model object beloning to one of the following categories:
 
     * Regression
     * Binomial
     * Multinomial
     * Clustering
+    * Autoencoder
 
-This is not an entirely representative list of model categories (e.g., what about Time Series,
-and Grid Search, or PCA?); but it represents the core set of underlying model categories
-that form the foundation and current state of modeling in H2O.
+This is better demonstrated by way of an example:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
+  >>>
+  >>> m = h2o.gbm(x=fr[3:], y=fr[2])                               # build a gbm with a method call
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
+  >>>
+  >>>
 
 
 * No explicit model objects -- have model categories
