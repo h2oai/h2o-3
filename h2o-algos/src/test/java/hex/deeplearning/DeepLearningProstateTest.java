@@ -23,7 +23,11 @@ import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+
+  static private int    p( int    x ) { System.out.println("RNG=" + x); return x; }
+  static private float  p( float  x ) { System.out.println("RNG=" + x); return x; }
+  static private double p( double x ) { System.out.println("RNG=" + x); return x; }
 
   @Test public void run() throws Exception { runFraction(0.0001f); }
 
@@ -107,21 +111,21 @@ public class DeepLearningProstateTest extends TestUtil {
                                           -2, //auto-tune
                                           -1, //N epochs per iteration
                                           0, //1 epoch per iteration
-                                          rng.nextInt(200), // <1 epoch per iteration
+                                          p(rng.nextInt(200)), // <1 epoch per iteration
                                           500, //>1 epoch per iteration
                                   }) {
                                     DeepLearningModel model1 = null, model2 = null, tmp_model = null;
                                     Key dest, dest_tmp;
                                     count++;
-                                    if (fraction < rng.nextFloat()) continue;
+                                    if (fraction < p(rng.nextFloat())) continue;
 
                                     try {
                                       Scope.enter();
                                       Log.info("**************************)");
                                       Log.info("Starting test #" + count);
                                       Log.info("**************************)");
-                                      final double epochs = 7 + rng.nextDouble() + rng.nextInt(4);
-                                      final int[] hidden = new int[]{1 + rng.nextInt(4), 1 + rng.nextInt(6)};
+                                      final double epochs = 7 + p(rng.nextDouble()) + p(rng.nextInt(4));
+                                      final int[] hidden = new int[]{1 + p(rng.nextInt(4)), 1 + p(rng.nextInt(6))};
                                       Frame valid = null; //no validation
                                       if (vf == 1) valid = frame; //use the same frame for validation
                                       else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
