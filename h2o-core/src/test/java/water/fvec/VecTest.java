@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
-import water.H2O;
 import water.TestUtil;
 
 import static org.junit.Assert.assertTrue;
@@ -36,41 +35,63 @@ public class VecTest extends TestUtil {
 
   @Test public void testMakeConSeq() {
     Vec v;
-    int chks1 = Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), 2*FileVec.DFLT_CHUNK_SIZE);
-    v = makeCon(0xCAFE,2*FileVec.DFLT_CHUNK_SIZE);
+
+    v = makeCon(0xCAFE,2*FileVec.DFLT_CHUNK_SIZE,false);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v._espc.length == chks1+1);
+    assertTrue(v._espc.length == 3);
+    assertTrue(
+            v._espc[0] == 0              &&
+                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE
+    );
     v.remove(new Futures()).blockForPending();
 
-    chks1 = Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), 3*FileVec.DFLT_CHUNK_SIZE);
-    v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE);
+    v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE,false);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(3*FileVec.DFLT_CHUNK_SIZE-1) == 0xCAFE);
-    assertTrue(v._espc.length == chks1+1);
+    assertTrue(v._espc.length == 4);
+    assertTrue(
+            v._espc[0] == 0              &&
+                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
+                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2
+    );
     v.remove(new Futures()).blockForPending();
 
-    chks1 = Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), 3*FileVec.DFLT_CHUNK_SIZE+1);
-    v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE+1);
+    v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE+1,false);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(3*FileVec.DFLT_CHUNK_SIZE) == 0xCAFE);
-    assertTrue(v._espc.length == chks1+1);
+    assertTrue(v._espc.length == 4);
+    assertTrue(
+            v._espc[0] == 0              &&
+                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
+                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
+                    v._espc[3] == FileVec.DFLT_CHUNK_SIZE*3+1
+    );
     v.remove(new Futures()).blockForPending();
 
-    chks1 = Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), 4*FileVec.DFLT_CHUNK_SIZE);
-    v = makeCon(0xCAFE,4*FileVec.DFLT_CHUNK_SIZE);
+    v = makeCon(0xCAFE,4*FileVec.DFLT_CHUNK_SIZE,false);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(4*FileVec.DFLT_CHUNK_SIZE-1) == 0xCAFE);
-    assertTrue(v._espc.length == chks1+1);
+    assertTrue(v._espc.length == 5);
+    assertTrue(
+            v._espc[0] == 0              &&
+                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
+                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
+                    v._espc[3] == FileVec.DFLT_CHUNK_SIZE*3
+    );
     v.remove(new Futures()).blockForPending();
   }
 
   @Test public void testMakeSeq() {
-    int chks1 = Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), 3*FileVec.DFLT_CHUNK_SIZE);
     Vec v = makeSeq(3*FileVec.DFLT_CHUNK_SIZE);
     assertTrue(v.at(0) == 1);
     assertTrue(v.at(234) == 235);
     assertTrue(v.at(2*FileVec.DFLT_CHUNK_SIZE) == 2*FileVec.DFLT_CHUNK_SIZE+1);
-    assertTrue(v._espc.length == chks1+1);
+    assertTrue(v._espc.length == 4);
+    assertTrue(
+            v._espc[0] == 0 &&
+                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE &&
+                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE * 2
+    );
     v.remove(new Futures()).blockForPending();
   }
 }

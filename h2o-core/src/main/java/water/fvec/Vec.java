@@ -290,16 +290,33 @@ public class Vec extends Keyed<Vec> {
    *  @return New zero-filled vector with the given row count. */
   public static Vec makeZero( long len ) { return makeCon(0L,len); }
 
+  /** Make a new constant vector with the given row count, and redistribute the data
+   * evenly around the cluster.
+   * @param x The value with which to fill the Vec.
+   * @param len Number of rows.
+   * @return New cosntant vector with the given len.
+   */
+  public static Vec makeCon(double x, long len) {
+    return makeCon(x,len,true);
+  }
+
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len) {
+  public static Vec makeCon(double x, long len, boolean redistribute) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x, len, log_rows_per_chunk);
+    return makeCon(x,len,log_rows_per_chunk,redistribute);
+  }
+
+  /** Make a new constant vector with the given row count, and redistribute the data evenly
+   *  around the cluster.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+    return makeCon(x,len,log_rows_per_chunk,true);
   }
 
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
     int nchunks = (int)Math.max(1,len >> log_rows_per_chunk);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
@@ -307,7 +324,7 @@ public class Vec extends Keyed<Vec> {
     espc[nchunks] = len;
     Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
     int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
-    if( v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
+    if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
       Key newKey = Key.make(".makeConRebalance" + chunks);
       Frame f = new Frame(v0);
       RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
