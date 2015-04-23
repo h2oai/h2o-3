@@ -172,6 +172,7 @@ public class TwoDimTable extends Iced {
         case "string":
           for (int r = 0; r < rowDim; ++r)
             set(r, c, strCellValues[r][c]);
+          break;
         default:
           throw new IllegalArgumentException("Column type " + colTypes[c] + " is not supported.");
       }
