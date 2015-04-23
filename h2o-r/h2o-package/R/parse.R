@@ -2,11 +2,24 @@
 #' H2O Data Parsing
 #'
 #' The second phase in the data ingestion step.
-
 #'
 #' Parse the Raw Data produced by the import phase.
+#'
+#' @param data An \linkS4class{H2ORawData} object to be parsed.
+#' @param key (Optional) The hex key assigned to the parsed file.
+#' @param header (Optional) A logical value indicating whether the first row is
+#'        the column header. If missing, H2O will automatically try to detect
+#'        the presence of a header.
+#' @param sep (Optional) The field separator character. Values on each line of
+#'        the file are separated by this character. If \code{sep = ""}, the
+#'        parser will automatically detect the separator.
+#' @param col.names (Optional) A \linkS4class{H2OFrame} object containing a
+#'        single delimited line with the column names for the file.
+#' @param col.types (Optional) A vector specifying the types to attempt to force
+#'        over columns.
 #' @export
-h2o.parseRaw <- function(data, key = "", header=NA, sep = "", col.names=NULL, col.types=NULL) {
+h2o.parseRaw <- function(data, key = "", header=NA, sep = "", col.names=NULL,
+                         col.types=NULL) {
   parse.params <- h2o.parseSetup(data,key,header,sep,col.names,col.types)
 
   parse.params <- list(
@@ -39,6 +52,7 @@ h2o.parseRaw <- function(data, key = "", header=NA, sep = "", col.names=NULL, co
 
 #'
 #' Get a parse setup back for the staged data.
+#' @inheritParams h2o.parseRaw
 #' @export
 h2o.parseSetup <- function(data, key = "", header=NA, sep = "", col.names=NULL, col.types=NULL) {
   if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")

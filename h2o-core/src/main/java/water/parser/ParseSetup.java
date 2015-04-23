@@ -43,6 +43,7 @@ public final class ParseSetup extends Iced {
   String[] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
+  PreviewParseWriter _column_previews = null;
 
   public ParseSetup(ParseSetup ps) {
     this(ps._is_valid, ps._invalid_lines, ps._errors, ps._parse_type,
@@ -259,8 +260,6 @@ public final class ParseSetup extends Iced {
 
     // Output
     public ParseSetup _gblSetup;
-    //IcedArrayList<Key> _failedSetup;
-    //IcedArrayList<Key> _conflicts;
     public long _totalParseSize;
 
     /**
@@ -342,7 +341,7 @@ public final class ParseSetup extends Iced {
           _gblSetup._parse_type = ParserType.ARFF;
           _gblSetup._column_types = setupB._column_types;
         } else if (setupA._parse_type == setupB._parse_type) {
-          _gblSetup._column_types = unifyColumnTypes(setupA._column_types, setupB._column_types);
+          _gblSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
         } else
           throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
                   + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
@@ -351,13 +350,20 @@ public final class ParseSetup extends Iced {
         throw new H2OParseSetupException("Cannot determine parse parameters for file.");
       }
 
-      if (_gblSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
+      if (_gblSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
         int n = _gblSetup._data.length;
-        int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
+        int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
         _gblSetup._data = Arrays.copyOf(_gblSetup._data, m);
         System.arraycopy(other._gblSetup._data, 1, _gblSetup._data, n, m - n);
       }
       _totalParseSize += other._totalParseSize;
+    }
+
+    @Override public void postGlobal() {
+      if (_gblSetup._column_previews != null && _gblSetup._parse_type != ParserType.ARFF) {
+        _gblSetup._column_types = _gblSetup._column_previews.guessTypes();
+        _gblSetup._na_strings = _gblSetup._column_previews.guessNAStrings(_gblSetup._column_types);
+      }
     }
 
     private static int unifyCheckHeader(int chkHdrA, int chkHdrB){
@@ -399,22 +405,6 @@ public final class ParseSetup extends Iced {
           }
         }
         return namesA;
-      }
-    }
-
-    private static byte[] unifyColumnTypes(byte[] typesA, byte[] typesB){
-      if (typesA == null) return typesB;
-      else if (typesB == null) return typesA;
-      else {
-        for (int i = 0; i < typesA.length; i++) {
-          if (i > typesB.length || typesA[i] != typesB[i]) {
-            if (typesA[i] == Vec.T_BAD)
-              typesA[i] = typesB[i];
-            // TODO improvement: add file names
-            else throw new H2OParseSetupException("Column " + (i+1) + " type mismatched for at least two files. Got types: " + Vec.TYPE_STR[typesA[i]] + " and " + Vec.TYPE_STR[typesB[i]]);
-          }
-        }
-        return typesA;
       }
     }
   }

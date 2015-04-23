@@ -7,6 +7,7 @@ import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -172,6 +173,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
     putPrefix(new ASTMedian());
+    putPrefix(new ASTMad());
 
     // Misc
     putPrefix(new ASTSetLevel());
@@ -217,7 +219,10 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSecond());
     putPrefix(new ASTMillis());
     putPrefix(new ASTMktime());
+    putPrefix(new ASTListTimeZones());
+    putPrefix(new ASTGetTimeZone());
     putPrefix(new ASTFoldCombine());
+    putPrefix(new ASTSetTimeZone());
     putPrefix(new COp());
     putPrefix(new ROp());
     putPrefix(new O());
@@ -1658,6 +1663,117 @@ class ASTSum extends ASTReducerOp {
   }
 }
 
+class ASTImpute extends ASTUniPrefixOp {
+  ImputeMethod _method;
+  long[] _by;
+  QuantileModel.CombineMethod _combine_method;  // for quantile only
+  private static enum ImputeMethod { MEAN , MEDIAN, MODE }
+  @Override String opStr() { return "h2o.impute"; }
+  @Override ASTOp make() { return new ASTImpute(); }
+  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by"}); }
+  ASTImpute parse_impl(Exec E) {
+    AST ary = E.parse();
+    _method = ImputeMethod.valueOf(E.nextStr());
+    _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
+
+    AST a = E.parse();
+    _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+    ASTImpute res = (ASTImpute) clone();
+    res._asts = new AST[]{ary};
+    res._by = _by;    // just in case
+    res._method = _method; // just in case
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Frame f = e.popAry();
+    if( f.numCols() != 1 ) throw new IllegalArgumentException("Can only impute a single column at a time.");
+    Vec v = f.anyVec();
+    Frame f2;
+    final double imputeValue;
+
+    // vanilla impute. no group by
+    if( _by == null ) {
+      if( !v.isNumeric() ) {
+        Log.info("Can only impute non-numeric columns with the mode.");
+        _method = ImputeMethod.MODE;
+      }
+      switch( _method ) {
+        case MEAN:   imputeValue = ASTVar.getMean(v,true,""); break;
+        case MEDIAN: imputeValue = ASTMedian.median(f, null); break;
+        case MODE:   imputeValue = mode(f); break;
+        default:
+          throw new IllegalArgumentException("Unknown type: " + _method);
+      }
+      // create a new vec by imputing the old.
+      f2 = new MRTask() {
+        @Override public void map(Chunk c, NewChunk n) {
+          for(int i=0;i<c._len;++i)
+            n.addNum( c.isNA(i) ? imputeValue : c.atd(i) );
+        }
+      }.doAll(1,f).outputFrame(null,f.names(),f.domains());
+    } else {
+      if(  _method==ImputeMethod.MEDIAN ) throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
+      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean",0,"rm","_avg",null,null) };
+      ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
+      final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s = t._g;
+      final long[] cols = _by;
+      f2 = new MRTask() {
+        transient NonBlockingHashSet<ASTGroupBy.G> _s;
+        @Override public void setupLocal() { _s = s._g; }
+        @Override public void map(Chunk[] c, NewChunk n) {
+          ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
+          double impute_value;
+          for( int i=0;i<c[0]._len;++i ) {
+            g.fill(i,c,cols);
+            impute_value = _s.get(g)._avs[0]; //currently only have the mean
+            n.addNum( c[0].isNA(i) ? impute_value : c[0].atd(i) );
+          }
+        }
+      }.doAll(1,f).outputFrame(null,f.names(),f.domains());
+    }
+    e.push(new ValFrame(f2));
+  }
+
+  private double mode(Frame f) { return (new ModeTask((int)f.anyVec().max())).doAll(f)._max; }
+  private static class ModeTask extends MRTask<ModeTask> {
+    // compute the mode of an enum column as fast as possible
+    int _m;   // max of the column... only for setting the size of _cnts
+    int _max; // updated atomically
+    long[] _cnts; // keep an array of counts, updated atomically
+    static private final long _maxOffset;
+    private static final Unsafe U = UtilUnsafe.getUnsafe();
+    private static final int _b = U.arrayBaseOffset(long[].class);
+    private static final int _s = U.arrayIndexScale(long[].class);
+    private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
+    static {
+      try {
+        _maxOffset = U.objectFieldOffset(ModeTask.class.getDeclaredField("_max"));
+      } catch( Exception e ) {
+        throw new RuntimeException("golly mistah, I crashed :(!");
+      }
+    }
+
+    ModeTask(int m) {_m=m;}
+    @Override public void setupLocal() {
+      _cnts = MemoryManager.malloc8(_m+1);
+      _max = Integer.MIN_VALUE;
+    }
+    @Override public void map(Chunk c) {
+      for( int i=0;i<c._len;++i ) {
+        int h = (int)c.at8(i);
+        long offset = ssid(h);
+        long cnt = _cnts[h];
+        while( !U.compareAndSwapLong(_cnts,offset,cnt,cnt+1))
+          cnt=_cnts[h];
+        int max=(int)cnt;
+        int omax = _max;
+        while( max > omax && !U.compareAndSwapInt(this,_maxOffset,omax,max))
+          omax=_max;
+      }
+    }
+    @Override public void postGlobal() { _cnts=null; }
+  }
+}
 
 class ASTRbind extends ASTUniPrefixOp {
   int argcnt;
@@ -1928,25 +2044,73 @@ class ASTMedian extends ASTReducerOp {
   @Override ASTOp make() { return new ASTMedian(); }
   @Override double op(double d0, double d1) { throw H2O.unimpl(); }
   @Override void apply(Env env) {
-    Frame fr;
-    try {
-      fr = env.popAry();
-    } catch (Exception e) {
-      throw new IllegalArgumentException("`median` expects a single column from a Frame.");
-    }
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+    Frame fr = env.popAry();
+    double median = median(fr, QuantileModel.CombineMethod.INTERPOLATE); // does linear interpolation for even sample sizes by default
+    env.push(new ValNum(median));
+  }
 
-    if (!fr.anyVec().isNumeric())
-      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
-
+  static double median(Frame fr, QuantileModel.CombineMethod combine_method) {
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+    if (!fr.anyVec().isNumeric()) throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._probs = new double[]{0.5};
     parms._train = fr._key;
+    parms._combine_method = combine_method;
     QuantileModel q = new Quantile(parms).trainModel().get();
     double median = q._output._quantiles[0][0];
     q.delete();
-    env.push(new ValNum(median));
+    return median;
+  }
+}
+
+// the mean absolute devation
+// mad = b * med(  |x_i - med(x)| )
+// b = 1.4826 for normally distributed data -- but this is used anyways..
+// looks like this: (h2o.mad %v #1.4826 %TRUE "interpolate")
+// args are: column, constant, na.rm, combine_method
+// possible combine_method values:
+// lo: for even sample size, take the lo value for the median
+// hi: for even sample size, take the hi value for the median
+// interpolate: interpolate lo & hi
+// avg: average lo & hi
+class ASTMad extends ASTReducerOp {
+  double _const;
+  QuantileModel.CombineMethod _combine_method;
+  ASTMad() { super( 0 ); }
+  @Override String opStr() { return "h2o.mad"; }
+  @Override ASTOp make() { return new ASTMad(); }
+  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
+  ASTMad parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    // set the constant
+    if( a instanceof ASTNum ) _const = ((ASTNum)a)._d;
+    else throw new IllegalArgumentException("`constant` is expected to be a literal number. Got: " + a.getClass());
+    a = E.parse();
+    // set the narm
+    if( a instanceof ASTId ) {
+      AST b = E._env.lookup((ASTId)a);
+      if( b instanceof ASTNum ) _narm = ((ASTNum)b)._d==1;
+      else throw new IllegalArgumentException("`na.rm` is expected to be oen of %TRUE, %FALSE, %T, %F. Got: " + ((ASTId) a)._id);
+    }
+    // set the combine method
+    _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
+    E.eatEnd();
+    ASTMad res = (ASTMad)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env e) {
+    Frame f = e.popAry();
+    final double median = ASTMedian.median(f,_combine_method);
+    Frame abs_dev = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for(int i=0;i<c._len;++i)
+          nc.addNum(Math.abs(c.at8(i)-median));
+      }
+    }.doAll(1, f).outputFrame(null,null,null);
+    double mad = ASTMedian.median(abs_dev,_combine_method);
+    e.push(new ValNum(_const*mad));
   }
 }
 
@@ -2383,8 +2547,9 @@ class ASTRepLen extends ASTUniPrefixOp {
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
   double[] _probs = null;  // if probs is null, pop the _probs frame etc.
+  QuantileModel.CombineMethod _combine_method  = null;
   @Override String opStr() { return "quantile"; }
-  public ASTQtile() { super(new String[]{"quantile","x","probs"}); }
+  public ASTQtile() { super(new String[]{"quantile","x","probs","combine_method"}); }
   @Override ASTQtile make() { return new ASTQtile(); }
   @Override ASTQtile parse_impl(Exec E) {
     // Get the ary
@@ -2393,6 +2558,7 @@ class ASTQtile extends ASTUniPrefixOp {
     AST seq = E.parse();
     if( seq instanceof ASTDoubleList ) { _probs = ((ASTDoubleList)seq)._d; seq=null; }
     else                               _probs = null;
+    _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
     E.eatEnd(); // eat the ending ')'
     ASTQtile res = (ASTQtile) clone();
     res._asts = seq == null ? new AST[]{ary} : new AST[]{ary, seq};
@@ -2419,7 +2585,7 @@ class ASTQtile extends ASTUniPrefixOp {
           throw new IllegalArgumentException("Quantile: probs must be in the range of [0, 1].");
       }
     }
-
+    parms._combine_method = _combine_method;
     Frame x = env.popAry();
     Key tk=null;
     if( x._key == null ) { DKV.put(tk=Key.make(), x=new Frame(tk, x.names(),x.vecs())); }
@@ -2479,15 +2645,21 @@ class ASTSetColNames extends ASTUniPrefixOp {
     E.eatEnd(); // eat the ending ')'
     ASTSetColNames res = (ASTSetColNames)clone();
     res._asts = new AST[]{ary};
+    res._idxs = _idxs; res._names = _names;
     return res;
   }
 
   @Override void apply(Env env) {
-    Frame f = env.popAry();
-    for (int i=0; i < _names.length; ++i)
-      f._names[(int)_idxs[i]] = _names[i];
-    if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
-    env.pushAry(f);
+    try {
+      Frame f = env.popAry();
+      for (int i = 0; i < _names.length; ++i)
+        f._names[(int) _idxs[i]] = _names[i];
+      if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
+      env.pushAry(f);
+    } catch (ArrayIndexOutOfBoundsException e) {
+      Log.info("AIOOBE!!! _idxs.length="+_idxs.length+ "; _names.length="+_names.length);
+      throw e; //rethrow
+    }
   }
 }
 
@@ -2962,7 +3134,7 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   // gets vast majority of cases and is stupidly fast (35x faster than using UniqueTwoColumnTask)
-  private static class UniqueColumnCountTask extends MRTask<UniqueColumnCountTask> {
+  public static class UniqueColumnCountTask extends MRTask<UniqueColumnCountTask> {
     long[] _cts;
     final int _max;
     final boolean _flip;
@@ -3513,6 +3685,70 @@ class ASTLs extends ASTOp {
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
+  }
+}
+
+class ASTGetTimeZone extends ASTOp {
+  ASTGetTimeZone() { super(null); }
+  @Override String opStr() { return "getTimeZone"; }
+  @Override ASTOp make() { return new ASTGetTimeZone(); }
+  ASTGetTimeZone parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTGetTimeZone) clone();
+  }
+  @Override void apply(Env env) {
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk tz = new NewChunk(av,0);
+    String domain[] = new String[]{ParseTime.getTimezone().toString()};
+    tz.addEnum(0);
+    tz.close(fs);
+    Vec v = av.close(fs);
+    v.setDomain(domain);
+    env.pushAry(new Frame(null, new String[]{"TimeZone"}, new Vec[]{v}));
+  }
+}
+
+class ASTListTimeZones extends ASTOp {
+  ASTListTimeZones() { super(null); }
+  @Override String opStr() { return "listTimeZones"; }
+  @Override ASTOp make() { return new ASTListTimeZones(); }
+  ASTListTimeZones parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTListTimeZones) clone();
+  }
+  @Override void apply(Env e) {
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk tz = new NewChunk(av,0);
+    String[] domain = ParseTime.listTimezones().split("\n");
+    for(int i=0;i<domain.length;++i)
+      tz.addEnum(i);
+    tz.close(fs);
+    Vec v = av.close(fs);
+    v.setDomain(domain);
+    e.pushAry(new Frame(null, new String[]{"ListTimeZones"}, new Vec[]{v}));
+  }
+}
+
+class ASTSetTimeZone extends ASTOp {
+  String _tz;
+  ASTSetTimeZone() { super(new String[]{"tz"}); }
+  @Override String opStr() { return "setTimeZone"; }
+  @Override ASTOp make() { return new ASTSetTimeZone(); }
+  ASTSetTimeZone parse_impl(Exec E) {
+    _tz = E.nextStr();
+    E.eatEnd();
+    return (ASTSetTimeZone)clone();
+  }
+  @Override void apply(Env e) {
+    Set<String> idSet = DateTimeZone.getAvailableIDs();
+    if(!idSet.contains(_tz))
+      throw new IllegalArgumentException("Unacceptable timezone name given.  For a list of acceptable names, use listTimezone().");
+    new MRTask() {
+      @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
+    }.doAllNodes();
+    e.pushAry(null);
   }
 }
 

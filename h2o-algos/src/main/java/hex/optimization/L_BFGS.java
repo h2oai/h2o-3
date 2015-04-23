@@ -101,10 +101,8 @@ public final class L_BFGS extends Iced {
      * @param pk   - search direction
      * @return objective values evaluated at k line-search points beta + pk*step[k]
      */
-    protected abstract double [] getObjVals(double[] beta, double[] pk);
+    public abstract double [] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec);
 
-    protected double _startStep = 1.0;
-    protected double _stepDec = .75;
 
     /**
      * Perform line search at given solution and search direction.
@@ -114,15 +112,15 @@ public final class L_BFGS extends Iced {
      * @param direction - search direction
      * @return
      */
-    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, double tdec) {
-      double [] objVals = getObjVals(beta, direction);
+    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, int nSteps, double tdec) {
+      double [] objVals = getObjVals(beta, direction, nSteps, tdec);
       double t = 1;
       for (int i = 0; i < objVals.length; ++i) {
         if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
           return new LineSearchSol(true, objVals[i], t);
         t *= tdec;
       }
-      return new LineSearchSol(false, objVals[objVals.length-1], t);
+      return new LineSearchSol(objVals[objVals.length-1] < ginfo._objVal, objVals[objVals.length-1], t/tdec);
     }
   }
 
@@ -134,7 +132,7 @@ public final class L_BFGS extends Iced {
   }
 
   // constants used in line search
-  public static final double c1 = .1;
+  public static final double c1 = .25;
 
   public static final class Result {
     public final int iter;
@@ -257,9 +255,11 @@ public final class L_BFGS extends Iced {
     int ls_switch = 0;
 
     while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
+//      System.out.println("objVal = " + ginfo._objVal + ", gradNorm = " + MathUtils.l2norm2(ginfo._gradient) + ", doLineSearch = " + doLineSearch);
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
+      double lsVal = Double.POSITIVE_INFINITY;
       if(doLineSearch) {
-        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, gslvr._stepDec);
+        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 24, .5);
         if(ls.step == 1) {
           if (++ls_switch == 2) {
             ls_switch = 0;
@@ -268,11 +268,14 @@ public final class L_BFGS extends Iced {
         } else {
           ls_switch = 0;
         }
-        if (ls.madeProgress || _hist._k < _hist._m) {
+        if (ls.madeProgress || _hist._k < 2) {
+          lsVal = ls.objVal;
           ArrayUtils.wadd(beta, pk, ls.step);
         } else break; // ls did not make progress => converged
       } else  ArrayUtils.add(beta, pk);
       GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
+      if(doLineSearch)
+        assert Math.abs(lsVal - newGinfo._objVal) < 1e-10:"objvals from line-search and gradient tasks differ, " + lsVal + " != " + newGinfo._objVal;
       if(!doLineSearch) //{
         if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
           if(++ls_switch == 2) {
@@ -285,23 +288,11 @@ public final class L_BFGS extends Iced {
             continue;
           }
         } else ls_switch = 0;
-//        doLineSearch = true;
-//        Log.info("switching line search on");
-//        ArrayUtils.subtract(beta, pk);
-//        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
-//        Log.info("ls took " + (System.currentTimeMillis() - t) + "ms, found step " + ls.step);
-//        doLineSearch = ls.step < 1;
-//        if (ls.madeProgress || _hist._k < _hist._m) {
-//          ArrayUtils.mult(pk, ls.step);
-//          ArrayUtils.add(beta, pk);
-//          newGinfo = gslvr.getGradient(beta); // expensive / distributed
-//        } else break;
-//      }
       ++iter;
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       ginfo = newGinfo;
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
+//    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
     return new Result(iter,beta, ginfo);
   }
 
