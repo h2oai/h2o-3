@@ -43,7 +43,7 @@
     },
     {
       "type": "md",
-      "input": "### GLM Results\n\nTo view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when\nstandardization is requested). The output also displays AIC, AUC, and deviance rates.  \n\nTo view more details, click the **Inspect** button. \n\nTo view the best coefficient values, click the **output - Coefficient Magnitudes** link. \n"
+      "input": "### GLM Results\n\nTo view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when standardization is requested). The output also displays AIC, AUC, and deviance rates.  \nBy default, the following output displays:\n\n- Model parameters (hidden)\n- A graph of the normalized coefficient magnitudes\n- Output (model category, model summary, scoring history, training metrics, validation metrics, best lambda, threshold, residual deviance, null deviance, residual degrees of freedom, null degrees of freedom, AIC, AUC, binomial, rank)\n- Coefficients\n- Coefficient magnitudes\n\nTo view more details, click the **Inspect** button. \n\nTo view the best coefficient values, click the **output - Coefficient Magnitudes** link. \n"
     },
     {
       "type": "cs",
