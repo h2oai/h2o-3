@@ -452,7 +452,7 @@ class ASTSeries extends AST {
 
 class ASTStatement extends AST {
   @Override ASTStatement make() { return new ASTStatement(); }
-  String opStr() {return ","; }
+  String opStr() { return ","; }
   // must parse all statements: {(ast);(ast);(ast);...;(ast)}
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
@@ -1404,7 +1404,6 @@ class ASTDelete extends AST {
             ? ((ASTFrame)ast)._key
             : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
     DKV.remove(Key.make(s));
-    env.push(new ValNum(0));
   }
 }
 
