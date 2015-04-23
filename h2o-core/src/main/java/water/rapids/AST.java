@@ -452,7 +452,7 @@ class ASTSeries extends AST {
 
 class ASTStatement extends AST {
   @Override ASTStatement make() { return new ASTStatement(); }
-  String opStr() {return ","; }
+  String opStr() { return ","; }
   // must parse all statements: {(ast);(ast);(ast);...;(ast)}
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
@@ -476,7 +476,7 @@ class ASTStatement extends AST {
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      env.pop();
+      if( !(_asts[i+1] instanceof ASTDelete) ) env.pop();
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
@@ -1402,7 +1402,6 @@ class ASTDelete extends AST {
             ? ((ASTFrame)ast)._key
             : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
     DKV.remove(Key.make(s));
-    env.push(new ValNum(0));
   }
 }
 

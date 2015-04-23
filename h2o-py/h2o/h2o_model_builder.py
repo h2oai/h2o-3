@@ -10,7 +10,16 @@ import h2o
 # Response variable model building
 def supervised_model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   # Sanity check data frames
-  if not y:  raise ValueError("Missing response training a supervised model")
+  if not y:
+    if algo_url=="deeplearning":
+      if "autoencoder" in kwargs and kwargs["autoencoder"]:
+        pass  # all good
+    else:
+      raise ValueError("Missing response training a supervised model")
+  elif y:
+    if algo_url=="deeplearning":
+      if "autoencoder" in kwargs and kwargs["autoencoder"]:
+        raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
   if validation_x:
     if not validation_y:  raise ValueError("Missing response validating a supervised model")
   return _model_build(x,y,validation_x,validation_y,algo_url,kwargs)
@@ -38,6 +47,12 @@ def _check_frame(x,y,response):
 # Build an H2O model
 def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   # Basic sanity checking
+  if algo_url == "autoencoder":
+    if "autoencoder" in kwargs.keys():
+      if kwargs["autoencoder"]:
+        if y:
+          raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
+        algo_url="deeplearning"
   if not x:  raise ValueError("Missing features")
   x = _check_frame(x,y,y)
   if validation_x:
