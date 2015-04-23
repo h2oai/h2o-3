@@ -179,7 +179,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
           else if (columns[c].format == "float") {
             dblCellValues[r][c] = (Float)data[c][r].get();
           }
-          else if (columns[c].format == "integer") {
+          else if (columns[c].format == "int") {
             dblCellValues[r][c] = (Integer)data[c][r].get();
           }
           else if (columns[c].format == "long") {
