@@ -2397,7 +2397,7 @@ class ASTSeqLen extends ASTUniPrefixOp {
     int len = (int) Math.ceil(_length);
     if (len <= 0)
       throw new IllegalArgumentException("Error in seq_len(" +len+"): argument must be coercible to positive integer");
-    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len)});
+    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len,true)});
     env.pushAry(fr);
   }
 }

@@ -83,7 +83,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Extract the scoring on validation set from the model
           mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
-          for (int i=0; i<100; ++i) {
+          for (int i=0; i<5; ++i) {
             Frame tmp = mymodel.score(test);
             Assert.assertTrue("Prediction #" + i + " for repeat #" + repeat + " differs!", isBitIdentical(preds[repeat],tmp));
             tmp.delete();

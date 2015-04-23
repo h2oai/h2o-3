@@ -1,6 +1,7 @@
 ext {
+  notYarn = true
   hadoopVersion = 'mapr3.1.1'
-  hadoopMavenArtifactVersion = '2.4.1-mapr-1408'
+  hadoopMavenArtifactVersion = '1.0.3-mapr-3.1.1'
 }
 
 apply from: '../driverjar.gradle'
