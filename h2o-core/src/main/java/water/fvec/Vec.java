@@ -285,7 +285,10 @@ public class Vec extends Keyed<Vec> {
   }
   
   // ======= Create zero/constant Vecs ======
-
+  /** Make a new zero-filled vec **/
+  public static Vec makeZero( long len, boolean redistribute ) {
+    return makeCon(0L,len,redistribute);
+  }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
   public static Vec makeZero( long len ) { return makeCon(0L,len); }
@@ -465,14 +468,14 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
-  public static Vec makeSeq( long len) {
+  public static Vec makeSeq( long len, boolean redistribute) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
             c.set(r, r + 1 + c._start);
       }
-    }.doAll(makeZero(len))._fr.vecs()[0];
+    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.

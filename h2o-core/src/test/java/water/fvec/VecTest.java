@@ -82,7 +82,7 @@ public class VecTest extends TestUtil {
   }
 
   @Test public void testMakeSeq() {
-    Vec v = makeSeq(3*FileVec.DFLT_CHUNK_SIZE);
+    Vec v = makeSeq(3*FileVec.DFLT_CHUNK_SIZE, false);
     assertTrue(v.at(0) == 1);
     assertTrue(v.at(234) == 235);
     assertTrue(v.at(2*FileVec.DFLT_CHUNK_SIZE) == 2*FileVec.DFLT_CHUNK_SIZE+1);
