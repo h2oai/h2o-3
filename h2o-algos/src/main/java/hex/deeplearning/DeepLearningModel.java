@@ -1180,7 +1180,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                       "Mean Weight", "Weight RMS",
                       "Mean Bias", "Bias RMS"
               },
-              new String[]{"integer", "integer", "string", "double", "double", "double",
+              new String[]{"int", "int", "string", "double", "double", "double",
                            "double", "double", "double",
                       "double", "double",
                       "double", "double"

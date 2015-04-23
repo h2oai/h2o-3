@@ -1,6 +1,7 @@
 package water.util;
 
 import water.AutoBuffer;
+import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 
@@ -80,9 +81,9 @@ public class TwoDimTable extends Iced {
     else {
       for (int c = 0; c < colDim; ++c) {
         colTypes[c] = colTypes[c].toLowerCase();
-        if (!(colTypes[c].equals("double") || colTypes[c].equals("float") || colTypes[c].equals("integer") ||
+        if (!(colTypes[c].equals("double") || colTypes[c].equals("float") || colTypes[c].equals("int") ||
             colTypes[c].equals("long") || colTypes[c].equals("string")))
-          throw new IllegalArgumentException("colTypes values must be one of \"double\", \"float\", \"integer\", \"long\", or \"string\"");
+          throw new IllegalArgumentException("colTypes values must be one of \"double\", \"float\", \"int\", \"long\", or \"string\"");
       }
     }
 
@@ -160,7 +161,7 @@ public class TwoDimTable extends Iced {
           for (int r = 0; r < rowDim; ++r)
             set(r, c, dblCellValues[r][c]);
           break;
-        case "integer":
+        case "int":
           for (int r = 0; r < rowDim; ++r)
             set(r, c, (int) dblCellValues[r][c]);
           break;
@@ -168,9 +169,11 @@ public class TwoDimTable extends Iced {
           for (int r = 0; r < rowDim; ++r)
             set(r, c, (long) dblCellValues[r][c]);
           break;
-        default:
+        case "string":
           for (int r = 0; r < rowDim; ++r)
             set(r, c, strCellValues[r][c]);
+        default:
+          throw new IllegalArgumentException("Column type " + colTypes[c] + " is not supported.");
       }
     }
   }
@@ -224,7 +227,7 @@ public class TwoDimTable extends Iced {
       cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
     else if (colTypes[col].equals("float"))
       cellValues[row][col] = new IcedWrapper(new Float(o.toString()));
-    else if (colTypes[col].equals("integer"))
+    else if (colTypes[col].equals("int"))
       cellValues[row][col] = new IcedWrapper(new Integer(o.toString()));
     else if (colTypes[col].equals("long"))
       cellValues[row][col] = new IcedWrapper(new Long(o.toString()));
@@ -275,7 +278,7 @@ public class TwoDimTable extends Iced {
             cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
           }
           break;
-        case "integer":
+        case "int":
           for (int r = 0; r < rowDim; ++r) {
             cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
           }
