@@ -156,8 +156,9 @@ class Expr(object):
     if noprint:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = j['frames'][0]['columns'][0]['data'][0:10]
-        return data
+        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        data = map(list, zip(*data))
+        return data[0:min(10,len(data))]
       return self._data
     else:
       if isinstance(self._data, unicode):
