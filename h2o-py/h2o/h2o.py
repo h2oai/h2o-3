@@ -362,11 +362,20 @@ def export_file(frame,path,force=False):
   H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
 
-def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):
+def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
   Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
+
+def autoencoder(x,**kwargs):
+  """
+  Build an Autoencoder
+  :param x: Columns with which to build an autoencoder
+  :param kwargs: Additional arguments to pass to the autoencoder.
+  :return: A new autoencoder model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,None,"autoencoder",kwargs)
 
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
