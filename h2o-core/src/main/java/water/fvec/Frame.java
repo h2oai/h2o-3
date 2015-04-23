@@ -197,6 +197,15 @@ public class Frame extends Lockable<Frame> {
   /** Number of columns
    *  @return Number of columns */
   public int  numCols() { return _keys.length; }
+  /** Number of columns with categoricals expanded
+   * @return Number of columns with categoricals expanded into indicator columns */
+  public int  numColsExp() {
+    if(_vecs == null) return 0;
+    int cols = 0;
+    for(int i = 0; i < _vecs.length; i++)
+      cols += (_vecs[i].isEnum() && _vecs[i].domain() != null) ? _vecs[i].domain().length : 1;
+    return cols;
+  }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
