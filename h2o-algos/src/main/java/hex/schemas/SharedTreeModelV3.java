@@ -19,6 +19,6 @@ public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
     TwoDimTableBase variable_importances;
 
     @API(help="The Intercept term, the initial model function value to which trees make adjustments", direction=API.Direction.OUTPUT)
-    double initF;
+    double init_f;
   }
 }
