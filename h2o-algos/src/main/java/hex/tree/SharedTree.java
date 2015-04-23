@@ -99,7 +99,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                              initial_MSE(response(), response()), 
                              _valid == null ? Double.NaN : initial_MSE(response(),vresponse())); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
-          _model._output._initF = _initialPrediction;
+          _model._output._init_f = _initialPrediction;
         }
 
         // Compute the response domain; makes for nicer printouts
