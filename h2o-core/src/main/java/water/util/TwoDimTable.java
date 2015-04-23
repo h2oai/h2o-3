@@ -1,6 +1,7 @@
 package water.util;
 
 import water.AutoBuffer;
+import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 
@@ -82,7 +83,7 @@ public class TwoDimTable extends Iced {
         colTypes[c] = colTypes[c].toLowerCase();
         if (!(colTypes[c].equals("double") || colTypes[c].equals("float") || colTypes[c].equals("int") ||
             colTypes[c].equals("long") || colTypes[c].equals("string")))
-          throw new IllegalArgumentException("colTypes values must be one of \"double\", \"float\", \"integer\", \"long\", or \"string\"");
+          throw new IllegalArgumentException("colTypes values must be one of \"double\", \"float\", \"int\", \"long\", or \"string\"");
       }
     }
 
@@ -168,9 +169,11 @@ public class TwoDimTable extends Iced {
           for (int r = 0; r < rowDim; ++r)
             set(r, c, (long) dblCellValues[r][c]);
           break;
-        default:
+        case "string":
           for (int r = 0; r < rowDim; ++r)
             set(r, c, strCellValues[r][c]);
+        default:
+          throw new IllegalArgumentException("Column type " + colTypes[c] + " is not supported.");
       }
     }
   }
