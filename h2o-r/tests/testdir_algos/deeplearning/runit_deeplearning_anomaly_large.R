@@ -54,7 +54,6 @@ check.deeplearning_anomaly <- function(conn) {
   # 1) LEARN WHAT'S NORMAL
   # train unsupervised Deep Learning autoencoder model on train_hex
   ae_model <- h2o.deeplearning(x=predictors,
-                               y=42, #response is ignored (pick any non-constant predictor column index)
                                training_frame=train_hex,
                                activation="Tanh",
                                autoencoder=T,

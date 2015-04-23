@@ -34,7 +34,6 @@ check.deeplearning_autoencoder <- function(conn) {
 
      # train autoencoder on train_unsupervised
      ae_model <- h2o.deeplearning(x=predictors,
-                                  y=42, #ignored (pick any non-constant predictor)
                                   training_frame=train_unsupervised,
                                   activation="Tanh",
                                   autoencoder=T,
