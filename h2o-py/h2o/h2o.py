@@ -327,7 +327,7 @@ def cbind(left,right):
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
   """
   Initiate an H2O connection to the specified ip and port.
 
