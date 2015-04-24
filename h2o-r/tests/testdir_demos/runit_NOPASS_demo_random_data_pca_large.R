@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# Purpose:  Create random data and run 20 iterations of GLM on it.
+# Purpose:  Create random data and run 20 iterations of PCA on it.
 # Compared to timings for R's pca on same data (#R#)
 #----------------------------------------------------------------------
 
@@ -10,12 +10,21 @@ options(echo=TRUE)
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort)
 
-# Data frame size 
-rows <- c(1e3,1e4) 
-cols <- c(1e1,1e2) 
-#rows = c(1e4,1e6) 
-#cols = c(1e1,1e2,300,400,1e3) 
-rows 
+# Data frame size
+
+## This causes Jenkins timeout
+#rows = c(1e3,1e4,1e5)
+#cols = c(50,100,200)
+
+## This runs... but is too small -> FIXME: Improve PCA algo!
+rows = c(100)
+cols = c(10)
+
+## This NPEs: PUBDEV-921
+#rows = c(1e7)
+#cols = c(20)
+
+rows
 cols 
 
 create_frm_time <- matrix(NA, nrow = length(rows), ncol = length(cols)) 
@@ -49,7 +58,7 @@ for(i in 1:length(rows)){ # changing number of rows
     #str(myframe) 
    
     #warmup
-    myframe.pca<-h2o.prcomp(training_frame=myframe, k = 3)
+    #myframe.pca<-h2o.prcomp(training_frame=myframe, k = 3)
 
     aat <- system.time(myframe.pca<-h2o.prcomp(training_frame=myframe, k=3))
     algo_run_time[i,j] <- aat[3] 
@@ -73,7 +82,7 @@ h2o.rm(conn,"myframe")
 #create_frm_time 
 #algo_run_time 
 frm_size/2^20 #MB 
-plot(frm_size[1:3]) 
+#plot(frm_size[1:3])
 #col_grid 
 #row_grid 
 

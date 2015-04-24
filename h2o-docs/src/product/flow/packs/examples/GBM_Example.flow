@@ -43,7 +43,7 @@
     },
     {
       "type": "md",
-      "input": "### Viewing GBM Results\n\nTo view the results, click the **View** button. GBM output for classification returns the output as a graph.  \n\nA graph of the variable importances is also included.  \n\n"
+      "input": "### Viewing GBM Results\n\nTo view the results, click the **View** button. The output for GBM includes the following: \n\n- Model parameters (hidden)\n- A graph of the scoring history (training MSE vs number of trees)\n- A graph of the variable importances\n- Output (model category, validation metrics, initf)\n- Model summary (number of trees, min. depth, max. depth, mean depth, min. leaves, max. leaves, mean leaves)\n- Scoring history in tabular format\n- Training metrics (model name, model checksum name, frame name, description, model category, duration in ms, scoring time, predictions, MSE, R2)\n- Variable importances in tabular format\n\n\n"
     },
     {
       "type": "cs",
