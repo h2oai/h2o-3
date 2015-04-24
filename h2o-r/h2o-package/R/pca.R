@@ -1,12 +1,3 @@
-# TODO: Describe this in details for scale center, or get this back
-# A character string that indicates how the training data
-# should be transformed before running PCA. Possible values are "NONE":
-# for no transformation, "DEMEAN": for subtracting the mean of each
-# column, "DESCALE": for dividing by the standard deviation of each
-# column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
-# for demeaning and dividing each column by its range (max - min).
-
-
 #'
 #' Quadratically Regularized PCA Model in H2O
 #'
