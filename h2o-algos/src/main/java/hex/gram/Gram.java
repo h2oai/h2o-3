@@ -725,18 +725,16 @@ public final class Gram extends Iced<Gram> {
       final double [] mrow = _xx[cid - _diagN];
       final double d = w*r.numVals[i];
       for(int j = 0; j <= i; ++j)
-        mrow[r.numIds[j] - _diagN] += d*r.numVals[j];
+        mrow[r.numIds[j]] += d*r.numVals[j];
       if(_hasIntercept)
         interceptRow[cid] += d; // intercept*x[i]
       // nums * cats
-      if(r.nBins > 0)
-        mrow[r.binIds[0]] += d;
-      for(int j = 1; j < r.nBins; ++j)
-        mrow[r.binIds[j] - _diagN] += d;
+      for(int j = 0; j < r.nBins; ++j)
+        mrow[r.binIds[j]] += d;
     }
     if(_hasIntercept){
       // intercept*intercept
-      interceptRow[_denseN+denseColStart] += w;
+      interceptRow[interceptRow.length-1] += w;
       // intercept X cat
       for(int j = 0; j < r.nBins; ++j)
         interceptRow[r.binIds[j]] += w;
