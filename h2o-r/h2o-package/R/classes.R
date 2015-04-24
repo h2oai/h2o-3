@@ -106,9 +106,9 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 })
 
 .keyFinalizer <- function(envir) {
-  try(h2o.rm(get("key", envir), get("conn", envir)), silent=TRUE)
-  try(h2o.rm(get("model_id", envir), get("conn", envir)), silent=TRUE)
-  try(h2o.rm(get("frame_id", envir), get("conn", envir)), silent=TRUE)
+  if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
+  if( !is.null(envir$key)      ) h2o.rm(envir$key, envir$conn)
+  invisible(NULL)
 }
 
 .newH2OObject <- function(Class, ..., conn = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
@@ -244,7 +244,7 @@ setMethod("initialize", "H2OFrame", function(.Object, ...) {
 })
 
 # TODO: make a more frame-specific constructor
-.newH2OFrame <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+.newH2OFrame <- function(Class, conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE,mutable=new("H2OFrameMutableState")) {
   if (linkToGC && !is.na(frame_id) && is(conn, "H2OConnection")) {
     envir <- new.env()
     assign("frame_id", frame_id, envir)
@@ -252,7 +252,7 @@ setMethod("initialize", "H2OFrame", function(.Object, ...) {
     reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
     finalizers <- c(list(envir), finalizers)
   }
-  new(Class, ..., conn = conn, frame_id = frame_id, finalizers = finalizers)
+  new("H2OFrame",conn = conn, frame_id = frame_id, finalizers = finalizers, mutable=mutable)
 }
 
 #' @rdname H2OFrame-class
