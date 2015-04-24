@@ -192,6 +192,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   public static class ChunkHomesV3 extends Schema<Iced, ChunkHomesV3> {
+    @API(help="Array of nodes in the cluster", direction = API.Direction.OUTPUT)
     public ChunkHomesEntryV3[] entries;
   }
 
