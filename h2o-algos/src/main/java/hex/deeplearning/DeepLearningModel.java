@@ -1174,7 +1174,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                   (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
                       (get_params()._autoencoder ? "auto-encoder" :
                               _classification ? (units[units.length-1] + "-class classification") : "regression" )
-                      + ", " + get_params()._loss.toString() + " loss",
+                      + ", " + get_params()._loss.toString() + " loss, " + String.format("%,d", size()) + " weights/biases",
               new String[neurons.length],
               new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                       "Mean Rate", "Rate RMS", "Momentum",
