@@ -1,15 +1,28 @@
 package water.util;
 
 import water.*;
+import water.api.API;
+import water.api.Schema;
 import water.persist.PersistManager;
 
 public class WaterMeterIo extends Iced {
-  public static class IoStatsEntry extends Iced {
-    String backend;
+  public static class IoStatsEntry extends Schema<Iced, IoStatsEntry> {
+    @API(help="Back end type", direction = API.Direction.OUTPUT)
+    public String backend;
+
+    @API(help="Number of store events", direction = API.Direction.OUTPUT)
     public long store_count;
+
+    @API(help="Cumulative stored bytes", direction = API.Direction.OUTPUT)
     public long store_bytes;
+
+    @API(help="Number of delete events", direction = API.Direction.OUTPUT)
     public long delete_count;
+
+    @API(help="Number of load events", direction = API.Direction.OUTPUT)
     public long load_count;
+
+    @API(help="Cumulative loaded bytes", direction = API.Direction.OUTPUT)
     public long load_bytes;
   }
 
