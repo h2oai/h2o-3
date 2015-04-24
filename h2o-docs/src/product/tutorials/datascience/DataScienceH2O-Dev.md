@@ -709,7 +709,7 @@ The output for GBM includes the following:
 ###FAQ
 
 R for multinomial  initial value =0
-h2o for multinomial initial value =  class distribution 
+R for binomial(multinomial) initial value =0, h2o for binomial (multinomial) initial value = class distribution
 
 R for response variable does not accept NA
 H2O if response has NAs works fine.
