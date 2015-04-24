@@ -25,7 +25,7 @@ class CreateFrameV3 extends JobV3<CreateFrame, CreateFrameV3> {
   @API(help = "Fraction of categorical columns (for randomize=true)", json=true)
   public double categorical_fraction;
 
-  @API(help = "The maximum number of (unique) factor levels in each categorical column", json=true)
+  @API(help = "Factor levels for categorical variables", json=true)
   public int factors;
 
   @API(help = "Fraction of integer columns (for randomize=true)", json=true)
