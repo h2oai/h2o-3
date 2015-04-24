@@ -108,18 +108,24 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 .keyFinalizer <- function(envir) {
   if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
   if( !is.null(envir$key)      ) h2o.rm(envir$key, envir$conn)
+  if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id,envir$conn)
   invisible(NULL)
 }
 
-.newH2OObject <- function(Class, ..., conn = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
+.newH2OObject <- function(Class, ..., conn = NULL, id = NA_character_, finalizers = list(), linkToGC = FALSE) {
   if (linkToGC && !is.na(key) && is(conn, "H2OConnection")) {
     envir <- new.env()
-    assign("key", key, envir)
+    assign("id", key, envir)
     assign("conn", conn, envir)
     reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
     finalizers <- c(list(envir), finalizers)
   }
-  new(Class, ..., conn = conn, key = key, finalizers = finalizers)
+
+  if( Class == "H2OFrame" || Class == "H2ORawData" ) {
+    new(Class, ..., conn=conn, frame_id=id, finalizers=finalizers)
+  } else {
+    new(Class, ..., conn = conn, model_id = id, finalizers = finalizers)
+  }
 }
 
 #'
@@ -234,25 +240,9 @@ setClass("H2OFrame",
                    mutable    = new("H2OFrameMutableState"))
          )
 
-#' @rdname H2OFrame-class
-#' @export
-setMethod("initialize", "H2OFrame", function(.Object, ...) {
-  .Object <- callNextMethod()
-  .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
-                                                                     function(x) capture.output(print(x)))))]
-  .Object
-})
-
 # TODO: make a more frame-specific constructor
 .newH2OFrame <- function(Class, conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE,mutable=new("H2OFrameMutableState")) {
-  if (linkToGC && !is.na(frame_id) && is(conn, "H2OConnection")) {
-    envir <- new.env()
-    assign("frame_id", frame_id, envir)
-    assign("conn", conn, envir)
-    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-    finalizers <- c(list(envir), finalizers)
-  }
-  new("H2OFrame",conn = conn, frame_id = frame_id, finalizers = finalizers, mutable=mutable)
+  .newH2OObject("H2OFrame", conn=conn,id=frame_id,finalizers=finalizers,mutable=mutable)
 }
 
 #' @rdname H2OFrame-class
@@ -292,14 +282,7 @@ setMethod("show", "H2OFrame", function(object) {
 setClass("H2ORawData", contains="H2OFrame")
 
 .newH2ORawData <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  if (linkToGC && !is.na(frame_id) && is(conn, "H2OConnection")) {
-    envir <- new.env()
-    assign("frame_id", frame_id, envir)
-    assign("conn", conn, envir)
-    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-    finalizers <- c(list(envir), finalizers)
-  }
-  new(Class, ..., conn = conn, frame_id = frame_id, finalizers = finalizers)
+  .newH2OObject("H2ORawData", ..., conn=conn,id=frame_id,finalizers=finalizers,linkToGC=linkToGC)
 }
 
 #' @rdname H2ORawData-class
@@ -344,26 +327,9 @@ setClass("H2OModel",
                         prototype(conn=NULL, model_id=NA_character_, finalizers=list()),
                         contains=c("VIRTUAL"))
 
-
-#' @rdname H2OModel-class
-#' @export
-setMethod("initialize", "H2OModel", function(.Object, ...) {
-  .Object <- callNextMethod()
-  .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
-                                                                     function(x) capture.output(print(x)))))]
-  .Object
-})
-
 # TODO: make a mode model-specific constructor
 .newH2OModel <- function(Class, ..., conn = NULL, model_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  if (linkToGC && !is.na(model_id) && is(conn, "H2OConnection")) {
-    envir <- new.env()
-    assign("model_id", model_id, envir)
-    assign("conn", conn, envir)
-    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-    finalizers <- c(list(envir), finalizers)
-  }
-  new(Class, ..., conn = conn, model_id = model_id, finalizers = finalizers)
+  .newH2OObject(Class, ..., conn=conn,id=model_id,finalizers=finalizers,linkToGC=linkToGC)
 }
 
 #' @rdname H2OModel-class
