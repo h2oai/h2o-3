@@ -2227,6 +2227,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return sb;
   }
 
+  @Override protected boolean toJavaCheckTooBig() { return (model_info.size() > 1e6); }
+
   @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
     SB model = new SB();
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();

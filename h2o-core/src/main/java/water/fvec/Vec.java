@@ -402,6 +402,19 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
+  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
+    long [] espc = new long[2];
+    espc[1] = vals.length;
+    Vec v = new Vec(vecKey,espc, domain);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(double d:vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key,v,fs);
+    fs.blockForPending();
+    return v;
+  }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.

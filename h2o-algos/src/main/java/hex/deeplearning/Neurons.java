@@ -1308,7 +1308,7 @@ public abstract class Neurons {
    */
   static Frame toFrame(Vector v, Key key) {
     final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(1) / Math.log(2.)));
-    Vec vv = makeCon(0, v.size(), log_rows_per_chunk);
+    Vec vv = makeCon(0, v.size(), log_rows_per_chunk, false /* no rebalancing! */);
     Frame f = new Frame(key, new Vec[]{vv}, true);
     Vec.Writer vw = f.vecs()[0].open();
     for (int r = 0; r < v.size(); ++r) {
