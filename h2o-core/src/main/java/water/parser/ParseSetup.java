@@ -485,6 +485,7 @@ public final class ParseSetup extends Iced {
               || n.endsWith("csv")
               || n.endsWith("xls")
               || n.endsWith("txt")
+              || n.endsWith("svm")
               || n.endsWith("arff")) {
         n = n.substring(0, dot);
         dot = n.lastIndexOf('.');
