@@ -4,6 +4,7 @@ package water.parser;
 
 import water.Futures;
 import water.Iced;
+import water.exceptions.H2OParseException;
 import water.fvec.AppendableVec;
 import water.fvec.C16Chunk;
 import water.fvec.NewChunk;
@@ -56,14 +57,6 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         dout._vecs = v;
       }
       for(int i = 0; i < dout._vecs.length; ++i) {
-        // unify string and enum chunks
-        if (_vecs[i].isString() && !dout._vecs[i].isString())
-          dout.enumCol2StrCol(i);
-        else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
-          enumCol2StrCol(i);
-          _ctypes[i] = Vec.T_STR;
-        }
-
         _vecs[i].reduce(dout._vecs[i]);
       }
     }
@@ -165,27 +158,11 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           int id = _enums[_col = colIdx].addKey(str);
           if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;
           _nvs[colIdx].addEnum(id);
-        } else { // maxed out enum map, convert col to string chunk
-          _ctypes[_col = colIdx] = Vec.T_STR;
-          enumCol2StrCol(colIdx);
-          _nvs[colIdx].addStr(str);
+        } else { // maxed out enum map
+          throw new H2OParseException("Exceeded enumeration limit.  Consider reparsing this column as a string.");
         }
       }
     }
-  }
-
-  private void enumCol2StrCol(int colIdx) {
-    //build local value2key map for enums
-    Categorical enums = _enums[colIdx].deepCopy();
-    ValueString emap[] = new ValueString[enums.maxId()+1];
-    ValueString keys[] = enums._map.keySet().toArray(new ValueString[enums.size()]);
-    for (ValueString str:keys)
-      // adjust for enum ids using 1-based indexing
-      emap[enums._map.get(str)-1] = str;
-
-    //swap in string NewChunk in place of enum NewChunk
-    _nvs[colIdx] = _nvs[colIdx].convertEnum2Str(emap);
-    //Log.info("enumCol2StrCol");
   }
 
   /** Adds double value to the column. */
