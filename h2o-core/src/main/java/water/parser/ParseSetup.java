@@ -464,15 +464,32 @@ public final class ParseSetup extends Iced {
     return new ParseSetup( false, 0, new String[]{"Cannot determine file type"}, pType, sep, singleQuotes, checkHeader, ncols, columnNames, null, domains, naStrings, null, FileVec.DFLT_CHUNK_SIZE);
   }
 
-  public static String hex( String n ) {
+  /**
+   * Cleans up the file name to make .hex name
+   * to be used as a destination key.  Eliminates
+   * common file extensions, and replaces odd
+   * characters.
+   *
+   * @param n filename to be cleaned
+   * @return cleaned name
+   */
+  public static String createHexName(String n) {
     // blahblahblah/myName.ext ==> myName
     // blahblahblah/myName.csv.ext ==> myName
     int sep = n.lastIndexOf(java.io.File.separatorChar);
     if( sep > 0 ) n = n.substring(sep+1);
     int dot = n.lastIndexOf('.');
-    if( dot > 0 ) n = n.substring(0, dot);
-    int dot2 = n.lastIndexOf('.');
-    if( dot2 > 0 ) n = n.substring(0, dot2);
+    if( dot > 0) {
+      while (n.endsWith("zip")
+              || n.endsWith("gz")
+              || n.endsWith("csv")
+              || n.endsWith("xls")
+              || n.endsWith("txt")
+              || n.endsWith("arff")) {
+        n = n.substring(0, dot);
+        dot = n.lastIndexOf('.');
+      }
+    }
     // "2012_somedata" ==> "X2012_somedata"
     if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;
     // "human%Percent" ==> "human_Percent"
