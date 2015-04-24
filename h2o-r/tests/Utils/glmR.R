@@ -23,11 +23,11 @@ penalty <- function(alpha, beta){
 }
 
 gaussian_obj <- function(deviance, nobs, lambda, alpha, beta) {
-  deviance * (1/nobs) + lambda * penalty(alpha, beta)
+  deviance * (1/(2*nobs)) + lambda * penalty(alpha, beta)
 }
 
 binomial_obj <- function(deviance, nobs, lambda, alpha, beta) {
-  deviance/2 + lambda * penalty(alpha, beta)
+  deviance * (1/(2*nobs)) + lambda * penalty(alpha, beta)
 }
 
 checkGLMModel2 <- function(myGLM.h2o,myGLM.r){
