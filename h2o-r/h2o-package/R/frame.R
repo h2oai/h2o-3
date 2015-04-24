@@ -68,7 +68,7 @@
 #' @param value If \code{randomize = FALSE}, then all real-valued entries will be set to this value.
 #' @param real_range The range of randomly generated real values.
 #' @param categorical_fraction The fraction of total columns that are categorical.
-#' @param factors The number of (unique) factor levels in each categorical column.
+#' @param factors The maximum number of (unique) factor levels in each categorical column.
 #' @param integer_fraction The fraction of total columns that are integer-valued.
 #' @param integer_range The range of randomly generated integer values.
 #' @param binary_fraction The fraction of total columns that are binary-valued.
