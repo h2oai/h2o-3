@@ -304,16 +304,16 @@ public final class ParseSetup extends Iced {
             _totalParseSize += bv.length();
 
         // only preview 1 DFLT_CHUNK_SIZE for ByteVecs, UploadFileVecs, compressed, and small files
-        if (ice instanceof ByteVec
+/*        if (ice instanceof ByteVec
                 || ((Frame)ice).vecs()[0] instanceof UploadFileVec
                 || bv.length() <= FileVec.DFLT_CHUNK_SIZE
-                || decompRatio > 1.0) {
+                || decompRatio > 1.0) { */
           try {
             _gblSetup = guessSetup(bits, _userSetup);
           } catch (H2OParseException pse) {
             throw new H2OParseSetupException(key, pse);
           }
-        } else { // file is aun uncompressed NFSFileVec or HDFSFileVec & larger than the DFLT_CHUNK_SIZE
+/*        } else { // file is aun uncompressed NFSFileVec or HDFSFileVec & larger than the DFLT_CHUNK_SIZE
           FileVec fv = (FileVec) ((Frame) ice).vecs()[0];
           // reset chunk size to 1M (uncompressed)
           int chkSize = (int) ((1<<20) /decompRatio);
@@ -341,7 +341,7 @@ public final class ParseSetup extends Iced {
 
           // return chunk size to DFLT
           fv.setChunkSize((Frame) ice, FileVec.DFLT_CHUNK_SIZE);
-        }
+        } */
         // report if multiple files exist in zip archive
         if (ZipUtil.getFileCount(bv) > 1) {
           if (_gblSetup._errors != null)
