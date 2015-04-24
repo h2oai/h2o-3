@@ -4,6 +4,7 @@ import hex.Model;
 import water.*;
 import water.api.ModelsHandler.Models;
 import water.exceptions.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.persist.PersistManager;
@@ -177,6 +178,45 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Docs for column summary. */
   public StringBuffer columnSummaryDocs(int version, StringBuffer docs) {
     return null; // doc(this, version, docs, "docs/columnSummary.md");
+  }
+
+  public static class ChunkHomesEntryV3 extends Schema<Iced, ChunkHomesEntryV3> {
+    @API(help="IP and Port of node", direction = API.Direction.OUTPUT)
+    public String ip_port;
+
+    @API(help="Number of chunks stored in this node", direction = API.Direction.OUTPUT)
+    long num_chunks;
+
+    @API(help="Number of rows stored in this node", direction = API.Direction.OUTPUT)
+    long num_rows;
+  }
+
+  public static class ChunkHomesV3 extends Schema<Iced, ChunkHomesV3> {
+    public ChunkHomesEntryV3[] entries;
+  }
+
+  /** Return chunk home information. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ChunkHomesV3 chunkHomes(int version, FramesV3 s) {
+    ChunkHomesV3 h = new ChunkHomesV3();
+    h.entries = new ChunkHomesEntryV3[H2O.CLOUD.size()];
+    for (int i = 0; i < h.entries.length; i++) {
+      H2ONode n = H2O.CLOUD.members()[i];
+      h.entries[i] = new ChunkHomesEntryV3();
+      h.entries[i].ip_port = n.getIpPortString();
+    }
+
+    Frame frame = getFromDKV("key", s.key.key()); // safe
+    Vec any = frame.anyVec();
+    int n = any.nChunks();
+    for (int i = 0; i < n; i++) {
+      Key k = any.chunkKey(i);
+      int node_idx = k.home_node().index();
+      h.entries[node_idx].num_chunks++;
+      h.entries[node_idx].num_rows += any._espc[i + 1] - any._espc[i];
+    }
+
+    return h;
   }
 
   /** Return a single frame. */
