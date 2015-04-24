@@ -13,7 +13,7 @@ import tempfile
 import tabulate
 import subprocess
 import atexit
-import h2o
+import pkg_resources
 from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
@@ -99,13 +99,13 @@ class H2OConnection(object):
 
     ver_h2o = cld['version']
     try:
-      ver_pkg = h2o.__version__
-    except AttributeError:
-      ver_pkg = "PKG_SOURCE"
+      ver_pkg = pkg_resources.get_distribution("h2o").version
+    except:
+      ver_pkg = "UNKNOWN"
 
-    if ver_h2o != ver_pkg and ver_pkg != "PKG_SOURCE":
+    if ver_h2o != ver_pkg:
       message = \
-        "Version mismatch! H2O is running version {0} but python package is version {1}".format(ver_h2o, str(ver_pkg))
+        "Version mismatch. H2O is version {0}, but the python package is version {1}.".format(ver_h2o, str(ver_pkg))
       if strict_version_check:
         raise EnvironmentError, message
       else:
