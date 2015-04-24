@@ -15,35 +15,12 @@ import java.util.Arrays;
 public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMParameters, GLMV3.GLMParametersV3, GLMModel.GLMOutput, GLMModelV3.GLMModelOutputV3> {
 
   public static final class GLMModelOutputV3 extends ModelOutputSchema<GLMModel.GLMOutput, GLMModelOutputV3> {
-    // Output fields; input fields are in the parameters list
-
-    // Submodel [] _submodels;
-
-
-//    @API(help="fill me in GLMModelOutputV2")
-//    double   [] global_beta;
-//
-//    @API(help="fill me in GLMModelOutputV2")
-//    String   [] coefficient_names;
 
     @API(help="Table of coefficients")
     TwoDimTableBase coefficients_table;
 
     @API(help="Coefficient magnitudes")
     TwoDimTableBase coefficients_magnitude;
-
-
-//    @API(help="Residual Deviance - Validation")
-//    double      validation_residual_deviance;
-//
-//    @API(help="Null Deviance - Validation")
-//    double      validation_null_deviance;
-//
-//    @API(help="Residual Degrees of Freedom - Validation")
-//    double      validation_residual_degrees_of_freedom;
-//
-//    @API(help="Null Degrees of Freedom - Validation")
-//    double      validation_null_degrees_of_freedom;
 
 
     @Override
