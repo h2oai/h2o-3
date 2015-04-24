@@ -12,6 +12,21 @@ from . import H2OConnection
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
     self._key = dest_key
+
+    # setup training metrics
+    if "training_metrics" in model_json["output"]:
+      tm = model_json["output"]["training_metrics"]
+      tm = metrics_class(tm,True,False,model_json["algo"])
+      model_json["output"]["training_metrics"] = tm
+
+    # setup validation metrics
+    if "validation_metrics" in model_json["output"]:
+      vm = model_json["output"]["validation_metrics"]
+      vm = metrics_class(vm,False,True,model_json["algo"])
+      model_json["output"]["validation_metrics"] = vm
+    else:
+      model_json["output"]["validation_metrics"] = None
+
     self._model_json = model_json
     self._metrics_class = metrics_class
 
@@ -81,26 +96,38 @@ class ModelBase(object):
     # finally return frame
     return H2OFrame(vecs=vecs)
 
-  def model_performance(self, test_data):
+  def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
-    :param test_data: Data set for which model metrics shall be computed against.
+    :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
+    :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
+    :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
     :return: An object of class H2OModelMetrics.
     """
-    if not test_data:  raise ValueError("Missing`test_data`.")
-    if not isinstance(test_data, H2OFrame):
-      raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
-    fr_key = H2OFrame.send_frame(test_data)
-    res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
-    h2o.remove(fr_key)
+    if test_data is None:
+      if not train and not valid:
+        train = True  # default to train
 
-    # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
-    raw_metrics = None
-    for mm in res["model_metrics"]:
-      if mm["frame"]["name"] == fr_key:
-        raw_metrics = mm
-        break
-    return self._metrics_class(raw_metrics)
+      if train:
+        return self._model_json["output"]["training_metrics"]
+
+      if valid:
+        return self._model_json["output"]["validation_metrics"]
+
+    else:  # cases dealing with test_data not None
+      if not isinstance(test_data, H2OFrame):
+        raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
+      fr_key = H2OFrame.send_frame(test_data)
+      res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
+      h2o.remove(fr_key)
+
+      # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+      raw_metrics = None
+      for mm in res["model_metrics"]:
+        if mm["frame"]["name"] == fr_key:
+          raw_metrics = mm
+          break
+      return self._metrics_class(raw_metrics)
 
   def summary(self):
     """

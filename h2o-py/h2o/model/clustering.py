@@ -56,7 +56,10 @@ class H2OClusteringModel(ModelBase):
     return o._model_json["output"]["training_metrics"]
 
 class H2OClusteringModelMetrics(object):
-  def __init__(self, metric_json):
+  def __init__(self, metric_json,on_train,on_valid,algo):
     self._metric_json = metric_json
+    self._on_train = on_train   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+    self._on_valid = on_valid   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+    self._algo = algo
 
 
