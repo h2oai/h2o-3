@@ -1480,11 +1480,11 @@ public abstract class Neurons {
       if (drm != null) m = drm;
       if (scm != null) m = scm;
       if (srm != null) m = srm;
-      assert(m.rows() == cs[0]._len);
+      int off = (int)cs[0].start();
       assert(m.cols() == cs.length);
       for (int c = 0; c < cs.length; ++c) {
-        for (int r = 0; r < m.rows(); ++r) {
-          cs[c].set(r, m.get((int)cs[0].start() + r, c));
+        for (int r = 0; r < cs[0]._len; ++r) {
+          cs[c].set(r, m.get(off + r, c));
         }
       }
     }
