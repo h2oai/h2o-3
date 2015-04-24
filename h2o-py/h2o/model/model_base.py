@@ -22,8 +22,11 @@ class ModelBase(object):
     # setup validation metrics
     if "validation_metrics" in model_json["output"]:
       vm = model_json["output"]["validation_metrics"]
-      vm = metrics_class(vm,False,True,model_json["algo"])
-      model_json["output"]["validation_metrics"] = vm
+      if vm is None:
+        model_json["output"]["validation_metrics"] = None
+      else:
+        vm = metrics_class(vm,False,True,model_json["algo"])
+        model_json["output"]["validation_metrics"] = vm
     else:
       model_json["output"]["validation_metrics"] = None
 
@@ -127,7 +130,7 @@ class ModelBase(object):
         if mm["frame"]["name"] == fr_key:
           raw_metrics = mm
           break
-      return self._metrics_class(raw_metrics)
+      return self._metrics_class(raw_metrics,algo=self._model_json["algo"])
 
   def summary(self):
     """

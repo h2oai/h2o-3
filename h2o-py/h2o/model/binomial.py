@@ -19,7 +19,7 @@ class H2OBinomialModelMetrics(object):
   This class contains methods for inspecting the AUC for different criteria.
   To input the different criteria, use the static variable `criteria`
   """
-  def __init__(self, metric_json,on_train,on_valid,algo):
+  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
     """
     Create a new Binomial Metrics object (essentially a wrapper around some json)
     :param metric_json: A blob of json holding all of the needed information
