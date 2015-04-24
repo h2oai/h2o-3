@@ -385,7 +385,7 @@
 
         for (j in seq_along(tbl)) {
           switch(x$columns[[j]]$type,
-                 integer = {
+                 int = {
                    tbl[[j]] <- as.integer(tbl[[j]])
                  },
                  long   =,

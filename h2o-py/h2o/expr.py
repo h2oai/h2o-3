@@ -156,8 +156,9 @@ class Expr(object):
     if noprint:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = j['frames'][0]['columns'][0]['data'][0:10]
-        return data
+        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        data = map(list, zip(*data))
+        return data[0:min(10,len(data))]
       return self._data
     else:
       if isinstance(self._data, unicode):
@@ -170,6 +171,7 @@ class Expr(object):
       else:
         data = [self._data]
       t_data = map(list, zip(*data))
+      t_data = t_data[0:min(10,len(t_data))]
       for didx,d in enumerate(t_data): t_data[didx].insert(0,didx)
       headers = ["Row ID"]
       for i in range(len(t_data[0])): headers.append('')
@@ -177,9 +179,9 @@ class Expr(object):
       print tabulate.tabulate(t_data, headers=headers)
       print
 
-#  def __repr__(self):
-#    self.show()
-#    return ""
+  # def __repr__(self):
+  #    self.show()
+  #    return ""
 
   # Compute summary data
   def summary(self):
@@ -232,6 +234,8 @@ class Expr(object):
   def _simple_expr_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return Expr(op, Expr(i), self)
     raise NotImplementedError
+
+  def logical_negation(self):  return Expr("not", self)
 
   def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
@@ -339,13 +343,15 @@ class Expr(object):
     if tmps:
       cmd = "(, " + cmd + tmps + ")"
     j = h2o.rapids(cmd)
-    if isinstance(self._data, unicode):
+    if isinstance(self._data, unicode) or j['result_type'] == 0:
       pass  # Big Data Key is the result
     # Small data result pulled locally
     elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
+    elif j['result_type'] == 2 or j['result_type'] == 4:
+      self._data = j['string']
     else:
       self._data = j['scalar']
     return self._data
@@ -492,6 +498,10 @@ class Expr(object):
       if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
       else:                 pass
 
+    elif self._op == "not":
+      if left.is_local():   self._data = [not x for x in left._data]
+      else:                 pass
+
     elif self._op == "sign":
       if left.is_local():   self._data = [cmp(x,0) for x in left._data]
       else:                 pass
@@ -523,6 +533,11 @@ class Expr(object):
     elif self._op in ["min", "max", "sum", "median"]:
       if left.is_local():   raise NotImplementedError
       else:                 __CMD__ += "%FALSE"
+
+    elif self._op == "cbind":
+      if left.is_local():
+        for v in left._data: __CMD__ += "'" + str(v._expr._data) + "'"
+      else:                 pass
 
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)

@@ -37,31 +37,21 @@ public class AUC2 extends Iced {
   public enum ThresholdCriterion {
     f1(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
-        final double recl = recall   .exec(tp,fp,fn,tn);
+        final double recl = tpr   .exec(tp,fp,fn,tn);
         return 2. * (prec * recl) / (prec + recl);
       } },
     f2(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
-        final double recl = recall   .exec(tp,fp,fn,tn);
+        final double recl = tpr   .exec(tp,fp,fn,tn);
         return 5. * (prec * recl) / (4. * prec + recl);
       } },
     f0point5(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
-        final double recl = recall   .exec(tp,fp,fn,tn);
+        final double recl = tpr   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return 1.0-((double)fn+fp)/(tp+fn+tn+fp);
-      } },
-    precision(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return (double)tp/(tp+fp);
-      } },
-    recall(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return (double)tp/(tp+fn);
-      } },
-    specificity(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return (double)tn/(tn+fp);
-      } },
+    accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return 1.0-((double)fn+fp)/(tp+fn+tn+fp); } },
+    precision(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tp/(tp+fp); } },
     absolute_MCC(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         double mcc = ((double)tp*tn - (double)fp*fn);
         if (mcc == 0) return 0;
@@ -79,6 +69,10 @@ public class AUC2 extends Iced {
     fns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
     fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
     tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
+    tnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tn/(fp+tn); } },
+    fnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fn/(fn+tp); } },
+    fpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fp/(fp+tn); } },
+    tpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tp/(tp+fn); } },
     ;
     public final boolean _isInt; // Integral-Valued data vs Real-Valued
     ThresholdCriterion(boolean isInt) { _isInt = isInt; }

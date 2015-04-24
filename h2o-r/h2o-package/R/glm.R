@@ -44,9 +44,9 @@
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
 #'        coefficients.
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
-#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
 h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     max_iterations = 50,
@@ -128,9 +128,14 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
   if(!missing(nfolds))
     if (nfolds > 1) stop("nfolds >1 not supported")
   #   parms$nfolds <- nfolds
-  if(!missing(beta_constraints))
+  if(!missing(beta_constraints)){
+    delete <- !.is.eval(beta_constraints)
+    if (delete) {
+        temp_key <- beta_constraints@key
+        .h2o.eval.frame(conn = conn, ast = beta_constraints@mutable$ast, key = temp_key)
+    }
     parms$beta_constraints <- beta_constraints
-
+  }
   m <- .h2o.createModel(training_frame@conn, 'glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]

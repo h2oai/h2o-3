@@ -171,7 +171,7 @@ class Basic(unittest.TestCase):
                 'standardize': False,
                 # 'seed': kmeansSeed,
                 'init': 'Furthest', # [u'Random', u'PlusPlus', u'Furthest', u'User']
-                # 'dropNA20Cols': False,
+                # 'drop_na20_cols': False,
                 # 'user_points': userPointsKey
             }
 

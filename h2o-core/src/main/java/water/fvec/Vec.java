@@ -285,27 +285,59 @@ public class Vec extends Keyed<Vec> {
   }
   
   // ======= Create zero/constant Vecs ======
-
+  /** Make a new zero-filled vec **/
+  public static Vec makeZero( long len, boolean redistribute ) {
+    return makeCon(0L,len,redistribute);
+  }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
   public static Vec makeZero( long len ) { return makeCon(0L,len); }
 
+  /** Make a new constant vector with the given row count, and redistribute the data
+   * evenly around the cluster.
+   * @param x The value with which to fill the Vec.
+   * @param len Number of rows.
+   * @return New cosntant vector with the given len.
+   */
+  public static Vec makeCon(double x, long len) {
+    return makeCon(x,len,true);
+  }
+
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len) {
+  public static Vec makeCon(double x, long len, boolean redistribute) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x, len, log_rows_per_chunk);
+    return makeCon(x,len,log_rows_per_chunk,redistribute);
+  }
+
+  /** Make a new constant vector with the given row count, and redistribute the data evenly
+   *  around the cluster.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+    return makeCon(x,len,log_rows_per_chunk,true);
   }
 
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
     int nchunks = (int)Math.max(1,len >> log_rows_per_chunk);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
       espc[i] = ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    return makeCon(x,VectorGroup.VG_LEN1,espc);
+    Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
+    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
+    if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
+      Key newKey = Key.make(".makeConRebalance" + chunks);
+      Frame f = new Frame(v0);
+      RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
+      H2O.submitTask(rb);
+      rb.join();
+      Keyed.remove(v0._key);
+      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(null); // this is gross.
+      Keyed.remove(newKey);
+    }
+    return v0;
   }
 
   /** Make a new vector with the same size and data layout as the current one,
@@ -393,7 +425,6 @@ public class Vec extends Keyed<Vec> {
     return v0;
   }
 
-
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
   public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
 
@@ -437,14 +468,14 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
-  public static Vec makeSeq( long len) {
+  public static Vec makeSeq( long len, boolean redistribute) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
             c.set(r, r + 1 + c._start);
       }
-    }.doAll(makeZero(len))._fr.vecs()[0];
+    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.

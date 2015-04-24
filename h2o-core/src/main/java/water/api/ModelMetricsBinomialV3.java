@@ -60,7 +60,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         types     [i+1] = crits[i]._isInt ? "long" : "double";
         formats   [i+1] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
-      colHeaders[i+1] = "idx"; types[i+1] = "integer"; formats[i+1] = "%d";
+      colHeaders[i+1] = "idx"; types[i+1] = "int"; formats[i+1] = "%d";
       TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Binomial metrics as a function of classification thresholds", new String[auc._nBins], colHeaders, types, formats, null );
       for( i=0; i<auc._nBins; i++ ) {
         int j=0;

@@ -657,6 +657,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
+  final public VarImp varImp() { return _output.errors.variable_importances; }
 
   public long run_time;
   private long start_time;
@@ -1180,7 +1181,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                       "Mean Weight", "Weight RMS",
                       "Mean Bias", "Bias RMS"
               },
-              new String[]{"integer", "integer", "string", "double", "double", "double",
+              new String[]{"int", "int", "string", "double", "double", "double",
                            "double", "double", "double",
                       "double", "double",
                       "double", "double"

@@ -9,8 +9,9 @@
     stop('`data` must be an H2OFrame object')
   if(!is.character(x) && !is.numeric(x))
     stop('`x` must be column names or indices')
-  if(!is.character(y) && !is.numeric(y))
-    stop('`y` must be a column name or index')
+  if( !autoencoder )
+    if(!is.character(y) && !is.numeric(y))
+      stop('`y` must be a column name or index')
 
   cc <- colnames(data)
 
@@ -25,25 +26,30 @@
     x <- cc[x_i]
   }
 
-  if(is.character(y)){
-    if(!(y %in% cc))
-      stop(y, ' is not a column name')
-    y_i <- which(y == cc)
+  x_ignore <- c()
+  if( !autoencoder ) {
+    if(is.character(y)){
+      if(!(y %in% cc))
+        stop(y, ' is not a column name')
+      y_i <- which(y == cc)
+    } else {
+      if(y < 1L || y > length(cc))
+        stop('response variable index ', y, ' is out of range')
+      y_i <- y
+      y <- cc[y]
+    }
+
+    if(!autoencoder && (y %in% x)) {
+      warning('removing response variable from the explanatory variables')
+      x <- setdiff(x,y)
+    }
+    x_ignore <- setdiff(setdiff(cc, x), y)
+    if( length(x_ignore) == 0L ) x_ignore <- ''
+    return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
   } else {
-    if(y < 1L || y > length(cc))
-      stop('response variable index ', y, ' is out of range')
-    y_i <- y
-    y <- cc[y]
+    if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
+    return(list(x=x,x_i=x_i,x_ignore=x_ignore))
   }
-
-  if(!autoencoder && (y %in% x)) {
-    warning('removing response variable from the explanatory variables')
-    x <- setdiff(x,y)
-  }
-
-  x_ignore <- setdiff(setdiff(cc, x), y)
-  if(length(x_ignore) == 0L) x_ignore <- ''
-  list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i)
 }
 
 .verify_datacols <- function(data, cols) {
@@ -668,14 +674,56 @@ h2o.precision <- function(object, thresholds){
 
 #' @rdname h2o.metric
 #' @export
+h2o.tpr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "tpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.fpr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.fnr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fnr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.tnr <- function(object, thresholds){
+  h2o.metric(object, thresholds, "tnr")
+}
+
+#' @rdname h2o.metric
+#' @export
 h2o.recall <- function(object, thresholds){
-  h2o.metric(object, thresholds, "recall")
+  h2o.metric(object, thresholds, "tpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.sensitivity <- function(object, thresholds){
+  h2o.metric(object, thresholds, "tpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.fallout <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fpr")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.missrate <- function(object, thresholds){
+  h2o.metric(object, thresholds, "fnr")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.specificity <- function(object, thresholds){
-  h2o.metric(object, thresholds, "specificity")
+  h2o.metric(object, thresholds, "tnr")
 }
 
 #
@@ -956,7 +1004,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
     main <- paste(yaxis, "vs", xaxis)
     if( x@on_train ) main <- paste(main, "(on train)")
     else             main <- paste(main, "(on valid)")
-    plot(1 - x@metrics$thresholds_and_metric_scores$specificity, x@metrics$thresholds_and_metric_scores$recall, main = main, xlab = xaxis, ylab = yaxis, ...)
+    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
 }

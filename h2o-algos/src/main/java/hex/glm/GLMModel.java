@@ -741,13 +741,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Train","Number of Predictors"}, new String[]{"String","String","String","integer"},new String[]{"%s","%s","%s","%d"},"");
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Training Frame","Number of Predictors"}, new String[]{"string","string","string","int"},new String[]{"%s","%s","%s","%d"},"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
       glmModel._output._model_summary.set(0,2,_trainFrame.toString());
       glmModel._output._model_summary.set(0,3,Integer.toString(glmModel.beta().length));
       if(_scoring_iters != null) {
-        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "likelihood", "objective"}, new String[]{"integer", "double", "double"}, new String[]{"%d", "%.5f", "%.5f"}, "");
+        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "likelihood", "objective"}, new String[]{"int", "double", "double"}, new String[]{"%d", "%.5f", "%.5f"}, "");
         for (int i = 0; i < _scoring_iters.length; ++i) {
           glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
           glmModel._output._scoring_history.set(i,1,_likelihoods[i]);

@@ -58,7 +58,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // NOT in the parameters - because this requires all model-builders to have
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
-    public boolean _dropNA20Cols;    // True if dropping cols > 20% NAs
+    public boolean _drop_na20_cols;    // True if dropping cols > 20% NAs
     public boolean _dropConsCols;    // True if dropping constant and all NA cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
@@ -69,7 +69,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _score_each_iteration;
 
     // Public no-arg constructor for reflective creation
-    public Parameters() { _dropNA20Cols = defaultDropNA20Cols();
+    public Parameters() { _drop_na20_cols = defaultDropNA20Cols();
                           _dropConsCols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
