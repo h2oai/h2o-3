@@ -320,7 +320,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **DropNA20Cols**: (Optional) Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
+- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
 
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#pca) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
@@ -329,7 +329,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [NaiveBayes](#nb)) Select the column to use as the independent variable.
 
-- **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
+- **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is IRLSM. 
 
 - **Ntrees**: [(GBM](#GBM), [DRF)](#drf) Specify the number of trees. The default value is 50. 
 
@@ -347,11 +347,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
-- **Distribution**: [(DL)](#DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
+- **Distribution**: [(DL)](#DL)[(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
 
-- **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, Absolute, or None and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
+- **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
-- **Score\_each\_iteration**: ([K-Means](#kmeans), [DRF](#drf), [NaiveBayes](#nb), [PCA](#pca), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
+- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#drf), [NaiveBayes](#nb), [PCA](#pca), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
 
 - **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
 
@@ -361,7 +361,7 @@ The available options vary depending on the selected model. If an option is only
  
 - **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
-- **Init**: [(K-Means](#Kmeans), [PCA)](#pca) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, or None. For PCA, the options are PlusPlus, User, or None. 
+- **Init**: [(K-Means](#Kmeans), [PCA)](#pca) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
 **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
@@ -386,6 +386,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
+- **Beta_constraints**: ([GLM](#GLM))To use beta constraints, select a dataset from the drop-down menu. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. 
 
 **Advanced Options**
 
@@ -465,7 +466,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1. The default value is 0.0. 
 
-- **Max\_hit\_ratio\_k**: [(DL)](#DL) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0. The default value is 10. 
+- **Max\_hit\_ratio\_k**: [(DL,)](#DL)[GLM](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0. The default value is 10. 
 
 - **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1. The default value is 0.000001. 
 
@@ -507,9 +508,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is -1. 
 
-- **NLambdas**: [(GLM)](#GLM) Specify the number of lambdas to use in the search. The default value is -1. 
+- **Max\_active\_predictors**: [(GLM)](#GLM) Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
-- **Lambda\_min\_ratio**: [(GLM)](#GLM) Specify the min lambda to use in the lambda search (as a ratio of lambda max). The default value is -1. 
+
 
 ---
 
@@ -529,6 +530,10 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
    **NOTE**: The **Clone this model...** button will be supported in a future version. 
  
 To compare models, check the checkboxes for the models to use in the comparison and click the **Compare selected models** button. To select all models, check the checkbox at the top of the checkbox column (next to the **KEY** heading). 
+
+To delete a model, click the **Delete** button. 
+
+To generate a POJO to be able to use the model outside of H2O, click the **Preview POJO** button. 
 
 To learn how to make predictions, continue to the next section. 
 
@@ -715,9 +720,9 @@ The location specified in `flow_dir` may be either an hdfs or regular filesystem
 To create a copy of the current flow, select the **Flow** menu, then click **Duplicate**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
 
-## Exporting Flows
+## Downloading Flows
 
-After saving a flow as a notebook, click the **Flow** menu, then select **Export**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as *<filename>*.flow, where *<filename>* is the name specified when the flow was saved. 
+After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename> .flow`, where `<filename>` is the name specified when the flow was saved. 
 
 **Caution**: You must have an active internet connection to export flows. 
 
