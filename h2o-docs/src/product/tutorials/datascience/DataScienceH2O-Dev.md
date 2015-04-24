@@ -15,20 +15,9 @@
 
 ###Introduction
 
-K-Means falls in the general category of clustering algorithms.  
-
-
-###When to Use K-Means
-
-Use K-Means when the data are a set of attributes on which the members of the population likely differ and the objective is classification. Here are some examples:
-
-- How do competitors differ from one another on critical dimensions? 
-- How is a particular market segmented? 
-- Which dimensions are most important to differentiating between members of a population of interest? 
+K-Means falls in the general category of clustering algorithms.
 
 ###Defining a K-Means Model
-
-**Note:** For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -39,15 +28,15 @@ Use K-Means when the data are a set of attributes on which the members of the po
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional)Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **K**: Specify the number of clusters. The default is 1. 
 
-- **User_points**: Specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
+- **User_points**: Specify a vector of initial cluster centers.
 
-- **Max_iterations**: Specify the number of training iterations. The default is 1000.
+- **Max_iterations**: Specify the maximum number of training iterations. The default is 1000.
 
 - **Init**: Select the initialization mode. The options are Random, Furthest, PlusPlus, or User. **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
@@ -57,10 +46,8 @@ Use K-Means when the data are a set of attributes on which the members of the po
 
 ###Interpreting a K-Means Model
 
-
 By default, the following output displays:
 
-- Model parameters (hidden)
 - A graph of the scoring history (number of iterations vs. average within the cluster's sum of squares) 
 - Output (model category, validation metrics if applicable, and centers std)
 - Model Summary (number of clusters, number of categorical columns, number of iterations, avg. within sum of squares, avg. sum of squares, avg. between the sum of squares)
@@ -69,20 +56,23 @@ By default, the following output displays:
 - Centroid statistics (centroid number, size, within sum of squares)
 - Cluster means (centroid number, column)
 
-K-Means randomly chooses starting points and converges on optimal centroids. The cluster number is arbitrary, and should be thought of as a factor.
-The output is a matrix of the cluster assignments, and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly.
+K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary, and should be thought of as a tuning parameter.
+The output is a matrix of the cluster assignments, and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is NP-hard.
 
 ###FAQ
 
 - How does the algo handle missing values during training?
+Missing values are automatically imputed by the column mean.
 - How does the algo handle missing values during testing?
-- What happens if the response domain is different in the training and testing datasets? 
-- What happens during prediction if the new sample has categorical levels not seen in training?
+Missing values are automatically imputed by the column mean of the training data.
 - Does it matter if the data is sorted? 
+No.
 - Should data be shuffled before training?
-- How does the algo handle highly unbalanced data in a response column?
+No.
 - What if there are a large number of columns?
+K-Means suffers from the curse of dimensionality, and all points are roughly at the same distance from each other in high dimensions, making the algorithm less and less useful.
 - What if there are a large number categorical factor levels?
+This can be problematic as categoricals are one-hot encoded on the fly and can lead to the same problem as datasets with a large number of columns.
 
 
 
@@ -155,13 +145,9 @@ The GLM suite includes:
 
 - Gaussian regression
 - Poisson regression
-- binomial regression
-- gamma regression
+- Binomial regression
+- Gamma regression
 
-
-###When to Use GLM
-
-  >When to use GLM?? (Please see [K-Means](http://docs.h2o.ai/datascience/kmeans.html#when-to-use-k-means) data science doc for a good example)
 
 ###Defining a GLM Model
 
@@ -174,7 +160,7 @@ The GLM suite includes:
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
@@ -184,7 +170,7 @@ The GLM suite includes:
 
 - **Alpha**: Specify the regularization distribution between L2 and L2. The default value is 0.5. 
 
-- **Lambda**:  Specify the regularization strength. The default value is 1E-5. 
+- **Lambda**:  Specify the regularization strength. The default value is data dependent.
 
 - **Lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
 
@@ -204,11 +190,6 @@ The GLM suite includes:
 
 - **Link**: Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
 
-
-- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the Max\_after\_balance\_size parameter.
-
-- **Use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. 
-
 - **Prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0. 
 
 - **Max\_active_\predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
@@ -218,7 +199,6 @@ The GLM suite includes:
 
 By default, the following output displays:
 
-- Model parameters (hidden)
 - A graph of the normalized coefficient magnitudes
 - Output (model category, model summary, scoring history, training metrics, validation metrics, best lambda, threshold, residual deviance, null deviance, residual degrees of freedom, null degrees of freedom, AIC, AUC, binomial, rank)
 - Coefficients
@@ -227,14 +207,23 @@ By default, the following output displays:
 ###FAQ
 
 - How does the algo handle missing values during training?
+GLM skips rows with missing values.
 - How does the algo handle missing values during testing?
+GLM will predict Double.NaN for rows containg missing values.
 - What happens if the response domain is different in the training and testing datasets? 
+It is handled properly, but you should check the results.
 - What happens during prediction if the new sample has categorical levels not seen in training?
+It will predict Double.NaN
 - Does it matter if the data is sorted? 
+No.
 - Should data be shuffled before training?
+No.
 - How does the algo handle highly unbalanced data in a response column?
+Yes.
 - What if there are a large number of columns?
+IRLS will get quadratically slower with the number of columns. You can try L-BFGS for datasets with more than 5-10 thousand columns.
 - What if there are a large number categorical factor levels?
+GLM internally one-hot encodes the categorical factor levels, and the same limitations as with a high column count will apply.
 
 ###GLM Algorithm
 
@@ -337,13 +326,7 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 ###Introduction
 
-Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees generates a classification for a given set of attributes. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
-
-###When to Use DRF
-
-RF is a good choice when your objective is classification.
-
-  >Can you suggest some questions (like in the [K-Means](http://docs.h2o.ai/datascience/kmeans.html#when-to-use-k-means) example)?
+Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
 
 ###Defining a DRF Model
 
@@ -356,7 +339,7 @@ RF is a good choice when your objective is classification.
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -432,10 +415,6 @@ By default, the following output displays:
 
 Naive Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
 
-###When to Use Naive Bayes
-
- >When to use Naive Bayes?? (Please see [K-Means](http://docs.h2o.ai/datascience/kmeans.html#when-to-use-k-means) data science doc for a good example)
-
 ###Defining a Naive Bayes Model
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
@@ -447,7 +426,7 @@ Naive Bayes (NB) is a classification algorithm that relies on strong assumptions
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -560,10 +539,6 @@ Principal Components Analysis (PCA) is closely related to Principal Components R
 
 PCA is commonly used to model without regularization or perform dimensionality reduction. It can also be useful to carry out before using a classification analysis like K-means, as K-means relies on Euclidian distances and PCA guarantees that all dimensions of a manifold are orthogonal.
 
-###When to Use PCA
-
-  >When to use PCA?? (Please see [K-Means](http://docs.h2o.ai/datascience/kmeans.html#when-to-use-k-means) data science doc for a good example)
-
 ###Defining a PCA Model
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
@@ -575,7 +550,7 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -679,12 +654,6 @@ Solve for $$x$$ by Gaussian elimination.
 
 Gradient Boosted Regression and Gradient Boosted Classification are forward learning ensemble methods. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations.
 
-
-
-###When to Use GBM
-
-  >When to use GBM?? (Please see [K-Means](http://docs.h2o.ai/datascience/kmeans.html#when-to-use-k-means) data science doc for a good example)
-
 ###Defining a GBM Model
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
@@ -696,7 +665,7 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -817,12 +786,6 @@ Vol.1. N.p., page 339: Springer New York, 2001.](http://www.stanford.edu/~hastie
 
 H2O’s Deep Learning is based on a multi-layer feed-forward artificial neural network that is trained with stochastic gradient descent using back-propagation. The network can contain a large number of hidden layers consisting of neurons with tanh, rectifier and maxout activation functions. Advanced features such as adaptive learning rate, rate annealing, momentum training, dropout, L1 or L2 regularization, checkpointing and grid search enable high predictive accuracy. Each compute node trains a copy of the global model parameters on its local data with multi-threading (asynchronously), and contributes periodically to the global model via model averaging across the network.
 
-
-
-###When to Use Deep Learning
-
-  >When to use Deep Learning?? (Please see [K-Means](http://docs.h2o.ai/datascience/kmeans.html#when-to-use-k-means) data science doc for a good example)
-
 ###Defining a Deep Learning Model
 
 H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
@@ -836,7 +799,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_NA20\_Cols**: (Optional) Check this checkbox to omit columns that are missing (i.e., use 0 or NA) over 20% of their values. 
+- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Response_column**: Select the column to use as the independent variable.
 
