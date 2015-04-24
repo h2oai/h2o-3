@@ -302,7 +302,7 @@ setMethod("show", "H2ORawData", function(object) {
 #'
 #' @aliases H2OW2V
 #' @export
-setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
+setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OFrame")
 
 #'
 #' The H2OModel object.

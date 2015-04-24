@@ -31,7 +31,7 @@ def _import1(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
   if j['fails']:
     raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
-  return j['frame_ids'][0]
+  return j['destination_frames'][0]
 
 def upload_file(path, destination_frame=""):
   """

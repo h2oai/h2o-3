@@ -23,7 +23,7 @@ public class ImportFilesHandler extends Handler {
     H2O.getPM().importFiles(importFiles.path, files, keys, fails, dels);
 
     importFiles.files = files.toArray(new String[files.size()]);
-    importFiles.frame_ids = keys.toArray(new String[keys.size()]);
+    importFiles.destination_frames = keys.toArray(new String[keys.size()]);
     importFiles.fails = fails.toArray(new String[fails.size()]);
     importFiles.dels = dels.toArray(new String[dels.size()]);
     return importFiles;

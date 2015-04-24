@@ -14,7 +14,7 @@ class ImportFilesV3 extends Schema<Iced,ImportFilesV3> {
   String files[];
 
   @API(help="names", direction=API.Direction.OUTPUT)
-  String frame_ids[];
+  String destination_frames[];
 
   @API(help="fails", direction=API.Direction.OUTPUT)
   String fails[];
@@ -27,12 +27,12 @@ class ImportFilesV3 extends Schema<Iced,ImportFilesV3> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ImportFiles");
-    if( frame_ids.length == 0 )
+    if( destination_frames.length == 0 )
       ab.putStr("path",path);
     else
-      ab.href("path",path, ParseSetupV3.link(frame_ids));
+      ab.href("path",path, ParseSetupV3.link(destination_frames));
     ab.putAStr("files",files);
-    ab.putAStr( "keys", frame_ids);
+    ab.putAStr( "keys", destination_frames);
     ab.putAStr("fails",fails);
     ab.putAStr( "dels", dels);
     return ab;

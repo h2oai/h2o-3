@@ -202,8 +202,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                         Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
                                         assert (tmp_model != null);
 
-                                        p._destination_key = Key.make();
-                                        dest = p._destination_key;
+                                        p._model_id = Key.make();
+                                        dest = p._model_id;
                                         p._checkpoint = dest_tmp;
                                         // p._n_folds = 0;
 

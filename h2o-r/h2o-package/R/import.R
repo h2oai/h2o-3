@@ -76,12 +76,12 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
   # Return only the files that successfully imported
   if(length(res$files) > 0L) {
     if(parse) {
-      srcKey <- res$frame_ids
+      srcKey <- res$destination_frames
       rawData <- .newH2ORawData("H2ORawData", conn=conn, frame_id=srcKey, linkToGC=FALSE)  # do not gc, H2O handles these nfs:// vecs
       ret <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names)
     } else {
-      myData <- lapply(res$frame_ids, function(x) .newH2ORawData("H2ORawData", conn=conn, frame_id=x, linkToGC=FALSE))  # do not gc, H2O handles these nfs:// vecs
-      if(length(res$frame_ids) == 1L)
+      myData <- lapply(res$destination_frames, function(x) .newH2ORawData("H2ORawData", conn=conn, frame_id=x, linkToGC=FALSE))  # do not gc, H2O handles these nfs:// vecs
+      if(length(res$destination_frames) == 1L)
         ret <- myData[[1L]]
       else
         ret <- myData

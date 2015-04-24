@@ -4,14 +4,14 @@ import hex.Model;
 import water.*;
 import water.api.ModelsHandler.Models;
 import water.exceptions.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.persist.PersistManager;
 import water.util.FileUtils;
 import water.util.Log;
 
-import java.io.*;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {

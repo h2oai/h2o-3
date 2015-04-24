@@ -232,7 +232,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     # TODO: training_frame, validation_frame
 
 
-def validate_predictions(result, model_name, frame_key, expected_rows, predictions_name=None):
+def validate_predictions(result, model_name, frame_key, expected_rows, predictions_frame=None):
     '''
     Validate a /Predictions result.
     '''
@@ -260,11 +260,11 @@ def validate_predictions(result, model_name, frame_key, expected_rows, predictio
     assert 'predict' == predictions['columns'][0]['label'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " column 0 is not 'predict'."
     assert expected_rows == predictions['rows'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " has an unexpected number of rows."
 
-    assert 'predictions_name' in result, "FAIL: failed to find 'predictions_name' in predict result:" + h2o_util.dump_json(result)
-    assert 'name' in result['predictions_name'], "FAIL: failed to find name in 'predictions_name' in predict result:" + h2o_util.dump_json(result)
+    assert 'predictions_frame' in result, "FAIL: failed to find 'predictions_frame' in predict result:" + h2o_util.dump_json(result)
+    assert 'name' in result['predictions_frame'], "FAIL: failed to find name in 'predictions_frame' in predict result:" + h2o_util.dump_json(result)
 
-    if predictions_name is not None:
-        assert predictions_name == result['predictions_name']['name'], "FAIL: bad value for 'predictions_name' in predict result; expected: " + predictions_name + ", got: " + result['predictions_name']['name']
+    if predictions_frame is not None:
+        assert predictions_frame == result['predictions_frame']['name'], "FAIL: bad value for 'predictions_frame' in predict result; expected: " + predictions_frame + ", got: " + result['predictions_frame']['name']
 
 def cleanup(a_node, models=None, frames=None):
     '''
@@ -393,11 +393,11 @@ class DatasetSpec(dict):
             print "import_result: "
             pp.pprint(import_result)
             print "frames: "
-            pp.pprint(a_node.frames(key=import_result['frame_ids'][0], row_count=5))
+            pp.pprint(a_node.frames(key=import_result['destination_frames'][0], row_count=5))
 
-        frames = a_node.frames(key=import_result['frame_ids'][0], row_count=5)['frames']
+        frames = a_node.frames(key=import_result['destination_frames'][0], row_count=5)['frames']
         assert frames[0]['is_text'], "FAIL: Raw imported Frame is not is_text: " + repr(frames[0])
-        parse_result = a_node.parse(key=import_result['frame_ids'][0], dest_key=self['dest_key']) # TODO: handle multiple files
+        parse_result = a_node.parse(key=import_result['destination_frames'][0], dest_key=self['dest_key']) # TODO: handle multiple files
         key = parse_result['frames'][0]['frame_id']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
         assert self['expected_rows'] == parse_result['frames'][0]['rows'], 'FAIL: Imported frame number of rows is wrong; expected: ' + str(self['expected_rows']) + ', got: ' + str(parse_result['frames'][0]['rows'])
@@ -796,8 +796,8 @@ if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 #####################################
 # Early test of predict()
 # TODO: remove after we remove the early exit
-p = a_node.predict(model='deeplearning_airlines_binomial', frame='airlines_binomial', predictions_name='deeplearning_airlines_binomial_predictions')
-validate_predictions(p, 'deeplearning_airlines_binomial', 'airlines_binomial', 43978, predictions_name='deeplearning_airlines_binomial_predictions')
+p = a_node.predict(model='deeplearning_airlines_binomial', frame='airlines_binomial', predictions_frame='deeplearning_airlines_binomial_predictions')
+validate_predictions(p, 'deeplearning_airlines_binomial', 'airlines_binomial', 43978, predictions_frame='deeplearning_airlines_binomial_predictions')
 validate_frame_exists('deeplearning_airlines_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_airlines_binomial', " on: ", 'airlines_binomial', ":  ", repr(p))
 
@@ -853,8 +853,8 @@ assert len(mms['model_metrics']) == 0, "FAIL: expected 0 ModelMetrics, found: " 
 
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
-p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', predictions_name='deeplearning_prostate_binomial_predictions')
-validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380, predictions_name='deeplearning_prostate_binomial_predictions')
+p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', predictions_frame='deeplearning_prostate_binomial_predictions')
+validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380, predictions_frame='deeplearning_prostate_binomial_predictions')
 validate_frame_exists('deeplearning_prostate_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(p))
 

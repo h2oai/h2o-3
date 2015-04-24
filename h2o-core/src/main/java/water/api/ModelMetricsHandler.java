@@ -79,7 +79,7 @@ class ModelMetricsHandler extends Handler {
     public KeyV3.FrameKeyV3 frame;
 
     @API(help = "Key of predictions frame, if predictions are requested (optional)", json = true, required = false, direction = API.Direction.INOUT)
-    public KeyV3.FrameKeyV3 predictions_name;
+    public KeyV3.FrameKeyV3 predictions_frame;
 
     @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
     public boolean reconstruction_error;
@@ -95,7 +95,7 @@ class ModelMetricsHandler extends Handler {
       // TODO: check for type!
       mml._model = (null == this.model || null == this.model.key() ? null : this.model.key().get());
       mml._frame = (null == this.frame || null == this.frame.key() ? null : this.frame.key().get());
-      mml._predictions_name = (null == this.predictions_name || null == this.predictions_name.key() ? null : this.predictions_name.key().toString());
+      mml._predictions_name = (null == this.predictions_frame || null == this.predictions_frame.key() ? null : this.predictions_frame.key().toString());
       mml._reconstruction_error = this.reconstruction_error;
       mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
 
@@ -114,7 +114,7 @@ class ModelMetricsHandler extends Handler {
       // Shouldn't need to do this manually. . .
       this.model = (mml._model == null ? null : new KeyV3.ModelKeyV3(mml._model._key));
       this.frame = (mml._frame == null ? null : new KeyV3.FrameKeyV3(mml._frame._key));
-      this.predictions_name = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.make(mml._predictions_name)));
+      this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.make(mml._predictions_name)));
       this.reconstruction_error = mml._reconstruction_error;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 
@@ -241,7 +241,7 @@ class ModelMetricsHandler extends Handler {
     if (null == mm)
       mm = new ModelMetricsListSchemaV3();
 
-    mm.predictions_name = new KeyV3.FrameKeyV3(predictions._key);
+    mm.predictions_frame = new KeyV3.FrameKeyV3(predictions._key);
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);

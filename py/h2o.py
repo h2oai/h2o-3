@@ -715,7 +715,7 @@ class H2O(object):
         return mm
 
 
-    def predict(self, model, frame, predictions_name = None, timeoutSecs=60, **kwargs):
+    def predict(self, model, frame, predictions_frame = None, timeoutSecs=60, **kwargs):
         assert model is not None, 'FAIL: "model" parameter is null'
         assert frame is not None, 'FAIL: "frame" parameter is null'
 
@@ -728,7 +728,7 @@ class H2O(object):
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
         assert frames['frames'][0]['frame_id']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['frame_id']['name'], frame)
 
-        postData = { 'predictions_name': predictions_name }
+        postData = { 'predictions_frame': predictions_frame }
 
         result = self.__do_json_request('/3/Predictions/models/' + model + '/frames/' + frame, cmd='post', postData=postData, timeout=timeoutSecs)
         return result
