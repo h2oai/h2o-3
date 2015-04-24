@@ -258,7 +258,8 @@ public final class ParseDataset extends Job<Frame> {
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
-    new SVFTask(fr).doAllNodes();
+    if (setup._parse_type == ParserType.SVMLight)
+      new SVFTask(fr).doAllNodes();
 
     // Log any errors
     if( mfpt._errors != null )
