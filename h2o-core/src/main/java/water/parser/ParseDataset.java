@@ -256,10 +256,6 @@ public final class ParseDataset extends Job<Frame> {
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     new SVFTask(fr).doAllNodes();
 
-    // unify any vecs with enums and strings to strings only
-    new UnifyStrVecTask().doAll(fr);
-
-
     // Log any errors
     if( mfpt._errors != null )
       for( String err : mfpt._errors )
@@ -401,27 +397,6 @@ public final class ParseDataset extends Job<Frame> {
       ForkJoinTask.invokeAll(rs);
     }
     @Override public void reduce( SVFTask drt ) {}
-  }
- 
-  // --------------------------------------------------------------------------
-  // Run once on all nodes; switch enum chunks over to string chunks
-  private static class UnifyStrVecTask extends MRTask<UnifyStrVecTask> {
-    private UnifyStrVecTask() {}
-
-    @Override public void map(Chunk[] chunks) {
-      for (Chunk c : chunks) {
-        Vec v = c.vec();
-        if (v.isString() && c instanceof C4Chunk) {
-          Key k = v.chunkKey(c.cidx());
-          NewChunk nc = new NewChunk(v, c.cidx());
-          for (int j = 0; j < c._len; ++j)
-            if (c.isNA(j)) nc.addNA();
-            else nc.addStr(new ValueString(v.domain()[(int) c.at8(j)]));
-
-          H2O.putIfMatch(k, new Value(k, nc.new_close()), H2O.get(k));
-        }
-      }
-    }
   }
 
   // --------------------------------------------------------------------------
