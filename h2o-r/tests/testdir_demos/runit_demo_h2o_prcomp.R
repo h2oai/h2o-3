@@ -19,8 +19,8 @@ test.h2o.prcomp <- function(conn) {
   australia.pca = h2o.prcomp(australia.hex, k = 8, transform = "DEMEAN")
   print(australia.pca)
   
-  Log.info("Run PCA with k = 4, gamma = 0.5, transform = 'STANDARDIZE'")
-  australia.pca2 = h2o.prcomp(australia.hex, k = 4, gamma = 0.5, transform = "STANDARDIZE")
+  Log.info("Run PCA with k = 4, transform = 'STANDARDIZE'")
+  australia.pca2 = h2o.prcomp(australia.hex, k = 4, transform = "STANDARDIZE")
   print(australia.pca2)
   
   testEnd()

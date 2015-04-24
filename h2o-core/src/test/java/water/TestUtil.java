@@ -196,8 +196,8 @@ public class TestUtil extends Iced {
     if( key != null ) DKV.put(key,fr);
     return fr;
   }
-  public static Frame frame(double[]... rows) { return frame(null,rows); }
-  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(),names,rows); }
+  public static Frame frame(double[]... rows) { return frame(null, rows); }
+  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
   public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   // Shortcuts for initializing constant arrays
@@ -238,6 +238,55 @@ public class TestUtil extends Iced {
     for(int i = 0; i < expecteds.length(); i++) {
       assertEquals(expecteds.at8(i), actuals.at8(i), delta);
     }
+  }
+
+  public static void checkStddev(double[] expected, double[] actual, double threshold) {
+    for(int i = 0; i < actual.length; i++)
+      Assert.assertEquals(expected[i], actual[i], threshold);
+  }
+
+  public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
+    int nfeat = actual.length;
+    int ncomp = actual[0].length;
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
+      for(int i = 0; i < nfeat; i++) {
+        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
+      }
+    }
+    return flipped;
+  }
+
+  public static boolean[] checkProjection(Frame expected, Frame actual, double threshold) {
+    assert expected.numCols() == actual.numCols();
+    int ncomp = expected.numCols();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      Vec vexp = expected.vec(j);
+      Vec vact = actual.vec(j);
+      flipped[j] = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
+    }
+    return checkProjection(expected, actual, threshold, flipped);
+  }
+
+  public static boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
+    assert expected.numCols() == actual.numCols();
+    assert expected.numCols() == flipped.length;
+    int nfeat = (int) expected.numRows();
+    int ncomp = expected.numCols();
+
+    for(int j = 0; j < ncomp; j++) {
+      Vec vexp = expected.vec(j);
+      Vec vact = actual.vec(j);
+      Assert.assertEquals(vexp.length(), vact.length());
+      for (int i = 0; i < nfeat; i++) {
+        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+      }
+    }
+    return flipped;
   }
 
   // Fast compatible Frames

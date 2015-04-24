@@ -14,63 +14,8 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 
 public class PCATest extends TestUtil {
-  public final double TOLERANCE = 1e-6;
+  public static final double TOLERANCE = 1e-6;
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
-
-  public void checkStddev(double[] expected, double[] actual) {
-    checkStddev(expected, actual, TOLERANCE);
-  }
-  public void checkStddev(double[] expected, double[] actual, double threshold) {
-    for(int i = 0; i < actual.length; i++)
-      Assert.assertEquals(expected[i], actual[i], threshold);
-  }
-
-  public boolean[] checkEigvec(double[][] expected, double[][] actual) {
-    return checkEigvec(expected, actual, TOLERANCE);
-  }
-  public boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
-    int nfeat = actual.length;
-    int ncomp = actual[0].length;
-    boolean[] flipped = new boolean[ncomp];
-
-    for(int j = 0; j < ncomp; j++) {
-      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
-      for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
-      }
-    }
-    return flipped;
-  }
-
-  public boolean[] checkProjection(Frame expected, Frame actual, double threshold) {
-    assert expected.numCols() == actual.numCols();
-    int ncomp = expected.numCols();
-    boolean[] flipped = new boolean[ncomp];
-
-    for(int j = 0; j < ncomp; j++) {
-      Vec vexp = expected.vec(j);
-      Vec vact = actual.vec(j);
-      flipped[j] = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
-    }
-    return checkProjection(expected, actual, threshold, flipped);
-  }
-
-  public boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
-    assert expected.numCols() == actual.numCols();
-    assert expected.numCols() == flipped.length;
-    int nfeat = (int) expected.numRows();
-    int ncomp = expected.numCols();
-
-    for(int j = 0; j < ncomp; j++) {
-      Vec vexp = expected.vec(j);
-      Vec vact = actual.vec(j);
-      Assert.assertEquals(vexp.length(), vact.length());
-      for (int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
-      }
-    }
-    return flipped;
-  }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of de-meaned training frame
@@ -122,11 +67,11 @@ public class PCATest extends TestUtil {
           }
 
           /* if (std == DataInfo.TransformType.DEMEAN) {
-            checkStddev(stddev, model._output._std_deviation);
-            checkEigvec(eigvec, model._output._eigenvectors_raw);
+            TestUtil.checkStddev(stddev, model._output._std_deviation, TOLERANCE);
+            TestUtil.checkEigvec(eigvec, model._output._eigenvectors_raw, TOLERANCE);
           } else if (std == DataInfo.TransformType.STANDARDIZE) {
-            checkStddev(stddev_std, model._output._std_deviation);
-            checkEigvec(eigvec_std, model._output._eigenvectors_raw);
+            TestUtil.checkStddev(stddev_std, model._output._std_deviation, TOLERANCE);
+            TestUtil.checkEigvec(eigvec_std, model._output._eigenvectors_raw, TOLERANCE);
           } */
         } catch (Throwable t) {
           t.printStackTrace();
@@ -173,12 +118,12 @@ public class PCATest extends TestUtil {
       try {
         job = new PCA(parms);
         model = job.trainModel().get();
-        // checkStddev(stddev, model._output._std_deviation, 1e-5);
-        // boolean[] flippedEig = checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
+        // TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
+        // boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
 
         score = model.score(train);
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
-        // checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+        // TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

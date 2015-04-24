@@ -110,7 +110,7 @@ public class DataInfo extends Keyed {
     _useAllFactorLevels = dinfo._useAllFactorLevels;
     _catLvls = null;
     _skipMissing = dinfo._skipMissing;
-    if(_normMul != null)
+    if(_normMul != null && _normSub != null)
       for(int i = 0; i < _normMul.length; ++i)
         _etaOffset -= _normSub[i] * _normMul[i];
   }
@@ -552,7 +552,7 @@ public class DataInfo extends Keyed {
     for (int i = 0; i < n; ++i) {
       double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
       if (_normMul != null)
-        d = (d - _normSub[i]) * _normMul[i];
+        d = (d - (_normSub == null ? 0 : _normSub[i])) * _normMul[i];
       row.numVals[i] = d;
     }
     for (int i = 0; i < _responses; ++i) {
@@ -580,7 +580,7 @@ public class DataInfo extends Keyed {
       throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
     double etaOffset = 0;
-    if(_normMul != null && beta != null)
+    if(_normMul != null && _normSub != null && beta != null)
       for(int i = 0; i < _nums; ++i)
         etaOffset -= beta[i] * _normSub[i] * _normMul[i];
 //    Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;

@@ -5,12 +5,12 @@ import hex.svd.SVDModel.SVDParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -18,25 +18,10 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
 public class SVDTest extends TestUtil {
-  public final double TOLERANCE = 1e-6;
+  public static final double TOLERANCE = 1e-6;
 
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
-  }
-
-  public boolean[] checkEigvec(double[][] expected, double[][] actual) { return checkEigvec(expected, actual, TOLERANCE); }
-  public boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
-    int nfeat = actual.length;
-    int ncomp = actual[0].length;
-    boolean[] flipped = new boolean[ncomp];
-
-    for(int j = 0; j < ncomp; j++) {
-      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
-      for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
-      }
-    }
-    return flipped;
   }
 
   @Test public void testArrestsSVD() throws InterruptedException, ExecutionException {
@@ -61,7 +46,7 @@ public class SVDTest extends TestUtil {
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
-        checkEigvec(v_expected, model._output._v);
+        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
         Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
         Assert.assertArrayEquals(sdev_expected, model._output._std_deviation, TOLERANCE);
       } catch (Throwable t) {
@@ -76,7 +61,7 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (model != null) {
-        model._parms._ukey.get().delete();
+        model._parms._u_key.get().delete();
         model.delete();
       }
     }
@@ -101,7 +86,7 @@ public class SVDTest extends TestUtil {
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
-        checkEigvec(svec, model._output._v);
+        TestUtil.checkEigvec(svec, model._output._v, TOLERANCE);
         assert model._output._d == null;
       } catch (Throwable t) {
         t.printStackTrace();
@@ -118,7 +103,53 @@ public class SVDTest extends TestUtil {
     }
   }
 
-  @Test public void testArrestsMissing() throws InterruptedException, ExecutionException {
+  @Test public void testArrestsScoring() throws InterruptedException, ExecutionException {
+    double[] stddev = new double[] {202.7230564, 27.8322637, 6.5230482, 2.5813652};
+    double[][] eigvec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
+            ard(-0.94395706, 0.32068580, 0.06655170, -0.04094568),
+            ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
+            ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
+
+    SVD job = null;
+    SVDModel model = null;
+    Frame train = null, score = null, scoreR = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      parms._train = train._key;
+      parms._nv = 4;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._only_v = false;
+      parms._keep_u = false;
+      parms._recover_pca = true;
+
+      try {
+        job = new SVD(parms);
+        model = job.trainModel().get();
+        TestUtil.checkStddev(stddev, model._output._std_deviation, TOLERANCE);
+        boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._v, TOLERANCE);
+
+        score = model.score(train);
+        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+        TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        if (job != null) job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (scoreR != null) scoreR.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  @Test @Ignore public void testArrestsMissing() throws InterruptedException, ExecutionException {
     SVDModel model = null;
     SVDParameters parms = null;
     Frame train = null;
@@ -163,7 +194,7 @@ public class SVDTest extends TestUtil {
       } finally {
         if (train != null) train.delete();
         if (model != null) {
-          model._parms._ukey.get().delete();
+          model._parms._u_key.get().delete();
           model.delete();
         }
       }
