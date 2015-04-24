@@ -1480,6 +1480,8 @@ public abstract class Neurons {
       if (drm != null) m = drm;
       if (scm != null) m = scm;
       if (srm != null) m = srm;
+      assert(m.rows() == cs[0]._len);
+      assert(m.cols() == cs.length);
       for (int c = 0; c < cs.length; ++c) {
         for (int r = 0; r < m.rows(); ++r) {
           cs[c].set(r, m.get((int)cs[0].start() + r, c));
@@ -1515,7 +1517,7 @@ public abstract class Neurons {
     DenseRowMatrix(int rows, int cols) { this(new float[cols*rows], rows, cols); }
     DenseRowMatrix(float[] v, int rows, int cols) { _data = v; _rows = rows; _cols = cols; }
     @Override public float get(int row, int col) {
-      assert(row<_rows && col<_cols) : "checking: " + row + " < " + _rows + " && " + col + " < " + _cols;
+      assert(row<_rows && col<_cols) : "_data.length: " + _data.length + ", checking: " + row + " < " + _rows + " && " + col + " < " + _cols;
       return _data[row*_cols + col];
     }
     @Override public void set(int row, int col, float val) { assert(row<_rows && col<_cols); _data[row*_cols + col] = val; }
