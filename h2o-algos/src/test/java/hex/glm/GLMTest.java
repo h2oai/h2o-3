@@ -966,7 +966,7 @@ public class GLMTest  extends TestUtil {
    */
   @Test public void testProstate() throws InterruptedException, ExecutionException {
     GLM job = null;
-    GLMModel model = null;
+    GLMModel model = null, model2 = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     Frame score = null;
     try{
@@ -999,12 +999,25 @@ public class GLMTest  extends TestUtil {
       hex.AUC2 adata = mm._auc;
       assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-2);
       assertEquals(val.computeAUC(model,fr), adata._auc, 1e-2);
+
+      double prior = 1e-5;
+      params._prior = prior;
+      job.remove();
+      // test the same data and model with prior, should get the same model except for the intercept
+      job = new GLM(Key.make("prostate_model2"),"glm test simple poisson",params);
+      model2 = job.trainModel().get();
+
+      for(int i = 0; i < model2.beta().length-1; ++i)
+        assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
+      assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu * (1-prior)/(prior * (1-model._ymu))),model2.beta()[model.beta().length-1],1e-10);
+
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
 //      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
 //      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
     } finally {
       fr.delete();
       if(model != null)model.delete();
+      if(model2 != null)model2.delete();
       if(score != null)score.delete();
       if( job != null ) job.remove();
       Scope.exit();

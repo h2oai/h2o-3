@@ -65,6 +65,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   private transient ArrayList<Integer> _scoring_iters = new ArrayList<>();
   private transient ArrayList<Double> _likelihoods = new ArrayList<>();
   private transient ArrayList<Double> _objectives = new ArrayList<>();
+  private transient double _iceptAdjust = 0;
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
@@ -74,6 +75,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
     if (expensive) {
+
       if(_parms._max_active_predictors == -1)
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ?6000:100000000;
       if (_parms._link == Link.family_default)
@@ -207,6 +209,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       } if (itsk._ymut._nobs < (_dinfo._adaptedFrame.numRows() >> 1)) { // running less than half of rows?
         warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
       }
+      if(_parms._prior > 0)
+        _iceptAdjust = -Math.log(itsk._ymut._ymu * (1-_parms._prior)/(_parms._prior * (1-itsk._ymut._ymu)));
       // GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, GradientInfo ginfo, double objVal){
       GLMGradientTask gtBetastart = itsk._gtBetaStart != null?itsk._gtBetaStart:itsk._gtNull;
       _bc.adjustGradient(itsk._gtNull._beta,itsk._gtNull._gradient);
@@ -247,11 +251,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       GLMModel m = new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       m.delete_and_lock(GLM.this._key);
-      m.adaptTestForTrain(_valid,true);
+      m.adaptTestForTrain(_valid, true);
       // _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       if(_valid != null)
         _validDinfo = new DataInfo(Key.make(), _valid, null, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-//      if(_parms._lambda_search) // todo add xval/hval for null model?
       setSubmodel(_dest,0,_bc._betaStart,gtBetastart._val,null,null);
       if(_parms._solver == Solver.COORDINATE_DESCENT) { // make needed vecs
         double eta = _parms.link(_tInfos[0]._ymu);
@@ -603,26 +606,26 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
   }
 
-
-  private void setSubmodel(Key dstKey, int iter, final double[] fullBeta, GLMValidation trainVal, GLMValidation holdOutVal, H2OCountedCompleter cmp) {
+  private void setSubmodel(Key dstKey, int iter, double[] fullBeta, GLMValidation trainVal, GLMValidation holdOutVal, H2OCountedCompleter cmp) {
     final double[] newBetaDeNorm;
+    final double [] fb = fullBeta.clone();
+    fb[fb.length-1] += _iceptAdjust;
     if (_dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE) {
-      newBetaDeNorm = fullBeta.clone();
+      newBetaDeNorm = fb.clone();
       double norm = 0.0;        // Reverse any normalization on the intercept
       // denormalize only the numeric coefs (categoricals are not normalized)
       final int numoff = _dinfo.numStart();
-      for (int i = numoff; i < fullBeta.length - 1; i++) {
+      for (int i = numoff; i < fb.length - 1; i++) {
         double b = newBetaDeNorm[i] * _dinfo._normMul[i - numoff];
         norm += b * _dinfo._normSub[i - numoff]; // Also accumulate the intercept adjustment
         newBetaDeNorm[i] = b;
       }
       newBetaDeNorm[newBetaDeNorm.length - 1] -= norm;
-    } else
+    } else {
       newBetaDeNorm = null;
-    GLMModel.setSubmodel(cmp, dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta,iter, System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, trainVal, holdOutVal, _train, _valid);
+    }
+    GLMModel.setSubmodel(cmp, dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fb : newBetaDeNorm, newBetaDeNorm == null ? null : fb,iter, System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, trainVal, holdOutVal, _train, _valid);
   }
-
-
 
   double objVal(double likelihood, double[] beta, double lambda, long nobs, boolean intercept) {
     double alpha = _parms._alpha[0];

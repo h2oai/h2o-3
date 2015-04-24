@@ -531,17 +531,17 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     if(cmp == null && f != null) try {
       f.get();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     } catch (ExecutionException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
   public int rank(double lambda){return -1;}
   
-  final double _lambda_max;
-  final double _ymu;
-  final long   _nobs;
+  public final double _lambda_max;
+  public final double _ymu;
+  public final long   _nobs;
   long   _run_time;
   
   public static class GLMOutput extends SupervisedModel.SupervisedOutput {
@@ -551,6 +551,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double _threshold;
     double[] _global_beta;
     public boolean _binomial;
+
 
     public int rank() {
       return _submodels[_best_lambda_idx].rank;
