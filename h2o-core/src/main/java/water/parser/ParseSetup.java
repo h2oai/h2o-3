@@ -129,8 +129,8 @@ public final class ParseSetup extends Iced {
         case "enum": types[i] = Vec.T_ENUM; break;
         case "time": types[i] = Vec.T_TIME; break;
         default: types[i] = Vec.T_BAD;
-          // TODO throw an exception
-          Log.err("Column type "+ strs[i] + " is unknown.");
+          throw new H2OIllegalArgumentException("Provided column type "+ strs[i] + " is unknown. ",
+                  "Cannot proceed with parse due to invalid argument.");
       }
     }
     return types;
@@ -143,7 +143,7 @@ public final class ParseSetup extends Iced {
       case SVMLight: return new SVMLightParser(this);
       case ARFF:     return new     ARFFParser(this);
     }
-    throw new H2OInternalParseException("Unknown file type.  Parse cannot be completed.",
+    throw new H2OIllegalArgumentException("Unknown file type.  Parse cannot be completed.",
             "Attempted to invoke a parser for ParseType:" + _parse_type +", which doesn't exist.");
   }
 
@@ -215,22 +215,6 @@ public final class ParseSetup extends Iced {
     GuessSetupTsk t = new GuessSetupTsk(userSetup);
     t.doAll(fkeys).getResult();
 
-    //check results
- /*   if (t._gblSetup._is_valid && (!t._failedSetup.isEmpty() || !t._conflicts.isEmpty())) {
-      // run guess setup once more, this time knowing the global setup to get rid of conflicts (turns them into failures) and bogus failures (i.e. single line files with unexpected separator)
-      GuessSetupTsk t2 = new GuessSetupTsk(t._gblSetup);
-      HashSet<Key> keySet = new HashSet<Key>(t._conflicts);
-      keySet.addAll(t._failedSetup);
-      Key[] keys2 = new Key[keySet.size()];
-      t2.doAll(keySet.toArray(keys2));
-      t._failedSetup = t2._failedSetup;
-      t._conflicts = t2._conflicts;
-        if(!gSetup._setup._header && t2._gblSetup._setup._header){
-          gSetup._setup._header = true;
-          gSetup._setup._column_names = t2._gblSetup._setup._column_names;
-          t._gblSetup._hdrFromFile = t2._gblSetup._hdrFromFile;
-        }*/
-
       //Calc chunk-size
       Iced ice = DKV.getGet(fkeys[0]);
       if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
@@ -238,14 +222,7 @@ public final class ParseSetup extends Iced {
       } else {
         t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns);
       }
-//      assert t._conflicts.isEmpty(); // we should not have any conflicts here, either we failed to find any valid global setup, or conflicts should've been converted into failures in the second pass
-//      if (!t._failedSetup.isEmpty()) {
-//        // TODO throw and exception ("Can not parse: Got incompatible files.", gSetup, t._failedSetup.keys);
-//      }
-//    }
-//    if (t._gblSetup == null || !t._gblSetup._is_valid) {
-//      //TODO throw an exception
-//    }
+
     return t._gblSetup;
   }
 
