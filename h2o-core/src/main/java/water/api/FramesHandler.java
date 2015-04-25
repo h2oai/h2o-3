@@ -184,7 +184,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     @API(help="IP and Port of node", direction = API.Direction.OUTPUT)
     public String ip_port;
 
-    @API(help="Number of chunks stored in this node", direction = API.Direction.OUTPUT)
+    @API(help="Number of chunks stored in this node for one of the vectors in the frame", direction = API.Direction.OUTPUT)
+    long num_chunks_per_vec;
+
+    @API(help="Number chunks stored in this node for the frame (num_chunks_per_vec * num_vecs)", direction = API.Direction.OUTPUT)
     long num_chunks;
 
     @API(help="Number of rows stored in this node", direction = API.Direction.OUTPUT)
@@ -192,6 +195,9 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   public static class ChunkHomesV3 extends Schema<Iced, ChunkHomesV3> {
+    @API(help="Number vecs (columns) stored in the frame", direction = API.Direction.OUTPUT)
+    long num_vecs;
+
     @API(help="Array of nodes in the cluster", direction = API.Direction.OUTPUT)
     public ChunkHomesEntryV3[] entries;
   }
@@ -208,12 +214,15 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
+    int numVecs = frame.vecs().length;
+    h.num_vecs = numVecs;
     Vec any = frame.anyVec();
     int n = any.nChunks();
     for (int i = 0; i < n; i++) {
       Key k = any.chunkKey(i);
       int node_idx = k.home_node().index();
-      h.entries[node_idx].num_chunks++;
+      h.entries[node_idx].num_chunks_per_vec += 1;
+      h.entries[node_idx].num_chunks += numVecs;
       h.entries[node_idx].num_rows += any._espc[i + 1] - any._espc[i];
     }
 

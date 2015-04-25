@@ -460,7 +460,7 @@ public class DataInfo extends Keyed {
     public double [] response;
     public int    [] numIds;
     public int    [] binIds;
-    public int       rid;
+    public long      rid;
     public int       nBins;
     public int       nNums;
     public final double etaOffset;
@@ -515,7 +515,7 @@ public class DataInfo extends Keyed {
     }
 
     public String toString() {
-      return Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
+      return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
   }
 
@@ -530,6 +530,7 @@ public class DataInfo extends Keyed {
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
+    row.rid = rid + chunks[0].start();
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
@@ -587,7 +588,7 @@ public class DataInfo extends Keyed {
 //      assert filterChunk == null || filterChunk.at8(i) == 0 || filterChunk.at8(i) == 1:"unepxected bit value " + filterChunk.at8(i);
 //      if(filterChunk == null || filterChunk.at8(i) == 0) {
         rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
-        rows[i].rid = i;
+        rows[i].rid = chunks[0].start() + i;
 //      }
 
     }
