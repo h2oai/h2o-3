@@ -377,7 +377,8 @@ class H2OFrame:
       veckeys = [str(v._expr._data) for v in self._vecs]
       left = Expr(veckeys)
       rite = Expr((i[0], i[1]))
-      return Expr("[", left, rite, length=2)
+      res = Expr("[", left, rite, length=2)
+      return res.eager() if isinstance(i[0], int) and isinstance(i[1], int) else res
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
