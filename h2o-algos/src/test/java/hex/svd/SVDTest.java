@@ -61,7 +61,8 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (model != null) {
-        model._parms._u_key.get().delete();
+        if (model._parms._keep_u)
+          model._parms._u_key.get().delete();
         model.delete();
       }
     }

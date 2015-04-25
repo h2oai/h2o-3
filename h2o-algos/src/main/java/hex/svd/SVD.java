@@ -248,12 +248,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._d = sigma;
 
           if(_parms._keep_u) {
-            // Normalize last left singular vector
+            final int idx = _parms._nv - 1;
+            final int ncols = _train.numCols();
             final double sigma_last = sigma[_parms._nv - 1];
+
+            // Normalize last left singular vector
             new MRTask() {
-              @Override
-              public void map(Chunk cs[]) {
-                div(chk_u(cs, _parms._nv - 1, _train.numCols()), sigma_last);
+              @Override public void map(Chunk cs[]) {
+                div(chk_u(cs, idx, ncols), sigma_last);
               }
             }.doAll(uinfo._adaptedFrame);
             model._output._ukey = _parms._u_key;
@@ -369,7 +371,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
       _sval += l2norm2(cs, _svec, _k, _ncols, _normSub, _normMul);    // Update \sigma_k and save u_k <- A_{k-1}v_k
-      div(chk_u(cs,_k-1, _ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
+      div(chk_u(cs,_k-1,_ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
     }
 
     @Override protected void postGlobal() {
