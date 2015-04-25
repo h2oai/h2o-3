@@ -10,10 +10,10 @@ def multi_dim_slicing(ip,port):
 
     # prostate[int,int] case
     # 48,0,68,1,2,1,12.3,16.3,8
-    pros = prostate[47:51,7]
-    #assert h2o.as_list(pros == 16.3)[0][0], "Incorrect slicing result"
+    pros = h2o.as_list(prostate[47:51,7])[0][0]
+    assert pros == 16.3, "Incorrect slicing result"
     pros = prostate[172,8]
-    #assert h2o.as_list(pros == 7)[0][0], "Incorrect slicing result"
+    assert pros.eager() == 7, "Incorrect slicing result"
 
     # prostate[slice,int] case
     # rows:
@@ -24,12 +24,12 @@ def multi_dim_slicing(ip,port):
     # 175,0,71,1,2,1,3.8,19,6
     # 176,0,67,1,3,1,5.7,15.4,6
     pros = prostate[170:176,2]
-    #assert h2o.as_list(pros[0,0] == 74)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[1,0] == 71)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[2,0] == 60)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[3,0] == 62)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[4,0] == 71)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[5,0] == 67)[0][0], "Incorrect slicing result"
+    assert pros[0,0].eager() == 74, "Incorrect slicing result"
+    assert pros[1,0].eager() == 71, "Incorrect slicing result"
+    assert pros[2,0].eager() == 60, "Incorrect slicing result"
+    assert pros[3,0].eager() == 62, "Incorrect slicing result"
+    assert pros[4,0].eager() == 71, "Incorrect slicing result"
+    assert pros[5,0].eager() == 67, "Incorrect slicing result"
 
     # # prostate[int,list] case
     # # 353,0,54,1,3,1,21.6,25,7
@@ -43,24 +43,24 @@ def multi_dim_slicing(ip,port):
     # prostate [int,slice] case
     # 189,1,69,1,3,2,8,31.2,6
     pros = prostate[188,0:3]
-    #assert h2o.as_list(pros[0,0] == 189)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[0,1] + 1 == 2)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[0,2] == 69)[0][0], "Incorrect slicing result"
+    assert pros[0,0].eager() == 189, "Incorrect slicing result"
+    assert pros[0,1].eager() + 1 == 2, "Incorrect slicing result"
+    assert pros[0,2].eager() == 69, "Incorrect slicing result"
 
     # prostate [slice,slice] case
     # 84,0,75,1,2,1,11,35,7
     # 85,0,75,1,1,1,9.9,15.4,7
     # 86,1,75,1,3,1,3.7,0,6
     pros = prostate[83:86,1:4]
-    #assert h2o.as_list(pros[0,0] == 0)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[0,1] == 75)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[0,2] - 1 == 0)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[1,0] == 0)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[1,1] + 75 == 150)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[1,2] == 1)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[2,0] + 1 == 2)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[2,1] == 75)[0][0], "Incorrect slicing result"
-    #assert h2o.as_list(pros[2,2] == 1)[0][0], "Incorrect slicing result"
+    assert pros[0,0].eager() == 0, "Incorrect slicing result"
+    assert pros[0,1].eager() == 75, "Incorrect slicing result"
+    assert pros[0,2].eager() - 1 == 0, "Incorrect slicing result"
+    assert pros[1,0].eager() == 0, "Incorrect slicing result"
+    assert pros[1,1].eager() + 75 == 150, "Incorrect slicing result"
+    assert pros[1,2].eager() == 1, "Incorrect slicing result"
+    assert pros[2,0].eager() + 1 == 2, "Incorrect slicing result"
+    assert pros[2,1].eager() == 75, "Incorrect slicing result"
+    assert pros[2,2].eager() == 1, "Incorrect slicing result"
 
     # # prostate [slice,list] case
     # # 27,0,67,1,2,1,2.8,25.6,7

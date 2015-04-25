@@ -354,7 +354,6 @@ class Expr(object):
       if isinstance(j['string'], str): self._data = j['string']
     else:
       if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
-    print j
     return self._data
 
   def _do_child(self, child):
@@ -407,7 +406,7 @@ class Expr(object):
     raise NotImplementedError
 
   def multi_dim_slice_cols_cmd(self, child):
-    if   isinstance(self._left._data, list): return '()'
+    if   isinstance(self._left._data, list): return '\"null\"' # TODO: there might be a bug here: replace null with ()
     elif isinstance(self._left._data,unicode):
       c = child._data[1]
       if isinstance(c, int): return "#" + str(c)
