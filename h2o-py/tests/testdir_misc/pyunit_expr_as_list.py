@@ -32,11 +32,11 @@ def expr_as_list(ip,port):
     # expr[tuple], expr._data is pending
     res = 2 - iris
     res5 = h2o.as_list(res[5,2])
-    assert abs(res5[0][0] - 0.3) < 1e-10, "incorrect values"
+    assert abs(res5 - 0.3) < 1e-10, "incorrect values"
 
     # expr[tuple], expr._data is remote
     res6 = h2o.as_list(res[5,2])
-    assert abs(res6[0][0] - 0.3) < 1e-10, "incorrect values"
+    assert abs(res6 - 0.3) < 1e-10, "incorrect values"
 
     # expr[tuple], expr._data is local
     expr = h2o.as_list(Expr([[1,2,3], [4,5,6]]))
