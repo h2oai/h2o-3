@@ -1051,7 +1051,7 @@ class H2OVec:
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr)
+    return Expr("var", self._expr).eager()
 
   def mean(self):
     """
