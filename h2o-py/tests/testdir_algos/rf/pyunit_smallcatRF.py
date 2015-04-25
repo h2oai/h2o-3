@@ -22,7 +22,8 @@ def smallcatRF(ip,port):
     #alphabet.summary()
 
     # Prepare data for scikit use
-    trainData = np.loadtxt(h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1, converters={0:lambda s: ord(s.split("\"")[1])})
+    trainData = np.loadtxt(h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
+                           converters={0:lambda s: ord(s.split("\"")[1])})
     trainDataResponse = trainData[:,1]
     trainDataFeatures = trainData[:,0]
 
