@@ -71,7 +71,7 @@ No.
 No.
 - What if there are a large number of columns?
 K-Means suffers from the curse of dimensionality, and all points are roughly at the same distance from each other in high dimensions, making the algorithm less and less useful.
-- What if there are a large number categorical factor levels?
+- What if there are a large number of categorical factor levels?
 This can be problematic as categoricals are one-hot encoded on the fly and can lead to the same problem as datasets with a large number of columns.
 
 
@@ -210,7 +210,7 @@ By default, the following output displays:
 GLM skips rows with missing values.
 - How does the algo handle missing values during testing?
 GLM will predict Double.NaN for rows containg missing values.
-- What happens if the response domain is different in the training and testing datasets? 
+- What happens if the response has missing values?
 It is handled properly, but you should check the results.
 - What happens during prediction if the new sample has categorical levels not seen in training?
 It will predict Double.NaN
@@ -218,11 +218,11 @@ It will predict Double.NaN
 No.
 - Should data be shuffled before training?
 No.
-- How does the algo handle highly unbalanced data in a response column?
-Yes.
+- How does the algo handle highly imbalanced data in a response column?
+GLM does not require special handling for imbalanced data.
 - What if there are a large number of columns?
 IRLS will get quadratically slower with the number of columns. You can try L-BFGS for datasets with more than 5-10 thousand columns.
-- What if there are a large number categorical factor levels?
+- What if there are a large number of categorical factor levels?
 GLM internally one-hot encodes the categorical factor levels, and the same limitations as with a high column count will apply.
 
 ###GLM Algorithm
@@ -389,14 +389,21 @@ By default, the following output displays:
 ###FAQ
 
 - How does the algo handle missing values during training?
+Missing values do not alter the tree building in any way; i.e., they are not counted as a point when computing means or errors. Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
 - How does the algo handle missing values during testing?
-- What happens if the response domain is different in the training and testing datasets? 
-- What happens during prediction if the new sample has categorical levels not seen in training?
+During scoring missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+- What happens if the response has missing values?
+That is fine, but nothing will be learned from rows containing missing the response.
 - Does it matter if the data is sorted? 
+No.
 - Should data be shuffled before training?
-- How does the algo handle highly unbalanced data in a response column?
+No.
+- How does the algo handle highly imbalanced data in a response column?
+You can specify balance_classes, class_sampling_factors and max_after_balance_size to control over/under-sampling.
 - What if there are a large number of columns?
-- What if there are a large number categorical factor levels?
+DRFs are best applied to datasets with fewer than a few thousand columns.
+- What if there are a large number of categorical factor levels?
+Large number of categoricals are handled very efficiently, there is no one-hot encoding ever.
 
 ###DRF Algorithm 
 
@@ -427,8 +434,6 @@ Naive Bayes (NB) is a classification algorithm that relies on strong assumptions
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
-
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
@@ -461,13 +466,13 @@ By default, the following output displays:
 
 - How does the algo handle missing values during training?
 - How does the algo handle missing values during testing?
-- What happens if the response domain is different in the training and testing datasets? 
+- What happens if the response has missing values?
 - What happens during prediction if the new sample has categorical levels not seen in training?
 - Does it matter if the data is sorted? 
 - Should data be shuffled before training?
-- How does the algo handle highly unbalanced data in a response column?
+- How does the algo handle highly imbalanced data in a response column?
 - What if there are a large number of columns?
-- What if there are a large number categorical factor levels?
+- What if there are a large number of categorical factor levels?
 
 ###Naive Bayes Algorithm 
 
@@ -537,7 +542,7 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 
 Principal Components Analysis (PCA) is closely related to Principal Components Regression. The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
 
-PCA is commonly used to model without regularization or perform dimensionality reduction. It can also be useful to carry out before using a classification analysis like K-means, as K-means relies on Euclidian distances and PCA guarantees that all dimensions of a manifold are orthogonal.
+PCA is commonly used to model without regularization or perform dimensionality reduction. It can also be useful to carry out as a preprocessing step before distance-based algorithms such as K-Means since PCA guarantees that all dimensions of a manifold are orthogonal.
 
 ###Defining a PCA Model
 
@@ -592,13 +597,11 @@ The output for PCA includes the following:
 
 - How does the algo handle missing values during training?
 - How does the algo handle missing values during testing?
-- What happens if the response domain is different in the training and testing datasets? 
 - What happens during prediction if the new sample has categorical levels not seen in training?
 - Does it matter if the data is sorted? 
 - Should data be shuffled before training?
-- How does the algo handle highly unbalanced data in a response column?
 - What if there are a large number of columns?
-- What if there are a large number categorical factor levels?
+- What if there are a large number of categorical factor levels?
 
 ###PCA Algorithm
 
@@ -652,7 +655,7 @@ Solve for $$x$$ by Gaussian elimination.
 
 ###Introduction
 
-Gradient Boosted Regression and Gradient Boosted Classification are forward learning ensemble methods. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations.
+Gradient Boosted Regression and Gradient Boosted Classification are forward learning ensemble methods. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O's GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
 
 ###Defining a GBM Model
 
@@ -708,28 +711,22 @@ The output for GBM includes the following:
 
 ###FAQ
 
-R for multinomial  initial value =0
-h2o for multinomial initial value =  class distribution 
-
-R for response variable does not accept NA
-H2O if response has NAs works fine.
-
-The GBM algorithm itself does not do any imputation - that's available from any of our munging APIs, including R, Python, REST, Scala, & Java.
-
-NAs do not alter the tree building in any way; i.e., they are not counted as a point when computing means or errors.  (to be clear: rows containing NA's certainly due affect tree building, but the NA does not change the split-point of the column it's in)
-
-During scoring NA's "always go left" at any decision point in a tree. Due to dynamic binning in GBM, a row with a NA typically ends up in the "leftmost bin" - with other outliers.
-
-
 - How does the algo handle missing values during training?
+Missing values do not alter the tree building in any way; i.e., they are not counted as a point when computing means or errors. Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
 - How does the algo handle missing values during testing?
-- What happens if the response domain is different in the training and testing datasets? 
-- What happens during prediction if the new sample has categorical levels not seen in training?
+During scoring missing values "always go left" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+- What happens if the response has missing values?
+That is fine, but nothing will be learned from rows containing missing the response.
 - Does it matter if the data is sorted? 
+No.
 - Should data be shuffled before training?
-- How does the algo handle highly unbalanced data in a response column?
+No.
+- How does the algo handle highly imbalanced data in a response column?
+You can specify balance_classes, class_sampling_factors and max_after_balance_size to control over/under-sampling.
 - What if there are a large number of columns?
-- What if there are a large number categorical factor levels?
+DRF models are best applied to datasets with fewer than a few thousand columns.
+- What if there are a large number of categorical factor levels?
+Large number of categoricals are handled very efficiently, there is no one-hot encoding ever.
 
 ###GBM Algorithm 
 
@@ -825,7 +822,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Adaptive_rate**: Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. 
 
-- **Input\_dropout\_ratio**: Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The default value is 0. 
+- **Input\_dropout\_ratio**: Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The default value is 0.
 
 - **L1**: Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. The default value is 0. 
 
@@ -901,22 +898,29 @@ To view the results, click the View button. The output for the Deep Learning mod
 - Status of neuron layers (layer number, units, type, dropout, L1, L2, mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias, bias RMS)
 - Scoring history in tabular format
 - Training metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
-- Top-10 Hit Ratios
-- Confusion matrix
+- Top-K Hit Ratios (for multi-class classification)
+- Confusion matrix (for classification)
 
 
 
 ###FAQ
 
 - How does the algo handle missing values during training?
+User-specifiable treatment of missing values via 'missing_values_handling'. Either skip or mean-impute.
 - How does the algo handle missing values during testing?
-- What happens if the response domain is different in the training and testing datasets? 
-- What happens during prediction if the new sample has categorical levels not seen in training?
+Missing values in the test set will be mean-imputed during scoring.
+- What happens if the response has missing values?
+That is fine, but nothing will be learned from rows containing missing the response.
 - Does it matter if the data is sorted? 
+Yes, the training set is processed in order. Depending on **train\_samples\_per\_iteration**, some rows will be skipped. If **shuffle\_training\_data** is enabled, then each thread processing a small subset of rows will process rows in random order, but it is not a global shuffle.
 - Should data be shuffled before training?
-- How does the algo handle highly unbalanced data in a response column?
+Yes, that is a good idea especially if you suspect that dataset is sorted.
+- How does the algo handle highly imbalanced data in a response column?
+You can specify balance_classes, class_sampling_factors and max_after_balance_size to control over/under-sampling.
 - What if there are a large number of columns?
-- What if there are a large number categorical factor levels?
+The size of the input layer of neurons is as large as there are input features, so the model complexity will go up with increasing number of columns.
+- What if there are a large number of categorical factor levels?
+This is something to look out for. Say you have three columns: zip code (70k levels), height and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, the the resulting weight matrix will be of size 70,002 x 200, and this can take a long time to train and converge. We recommend to either reduce the number of categorical factor levels upfront (e.g., with h2o.interaction() from R), or to specify **max\_categorical\_features** to use feature hashing to reduce the dimensionality.
 
 ###Deep Learning Algorithm 
 
@@ -944,7 +948,7 @@ To view the results, click the View button. The output for the Deep Learning mod
     
   [**The Definitive Performance Tuning Guide for H2O Deep Learning**](http://h2o.ai/blog/2015/02/deep-learning-performance/)
 
-[Niu, Feng, et al. "Hogwild!: A lock-free approach to parallelizing stochastic gradient descent." Advances in Neural Information Processing Systems 24 (2011): 693-701. (algorithm implemented is on p.5)](https://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent.pdf)
+  [Niu, Feng, et al. "Hogwild!: A lock-free approach to parallelizing stochastic gradient descent." Advances in Neural Information Processing Systems 24 (2011): 693-701. (algorithm implemented is on p.5)](https://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent.pdf)
 
   [Hawkins, Simon et al. "Outlier Detection Using Replicator Neural Networks." CSIRO Mathematical and Information Sciences](http://neuro.bstu.by/ai/To-dom/My_research/Paper-0-again/For-research/D-mining/Anomaly-D/KDD-cup-99/NN/dawak02.pdf)
 

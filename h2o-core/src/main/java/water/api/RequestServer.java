@@ -158,6 +158,8 @@ public class RequestServer extends NanoHTTPD {
       "Return all the columns from a Frame.");
     register("/3/Frames/(?<key>.*)/summary"                      ,"GET"   ,FramesHandler.class, "summary",                            new String[] {"key"},
       "Return a Frame, including the histograms, after forcing computation of rollups.");
+    register("/3/Frames/(?<key>.*)/chunk_homes"                  ,"GET"   ,FramesHandler.class, "chunkHomes",                         new String[] {"key"},
+      "Return chunk location information for a frame.");
     register("/3/Frames/(?<key>.*)"                              ,"GET"   ,FramesHandler.class, "fetch",                              new String[] {"key"},
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",

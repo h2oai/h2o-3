@@ -7,13 +7,13 @@ import water.api.*;
 public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLearningModelV3, DeepLearningModel.DeepLearningParameters, DeepLearningV3.DeepLearningParametersV3, DeepLearningModel.DeepLearningModelOutput, DeepLearningModelV3.DeepLearningModelOutputV3> {
 
   public static final class DeepLearningModelOutputV3 extends ModelOutputSchema<DeepLearningModel.DeepLearningModelOutput, DeepLearningModelOutputV3> {
-    @API(help="Frame keys for weight matrices")
+    @API(help="Frame keys for weight matrices", level = API.Level.expert)
     KeyV3.FrameKeyV3[] weights;
 
-    @API(help="Frame keys for bias vectors")
+    @API(help="Frame keys for bias vectors", level = API.Level.expert)
     KeyV3.FrameKeyV3[] biases;
 
-    @API(help="Variable Importances", direction=API.Direction.OUTPUT)
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableBase variable_importances;
   }
 
