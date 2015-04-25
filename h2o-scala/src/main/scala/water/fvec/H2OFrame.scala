@@ -26,7 +26,7 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
 
   // Uniform call to load any resource referenced by URI
   def this(uris: URI*) = this(water.util.FrameUtils.parseFrame(
-                                Key.make(ParseSetup.hex(uris(0).toString)),
+                                Key.make(ParseSetup.createHexName(uris(0).toString)),
                                 uris : _*))
 
   // Scala DataFrame by reading a CSV file

@@ -37,6 +37,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       Scope.enter();
       Frame[] preds = new Frame[N];
       long[] checksums = new long[N];
+      double[] numbers = new double[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
@@ -81,7 +82,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
           for (int i=0; i<5; ++i) {
             Frame tmp = mymodel.score(test);
@@ -89,6 +89,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
             tmp.delete();
           }
           Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());
+          numbers[repeat] = mymodel.model_info().get_weights(0).get(23,4);
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.error());
 
@@ -116,6 +117,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       try {
         if (repro) {
           // check reproducibility
+          for (double error : numbers)
+            assertTrue(Arrays.toString(numbers), error == numbers[0]);
           for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
           for (long cs : checksums)
