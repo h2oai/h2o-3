@@ -3,7 +3,6 @@ Version: SUBST_PROJECT_VERSION
 Type: Package
 Title: H2O R Interface
 Date: 2014-12-12
-Branch: SUBST_PROJECT_BRANCH
 Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
 Description: This is a package for running H2O via its REST API from within R.
