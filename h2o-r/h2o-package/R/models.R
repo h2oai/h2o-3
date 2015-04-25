@@ -851,8 +851,10 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
 #'
 #' Print the Model Summary
 #'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param ... further arguments to be passed on (currently unimplemented)
 #' @export
-summary.H2OModel <- function(object) {
+setMethod("summary", "H2OModel", function(object, ...) {
   o <- object
   m <- o@model
   cat("Model Details:\n")
@@ -880,7 +882,7 @@ summary.H2OModel <- function(object) {
     cat("=================================================\n\n")
     h2o.varimp(o)
   }
-}
+})
 
 #' Access H2O Confusion Matrices
 #'

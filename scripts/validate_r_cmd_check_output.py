@@ -41,7 +41,7 @@ class Check:
             r"^\* checking .* \.\.\. OK",
             r"^\* checking extension type \.\.\. Package",
             r"^\* this is package",
-            r"^\* checking CRAN incoming feasibility \.\.\. WARNING",
+            r"^\* checking CRAN incoming feasibility \.\.\.",
             r"^Maintainer:",
             r"^New maintainer:",
             r"^\s*Tom Kraljevic",
