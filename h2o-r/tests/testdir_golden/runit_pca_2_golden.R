@@ -20,10 +20,8 @@ test.pcastand.golden <- function(H2Oserver) {
   # expect_equal(as.matrix(pcimpH2O), pcimpR, tolerance = 1e-4)
   expect_equal(dim(pcimpH2O), dim(pcimpR))
   pcimpH2O <- as.matrix(pcimpH2O)
-  for(i in 1:nrow(pcimpR)) {
-    for(j in 1:ncol(pcimpR))
-      expect_equal(pcimpH2O[i,j], pcimpR[i,j], tolerance = 1e-4)
-  }
+  dimnames(pcimpH2O) <- dimnames(pcimpR)
+  expect_equal(pcimpH2O, pcimpR, tolerance = 1e-4)
   
   testEnd()
 }
