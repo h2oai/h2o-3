@@ -12,23 +12,23 @@ class H2OClusteringModel(ModelBase):
 
   def size(self):
     tm = H2OClusteringModel._get_metrics(self)
-    return [ v[2] for v in  tm["centroid_stats"].cell_values]
+    return [ v[2] for v in  tm._metric_json["centroid_stats"].cell_values]
 
   def avg_between_ss(self):
     tm = H2OClusteringModel._get_metrics(self)
-    return tm["avg_between_ss"]
+    return tm._metric_json["avg_between_ss"]
 
   def avg_ss(self):
     tm = H2OClusteringModel._get_metrics(self)
-    return tm["avg_ss"]
+    return tm._metric_json["avg_ss"]
 
   def avg_within_ss(self):
     tm = H2OClusteringModel._get_metrics(self)
-    return tm["avg_within_ss"]
+    return tm._metric_json["avg_within_ss"]
 
   def within_mse(self):
     tm = H2OClusteringModel._get_metrics(self)
-    return [ v[-1] for v in  tm["centroid_stats"].cell_values]
+    return [ v[-1] for v in  tm._metric_json["centroid_stats"].cell_values]
 
   def centers(self):
     o = self._model_json["output"]
@@ -48,7 +48,7 @@ class H2OClusteringModel(ModelBase):
 
   def centroid_stats(self):
     tm = H2OClusteringModel._get_metrics(self)
-    return tm["centroid_stats"]
+    return tm._metric_json["centroid_stats"]
 
   # TODO: move this out to ModelBase
   @staticmethod

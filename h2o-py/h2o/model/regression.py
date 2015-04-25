@@ -46,3 +46,13 @@ class H2ORegressionModelMetrics(object):
     print "Regression model"
     print "MSE=",mse,"RMSE=",math.sqrt(mse),"r2=",self.r2()
     print
+
+  def residual_deviance(self):
+    if ModelBase._has(self._metric_json, "residual_deviance"):
+      return self._metric_json["residual_deviance"]
+    return None
+
+  def null_deviance(self):
+    if ModelBase._has(self._metric_json, "null_deviance"):
+      return self._metric_json["null_deviance"]
+    return None

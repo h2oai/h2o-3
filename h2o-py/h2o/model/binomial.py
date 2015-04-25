@@ -258,3 +258,13 @@ class H2OBinomialModelMetrics(object):
       if abs(t-threshold) < 0.00000001 * max(t,threshold):
         return i
     raise ValueError("No threshold "+str(threshold))
+
+  def residual_deviance(self):
+    if ModelBase._has(self._metric_json, "residual_deviance"):
+      return self._metric_json["residual_deviance"]
+    return None
+
+  def null_deviance(self):
+    if ModelBase._has(self._metric_json, "null_deviance"):
+      return self._metric_json["null_deviance"]
+    return None

@@ -169,22 +169,59 @@ class ModelBase(object):
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
+  def residual_deviance(self,train=False,valid=False):
+    """
+    Retreive the residual deviance if this model has the attribute, or None otherwise.
+    :param:  train Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
+    :param:  valid Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
+    :return: Return the residual deviance, or None if it is not present.
+    """
+    if not train and not valid:
+      train = True
+    if train and valid:
+      train = True
+
+    if train:
+      return self._model_json["output"]["training_metrics"].residual_deviance()
+    else:
+      return self._model_json["output"]["validation_metrics"].residual_deviance()
+
+  def null_deviance(self,train=False,valid=False):
+    """
+    Retreive the null deviance if this model has the attribute, or None otherwise.
+    :param:  train Get the null deviance for the training set. If both train and valid are False, then train is selected by default.
+    :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
+    :return: Return the null deviance, or None if it is not present.
+    """
+    if not train and not valid:
+      train = True
+    if train and valid:
+      train = True
+
+    if train:
+      return self._model_json["output"]["training_metrics"].null_deviance()
+    else:
+      return self._model_json["output"]["validation_metrics"].null_deviance()
+
 
   @staticmethod
   def _show_multi_metrics(metrics, train_or_valid="Training"):
-    tm = metrics
+    tm = metrics._metric_json
     print train_or_valid, " Metrics: "
     print "==================="
     print
-    if tm["description"]:     print tm["description"]
-    if tm["frame"]:           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
-    if tm["MSE"]:             print "MSE on ", train_or_valid, ": ", tm["MSE"]
-    if tm["logloss"]:         print "logloss on ", train_or_valid, ": ", tm["logloss"]
-    if tm["cm"]:              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
-    if tm["hit_ratio_table"]: print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
-
+    if _has(tm,"description"):     print tm["description"]
+    if _has(tm,"frame"):           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
+    if _has(tm,"MSE"):             print "MSE on ", train_or_valid, ": ", tm["MSE"]
+    if _has(tm,"logloss"):         print "logloss on ", train_or_valid, ": ", tm["logloss"]
+    if _has(tm,"cm"):              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
+    if _has(tm,"hit_ratio_table"): print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
   # Delete from cluster as model goes out of scope
   def __del__(self):
     h2o.remove(self._key)
+
+  @staticmethod
+  def _has(dictionary, key):
+    return key in dictionary and dictionary[key] is not None
