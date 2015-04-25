@@ -21,7 +21,7 @@ def supervised_model_build(x,y,validation_x,validation_y,algo_url,kwargs):
       if "autoencoder" in kwargs and kwargs["autoencoder"]:
         raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
   if validation_x:
-    if not validation_y:  raise ValueError("Missing response validating a supervised model")
+    if validation_y is None:  raise ValueError("Missing response validating a supervised model")
   return _model_build(x,y,validation_x,validation_y,algo_url,kwargs)
 
 # No response variable model building
@@ -35,7 +35,7 @@ def _check_frame(x,y,response):
     if not isinstance(x,list):
       raise ValueError("`x` must be an H2OFrame or a list of H2OVecs. Got: " + str(type(x)))
     x = H2OFrame(vecs=x)
-  if y:
+  if y is not None:
     if not isinstance(y,H2OVec):
       raise ValueError("`y` must be an H2OVec. Got: " + str(type(y)))
     for v in x._vecs:
@@ -61,7 +61,7 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   # Send frame descriptions to H2O cluster
   train_key = x.send_frame()
   kwargs['training_frame']=train_key
-  if validation_x:
+  if validation_x is not None:
     valid_key = validation_x.send_frame()
     kwargs['validation_frame']=valid_key
 

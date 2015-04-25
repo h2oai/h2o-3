@@ -201,23 +201,74 @@ Models
 ++++++
 
 The model-building experience with this module is unique, and is not the same experience
-for those coming from a background in scikit-learn.
-
-Rather than have each model define its own class, each model will belong to one of the following
-categories:
+for those coming from a background in scikit-learn. Instead of using objects to build the
+model, builder functions are provided in the top-level module, and the result of a call
+is an model object belonging to one of the following categories:
 
     * Regression
     * Binomial
     * Multinomial
     * Clustering
+    * Autoencoder
 
-This is not an entirely representative list of model categories (e.g., what about Time Series,
-and Grid Search, or PCA?); but it represents the core set of underlying model categories
-that form the foundation and current state of modeling in H2O.
+This is better demonstrated by way of an example:
 
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
+  >>>
+  >>> m = h2o.gbm(x=fr[3:], y=fr[2])                               # build a gbm with a method call
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
+  >>>
+  >>> m.show()                                                     # print the model details
+  >>>
+  >>> m.summary()                                                  # print a model summary
 
-* No explicit model objects -- have model categories
-* How to create new models
+As you can see, the result of the gbm call is a binomial model. This example also showcases
+an important feature-munging step in order to cause the gbm to perform a classification task
+over a regression task. Namely, the second column is a numeric column when it's initially read in,
+but it must be cast to a factor by way of the H2OVec operation `asfactor`. Let's take a look
+at this more deeply:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1].isfactor()                                             # produces False
+  >>>
+  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
+  >>>
+  >>> m.__class__                                                  # <h2o.model.regression.H2ORegressionModel object at 0x104d07590>
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast the 2nd column to a factor column
+  >>>
+  >>> fr[1].isfactor()                                             # produces True
+  >>>
+  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104d18f50>
+
+The above example shows how to properly deal with numeric columns you would like to use in a
+classification setting. Additioanlly, H2O can perform on-the-fly scoring of validation
+data and provide a host of metrics on the validation and training data. Here's an example
+of doing this, where we additioanlly split the data set into three pieces for training, validation,
+and finally testing:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast to factor
+  >>>
+  >>> r = fr[0].runif()                                            # Random UNIform numbers, one per row
+  >>>
+  >>> train = fr[ r < 0.6 ]                                        # 60% for training data
+  >>>
+  >>> valid = fr[ (0.6 <= r) & (r < 0.9) ]                         # 30% for validation
+  >>>
+  >>> test  = fr[ 0.9 <= r ]                                       # 10% for testing
+  >>>
+  >>> m = h2o.gbm(x=train[2:],y=train[1],validation_x=valid[2:],validation_y=valid[1])  # build a gbm with a validation set
+  >>>
+  >>>
+
 * train and validation data
 * parameter specification
 * categoricals are dealt with internally (no need to one-hot expand them!)
