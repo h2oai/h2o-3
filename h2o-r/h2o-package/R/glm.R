@@ -132,7 +132,7 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
     delete <- !.is.eval(beta_constraints)
     if (delete) {
         temp_key <- beta_constraints@key
-        .h2o.eval.frame(conn = conn, ast = beta_constraints@mutable$ast, key = temp_key)
+        .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, key = temp_key)
     }
     parms$beta_constraints <- beta_constraints
   }
