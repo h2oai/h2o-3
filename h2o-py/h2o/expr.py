@@ -266,19 +266,19 @@ class Expr(object):
     """
     :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("min", self)
+    return Expr("min", self).eager()
 
   def max(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("max", self)
+    return Expr("max", self).eager()
 
   def sum(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("sum", self)
+    return Expr("sum", self).eager()
 
   def sd(self):
     """
@@ -296,13 +296,13 @@ class Expr(object):
     """
     :return: A lazy Expr representing the mean of this H2OVec.
     """
-    return Expr("mean", self)
+    return Expr("mean", self).eager()
 
   def median(self):
     """
     :return: A lazy Expr representing the median of this H2OVec.
     """
-    return Expr("median", self)
+    return Expr("median", self).eager()
 
   def __del__(self):
     # Dead pending op or local data; nothing to delete
