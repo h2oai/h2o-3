@@ -19,8 +19,11 @@ class H2ORegressionModelMetrics(object):
 
   It is possible to retrieve the R^2 (1 - MSE/variance) and MSE
   """
-  def __init__(self, metric_json):
+  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
     self._metric_json = metric_json
+    self._on_train = on_train   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+    self._on_valid = on_valid   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+    self._algo = algo
 
   def r2(self):
     """
@@ -43,3 +46,13 @@ class H2ORegressionModelMetrics(object):
     print "Regression model"
     print "MSE=",mse,"RMSE=",math.sqrt(mse),"r2=",self.r2()
     print
+
+  def residual_deviance(self):
+    if ModelBase._has(self._metric_json, "residual_deviance"):
+      return self._metric_json["residual_deviance"]
+    return None
+
+  def null_deviance(self):
+    if ModelBase._has(self._metric_json, "null_deviance"):
+      return self._metric_json["null_deviance"]
+    return None

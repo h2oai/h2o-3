@@ -210,7 +210,14 @@ import java.util.concurrent.atomic.AtomicInteger;
       byte[] naMethods = AGG.naMethods(_agg);
       for (int i=0;i<c[0]._len;++i) {
         G g = new G(i,c,_gbCols,_agg.length,naMethods);
-        if( !_g.add(g) ) g=_g.get(g);
+        if( !_g.add(g) ) {
+          G g2=g;
+          g=_g.get(g);
+          if( g==null ) { // probably a miss in due to resize?
+            // try again
+            while( g==null ) g=_g.get(g2);  // spin until we get non-null
+          }
+        }
         // cas in COUNT
         long r=g._N;
         while(!G.CAS_N(g, r, r + 1))
