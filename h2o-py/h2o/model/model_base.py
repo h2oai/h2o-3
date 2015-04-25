@@ -211,12 +211,12 @@ class ModelBase(object):
     print "==================="
     print
 
-    if _has(tm,"description"):     print tm["description"]
-    if _has(tm,"frame"):           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
-    if _has(tm,"MSE"):             print "MSE on ", train_or_valid, ": ", tm["MSE"]
-    if _has(tm,"logloss"):         print "logloss on ", train_or_valid, ": ", tm["logloss"]
-    if _has(tm,"cm"):              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
-    if _has(tm,"hit_ratio_table"): print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
+    if ModelBase._has(tm,"description"):     print tm["description"]
+    if ModelBase._has(tm,"frame"):           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
+    if ModelBase._has(tm,"MSE"):             print "MSE on ", train_or_valid, ": ", tm["MSE"]
+    if ModelBase._has(tm,"logloss"):         print "logloss on ", train_or_valid, ": ", tm["logloss"]
+    if ModelBase._has(tm,"cm"):              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
+    if ModelBase._has(tm,"hit_ratio_table"): print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
   # Delete from cluster as model goes out of scope
   def __del__(self):
