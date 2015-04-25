@@ -18,14 +18,6 @@ def distribution_behaviorGBM(ip,port):
   cars_model = h2o.gbm(x=cars[3:7], y=cars["cylinders"])
   assert isinstance(cars_model,h2o.model.regression.H2ORegressionModel)
 
-# AUTO distribution works now - no longer dies here
-#  # character response: expect error
-#  try:
-#    eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"])
-#    assert False, "expected an error"
-#  except EnvironmentError:
-#    assert True
-
   #Log.info("==============================")
   #Log.info("Gaussian Behavior")
   #Log.info("==============================")
