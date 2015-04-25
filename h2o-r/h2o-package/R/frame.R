@@ -1150,6 +1150,7 @@ quantile.H2OFrame <- function(x,
   #if(!na.rm && .h2o.__unary_op("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
   if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
     stop("`probs` must be between 0 and 1 exclusive")
+  combine_method = match.arg(combine_method)   # otherwise warning "the condition has length > 1 and only first will be used"
   if( combine_method == "lo" ) combine_method <- "low"
   if( combine_method == "hi" ) combine_method <- "high"
   if( combine_method == "avg") combine_method <- "avg"
