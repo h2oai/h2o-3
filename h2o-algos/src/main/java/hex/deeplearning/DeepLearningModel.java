@@ -2281,37 +2281,69 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     bodySb.i(1).p("java.util.Arrays.fill(ACTIVATION[i],0f);").nl();
     if (maxout) {
       bodySb.i(1).p("float rmax = 0;").nl();
-    }
-    bodySb.i(1).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
-    bodySb.i(2).p("final int cols = ACTIVATION[i-1].length;").nl();
-    if (maxout) {
+      bodySb.i(1).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
+      bodySb.i(2).p("final int cols = ACTIVATION[i-1].length;").nl();
       bodySb.i(2).p("float cmax = Float.NEGATIVE_INFINITY;").nl();
-    }
-    bodySb.i(2).p("for (int c=0; c<cols; ++c) {").nl();
-    if (!maxout) {
-      bodySb.i(3).p("ACTIVATION[i][r] += ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c];").nl();
-    } else {
+      bodySb.i(2).p("for (int c=0; c<cols; ++c) {").nl();
       bodySb.i(3).p("if " + stopping + " cmax = Math.max(ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c], cmax);").nl();
       bodySb.i(3).p("else ACTIVATION[i][r] += ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c];").nl();
-    }
-    bodySb.i(2).p("}").nl();
-    if (maxout) {
+      bodySb.i(2).p("}").nl();
       bodySb.i(2).p("if "+ stopping +" ACTIVATION[i][r] = Float.isInfinite(cmax) ? 0f : cmax;").nl();
-    }
-    bodySb.i(2).p("ACTIVATION[i][r] += BIAS[i][r];").nl();
-    if (maxout) {
+      bodySb.i(2).p("ACTIVATION[i][r] += BIAS[i][r];").nl();
       bodySb.i(2).p("if " + stopping + " rmax = Math.max(rmax, ACTIVATION[i][r]);").nl();
-    }
-    bodySb.i(1).p("}").nl();
-
-    if (!maxout) bodySb.i(1).p("if " + stopping + " {").nl();
-    bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
-    if (tanh) {
-      bodySb.i(3).p("ACTIVATION[i][r] = 1f - 2f / (1f + (float)Math.exp(2*ACTIVATION[i][r]));").nl();
-    } else if (relu) {
-      bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
-    } else if (maxout) {
+      bodySb.i(1).p("}").nl();
+      bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
       bodySb.i(3).p("if (rmax > 1 ) ACTIVATION[i][r] /= rmax;").nl();
+    } else {
+      // Plain mat-vec
+      if (false /*naive*/) {
+        bodySb.p("  for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
+        bodySb.p("    final int cols = ACTIVATION[i-1].length;").nl();
+        bodySb.p("    for (int c=0; c<cols; ++c) {").nl();
+        bodySb.p("      ACTIVATION[i][r] += ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c];").nl();
+        bodySb.p("    }").nl();
+        bodySb.p("    ACTIVATION[i][r] += BIAS[i][r];").nl();
+        bodySb.p("  }").nl();
+      } else {
+        // optimized
+        bodySb.p("  int cols = ACTIVATION[i-1].length;").nl();
+        bodySb.p("  int rows = ACTIVATION[i].length;").nl();
+        bodySb.p("  int extra=cols-cols%8;").nl();
+        bodySb.p("  int multiple = (cols/8)*8-1;").nl();
+        bodySb.p("  int idx = 0;").nl();
+        bodySb.p("  float[] a = WEIGHT[i];").nl();
+        bodySb.p("  float[] x = ACTIVATION[i-1];").nl();
+        bodySb.p("  float[] y = BIAS[i];").nl();
+        bodySb.p("  float[] res = ACTIVATION[i];").nl();
+        bodySb.p("  for (int row=0; row<rows; ++row) {").nl();
+        bodySb.p("    float psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
+        bodySb.p("    for (int col = 0; col < multiple; col += 8) {").nl();
+        bodySb.p("      int off = idx + col;").nl();
+        bodySb.p("      psum0 += a[off    ] * x[col    ];").nl();
+        bodySb.p("      psum1 += a[off + 1] * x[col + 1];").nl();
+        bodySb.p("      psum2 += a[off + 2] * x[col + 2];").nl();
+        bodySb.p("      psum3 += a[off + 3] * x[col + 3];").nl();
+        bodySb.p("      psum4 += a[off + 4] * x[col + 4];").nl();
+        bodySb.p("      psum5 += a[off + 5] * x[col + 5];").nl();
+        bodySb.p("      psum6 += a[off + 6] * x[col + 6];").nl();
+        bodySb.p("      psum7 += a[off + 7] * x[col + 7];").nl();
+        bodySb.p("    }").nl();
+        bodySb.p("    res[row] += psum0 + psum1 + psum2 + psum3;").nl();
+        bodySb.p("    res[row] += psum4 + psum5 + psum6 + psum7;").nl();
+        bodySb.p("    for (int col = extra; col < cols; col++)").nl();
+        bodySb.p("      res[row] += a[idx + col] * x[col];").nl();
+        bodySb.p("    res[row] += y[row];").nl();
+        bodySb.p("    idx += cols;").nl();
+        bodySb.p("  }").nl();
+      }
+      // Activation function
+      bodySb.i(1).p("if " + stopping + " {").nl();
+      bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
+      if (tanh) {
+        bodySb.i(3).p("ACTIVATION[i][r] = 1f - 2f / (1f + (float)Math.exp(2*ACTIVATION[i][r]));").nl();
+      } else if (relu) {
+        bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
+      }
     }
     if (get_params()._hidden_dropout_ratios != null) {
       bodySb.i(3).p("if (i<ACTIVATION.length-1) {").nl();
