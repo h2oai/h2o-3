@@ -27,7 +27,7 @@ def link_functions_binomial(ip,port):
 	sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Binomial(sm.families.links.logit)).fit()
 
 	print("Compare model deviances for link function logit")
-	h2o_deviance = h2o_model._model_json['output']['training_metrics']['residual_deviance'] / h2o_model._model_json['output']['training_metrics']['null_deviance']
+	h2o_deviance = h2o_model.residual_deviance() / h2o_model.null_deviance()
 	sm_deviance = sm_model.deviance / sm_model.null_deviance
 	assert h2o_deviance - sm_deviance < 0.01, "expected h2o to have an equivalent or better deviance measures"
 

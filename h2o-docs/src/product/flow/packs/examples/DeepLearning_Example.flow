@@ -63,7 +63,7 @@
     },
     {
       "type": "md",
-      "input": "##Results\n\n To view the results, click the **View** button. The output for the Deep Learning model displays the status of the neuron layers and the scoring history. "
+      "input": "##Results\n\n To view the results, click the **View** button. The output for the Deep Learning model includes the following information for both the training and testing sets: \n\n- Model parameters (hidden)\n- A chart of the variable importances\n- A graph of the scoring history (training MSE and validation MSE vs epochs)\n- Output (model category, weights, biases)\n- Status of neuron layers (layer number, units, type, dropout, L1, L2, mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias, bias RMS)\n- Scoring history in tabular format\n- Training metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)\n- Top-10 Hit Ratios\n- Confusion matrix"
     },
     {
       "type": "cs",

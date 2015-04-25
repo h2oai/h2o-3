@@ -1308,7 +1308,7 @@ public abstract class Neurons {
    */
   static Frame toFrame(Vector v, Key key) {
     final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(1) / Math.log(2.)));
-    Vec vv = makeCon(0, v.size(), log_rows_per_chunk);
+    Vec vv = makeCon(0, v.size(), log_rows_per_chunk, false /* no rebalancing! */);
     Frame f = new Frame(key, new Vec[]{vv}, true);
     Vec.Writer vw = f.vecs()[0].open();
     for (int r = 0; r < v.size(); ++r) {
@@ -1480,9 +1480,11 @@ public abstract class Neurons {
       if (drm != null) m = drm;
       if (scm != null) m = scm;
       if (srm != null) m = srm;
+      int off = (int)cs[0].start();
+      assert(m.cols() == cs.length);
       for (int c = 0; c < cs.length; ++c) {
-        for (int r = 0; r < m.rows(); ++r) {
-          cs[c].set(r, m.get((int)cs[0].start() + r, c));
+        for (int r = 0; r < cs[0]._len; ++r) {
+          cs[c].set(r, m.get(off + r, c));
         }
       }
     }
@@ -1514,7 +1516,10 @@ public abstract class Neurons {
     private int _rows;
     DenseRowMatrix(int rows, int cols) { this(new float[cols*rows], rows, cols); }
     DenseRowMatrix(float[] v, int rows, int cols) { _data = v; _rows = rows; _cols = cols; }
-    @Override public float get(int row, int col) { assert(row<_rows && col<_cols); return _data[row*_cols + col]; }
+    @Override public float get(int row, int col) {
+      assert(row<_rows && col<_cols) : "_data.length: " + _data.length + ", checking: " + row + " < " + _rows + " && " + col + " < " + _cols;
+      return _data[row*_cols + col];
+    }
     @Override public void set(int row, int col, float val) { assert(row<_rows && col<_cols); _data[row*_cols + col] = val; }
     @Override public void add(int row, int col, float val) { assert(row<_rows && col<_cols); _data[row*_cols + col] += val; }
     @Override public int cols() { return _cols; }

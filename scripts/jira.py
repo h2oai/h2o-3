@@ -64,6 +64,9 @@ class Person:
     def get_story_points(self):
         return (self.resolved_story_points + self.unresolved_story_points)
 
+    def get_total_issues_count(self):
+        return (len(self.resolved_list) + len(self.unresolved_list))
+
     def emit_issues_csv(self):
         print (self.name + "," + str(len(self.resolved_list)) + "," + str(len(self.unresolved_list)))
 
@@ -130,48 +133,57 @@ class PeopleManager:
     def emit(self):
         if g_burndown:
             total_story_points = 0
+            total_issues = 0
             for key in sorted(self.people_map.keys()):
                 person = self.people_map[key]
                 total_story_points += person.get_story_points()
+                total_issues += person.get_total_issues_count()
             issues = self.get_resolved_issues_sorted_by_date()
             if (len(issues) == 0):
                 print("No resolved issues")
                 return
-            after_total = total_story_points
+            after_total_story_points = total_story_points
+            after_total_issues = total_issues
             earliest_resolution_date = get_issue_resolution_date(issues[0])
             if (g_start_date is not None):
                 start_date = g_start_date
             else:
                 start_date = earliest_resolution_date
             if g_csv:
-                print("key,assignee,story_points,before_total,resolution_date,resolution_date_days,after_total")
+                print("key,assignee,story_points,before_total_story_points,resolution_date,resolution_date_days,after_total_story_points,after_total_issues")
                 if (start_date < earliest_resolution_date):
                     tmp = start_date
                 else:
                     tmp = earliest_resolution_date
                 date_str = tmp.strftime("%Y-%m-%d %H:%M")
                 date_days = (tmp - start_date).total_seconds() / 3600.0 / 24
-                print(",,,,{},{},{}".format(date_str, date_days, total_story_points))
+                print(",,,,{},{},{},{}".format(date_str, date_days, total_story_points, total_issues))
             for issue in issues:
-                before_total = after_total
+                before_total_story_points = after_total_story_points
+                before_total_issues = after_total_issues
                 key = get_issue_key(issue)
                 assignee = get_issue_assignee_name(issue)
                 story_points = get_issue_story_points(issue)
                 resolution_date = get_issue_resolution_date(issue)
                 date_days = (resolution_date - start_date).total_seconds() / 3600.0 / 24
-                after_total = before_total - story_points
+                after_total_story_points = before_total_story_points - story_points
+                after_total_issues = before_total_issues - 1
                 if g_csv:
                     date_str = resolution_date.strftime("%Y-%m-%d %H:%M")
-                    print("{},{},{},{},{},{},{}".format(key, assignee,
-                                                        story_points, before_total,
-                                                        date_str, date_days,
-                                                        after_total))
+                    print("{},{},{},{},{},{},{},{}"
+                          .format(key, assignee,
+                                  story_points, before_total_story_points,
+                                  date_str, date_days,
+                                  after_total_story_points,
+                                  after_total_issues))
                 else:
                     date_str = resolution_date.strftime("%Y-%m-%d %H:%M")
-                    print("{:11s}  {:10s}  {:.1f}  {:.1f}  {:s}  {:.2f}  {:.1f}".format(key, assignee,
-                                                                                        story_points, before_total,
-                                                                                        date_str, date_days,
-                                                                                        after_total))
+                    print("{:11s}  {:10s}  {:.1f}  {:.1f}  {:s}  {:.2f}  {:.1f}  {:.1f}"
+                          .format(key, assignee,
+                                  story_points, before_total_story_points,
+                                  date_str, date_days,
+                                  after_total_story_points,
+                                  after_total_issues))
             return
 
         if g_csv:

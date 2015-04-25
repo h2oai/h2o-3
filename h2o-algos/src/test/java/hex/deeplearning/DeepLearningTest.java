@@ -441,6 +441,7 @@ public class DeepLearningTest extends TestUtil {
       dl._reproducible = true;
       dl._epochs = epochs;
       dl._activation = activation;
+      dl._export_weights_and_biases = true;
       dl._hidden = hidden;
       dl._l1 = l1;
 
@@ -499,4 +500,48 @@ public class DeepLearningTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Ignore
+  @Test public void testWhatever() {
+    DeepLearningModel.DeepLearningParameters dl;
+    Frame frTrain = null;
+    DeepLearningModel model = null;
+    while(true) {
+      dl = new DeepLearningModel.DeepLearningParameters();
+      Scope.enter();
+      try {
+        frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+        Vec resp = frTrain.lastVec().toEnum();
+        frTrain.remove(frTrain.vecs().length-1);
+        frTrain.add("Response", resp);
+        // Configure DL
+        dl._train = frTrain._key;
+        dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
+        dl._seed = 1234;
+        dl._reproducible = true;
+        dl._epochs = 0.0001;
+        dl._export_weights_and_biases = true;
+        dl._hidden = new int[]{188, 191};
+
+        // Invoke DL and block till the end
+        DeepLearning job = null;
+        try {
+          job = new DeepLearning(dl);
+          // Get the model
+          model = job.trainModel().get();
+          Log.info(model._output);
+        } finally {
+          if (job != null) job.remove();
+        }
+        Assert.assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+
+
+      } finally {
+        if (frTrain != null) frTrain.remove();
+        if (model != null) model.delete();
+        Scope.exit();
+      }
+    }
+  }
+
 }
