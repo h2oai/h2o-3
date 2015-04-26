@@ -346,10 +346,23 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   return None
 
 def export_file(frame,path,force=False):
+  """
+  Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
+  :param frame: The Frame to save to disk.
+  :param path: The path to the save point on disk.
+  :param force: Overwrite any preexisting file with the same path
+  :return: None
+  """
   fr = H2OFrame.send_frame(frame)
   f = "true" if force else "false"
   H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
+def cluster_info():
+  """
+  Display the current H2O cluster information.
+  :return: None
+  """
+  H2OConnection._cluster_info()
 
 def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """

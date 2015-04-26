@@ -218,6 +218,25 @@ class ModelBase(object):
     if ModelBase._has(tm,"cm"):              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
     if ModelBase._has(tm,"hit_ratio_table"): print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
+  @staticmethod
+  def _get_metrics(o, train, valid):
+    if train:
+      return o._model_json["output"]["training_metrics"]
+    if valid:
+      return o._model_json["output"]["validation_metrics"]
+    raise ValueError("`_get_metrics` demands `train` or `valid` to be True.")
+
+  @staticmethod
+  def _train_or_valid(train,valid):
+    """
+    Internal static method.
+    :param train: a boolean for train. Ignored, however.
+    :param valid: a boolean for valid
+    :return: true if train, false if valid. If both are false, return True for train.
+    """
+    if valid: return [False, True]
+    return [True,False]
+
   # Delete from cluster as model goes out of scope
   def __del__(self):
     h2o.remove(self._key)

@@ -50,6 +50,7 @@ class H2OConnection(object):
     if not (isinstance(port, int) and 0 <= port <= sys.maxint):
        raise ValueError("Port out of range, "+port)
     global __H2OCONN__
+    self._cld = None
     self._ip = ip
     self._port = port
     self._session_id = None
@@ -77,25 +78,8 @@ class H2OConnection(object):
         else:
           print "No jar file found. Could not start local instance."
           raise
-
-    # self._session_id = self.get_session_id()
-    ncpus = sum([n['num_cpus'] for n in cld['nodes']])
-    allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
-    mmax = sum([n['max_mem'] for n in cld['nodes']])
-    cluster_health = all([n['healthy'] for n in cld['nodes']])
-    cluster_info = [
-      ["H2O cluster uptime: ", get_human_readable_time(cld["cloud_uptime_millis"])],
-      ["H2O cluster version: ", cld["version"]],
-      ["H2O cluster name: ", cld["cloud_name"]],
-      ["H2O cluster total nodes: ", cld["cloud_size"]],
-      ["H2O cluster total memory: ", get_human_readable_size(mmax)],
-      ["H2O cluster total cores: ", str(ncpus)],
-      ["H2O cluster allowed cores: ", str(allowed_cpus)],
-      ["H2O cluster healthy: ", str(cluster_health)],
-    ]
-    print
-    print tabulate.tabulate(cluster_info)
-    print
+    __H2OCONN__._cld = cld
+    self._cluster_info()
 
     ver_h2o = cld['version']
     try:
@@ -110,6 +94,33 @@ class H2OConnection(object):
         raise EnvironmentError, message
       else:
         print "Warning: {0}".format(message)
+
+  @staticmethod
+  def _cluster_info():
+    global __H2OCONN__
+    cld = __H2OCONN__._cld
+    # self._session_id = self.get_session_id()
+    ncpus = sum([n['num_cpus'] for n in cld['nodes']])
+    allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
+    mmax = sum([n['max_mem'] for n in cld['nodes']])
+    cluster_health = all([n['healthy'] for n in cld['nodes']])
+    ip = "127.0.0.1" if __H2OCONN__._ip=="localhost" else __H2OCONN__._ip
+    cluster_info = [
+      ["H2O cluster uptime: ", get_human_readable_time(cld["cloud_uptime_millis"])],
+      ["H2O cluster version: ", cld["version"]],
+      ["H2O cluster name: ", cld["cloud_name"]],
+      ["H2O cluster total nodes: ", cld["cloud_size"]],
+      ["H2O cluster total memory: ", get_human_readable_size(mmax)],
+      ["H2O cluster total cores: ", str(ncpus)],
+      ["H2O cluster allowed cores: ", str(allowed_cpus)],
+      ["H2O cluster healthy: ", str(cluster_health)],
+      ["H2O Connection ip: ", ip],
+      ["H2O Connection port: ", __H2OCONN__._port],
+      ]
+    print
+    print tabulate.tabulate(cluster_info)
+    print
+    __H2OCONN__._cld = H2OConnection.get_json(url_suffix="Cloud")   # update the cached version of cld
 
   def _connect(self, size, max_retries=5, print_dots=False):
     """

@@ -1,19 +1,21 @@
 """
-AutoEncoder Models should be comparable.
+AutoEncoder Models
 """
 
 from model_base import *
 
 class H2OAutoEncoderModel(ModelBase):
   """
-  Class for Binomial models.
+  Class for AutoEncoder models.
   """
   def __init__(self, dest_key, model_json):
     super(H2OAutoEncoderModel, self).__init__(dest_key, model_json,H2OAutoEncoderModelMetrics)
 
   def anomaly(self,test_data):
     """
-    Return the reconstruction error for an AutoEncoder models
+    Obtain the reconstruction error for the input test_data.
+    :param test_data: The dataset upon which the reconstruction error is computed.
+    :return: Return the reconstruction error.
     """
     if not test_data: raise ValueError("Must specify test data")
     # cbind the test_data vecs together and produce a temp key

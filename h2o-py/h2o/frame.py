@@ -234,6 +234,13 @@ class H2OFrame:
         print
 
   def head(self, rows=10, cols=200, **kwargs):
+    """
+    Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
+    :param rows: Number of rows to display.
+    :param cols: Number of columns to display.
+    :param kwargs: Extra arguments passed from other methods.
+    :return: None
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     nrows = min(self.nrow(), rows)
@@ -253,6 +260,13 @@ class H2OFrame:
     print
 
   def tail(self, rows=10, cols=200, **kwargs):
+    """
+    Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
+    :param rows: Number of rows to display.
+    :param cols: Number of columns to display.
+    :param kwargs: Extra arguments passed from other methods.
+    :return: None
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     nrows = min(self.nrow(), rows)
@@ -276,6 +290,11 @@ class H2OFrame:
     print
 
   def levels(self, col=0):
+    """
+    Get the factor levels for this frame and the specified column index.
+    :param col: A column index in this H2OFrame.
+    :return: a list of strings that are the factor levels for the column.
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     if col < 0: col = 0
@@ -285,6 +304,11 @@ class H2OFrame:
     return res["domain"][0]
 
   def setNames(self,names):
+    """
+    Change the column names to `names`.
+    :param names: A list of strings equal to the number of columns in the H2OFrame.
+    :return: None. Rename the column names in this H2OFrame.
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     if not names or not isinstance(names,list):
@@ -352,6 +376,12 @@ class H2OFrame:
   # Column selection via slice returns a subset Frame
   # Multi-dimensional slicing via 2-tuple
   def __getitem__(self, i):
+    """
+    Column selection via integer, string(name)
+    Column selection via slice returns a subset of the H2OFrame
+    :param i: An int, str, slice, H2OVec, or list/tuple
+    :return: An H2OVec, an H2OFrame, or scalar depending on the input slice.
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     if isinstance(i, int):   return self._vecs[i]
@@ -616,6 +646,12 @@ class H2OFrame:
 
   # Quantiles
   def quantile(self, prob=None, combine_method="interpolate"):
+    """
+    Compute quantiles over a given H2OFrame.
+    :param prob: A list of probabilties, default is [0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]. You may provide any sequence of any length.
+    :param combine_method: For even samples, how to combine quantiles. Should be one of ["interpolate", "average", "low", "hi"]
+    :return: an H2OFrame containing the quantiles and probabilities.
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     if len(self) == 0: return self
@@ -834,18 +870,33 @@ class H2OVec:
     return [H2OVec(str(col), Expr(op=veckey['name'], length=rows))  for idx, (col, veckey) in enumerate(vecs)]
 
   def name(self):
+    """
+    :return: Return the column name for this H2OVec
+    """
     return self._name
 
   def key(self):
+    """
+    :return: Return the H2O Key for this Vec.
+    """
     return self._expr._data if isinstance(self._expr._data, (unicode, str)) else ""
 
   def setName(self,name):
+    """
+    Set the column name for this column.
+    :param name: The new name for this column.
+    :return: None
+    """
     if name and isinstance(name,str):
       self._name = name
     else:
         raise ValueError("name parameter must be a string")
 
   def get_expr(self):
+    """
+    Helper method to obtain the expr object in self. Can also get it directly  @ ._expr.
+    :return: the _expr member of this H2OVec
+    """
     return self._expr
 
   def append(self, data):

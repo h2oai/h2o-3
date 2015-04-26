@@ -212,6 +212,12 @@ class H2OBinomialModelMetrics(object):
     return 1-self.metric("min_per_class_accuracy", thresholds=thresholds)
 
   def metric(self, metric, thresholds=None):
+    """
+
+    :param metric:
+    :param thresholds:
+    :return:
+    """
     if not thresholds: thresholds=[self.find_threshold_by_max_metric(metric)]
     if not isinstance(thresholds,list):
       raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
@@ -225,6 +231,11 @@ class H2OBinomialModelMetrics(object):
     return metrics
 
   def confusion_matrices(self, thresholds=None):
+    """
+    Each threshold defines a confusion matrix. For each threshold in the thresholds list, return a 2x2 list.
+    :param thresholds: A list of thresholds.
+    :return: A list of 2x2-lists: [, ..., [ [tns,fps], [fns,tps] ], ..., ]
+    """
     if not thresholds: thresholds=[self.find_threshold_by_max_metric("f1")]
     if not isinstance(thresholds,list):
       raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
@@ -243,6 +254,10 @@ class H2OBinomialModelMetrics(object):
     return cms
 
   def find_threshold_by_max_metric(self,metric):
+    """
+    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "error", "accuracy", "f0point5", "f2", "f1"}
+    :return: the threshold at which the given metric is maximum.
+    """
     crit2d = self._metric_json['max_criteria_and_metric_scores']
     for e in crit2d.cell_values:
       if e[0]==metric:
@@ -250,6 +265,11 @@ class H2OBinomialModelMetrics(object):
     raise ValueError("No metric "+str(metric))
 
   def find_idx_by_threshold(self,threshold):
+    """
+    Retrieve the index in this metric's threshold list at which the given threshold is located.
+    :param threshold: Find the index of this input threshold.
+    :return: Return the index or throw a ValueError if no such index can be found.
+    """
     if not isinstance(threshold,float):
       raise ValueError("Expected a float but got a "+type(threshold))
     thresh2d = self._metric_json['thresholds_and_metric_scores']
@@ -260,11 +280,17 @@ class H2OBinomialModelMetrics(object):
     raise ValueError("No threshold "+str(threshold))
 
   def residual_deviance(self):
+    """
+    :return: the residual deviance if the model has residual deviance, or None if no residual deviance.
+    """
     if ModelBase._has(self._metric_json, "residual_deviance"):
       return self._metric_json["residual_deviance"]
     return None
 
   def null_deviance(self):
+    """
+    :return: the null deviance if the model has residual deviance, or None if no null deviance.
+    """
     if ModelBase._has(self._metric_json, "null_deviance"):
       return self._metric_json["null_deviance"]
     return None
