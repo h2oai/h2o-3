@@ -226,7 +226,7 @@ This is better demonstrated by way of an example:
   >>> m.summary()                                                  # print a model summary
 
 As you can see, the result of the glm call is a binomial model. This example also showcases
-an important feature-munging step in order to cause the gbm to perform a classification task
+an important feature-munging step in order to cause the glm to perform a classification task
 over a regression task. Namely, the second column is a numeric column when it's initially read in,
 but it must be cast to a factor by way of the H2OVec operation `asfactor`. Let's take a look
 at this more deeply:
@@ -290,24 +290,68 @@ Here are some examples doing just that:
   >>>
   >>> m.confusion_matrix()  # confusion matrix for max F1
   >>>
-  >>> m.confusion_matrix("tpr") # confusion marix for max true positive rate
+  >>> m.confusion_matrix("tpr") # confusion matrix for max true positive rate
   >>>
-  >>> m.confusion_matrix("max_per_class_error") #
+  >>> m.confusion_matrix("max_per_class_error")   # etc.
 
 All of our models support various accessors such as these. Please refer to the relevant documentation
-for each model category
-* parameter specification
-* categoricals are dealt with internally (no need to one-hot expand them!)
-* what about categoricals in my response?
-* what about an integral response column that I want to do classification on
-* See more on the chapter on Models
+for each model category to get further specifics on arguments and available metrics.
+
+Each model handles missing (colloquially: "missing" or "NA") and categorical data automatically.
+Because each model handles these types of data differently, please refer to the model call below for
+more information. If you still have questions, please send a note to support@support@h2o.ai.
 
 Metrics
 +++++++
 
-* Metrics for different types of model categories
-* See more in the chapter on Metrics
 
+
+
+Example of H2O on Hadoop
+------------------------
+
+Here is a small example (H2O on Hadoop) :
+
+.. code-block:: python
+
+  import h2o
+  h2o.init(ip="192.168.1.10", port=54321)
+  --------------------------  ------------------------------------
+  H2O cluster uptime:         2 minutes 1 seconds 966 milliseconds
+  H2O cluster version:        0.1.27.1064
+  H2O cluster name:           H2O_96762
+  H2O cluster total nodes:    4
+  H2O cluster total memory:   38.34 GB
+  H2O cluster total cores:    16
+  H2O cluster allowed cores:  80
+  H2O cluster healthy:        True
+  --------------------------  ------------------------------------
+  pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
+  pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
+  trainFrame = h2o.import_frame(path=pathDataTrain)
+  testFrame = h2o.import_frame(path=pathDataTest)
+
+  #Parse Progress: [##################################################] 100%
+  #Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols
+
+  #Parse Progress: [##################################################] 100%
+  #Imported ['hdfs://192.168.1.10/user/data/data_test.csv'] into cluster with 10000 rows and 500 cols
+
+  trainFrame[499]._name = "label"
+  testFrame[499]._name = "label"
+
+  model = h2o.gbm(x=trainFrame.drop("label"),
+              y=trainFrame["label"],
+              validation_x=testFrame.drop("label"),
+              validation_y=testFrame["label"],
+              ntrees=100,
+              max_depth=10
+              )
+
+  #gbm Model Build Progress: [##################################################] 100%
+
+  predictFrame = model.predict(testFrame)
+  model.model_performance(testFrame)
 """
 __version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
@@ -317,9 +361,3 @@ from frame import H2OVec
 from two_dim_table import H2OTwoDimTable
 
 __all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]
-
-
-
-###
-# inspect.getcallargs(h2o.init)
-###

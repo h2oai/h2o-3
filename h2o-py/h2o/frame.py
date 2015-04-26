@@ -152,6 +152,11 @@ class H2OFrame:
     self._handle_text_key(dest_key, column_names)
 
   def __iter__(self):
+    """
+    Allows for list comprehensions over an H2OFrame
+
+    :return: An iterator over the H2OFrame
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     return (vec for vec in self._vecs.__iter__() if vec is not None)
@@ -159,6 +164,7 @@ class H2OFrame:
   def vecs(self):
     """
     Retrieve the array of H2OVec objects comprising this H2OFrame.
+
     :return: The array of H2OVec objects.
     """
     if self._vecs is None or self._vecs == []:
@@ -168,6 +174,7 @@ class H2OFrame:
   def keys(self):
     """
     Retrieve the keys for each of the H2OVec objects comrpising this H2OFrame.
+
     :return: the array of keys.
     """
     return [i.key() for i in self._vecs]
@@ -175,6 +182,7 @@ class H2OFrame:
   def col_names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
+
     :return: A character list[] of column names.
     """
     if self._vecs is None or self._vecs == []:
@@ -184,6 +192,7 @@ class H2OFrame:
   def names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
+
     :return: A character list[] of column names.
     """
     if self._vecs is None or self._vecs == []:
@@ -193,6 +202,7 @@ class H2OFrame:
   def nrow(self):
     """
     Get the number of rows in this H2OFrame.
+
     :return: The number of rows in this dataset.
     """
     if self._vecs is None or self._vecs == []:
@@ -202,6 +212,7 @@ class H2OFrame:
   def ncol(self):
     """
     Get the number of columns in this H2OFrame.
+
     :return: The number of columns in this H2OFrame.
     """
     if self._vecs is None or self._vecs == []:
@@ -211,6 +222,7 @@ class H2OFrame:
   def dim(self):
     """
     Get the number of rows and columns in the H2OFrame.
+
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
     if self._vecs is None or self._vecs == []:
@@ -236,6 +248,7 @@ class H2OFrame:
   def head(self, rows=10, cols=200, **kwargs):
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
+
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
     :param kwargs: Extra arguments passed from other methods.
@@ -262,6 +275,7 @@ class H2OFrame:
   def tail(self, rows=10, cols=200, **kwargs):
     """
     Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
+
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
     :param kwargs: Extra arguments passed from other methods.
@@ -292,6 +306,7 @@ class H2OFrame:
   def levels(self, col=0):
     """
     Get the factor levels for this frame and the specified column index.
+
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
@@ -306,6 +321,7 @@ class H2OFrame:
   def setNames(self,names):
     """
     Change the column names to `names`.
+
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
@@ -379,6 +395,7 @@ class H2OFrame:
     """
     Column selection via integer, string(name)
     Column selection via slice returns a subset of the H2OFrame
+
     :param i: An int, str, slice, H2OVec, or list/tuple
     :return: An H2OVec, an H2OFrame, or scalar depending on the input slice.
     """
@@ -414,6 +431,7 @@ class H2OFrame:
   def __setitem__(self, b, c):
     """
     Replace a column in an H2OFrame.
+
     :param b: A 0-based index or a column name.
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
@@ -443,6 +461,12 @@ class H2OFrame:
 
   # Modifies the collection in-place to remove a named item
   def __delitem__(self, i):
+    """
+    Remove a vec specified at the index i.
+
+    :param i: The index of the vec to delete.
+    :return: The Vec to be deleted.
+    """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     if isinstance(i, str):
@@ -454,6 +478,7 @@ class H2OFrame:
     """
     Column selection via integer, string(name) returns a Vec
     Column selection via slice returns a subset Frame
+
     :param i: Column to select
     :return: Returns an H2OVec or H2OFrame.
     """
@@ -546,6 +571,7 @@ class H2OFrame:
   def send_frame(self):
     """
     Send a frame description to H2O, returns a key.
+
     :return: A key
     """
     if self._vecs is None or self._vecs == []:
@@ -648,6 +674,7 @@ class H2OFrame:
   def quantile(self, prob=None, combine_method="interpolate"):
     """
     Compute quantiles over a given H2OFrame.
+
     :param prob: A list of probabilties, default is [0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]. You may provide any sequence of any length.
     :param combine_method: For even samples, how to combine quantiles. Should be one of ["interpolate", "average", "low", "hi"]
     :return: an H2OFrame containing the quantiles and probabilities.
@@ -765,10 +792,8 @@ class H2OFrame:
   def merge(self, other, allLeft=False, allRite=False):
     """
     Merge two datasets based on common column names
-    :param other: Other dataset to merge.  Must have at least one column in
-    common with self, and all columns in common are used as the merge key.  If
-    you want to use only a subset of the columns in common, rename the other
-    columns so the columns are unique in the merged result.
+
+    :param other: Other dataset to merge.  Must have at least one column in common with self, and all columns in common are used as the merge key.  If you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
     :param allLeft: If true, include all rows from the left/self frame
     :param allRite: If true, include all rows from the right/other frame
     :return: Original self frame enhanced with merged columns and rows
@@ -884,6 +909,7 @@ class H2OVec:
   def setName(self,name):
     """
     Set the column name for this column.
+
     :param name: The new name for this column.
     :return: None
     """
@@ -895,6 +921,7 @@ class H2OVec:
   def get_expr(self):
     """
     Helper method to obtain the expr object in self. Can also get it directly  @ ._expr.
+
     :return: the _expr member of this H2OVec
     """
     return self._expr
@@ -949,6 +976,7 @@ class H2OVec:
   def show(self, noprint=False):
     """
     Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame
+
     :param noprint: A boolean stating whether to print or to return data.
     :return: If noprint is False, then self._expr is returned.
     """
@@ -970,6 +998,7 @@ class H2OVec:
   def summary(self):
     """
     Compute the rollup data summary (min, max, mean, etc.)
+
     :return: the summary from this Expr object
     """
     return self._expr.summary()
@@ -977,6 +1006,7 @@ class H2OVec:
   def __getitem__(self, i):
     """
     Basic index/sliced lookup
+
     :param i: An Expr or an H2OVec
     :return: A new Expr object corresponding to the input query
     """
@@ -989,6 +1019,7 @@ class H2OVec:
   def row_select(self, vec):
     """
     Boolean column select lookup
+
     :param vec: An H2OVec.
     :return: A new H2OVec.
     """
@@ -1065,7 +1096,11 @@ class H2OVec:
     """
     return len(self._expr)
 
-  def dim(self): return len(self), 1
+  def dim(self):
+    """
+    :return: The length of the H2OVec
+    """
+    return len(self), 1
 
   def floor(self):
     """
@@ -1177,6 +1212,7 @@ class H2OVec:
   def mktime(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0):
     """
     All units are zero-based (including months and days).  Missing year is 1970.
+
     :return: Returns msec since the Epoch.
     """
     # Some error checking on length

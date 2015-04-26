@@ -1,5 +1,6 @@
 """
-This module implements the communication REST layer for the python <-> H2O connection.
+This module provides all of the top level calls for models and various data transform methods.
+By simply
 """
 
 import os
@@ -184,6 +185,7 @@ def value_check(h2o_data, local_data, num_elements, col=None):
   """
   Check that the values of h2o_data and local_data are the same. In a testing context, this could be used to check
   that an operation did not alter the original h2o_data.
+
   :param h2o_data: an H2OFrame, H2OVec or Expr
   :param local_data: a list of lists (row x col format)
   :param num_elements: number of elements to check
@@ -280,6 +282,7 @@ def frame(key):
 def frame_summary(key):
   """
   Retrieve metadata and summary information for a key that points to a Frame/Vec
+
   :param key: A pointer to a Frame/Vec in H2O
   :return: Meta and summary info on the frame
   """
@@ -348,6 +351,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
 def export_file(frame,path,force=False):
   """
   Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
+
   :param frame: The Frame to save to disk.
   :param path: The path to the save point on disk.
   :param force: Overwrite any preexisting file with the same path
@@ -360,6 +364,7 @@ def export_file(frame,path,force=False):
 def cluster_info():
   """
   Display the current H2O cluster information.
+
   :return: None
   """
   H2OConnection._cluster_info()
@@ -367,12 +372,15 @@ def cluster_info():
 def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
   Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: Return a new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
 
 def autoencoder(x,**kwargs):
   """
   Build an Autoencoder
+
   :param x: Columns with which to build an autoencoder
   :param kwargs: Additional arguments to pass to the autoencoder.
   :return: A new autoencoder model
@@ -382,12 +390,16 @@ def autoencoder(x,**kwargs):
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Gradient Boosted Method model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
 
 def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new regression or binomial classifier.
   """
   kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
@@ -395,12 +407,16 @@ def glm(x,y,validation_x=None,validation_y=None,**kwargs):
 def kmeans(x,validation_x=None,**kwargs):
   """
   Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new clustering model
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
 
 def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Random Forest Model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
 
@@ -444,6 +460,7 @@ def as_list(data):
   Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
   100 rows. This function is only intended to be used within the testing framework. More robust functionality must
   be constructed for production conversion between H2O and python data types.
+
   :return: List of list (Rows x Columns).
   """
   if isinstance(data, Expr):

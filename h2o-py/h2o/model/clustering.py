@@ -1,9 +1,8 @@
 """
-Clustering Models should be comparable.
+Clustering Models
 """
 
-from model_base import ModelBase
-from metrics_base import MetricsBase
+from metrics_base import *
 
 
 class H2OClusteringModel(ModelBase):
@@ -98,7 +97,3 @@ class H2OClusteringModel(ModelBase):
     for cidx, cval in enumerate(cvals):
       centers_std.append(list(cvals[cidx])[1:])
     return centers_std
-
-class H2OClusteringModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
-    super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)

@@ -13,7 +13,6 @@ Contents:
 
    h2o
    frame
-   h2o.h2o
    h2o.model
    other
 

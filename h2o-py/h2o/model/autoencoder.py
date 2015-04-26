@@ -36,7 +36,3 @@ class H2OAutoEncoderModel(ModelBase):
     h2o.remove(test_data_key)
     # return new H2OFrame object
     return H2OFrame(vecs=vecs)
-
-class H2OAutoEncoderModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
-    super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)

@@ -1,10 +1,9 @@
 """
-Regression Models should be comparable.
+Regression Models
 """
 
 import math
-from model_base import ModelBase
-from metrics_base import MetricsBase
+from metrics_base import *
 
 class H2ORegressionModel(ModelBase):
   """
@@ -16,6 +15,7 @@ class H2ORegressionModel(ModelBase):
   def show(self, train=False, valid=False):
     """
     Show the MSE, RMSE, and R2 for this regression model.
+
     :param train: If train is True, then show for the training data. If train and valid are both False, then show for training.
     :param valid: If valid is True, then show for the validation data. If train and valid are both True, then show for validation.
     :return: None
@@ -24,12 +24,3 @@ class H2ORegressionModel(ModelBase):
     print "Regression model"
     print "MSE=",mse,"RMSE=",math.sqrt(mse),"r2=",self.r2()
     print
-
-class H2ORegressionModelMetrics(MetricsBase):
-  """
-  This class provides an API for inspecting the metrics returned by a regression model.
-
-  It is possible to retrieve the R^2 (1 - MSE/variance) and MSE
-  """
-  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
-    super(H2ORegressionModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
