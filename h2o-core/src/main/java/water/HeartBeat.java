@@ -20,9 +20,9 @@ public class HeartBeat extends Iced<HeartBeat> {
   public double _gflops;        // Number of GFlops for this node
   public double _membw;         // Memory bandwidth in GB/s
   public float _system_load_average;
-  long _system_idle_ticks;
-  long _system_total_ticks;
-  long _process_total_ticks;
+  public long _system_idle_ticks;
+  public long _system_total_ticks;
+  public long _process_total_ticks;
   public int _process_num_open_fds;
   public int _cpus_allowed;   // Number of CPUs allowed by process
   public int _nthreads;
