@@ -33,9 +33,14 @@ class ModelBase(object):
     self._model_json = model_json
     self._metrics_class = metrics_class
 
+  def __repr__(self):
+    self.show()
+    return ""
+
   def predict(self, test_data):
     """
     Predict on a dataset.
+
     :param test_data: Data to be predicted on.
     :return: A new H2OFrame filled with predictions.
     """
@@ -62,7 +67,7 @@ class ModelBase(object):
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
 
-  def confusionMatrix(self, test_data):
+  def confusion_matrix(self, test_data):
     """
     Returns a confusion matrix based of H2O's default prediction threshold for a dataset
     """
@@ -78,6 +83,7 @@ class ModelBase(object):
   def deepfeatures(self, test_data, layer):
     """
     Return hidden layer details
+
     :param test_data: Data to create a feature space on
     :param layer: 0 index hidden layer
     """
@@ -102,6 +108,7 @@ class ModelBase(object):
   def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
+
     :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
     :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
     :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
@@ -135,6 +142,7 @@ class ModelBase(object):
   def summary(self):
     """
     Print a detailed summary of the model.
+
     :return:
     """
     model = self._model_json["output"]
@@ -146,6 +154,7 @@ class ModelBase(object):
   def show(self):
     """
     Print innards of model, without regards to type
+
     :return: None
     """
     model = self._model_json["output"]
@@ -172,8 +181,9 @@ class ModelBase(object):
   def residual_deviance(self,train=False,valid=False):
     """
     Retreive the residual deviance if this model has the attribute, or None otherwise.
-    :param:  train Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
-    :param:  valid Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
+
+    :param train: Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
+    :param valid: Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the residual deviance, or None if it is not present.
     """
     if not train and not valid:
@@ -189,6 +199,7 @@ class ModelBase(object):
   def null_deviance(self,train=False,valid=False):
     """
     Retreive the null deviance if this model has the attribute, or None otherwise.
+
     :param:  train Get the null deviance for the training set. If both train and valid are False, then train is selected by default.
     :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the null deviance, or None if it is not present.
@@ -203,6 +214,99 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].null_deviance()
 
+  def pprint_coef(self):
+    """
+    Pretty print the coefficents table (includes normalized coefficients)
+    :return: None
+    """
+    print self._model_json["output"]["coefficients_table"]  # will return None if no coefs!
+
+  def coef(self):
+    """
+    :return: Return the coefficients for this model.
+    """
+    tbl = self._model_json["output"]["coefficients_table"].cell_values
+    if tbl is None: return None
+    tbl = tbl.cell_values
+    return {a[0]:a[1] for a in tbl}
+
+  def coef_norm(self):
+    """
+    :return: Return the normalized coefficients
+    """
+    tbl = self._model_json["output"]["coefficients_table"]
+    if tbl is None: return None
+    tbl = tbl.cell_values
+    return {a[0]:a[2] for a in tbl}
+
+  def r2(self, train=False, valid=False):
+    """
+    Return the R^2 for this regression model.
+
+    The R^2 value is defined to be 1 - MSE/var,
+    where var is computed as sigma*sigma.
+
+    :param train: If train is True, then return the R^2 value for the training data. If train and valid are both False, then return the training R^2.
+    :param valid: If valid is True, then return the R^2 value for the validation data. If train and valid are both True, then return the validation R^2.
+    :return: The R^2 for this regression model.
+    """
+    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train,valid))
+    if tm is None: return None
+    return tm.r2()
+
+  def mse(self, train=False,valid=False):
+    """
+    :param train: If train is True, then return the MSE value for the training data. If train and valid are both False, then return the training MSE.
+    :param valid: If valid is True, then return the MSE value for the validation data. If train and valid are both True, then return the validation MSE.
+    :return: The MSE for this regression model.
+    """
+    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train,valid))
+    if tm is None: return None
+    return tm.mse()
+
+  def logloss(self, train=False, valid=False):
+    """
+    Get the Log Loss.
+    If both train and valid are False, return the train.
+    If both train and valid are True, return the valid.
+
+    :param train: Return the log loss for training data.
+    :param valid: Return the log loss for the validation data.
+    :return: Retrieve the log loss coefficient for this set of metrics
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    if tm is None: return None
+    return tm.logloss()
+
+  def auc(self, train=False, valid=False):
+    """
+    Get the AUC.
+    If both train and valid are False, return the train.
+    If both train and valid are True, return the valid.
+
+    :param train: Return the AUC for training data.
+    :param valid: Return the AUC for the validation data.
+    :return: Retrieve the AUC coefficient for this set of metrics
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    if tm is None: return None
+    tm = tm._metric_json
+    return tm.auc()
+
+  def giniCoef(self, train=False, valid=False):
+    """
+    Get the Gini.
+    If both train and valid are False, return the train.
+    If both train and valid are True, return the valid.
+
+    :param train: Return the Gini for training data.
+    :param valid: Return the Gini for the validation data.
+    :return: Retrieve the Gini coefficient for this set of metrics
+    """
+    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
+    if tm is None: return None
+    tm = tm._metric_json
+    return tm.giniCoef()
 
   @staticmethod
   def _show_multi_metrics(metrics, train_or_valid="Training"):
@@ -230,6 +334,7 @@ class ModelBase(object):
   def _train_or_valid(train,valid):
     """
     Internal static method.
+
     :param train: a boolean for train. Ignored, however.
     :param valid: a boolean for valid
     :return: true if train, false if valid. If both are false, return True for train.

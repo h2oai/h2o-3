@@ -722,16 +722,16 @@ class H2OFrame:
     """
     GroupBy
     :param cols: The columns to group on.
-    :param a: A dictionary of aggregates having the following shape:
-              {"colname":[aggregate, column, naMethod]}
-              e.g.: {"bikes":["count", 0, "all"]}
+    :param a: A dictionary of aggregates having the following shape: \
+    {"colname":[aggregate, column, naMethod]}\
+    e.g.: {"bikes":["count", 0, "all"]}\
 
-              The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
-              NAs that appear in columns that are being aggregated.
+    The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
+    NAs that appear in columns that are being aggregated.
 
-              "all" - include NAs
-              "rm"  - exclude NAs
-              "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    "all" - include NAs
+    "rm"  - exclude NAs
+    "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
     :return: The group by frame.
     """
     if self._vecs is None or self._vecs == []:

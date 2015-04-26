@@ -3,6 +3,7 @@ Clustering Models should be comparable.
 """
 
 from model_base import ModelBase
+from metrics_base import MetricsBase
 
 
 class H2OClusteringModel(ModelBase):
@@ -13,6 +14,7 @@ class H2OClusteringModel(ModelBase):
   def size(self, train=False, valid=False):
     """
     Get the sizes of each cluster.
+
     :param train: If train is True, then return the sizes of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the sizes of clusters based on the validation data. If both train and valid are True, then validation data is returned.
     :return: the sizes of clusters for either the training or validation dataset.
@@ -23,6 +25,7 @@ class H2OClusteringModel(ModelBase):
   def avg_between_ss(self, train, valid):
     """
     Get the average between cluster sum of squares.
+
     :param train: If train is True, then return the average between cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the average between cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
     :return: The average between cluster sum of squares for either the training or validation dataset.
@@ -33,6 +36,7 @@ class H2OClusteringModel(ModelBase):
   def avg_ss(self, train=False, valid=False):
     """
     Get the average cluster sum of squares.
+
     :param train: If train is True, then return the average cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the average cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
     :return: The average cluster sum of squares for either the training or validation dataset.
@@ -43,6 +47,7 @@ class H2OClusteringModel(ModelBase):
   def avg_within_ss(self, train=False, valid=False):
     """
     Get the average within cluster sum of squares.
+
     :param train: If train is True, then return the average within cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the average within cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
     :return: The average within cluster sum of squares for either the training or validation dataset.
@@ -53,6 +58,7 @@ class H2OClusteringModel(ModelBase):
   def within_mse(self, train=False, valid=False):
     """
     Get the within cluster sum of squares for each cluster.
+
     :param train: If train is True, then return the within cluster sum of squares for each cluster based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the within cluster sum of squares for each cluster based on the validation data. If both train and valid are True, then validation data is returned.
     :return: The within cluster sum of squares for each cluster on either the training or validation dataset.
@@ -63,6 +69,7 @@ class H2OClusteringModel(ModelBase):
   def centroid_stats(self,train=False,valid=False):
     """
     Get the centroid statistics for each cluster.
+
     :param train: If train is True, then return the centroid statistics based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the centroid statistics based on the validation data. If both train and valid are True, then validation data is returned.
     :return: The centroid statistics on either the training or validation dataset.
@@ -92,9 +99,6 @@ class H2OClusteringModel(ModelBase):
       centers_std.append(list(cvals[cidx])[1:])
     return centers_std
 
-class H2OClusteringModelMetrics(object):
-  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
-    self._metric_json = metric_json
-    self._on_train = on_train   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._on_valid = on_valid   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._algo = algo
+class H2OClusteringModelMetrics(MetricsBase):
+  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
+    super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)

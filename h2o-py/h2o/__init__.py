@@ -217,7 +217,7 @@ This is better demonstrated by way of an example:
   >>>
   >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
   >>>
-  >>> m = h2o.gbm(x=fr[3:], y=fr[2])                               # build a gbm with a method call
+  >>> m = h2o.glm(x=fr[3:], y=fr[2])                               # build a glm with a method call
   >>>
   >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
   >>>
@@ -225,7 +225,7 @@ This is better demonstrated by way of an example:
   >>>
   >>> m.summary()                                                  # print a model summary
 
-As you can see, the result of the gbm call is a binomial model. This example also showcases
+As you can see, the result of the glm call is a binomial model. This example also showcases
 an important feature-munging step in order to cause the gbm to perform a classification task
 over a regression task. Namely, the second column is a numeric column when it's initially read in,
 but it must be cast to a factor by way of the H2OVec operation `asfactor`. Let's take a look
@@ -248,9 +248,9 @@ at this more deeply:
   >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104d18f50>
 
 The above example shows how to properly deal with numeric columns you would like to use in a
-classification setting. Additioanlly, H2O can perform on-the-fly scoring of validation
+classification setting. Additionally, H2O can perform on-the-fly scoring of validation
 data and provide a host of metrics on the validation and training data. Here's an example
-of doing this, where we additioanlly split the data set into three pieces for training, validation,
+of doing this, where we additionally split the data set into three pieces for training, validation,
 and finally testing:
 
   >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate
@@ -265,11 +265,37 @@ and finally testing:
   >>>
   >>> test  = fr[ 0.9 <= r ]                                       # 10% for testing
   >>>
-  >>> m = h2o.gbm(x=train[2:],y=train[1],validation_x=valid[2:],validation_y=valid[1])  # build a gbm with a validation set
+  >>> m = h2o.deeplearning(x=train[2:],y=train[1],validation_x=valid[2:],validation_y=valid[1])  # build a deeplearning with a validation set (yes it's this simple)
   >>>
+  >>> m                                                            # display the model summary by default (can also call m.show())
   >>>
+  >>> m.show()                                                     # equivalent to the above
+  >>>
+  >>> m.model_performance()                                        # show the performance on the training data, (can also be m.performance(train=True)
+  >>>
+  >>> m.model_performance(valid=True)                              # show the performance on the validation data
+  >>>
+  >>> m.model_performance(test_data=test)                          # score and compute new metrics on the test data!
 
-* train and validation data
+Continuing from this example, there are a number of ways of querying a model for its attributes.
+Here are some examples doing just that:
+
+  >>> m.mse()           # MSE on the training data
+  >>>
+  >>> m.mse(valid=True) # MSE on the validation data
+  >>>
+  >>> m.r2()            # R^2 on the training data
+  >>>
+  >>> m.r2(valid=True)  # R^2 on the validation data
+  >>>
+  >>> m.confusion_matrix()  # confusion matrix for max F1
+  >>>
+  >>> m.confusion_matrix("tpr") # confusion marix for max true positive rate
+  >>>
+  >>> m.confusion_matrix("max_per_class_error") #
+
+All of our models support various accessors such as these. Please refer to the relevant documentation
+for each model category
 * parameter specification
 * categoricals are dealt with internally (no need to one-hot expand them!)
 * what about categoricals in my response?

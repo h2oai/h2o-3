@@ -3,6 +3,7 @@ AutoEncoder Models
 """
 
 from model_base import *
+from metrics_base import *
 
 class H2OAutoEncoderModel(ModelBase):
   """
@@ -14,6 +15,7 @@ class H2OAutoEncoderModel(ModelBase):
   def anomaly(self,test_data):
     """
     Obtain the reconstruction error for the input test_data.
+
     :param test_data: The dataset upon which the reconstruction error is computed.
     :return: Return the reconstruction error.
     """
@@ -35,9 +37,6 @@ class H2OAutoEncoderModel(ModelBase):
     # return new H2OFrame object
     return H2OFrame(vecs=vecs)
 
-class H2OAutoEncoderModelMetrics(object):
-  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
-    self._metric_json = metric_json
-    self._on_train = on_train   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._on_valid = on_valid   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._algo = algo
+class H2OAutoEncoderModelMetrics(MetricsBase):
+  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
+    super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
