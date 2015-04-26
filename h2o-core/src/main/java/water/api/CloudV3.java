@@ -4,10 +4,42 @@ import water.*;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class CloudV3 extends Schema<Iced, CloudV3> {
+  /**
+   * Data structure to store last tick counts from a given node.
+   */
+  private static class LastTicksEntry {
+    final public long _system_idle_ticks;
+    final public long _system_total_ticks;
+    final public long _process_total_ticks;
+
+    LastTicksEntry(HeartBeat hb) {
+      _system_idle_ticks   = hb._system_idle_ticks;
+      _system_total_ticks  = hb._system_total_ticks;
+      _process_total_ticks = hb._process_total_ticks;
+    }
+  }
+
+  /**
+   * Store last tick counts for each node.
+   *
+   * This is local to a node and doesn't need to be Iced, so make it transient.
+   * Access this each time the Cloud status page is called on this node.
+   *
+   * The window of tick aggregation is between calls to this page (which might come from the browser or from REST
+   * API clients).
+   *
+   * Note there is no attempt to distinguish between REST API sessions.  Every call updates the last tick count info.
+   */
+  private static transient ConcurrentHashMap<String,LastTicksEntry> ticksHashMap = new ConcurrentHashMap<String, LastTicksEntry>();
+
   public CloudV3() {}
 
   // This Schema has no inputs
+  @API(help="skip_ticks", direction=API.Direction.INPUT)
+  public boolean skip_ticks = false;
 
   // Output fields
   @API(help="version", direction=API.Direction.OUTPUT)
@@ -110,10 +142,16 @@ public class CloudV3 extends Schema<Iced, CloudV3> {
     @API(help="nthreads", direction=API.Direction.OUTPUT)
     public int nthreads;
 
+    @API(help="System CPU percentage used by this H2O process in last interval", direction=API.Direction.OUTPUT)
+    public int my_cpu_pct;
+
+    @API(help="System CPU percentage used by everything in last interval", direction=API.Direction.OUTPUT)
+    public int sys_cpu_pct;
+
     @API(help="PID", direction=API.Direction.OUTPUT)
     public String pid;
 
-    NodeV1( H2ONode h2o ) {
+    NodeV1( H2ONode h2o, boolean skip_ticks ) {
       HeartBeat hb = h2o._heartbeat;
 
       // Basic system health
@@ -149,6 +187,38 @@ public class CloudV3 extends Schema<Iced, CloudV3> {
       cpus_allowed = hb._cpus_allowed;
       nthreads = hb._nthreads;
       pid = hb._pid;
+
+      // Use tick information to calculate CPU usage percentage for the entire system and
+      // for the specific H2O node.
+      //
+      // Note that 100% here means "the entire box".  This is different from 'top' 100%,
+      // which usually means one core.
+      my_cpu_pct = -1;
+      sys_cpu_pct = -1;
+      if (!skip_ticks) {
+        LastTicksEntry lte = ticksHashMap.get(h2o.toString());
+        if (lte != null) {
+          long system_total_ticks_delta = hb._system_total_ticks - lte._system_total_ticks;
+
+          // Avoid divide by 0 errors.
+          if (system_total_ticks_delta > 0) {
+            long system_idle_ticks_delta = hb._system_idle_ticks - lte._system_idle_ticks;
+            double sys_cpu_frac_double = 1 - ((double)(system_idle_ticks_delta) / (double)system_total_ticks_delta);
+            if (sys_cpu_frac_double < 0) sys_cpu_frac_double = 0;               // Clamp at 0.
+            else if (sys_cpu_frac_double > 1) sys_cpu_frac_double = 1;          // Clamp at 1.
+            sys_cpu_pct = (int)(sys_cpu_frac_double * 100);
+
+            long process_total_ticks_delta = hb._process_total_ticks - lte._process_total_ticks;
+            double process_cpu_frac_double = ((double)(process_total_ticks_delta) / (double)system_total_ticks_delta);
+            // Saturate at 0 and 1.
+            if (process_cpu_frac_double < 0) process_cpu_frac_double = 0;       // Clamp at 0.
+            else if (process_cpu_frac_double > 1) process_cpu_frac_double = 1;  // Clamp at 1.
+            my_cpu_pct = (int)(process_cpu_frac_double * 100);
+          }
+        }
+        LastTicksEntry newLte = new LastTicksEntry(hb);
+        ticksHashMap.put(h2o.toString(), newLte);
+      }
     }
   }
 
