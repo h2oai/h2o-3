@@ -217,7 +217,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gaussian:
           return 1;
         case binomial:
-//        assert (0 <= mu && mu <= 1) : "mu out of bounds<0,1>:" + mu;
           return mu * (1 - mu);
         case poisson:
           return mu;
@@ -228,12 +227,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         default:
           throw new RuntimeException("unknown family Id " + this);
       }
-    }
-
-    public double [] nullModelBeta(DataInfo dinfo, double ymu){
-      double [] res = MemoryManager.malloc8d(dinfo.fullN() + 1);
-      res[res.length-1] = link(ymu);
-      return res;
     }
 
     public final boolean canonical(){
@@ -250,21 +243,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 //          return false;
         default:
           throw H2O.unimpl();
-      }
-    }
-
-    public final double mustart(double y, double ymu) {
-      switch(_family) {
-        case gaussian:
-        case binomial:
-        case poisson:
-          return ymu;
-        case gamma:
-          return y;
-//        case tweedie:
-//          return y + (y==0?0.1:0);
-        default:
-          throw new RuntimeException("unimplemented");
       }
     }
 
@@ -668,7 +646,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
-//      if (_submodels[l].trainVal != null && tFrame != null)
+      if (_submodels[l].trainVal != null && tFrame != null)
         _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,Double.NaN);
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();

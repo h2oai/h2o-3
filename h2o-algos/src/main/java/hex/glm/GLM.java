@@ -37,8 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by tomasnykodym on 8/27/14.
  *
  * Generalized linear model implementation.
- * TODO: GLM will use a threshold during predict to do binomial classification, but
- * GLMModel currently never returns Binomial as its ModelCategory.
  */
 public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   static final double LINE_SEARCH_STEP = .5;
@@ -47,7 +45,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
             Model.ModelCategory.Regression,
-            // Model.ModelCategory.Binomial, // see TODO comment above.
+            Model.ModelCategory.Binomial,
     };
   }
 
@@ -268,11 +266,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if(_parms._solver == Solver.IRLSM) {
           _tInfos[0]._iterationsPerLambda = 10;
           _parms._max_iterations = _parms._lambda_search ? _tInfos[0]._iterationsPerLambda * _parms._nlambdas : 50;
-        }
-        else if(_parms._solver == Solver.L_BFGS) {
-          _parms._max_iterations = _dinfo.fullN() >> 1;
+        } else {
+          _parms._max_iterations = Math.max(20,_dinfo.fullN() >> 2);
           if(_parms._lambda_search) {
-            _tInfos[0]._iterationsPerLambda = _parms._max_iterations / 20;
+            _tInfos[0]._iterationsPerLambda = Math.max(20,_parms._max_iterations / 20);
             _parms._max_iterations *= _parms._nlambdas*_tInfos[0]._iterationsPerLambda;
           }
         }
@@ -457,22 +454,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   }
 
   /**
-   * Encapsulates state needed for line search i.e. previous solution and it's gradient and objective value.
-   */
-  private static final class IterationInfo {
-    final double[] _beta;
-    final double _likelihood;
-
-    final int _iter;
-
-    public IterationInfo(int iter, double[] beta, double likelihood) {
-      _iter = iter;
-      _beta = beta;
-      _likelihood = likelihood;
-    }
-  }
-
-  /**
    * Contains implementation of the glm algo.
    * It's a DTask so it can be computed on other nodes (to distributed single node part of the computation).
    */
@@ -567,12 +548,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           update(workDiff,"lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter);
           _tInfos[0]._worked += workDiff;
         }
-
-        Log.info("Gradient err at lambda = " + _parms._lambda[_lambdaId] + " = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
         int rank = 0;
         for(int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept?1:0); ++i)
           if(_tInfos[0]._beta[i] != 0) ++rank;
-        Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + "has " + rank + " nonzeros");
+        Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + " has " + rank + " nonzeros, gradient err = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
         if(_parms._n_folds > 1){
           // copy the state over
           ParallelTasks<GLMSingleLambdaTsk> t = (ParallelTasks<GLMSingleLambdaTsk>)h2OCountedCompleter;
@@ -585,7 +564,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         // launch the next lambda
         if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iterations) {
           getCompleter().addToPendingCount(1);
-          if(_parms._n_folds > 1){
+          if(_parms._n_folds > 1) {
             GLMSingleLambdaTsk[] tasks = new GLMSingleLambdaTsk[_tInfos.length];
             H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter());
             cmp.addToPendingCount(tasks.length-1);
@@ -606,7 +585,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
     }
   }
-
   private void setSubmodel(Key dstKey, int iter, double[] fullBeta, GLMValidation trainVal, GLMValidation holdOutVal, H2OCountedCompleter cmp) {
     final double[] newBetaDeNorm;
     final double [] fb = fullBeta.clone();
@@ -643,8 +621,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, intercept));
   }
 
-
-
   /**
    * Task to compute GLM solution for a particular (single) lambda value.
    * Can be warm-started by passing in a state of previous computation so e.g. incremental strong rules can be
@@ -666,7 +642,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     private String LogInfo(String msg) {
-      msg = "GLM2[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + _parms._lambda[_lambdaId] + "]: " + msg;
+      msg = "GLM[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + _parms._lambda[_lambdaId] + "]: " + msg;
       Log.info(msg);
       return msg;
     }
@@ -675,9 +651,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     boolean _allIn;
 
     /**
-     * Apply strong rules to filter out expected innactive (with zero coefficient) predictors.
+     * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
      *
-     * @return indeces of expected active predictors.
+     * @return indices of expected active predictors.
      */
     private int[] activeCols(final double l1, final double l2, final double[] grad) {
       if (_allIn) return null;
@@ -723,9 +699,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         throw new TooManyPredictorsException();
       Solver solverType = _parms._solver;
       if(solverType == Solver.AUTO) {
-        solverType = Solver.IRLSM; // default choice
         if(_activeData.fullN() > 6000 || _activeData._adaptedFrame.numCols() > 500)
           solverType = Solver.L_BFGS;
+        else {
+          solverType = Solver.IRLSM; // default choice
+        }
       }
       switch(solverType) {
         case L_BFGS: {
@@ -752,9 +730,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             // compute rhos
             for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
               rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen);
-//            avg /= rho.length - (_dinfo._intercept?1:0);
-//            for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
-//              rho[i] = Math.max(Math.min(rho[i],1.5*avg),0.5*avg);
             new ADMM.L1Solver(1e-4, 1000).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, GLM.this._key), _taskInfo._beta, l1pen);
           } else {
             Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
