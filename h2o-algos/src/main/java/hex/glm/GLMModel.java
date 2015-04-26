@@ -74,15 +74,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
-    } else { // do not good any levels!
+        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk))-1];
+    } else { // do not skip any levels
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
-    final int noff = _dinfo.numStart() - _dinfo._cats;
+    final int noff = _dinfo.numStart() - _dinfo._cats ;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*chks[i].atd(row_in_chunk);
-    eta += b[b.length-1]; // reduce intercept
+    eta += b[b.length-1]; // intercept
     double mu = _parms.linkInv(eta);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
@@ -668,7 +668,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
-      if (_submodels[l].trainVal != null && tFrame != null)
+//      if (_submodels[l].trainVal != null && tFrame != null)
         _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,Double.NaN);
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
@@ -679,9 +679,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       int j = 0;
       for(int i:_submodels[l].idxs)
         _global_beta[i] = _submodels[l].beta[j++];
-//      public TwoDimTable(String tableHeader, String tableDescription, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-//        String[] colFormats, String colHeaderForRowHeaders) {
-//      _model_summary = new TwoDimTable("Model Summary","Summary", new String[]{"Degrees Of Freedom", "Deviance"});
     }
 
     public double [] beta() { return _global_beta;}

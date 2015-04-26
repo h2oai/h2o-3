@@ -69,9 +69,13 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   public void add(double yreal, double ymodel) {
     _yact[0] = (float) yreal;
-    _ds[0] = ymodel > _threshold ? 1 : 0;
-    _ds[1] = 1 - ymodel;
-    _ds[2] = ymodel;
+    if(_glm._family == Family.binomial) {
+      _ds[0] = ymodel > _threshold ? 1 : 0;
+      _ds[1] = 1 - ymodel;
+      _ds[2] = ymodel;
+    } else {
+      _ds[0] = ymodel;
+    }
     _metricBuilder.perRow(_ds, _yact, null);
     add2(yreal, ymodel);
   }
@@ -150,6 +154,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
       metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     }
+    DKV.put(metrics._key,metrics);
     return gm._output.addModelMetrics(metrics);
   }
 }

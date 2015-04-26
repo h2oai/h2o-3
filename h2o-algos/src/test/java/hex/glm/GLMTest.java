@@ -1,8 +1,10 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.ModelMetrics;
+import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsRegressionGLM;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -22,10 +24,7 @@ import hex.utils.MSETsk;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.FVecTest;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
 import water.util.FrameUtils;
@@ -955,6 +954,46 @@ public class GLMTest  extends TestUtil {
   @Test public void testYmuTsk() {
 
   }
+
+  // test class
+  private static final class GLMIterationTaskTest extends GLMIterationTask {
+    final GLMModel _m;
+    GLMValidation _val2;
+
+    public GLMIterationTaskTest(Key jobKey, DataInfo dinfo, double lambda, GLMParameters glm, boolean validate, double[] beta, double ymu, Vec rowFilter, GLMModel m) {
+      super(jobKey, dinfo, lambda, glm, validate, beta, ymu, rowFilter, null);
+      _m = m;
+    }
+
+    public void map(Chunk[] chks) {
+      super.map(chks);
+
+      _val2 = (GLMValidation) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain());
+      double[] ds = new double[3];
+
+      float[] actual = new float[1];
+      for (int i = 0; i < chks[0]._len; ++i) {
+        _m.score0(chks, i, null, ds);
+        actual[0] = (float) chks[chks.length - 1].atd(i);
+        _val2.perRow(ds, actual, _m);
+      }
+    }
+
+    public void reduce(GLMIterationTask gmt) {
+      super.reduce(gmt);
+      GLMIterationTaskTest g = (GLMIterationTaskTest) gmt;
+      _val2.reduce(g._val2);
+    }
+    @Override public void postGlobal(){
+      System.out.println("val1 = " + _val.toString());
+      System.out.println("val2 = " + _val2.toString());
+      ModelMetrics mm1 = _val.makeModelMetrics(_m,_dinfo._adaptedFrame,Double.NaN);
+      ModelMetrics mm2 = _val2.makeModelMetrics(_m,_dinfo._adaptedFrame,Double.NaN);
+      System.out.println("mm1 = " + mm1.toString());
+      System.out.println("mm2 = " + mm2.toString());
+      assert mm1.equals(mm2);
+    }
+  }
   /**
    * Simple test for binomial family (no regularization, test both lsm solvers).
    * Runs the classical prostate, using dataset with race replaced by categoricals (probably as it's supposed to be?), in any case,
@@ -966,7 +1005,7 @@ public class GLMTest  extends TestUtil {
    */
   @Test public void testProstate() throws InterruptedException, ExecutionException {
     GLM job = null;
-    GLMModel model = null, model2 = null;
+    GLMModel model = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     Frame score = null;
     try{
@@ -994,12 +1033,19 @@ public class GLMTest  extends TestUtil {
       assertEquals(378.3, val.residualDeviance(),1e-1);
       assertEquals(371,val.resDOF());
       assertEquals(396.3, val.aic,1e-1);
+      model.delete();
+      // test scoring
       score = model.score(fr);
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-2);
-      assertEquals(val.computeAUC(model,fr), adata._auc, 1e-2);
-
+      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+      assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+      assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
+      Frame score1 = model.score(fr);
+      mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
+      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+      assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+      assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       double prior = 1e-5;
       params._prior = prior;
       job.remove();
@@ -1011,6 +1057,45 @@ public class GLMTest  extends TestUtil {
         assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
       assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu * (1-prior)/(prior * (1-model._ymu))),model2.beta()[model.beta().length-1],1e-10);
 
+      // run with lambda search, check the final submodel
+      params._lambda_search = true;
+      params._lambda = null;
+      params._alpha = new double[]{0};
+      params._prior = -1;
+      params._max_iterations = 500;
+      job.remove();
+      // test the same data and model with prior, should get the same model except for the intercept
+      job = new GLM(Key.make("prostate_model2"),"glm test simple poisson",params);
+      model3 = job.trainModel().get();
+      double lambda =  model3._output._submodels[model3._output._best_lambda_idx].lambda_value;
+      params._lambda_search = false;
+      params._lambda = new double[]{lambda};
+      job.remove();
+      ModelMetrics mm3 = ModelMetrics.getFromDKV(model3,fr);
+      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
+      assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      fr.remove("ID").remove();
+      DKV.put(fr._key,fr);
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
+      new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
+      score = model3.score(fr);
+      mm3 = ModelMetrics.getFromDKV(model3,fr);
+
+      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
+      assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
+
+
+      // test the same data and model with prior, should get the same model except for the intercept
+      job = new GLM(Key.make("prostate_model2"),"glm test simple poisson",params);
+      model4 = job.trainModel().get();
+      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-8);
+      assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,1e-4);
+      Frame fscore4 = model4.score(fr);
+      ModelMetrics mm4 = ModelMetrics.getFromDKV(model4,fr);
+      fscore4.delete();
+      assertEquals("mse don't match, " + mm3._MSE + " != " + mm4._MSE,mm3._MSE,mm4._MSE,1e-8);
+      assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)mm3)._resDev + " != " + ((ModelMetricsBinomialGLM)mm4)._resDev,((ModelMetricsBinomialGLM)mm3)._resDev, ((ModelMetricsBinomialGLM)mm4)._resDev,1e-4);
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
 //      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
 //      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
@@ -1018,6 +1103,8 @@ public class GLMTest  extends TestUtil {
       fr.delete();
       if(model != null)model.delete();
       if(model2 != null)model2.delete();
+      if(model3 != null)model3.delete();
+      if(model4 != null)model4.delete();
       if(score != null)score.delete();
       if( job != null ) job.remove();
       Scope.exit();

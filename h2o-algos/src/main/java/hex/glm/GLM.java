@@ -75,7 +75,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
     if (expensive) {
-
+      if(_parms._lambda_search)
+        _parms._use_all_factor_levels= true;
       if(_parms._max_active_predictors == -1)
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ?6000:100000000;
       if (_parms._link == Link.family_default)
@@ -854,6 +855,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], fullBeta, 1.0 / _taskInfo._nobs, _rowFilter, new H2OCallback<GLMGradientTask>(this) {
         @Override
         public void callback(final GLMGradientTask gt1) {
+          assert gt1._nobs == _taskInfo._nobs;
           double[] subgrad = gt1._gradient.clone();
           ADMM.subgrad(_parms._alpha[0] * _parms._lambda[_lambdaId], fullBeta, subgrad);
           double err = GLM_GRAD_EPS;
