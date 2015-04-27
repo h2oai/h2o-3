@@ -29,17 +29,6 @@ def expr_show(ip,port):
     print "expr:"
     expr.show()
 
-    # expr[tuple], expr._data is pending
-    res = 2 - iris
-    res4 = res[5,2]
-    print "res4:"
-    res4.show()
-
-    # expr[tuple], expr._data is remote
-    res5 = res[5,2]
-    print "res5:"
-    res5.show()
-
     # expr[tuple], expr._data is local
     expr = Expr([[1,2,3], [4,5,6]])
     print "expr:"
