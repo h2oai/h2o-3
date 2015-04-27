@@ -12,14 +12,15 @@ def quantile(ip,port):
     h2o_data = h2o.H2OFrame(python_obj=data)
     np_data = np.array(data)
 
-    h2o_quants = h2o.as_list(h2o_data.quantile())
+    h2o_quants = h2o_data.quantile()
     np_quants = np.percentile(np_data,[1, 10, 25, 33.3, 50, 66.7, 75, 90, 99],axis=0)
 
     for e in range(9):
-        h2o_val = h2o_quants[e][1]
-        np_val = np_quants[e][0]
+        h2o_val = h2o_quants[e,1]
+        np_val = np_quants[e,0]
         assert abs(h2o_val - np_val) < 1e-06, \
-        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal quantile values between h2o and numpy".format(h2o_val,np_val)
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal quantile values between h2o " \
+        "and numpy".format(h2o_val,np_val)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, quantile)

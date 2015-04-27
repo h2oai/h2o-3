@@ -54,6 +54,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase chunk_summary;
 
+  @API(help="Distribution summary", direction=API.Direction.OUTPUT)
+  public TwoDimTableBase distribution_summary;
+
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
     public ColSpecifierV2(String column_name) {
@@ -221,8 +224,10 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
-    TwoDimTable table = FrameUtils.chunkSummary(fr).toTwoDimTable();
+    TwoDimTable table = FrameUtils.chunkSummary(fr).toTwoDimTableChunkTypes();
     chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
+    TwoDimTable table2 = FrameUtils.chunkSummary(fr).toTwoDimTableDistribution();
+    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table2);
   }
 
   //==========================
@@ -264,7 +269,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     }
     is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
-    chunk_summary = new TwoDimTableV3().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTable());
+    chunk_summary = new TwoDimTableV3().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTableChunkTypes());
     return this;
   }
 

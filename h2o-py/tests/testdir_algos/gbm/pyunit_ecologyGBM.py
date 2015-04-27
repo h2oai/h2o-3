@@ -55,10 +55,12 @@ def ecologyGBM(ip,port):
 
     ecology_train["Angaus"] = ecology_train["Angaus"].asfactor()
     # Train H2O GBM Model:
-    gbm_h2o = h2o.gbm(x=ecology_train[2:], y=ecology_train["Angaus"], ntrees=ntrees, learn_rate=learn_rate, max_depth=max_depth, min_rows=min_rows, distribution="bernoulli")
+    gbm_h2o = h2o.gbm(x=ecology_train[2:], y=ecology_train["Angaus"], ntrees=ntrees, learn_rate=learn_rate,
+                      max_depth=max_depth, min_rows=min_rows, distribution="bernoulli")
 
     # Train scikit GBM Model:
-    gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learn_rate, n_estimators=ntrees, max_depth=max_depth, min_samples_leaf=min_rows, max_features=None)
+    gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learn_rate, n_estimators=ntrees, max_depth=max_depth,
+                                                  min_samples_leaf=min_rows, max_features=None)
     gbm_sci.fit(trainDataFeatures[:,np.newaxis],trainDataResponse)
 
     # Evaluate the trained models on test data
