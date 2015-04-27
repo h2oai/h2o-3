@@ -122,6 +122,7 @@ class Expr(object):
   def __len__(self):
     """
     The length of this H2OVec/H2OFrame (generally without triggering eager evaluation)
+
     :return: The number of columns/rows of the H2OFrame/H2OVec.
     """
     return self._len
@@ -129,6 +130,7 @@ class Expr(object):
   def dim(self):
     """
     Eagerly evaluate the Expr. If it's an H2OFrame, return the number of rows and columns.
+
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
     self.eager()
@@ -150,7 +152,8 @@ class Expr(object):
   def show(self, noprint=False):
     """
     Evaluate and print.
-    :return:
+
+    :return: None
     """
     self.eager()
     if noprint:
@@ -327,6 +330,7 @@ class Expr(object):
     This forces a top-level execution, as needed, and produces a top-level result
     locally. Frames are returned and truncated to the standard preview response
     provided by rapids - 100 rows X 200 cols.
+
     :return: A key pointing to the big data object
     """
     if self.is_computed(): return self._data
@@ -421,6 +425,7 @@ class Expr(object):
     """
     External API for eager; called by all top-level demanders (e.g. print)
     This may trigger (recursive) big-data evaluation.
+
     :return: None
     """
     if self.is_computed(): return

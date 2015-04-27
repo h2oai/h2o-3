@@ -190,8 +190,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Inspect/Summary Endpoints
 .h2o.__FRAMES         <- "Frames"        # Frames/<key>    example: http://localhost:54321/3/Frames/meow.hex
-.h2o.__COL_SUMMARY <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/")
-.h2o.__COL_DOMAIN  <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/")
+.h2o.__COL_SUMMARY <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/"))
+.h2o.__COL_DOMAIN  <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/"))
 
 #' Frame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame"
