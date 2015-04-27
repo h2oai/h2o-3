@@ -13,7 +13,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -56,6 +55,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     if(_parms._nv < 1 || _parms._nv > _train.numCols())
       error("_nv", "Number of right singular values must be between 1 and " + _train.numCols());
 
+    // PCA does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isNumeric()) {
@@ -114,43 +114,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
-
-    protected void recoverPCA(SVDModel model) {
-      // Eigenvectors are just the V matrix
-      String[] colTypes = new String[_parms._nv];
-      String[] colFormats = new String[_parms._nv];
-      String[] colHeaders = new String[_parms._nv];
-      Arrays.fill(colTypes, "double");
-      Arrays.fill(colFormats, "%5f");
-      for (int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i + 1);
-      model._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
-              colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], model._output._v);
-
-      // Compute standard deviation if D matrix was output
-      if(!_parms._only_v) {
-        double[] sdev = new double[model._output._d.length];
-        double[] vars = new double[model._output._d.length];
-        double totVar = 0;
-        double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
-        for (int i = 0; i < sdev.length; i++) {
-          sdev[i] = dfcorr * model._output._d[i];
-          vars[i] = sdev[i] * sdev[i];
-          totVar += vars[i];
-        }
-        model._output._std_deviation = sdev;
-
-        // Importance of principal components
-        double[] prop_var = new double[vars.length];    // Proportion of total variance
-        double[] cum_var = new double[vars.length];    // Cumulative proportion of total variance
-        for(int i = 0; i < vars.length; i++) {
-          prop_var[i] = vars[i]/totVar;
-          cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
-        }
-        model._output._pc_importance = new TwoDimTable("Importance of components", null,
-                new String[] { "Standard deviation", "Proportion of Variance", "Cumulative Proportion" },
-                colHeaders, colTypes, colFormats, "", new String[3][], new double[][] { sdev, prop_var, cum_var });
-      }
-    }
 
     @Override protected void compute2() {
       SVDModel model = null;
@@ -258,10 +221,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
                 div(chk_u(cs, idx, ncols), sigma_last);
               }
             }.doAll(uinfo._adaptedFrame);
-            model._output._ukey = _parms._u_key;
+            model._output._u_key = _parms._u_key;
           }
         }
-        if(_parms._recover_pca) recoverPCA(model);
         done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);

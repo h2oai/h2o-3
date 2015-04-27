@@ -20,9 +20,8 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
     public boolean _keep_u = true;    // Should left singular vectors be saved in memory? (Only applies if _only_v = false)
-    public Key<Frame> _u_key;
+    public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
-    public boolean _recover_pca = false;   // Recover principal components of Gram matrix at the end?
   }
 
   public static class SVDOutput extends Model.Output {
@@ -33,12 +32,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public double[] _d;
 
     // Frame key for left singular vectors (U)
-    public Key<Frame> _ukey;
-
-    // PCA output
-    public double[] _std_deviation;
-    public TwoDimTable _eigenvectors;
-    public TwoDimTable _pc_importance;
+    public Key<Frame> _u_key;
 
     // If standardized, mean of each numeric data column
     public double[] _normSub;

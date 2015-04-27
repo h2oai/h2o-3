@@ -17,6 +17,7 @@ import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 import water.parser.ValueString;
+import water.util.TwoDimTable;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
@@ -254,6 +255,20 @@ public class TestUtil extends Iced {
       flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       for(int i = 0; i < nfeat; i++) {
         Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
+      }
+    }
+    return flipped;
+  }
+
+  public static boolean[] checkEigvec(double[][] expected, TwoDimTable actual, double threshold) {
+    int nfeat = actual.getRowDim();
+    int ncomp = actual.getColDim();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      flipped[j] = Math.abs(expected[0][j] - (double)actual.get(0,j)) > threshold;
+      for(int i = 0; i < nfeat; i++) {
+        Assert.assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
     }
     return flipped;

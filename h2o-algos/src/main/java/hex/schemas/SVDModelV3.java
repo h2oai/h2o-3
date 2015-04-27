@@ -13,16 +13,7 @@ public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDPa
     public double[] d;
 
     @API(help = "Frame key of left singular vectors")
-    public KeyV3.FrameKeyV3 ukey;
-
-    @API(help = "Standard deviation of each principal component")
-    public double[] std_deviation;
-
-    @API(help = "Principal components matrix")
-    public TwoDimTableBase eigenvectors;
-
-    @API(help = "Importance of each principal component")
-    public TwoDimTableBase pc_importance;
+    public KeyV3.FrameKeyV3 u_key;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

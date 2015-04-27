@@ -41,14 +41,12 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._seed = 1234;
       parms._only_v = false;
-      parms._recover_pca = true;
 
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
         TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
         Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
-        Assert.assertArrayEquals(sdev_expected, model._output._std_deviation, TOLERANCE);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -122,12 +120,10 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._only_v = false;
       parms._keep_u = false;
-      parms._recover_pca = true;
 
       try {
         job = new SVD(parms);
         model = job.trainModel().get();
-        TestUtil.checkStddev(stddev, model._output._std_deviation, TOLERANCE);
         boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._v, TOLERANCE);
 
         score = model.score(train);

@@ -60,17 +60,16 @@ h2o.prcomp <- function(training_frame, x, k, retx = TRUE,
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
   if(!missing(k))
-    parms$nv <- as.numeric(k)    # TODO: Want default to min(n,p) where n = nrow, p = ncol of adapted training_frame
+    parms$k <- as.numeric(k)    # TODO: Want default to min(n,p) where n = nrow, p = ncol of adapted training_frame
   if(!missing(retx))
-    parms$keep_u <- retx
+    parms$keep_loading <- retx
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if(!missing(transform))
     parms$transform <- transform
   if(!missing(seed))
     parms$seed <- seed
-  parms$recover_pca <- TRUE
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'svd', parms)
+  .h2o.createModel(training_frame@conn, 'pca', parms)
 }
