@@ -378,7 +378,14 @@ class H2OFrame:
       left = Expr(veckeys)
       rite = Expr((i[0], i[1]))
       res = Expr("[", left, rite, length=2)
-      return res.eager() if isinstance(i[0], int) and isinstance(i[1], int) else res
+      if not isinstance(i[0], int) or not isinstance(i[1], int): return res # possible big data
+      # small data (single value)
+      res.eager()
+      if res.is_local(): return res
+      j = h2o.frame(res._data) # data is remote
+      return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))[0][0]
+
+
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 

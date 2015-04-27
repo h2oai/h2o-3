@@ -36,7 +36,6 @@ def binop_pow(ip,port):
     res2 = res[33] ** iris
     res2.show()
 
-
     # LHS: Expr, RHS: H2OVec
     res = 1.2 ** iris[2]
     res2 = res[34] ** iris[1]
@@ -111,7 +110,6 @@ def binop_pow(ip,port):
     res = 1.2 ** iris[2]
     res2 = iris ** res[63]
     res2.show()
-
 
     # LHS: H2OFrame, RHS: scaler
     res = iris ** 2

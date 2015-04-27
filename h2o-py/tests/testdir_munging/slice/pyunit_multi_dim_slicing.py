@@ -10,8 +10,8 @@ def multi_dim_slicing(ip,port):
 
     # prostate[int,int] case
     # 48,0,68,1,2,1,12.3,16.3,8
-    pros = h2o.as_list(prostate[47:51,7])[0][0]
-    assert pros == 16.3, "Incorrect slicing result"
+    pros = prostate[47:51,7]
+    assert pros[0,0] == 16.3, "Incorrect slicing result"
     pros = prostate[172,8]
     assert pros == 7, "Incorrect slicing result"
 

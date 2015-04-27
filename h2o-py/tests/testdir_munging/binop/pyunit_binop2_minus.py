@@ -110,7 +110,6 @@ def binop_minus(ip,port):
     res2 = iris - res[21]
     res2.show()
 
-
     # LHS: H2OFrame, RHS: scaler
     res = iris - 2
     res_rows, res_cols = res.dim()
