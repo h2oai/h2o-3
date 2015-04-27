@@ -26,7 +26,7 @@ def binop_amp(ip,port):
     # LHS: scaler, RHS: Expr
     res = 2 + iris[0]
     res2 = 1.1 & res[44]
-    assert res2[0,0], "expected True"
+    assert res2.eager(), "expected True"
 
     ###################################################################
 
@@ -43,12 +43,12 @@ def binop_amp(ip,port):
     # LHS: Expr, RHS: Expr
     res = 1.1 + iris[2]
     res2 = res[22] & res[10]
-    assert res2[0,0], "expected True"
+    assert res2.eager(), "expected True"
 
     # LHS: Expr, RHS: scaler
     res = 2 + iris[0]
     res2 = res[41] & 3
-    assert res2[0,0], "expected True"
+    assert res2.eager(), "expected True"
 
     ###################################################################
 

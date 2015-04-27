@@ -20,7 +20,6 @@ def expr_show(ip,port):
     res2.show()
 
     # expr[int], expr._data is remote
-    res.eager()
     res3 = res[0]
     print "res3:"
     res3.show()
@@ -37,7 +36,6 @@ def expr_show(ip,port):
     res4.show()
 
     # expr[tuple], expr._data is remote
-    res.eager()
     res5 = res[5,2]
     print "res5:"
     res5.show()

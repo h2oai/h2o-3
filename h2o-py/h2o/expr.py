@@ -217,7 +217,10 @@ class Expr(object):
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     elif self.is_remote() or self.is_pending():
       if    isinstance(i, int)  : return Expr("[", self, Expr(("()", i)))  # column slicing
-      elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
+      elif  isinstance(i, tuple): # row, column slicing
+        res = Expr("[", self, Expr((i[0], i[1])))
+        if isinstance(i[0],int) and isinstance(i[1],int): return res.eager() # small data
+        return res # potentially big data
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
 

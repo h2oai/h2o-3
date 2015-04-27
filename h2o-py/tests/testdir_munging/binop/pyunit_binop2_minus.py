@@ -25,7 +25,7 @@ def binop_minus(ip,port):
     # LHS: scaler, RHS: Expr
     res = 2 - iris[0]
     res2 = 1.1 - res[21]
-    assert abs(res2[0,0] - 4.2) < 1e-1, "expected same values"
+    assert abs(res2.eager() - 4.2) < 1e-1, "expected same values"
 
     ###################################################################
 
@@ -43,12 +43,12 @@ def binop_minus(ip,port):
     # LHS: Expr, RHS: Expr
     res = 1.1 - iris[2]
     res2 = res[21] - res[10]
-    assert abs(res2[0,0] - 0) < 1e-1, "expected same values"
+    assert abs(res2.eager() - 0) < 1e-1, "expected same values"
 
     # LHS: Expr, RHS: scaler
     res = 2 - iris[0]
     res2 = res[21] - 3
-    assert abs(res2[0,0] - -6.1) < 1e-1, "expected same values"
+    assert abs(res2.eager() - -6.1) < 1e-1, "expected same values"
 
     ###################################################################
 
