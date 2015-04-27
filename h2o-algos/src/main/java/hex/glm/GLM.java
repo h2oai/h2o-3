@@ -12,6 +12,7 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.*;
 import hex.gram.Gram;
 import hex.gram.Gram.Cholesky;
+import hex.gram.Gram.NonSPDMatrixException;
 import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS;
@@ -28,6 +29,7 @@ import water.parser.ValueString;
 import water.util.*;
 import water.util.MRUtils.ParallelTasks;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -973,8 +975,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           long ty = System.currentTimeMillis();
           new ADMM.L1Solver(1e-4, 1000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
           LogInfo("ADMM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + (ty - tx) + "ms");
-        } else
-          new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen /*, 0*/, l1pen, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB).solve(null, newBeta);
+        } else {
+          glmt._gram.addDiag(l2pen);
+          new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon).solve(newBeta);
+        }
         _taskInfo._worked += _taskInfo._workPerIteration;
         update(_taskInfo._workPerIteration, "lambdaId = " + _lambdaId + ", iteration = " + _taskInfo._iter + ", objective value = " + objVal);
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
@@ -1062,14 +1066,43 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     private final double [] _xy;
     final double _lambda;
-
-    double _addedL2;
     double  [] _rho;
+    boolean _addedL2;
+    double _betaEps;
 
     private static double boundedX(double x, double lb, double ub) {
       if(x < lb)x = lb;
       if(x > ub)x = ub;
       return x;
+    }
+
+    public GramSolver(Gram gram, double[] xy, double lmax, double betaEps) {
+      _gram = gram;
+      _xy = xy;
+      _lambda = 0;
+      _betaEps = betaEps;
+      double [] rhos = MemoryManager.malloc8d(xy.length);
+      computeCholesky(gram,rhos, lmax*1e-8);
+      _addedL2 = rhos[0] != 0;
+      _rho = _addedL2?rhos:null;
+    }
+    // solve non-penalized problem
+    public void solve(double [] result) {
+      System.arraycopy(_xy,0,result,0, _xy.length);
+      _chol.solve(result);
+      double gerr = Double.POSITIVE_INFINITY;
+      if(_addedL2) { // had to add l2-pen to turn the gram to be SPD
+        double [] oldRes = MemoryManager.arrayCopyOf(result, result.length);
+        for(int i = 0; i < 1000; ++i) {
+          solve(oldRes, result);
+          double [] g = gradient(result);
+          gerr = Math.max(-ArrayUtils.minValue(g), ArrayUtils.maxValue(g));
+          System.out.println(i +": " + gerr);
+          if(gerr < 1e-4) return;
+          System.arraycopy(result,0,oldRes,0,result.length);
+        }
+      }
+      Log.warn("Gram solver did not converge, gerr = " + gerr);
     }
 
     public GramSolver(Gram gram, double[] xy, boolean intercept, double l2pen, double l1pen, double[] beta_given, double[] proxPen, double default_rho, double[] lb, double[] ub) {
@@ -1129,28 +1162,39 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         for(int i = 0; i < xy.length; ++i)
           xy[i] += proxPen[i]*beta_given[i];
       }
-      gram.addDiag(rhos);
-      _chol = gram.cholesky(null,true,null);
-      double l2 = 1e-8;
-      while(!_chol.isSPD() && _addedL2 < 1) { // need to add l2
-        _gram.addDiag(l2 - _addedL2);
-        _addedL2 = l2;
-        l2 *= 10;
-        _chol = _gram.cholesky(_chol);
-      }
-      gram.addDiag(ArrayUtils.mult(rhos, -1));
-      ArrayUtils.mult(rhos, -1);
+      computeCholesky(gram,rhos,1e-5);
       _rho = rhos;
       _xy = xy;
     }
 
-    public double [] nullGradient(double ybar){
-      double [] beta = MemoryManager.malloc8d(_xy.length);
-      beta[beta.length-1] = ybar;
-      return ArrayUtils.subtract(_gram.mul(beta), _xy) ;
+    private void computeCholesky(Gram gram, double [] rhos, double rhoAdd) {
+      gram.addDiag(rhos);
+      _chol = gram.cholesky(null,true,null);
+      if(!_chol.isSPD())  { // make sure rho is big enough
+        gram.addDiag(ArrayUtils.mult(rhos, -1));
+        ArrayUtils.mult(rhos, -1);
+        for(int i = 0; i < rhos.length; ++i)
+          rhos[i] += rhoAdd;//1e-5;
+        Log.info("Got NonSPD matrix with original rho, re-computing with rho = " + rhos[0]);
+        _gram.addDiag(rhos);
+        _chol = gram.cholesky(null,true,null);
+        int cnt = 0;
+        while(!_chol.isSPD() && cnt++ < 5) {
+          gram.addDiag(ArrayUtils.mult(rhos, -1));
+          ArrayUtils.mult(rhos, -1);
+          for(int i = 0; i < rhos.length; ++i)
+            rhos[i] *= 100;
+          Log.warn("Still NonSPD matrix, re-computing with rho = " + rhos[0]);
+            _gram.addDiag(rhos);
+          _chol = gram.cholesky(null,true,null);
+        }
+        if(!_chol.isSPD())
+          throw new NonSPDMatrixException();
+      }
+      gram.addDiag(ArrayUtils.mult(rhos, -1));
+      ArrayUtils.mult(rhos, -1);
     }
 
-    public double addedL2(){return _addedL2;}
     @Override
     public double [] rho() { return _rho;}
 
