@@ -139,40 +139,41 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
       "Typehead hander for filename completion.");
-    register("/3/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
+
+    register("/3/Jobs/(?<jobid>.*)"                               ,"GET",JobsHandler     .class, "fetch", new String[] {"job_id"},
       "Get the status of the given H2O Job (long-running action).");
 
-    register("/3/Jobs/(?<key>.*)/cancel"                           ,"POST",JobsHandler     .class, "cancel", new String[] {"key"}, "Cancel a running job.");
+    register("/3/Jobs/(?<jobid>.*)/cancel"                        ,"POST",JobsHandler     .class, "cancel", new String[] {"job_id"}, "Cancel a running job.");
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-    register("/3/Frames/(?<key>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"key", "path", "force"},
+    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
-    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"key", "column"},
+    register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"frame_id", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
-    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"key", "column"},
+    register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"frame_id", "column"},
             "Return the domains for the specified column. \"null\" if the column is not an Enum.");
-    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column",                             new String[] {"key", "column"},
+    register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column",                             new String[] {"frame_id", "column"},
       "Return the specified column from a Frame.");
-    register("/3/Frames/(?<key>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns",                            new String[] {"key"},
+    register("/3/Frames/(?<frameid>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns",                            new String[] {"frame_id"},
       "Return all the columns from a Frame.");
-    register("/3/Frames/(?<key>.*)/summary"                      ,"GET"   ,FramesHandler.class, "summary",                            new String[] {"key"},
+    register("/3/Frames/(?<frameid>.*)/summary"                      ,"GET"   ,FramesHandler.class, "summary",                            new String[] {"frame_id"},
       "Return a Frame, including the histograms, after forcing computation of rollups.");
-    register("/3/Frames/(?<key>.*)"                              ,"GET"   ,FramesHandler.class, "fetch",                              new String[] {"key"},
+    register("/3/Frames/(?<frameid>.*)"                              ,"GET"   ,FramesHandler.class, "fetch",                              new String[] {"frame_id"},
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",
       "Return all Frames in the H2O distributed K/V store.");
-    register("/3/Frames/(?<key>.*)"                              ,"DELETE",FramesHandler.class, "delete",                             new String[] {"key"},
+    register("/3/Frames/(?<frameid>.*)"                              ,"DELETE",FramesHandler.class, "delete",                             new String[] {"frame_id"},
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
       "Delete all Frames from the H2O distributed K/V store.");
-    register("/3/Models/(?<key>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"key"},
+    register("/3/Models/(?<modelid>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"model_id"},
       "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"key"},
+    register("/3/Models/(?<modelid>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
       "Return all Models from the H2O distributed K/V store.");
-    register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete",                             new String[] {"key"},
+    register("/3/Models/(?<modelid>.*)"                              ,"DELETE",ModelsHandler.class, "delete",                             new String[] {"model_id"},
       "Delete the specified Model from the H2O distributed K/V store.");
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll",
       "Delete all Models from the H2O distributed K/V store.");
@@ -492,10 +493,12 @@ public class RequestServer extends NanoHTTPD {
       throw H2O.fail("Routing regex error: Pattern matched once but not again for pattern: " + route._url_pattern.pattern() + " and path: " + path);
     }
 
+    // Java doesn't allow _ in group names but we want them in field names, so remove all _ from the path params before we look up the group capture value
     for (String key : route._path_params) {
+      String key_no_underscore = key.replace("_","");
       String val;
       try {
-        val = m.group(key);
+        val = m.group(key_no_underscore);
       }
       catch (IllegalArgumentException e) {
         throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route._url_pattern.pattern() + " with expected parameters: " + Arrays.toString(route._path_params) + " for URL: " + path);

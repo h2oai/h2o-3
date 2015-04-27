@@ -457,7 +457,7 @@ class H2O(object):
               noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
 
         #
-        # Call ParseSetup?source_keys=[keys] . . .
+        # Call ParseSetup?source_frames=[keys] . . .
         #
 
         if benchmarkLogging:
@@ -465,20 +465,20 @@ class H2O(object):
 
         # TODO: multiple keys
         parse_setup_params = {
-            'source_keys': '["' + key + '"]'  # NOTE: quote key names
+            'source_frames': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="/3/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
-        # and then Parse?source_keys=<keys list> and params from the ParseSetup result
-        # Parse?source_keys=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_key=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
+        # and then Parse?source_frames=<keys list> and params from the ParseSetup result
+        # Parse?source_frames=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_frame=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
         #
 
         parse_params = {
-            'source_keys': '["' + setup_result['source_keys'][0]['name'] + '"]', # TODO: cons up the whole list
-            'destination_key': dest_key if dest_key else setup_result['destination_key'],
+            'source_frames': '["' + setup_result['source_frames'][0]['name'] + '"]', # TODO: cons up the whole list
+            'destination_frame': dest_key if dest_key else setup_result['destination_frame'],
             'parse_type': setup_result['parse_type'],
             'separator': setup_result['separator'],
             'single_quotes': setup_result['single_quotes'],
@@ -653,7 +653,7 @@ class H2O(object):
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
     '''
-    def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
+    def build_model(self, algo, training_frame, parameters, model_id = None, timeoutSecs=60, asynchronous=False, **kwargs):
         # basic parameter checking
         assert algo is not None, 'FAIL: "algo" parameter is null'
         assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
@@ -672,8 +672,8 @@ class H2O(object):
         assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
         parameters['training_frame'] = training_frame
 
-        if destination_key is not None:
-            parameters['destination_key'] = destination_key
+        if model_id is not None:
+            parameters['model_id'] = model_id
         result = self.__do_json_request('/3/ModelBuilders/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
 
         if asynchronous:
@@ -715,7 +715,7 @@ class H2O(object):
         return mm
 
 
-    def predict(self, model, frame, destination_key = None, timeoutSecs=60, **kwargs):
+    def predict(self, model, frame, predictions_name = None, timeoutSecs=60, **kwargs):
         assert model is not None, 'FAIL: "model" parameter is null'
         assert frame is not None, 'FAIL: "frame" parameter is null'
 
@@ -728,7 +728,7 @@ class H2O(object):
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
         assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
-        postData = { 'destination_key': destination_key }
+        postData = { 'predictions_name': predictions_name }
 
         result = self.__do_json_request('/3/Predictions/models/' + model + '/frames/' + frame, cmd='post', postData=postData, timeout=timeoutSecs)
         return result

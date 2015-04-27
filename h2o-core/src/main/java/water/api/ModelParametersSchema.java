@@ -24,7 +24,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "drop_na20_cols", "score_each_iteration" };
+  static public String[] own_fields = new String[] { "model_id", "training_frame", "validation_frame", "ignored_columns", "drop_na20_cols", "score_each_iteration" };
 
   /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
   private transient String[] __fields_cache = null;
@@ -59,7 +59,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
   // Parameters common to all models:
   @API(help="Destination key for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
-  public ModelKeyV3 destination_key;
+  public ModelKeyV3 model_id;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
   public FrameKeyV3 training_frame;

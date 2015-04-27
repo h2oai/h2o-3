@@ -11,11 +11,11 @@ import java.util.Arrays;
 
 public class ParseV3 extends Schema<Iced, ParseV3> {
   // Input fields
-  @API(help="Final hex key name",required=true)
-  FrameKeyV3 destination_key;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
+  @API(help="Final frame name",required=true)
+  FrameKeyV3 destination_frame;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
 
-  @API(help="Source keys",required=true)
-  FrameKeyV3[] source_keys;
+  @API(help="Source frames",required=true)
+  FrameKeyV3[] source_frames;
 
   @API(help="Parser type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   ParserType parse_type;

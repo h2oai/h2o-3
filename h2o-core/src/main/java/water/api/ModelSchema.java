@@ -32,7 +32,7 @@ public class ModelSchema<M extends Model<M, P, O>,
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
-  public ModelKeyV3 key;
+  public ModelKeyV3 model_id;
 
   // Output fields
   @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
@@ -79,7 +79,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     this.algo = ModelBuilder.getAlgo(m);
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
     // Key<? extends Model> k = m._key;
-    this.key = new ModelKeyV3(m._key);
+    this.model_id = new ModelKeyV3(m._key);
     this.checksum = m.checksum();
 
     parameters = createParametersSchema();
@@ -98,7 +98,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     ab.put1(',');
     ab.putJSONStr("algo_full_name", algo_full_name);
     ab.put1(',');
-    ab.putJSON("key", key);
+    ab.putJSON("key", model_id);
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
@@ -129,9 +129,9 @@ public class ModelSchema<M extends Model<M, P, O>,
   }
 
   public String toJava(boolean preview) {
-    Model m = DKV.getGet(key.key());
+    Model m = DKV.getGet(model_id.key());
     if (m == null) {
-      throw new H2OKeyNotFoundArgumentException("model_key", "toJava", key.key().toString());
+      throw new H2OKeyNotFoundArgumentException("model_key", "toJava", model_id.key().toString());
     }
     return m.toJava(preview);
   }
