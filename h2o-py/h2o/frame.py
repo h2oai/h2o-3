@@ -381,11 +381,9 @@ class H2OFrame:
       if not isinstance(i[0], int) or not isinstance(i[1], int): return res # possible big data
       # small data (single value)
       res.eager()
-      if res.is_local(): return res
+      if res.is_local(): return res._data
       j = h2o.frame(res._data) # data is remote
       return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))[0][0]
-
-
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 

@@ -20,7 +20,7 @@ def expr_reducers(ip,port):
         for i in range(10):
             r = random.randint(0,row-1)
             c = random.randint(0,col-1)
-            h2o_val = h2o.as_list(h2o_data[r,c])[0][0]
+            h2o_val = h2o_data[r,c]
             num_val = numpy_data[r,c]
             if not abs(h2o_val - num_val) < 1e-06:
                 success = False

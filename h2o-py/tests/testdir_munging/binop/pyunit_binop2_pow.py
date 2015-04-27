@@ -48,7 +48,7 @@ def binop_pow(ip,port):
 
     # LHS: Expr, RHS: scaler
     res = 2 ** iris[0]
-    res2 = h2o.as_list(res[32] ** 3)[0][0]
+    res2 = (res[32] ** 3).eager()
     assert int(res2) - 49667 == 0, "expected same values"
 
     ###################################################################
@@ -68,8 +68,8 @@ def binop_pow(ip,port):
     res = iris[2] ** iris[1]
     assert abs(sum([res[i,0] for i in range(rows)]) - 1309.794) < 1e-2, "expected same values"
 
-    res = h2o.as_list(iris[0] ** iris[1] * iris[2] ** iris[3])
-    assert (int(sum([res[i][0] for i in range(rows)])) - 47242.98) < 1e-2, "expected same values"
+    res = iris[0] ** iris[1] * iris[2] ** iris[3]
+    assert (int(sum([res[i,0].eager() for i in range(rows)])) - 47242.98) < 1e-2, "expected same values"
 
     # LHS: H2OVec, RHS: Expr
     res = 1.2 ** iris[2]
