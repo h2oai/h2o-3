@@ -36,19 +36,28 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   // OUTPUT
   private long[] chunk_counts;
   private long total_chunk_count;
-  private long total_row_count;
   private long[] chunk_byte_sizes;
+
   private long total_chunk_byte_size;
   private long[] byte_size_per_node; //averaged over all chunks
   private float byte_size_per_node_mean;
   private float byte_size_per_node_min;
   private float byte_size_per_node_max;
   private float byte_size_per_node_stddev;
+
+  private long total_row_count;
   private long[] row_count_per_node;
   private float row_count_per_node_mean;
   private float row_count_per_node_min;
   private float row_count_per_node_max;
   private float row_count_per_node_stddev;
+
+  private long total_chunk_count_per_col;
+  private long[] chunk_count_per_col_per_node;
+  private float chunk_count_per_col_per_node_mean;
+  private float chunk_count_per_col_per_node_min;
+  private float chunk_count_per_col_per_node_max;
+  private float chunk_count_per_col_per_node_stddev;
 
   @Override
   public void map(Chunk[] cs) {
@@ -56,6 +65,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     chunk_byte_sizes = new long[chunkTypes.length];
     byte_size_per_node = new long[H2O.CLOUD.size()];
     row_count_per_node = new long[H2O.CLOUD.size()];
+    chunk_count_per_col_per_node = new long[H2O.CLOUD.size()];
     for( Chunk c : cs ) {       // Can be a big loop, for high column counts
       // Pull out the class name; trim a trailing "Chunk"
       String cname = c.getClass().getSimpleName();
@@ -81,6 +91,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     }
     row_count_per_node[H2O.SELF.index()] += cs[0].len();
     total_row_count +=  cs[0].len();
+    chunk_count_per_col_per_node[H2O.SELF.index()]++;
+    total_chunk_count_per_col++;
   }
 
   @Override
@@ -89,7 +101,9 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     ArrayUtils.add(chunk_byte_sizes,mrt.chunk_byte_sizes);
     ArrayUtils.add(byte_size_per_node,mrt.byte_size_per_node);
     ArrayUtils.add(row_count_per_node,mrt.row_count_per_node);
+    ArrayUtils.add(chunk_count_per_col_per_node,mrt.chunk_count_per_col_per_node);
     total_row_count += mrt.total_row_count;
+    total_chunk_count_per_col += mrt.total_chunk_count_per_col;
   }
 
   @Override
@@ -117,12 +131,19 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     byte_size_per_node_min = Float.MAX_VALUE;
     byte_size_per_node_max = Float.MIN_VALUE;
     byte_size_per_node_mean = 0;
-    for (long aByte_size_per_node : byte_size_per_node) {
-      byte_size_per_node_min = Math.min(aByte_size_per_node, byte_size_per_node_min);
-      byte_size_per_node_max = Math.max(aByte_size_per_node, byte_size_per_node_max);
-      byte_size_per_node_mean += aByte_size_per_node;
+    for (long tmp : byte_size_per_node) {
+      byte_size_per_node_min = Math.min(tmp, byte_size_per_node_min);
+      byte_size_per_node_max = Math.max(tmp, byte_size_per_node_max);
+      byte_size_per_node_mean += tmp;
     }
     byte_size_per_node_mean /= byte_size_per_node.length;
+    // compute standard deviation (doesn't have to be single pass...)
+    byte_size_per_node_stddev = 0;
+    for (long aByte_size_per_node : byte_size_per_node) {
+      byte_size_per_node_stddev += Math.pow(aByte_size_per_node - byte_size_per_node_mean, 2);
+    }
+    byte_size_per_node_stddev /= byte_size_per_node.length;
+    byte_size_per_node_stddev = (float)Math.sqrt(byte_size_per_node_stddev);
 
     row_count_per_node_min = Float.MAX_VALUE;
     row_count_per_node_max = Float.MIN_VALUE;
@@ -133,14 +154,29 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       row_count_per_node_mean += tmp;
     }
     row_count_per_node_mean /= row_count_per_node.length;
-
-    // compute standard deviation (doesn't have to be single pass...)
-    byte_size_per_node_stddev = 0;
-    for (long aByte_size_per_node : byte_size_per_node) {
-      byte_size_per_node_stddev += Math.pow(aByte_size_per_node - byte_size_per_node_mean, 2);
+    row_count_per_node_stddev = 0;
+    for (long tmp : row_count_per_node) {
+      row_count_per_node_stddev += Math.pow(tmp - row_count_per_node_mean, 2);
     }
-    byte_size_per_node_stddev /= byte_size_per_node.length;
-    byte_size_per_node_stddev = (float)Math.sqrt(byte_size_per_node_stddev);
+    row_count_per_node_stddev /= row_count_per_node.length;
+    row_count_per_node_stddev = (float)Math.sqrt(row_count_per_node_stddev);
+
+    chunk_count_per_col_per_node_min = Float.MAX_VALUE;
+    chunk_count_per_col_per_node_max = Float.MIN_VALUE;
+    chunk_count_per_col_per_node_mean = 0;
+    for (long tmp : chunk_count_per_col_per_node) {
+      chunk_count_per_col_per_node_min = Math.min(tmp, chunk_count_per_col_per_node_min);
+      chunk_count_per_col_per_node_max = Math.max(tmp, chunk_count_per_col_per_node_max);
+      chunk_count_per_col_per_node_mean += tmp;
+    }
+    chunk_count_per_col_per_node_mean /= chunk_count_per_col_per_node.length;
+    chunk_count_per_col_per_node_stddev = 0;
+    for (long tmp : chunk_count_per_col_per_node) {
+      chunk_count_per_col_per_node_stddev += Math.pow(tmp - chunk_count_per_col_per_node_mean, 2);
+    }
+    chunk_count_per_col_per_node_stddev /= chunk_count_per_col_per_node.length;
+    chunk_count_per_col_per_node_stddev = (float)Math.sqrt(chunk_count_per_col_per_node_stddev);
+
   }
 
   String display(long val) { return String.format("%10s", val == 0 ? "  0  B" : PrettyPrint.bytes(val)); }
@@ -183,26 +219,43 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     rowHeaders[row++] = "max";
     rowHeaders[row++] = "stddev";
     rowHeaders[row++] = "total";
-    final String[] colHeaders = new String[]{"Size", "Number Of Rows"};
-    final String[] colTypes = new String[]{"string", "float"};
-    final String[] colFormats = new String[]{"%s", "%f"};
+    final String[] colHeaders = new String[]{"Size", "Number of Rows", "Number of Chunks per Column", "Number of Chunks"};
+    final String[] colTypes = new String[]{"string", "float", "float", "float"};
+    final String[] colFormats = new String[]{"%s", "%f", "%f", "%f"};
     final String colHeaderForRowHeaders = "";
     TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     for (row = 0; row < rows-5; ++row) {
       table.set(row, 0, display(byte_size_per_node[row]));
       table.set(row, 1, row_count_per_node[row]);
+      table.set(row, 2, chunk_count_per_col_per_node[row]);
+      table.set(row, 3, _fr.numCols()*chunk_count_per_col_per_node[row]);
     }
     table.set(row, 0, display((long)byte_size_per_node_mean));
-    table.set(row++, 1, row_count_per_node_mean);
+    table.set(row, 1, row_count_per_node_mean);
+    table.set(row, 2, chunk_count_per_col_per_node_mean);
+    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_mean);
+
     table.set(row, 0, display((long)byte_size_per_node_min));
-    table.set(row++, 1, row_count_per_node_min);
+    table.set(row, 1, row_count_per_node_min);
+    table.set(row, 2, chunk_count_per_col_per_node_min);
+    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_min);
+
     table.set(row, 0, display((long)byte_size_per_node_max));
-    table.set(row++, 1, row_count_per_node_max);
+    table.set(row, 1, row_count_per_node_max);
+    table.set(row, 2, chunk_count_per_col_per_node_max);
+    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_max);
+
     table.set(row, 0, display((long)byte_size_per_node_stddev));
-    table.set(row++, 1, row_count_per_node_stddev);
+    table.set(row, 1, row_count_per_node_stddev);
+    table.set(row, 2, chunk_count_per_col_per_node_stddev);
+    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_stddev);
+
     table.set(row, 0, display(total_chunk_byte_size));
-    table.set(row++, 1, total_row_count);
+    table.set(row, 1, total_row_count);
+    table.set(row, 2, total_chunk_count_per_col);
+    table.set(row++, 3, _fr.numCols()*total_chunk_count_per_col);
+
     return table;
   }
 
@@ -210,11 +263,9 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(toTwoDimTableChunkTypes().toString());
-    if (H2O.CLOUD.size() > 1) {
-      sb.append(toTwoDimTableDistribution().toString());
-      if (byte_size_per_node_stddev > 0.2 * byte_size_per_node_mean) {
-        sb.append("** Note: Dataset is not well distributed, consider rebalancing **\n");
-      }
+    sb.append(toTwoDimTableDistribution().toString());
+    if (H2O.CLOUD.size() > 1 && byte_size_per_node_stddev > 0.2 * byte_size_per_node_mean) {
+      sb.append("** Note: Dataset is not well distributed, consider rebalancing **\n");
     }
     return sb.toString();
   }
