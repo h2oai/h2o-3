@@ -77,7 +77,6 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
           return 0;
         }
       });
-      System.out.println("sorted indices = " + Arrays.toString(indices));
       String [] names2 = new String[names.length];
       for(int i = 0; i < names2.length-1; ++i)
         names2[i] = names[indices[i]];
