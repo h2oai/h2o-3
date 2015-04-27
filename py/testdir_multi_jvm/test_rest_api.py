@@ -654,7 +654,11 @@ assert col['precision'] == -1, 'FAIL: Failed to find -1 as the precision for AGE
 assert col['histogram_bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
 assert col['histogram_base'] == 43, 'FAIL: Failed to find 43 as the histogram_base for AGE.'
 assert col['histogram_stride'] == 1, 'FAIL: Failed to find 1 as the histogram_stride for AGE.'
-assert col['percentiles'][0] == 43, 'FAIL: Failed to find 43 as the first percentile for AGE. '+str(col['percentiles'][0])
+assert col['percentiles'][0] == 44.516, 'FAIL: Failed to find 43.516 as the 0.1% percentile for AGE. '+str(col['percentiles'][0])
+assert col['percentiles'][1] == 50.79, 'FAIL: Failed to find 50.79 as the 1.0% percentile for AGE. '+str(col['percentiles'][1])
+assert col['percentiles'][9] == 78, 'FAIL: Failed to find 78 as the 99.0% percentile for AGE. '+str(col['percentiles'][9])
+assert col['percentiles'][10] == 79, 'FAIL: Failed to find 79 as the 99.9% percentile for AGE. '+str(col['percentiles'][10])
+# NB: col['percentiles'] corresponds to probs=[0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999]
 
 # Test /SplitFrame for prostate.csv
 if verbose: print 'Testing SplitFrame with named dest_keys. . .'
