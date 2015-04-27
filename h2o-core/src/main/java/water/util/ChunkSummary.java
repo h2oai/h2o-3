@@ -40,24 +40,24 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   private long total_chunk_byte_size;
   private long[] byte_size_per_node; //averaged over all chunks
-  private float byte_size_per_node_mean;
-  private float byte_size_per_node_min;
-  private float byte_size_per_node_max;
-  private float byte_size_per_node_stddev;
+  private double byte_size_per_node_mean;
+  private double byte_size_per_node_min;
+  private double byte_size_per_node_max;
+  private double byte_size_per_node_stddev;
 
   private long total_row_count;
   private long[] row_count_per_node;
-  private float row_count_per_node_mean;
-  private float row_count_per_node_min;
-  private float row_count_per_node_max;
-  private float row_count_per_node_stddev;
+  private double row_count_per_node_mean;
+  private double row_count_per_node_min;
+  private double row_count_per_node_max;
+  private double row_count_per_node_stddev;
 
   private long total_chunk_count_per_col;
   private long[] chunk_count_per_col_per_node;
-  private float chunk_count_per_col_per_node_mean;
-  private float chunk_count_per_col_per_node_min;
-  private float chunk_count_per_col_per_node_max;
-  private float chunk_count_per_col_per_node_stddev;
+  private double chunk_count_per_col_per_node_mean;
+  private double chunk_count_per_col_per_node_min;
+  private double chunk_count_per_col_per_node_max;
+  private double chunk_count_per_col_per_node_stddev;
 
   @Override
   public void map(Chunk[] cs) {
@@ -127,56 +127,23 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     // This doesn't always hold, FileVecs have File-based byte size, while Vecs have Chunk-based byte size.
 //    assert(total_chunk_byte_size == _fr.byteSize());
 
-    // compute min, max, mean
-    byte_size_per_node_min = Float.MAX_VALUE;
-    byte_size_per_node_max = Float.MIN_VALUE;
-    byte_size_per_node_mean = 0;
-    for (long tmp : byte_size_per_node) {
-      byte_size_per_node_min = Math.min(tmp, byte_size_per_node_min);
-      byte_size_per_node_max = Math.max(tmp, byte_size_per_node_max);
-      byte_size_per_node_mean += tmp;
-    }
-    byte_size_per_node_mean /= byte_size_per_node.length;
-    // compute standard deviation (doesn't have to be single pass...)
-    byte_size_per_node_stddev = 0;
-    for (long aByte_size_per_node : byte_size_per_node) {
-      byte_size_per_node_stddev += Math.pow(aByte_size_per_node - byte_size_per_node_mean, 2);
-    }
-    byte_size_per_node_stddev /= byte_size_per_node.length;
-    byte_size_per_node_stddev = (float)Math.sqrt(byte_size_per_node_stddev);
+    double[] res=MathUtils.min_max_mean_stddev(byte_size_per_node);
+    byte_size_per_node_min = res[0];
+    byte_size_per_node_max = res[1];
+    byte_size_per_node_mean = res[2];
+    byte_size_per_node_stddev = res[3];
 
-    row_count_per_node_min = Float.MAX_VALUE;
-    row_count_per_node_max = Float.MIN_VALUE;
-    row_count_per_node_mean = 0;
-    for (long tmp : row_count_per_node) {
-      row_count_per_node_min = Math.min(tmp, row_count_per_node_min);
-      row_count_per_node_max = Math.max(tmp, row_count_per_node_max);
-      row_count_per_node_mean += tmp;
-    }
-    row_count_per_node_mean /= row_count_per_node.length;
-    row_count_per_node_stddev = 0;
-    for (long tmp : row_count_per_node) {
-      row_count_per_node_stddev += Math.pow(tmp - row_count_per_node_mean, 2);
-    }
-    row_count_per_node_stddev /= row_count_per_node.length;
-    row_count_per_node_stddev = (float)Math.sqrt(row_count_per_node_stddev);
+    res=MathUtils.min_max_mean_stddev(row_count_per_node);
+    row_count_per_node_min = res[0];
+    row_count_per_node_max = res[1];
+    row_count_per_node_mean = res[2];
+    row_count_per_node_stddev = res[3];
 
-    chunk_count_per_col_per_node_min = Float.MAX_VALUE;
-    chunk_count_per_col_per_node_max = Float.MIN_VALUE;
-    chunk_count_per_col_per_node_mean = 0;
-    for (long tmp : chunk_count_per_col_per_node) {
-      chunk_count_per_col_per_node_min = Math.min(tmp, chunk_count_per_col_per_node_min);
-      chunk_count_per_col_per_node_max = Math.max(tmp, chunk_count_per_col_per_node_max);
-      chunk_count_per_col_per_node_mean += tmp;
-    }
-    chunk_count_per_col_per_node_mean /= chunk_count_per_col_per_node.length;
-    chunk_count_per_col_per_node_stddev = 0;
-    for (long tmp : chunk_count_per_col_per_node) {
-      chunk_count_per_col_per_node_stddev += Math.pow(tmp - chunk_count_per_col_per_node_mean, 2);
-    }
-    chunk_count_per_col_per_node_stddev /= chunk_count_per_col_per_node.length;
-    chunk_count_per_col_per_node_stddev = (float)Math.sqrt(chunk_count_per_col_per_node_stddev);
-
+    res=MathUtils.min_max_mean_stddev(chunk_count_per_col_per_node);
+    chunk_count_per_col_per_node_min = res[0];
+    chunk_count_per_col_per_node_max = res[1];
+    chunk_count_per_col_per_node_mean = res[2];
+    chunk_count_per_col_per_node_stddev = res[3];
   }
 
   String display(long val) { return String.format("%10s", val == 0 ? "  0  B" : PrettyPrint.bytes(val)); }
