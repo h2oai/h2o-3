@@ -6,10 +6,8 @@ def binop_amp(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
-
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
     rows, cols = iris.dim()
-    iris.show()
 
     ###################################################################
 
@@ -27,8 +25,8 @@ def binop_amp(ip,port):
 
     # LHS: scaler, RHS: Expr
     res = 2 + iris[0]
-    res2 = h2o.as_list(1.1 & res[44])
-    assert res2, "expected True"
+    res2 = 1.1 & res[44]
+    assert res2[0,0], "expected True"
 
     ###################################################################
 
@@ -44,13 +42,13 @@ def binop_amp(ip,port):
 
     # LHS: Expr, RHS: Expr
     res = 1.1 + iris[2]
-    res2 = h2o.as_list(res[22] & res[10])
-    assert res2, "expected True"
+    res2 = res[22] & res[10]
+    assert res2[0,0], "expected True"
 
     # LHS: Expr, RHS: scaler
     res = 2 + iris[0]
-    res2 = h2o.as_list(res[41] & 3)
-    assert res2, "expected True"
+    res2 = res[41] & 3
+    assert res2[0,0], "expected True"
 
     ###################################################################
 
@@ -63,11 +61,11 @@ def binop_amp(ip,port):
         pass
 
     # LHS: H2OVec, RHS: H2OVec
-    res = h2o.as_list(iris[0] & iris[1])
-    assert sum([x[0] for x in res]) == 65.0, "expected all True"
+    res = iris[0] & iris[1]
+    assert res.sum() == 65.0, "expected all True"
 
-    res = h2o.as_list(iris[2] & iris[1])
-    assert sum([x[0] for x in res]) == 65.0, "expected all True"
+    res = iris[2] & iris[1]
+    assert res.sum() == 65.0, "expected all True"
 
     # LHS: H2OVec, RHS: Expr
     res = 1.2 + iris[2]
@@ -75,8 +73,8 @@ def binop_amp(ip,port):
     res2.show()
 
     # LHS: H2OVec, RHS: scaler
-    res = h2o.as_list(iris[0] & 0)
-    assert sum([x[0] for x in res]) == 0.0, "expected all False"
+    res = iris[0] & 0
+    assert res.sum() == 0.0, "expected all False"
 
     ###################################################################
 
@@ -112,11 +110,10 @@ def binop_amp(ip,port):
     # LHS: H2OFrame, RHS: scaler
     res = iris & 0
     res_rows, res_cols = res.dim()
-    res = h2o.as_list(res)
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for c in range(cols-1):
         for r in range(rows):
-            assert res[r][c] == 0.0,  "expected False"
+            assert res[r,c] == 0.0,  "expected False"
 
     ###################################################################
 

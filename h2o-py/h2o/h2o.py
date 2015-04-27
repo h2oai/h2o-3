@@ -434,16 +434,18 @@ def as_list(data):
   :return: List of list (Rows x Columns).
   """
   if isinstance(data, Expr):
-    x = data.eager()
-    if data.is_local():
-      return x
-    j = frame(data._data)
+    if data.is_local(): return data._data
+    if data.is_pending():
+      data.eager()
+      if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
+    j = frame(data._data) # data is remote
     return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
   if isinstance(data, H2OVec):
-    x = data._expr.eager()
-    if data._expr.is_local():
-      return x
-    j = frame(data._expr._data)
+    if data._expr.is_local(): return data._expr._data
+    if data._expr.is_pending():
+      data._expr.eager()
+      if data._expr.is_local(): return [[data._expr._data]]
+    j = frame(data._expr._data) # data is remote
     return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
   if isinstance(data, H2OFrame):
     vec_as_list = [as_list(v) for v in data._vecs]

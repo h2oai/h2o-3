@@ -44,7 +44,7 @@ def vec_scaler_comparisons(ip,port):
     row_sum = 0
     for level in air.levels(16):
        if level == "ANC": continue
-       r, c = air[str(level) == air["Origin"] ].dim()
+       r, c = air[str(level) == air["Origin"]].dim()
        row_sum = row_sum + r
     assert row_sum == rows - 1, "expected equal number of rows"
 
