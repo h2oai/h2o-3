@@ -12,6 +12,24 @@ from . import H2OConnection
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
     self._key = dest_key
+
+    # setup training metrics
+    if "training_metrics" in model_json["output"]:
+      tm = model_json["output"]["training_metrics"]
+      tm = metrics_class(tm,True,False,model_json["algo"])
+      model_json["output"]["training_metrics"] = tm
+
+    # setup validation metrics
+    if "validation_metrics" in model_json["output"]:
+      vm = model_json["output"]["validation_metrics"]
+      if vm is None:
+        model_json["output"]["validation_metrics"] = None
+      else:
+        vm = metrics_class(vm,False,True,model_json["algo"])
+        model_json["output"]["validation_metrics"] = vm
+    else:
+      model_json["output"]["validation_metrics"] = None
+
     self._model_json = model_json
     self._metrics_class = metrics_class
 
@@ -81,26 +99,38 @@ class ModelBase(object):
     # finally return frame
     return H2OFrame(vecs=vecs)
 
-  def model_performance(self, test_data):
+  def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
-    :param test_data: Data set for which model metrics shall be computed against.
+    :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
+    :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
+    :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
     :return: An object of class H2OModelMetrics.
     """
-    if not test_data:  raise ValueError("Missing`test_data`.")
-    if not isinstance(test_data, H2OFrame):
-      raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
-    fr_key = H2OFrame.send_frame(test_data)
-    res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
-    h2o.remove(fr_key)
+    if test_data is None:
+      if not train and not valid:
+        train = True  # default to train
 
-    # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
-    raw_metrics = None
-    for mm in res["model_metrics"]:
-      if mm["frame"]["name"] == fr_key:
-        raw_metrics = mm
-        break
-    return self._metrics_class(raw_metrics)
+      if train:
+        return self._model_json["output"]["training_metrics"]
+
+      if valid:
+        return self._model_json["output"]["validation_metrics"]
+
+    else:  # cases dealing with test_data not None
+      if not isinstance(test_data, H2OFrame):
+        raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
+      fr_key = H2OFrame.send_frame(test_data)
+      res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
+      h2o.remove(fr_key)
+
+      # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+      raw_metrics = None
+      for mm in res["model_metrics"]:
+        if mm["frame"]["name"] == fr_key:
+          raw_metrics = mm
+          break
+      return self._metrics_class(raw_metrics,algo=self._model_json["algo"])
 
   def summary(self):
     """
@@ -139,22 +169,59 @@ class ModelBase(object):
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
+  def residual_deviance(self,train=False,valid=False):
+    """
+    Retreive the residual deviance if this model has the attribute, or None otherwise.
+    :param:  train Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
+    :param:  valid Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
+    :return: Return the residual deviance, or None if it is not present.
+    """
+    if not train and not valid:
+      train = True
+    if train and valid:
+      train = True
+
+    if train:
+      return self._model_json["output"]["training_metrics"].residual_deviance()
+    else:
+      return self._model_json["output"]["validation_metrics"].residual_deviance()
+
+  def null_deviance(self,train=False,valid=False):
+    """
+    Retreive the null deviance if this model has the attribute, or None otherwise.
+    :param:  train Get the null deviance for the training set. If both train and valid are False, then train is selected by default.
+    :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
+    :return: Return the null deviance, or None if it is not present.
+    """
+    if not train and not valid:
+      train = True
+    if train and valid:
+      train = True
+
+    if train:
+      return self._model_json["output"]["training_metrics"].null_deviance()
+    else:
+      return self._model_json["output"]["validation_metrics"].null_deviance()
+
 
   @staticmethod
   def _show_multi_metrics(metrics, train_or_valid="Training"):
-    tm = metrics
+    tm = metrics._metric_json
     print train_or_valid, " Metrics: "
     print "==================="
     print
-    if tm["description"]:     print tm["description"]
-    if tm["frame"]:           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
-    if tm["MSE"]:             print "MSE on ", train_or_valid, ": ", tm["MSE"]
-    if tm["logloss"]:         print "logloss on ", train_or_valid, ": ", tm["logloss"]
-    if tm["cm"]:              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
-    if tm["hit_ratio_table"]: print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
-
+    if ModelBase._has(tm,"description"):     print tm["description"]
+    if ModelBase._has(tm,"frame"):           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
+    if ModelBase._has(tm,"MSE"):             print "MSE on ", train_or_valid, ": ", tm["MSE"]
+    if ModelBase._has(tm,"logloss"):         print "logloss on ", train_or_valid, ": ", tm["logloss"]
+    if ModelBase._has(tm,"cm"):              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
+    if ModelBase._has(tm,"hit_ratio_table"): print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
   # Delete from cluster as model goes out of scope
   def __del__(self):
     h2o.remove(self._key)
+
+  @staticmethod
+  def _has(dictionary, key):
+    return key in dictionary and dictionary[key] is not None

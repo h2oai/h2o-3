@@ -87,6 +87,20 @@ public class h2odriver extends Configured implements Tool {
     return shutdownRequested;
   }
 
+  public boolean usingYarn() {
+    Class clazz = null;
+    try {
+      clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
+    }
+    catch (Exception ignore) {}
+
+    if (clazz != null) {
+      return true;
+    }
+
+    return false;
+  }
+
   public static class H2ORecordReader extends RecordReader<Text, Text> {
     H2ORecordReader() {
     }
@@ -915,6 +929,10 @@ public class h2odriver extends Configured implements Tool {
               + (enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : "")
               ;
       conf.set("mapreduce.map.java.opts", mapChildJavaOpts);
+      if (! usingYarn()) {
+        conf.set("mapred.child.java.opts", mapChildJavaOpts);
+        conf.set("mapred.map.child.java.opts", mapChildJavaOpts);       // MapR 2.x requires this.
+      }
 
       System.out.println("Memory Settings:");
       System.out.println("    mapreduce.map.java.opts:     " + mapChildJavaOpts);
@@ -923,12 +941,26 @@ public class h2odriver extends Configured implements Tool {
     }
 
     conf.set("mapreduce.client.genericoptionsparser.used", "true");
+    if (! usingYarn()) {
+      conf.set("mapred.used.genericoptionsparser", "true");
+    }
+
     conf.set("mapreduce.map.speculative", "false");
+    if (! usingYarn()) {
+      conf.set("mapred.map.tasks.speculative.execution", "false");
+    }
+
     conf.set("mapreduce.map.maxattempts", "1");
+    if (! usingYarn()) {
+      conf.set("mapred.map.max.attempts", "1");
+    }
+
     conf.set("mapreduce.job.jvm.numtasks", "1");
+    if (! usingYarn()) {
+      conf.set("mapred.job.reuse.jvm.num.tasks", "1");
+    }
 
     conf.set(h2omapper.H2O_JOBTRACKERNAME_KEY, jobtrackerName);
-
     conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackIp);
     conf.set(h2omapper.H2O_DRIVER_PORT_KEY, Integer.toString(actualDriverCallbackPort));
     conf.set(h2omapper.H2O_NETWORK_KEY, network);

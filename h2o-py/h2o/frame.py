@@ -377,7 +377,13 @@ class H2OFrame:
       veckeys = [str(v._expr._data) for v in self._vecs]
       left = Expr(veckeys)
       rite = Expr((i[0], i[1]))
-      return Expr("[", left, rite, length=2)
+      res = Expr("[", left, rite, length=2)
+      if not isinstance(i[0], int) or not isinstance(i[1], int): return res # possible big data
+      # small data (single value)
+      res.eager()
+      if res.is_local(): return res._data
+      j = h2o.frame(res._data) # data is remote
+      return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))[0][0]
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
@@ -1051,7 +1057,7 @@ class H2OVec:
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr)
+    return Expr("var", self._expr).eager()
 
   def mean(self):
     """

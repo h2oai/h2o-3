@@ -38,10 +38,14 @@ if (n != 1166952590) {
 myY = "C31"
 myX = setdiff(names(data.hex), myY)
 
+
+## Chose which col as response
+DepY <- "IsDepDelayed"
+
 ## Build GLM Model and compare AUC with h2o1
-data_admm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "ADMM")
+data_admm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "IRLSM")
 data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "L_BFGS")
 
-data.gbm <- h2o.gbm(x = myX1, y = DepY, training_frame = data.hex, distribution = "AUTO")
+data.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.hex, distribution = "AUTO")
 
 PASS_BANNER()
