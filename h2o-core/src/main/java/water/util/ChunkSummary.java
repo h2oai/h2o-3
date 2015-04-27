@@ -36,6 +36,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   // OUTPUT
   private long[] chunk_counts;
   private long total_chunk_count;
+  private long total_row_count;
   private long[] chunk_byte_sizes;
   private long total_chunk_byte_size;
   private long[] byte_size_per_node; //averaged over all chunks
@@ -43,12 +44,18 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   private float byte_size_per_node_min;
   private float byte_size_per_node_max;
   private float byte_size_per_node_stddev;
+  private long[] row_count_per_node;
+  private float row_count_per_node_mean;
+  private float row_count_per_node_min;
+  private float row_count_per_node_max;
+  private float row_count_per_node_stddev;
 
   @Override
   public void map(Chunk[] cs) {
     chunk_counts = new long[chunkTypes.length];
     chunk_byte_sizes = new long[chunkTypes.length];
     byte_size_per_node = new long[H2O.CLOUD.size()];
+    row_count_per_node = new long[H2O.CLOUD.size()];
     for( Chunk c : cs ) {       // Can be a big loop, for high column counts
       // Pull out the class name; trim a trailing "Chunk"
       String cname = c.getClass().getSimpleName();
@@ -72,6 +79,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       chunk_byte_sizes[j] += c.byteSize();
       byte_size_per_node[H2O.SELF.index()] += c.byteSize();
     }
+    row_count_per_node[H2O.SELF.index()] += cs[0].len();
+    total_row_count +=  cs[0].len();
   }
 
   @Override
@@ -79,11 +88,14 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     ArrayUtils.add(chunk_counts,mrt.chunk_counts);
     ArrayUtils.add(chunk_byte_sizes,mrt.chunk_byte_sizes);
     ArrayUtils.add(byte_size_per_node,mrt.byte_size_per_node);
+    ArrayUtils.add(row_count_per_node,mrt.row_count_per_node);
+    total_row_count += mrt.total_row_count;
   }
 
   @Override
   protected void postGlobal() {
     if (chunk_counts == null || chunk_byte_sizes == null || byte_size_per_node == null) return;
+    assert(total_row_count == _fr.numRows());
 
     // compute counts and sizes
     total_chunk_byte_size = 0;
@@ -112,6 +124,16 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     }
     byte_size_per_node_mean /= byte_size_per_node.length;
 
+    row_count_per_node_min = Float.MAX_VALUE;
+    row_count_per_node_max = Float.MIN_VALUE;
+    row_count_per_node_mean = 0;
+    for (long tmp : row_count_per_node) {
+      row_count_per_node_min = Math.min(tmp, row_count_per_node_min);
+      row_count_per_node_max = Math.max(tmp, row_count_per_node_max);
+      row_count_per_node_mean += tmp;
+    }
+    row_count_per_node_mean /= row_count_per_node.length;
+
     // compute standard deviation (doesn't have to be single pass...)
     byte_size_per_node_stddev = 0;
     for (long aByte_size_per_node : byte_size_per_node) {
@@ -123,7 +145,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   String display(long val) { return String.format("%10s", val == 0 ? "  0  B" : PrettyPrint.bytes(val)); }
 
-  public TwoDimTable toTwoDimTable() {
+  public TwoDimTable toTwoDimTableChunkTypes() {
     final String tableHeader = "Internal FluidVec compression/distribution summary";
     int rows = 0;
     for (int j = 0; j < chunkTypes.length; ++j) if (chunk_counts != null && chunk_counts[j] > 0) rows++;
@@ -148,24 +170,51 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     return table;
   }
 
+  public TwoDimTable toTwoDimTableDistribution() {
+    final String tableHeader = "Frame distribution summary";
+    int rows = H2O.CLOUD.size() + 5;
+    final String[] rowHeaders = new String[rows];
+    int row;
+    for (row=0; row<rows-5; ++row) {
+      rowHeaders[row] = H2O.CLOUD._memary[row].getIpPortString();
+    }
+    rowHeaders[row++] = "mean";
+    rowHeaders[row++] = "min";
+    rowHeaders[row++] = "max";
+    rowHeaders[row++] = "stddev";
+    rowHeaders[row++] = "total";
+    final String[] colHeaders = new String[]{"Size", "Number Of Rows"};
+    final String[] colTypes = new String[]{"string", "float"};
+    final String[] colFormats = new String[]{"%s", "%f"};
+    final String colHeaderForRowHeaders = "";
+    TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+
+    for (row = 0; row < rows-5; ++row) {
+      table.set(row, 0, display(byte_size_per_node[row]));
+      table.set(row, 1, row_count_per_node[row]);
+    }
+    table.set(row, 0, display((long)byte_size_per_node_mean));
+    table.set(row++, 1, row_count_per_node_mean);
+    table.set(row, 0, display((long)byte_size_per_node_min));
+    table.set(row++, 1, row_count_per_node_min);
+    table.set(row, 0, display((long)byte_size_per_node_max));
+    table.set(row++, 1, row_count_per_node_max);
+    table.set(row, 0, display((long)byte_size_per_node_stddev));
+    table.set(row++, 1, row_count_per_node_stddev);
+    table.set(row, 0, display(total_chunk_byte_size));
+    table.set(row++, 1, total_row_count);
+    return table;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append(toTwoDimTable().toString());
-    sb.append(" Total memory usage : " + display(total_chunk_byte_size) + "\n");
-    // if standard deviation is more than 20% of mean, then show detailed per-node distribution
-    if (byte_size_per_node_stddev > 0.2 * byte_size_per_node_mean) {
-      sb.append("** Note: Dataset is not well distributed, consider rebalancing **\n");
-      for (int i = 0; i < byte_size_per_node.length; ++i) {
-        sb.append("     size on node " + i + " : " + display(byte_size_per_node[i]) + "\n");
+    sb.append(toTwoDimTableChunkTypes().toString());
+    if (H2O.CLOUD.size() > 1) {
+      sb.append(toTwoDimTableDistribution().toString());
+      if (byte_size_per_node_stddev > 0.2 * byte_size_per_node_mean) {
+        sb.append("** Note: Dataset is not well distributed, consider rebalancing **\n");
       }
-    }
-    // display chunk distribution
-    if (byte_size_per_node != null && byte_size_per_node.length > 1) {
-      sb.append(" mean size per node : " + display((long) byte_size_per_node_mean) + "\n");
-      sb.append("  min size per node : " + display((long) byte_size_per_node_min) + "\n");
-      sb.append("  max size per node : " + display((long) byte_size_per_node_max) + "\n");
-      sb.append("stddev of node size : " + display((long) byte_size_per_node_stddev) + "\n");
     }
     return sb.toString();
   }
