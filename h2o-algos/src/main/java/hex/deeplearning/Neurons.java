@@ -270,7 +270,6 @@ public abstract class Neurons {
       final int w = idx + col;
 
       if (have_ada) {
-        assert(!have_momenta);
         final float grad2 = grad*grad;
         avg_grad2 += grad2;
         float brate = computeAdaDeltaRateForWeight(grad, w, adaxg, rho, eps);
