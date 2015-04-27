@@ -635,6 +635,9 @@ class H2OFrame:
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (quantile '{}' {} '{}'".format(tmp_key,key,probs,combine_method)
     h2o.rapids(expr)
+    # Remove h2o temp frame after groupby
+    h2o.remove(key)
+    # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
     rows = fr['rows']         # Row count
@@ -724,6 +727,9 @@ class H2OFrame:
 
     expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
     h2o.rapids(expr)  # group by
+    # Remove h2o temp frame after groupby
+    h2o.remove(key)
+    # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
     rows = fr['rows']         # Row count
