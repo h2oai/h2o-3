@@ -639,7 +639,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("}").nl().di(1);
     sb.p(fileContext).nl(); // Append file
     if (preview) {
-      String [] first100k = sb._sb.toString().substring(0, 100000).split("\n");
+      String [] first100k = sb._sb.toString().substring(0, Math.min(sb._sb.toString().length(), 100000)).split("\n");
       SB out = new SB();
       int lines=0;
       for (String line : first100k) {

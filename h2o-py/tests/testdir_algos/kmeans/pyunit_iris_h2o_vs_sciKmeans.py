@@ -13,7 +13,6 @@ def iris_h2o_vs_sciKmeans(ip,port):
   iris_sci = np.genfromtxt(h2o.locate("smalldata/iris/iris.csv"), delimiter=',')
   iris_sci = iris_sci[:,0:4]
 
-  #TODO: implement row slicing
   s =[[4.9,3.0,1.4,0.2],
   [5.6,2.5,3.9,1.1],
   [6.5,3.0,5.2,2.0]]

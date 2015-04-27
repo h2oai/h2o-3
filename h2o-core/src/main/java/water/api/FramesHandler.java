@@ -180,55 +180,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return null; // doc(this, version, docs, "docs/columnSummary.md");
   }
 
-  public static class ChunkHomesEntryV3 extends Schema<Iced, ChunkHomesEntryV3> {
-    @API(help="IP and Port of node", direction = API.Direction.OUTPUT)
-    public String ip_port;
-
-    @API(help="Number of chunks stored in this node for one of the vectors in the frame", direction = API.Direction.OUTPUT)
-    long num_chunks_per_vec;
-
-    @API(help="Number chunks stored in this node for the frame (num_chunks_per_vec * num_vecs)", direction = API.Direction.OUTPUT)
-    long num_chunks;
-
-    @API(help="Number of rows stored in this node", direction = API.Direction.OUTPUT)
-    long num_rows;
-  }
-
-  public static class ChunkHomesV3 extends Schema<Iced, ChunkHomesV3> {
-    @API(help="Number vecs (columns) stored in the frame", direction = API.Direction.OUTPUT)
-    long num_vecs;
-
-    @API(help="Array of nodes in the cluster", direction = API.Direction.OUTPUT)
-    public ChunkHomesEntryV3[] entries;
-  }
-
-  /** Return chunk home information. */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ChunkHomesV3 chunkHomes(int version, FramesV3 s) {
-    ChunkHomesV3 h = new ChunkHomesV3();
-    h.entries = new ChunkHomesEntryV3[H2O.CLOUD.size()];
-    for (int i = 0; i < h.entries.length; i++) {
-      H2ONode n = H2O.CLOUD.members()[i];
-      h.entries[i] = new ChunkHomesEntryV3();
-      h.entries[i].ip_port = n.getIpPortString();
-    }
-
-    Frame frame = getFromDKV("key", s.key.key()); // safe
-    int numVecs = frame.vecs().length;
-    h.num_vecs = numVecs;
-    Vec any = frame.anyVec();
-    int n = any.nChunks();
-    for (int i = 0; i < n; i++) {
-      Key k = any.chunkKey(i);
-      int node_idx = k.home_node().index();
-      h.entries[node_idx].num_chunks_per_vec += 1;
-      h.entries[node_idx].num_chunks += numVecs;
-      h.entries[node_idx].num_rows += any._espc[i + 1] - any._espc[i];
-    }
-
-    return h;
-  }
-
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {

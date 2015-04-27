@@ -7,11 +7,8 @@ import water.api.KeyV3.VecKeyV3;
 import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
+import water.util.*;
 import water.util.DocGen.HTML;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.PrettyPrint;
-import water.util.TwoDimTable;
 
 // TODO: need a base (versionless) class!
 public class FrameV3 extends Schema<Frame, FrameV3> {
@@ -53,6 +50,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
 
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase chunk_summary;
+
+  @API(help="Distribution summary", direction=API.Direction.OUTPUT)
+  public TwoDimTableBase distribution_summary;
 
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
@@ -221,8 +221,11 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
-    TwoDimTable table = FrameUtils.chunkSummary(fr).toTwoDimTable();
+    ChunkSummary cs = FrameUtils.chunkSummary(fr);
+    TwoDimTable table = cs.toTwoDimTableChunkTypes();
     chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
+    table = cs.toTwoDimTableDistribution();
+    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
   }
 
   //==========================
@@ -264,7 +267,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     }
     is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
-    chunk_summary = new TwoDimTableV3().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTable());
+    chunk_summary = new TwoDimTableV3().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTableChunkTypes());
     return this;
   }
 

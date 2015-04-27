@@ -49,23 +49,23 @@ def frame_math_ops(ip,port):
     h2o.np_comparison_check(h2o.log2(h2o_data3), np.log2(np_data3), 10)
     h2o.np_comparison_check(h2o.exp(h2o_data3), np.exp(np_data3), 10)
     h2o.np_comparison_check(h2o.expm1(h2o_data3), np.expm1(np_data3), 10)
-    h2o_val = h2o.as_list(h2o.gamma(h2o_data3))[5][5]
-    num_val = math.gamma(h2o.as_list(h2o_data3)[5][5])
+    h2o_val = h2o.gamma(h2o_data3)[5,5]
+    num_val = math.gamma(h2o_data3[5,5])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o.as_list(h2o.lgamma(h2o_data3))[5][5]
-    num_val = math.lgamma(h2o.as_list(h2o_data3)[5][5])
+    h2o_val = h2o.lgamma(h2o_data3)[5,5]
+    num_val = math.lgamma(h2o_data3[5,5])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal lgamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o.as_list(h2o.digamma(h2o_data3))[5][5]
-    num_val = scipy.special.polygamma(0,h2o.as_list(h2o_data3)[5][5])
+    h2o_val = h2o.digamma(h2o_data3)[5,5]
+    num_val = scipy.special.polygamma(0,h2o_data3[5,5])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal digamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o.as_list(h2o.trigamma(h2o_data3))[5][5]
-    num_val = scipy.special.polygamma(1,h2o.as_list(h2o_data3)[5][5])
+    h2o_val = h2o.trigamma(h2o_data3)[5,5]
+    num_val = scipy.special.polygamma(1,h2o_data3[5,5])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and " \
         "math".format(h2o_val,num_val)

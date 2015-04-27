@@ -175,7 +175,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
   for i in range(num_elements):
     r = random.randint(0,rows-1)
     c = random.randint(0,cols-1)
-    h2o_val = as_list(h2o_data[r,c])
+    h2o_val = h2o_data[r,c]
     h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
     np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
     assert np.absolute(h2o_val - np_val) < 1e-6, \
@@ -330,7 +330,7 @@ def cbind(left,right):
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
   """
   Initiate an H2O connection to the specified ip and port.
 
@@ -464,16 +464,18 @@ def as_list(data):
   :return: List of list (Rows x Columns).
   """
   if isinstance(data, Expr):
-    x = data.eager()
-    if data.is_local():
-      return x
-    j = frame(data._data)
+    if data.is_local(): return data._data
+    if data.is_pending():
+      data.eager()
+      if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
+    j = frame(data._data) # data is remote
     return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
   if isinstance(data, H2OVec):
-    x = data._expr.eager()
-    if data._expr.is_local():
-      return x
-    j = frame(data._expr._data)
+    if data._expr.is_local(): return data._expr._data
+    if data._expr.is_pending():
+      data._expr.eager()
+      if data._expr.is_local(): return [[data._expr._data]]
+    j = frame(data._expr._data) # data is remote
     return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
   if isinstance(data, H2OFrame):
     vec_as_list = [as_list(v) for v in data._vecs]

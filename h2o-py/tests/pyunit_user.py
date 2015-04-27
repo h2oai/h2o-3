@@ -52,24 +52,22 @@ def user(ip, port):
     c = None
     # Internal "Expr(c=a+b)" not dead!
 
-    # column addition can be a big data operation, so the result should be an Expr.
-    # TODO: create custom 'mean' function to operate on Expr objects.
-    # print 1 + (a[0] + b[1]).mean()
+    print 1 + (a[0] + b[1]).mean()
 
-    #import collections
+    import collections
 
-    #c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
-    #c.show()
+    c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
+    c.show()
 
-    #c.describe()
-    #c.head()
+    c.describe()
+    c.head()
 
-    #c[0].show()
-    #c[0][1].show()
-    #c[0][0:2].show()
+    c[0].show()
+    c[0][1].show()
+    c[0][0:2].show()
 
-    #sliced = a[0][0:51]
-    #sliced.show()
+    sliced = a[0][0:51]
+    sliced.show()
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, user)
