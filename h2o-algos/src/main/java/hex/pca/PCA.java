@@ -206,6 +206,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if(_parms._keep_loading) model._output._loading_key = svd._output._u_key;
         model._output._normSub = svd._output._normSub;
         model._output._normMul = svd._output._normMul;
+        model.update(_key);
+        update(1);
+
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);

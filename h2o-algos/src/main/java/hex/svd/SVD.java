@@ -203,6 +203,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           ivv_sum = sub_symm(ivv_sum, vv);
           double[][] lmat = ArrayUtils.multArrArr(ivv_sum, gram);
           gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
+
+          model.update(_key); // Update model in K/V store
+          update(1);          // One unit of work
         }
 
         // 4) Save solution to model output
