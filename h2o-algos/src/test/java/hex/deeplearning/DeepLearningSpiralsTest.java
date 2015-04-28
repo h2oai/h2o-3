@@ -3,7 +3,6 @@ package hex.deeplearning;
 import hex.ModelMetricsBinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -63,7 +62,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._shuffle_training_data = false;
           p._force_load_balance = false;
           p._replicate_training_data = false;
-          p._destination_key = dest;
+          p._model_id = dest;
           p._adaptive_rate = true;
           p._reproducible = true;
           p._rho = 0.99;

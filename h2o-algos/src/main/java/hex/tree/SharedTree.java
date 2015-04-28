@@ -58,7 +58,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       error("_ntrees", "Requested ntrees must be between 1 and 100000");
     _ntrees = _parms._ntrees;   // Total trees in final model
     if( _parms._checkpoint ) {  // Asking to continue from checkpoint?
-      Value cv = DKV.get(_parms._destination_key);
+      Value cv = DKV.get(_parms._model_id);
       if( cv!=null ) {          // Look for prior model
         M checkpointModel = cv.get();
         if( _parms._ntrees < checkpointModel._output._ntrees+1 )
@@ -88,7 +88,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
 
         // New Model?  Or continuing from a checkpoint?
-        if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {
+        if( _parms._checkpoint && DKV.get(_parms._model_id) != null ) {
           _model = DKV.get(_dest).get();
           _model.write_lock(_key); // do not delete previous model; we are extending it
         } else {                   // New Model

@@ -27,7 +27,7 @@
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"http://archive.ics.uci.edu/ml/machine-learning-databases/00236/seeds_dataset.txt\"]\n  destination_key: \"seeds_dataset.hex\"\n  parse_type: \"CSV\"\n  separator: 9\n  number_columns: 8\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+      "input": "parseFiles\n  paths: [\"http://archive.ics.uci.edu/ml/machine-learning-databases/00236/seeds_dataset.txt\"]\n  destination_frame: \"seeds_dataset.hex\"\n  parse_type: \"CSV\"\n  separator: 9\n  number_columns: 8\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
     },
     {
       "type": "md",
@@ -43,7 +43,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'kmeans', {\"destination_key\":\"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\",\"training_frame\":\"seeds_dataset.hex\",\"ignored_columns\":[\"C7\"],\"drop_na20_cols\":false,\"k\":\"3\",\"max_iterations\":\"100\",\"init\":\"PlusPlus\",\"standardize\":false,\"seed\":1425597869002366000}"
+      "input": "buildModel 'kmeans', {\"model_id\":\"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\",\"training_frame\":\"seeds_dataset.hex\",\"ignored_columns\":[\"C7\"],\"drop_na20_cols\":false,\"k\":\"3\",\"max_iterations\":\"100\",\"init\":\"PlusPlus\",\"standardize\":false,\"seed\":1425597869002366000}"
     },
     {
       "type": "md",
@@ -63,7 +63,7 @@
     },
     {
       "type": "cs",
-      "input": "predict model: \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\", frame: \"seeds_dataset.hex\", destination_key: \"prediction-2e8d0460-8bc0-4dc1-9cad-df0a3a9d2eb1\""
+      "input": "predict model: \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\", frame: \"seeds_dataset.hex\", predictions_frame: \"prediction-2e8d0460-8bc0-4dc1-9cad-df0a3a9d2eb1\""
     }
   ]
 }

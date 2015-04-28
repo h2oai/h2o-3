@@ -10,7 +10,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
   print("Reading in original prostate data.")
-  prostate.hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"), key="prostate.hex", header=TRUE)
+  prostate.hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex", header=TRUE)
 
   print("Run test/train split at 20/80.")
   prostate.hex$split <- ifelse(h2o.runif(prostate.hex)>0.8, yes=1, no=0)
@@ -23,7 +23,7 @@ test <- function(conn) {
   myY <- 2
 
   print("Creating model")
-  system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, destination_key="h2o.glm.prostate", family="binomial", alpha=1, lambda_search=F, nfolds=0, use_all_factor_levels=FALSE))
+  system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, model_id="h2o.glm.prostate", family="binomial", alpha=1, lambda_search=F, nfolds=0, use_all_factor_levels=FALSE))
 
   print("Predict on test data")
   prediction <- predict(h2o.glm.model, prostate.test)

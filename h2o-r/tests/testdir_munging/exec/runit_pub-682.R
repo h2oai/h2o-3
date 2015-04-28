@@ -28,7 +28,7 @@ test.head_empty <- function(conn) {
     print(a)
     print(b)
 
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
 
     # now we'll create an empty b.h2o in h2o
     b.h2o <- a.h2o[a.h2o$v1==32,]

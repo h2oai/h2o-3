@@ -6,7 +6,7 @@ import water.util.PojoUtils;
 public class JobsHandler extends Handler {
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
   public static final class Jobs extends Iced {
-    public Key _key;
+    public Key _job_id;
     public Job[] _jobs;
 
     public Jobs() {}
@@ -23,7 +23,7 @@ public class JobsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, JobsV3 s) {
-    Key key = s.key.key();
+    Key key = s.job_id.key();
     Value val = DKV.get(key);
     if( null == val ) throw new IllegalArgumentException("Job is missing");
     Iced ice = val.get();
@@ -38,9 +38,9 @@ public class JobsHandler extends Handler {
   }
 
   public Schema cancel(int version, JobsV3 c) {
-    Job j = DKV.getGet(c.key.key());
+    Job j = DKV.getGet(c.job_id.key());
     if (j == null) {
-      throw new IllegalArgumentException("No job with key " + c.key.key());
+      throw new IllegalArgumentException("No job with key " + c.job_id.key());
     }
     j.cancel();
     return c;

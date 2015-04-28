@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 check.deeplearning.gridlayers <- function(conn) {
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"), key="iris.hex")
+  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
   print(summary(iris.hex))
 
   pretty.list <- function(ll) {

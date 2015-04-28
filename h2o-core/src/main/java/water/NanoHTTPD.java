@@ -375,6 +375,8 @@ public class NanoHTTPD
               sendError( HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but boundary syntax error. Usage: GET /example/file.html" );
             st.nextToken();
             String boundary = st.nextToken();
+            String paddedMethod = String.format("%-6s", method);
+            Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + "(special case)" + ", parms: " + parms);
             boolean handled = fileUpload(boundary, is, parms, uri);
             if (handled) {
               return;
@@ -616,7 +618,7 @@ public class NanoHTTPD
           }
 
           {
-            String destination_key = parms.getProperty("destination_key");
+            String destination_key = parms.getProperty("destination_frame");
             if (destination_key == null) {
               destination_key = "upload" + Key.rand();
             }
@@ -640,7 +642,7 @@ public class NanoHTTPD
               UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
               UploadFileVec.readPut(destination_key, new InputStreamWrapper(in, boundary.getBytes()), stats);
               // TODO: Figure out how to marshal a response here Ray-style so that docs, etc. are generated properly.
-              String responsePayload = "{ \"destination_key\": \"" + destination_key + "\", \"total_bytes\": " + stats.total_bytes + " }\n";
+              String responsePayload = "{ \"destination_frame\": \"" + destination_key + "\", \"total_bytes\": " + stats.total_bytes + " }\n";
               sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
               return true;
             }

@@ -60,7 +60,7 @@ randomParams <- function(distribution, train, test, x, y) {
   else
     hh <- do.call("h2o.gbm", parms)
 
-  h2o.rm(hh@key)
+  h2o.rm(hh@model_id)
 }
 
 test.GBM.rand_attk_forloop <- function(conn) {

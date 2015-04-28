@@ -32,7 +32,7 @@ public class DeepLearningMNIST extends TestUtil {
         DeepLearningParameters p = new DeepLearningParameters();
 
         // populate model parameters
-        p._destination_key = Key.make("dl_mnist_model");
+        p._model_id = Key.make("dl_mnist_model");
         p._train = frame._key;
         p._response_column = "C785"; // last column is the response
         p._activation = DeepLearningParameters.Activation.Tanh;
