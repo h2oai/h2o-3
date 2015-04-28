@@ -63,8 +63,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   private int _lambdaId;
   private transient DataInfo _validDinfo;
   private transient ArrayList<Integer> _scoring_iters = new ArrayList<>();
+  // time per iteration in ms
+  private transient ArrayList<Integer> _scoring_times = new ArrayList<>();
   private transient ArrayList<Double> _likelihoods = new ArrayList<>();
   private transient ArrayList<Double> _objectives = new ArrayList<>();
+  private transient ArrayList<Double> _gradients = new ArrayList<>();
+
   private transient double _iceptAdjust = 0;
 
   @Override public void init(boolean expensive) {
@@ -963,14 +967,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
-        } else if (lastObjVal > objVal) {
-          ++_taskInfo._iter; // =new IterationInfo(_iter, glmt._beta, glmt._objVal);
-          _taskInfo._beta = glmt._beta;
-          _taskInfo._objVal = objVal;
-          _taskInfo._ginfo = null;
+        } else {
           _scoring_iters.add(_taskInfo._iter);
           _likelihoods.add(logl);
           _objectives.add(objVal);
+          if (lastObjVal > objVal) {
+            ++_taskInfo._iter; // =new IterationInfo(_iter, glmt._beta, glmt._objVal);
+            _taskInfo._beta = glmt._beta;
+            _taskInfo._objVal = objVal;
+            _taskInfo._ginfo = null;
+            _scoring_iters.add(_taskInfo._iter);
+            _likelihoods.add(logl);
+            _objectives.add(objVal);
+          }
         }
         final double[] newBeta = MemoryManager.malloc8d(glmt._xy.length);
         double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]);
