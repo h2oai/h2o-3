@@ -57,22 +57,33 @@ By default, the following output displays:
 - Cluster means (centroid number, column)
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary, and should be thought of as a tuning parameter.
-The output is a matrix of the cluster assignments, and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is NP-hard.
+The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-Missing values are automatically imputed by the column mean.
-- How does the algo handle missing values during testing?
-Missing values are automatically imputed by the column mean of the training data.
-- Does it matter if the data is sorted? 
-No.
-- Should data be shuffled before training?
-No.
-- What if there are a large number of columns?
-K-Means suffers from the curse of dimensionality, and all points are roughly at the same distance from each other in high dimensions, making the algorithm less and less useful.
-- What if there are a large number of categorical factor levels?
-This can be problematic as categoricals are one-hot encoded on the fly and can lead to the same problem as datasets with a large number of columns.
+- **How does the algorithm handle missing values during training?**
+   
+  Missing values are automatically imputed by the column mean.
+
+- **How does the algorithm handle missing values during testing?*
+   
+  Missing values are automatically imputed by the column mean of the training data.
+
+- **Does it matter if the data is sorted?** 
+  
+  No.
+
+- **Should data be shuffled before training?**
+  
+  No.
+
+- **What if there are a large number of columns?**
+  
+  K-Means suffers from the curse of dimensionality: all points are roughly at the same distance from each other in high dimensions, making the algorithm less and less useful.
+
+- **What if there are a large number of categorical factor levels?**
+
+  This can be problematic, as categoricals are one-hot encoded on the fly, which can lead to the same problem as datasets with a large number of columns.
 
 
 
@@ -178,8 +189,6 @@ The GLM suite includes:
 
 - **Beta constraints**: To use beta constraints, select a dataset from the drop-down menu. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. 
 
-  >Is that correct? 
-
 - **Max\_confusion\_matrix\_size**: Specify the maximum size (number of classes) for the confusion matrices printed in the logs. 
 
 - **Max\_hits\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
@@ -206,24 +215,41 @@ By default, the following output displays:
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-GLM skips rows with missing values.
-- How does the algo handle missing values during testing?
-GLM will predict Double.NaN for rows containg missing values.
-- What happens if the response has missing values?
-It is handled properly, but you should check the results.
-- What happens during prediction if the new sample has categorical levels not seen in training?
-It will predict Double.NaN
-- Does it matter if the data is sorted? 
-No.
-- Should data be shuffled before training?
-No.
-- How does the algo handle highly imbalanced data in a response column?
-GLM does not require special handling for imbalanced data.
-- What if there are a large number of columns?
-IRLS will get quadratically slower with the number of columns. You can try L-BFGS for datasets with more than 5-10 thousand columns.
-- What if there are a large number of categorical factor levels?
-GLM internally one-hot encodes the categorical factor levels, and the same limitations as with a high column count will apply.
+- **How does the algorithm handle missing values during training?**
+
+  GLM skips rows with missing values.
+
+- **How does the algorithm handle missing values during testing?**
+
+  GLM will predict Double.NaN for rows containg missing values.
+
+- **What happens if the response has missing values?**
+
+  It is handled properly, but verify the results are correct.
+
+- **What happens during prediction if the new sample has categorical levels not seen in training?**
+
+  It will predict Double.NaN.
+
+- **Does it matter if the data is sorted?** 
+
+  No.
+
+- **Should data be shuffled before training?**
+
+  No.
+
+- **How does the algorithm handle highly imbalanced data in a response column?**
+
+  GLM does not require special handling for imbalanced data.
+
+- **What if there are a large number of columns?**
+
+  IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
+
+- **What if there are a large number of categorical factor levels?**
+
+  GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
 
 ###GLM Algorithm
 
@@ -388,22 +414,37 @@ By default, the following output displays:
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-Missing values do not alter the tree building in any way; i.e., they are not counted as a point when computing means or errors. Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
-- How does the algo handle missing values during testing?
-During scoring missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
-- What happens if the response has missing values?
-That is fine, but nothing will be learned from rows containing missing the response.
-- Does it matter if the data is sorted? 
-No.
-- Should data be shuffled before training?
-No.
-- How does the algo handle highly imbalanced data in a response column?
-You can specify balance_classes, class_sampling_factors and max_after_balance_size to control over/under-sampling.
-- What if there are a large number of columns?
-DRFs are best applied to datasets with fewer than a few thousand columns.
-- What if there are a large number of categorical factor levels?
-Large number of categoricals are handled very efficiently, there is no one-hot encoding ever.
+- **How does the algorithm handle missing values during training?**
+
+  Missing values do not alter the tree building in any way (i.e., they are not counted as a point when computing means or errors). Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
+
+- **How does the algorithm handle missing values during testing?**
+
+  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+
+- **What happens if the response has missing values?**
+ 
+  No errors will occur, but nothing will be learned from rows containing missing the response.
+
+- **Does it matter if the data is sorted?** 
+
+  No.
+
+- **Should data be shuffled before training?**
+  
+  No.
+
+- **How does the algorithm handle highly imbalanced data in a response column?**
+
+ Specify `balance_classes`, `class_sampling_factors` and `max_after_balance_size` to control over/under-sampling.
+
+- **What if there are a large number of columns?**
+
+  DRFs are best for datasets with fewer than a few thousand columns.
+
+- **What if there are a large number of categorical factor levels?**
+
+  Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
 
 ###DRF Algorithm 
 
@@ -671,7 +712,6 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
-
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Ntrees**: Specify the number of trees. The default value is 50. 
@@ -679,7 +719,6 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 - **Max\_depth**: Specify the maximum tree depth.  The default value is 5. 
 
 - **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R). The default value is 10. 
-
 - **Nbins**: Specify the number of bins for the histogram. The default value is 20. 
 
 - **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
@@ -711,22 +750,37 @@ The output for GBM includes the following:
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-Missing values do not alter the tree building in any way; i.e., they are not counted as a point when computing means or errors. Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
-- How does the algo handle missing values during testing?
-During scoring missing values "always go left" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
-- What happens if the response has missing values?
-That is fine, but nothing will be learned from rows containing missing the response.
-- Does it matter if the data is sorted? 
-No.
-- Should data be shuffled before training?
-No.
-- How does the algo handle highly imbalanced data in a response column?
-You can specify balance_classes, class_sampling_factors and max_after_balance_size to control over/under-sampling.
-- What if there are a large number of columns?
-DRF models are best applied to datasets with fewer than a few thousand columns.
-- What if there are a large number of categorical factor levels?
-Large number of categoricals are handled very efficiently, there is no one-hot encoding ever.
+- **How does the algorithm handle missing values during training?**
+
+  Missing values do not alter the tree building in any way (i.e., they are not counted as a point when computing means or errors). Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
+
+- **How does the algorithm handle missing values during testing?**
+
+  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+
+- **What happens if the response has missing values?**
+
+  No errors will occur, but nothing will be learned from rows containing missing the response.
+
+- **Does it matter if the data is sorted?** 
+
+  No.
+
+- **Should data be shuffled before training?**
+
+  No.
+
+- **How does the algorithm handle highly imbalanced data in a response column?**
+
+  You can specify `balance_classes`, `class_sampling_factors` and `max_after_balance_size` to control over/under-sampling.
+
+- **What if there are a large number of columns?**
+
+  DRF models are best for datasets with fewer than a few thousand columns.
+
+- **What if there are a large number of categorical factor levels?**
+
+  Large number of categoricals are handled very efficiently - there is never any one-hot encoding.
 
 ###GBM Algorithm 
 
@@ -875,7 +929,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Sparse**: Check this checkbox to use sparse data handling. This option is not selected by default. 
 
 - **Col_major**: Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
-
 - **Average_activation**: Specify the average activation for the sparse autoencoder. The default value is 0.0. 
 
 - **Sparsity_beta**: Specify the sparsity regularization. The default value is 0.0. 
@@ -905,22 +958,37 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-User-specifiable treatment of missing values via 'missing_values_handling'. Either skip or mean-impute.
-- How does the algo handle missing values during testing?
-Missing values in the test set will be mean-imputed during scoring.
-- What happens if the response has missing values?
-That is fine, but nothing will be learned from rows containing missing the response.
-- Does it matter if the data is sorted? 
-Yes, the training set is processed in order. Depending on **train\_samples\_per\_iteration**, some rows will be skipped. If **shuffle\_training\_data** is enabled, then each thread processing a small subset of rows will process rows in random order, but it is not a global shuffle.
-- Should data be shuffled before training?
-Yes, that is a good idea especially if you suspect that dataset is sorted.
-- How does the algo handle highly imbalanced data in a response column?
-You can specify balance_classes, class_sampling_factors and max_after_balance_size to control over/under-sampling.
-- What if there are a large number of columns?
-The size of the input layer of neurons is as large as there are input features, so the model complexity will go up with increasing number of columns.
-- What if there are a large number of categorical factor levels?
-This is something to look out for. Say you have three columns: zip code (70k levels), height and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, the the resulting weight matrix will be of size 70,002 x 200, and this can take a long time to train and converge. We recommend to either reduce the number of categorical factor levels upfront (e.g., with h2o.interaction() from R), or to specify **max\_categorical\_features** to use feature hashing to reduce the dimensionality.
+- **How does the algorithm handle missing values during training?**
+
+  User-specifiable treatment of missing values via `missing_values_handling`. Specify either the skip or mean-impute option.
+
+- **How does the algorithm handle missing values during testing?**
+
+  Missing values in the test set will be mean-imputed during scoring.
+
+- **What happens if the response has missing values?**
+
+  No errors will occur, but nothing will be learned from rows containing missing the response.
+
+- **Does it matter if the data is sorted?** 
+
+  Yes, since the training set is processed in order. Depending whether `train\_samples\_per\_iteration` is enabled, some rows will be skipped. If `shuffle\_training\_data` is enabled, then each thread that is processing a small subset of rows will process rows randomly, but it is not a global shuffle.
+
+- **Should data be shuffled before training?**
+
+  Yes; it is an especially good idea if the dataset is sorted.
+
+- **How does the algorithm handle highly imbalanced data in a response column?**
+
+  Specify `balance_classes`, `class_sampling_factors` and `max_after_balance_size` to control over/under-sampling.
+
+- **What if there are a large number of columns?**
+
+  The input neuron layer's size is scaled to the number of input features, so as the number of columns increases, the model complexity increases as well. 
+  
+- **What if there are a large number of categorical factor levels?**
+
+This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max\_categorical\_features` to use feature hashing to reduce the dimensionality.
 
 ###Deep Learning Algorithm 
 
