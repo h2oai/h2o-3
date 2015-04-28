@@ -3,7 +3,7 @@ package hex.pca;
 import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.ModelMetricsPCA;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -60,27 +60,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsPCA.PCAModelMetrics(_parms._k);
-  }
-
-  public static class ModelMetricsPCA extends ModelMetricsUnsupervised {
-    public ModelMetricsPCA(Model model, Frame frame) {
-      super(model, frame, Double.NaN);
-    }
-
-    // PCA currently does not have any model metrics to compute during scoring
-    public static class PCAModelMetrics extends MetricBuilderUnsupervised {
-      public PCAModelMetrics(int dims) {
-        _work = new double[dims];
-      }
-
-      @Override
-      public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
-
-      @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
-        return m._output.addModelMetrics(new ModelMetricsPCA(m, f));
-      }
-    }
   }
 
   @Override

@@ -1,15 +1,13 @@
-#'
-#' Class definitions and their `show` & `summary` methods.
-#'
-#'
-#' To conveniently and safely pass messages between R and H2O, this package relies
-#' on S4 objects to capture and pass state. This R file contains all of the h2o
-#' package's classes as well as their complementary `show` methods. The end user
-#' will typically never have to reason with these objects directly, as there are
-#' S3 accessor methods provided for creating new objects.
-#'
-#' @name ClassesIntro
-NULL
+#`
+#` Class definitions and their `show` & `summary` methods.
+#`
+#`
+#` To conveniently and safely pass messages between R and H2O, this package relies
+#` on S4 objects to capture and pass state. This R file contains all of the h2o
+#` package's classes as well as their complementary `show` methods. The end user
+#` will typically never have to reason with these objects directly, as there are
+#` S3 accessor methods provided for creating new objects.
+#`
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Definitions
@@ -84,14 +82,14 @@ setMethod("show", "H2OConnection", function(object) {
 #' The H2OObject class
 #'
 #' @slot conn An \code{H2OConnection} object specifying the connection to an H2O cloud.
-#' @slot key A \code{character} string specifying the key in the H2O cloud's key-value store.
+#' @slot id A \code{character} string specifying the key in the H2O cloud's key-value store.
 #' @slot finalizers A \code{list} object containing environments with finalizers that
 #'                  remove keys from the H2O key-value store.
 #' @aliases H2OObject
 #' @export
 setClass("H2OObject",
-         representation(conn="H2OConnectionOrNULL", key="character", finalizers="list"),
-         prototype(conn=NULL, key=NA_character_, finalizers=list()),
+         representation(conn="H2OConnectionOrNULL", id="character", finalizers="list"),
+         prototype(conn=NULL, id=NA_character_, finalizers=list()),
          contains="VIRTUAL")
 
 #' @rdname H2OObject-class
@@ -107,15 +105,15 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 
 .keyFinalizer <- function(envir) {
   if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
-  if( !is.null(envir$key)      ) h2o.rm(envir$key, envir$conn)
+  if( !is.null(envir$id)      ) h2o.rm(envir$id, envir$conn)
   if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id,envir$conn)
   invisible(NULL)
 }
 
 .newH2OObject <- function(Class, ..., conn = NULL, id = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  if (linkToGC && !is.na(key) && is(conn, "H2OConnection")) {
+  if (linkToGC && !is.na(id) && is(conn, "H2OConnection")) {
     envir <- new.env()
-    assign("id", key, envir)
+    assign("id", id, envir)
     assign("conn", conn, envir)
     reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
     finalizers <- c(list(envir), finalizers)
@@ -276,7 +274,9 @@ setMethod("show", "H2OFrame", function(object) {
 #'
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
 #' @slot conn An \code{H2OConnection} object containing the IP address and port number of the H2O server.
-#' @slot key An object of class \code{"character"}, which is the name of the key assigned to the imported data.
+#' @slot frame_id An object of class \code{"character"}, which is the name of the key assigned to the imported data.
+#' @slot finalizers A \code{list} object containing environments with finalizers that
+#'                  remove objects from the H2O cloud.
 #' @aliases H2ORawData
 #' @export
 setClass("H2ORawData", contains="H2OFrame")

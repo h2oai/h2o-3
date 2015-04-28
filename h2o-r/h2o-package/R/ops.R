@@ -118,9 +118,9 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
 ##`
 ##` Methods that don't fit into the S4 group generics:
 ##`
-##` This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
+##` This also handles the cases where the Math ops have multiple args (e.g. 'log' and 'trunc')
 ##`
-##` ‘"!"’, ‘"is.na"’, ‘"t"’, ‘"trunc"’
+##` "!", "is.na", "t", "trunc"
 
 #' @rdname H2OS4groupGeneric
 #' @export
