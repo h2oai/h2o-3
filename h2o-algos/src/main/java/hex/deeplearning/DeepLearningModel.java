@@ -598,9 +598,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // return the most up-to-date model metrics
   DeepLearningScoring last_scored() { return errors == null ? null : errors[errors.length-1]; }
 
-//  @Override
-  public final DeepLearningParameters get_params() { return _parms; }
-//  @Override public final Request2 job() { return get_params(); }
+  /**
+   * Get the parameters actually used for model building, not the user-given ones (_parms)
+   * They might differ since some defaults are filled in, and some invalid combinations are auto-disabled in modifyParams
+   * @return actually used parameters
+   */
+  public final DeepLearningParameters get_params() { return model_info.get_params(); }
 
 //  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
@@ -960,7 +963,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       _train = train;
       _valid = valid;
       data_info = dinfo;
-      parameters = params;
+      parameters = (DeepLearningParameters)params.clone();
+      modifyParms(parameters, parameters, _classification);
+
       final int num_input = dinfo.fullN();
       final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
       assert(num_input > 0);
@@ -1432,20 +1437,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   /** Constructor to restart from a checkpointed model
    * @param destKey New destination key for the model
+   *  @param parms User-given parameters for checkpoint restart
    *  @param cp Checkpoint to restart from
    * @param store_best_model Store only the best model instead of the latest one  */
-  public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
-    super(destKey, (DeepLearningParameters)cp._parms.clone(), (DeepLearningModelOutput)cp._output.clone());
+  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
+    super(destKey, parms == null ? (DeepLearningParameters)cp._parms.clone() : parms, (DeepLearningModelOutput)cp._output.clone());
+    assert(_parms != cp._parms); //make sure we have a clone
+    model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
     if (store_best_model) {
-      model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
       model_info.data_info = dataInfo.deep_clone(); //replace previous data_info with updated version that's passed in (contains enum for classification)
     } else {
-      model_info = (DeepLearningModelInfo) cp.model_info.clone(); //shallow clone is ok (won't modify the Checkpoint in K-V store during checkpoint restart)
       model_info.data_info = dataInfo; //shallow clone is ok
-      // Ok to modify (the normally immutable read-only) parameters, because
-      // this is a private copy just cloned above in the super() call.
-      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
+      if (parms != null) {
+        assert (_parms == parms);
+        assert (_parms._checkpoint == parms._checkpoint);
+        assert (_parms._checkpoint == cp._key);
+      }
+//      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
+    assert(model_info().get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
     run_time = cp.run_time;
@@ -1478,7 +1488,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     output._domains= train.domains();
     DKV.put(dinfo._key,dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
-    modifyParms(parms, model_info.parameters, classification);
     actual_best_model_key = Key.makeUserHidden(Key.make());
     if (parms.getNumFolds() != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -1510,52 +1519,56 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               || fromParms._activation == DeepLearningParameters.Activation.RectifierWithDropout) {
         toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
         if (!fromParms._quiet_mode)
-          Log.warn("_hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
+          Log.warn("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
         Arrays.fill(toParms._hidden_dropout_ratios, 0.5);
       }
     } else {
       toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
     }
     if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
-      Log.warn("_replicate_training_data", "Disabling replicate_training_data on 1 node.");
+      Log.warn("_replicate_training_data: Disabling replicate_training_data on 1 node.");
       toParms._replicate_training_data = false;
     }
     if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
-      Log.warn("_single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
+      Log.warn("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
       toParms._single_node_mode = false;
     }
     if (!fromParms._use_all_factor_levels && fromParms._autoencoder ) {
-      Log.warn("_use_all_factor_levels", "Automatically enabling all_factor_levels for auto-encoders.");
+      Log.warn("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
       toParms._use_all_factor_levels = true;
     }
     if(fromParms._override_with_best_model && fromParms.getNumFolds() != 0) {
-      Log.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
+      Log.warn("_override_with_best_model: Disabling override_with_best_model in combination with n-fold cross-validation.");
       toParms._override_with_best_model = false;
     }
     if (fromParms._adaptive_rate) {
-      Log.warn("_adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
+      Log.warn("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
               + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+      toParms._rate = 0;
+      toParms._rate_decay = 0;
+      toParms._rate_annealing = 0;
       toParms._momentum_start = 0;
+      toParms._momentum_ramp = 0;
       toParms._momentum_stable = 0;
+      toParms._nesterov_accelerated_gradient = false;
     } else {
-      Log.warn("_adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
+      Log.warn("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
               + "rho, epsilon.");
       toParms._rho = 0;
       toParms._epsilon = 0;
     }
     if (fromParms.getNumFolds() != 0) {
       if (fromParms._override_with_best_model) {
-        Log.warn("_override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+        Log.warn("_override_with_best_model: Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
         toParms._override_with_best_model = false;
       }
     }
     if (fromParms._loss == DeepLearningParameters.Loss.Automatic) {
         toParms._loss = (classification && !fromParms._autoencoder) ? DeepLearningParameters.Loss.CrossEntropy : DeepLearningParameters.Loss.MeanSquare;
-        Log.warn("_loss", "Automatically setting loss function to " + toParms._loss);
+        Log.warn("_loss: Automatically setting loss function to " + toParms._loss);
     }
     if (fromParms._reproducible) {
-      Log.warn("_reproducibility",
-              "Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+      Log.warn("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
                       +"and setting train_samples_per_iteration to -1 to enforce reproducibility.");
       toParms._force_load_balance = true;
       toParms._single_node_mode = false;
@@ -1602,7 +1615,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       run_time += time_last_iter_millis;
       _timeLastScoreEnter = now;
-      keep_running = (epoch_counter < get_params()._epochs);
+      keep_running = (epoch_counter < model_info().get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
       final long sinceLastPrint = now -_timeLastPrintStart;
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
@@ -2068,7 +2081,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
-    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
+    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);

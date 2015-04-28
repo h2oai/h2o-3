@@ -4,7 +4,6 @@ package hex.deeplearning;
 import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -69,21 +68,21 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
   /**
    * Helper to create the DataInfo object from training/validation frames and the DL parameters
-   * @param _train Training frame
-   * @param _valid Validation frame
-   * @param _parms Model parameters
+   * @param train Training frame
+   * @param valid Validation frame
+   * @param parms Model parameters
    * @return
    */
-  static DataInfo makeDataInfo(Frame _train, Frame _valid, DeepLearningModel.DeepLearningParameters _parms) {
+  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningModel.DeepLearningParameters parms) {
     return new DataInfo(
             Key.make(), //dest key
-            _train,
-            _valid,
-            _parms._autoencoder ? 0 : 1, //nResponses
-            _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-            _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            _train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
-            _parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip); //whether to skip missing
+            train,
+            valid,
+            parms._autoencoder ? 0 : 1, //nResponses
+            parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
+            parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip); //whether to skip missing
   }
 
   @Override
@@ -179,44 +178,56 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
+
+        // check the user-given arguments for consistency
+        DeepLearningModel.DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
+        DeepLearningModel.DeepLearningParameters newP = _parms; //user-given parameters for restart
+
         new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
-        if (_parms.getNumFolds() != 0)
+        if (newP.getNumFolds() != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
-        _parms._autoencoder = previous.model_info().get_params()._autoencoder;
-        if (!_parms._autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
-          throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
-        }
-        if (ArrayUtils.difference(_parms._ignored_columns, previous.model_info().get_params()._ignored_columns).length != 0
-                || ArrayUtils.difference(previous.model_info().get_params()._ignored_columns, _parms._ignored_columns).length != 0) {
-          _parms._ignored_columns = previous.model_info().get_params()._ignored_columns;
-          Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
-        }
         if ((_parms._valid == null) != (previous._parms._valid == null)
                 || (_parms._valid != null  && !_parms._valid.equals(previous._parms._valid))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
-        if( isClassifier() != previous._output.isClassifier() )
-          Log.warn("Automatically switching to " + (isClassifier() ? "regression" : "classification") + " (same as the checkpointed model).");
-        _parms._epochs += previous.epoch_counter; //add new epochs to existing model
-        Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
         try {
           final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo._key,dinfo);
-          cp = new DeepLearningModel(dest(), previous, false, dinfo);
+          cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(self());
-          final DeepLearningModel.DeepLearningParameters A = cp.model_info().get_params();
-          Object B = _parms;
-          for (Field fA : A.getClass().getDeclaredFields()) {
-            if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
-//              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
-              for (Field fB : B.getClass().getDeclaredFields()) {
-                if (fA.equals(fB)) {
+
+          // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
+          final DeepLearningModel.DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          assert(actualNewP != previous.model_info().get_params());
+          assert(actualNewP != newP);
+          assert(actualNewP != oldP);
+
+          // Automatically set some parameters
+          if (oldP._autoencoder != newP._autoencoder) {
+            newP._autoencoder = oldP._autoencoder;
+            Log.warn("Automatically " + (newP._autoencoder ? "enabling" : "disabling") + " autoencoder (same as the checkpointed model).");
+          }
+          if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
+            throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+          }
+          if (ArrayUtils.difference(newP._ignored_columns, oldP._ignored_columns).length != 0
+                  || ArrayUtils.difference(newP._ignored_columns, oldP._ignored_columns).length != 0) {
+            actualNewP._ignored_columns = oldP._ignored_columns;
+            Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
+          }
+          if( isClassifier() != previous._output.isClassifier() )
+            Log.warn("Automatically switching to " + (isClassifier() ? "regression" : "classification") + " (same as the checkpointed model).");
+
+          for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
+            if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
+              for (Field fAfter : newP.getClass().getDeclaredFields()) {
+                if (fBefore.equals(fAfter)) {
                   try {
-                    if (fB.get(B) == null || fA.get(A) == null || !fA.get(A).toString().equals(fB.get(B).toString())) { // if either of the two parameters is null, skip the toString()
-                      if (fA.get(A) == null && fB.get(B) == null) continue; //if both parameters are null, we don't need to do anything
-                      Log.info("Applying user-requested modification of '" + fA.getName() + "': " + fA.get(A) + " -> " + fB.get(B));
-                      fA.set(A, fB.get(B));
+                    if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
+                      if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null) continue; //if both parameters are null, we don't need to do anything
+                      Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
+                      fBefore.set(actualNewP, fAfter.get(newP));
                     }
                   } catch (IllegalAccessException e) {
                     e.printStackTrace();
@@ -225,13 +236,17 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
               }
             }
           }
-          // update parameters in place (in case the cp_modifiable set included some parameters that are to be auto-populated after the user sets them)
-          cp.modifyParms(A, A, isClassifier());
-          if (A.getNumFolds() != 0) {
+          // update parameters in place to set defaults etc.
+          cp.modifyParms(actualNewP, actualNewP, isClassifier());
+
+          actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
+          Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+
+          if (actualNewP.getNumFolds() != 0) {
             Log.warn("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
 
             H2O.unimpl("writing to n_folds field needs to be uncommented");
-            // A._n_folds = 0;
+            // actualNewP._n_folds = 0;
           }
           cp.update(self());
         } finally {
@@ -278,7 +293,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         model.write_lock(self());
-        final DeepLearningModel.DeepLearningParameters mp = model._parms;
+        final DeepLearningModel.DeepLearningParameters mp = model.model_info().get_params();
         Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
         Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
 
