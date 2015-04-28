@@ -44,12 +44,19 @@ test.quantile.golden <- function(conn) {
   expect_equal(quantNA.rand.h2o, quantNA.rand.r)
 
   Log.info("Check interpolation matches R with type=7 (pubdev-671)")
+  getNumbers = function(x)as.numeric(sapply(strsplit(x, split=":"),'[',2))  # even in base R, summary.data.frame returns formatted text
   probs = seq(0,1,by=0.01)
   for (vec in list(
        c(5 , 8 , 9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43, 45, 48, 161)   # unique
       ,c(5 , 8 , 9 , 9 , 9 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 31 , 34 , 43, 43, 43, 161)     # some dups
+      , c(rep(1,10), rep(21,6), rep(3.9,7))                                                    # stride from Nidhi
   )) {
       vec.hex <- as.h2o(conn, vec)
+
+      # summary() fetches precomputed quantiles from rollup [what pubdev-671 is about]
+      expect_equal(getNumbers(summary(as.data.frame(vec))), getNumbers(summary(vec.hex)), tolerance=(max(vec)-min(vec))/1000)
+
+      # quantile() on the other hand is recomputed and is exact
       expect_equal(as.vector(quantile(vec, probs=probs, type=7)),
                    as.vector(quantile(vec.hex, probs=probs)))
   }

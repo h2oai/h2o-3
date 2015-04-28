@@ -62,10 +62,13 @@ public class VecStatsTest extends TestUtil {
     double[] pctiles = vec.pctiles();
     // System.out.println(java.util.Arrays.toString(pctiles));
     Assert.assertEquals(13.75,pctiles[3],1e-5);
+    vec.remove();
 
     vec = vec(5 , 8 ,  9 , 9 , 9 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 31 , 34 , 43,  43,  43, 161);
     pctiles = vec.pctiles();
     // System.out.println(java.util.Arrays.toString(pctiles));
     Assert.assertEquals(10.75,pctiles[3],1e-5);
+    vec.remove();
+
   }
 }

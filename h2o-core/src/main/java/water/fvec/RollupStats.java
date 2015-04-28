@@ -42,7 +42,10 @@ class RollupStats extends Iced {
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
-  private static final int MAX_SIZE = 1024; // Standard bin count; enums can have more bins
+  private static final int MAX_SIZE = 1000; // Standard bin count; enums can have more bins
+  // the choice of MAX_SIZE being a power of 10 (rather than 1024) just aligns-to-the-grid of the common input of fixed decimal
+  // precision numbers. It is still an estimate and makes no difference mathematically. It just gives tidier output in some
+  // simple cases without penalty.
   volatile long[] _bins;
   // Approximate data value closest to the Xth percentile
   double[] _pctiles;
@@ -462,21 +465,19 @@ class RollupStats extends Iced {
             double h = pdouble - pint;           // any fraction h to linearly interpolate between?
             assert P!=1 || (h==0.0 && pint==rows);  // i.e. max
             while (hsum < pint) hsum += rs._bins[j++];
-            // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
-            // pint now falls in bin j-1, grab that bin value now
+            // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
+            // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
             rs._pctiles[i] = base + stride * (j - 1);
-            // linear interpolate stride, based on fraction of bin
-            if( stride != 1.0 || !rs._isInt )
-              rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
-            else if (h>0 && pint==hsum) {
+            if (h>0 && pint==hsum) {
               // linearly interpolate between adjacent non-zero bins
-              //      i) pint is the last of (j-1)'s bin count (>1 when duplicates exist in input)
-              // and ii) h>0 so we do need to find the next non-zero bin
+              //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
+              // AND ii) h>0 so we do need to find the next non-zero bin
               if (k<j) k=j; // if j jumped over the k needed for the last P, catch k up to j
                             // Saves potentially winding k forward over the same zero stretch many times
               while (rs._bins[k]==0) k++;  // find the next non-zero bin
               rs._pctiles[i] += h * stride * (k-j+1);
-            } // otherwise either h==0 or both pint and pint+1 fall in the same bin, so no need to interpolate
+            } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
+            // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
           }
           installResponse(nnn,rs);
         }
