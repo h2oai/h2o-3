@@ -273,12 +273,12 @@ public final class ParseSetup extends Iced {
       if(bits.length > 0) {
         _empty = false;
 
-          // get file size
-          float decompRatio = ZipUtil.decompressionRatio(bv);
-          if (decompRatio > 1.0)
-            _totalParseSize += bv.length() * decompRatio; // estimate file size
-          else  // avoid numerical distortion of file size when not compressed
-            _totalParseSize += bv.length();
+        // get file size
+        float decompRatio = ZipUtil.decompressionRatio(bv);
+        if (decompRatio > 1.0)
+          _totalParseSize += bv.length() * decompRatio; // estimate file size
+        else  // avoid numerical distortion of file size when not compressed
+          _totalParseSize += bv.length();
 
         // Check for supported encodings
         checkEncoding(bits);
