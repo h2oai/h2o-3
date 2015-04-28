@@ -63,13 +63,15 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
 
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
-      String[][] domains = dinfo._adaptedFrame.domains();
+      // String[][] domains = dinfo._adaptedFrame.domains();
+      String[][] domains = model._output._domains;
       double[] apriori = new double[tsk._nrescat];
       double[][][] pcond = new double[tsk._npreds][][];
       for(int i = 0; i < pcond.length; i++) {
         int ncnt = domains[i] == null ? 2 : domains[i].length;
         pcond[i] = new double[tsk._nrescat][ncnt];
       }
+      model._output._rescnt = tsk._rescnt;
 
       // A-priori probability of response y
       for(int i = 0; i < apriori.length; i++)

@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 test.glrmvanilla.golden <- function(conn) {
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"), key = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   initCent <- scale(arrestsR)[1:4,]
   
   Log.info("Compare with PCA when center = TRUE, scale. = TRUE")
