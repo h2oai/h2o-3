@@ -122,6 +122,7 @@ class Expr(object):
   def __len__(self):
     """
     The length of this H2OVec/H2OFrame (generally without triggering eager evaluation)
+
     :return: The number of columns/rows of the H2OFrame/H2OVec.
     """
     return self._len
@@ -129,6 +130,7 @@ class Expr(object):
   def dim(self):
     """
     Eagerly evaluate the Expr. If it's an H2OFrame, return the number of rows and columns.
+
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
     self.eager()
@@ -150,7 +152,8 @@ class Expr(object):
   def show(self, noprint=False):
     """
     Evaluate and print.
-    :return:
+
+    :return: None
     """
     self.eager()
     if noprint:
@@ -217,7 +220,10 @@ class Expr(object):
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     elif self.is_remote() or self.is_pending():
       if    isinstance(i, int)  : return Expr("[", self, Expr(("()", i)))  # column slicing
-      elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
+      elif  isinstance(i, tuple): # row, column slicing
+        res = Expr("[", self, Expr((i[0], i[1])))
+        if isinstance(i[0],int) and isinstance(i[1],int): return res.eager() # small data
+        return res # potentially big data
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
 
@@ -266,19 +272,19 @@ class Expr(object):
     """
     :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("min", self)
+    return Expr("min", self).eager()
 
   def max(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("max", self)
+    return Expr("max", self).eager()
 
   def sum(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("sum", self)
+    return Expr("sum", self).eager()
 
   def sd(self):
     """
@@ -296,13 +302,13 @@ class Expr(object):
     """
     :return: A lazy Expr representing the mean of this H2OVec.
     """
-    return Expr("mean", self)
+    return Expr("mean", self).eager()
 
   def median(self):
     """
     :return: A lazy Expr representing the median of this H2OVec.
     """
-    return Expr("median", self)
+    return Expr("median", self).eager()
 
   def __del__(self):
     # Dead pending op or local data; nothing to delete
@@ -324,6 +330,7 @@ class Expr(object):
     This forces a top-level execution, as needed, and produces a top-level result
     locally. Frames are returned and truncated to the standard preview response
     provided by rapids - 100 rows X 200 cols.
+
     :return: A key pointing to the big data object
     """
     if self.is_computed(): return self._data
@@ -343,17 +350,17 @@ class Expr(object):
     if tmps:
       cmd = "(, " + cmd + tmps + ")"
     j = h2o.rapids(cmd)
-    if isinstance(self._data, unicode) or j['result_type'] == 0:
+    if j['result_type']  == 0:
       pass  # Big Data Key is the result
     # Small data result pulled locally
     elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
-    elif j['result_type'] == 2 or j['result_type'] == 4:
-      self._data = j['string']
+    elif j['result_type'] in [2,4]:
+      if isinstance(j['string'], str): self._data = j['string']
     else:
-      self._data = j['scalar']
+      if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
     return self._data
 
   def _do_child(self, child):
@@ -406,7 +413,7 @@ class Expr(object):
     raise NotImplementedError
 
   def multi_dim_slice_cols_cmd(self, child):
-    if   isinstance(self._left._data, list): return '()'
+    if   isinstance(self._left._data, list): return '\"null\"' # TODO: there might be a bug here: replace null with ()
     elif isinstance(self._left._data,unicode):
       c = child._data[1]
       if isinstance(c, int): return "#" + str(c)
@@ -418,6 +425,7 @@ class Expr(object):
     """
     External API for eager; called by all top-level demanders (e.g. print)
     This may trigger (recursive) big-data evaluation.
+
     :return: None
     """
     if self.is_computed(): return

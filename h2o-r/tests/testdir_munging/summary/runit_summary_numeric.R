@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 test.summary.numeric <- function(conn) {
   Log.info("Importing USArrests.csv data...\n")
   # arrests.hex <- h2o.importFile(conn, locate("smalldata/pca_test/USArrests.csv", schema = "local"), "arrests.hex")
-  arrests.hex <- as.h2o(conn, USArrests, key = "arrests.hex")
+  arrests.hex <- as.h2o(conn, USArrests, destination_frame = "arrests.hex")
 
   Log.info("Check that summary works...")
   summary(arrests.hex)

@@ -33,7 +33,7 @@ if (TRUE) {
 conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 # Uploading data file to h2o.
-air <- h2o.importFile(conn, path = filePath, key = "air")
+air <- h2o.importFile(conn, path = filePath, destination_frame = "air")
 
 # Print dataset size.
 dim(air)

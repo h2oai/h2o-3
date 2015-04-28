@@ -82,7 +82,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._input_dropout_ratio = 0.2;
           p._epochs = 3;
 //          p._quiet_mode = true;
-          p._destination_key = Key.make();
+          p._model_id = Key.make();
           p._reproducible = true;
           p._seed = seed;
 

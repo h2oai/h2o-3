@@ -18,7 +18,7 @@ test.km.benign <- function(conn) {
     Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))
     benign.km.h2o <- h2o.kmeans(training_frame = benign.hex, k = as.numeric(i))
     print(benign.km.h2o)
-    m <- h2o.getModel(conn, benign.km.h2o@key)
+    m <- h2o.getModel(conn, benign.km.h2o@model_id)
     print(m)
     benign.km <- kmeans(benign.data, centers = i)
   }

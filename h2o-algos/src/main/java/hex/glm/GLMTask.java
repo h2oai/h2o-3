@@ -778,7 +778,7 @@ public abstract class GLMTask  {
         int ns = _dinfo.numStart();
         int interceptIdx = _xy.length-1;
         double [] interceptRow = _gram._xx[interceptIdx-_gram._diagN];
-        double nobs = interceptRow[interceptRow.length-1]; // wighted nobes
+        double nobs = interceptRow[interceptRow.length-1]; // weighted nobs
         for(int i = ns; i < _dinfo.fullN(); ++i) {
           double iMean = _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
           for (int j = 0; j < ns; ++j)

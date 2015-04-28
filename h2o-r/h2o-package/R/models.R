@@ -155,7 +155,7 @@
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
     if(is(i, "H2OFrame"))
-      i@key
+      i@frame_id
     else
       i
   })
@@ -183,30 +183,32 @@
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture",conn=conn, job_key=job_key, destination_key=dest_key)
+  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
  params$training_frame <- get("training_frame", parent.frame())
  tmp_train <- !.is.eval(params$training_frame)
  if( tmp_train ) {
-    temp_train_key <- params$training_frame@key
-    .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, key = temp_train_key)
+    temp_train_key <- params$training_frame@frame_id
+    .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, frame_id = temp_train_key)
  }
+
  if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
     tmp_valid <- !.is.eval(params$validation_frame)
     if( tmp_valid ) {
-      temp_valid_key <- params$validation_frame@key
-      .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
+      temp_valid_key <- params$validation_frame@frame_id
+      .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, frame_id = temp_valid_key)
     }
   }
+
   h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
 }
 
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@destination_key, object@conn)
+  h2o.getModel(object@model_id, object@conn)
 }
 
 #' Predict on an H2O Model
@@ -234,12 +236,12 @@ predict.H2OModel <- function(object, newdata, ...) {
 
   tmp_data <- !.is.eval(newdata)
   if( tmp_data ) {
-    key  <- newdata@key
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=newdata@mutable$ast, key=key)
+    key  <- newdata@frame_id
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=newdata@mutable$ast, frame_id=key)
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@key, '/frames/', newdata@key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
   res <- res$model_metrics[[1L]]$predictions
 
@@ -249,6 +251,48 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @rdname predict.H2OModel
 #' @export
 h2o.predict <- predict.H2OModel
+
+h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
+{
+  output <- data.frame()
+
+  if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
+  if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
+  else if( missing(model) )
+  {
+    if(model.type == "gbm") model.type = "h2o.gbm"
+    else if(model.type == "glm") model.type = "h2o.glm"
+    else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
+
+    model <- do.call(model.type, c(params))
+  }
+  output[1, "fold_num"] <- -1
+  output[1, "model_key"] <- model@model_id
+  # output[1, "model"] <- model@model$mse_valid
+
+  data <- params$training_frame
+  data <- eval(data)
+  data.len <- nrow(data)
+
+  # nfold_vec <- h2o.sample(fr, 1:nfolds)
+  nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
+
+  fnum_id <- as.h2o(nfold_vec, model@conn)
+  fnum_id <- h2o.cbind(fnum_id, data)
+
+  xval <- lapply(1:nfolds, function(i) {
+      params$training_frame <- data[fnum_id$object != i, ]
+      params$validation_frame <- data[fnum_id$object != i, ]
+      fold <- do.call(model.type, c(params))
+      output[(i+1), "fold_num"] <<- i - 1
+      output[(i+1), "model_key"] <<- fold@model_id
+      # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
+      fold
+    })
+  print(output)
+
+  model
+}
 
 #' Model Performance Metrics in H2O
 #'
@@ -281,8 +325,8 @@ h2o.performance <- function(model, data=NULL, train=FALSE, valid=FALSE, ...) {
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.key <- if( missingData ) trainingFrame else data@key
-  if( !missingData && data.key == trainingFrame ) {
+  data.frame_id <- if( missingData ) trainingFrame else data@frame_id
+  if( !missingData && data.frame_id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
   }
@@ -293,20 +337,20 @@ h2o.performance <- function(model, data=NULL, train=FALSE, valid=FALSE, ...) {
   }
   else if( !missingData ) {
     parms <- list()
-    parms[["model"]] <- model@key
-    parms[["frame"]] <- data.key
-    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@key,data.key), .params = parms)
+    parms[["model"]] <- model@model_id
+    parms[["frame"]] <- data.frame_id
+    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@model_id,data.frame_id), .params = parms)
 
     ####
     # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
-    model_metrics <- Filter(function(mm) { mm$frame$name==data.key}, res$model_metrics)[[1]]   # filter on data.key, R's builtin Filter function
+    model_metrics <- Filter(function(mm) { mm$frame$name==data.frame_id}, res$model_metrics)[[1]]   # filter on data.frame_id, R's builtin Filter function
     #
     ####
     metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
     model_category <- model_metrics$model_category
     Class <- paste0("H2O", model_category, "Metrics")
     metrics$frame <- list()
-    metrics$frame$name <- data.key
+    metrics$frame$name <- data.frame_id
     new(Class     = Class,
         algorithm = model@algorithm,
         on_train  = missingData,
@@ -860,7 +904,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@key, "\n")
+  cat("Model Key: ", o@model_id, "\n")
 
   # summary
   print(m$model_summary)
@@ -937,11 +981,11 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, train=FAL
   }
   tmp <- !.is.eval(newdata)
   if( tmp ) {
-    temp_key <- newdata@key
-    .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, key = temp_key)
+    temp_key <- newdata@frame_id
+    .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, frame_id = temp_key)
   }
 
-  url <- paste0("Predictions/models/",object@key, "/frames/", newdata@key)
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", newdata@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")
 
   # Make the correct class of metrics object

@@ -8,37 +8,23 @@ def expr_as_list(ip,port):
     h2o.init(ip,port)
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    print "iris:"
-    iris.show()
 
-    ###################################################################
-
-    # expr[int], expr is pending
+    # multiple rows and columns
     res = 2 - iris
-    res2 = h2o.as_list(res[0])
-    assert abs(res2[3][0] - -2.6) < 1e-10 and abs(res2[17][0] - -3.1) < 1e-10 and abs(res2[24][0] - -2.8) < 1e-10, \
+    res = h2o.as_list(res)
+    assert abs(res[3][0] - -2.6) < 1e-10 and abs(res[4][1] - -1.6) < 1e-10 and abs(res[10][2] - 0.5) < 1e-10, \
         "incorrect values"
 
-    # expr[int], expr is remote
-    res3 = h2o.as_list(res[0])
-    assert abs(res3[3][0] - -2.6) < 1e-10 and abs(res3[17][0] - -3.1) < 1e-10 and abs(res3[24][0] - -2.8) < 1e-10, \
+    # single column
+    res = 2 - iris
+    res = h2o.as_list(res[0])
+    assert abs(res[3][0] - -2.6) < 1e-10 and abs(res[17][0] - -3.1) < 1e-10 and abs(res[24][0] - -2.8) < 1e-10, \
         "incorrect values"
 
-    # expr[int], expr is local
+    # local data
     expr = h2o.as_list(Expr([1,2,3]))
-    res4 = expr[2]
-    assert res4 == 3, "incorrect values"
+    assert expr[2] == 3, "incorrect values"
 
-    # expr[tuple], expr._data is pending
-    res = 2 - iris
-    res5 = h2o.as_list(res[5,2])
-    assert abs(res5[0][0] - 0.3) < 1e-10, "incorrect values"
-
-    # expr[tuple], expr._data is remote
-    res6 = h2o.as_list(res[5,2])
-    assert abs(res6[0][0] - 0.3) < 1e-10, "incorrect values"
-
-    # expr[tuple], expr._data is local
     expr = h2o.as_list(Expr([[1,2,3], [4,5,6]]))
     assert expr[1][1] == 5, "incorrect values"
 

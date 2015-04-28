@@ -172,6 +172,7 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
+    Log.trace("Done ingesting files.");
 /*    if (mfpt._errors != null) {
       job.cancel();
       //TODO replace with H2OParseException
@@ -229,6 +230,7 @@ public final class ParseDataset extends Job<Frame> {
         emaps[nodeId] = new EnumMapping(emap);
       }
       fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(setup._number_columns),AppendableVec.closeAll(avs));
+      Log.trace("Done closing all Vecs.");
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -248,13 +250,16 @@ public final class ParseDataset extends Job<Frame> {
       Vec[] evecs = new Vec[j];
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
+      Log.trace("Done unifying categoricals across nodes.");
 
     } else {                    // No enums case
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
+      Log.trace("Done closing all Vecs.");
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
-    new SVFTask(fr).doAllNodes();
+    if (setup._parse_type == ParserType.SVMLight)
+      new SVFTask(fr).doAllNodes();
 
     // Log any errors
     if( mfpt._errors != null )
@@ -796,7 +801,7 @@ public final class ParseDataset extends Job<Frame> {
         }
 
         if (printLogSeparatorToStdout)
-          System.out.println("Additional column information only sent to log file...");
+          Log.info("Additional column information only sent to log file...");
 
         String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
         Log.info(s,printColumnToStdout);

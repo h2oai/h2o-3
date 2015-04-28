@@ -26,7 +26,7 @@ test.ifelse <- function(conn) {
     expect_that(all(b == a[,4]), equals(T))
 
 
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
     b.h2o <- ifelse(a.h2o[,1], a.h2o[,3], a.h2o[,2])
 
     b.h2o.R <- as.data.frame(b.h2o)
