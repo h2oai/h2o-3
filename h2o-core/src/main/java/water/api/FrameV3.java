@@ -7,18 +7,15 @@ import water.api.KeyV3.VecKeyV3;
 import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
+import water.util.*;
 import water.util.DocGen.HTML;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.PrettyPrint;
-import water.util.TwoDimTable;
 
 // TODO: need a base (versionless) class!
 public class FrameV3 extends Schema<Frame, FrameV3> {
 
   // Input fields
   @API(help="Key to inspect",required=true)
-  public FrameKeyV3 key;
+  public FrameKeyV3 frame_id;
 
   @API(help="Row offset to display",direction=API.Direction.INPUT)
   public long row_offset;
@@ -48,8 +45,8 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
-  @API(help="The set of vector keys in the Frame", direction=API.Direction.OUTPUT)
-  public VecKeyV3[] vec_keys;
+  @API(help="The set of IDs of vectors in the Frame", direction=API.Direction.OUTPUT)
+  public VecKeyV3[] vec_ids;
 
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase chunk_summary;
@@ -195,7 +192,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   public FrameV3() { super(); }
 
   /* Key-only constructor, for the times we only want to return the key. */
-  FrameV3(Key key) { this.key = new FrameKeyV3(key); }
+  FrameV3(Key frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   FrameV3(Frame fr) {
     this(fr, 1, (int)fr.numRows()); // NOTE: possible len truncation
@@ -205,7 +202,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   FrameV3(Frame fr, long off2, int len2) {
     // if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
-    key = new FrameKeyV3(fr._key);
+    frame_id = new FrameKeyV3(fr._key);
     _fr = fr;
     row_offset = off2;
     rows = fr.numRows();
@@ -214,9 +211,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     columns = new ColV2[fr.numCols()];
     Key[] keys = fr.keys();
     if(keys != null && keys.length > 0) {
-      vec_keys = new VecKeyV3[keys.length];
+      vec_ids = new VecKeyV3[keys.length];
       for (int i = 0; i < keys.length; i++)
-        vec_keys[i] = new VecKeyV3(keys[i]);
+        vec_ids[i] = new VecKeyV3(keys[i]);
     }
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
@@ -224,10 +221,11 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
-    TwoDimTable table = FrameUtils.chunkSummary(fr).toTwoDimTableChunkTypes();
+    ChunkSummary cs = FrameUtils.chunkSummary(fr);
+    TwoDimTable table = cs.toTwoDimTableChunkTypes();
     chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
-    TwoDimTable table2 = FrameUtils.chunkSummary(fr).toTwoDimTableDistribution();
-    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table2);
+    table = cs.toTwoDimTableDistribution();
+    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
   }
 
   //==========================
@@ -244,7 +242,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     // if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
     this._fr = f;
-    this.key = new FrameKeyV3(f._key);
+    this.frame_id = new FrameKeyV3(f._key);
     this.checksum = _fr.checksum();
     row_offset = off2;
     rows = _fr.numRows();
@@ -253,9 +251,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     columns = new ColV2[_fr.numCols()];
     Key[] keys = _fr.keys();
     if(keys != null && keys.length > 0) {
-      vec_keys = new VecKeyV3[keys.length];
+      vec_ids = new VecKeyV3[keys.length];
       for (int i = 0; i < keys.length; i++)
-        vec_keys[i] = new VecKeyV3(keys[i]);
+        vec_ids[i] = new VecKeyV3(keys[i]);
     }
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ ) {
@@ -272,6 +270,8 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     chunk_summary = new TwoDimTableV3().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTableChunkTypes());
     return this;
   }
+
+
 
   public void clearBinsField() {
     for (ColV2 col: columns)

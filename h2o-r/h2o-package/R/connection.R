@@ -27,7 +27,7 @@
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
 #' @seealso \href{http://docs.h2o.ai/Ruser/top.html}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with the default settings.
 #' localH2O = h2o.init()

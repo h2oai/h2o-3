@@ -193,10 +193,12 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     for (row = 0; row < rows-5; ++row) {
-      table.set(row, 0, display(byte_size_per_node[row]));
-      table.set(row, 1, row_count_per_node[row]);
-      table.set(row, 2, chunk_count_per_col_per_node[row]);
-      table.set(row, 3, _fr.numCols()*chunk_count_per_col_per_node[row]);
+      if (byte_size_per_node != null) {
+        table.set(row, 0, display(byte_size_per_node[row]));
+        table.set(row, 1, row_count_per_node[row]);
+        table.set(row, 2, chunk_count_per_col_per_node[row]);
+        table.set(row, 3, _fr.numCols() * chunk_count_per_col_per_node[row]);
+      }
     }
     table.set(row, 0, display((long)byte_size_per_node_mean));
     table.set(row, 1, row_count_per_node_mean);

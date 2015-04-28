@@ -2,7 +2,6 @@ package hex;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.H2O;
@@ -129,11 +128,11 @@ public class FrameSplitterTest extends TestUtil {
       SplitFrame sf = new SplitFrame(Key.make());
       sf.dataset = f;
       sf.ratios = new double[] { 0.5 };
-      sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
       // Invoke the job
       sf.exec().get();
       Assert.assertTrue("The job is not in DONE state, but in " + sf._state, sf.isDone());
-      Key[] ksplits = sf.dest_keys;
+      Key[] ksplits = sf.destination_frames;
       Frame[] fsplits = new Frame[ksplits.length];
       for (int i=0; i<ksplits.length; i++) fsplits[i] = DKV.get(ksplits[i]).get();
       Assert.assertEquals("Number of splits", 2, ksplits.length);

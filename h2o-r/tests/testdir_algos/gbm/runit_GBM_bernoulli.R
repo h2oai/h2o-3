@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.GBM.bernoulli <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), key="prostate.hex")
+  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
   Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
   prostate.hex$RACE <- as.factor(prostate.hex$RACE)

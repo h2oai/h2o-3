@@ -50,7 +50,7 @@ def deeplearning_autoencoder(ip, port):
   test_features.cbind(test_hex[resp])
 
   # Confusion Matrix and assertion
-  cm = drf_model.confusionMatrix(test_features)
+  cm = drf_model.confusion_matrix(test_features)
   cm.show()
 
   # 10% error +/- 0.001

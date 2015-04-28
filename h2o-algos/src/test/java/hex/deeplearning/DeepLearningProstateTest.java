@@ -137,8 +137,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                         {
                                           Log.info("Using seed: " + seed);
                                           DeepLearningParameters p = new DeepLearningParameters();
-                                          p._destination_key = Key.make(Key.make().toString() + "first");
-                                          dest_tmp = p._destination_key;
+                                          p._model_id = Key.make(Key.make().toString() + "first");
+                                          dest_tmp = p._model_id;
                                           p._checkpoint = null;
 
                                           p._train = frame._key;
@@ -202,8 +202,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                         Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
                                         assert (tmp_model != null);
 
-                                        p._destination_key = Key.make();
-                                        dest = p._destination_key;
+                                        p._model_id = Key.make();
+                                        dest = p._model_id;
                                         p._checkpoint = dest_tmp;
                                         // p._n_folds = 0;
 
@@ -325,9 +325,9 @@ public class DeepLearningProstateTest extends TestUtil {
     Log.info("\n\n=============================================");
     Log.info("Tested " + testcount + " out of " + count + " parameter combinations.");
     Log.info("=============================================");
-  }
+    }
 
-  public static class Mid extends DeepLearningProstateTest {
+    public static class Mid extends DeepLearningProstateTest {
     @Test @Ignore public void run() throws Exception { runFraction(0.01f); } //for nightly tests
   }
 

@@ -17,9 +17,9 @@ test <- function(h) {
 	filePath <- normalizePath(locate("smalldata/gbm_test/BostonHousing.csv"))
 	print(filePath)
 	#Import data into H2O
-	BostonHousing <- h2o.uploadFile(h, path = filePath, key = "BostonHousing")
+	BostonHousing <- h2o.uploadFile(h, path = filePath, destination_frame= "BostonHousing")
 	print(BostonHousing)
-	BostonHousing <-  h2o.importFile(h, path = filePath, key="BostonHousing")
+	BostonHousing <-  h2o.importFile(h, path = filePath, destination_frame="BostonHousing")
 	print(dim(BostonHousing))
 	str(BostonHousing)
 	#Convert column type to factor

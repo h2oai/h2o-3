@@ -21,21 +21,21 @@ test.GLM.covtype <- function(conn) {
   start = Sys.time()
   covtype.h2o1 = h2o.glm(y = myY, x = myX, training_frame = covtype.hex, family = "binomial", nfolds = 2, alpha = 0, lambda = 0)
   end = Sys.time()
-  Log.info(cat("GLM (L2) on", covtype.hex@key, "took", as.numeric(end-start), "seconds\n"))
+  Log.info(cat("GLM (L2) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o1)
 
   # Elastic: alpha = 0.5, lambda = 1e-4
   start = Sys.time()
   covtype.h2o2 = h2o.glm(y = myY, x = myX, training_frame = covtype.hex, family = "binomial", nfolds = 2, alpha = 0.5, lambda = 1e-4)
   end = Sys.time()
-  Log.info(cat("GLM (Elastic) on", covtype.hex@key, "took", as.numeric(end-start), "seconds\n"))
+  Log.info(cat("GLM (Elastic) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o2)
 
   # L1: alpha = 1, lambda = 1e-4
   start = Sys.time()
   covtype.h2o3 = h2o.glm(y = myY, x = myX, training_frame = covtype.hex, family = "binomial", nfolds = 2, alpha = 1, lambda = 1e-4)
   end = Sys.time()
-  Log.info(cat("GLM (L1) on", covtype.hex@key, "took", as.numeric(end-start), "seconds\n"))
+  Log.info(cat("GLM (L1) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o3)
 
   testEnd()

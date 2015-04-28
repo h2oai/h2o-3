@@ -37,6 +37,6 @@ public class KMeansModelV3 extends ModelSchema<KMeansModel, KMeansModelV3, KMean
   // Version&Schema-specific filling into the impl
   @Override public KMeansModel createImpl() {
     KMeansModel.KMeansParameters parms = parameters.createImpl();
-    return new KMeansModel( key.key(), parms, null );
+    return new KMeansModel( model_id.key(), parms, null );
   }
 }

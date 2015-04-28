@@ -6,10 +6,10 @@ import water.fvec.Frame;
 
 class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I, FramesBase<I, S>> {
   // Input fields
-  @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  public FrameKeyV3 key; // TODO: change to Frame
+  @API(help="Name of Frame of interest", json=false)
+  public FrameKeyV3 frame_id;
 
-  @API(help="Name of column of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
+  @API(help="Name of column of interest", json=false)
   public String column;
 
   @API(help="Row offset to display", direction=API.Direction.INOUT)
@@ -29,7 +29,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
 
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
-  FrameV3[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
+  FrameV3[] frames;
 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
   ModelSchema[] compatible_models;
@@ -45,7 +45,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
       f.frames = new Frame[frames.length];
 
       int i = 0;
-      for (FrameV3 frame : this.frames) { // TODO: base class for FrameV2!
+      for (FrameV3 frame : this.frames) {
         f.frames[i++] = frame._fr;
       }
     }
@@ -54,7 +54,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
 
   // TODO: parameterize on the FrameVx Schema class
   @Override public FramesBase fillFromImpl(Frames f) {
-    this.key = new FrameKeyV3(f.key);
+    this.frame_id = new FrameKeyV3(f.frame_id);
     this.column = f.column; // NOTE: this is needed for request handling, but isn't really part of state
     this.find_compatible_models = f.find_compatible_models;
 

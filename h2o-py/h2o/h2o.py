@@ -1,5 +1,6 @@
 """
-This module implements the communication REST layer for the python <-> H2O connection.
+This module provides all of the top level calls for models and various data transform methods.
+By simply
 """
 
 import os
@@ -30,20 +31,20 @@ def _import1(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
   if j['fails']:
     raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
-  return j['keys'][0]
+  return j['destination_frames'][0]
 
-def upload_file(path, destination_key=""):
+def upload_file(path, destination_frame=""):
   """
   Upload a dataset at the path given from the local machine to the H2O cluster.
 
   :param path: A path specifying the location of the data to upload.
-  :param destination_key: The name of the H2O Frame in the H2O Cluster.
+  :param destination_frame: The name of the H2O Frame in the H2O Cluster.
   :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
-  dest_key = H2OFrame.py_tmp_key() if destination_key == "" else destination_key
-  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_key=dest_key)
-  return H2OFrame(text_key=dest_key)
+  destination_frame = H2OFrame.py_tmp_key() if destination_frame == "" else destination_frame
+  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame)
+  return H2OFrame(text_key=destination_frame)
 
 
 def import_frame(path=None, vecs=None):
@@ -56,15 +57,15 @@ def import_frame(path=None, vecs=None):
   return H2OFrame(vecs=vecs) if vecs else H2OFrame(remote_fname=path)
 
 
-def parse_setup(rawkey):
+def parse_setup(raw_frames):
   """
-  :param rawkey: A collection of imported file keys
+  :param raw_frames: A collection of imported file frames
   :return: A ParseSetup "object"
   """
 
   # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
-  if isinstance(rawkey, unicode): rawkey = [rawkey]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", source_keys=[_quoted(key) for key in rawkey])
+  if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
+  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
   if not j['is_valid']:
     raise ValueError("ParseSetup not Valid", j)
   return j
@@ -72,7 +73,7 @@ def parse_setup(rawkey):
 
 def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   """
-  Trigger a parse; blocking; removeFrame just keep the Vec keys.
+  Trigger a parse; blocking; removeFrame just keep the Vecs.
 
   :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
@@ -80,7 +81,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   :return: A new parsed object  
   """
   # Parse parameters (None values provided by setup)
-  p = { 'destination_key' : h2o_name,
+  p = { 'destination_frame' : h2o_name,
         'parse_type' : None,
         'separator' : None,
         'single_quotes' : None,
@@ -113,7 +114,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   p["check_header"] = first_line_is_header
 
   # Extract only 'name' from each src in the array of srcs
-  p['source_keys'] = [_quoted(src['name']) for src in setup['source_keys']]
+  p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
 
   # Request blocking parse
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
@@ -184,6 +185,7 @@ def value_check(h2o_data, local_data, num_elements, col=None):
   """
   Check that the values of h2o_data and local_data are the same. In a testing context, this could be used to check
   that an operation did not alter the original h2o_data.
+
   :param h2o_data: an H2OFrame, H2OVec or Expr
   :param local_data: a list of lists (row x col format)
   :param num_elements: number of elements to check
@@ -232,29 +234,29 @@ def ipy_lines(block):
   else:
     raise NotImplementedError, "ipython notebook source/line json format not handled"
 
-def remove(key):
+def remove(object):
   """
-  Remove key from H2O.
+  Remove object from H2O.
 
-  :param key: The key pointing to the object to be removed.
+  :param object: The object pointing to the object to be removed.
   :return: Void
   """
-  if key is None:
-    raise ValueError("remove with no key is not supported, for your protection")
+  if object is None:
+    raise ValueError("remove with no object is not supported, for your protection")
 
-  if isinstance(key, H2OFrame):
-    key._vecs=[]
+  if isinstance(object, H2OFrame):
+    object._vecs=[]
 
-  elif isinstance(key, H2OVec):
-    H2OConnection.delete("DKV/"+str(key.key()))
-    key._expr=None
-    key=None
+  elif isinstance(object, H2OVec):
+    H2OConnection.delete("DKV/"+str(object.key()))
+    object._expr=None
+    object=None
 
   else:
-    H2OConnection.delete("DKV/" + key)
+    H2OConnection.delete("DKV/" + object)
   #
   # else:
-  #   raise ValueError("Can't remove objects of type: " + key.__class__)
+  #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
 def rapids(expr):
   """
@@ -268,18 +270,28 @@ def rapids(expr):
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
 
-def frame(key):
+def frame(frame_id):
   """
-  Retrieve metadata for a key that points to a Frame.
+  Retrieve metadata for a id that points to a Frame.
 
-  :param key: A pointer to a Frame  in H2O.
+  :param frame_id: A pointer to a Frame  in H2O.
   :return: Meta information on the frame
   """
-  return H2OConnection.get_json("Frames/" + key)
+  return H2OConnection.get_json("Frames/" + frame_id)
+
+
+def frames():
+  """
+  Retrieve all the Frames.
+
+  :return: Meta information on the frames
+  """
+  return H2OConnection.get_json("Frames")
 
 def frame_summary(key):
   """
   Retrieve metadata and summary information for a key that points to a Frame/Vec
+
   :param key: A pointer to a Frame/Vec in H2O
   :return: Meta and summary info on the frame
   """
@@ -318,10 +330,10 @@ def cbind(left,right):
   j = frame(fr)
   fr = j['frames'][0]
   rows = fr['rows']
-  veckeys = fr['vec_keys']
+  vec_ids = fr['vec_ids']
   cols = fr['columns']
   colnames = [col['label'] for col in cols]
-  result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+  result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
   result.setNames(names)
   return result
 
@@ -346,20 +358,38 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   return None
 
 def export_file(frame,path,force=False):
+  """
+  Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
+
+  :param frame: The Frame to save to disk.
+  :param path: The path to the save point on disk.
+  :param force: Overwrite any preexisting file with the same path
+  :return: None
+  """
   fr = H2OFrame.send_frame(frame)
   f = "true" if force else "false"
   H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
+def cluster_info():
+  """
+  Display the current H2O cluster information.
+
+  :return: None
+  """
+  H2OConnection._cluster_info()
 
 def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
   Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: Return a new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
 
 def autoencoder(x,**kwargs):
   """
   Build an Autoencoder
+
   :param x: Columns with which to build an autoencoder
   :param kwargs: Additional arguments to pass to the autoencoder.
   :return: A new autoencoder model
@@ -369,12 +399,16 @@ def autoencoder(x,**kwargs):
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Gradient Boosted Method model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
 
 def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new regression or binomial classifier.
   """
   kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
@@ -382,12 +416,16 @@ def glm(x,y,validation_x=None,validation_y=None,**kwargs):
 def kmeans(x,validation_x=None,**kwargs):
   """
   Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new clustering model
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
 
 def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Random Forest Model (kwargs are the same arguments that you can find in FLOW)
+
+  :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
 
@@ -431,6 +469,7 @@ def as_list(data):
   Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
   100 rows. This function is only intended to be used within the testing framework. More robust functionality must
   be constructed for production conversion between H2O and python data types.
+
   :return: List of list (Rows x Columns).
   """
   if isinstance(data, Expr):
