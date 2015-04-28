@@ -413,9 +413,10 @@
 #' Print method for H2OTable objects
 #'
 #' @param x An H2OTable object
+#' @param header Logical value stating whether or not to print the name of the table. Default is TRUE.
 #' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
-print.H2OTable <- function(x, ...) {
+print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
@@ -431,9 +432,18 @@ print.H2OTable <- function(x, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  if (!is.null(attr(x, "header")))
+  if( header && !is.null(attr(x, "header")) )
     cat(attr(x, "header"), ":\n", sep = "")
-  print(xx, ...)
+
+  # pretty print the frame if it is large (e.g. > 20 rows)
+  nr <- nrow(xx)
+  if( nr > 20L ) {
+    print(xx[1L:5L,],...)
+    cat("\n---\n")
+    print(xx[(nr-5L):nr,],...)
+  } else {
+    print(xx, ...)
+  }
 
   # return original object
   invisible(x)

@@ -294,7 +294,7 @@ Here are some examples doing just that:
   >>>
   >>> m.confusion_matrix("max_per_class_error")   # etc.
 
-All of our models support various accessors such as these. Please refer to the relevant documentation
+All of our models support various accessor methods such as these. Please refer to the relevant documentation
 for each model category to get further specifics on arguments and available metrics.
 
 Each model handles missing (colloquially: "missing" or "NA") and categorical data automatically.
