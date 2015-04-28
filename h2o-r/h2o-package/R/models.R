@@ -784,6 +784,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
   res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]
+  if( nrow(res) > 1  ) res <- res[1]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
 }
