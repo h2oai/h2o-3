@@ -156,7 +156,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #'         built.
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")

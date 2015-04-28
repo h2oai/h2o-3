@@ -109,7 +109,7 @@ h2o.clearLog <- function() {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
 #'          \link{h2o.clearLog}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Skip running this to avoid windows being opened during R CMD check
 #' library(h2o)
 #' localH2O = h2o.init()
