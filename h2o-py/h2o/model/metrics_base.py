@@ -122,6 +122,50 @@ class H2OClusteringModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
 
+  def show(self):
+    """
+    Display a short summary of the regression metrics.
+    :return: None
+    """
+    print
+    print "H2OClusteringMetrics: " + self._algo
+    reported_on = "** Reported on {} data. **"
+    if self._on_train:
+      print reported_on.format("train")
+    elif self._on_valid:
+      print reported_on.format("validation")
+    else:
+      print reported_on.format("test")
+    print
+    print "Average within cluster Mean Square Error: " + str(self.avg_within_ss())
+    print "Average Mean Square Error to grand mean: "  + str(self.avg_ss())
+    print "Average between cluster Mean Square Error: "  + str(self.avg_between_ss())
+    self._metric_json['centroid_stats'].show()
+
+  def avg_within_ss(self):
+    """
+    :return: the Average within cluster Mean Square Error, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "avg_within_ss"):
+      return self._metric_json["avg_within_ss"]
+    return None
+
+  def avg_ss(self):
+    """
+    :return: the Average Mean Square Error to grand mean, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "avg_ss"):
+      return self._metric_json["avg_ss"]
+    return None
+
+  def avg_between_ss(self):
+    """
+    :return: the Average between cluster Mean Square Error, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "avg_between_ss"):
+      return self._metric_json["avg_between_ss"]
+    return None
+
 class H2OMultinomialModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OMultinomialModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
