@@ -69,8 +69,8 @@ class Check:
             r"^See",
             r"^ .*/h2o-r/h2o\.Rcheck/00check\.log.*",
             r"^for details.",
-            r"^ Running .*",
-            r"^OK",
+            r"^  Running .*",
+            r"^ OK",
 
             r"^Package has FOSS license, installs .class/.jar but has no 'java' directory.",
             r"^\* DONE",
