@@ -32,6 +32,6 @@ public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAPa
   // Version&Schema-specific filling into the impl
   @Override public PCAModel createImpl() {
     PCAModel.PCAParameters parms = parameters.createImpl();
-    return new PCAModel( key.key(), parms, null );
+    return new PCAModel( model_id.key(), parms, null );
   }
 }

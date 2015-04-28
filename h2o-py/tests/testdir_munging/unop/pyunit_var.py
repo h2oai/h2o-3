@@ -21,7 +21,7 @@ def var_test(ip,port):
 
     var_np = np.var(iris_np, axis=0, ddof=1)
     for i in range(4):
-        var_h2o = h2o.as_list(iris_h2o[i].var())[0][0]
+        var_h2o = iris_h2o[i].var()
         assert abs(var_np[i] - var_h2o) < 1e-10, "expected equal variances"
 
 

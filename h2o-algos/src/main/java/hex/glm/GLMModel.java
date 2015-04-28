@@ -74,15 +74,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
-    } else { // do not good any levels!
+        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk))-1];
+    } else { // do not skip any levels
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
-    final int noff = _dinfo.numStart() - _dinfo._cats;
+    final int noff = _dinfo.numStart() - _dinfo._cats ;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*chks[i].atd(row_in_chunk);
-    eta += b[b.length-1]; // reduce intercept
+    eta += b[b.length-1]; // intercept
     double mu = _parms.linkInv(eta);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
@@ -217,7 +217,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gaussian:
           return 1;
         case binomial:
-//        assert (0 <= mu && mu <= 1) : "mu out of bounds<0,1>:" + mu;
           return mu * (1 - mu);
         case poisson:
           return mu;
@@ -228,12 +227,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         default:
           throw new RuntimeException("unknown family Id " + this);
       }
-    }
-
-    public double [] nullModelBeta(DataInfo dinfo, double ymu){
-      double [] res = MemoryManager.malloc8d(dinfo.fullN() + 1);
-      res[res.length-1] = link(ymu);
-      return res;
     }
 
     public final boolean canonical(){
@@ -250,21 +243,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 //          return false;
         default:
           throw H2O.unimpl();
-      }
-    }
-
-    public final double mustart(double y, double ymu) {
-      switch(_family) {
-        case gaussian:
-        case binomial:
-        case poisson:
-          return ymu;
-        case gamma:
-          return y;
-//        case tweedie:
-//          return y + (y==0?0.1:0);
-        default:
-          throw new RuntimeException("unimplemented");
       }
     }
 
@@ -531,17 +509,17 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     if(cmp == null && f != null) try {
       f.get();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     } catch (ExecutionException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
   public int rank(double lambda){return -1;}
   
-  final double _lambda_max;
-  final double _ymu;
-  final long   _nobs;
+  public final double _lambda_max;
+  public final double _ymu;
+  public final long   _nobs;
   long   _run_time;
   
   public static class GLMOutput extends SupervisedModel.SupervisedOutput {
@@ -551,6 +529,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double _threshold;
     double[] _global_beta;
     public boolean _binomial;
+
 
     public int rank() {
       return _submodels[_best_lambda_idx].rank;
@@ -678,9 +657,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       int j = 0;
       for(int i:_submodels[l].idxs)
         _global_beta[i] = _submodels[l].beta[j++];
-//      public TwoDimTable(String tableHeader, String tableDescription, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-//        String[] colFormats, String colHeaderForRowHeaders) {
-//      _model_summary = new TwoDimTable("Model Summary","Summary", new String[]{"Degrees Of Freedom", "Deviance"});
     }
 
     public double [] beta() { return _global_beta;}

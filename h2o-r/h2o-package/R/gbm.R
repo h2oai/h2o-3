@@ -11,9 +11,9 @@
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
-#' @param destination_key (Optional) The unique hex key assigned to the resulting model. If
-#'        none is given, a key will automatically be generated.
-#' @param distribution A \code{character} string. The distribution family.
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#'        none is given, an id will automatically be generated.
+#' @param distribution A \code{character} string. The loss function to be implemented.
 #'        Must be "AUTO", "bernoulli", "multinomial", or "gaussian"
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
@@ -45,7 +45,7 @@
 #'         ntrees = 3, max_depth = 3, min_rows = 2)
 #' @export
 h2o.gbm <- function(x, y, training_frame,
-                    destination_key,
+                    model_id,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial"),
                     ntrees = 50,
                     max_depth = 5,
@@ -88,8 +88,8 @@ h2o.gbm <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if (!missing(destination_key))
-    parms$destination_key <- destination_key
+  if (!missing(model_id))
+    parms$model_id <- model_id
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(ntrees))

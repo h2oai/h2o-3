@@ -1,67 +1,59 @@
-model Package
-=============
+Modeling in H2O
+===============
 
-:mod:`model` Package
---------------------
+:mod:`Modeling In H2O`
+----------------------
 
 .. automodule:: h2o.model
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`auc_data` Module
-----------------------
-
-.. automodule:: h2o.model.auc_data
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`binomial` Module
-----------------------
-
-.. automodule:: h2o.model.binomial
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`clustering` Module
-------------------------
-
-.. automodule:: h2o.model.clustering
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`confusion_matrix` Module
-------------------------------
-
-.. automodule:: h2o.model.confusion_matrix
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`model_base` Module
-------------------------
+:mod:`ModelBase`
+----------------
 
 .. automodule:: h2o.model.model_base
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`multinomial` Module
--------------------------
+:mod:`Binomial Classification`
+------------------------------
+
+.. automodule:: h2o.model.binomial
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`Multinomial Classification`
+---------------------------------
 
 .. automodule:: h2o.model.multinomial
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`regression` Module
-------------------------
+:mod:`Regression`
+-----------------
 
 .. automodule:: h2o.model.regression
     :members:
     :undoc-members:
     :show-inheritance:
+
+:mod:`Clustering Methods`
+-------------------------
+
+.. automodule:: h2o.model.clustering
+      :members:
+      :undoc-members:
+      :show-inheritance:
+
+:mod:`AutoEncoders`
+-------------------
+
+.. automodule:: h2o.model.autoencoder
+      :members:
+      :undoc-members:
+      :show-inheritance:
 

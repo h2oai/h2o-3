@@ -10,7 +10,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
   print("Reading in original adult data.")
-  adult.train <-  h2o.importFile(conn, locate("smalldata/glm_test/adult.gz"), key="adult.train")
+  adult.train <-  h2o.importFile(conn, locate("smalldata/glm_test/adult.gz"), destination_frame="adult.train")
   
   print("Make labels 1/0 for binomial glm")
   adult.train$label <- ifelse(adult.train$"C15"==">50K",1,0)
@@ -25,12 +25,12 @@ test <- function(conn) {
   myY <- "label"
   
   print("Creating model without CV")
-  system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=adult.train, destination_key="h2o.glm.adult", family="binomial", 
+  system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=adult.train, model_id="h2o.glm.adult", family="binomial", 
                                        alpha=1, lambda_search=T, nfolds=0, use_all_factor_levels=TRUE))
   h2o.glm.model
   
   print("Creating model with CV")
-  system.time(h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=adult.train, destination_key="h2o.glm.CV.adult", family="binomial", 
+  system.time(h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=adult.train, model_id="h2o.glm.CV.adult", family="binomial", 
                                        alpha=1, lambda_search=T, nfolds=5, use_all_factor_levels=TRUE))    # This line is failing
   h2o.glm.CV
   

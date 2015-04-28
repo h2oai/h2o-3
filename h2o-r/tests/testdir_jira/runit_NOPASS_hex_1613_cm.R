@@ -11,7 +11,7 @@ heading("BEGIN TEST")
 conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 path <- locate("smalldata/logreg/prostate.csv")
-hex <- h2o.importFile(conn, path, key="p.hex")
+hex <- h2o.importFile(conn, path, destination_frame="p.hex")
 
 m <- h2o.glm(x = 3:8, y = 2, family = "binomial", training_frame = hex)
 

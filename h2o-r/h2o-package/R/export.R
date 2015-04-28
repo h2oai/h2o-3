@@ -1,10 +1,8 @@
-#'
-#' Data Export
-#'
-#' Export data to local disk or HDFS.
-#' Save models to local disk or HDFS.
-#' @name Export intro
-NULL
+#`
+#` Data Export
+#`
+#` Export data to local disk or HDFS.
+#` Save models to local disk or HDFS.
 
 #' Export an H2O Data Frame to a File
 #'
@@ -81,7 +79,7 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@key)
+  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@frame_id)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -137,7 +135,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   if(!is.character(name) || length(name) != 1L || is.na(name))
     stop("`name` must be a character string")
   else if(!nzchar(name))
-    name <- object@key
+    name <- object@model_id
 
   if(!is.character(filename) || length(filename) != 1L || is.na(filename))
     stop("`filename` must be a character string")
@@ -152,7 +150,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
     path <- file.path(dir, name)
 
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
+  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
 
 # path
 }

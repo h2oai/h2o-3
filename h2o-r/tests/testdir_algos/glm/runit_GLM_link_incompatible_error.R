@@ -7,7 +7,7 @@ source('../../h2o-runit.R')
 
 test <- function(conn) {
     print("Reading in original prostate data.")
-        prostate.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"), key="prostate.data", header=TRUE)
+        prostate.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
 
     print("Throw error when trying to create model with incompatible logit link.")
         assertError(h2o.model <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="gaussian", link="logit"))

@@ -447,27 +447,36 @@ class RollupStats extends Iced {
           rs._bins = histo._bins;
           // Compute percentiles from histogram
           rs._pctiles = new double[Vec.PERCENTILES.length];
-          int j = 0;                    // Histogram bin number
-          long hsum = 0;                // Rolling histogram sum
+          int j = 0;                 // Histogram bin number
+          int k = 0;                 // The next non-zero bin after j
+          long hsum = 0;             // Rolling histogram sum
           double base = rs.h_base();
           double stride = rs.h_stride();
-          long oldPint = 0;
-          double oldVal = rs._mins[0];
+          double lastP = -1.0;       // any negative value to pass assert below first time
           for (int i = 0; i < Vec.PERCENTILES.length; i++) {
             final double P = Vec.PERCENTILES[i];
-            long pint = (long) ((P * rows)+0.5);
-            if (pint == oldPint) { // can happen if rows < 100
-              rs._pctiles[i] = oldVal;
-              continue;
-            }
-            oldPint = pint;
+            assert P>=0 && P<=1 && P>=lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
+            lastP = P;
+            double pdouble = 1.0 + P*(rows-1);   // following stats:::quantile.default type 7
+            long pint = (long) pdouble;          // 1-based into bin vector
+            double h = pdouble - pint;           // any fraction h to linearly interpolate between?
+            assert P!=1 || (h==0.0 && pint==rows);  // i.e. max
             while (hsum < pint) hsum += rs._bins[j++];
             // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
+            // pint now falls in bin j-1, grab that bin value now
             rs._pctiles[i] = base + stride * (j - 1);
             // linear interpolate stride, based on fraction of bin
             if( stride != 1.0 || !rs._isInt )
               rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
-            oldVal = rs._pctiles[i];
+            else if (h>0 && pint==hsum) {
+              // linearly interpolate between adjacent non-zero bins
+              //      i) pint is the last of (j-1)'s bin count (>1 when duplicates exist in input)
+              // and ii) h>0 so we do need to find the next non-zero bin
+              if (k<j) k=j; // if j jumped over the k needed for the last P, catch k up to j
+                            // Saves potentially winding k forward over the same zero stretch many times
+              while (rs._bins[k]==0) k++;  // find the next non-zero bin
+              rs._pctiles[i] += h * stride * (k-j+1);
+            } // otherwise either h==0 or both pint and pint+1 fall in the same bin, so no need to interpolate
           }
           installResponse(nnn,rs);
         }

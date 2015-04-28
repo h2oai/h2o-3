@@ -10,7 +10,7 @@ source('../h2o-runit.R')
 test.h2o.prcomp <- function(conn) {
   ausPath <- system.file("extdata", "australia.csv", package="h2o")
   Log.info(paste("Uploading", ausPath))
-  australia.hex <- h2o.uploadFile(conn, path = ausPath, key = "australia.hex")
+  australia.hex <- h2o.uploadFile(conn, path = ausPath, destination_frame = "australia.hex")
   
   Log.info("Print out summary of australia.csv")
   print(summary(australia.hex))

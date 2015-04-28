@@ -201,36 +201,157 @@ Models
 ++++++
 
 The model-building experience with this module is unique, and is not the same experience
-for those coming from a background in scikit-learn.
-
-Rather than have each model define its own class, each model will belong to one of the following
-categories:
+for those coming from a background in scikit-learn. Instead of using objects to build the
+model, builder functions are provided in the top-level module, and the result of a call
+is an model object belonging to one of the following categories:
 
     * Regression
     * Binomial
     * Multinomial
     * Clustering
+    * Autoencoder
 
-This is not an entirely representative list of model categories (e.g., what about Time Series,
-and Grid Search, or PCA?); but it represents the core set of underlying model categories
-that form the foundation and current state of modeling in H2O.
+This is better demonstrated by way of an example:
 
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
+  >>>
+  >>> m = h2o.glm(x=fr[3:], y=fr[2])                               # build a glm with a method call
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
+  >>>
+  >>> m.show()                                                     # print the model details
+  >>>
+  >>> m.summary()                                                  # print a model summary
 
-* No explicit model objects -- have model categories
-* How to create new models
-* train and validation data
-* parameter specification
-* categoricals are dealt with internally (no need to one-hot expand them!)
-* what about categoricals in my response?
-* what about an integral response column that I want to do classification on
-* See more on the chapter on Models
+As you can see, the result of the glm call is a binomial model. This example also showcases
+an important feature-munging step in order to cause the glm to perform a classification task
+over a regression task. Namely, the second column is a numeric column when it's initially read in,
+but it must be cast to a factor by way of the H2OVec operation `asfactor`. Let's take a look
+at this more deeply:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1].isfactor()                                             # produces False
+  >>>
+  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
+  >>>
+  >>> m.__class__                                                  # <h2o.model.regression.H2ORegressionModel object at 0x104d07590>
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast the 2nd column to a factor column
+  >>>
+  >>> fr[1].isfactor()                                             # produces True
+  >>>
+  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104d18f50>
+
+The above example shows how to properly deal with numeric columns you would like to use in a
+classification setting. Additionally, H2O can perform on-the-fly scoring of validation
+data and provide a host of metrics on the validation and training data. Here's an example
+of doing this, where we additionally split the data set into three pieces for training, validation,
+and finally testing:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast to factor
+  >>>
+  >>> r = fr[0].runif()                                            # Random UNIform numbers, one per row
+  >>>
+  >>> train = fr[ r < 0.6 ]                                        # 60% for training data
+  >>>
+  >>> valid = fr[ (0.6 <= r) & (r < 0.9) ]                         # 30% for validation
+  >>>
+  >>> test  = fr[ 0.9 <= r ]                                       # 10% for testing
+  >>>
+  >>> m = h2o.deeplearning(x=train[2:],y=train[1],validation_x=valid[2:],validation_y=valid[1])  # build a deeplearning with a validation set (yes it's this simple)
+  >>>
+  >>> m                                                            # display the model summary by default (can also call m.show())
+  >>>
+  >>> m.show()                                                     # equivalent to the above
+  >>>
+  >>> m.model_performance()                                        # show the performance on the training data, (can also be m.performance(train=True)
+  >>>
+  >>> m.model_performance(valid=True)                              # show the performance on the validation data
+  >>>
+  >>> m.model_performance(test_data=test)                          # score and compute new metrics on the test data!
+
+Continuing from this example, there are a number of ways of querying a model for its attributes.
+Here are some examples doing just that:
+
+  >>> m.mse()           # MSE on the training data
+  >>>
+  >>> m.mse(valid=True) # MSE on the validation data
+  >>>
+  >>> m.r2()            # R^2 on the training data
+  >>>
+  >>> m.r2(valid=True)  # R^2 on the validation data
+  >>>
+  >>> m.confusion_matrix()  # confusion matrix for max F1
+  >>>
+  >>> m.confusion_matrix("tpr") # confusion matrix for max true positive rate
+  >>>
+  >>> m.confusion_matrix("max_per_class_error")   # etc.
+
+All of our models support various accessors such as these. Please refer to the relevant documentation
+for each model category to get further specifics on arguments and available metrics.
+
+Each model handles missing (colloquially: "missing" or "NA") and categorical data automatically.
+Because each model handles these types of data differently, please refer to the model call below for
+more information. If you still have questions, please send a note to support@support@h2o.ai.
 
 Metrics
 +++++++
 
-* Metrics for different types of model categories
-* See more in the chapter on Metrics
 
+
+
+Example of H2O on Hadoop
+------------------------
+
+Here is a small example (H2O on Hadoop) :
+
+.. code-block:: python
+
+  import h2o
+  h2o.init(ip="192.168.1.10", port=54321)
+  --------------------------  ------------------------------------
+  H2O cluster uptime:         2 minutes 1 seconds 966 milliseconds
+  H2O cluster version:        0.1.27.1064
+  H2O cluster name:           H2O_96762
+  H2O cluster total nodes:    4
+  H2O cluster total memory:   38.34 GB
+  H2O cluster total cores:    16
+  H2O cluster allowed cores:  80
+  H2O cluster healthy:        True
+  --------------------------  ------------------------------------
+  pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
+  pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
+  trainFrame = h2o.import_frame(path=pathDataTrain)
+  testFrame = h2o.import_frame(path=pathDataTest)
+
+  #Parse Progress: [##################################################] 100%
+  #Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols
+
+  #Parse Progress: [##################################################] 100%
+  #Imported ['hdfs://192.168.1.10/user/data/data_test.csv'] into cluster with 10000 rows and 500 cols
+
+  trainFrame[499]._name = "label"
+  testFrame[499]._name = "label"
+
+  model = h2o.gbm(x=trainFrame.drop("label"),
+              y=trainFrame["label"],
+              validation_x=testFrame.drop("label"),
+              validation_y=testFrame["label"],
+              ntrees=100,
+              max_depth=10
+              )
+
+  #gbm Model Build Progress: [##################################################] 100%
+
+  predictFrame = model.predict(testFrame)
+  model.model_performance(testFrame)
 """
 __version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
@@ -240,9 +361,3 @@ from frame import H2OVec
 from two_dim_table import H2OTwoDimTable
 
 __all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]
-
-
-
-###
-# inspect.getcallargs(h2o.init)
-###

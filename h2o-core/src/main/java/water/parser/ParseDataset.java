@@ -172,6 +172,7 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
+    Log.trace("Done ingesting files.");
 /*    if (mfpt._errors != null) {
       job.cancel();
       //TODO replace with H2OParseException
@@ -229,6 +230,7 @@ public final class ParseDataset extends Job<Frame> {
         emaps[nodeId] = new EnumMapping(emap);
       }
       fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(setup._number_columns),AppendableVec.closeAll(avs));
+      Log.trace("Done closing all Vecs.");
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -248,17 +250,16 @@ public final class ParseDataset extends Job<Frame> {
       Vec[] evecs = new Vec[j];
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
+      Log.trace("Done unifying categoricals across nodes.");
 
     } else {                    // No enums case
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
+      Log.trace("Done closing all Vecs.");
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
-    new SVFTask(fr).doAllNodes();
-
-    // unify any vecs with enums and strings to strings only
-    new UnifyStrVecTask().doAll(fr);
-
+    if (setup._parse_type == ParserType.SVMLight)
+      new SVFTask(fr).doAllNodes();
 
     // Log any errors
     if( mfpt._errors != null )
@@ -401,27 +402,6 @@ public final class ParseDataset extends Job<Frame> {
       ForkJoinTask.invokeAll(rs);
     }
     @Override public void reduce( SVFTask drt ) {}
-  }
- 
-  // --------------------------------------------------------------------------
-  // Run once on all nodes; switch enum chunks over to string chunks
-  private static class UnifyStrVecTask extends MRTask<UnifyStrVecTask> {
-    private UnifyStrVecTask() {}
-
-    @Override public void map(Chunk[] chunks) {
-      for (Chunk c : chunks) {
-        Vec v = c.vec();
-        if (v.isString() && c instanceof C4Chunk) {
-          Key k = v.chunkKey(c.cidx());
-          NewChunk nc = new NewChunk(v, c.cidx());
-          for (int j = 0; j < c._len; ++j)
-            if (c.isNA(j)) nc.addNA();
-            else nc.addStr(new ValueString(v.domain()[(int) c.at8(j)]));
-
-          H2O.putIfMatch(k, new Value(k, nc.new_close()), H2O.get(k));
-        }
-      }
-    }
   }
 
   // --------------------------------------------------------------------------
@@ -568,7 +548,7 @@ public final class ParseDataset extends Job<Frame> {
         switch( cpr ) {
         case NONE:
           if( _parseSetup._parse_type._parallelParseSupported ) {
-            DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
+            DistributedParse dp = new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
             addToPendingCount(1);
             dp.setCompleter(this);
             dp.asyncExec(vec);
@@ -648,7 +628,7 @@ public final class ParseDataset extends Job<Frame> {
     }
 
     // ------------------------------------------------------------------------
-    private static class DParse extends MRTask<DParse> {
+    private static class DistributedParse extends MRTask<DistributedParse> {
       private final ParseSetup _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
@@ -662,7 +642,7 @@ public final class ParseDataset extends Job<Frame> {
       private transient long [] _espc;
       final int _nchunks;
 
-      DParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey,int nchunks) {
+      DistributedParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(mfpt);
         _vg = vg;
         _setup = setup;
@@ -718,7 +698,7 @@ public final class ParseDataset extends Job<Frame> {
         v.freePOJO();           // Eagerly toss from memory
         v.freeMem();
       }
-      @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
+      @Override public void reduce(DistributedParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
@@ -821,7 +801,7 @@ public final class ParseDataset extends Job<Frame> {
         }
 
         if (printLogSeparatorToStdout)
-          System.out.println("Additional column information only sent to log file...");
+          Log.info("Additional column information only sent to log file...");
 
         String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
         Log.info(s,printColumnToStdout);

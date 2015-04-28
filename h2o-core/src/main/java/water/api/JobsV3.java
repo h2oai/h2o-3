@@ -4,8 +4,8 @@ import water.Iced;
 
 public class JobsV3 extends Schema<Iced,JobsV3> {
   // Input fields
-  @API(help="Optional Job key")
-  public KeyV3.JobKeyV3 key;
+  @API(help="Optional Job identifier")
+  public KeyV3.JobKeyV3 job_id;
 
   // Output fields
   @API(help="jobs", direction=API.Direction.OUTPUT)

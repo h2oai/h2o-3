@@ -1,5 +1,5 @@
-H2OFrame
-========
+Data In H2O
+===========
 
 A H2OFrame represents a 2D array of data where each column is uniformly typed.
 
@@ -190,20 +190,15 @@ may be written out of order from which they were initially put into the dict.
 
 collections.OrderedDict preserves the order of the key-value pairs in which they were entered.
 
-:mod:`frame` Module
-===================
-
-H2OFrame Class
---------------
-
+:mod:`H2OFrame`
+----------------
 .. autoclass:: h2o.frame.H2OFrame
     :members:
     :undoc-members:
     :show-inheritance:
 
-H2OVec Class
-------------
-
+:mod:`H2OVec`
+--------------
 .. autoclass:: h2o.frame.H2OVec
     :members:
     :undoc-members:

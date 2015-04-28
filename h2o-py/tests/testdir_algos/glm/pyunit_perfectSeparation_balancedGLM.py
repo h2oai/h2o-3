@@ -11,7 +11,8 @@ def perfectSeparation_balanced(ip,port):
     data = h2o.import_frame(path=h2o.locate("smalldata/synthetic_perfect_separation/balanced.csv"))
 
     print("Fit model on dataset")
-    model = h2o.glm(x=data[["x1", "x2"]], y=data["y"], family="binomial", lambda_search=True, use_all_factor_levels=True, alpha=[0.5], Lambda=[0])
+    model = h2o.glm(x=data[["x1", "x2"]], y=data["y"], family="binomial", lambda_search=True,
+                    use_all_factor_levels=True, alpha=[0.5], Lambda=[0])
 
     print("Extract models' coefficients and assert reasonable values (ie. no greater than 50)")
     print("Balanced dataset")

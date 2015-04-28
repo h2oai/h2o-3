@@ -30,5 +30,5 @@ public class RapidsV3 extends Schema<Iced, RapidsV3> {
   @API(help="Was evaluated"          , direction=API.Direction.OUTPUT) boolean evaluated;
   @API(help="Head of a Frame result" , direction=API.Direction.OUTPUT) String[][] head;
   @API(help="Result Type."           , direction=API.Direction.OUTPUT) int result_type;
-  @API(help="Vec keys for key result", direction=API.Direction.OUTPUT) KeyV3.VecKeyV3[] vec_keys;
+  @API(help="Vec keys for key result", direction=API.Direction.OUTPUT) KeyV3.VecKeyV3[] vec_ids;
 }
