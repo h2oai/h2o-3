@@ -412,10 +412,13 @@
 
 #' Print method for H2OTable objects
 #'
+#' This will print a truncated view of the table if there are more than 20 rows.
+#'
 #' @param x An H2OTable object
+#' @param header A logical value dictating whether or not the table name should be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
-print.H2OTable <- function(x, ...) {
+print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
@@ -431,9 +434,15 @@ print.H2OTable <- function(x, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  if (!is.null(attr(x, "header")))
+  nr <- nrow(xx)
+  if( header && !is.null(attr(x, "header")) )
     cat(attr(x, "header"), ":\n", sep = "")
-  print(xx, ...)
+
+  if( nr > 20L ) {
+    print(xx[1L:5L,])
+    cat("\n---\n")
+    print(xx[(nr-5L):nr,])
+  } else { print(xx, ...) }
 
   # return original object
   invisible(x)
