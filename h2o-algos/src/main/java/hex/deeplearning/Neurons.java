@@ -132,6 +132,7 @@ public abstract class Neurons {
   public final void init(Neurons[] neurons, int index, DeepLearningModel.DeepLearningParameters p, final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
     _index = index-1;
     params = (DeepLearningModel.DeepLearningParameters)p.clone();
+    params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     _a = new DenseVector(units);
     if (!(this instanceof Output) && !(this instanceof Input)) {

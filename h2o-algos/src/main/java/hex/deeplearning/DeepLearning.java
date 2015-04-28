@@ -64,6 +64,49 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   @Override public void init(boolean expensive) {
     super.init(expensive);
     _parms.validate(this, expensive);
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
+  }
+
+  /**
+   * Helper to create the DataInfo object from training/validation frames and the DL parameters
+   * @param _train Training frame
+   * @param _valid Validation frame
+   * @param _parms Model parameters
+   * @return
+   */
+  static DataInfo makeDataInfo(Frame _train, Frame _valid, DeepLearningModel.DeepLearningParameters _parms) {
+    return new DataInfo(
+            Key.make(), //dest key
+            _train,
+            _valid,
+            _parms._autoencoder ? 0 : 1, //nResponses
+            _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+            _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            _train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
+            _parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip); //whether to skip missing
+  }
+
+  @Override
+  public void checkMemoryFootPrint() {
+    final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
+    int p = dinfo.fullN();
+
+    // weights
+    long model_size = p * _parms._hidden[0];
+    int layer=1;
+    for (; layer < _parms._hidden.length; ++layer)
+      model_size += _parms._hidden[layer-1] * _parms._hidden[layer];
+    model_size += _parms._hidden[layer-1] * Math.abs(_train.lastVec().cardinality());
+
+    // biases
+    for (layer=0; layer < _parms._hidden.length; ++layer)
+      model_size += _parms._hidden[layer];
+    model_size += Math.abs(_train.lastVec().cardinality());
+
+    Log.info("Model size: " + model_size);
+    if (model_size > 256e6/4/3) {
+      error("_hidden", "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers.");
+    }
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
@@ -158,11 +201,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
         try {
-          final DataInfo dinfo = new DataInfo(Key.make(), _train, _valid,
-                                              _parms._autoencoder ? 0 : 1, 
-                                              _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-                                              _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip);
+          final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo._key,dinfo);
           cp = new DeepLearningModel(dest(), previous, false, dinfo);
           cp.write_lock(self());
@@ -186,6 +225,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
               }
             }
           }
+          // update parameters in place (in case the cp_modifiable set included some parameters that are to be auto-populated after the user sets them)
+          cp.modifyParms(A, A, isClassifier());
           if (A.getNumFolds() != 0) {
             Log.warn("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
 
