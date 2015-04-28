@@ -23,7 +23,7 @@ randomParams <- function(distribution, train, test, x, y) {
   parms$distribution <- distribution
   Log.info(paste("distribution:", parms$distribution))
   # [1, 100,000]
-  parms$ntrees <- sample.int(1000,1)
+  parms$ntrees <- sample.int(50,1)
   Log.info(paste("ntrees:", parms$ntrees))
   # [1, maxInt]
   parms$max_depth <- sample.int(30, 1)
@@ -87,13 +87,13 @@ test.GBM.rand_attk_forloop <- function(conn) {
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
   Log.info("### Binomial ###")
-  for(i in 1:3)
+  for(i in 1:10)
     randomParams("bernoulli", pros.train, pros.test, 3:9, 2)
   Log.info("### Multinomial ###")
-  for(i in 1:3)
+  for(i in 1:10)
     randomParams("multinomial", iris.train, iris.test, 1:4, 5)
   Log.info("### Regression ###")
-  for(i in 1:3)
+  for(i in 1:10)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
   testEnd()

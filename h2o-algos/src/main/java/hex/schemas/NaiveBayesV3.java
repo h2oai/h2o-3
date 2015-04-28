@@ -21,7 +21,7 @@ public class NaiveBayesV3 extends SupervisedModelBuilderSchema<NaiveBayes,NaiveB
     @API(help = "Min. probability to use for observations with not enough data")
     public double min_prob;
 
-    @API(help = "Cutoff below which standard deviation is replaced with min_sdev")
+    @API(help = "Cutoff below which probability is replaced with min_prob")
     public double eps_prob;
   }
 }
