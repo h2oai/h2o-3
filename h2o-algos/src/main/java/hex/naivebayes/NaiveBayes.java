@@ -71,7 +71,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         int ncnt = domains[i] == null ? 2 : domains[i].length;
         pcond[i] = new double[tsk._nrescat][ncnt];
       }
-      model._output._rescnt = tsk._rescnt;
 
       // A-priori probability of response y
       for(int i = 0; i < apriori.length; i++)
@@ -151,6 +150,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
+        model._output._rescnt = tsk._rescnt;
         model._output._levels = _response.domain();
         model._output._ncats = dinfo._cats;
         model.update(_key);
