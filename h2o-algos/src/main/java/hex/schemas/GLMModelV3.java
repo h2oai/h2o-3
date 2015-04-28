@@ -39,7 +39,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double","double"};
         String [] colFormats = new String[]{"%5f", "%5f"};
-        TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", names, new String[]{"Coefficients", "Norm Coefficients"}, colTypes, colFormats, "names");
+        TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", names, new String[]{"Coefficients", "Standardized Coefficients"}, colTypes, colFormats, "names");
         for(int i = 0; i < sm.beta.length; ++i) {
           tdt.set(i, 0, sm.beta[i]);
           tdt.set(i, 1, sm.norm_beta[i]);
