@@ -65,7 +65,7 @@ The output is a matrix of the cluster assignments and the coordinates of the clu
    
   Missing values are automatically imputed by the column mean.
 
-- **How does the algorithm handle missing values during testing?*
+- **How does the algorithm handle missing values during testing?**
    
   Missing values are automatically imputed by the column mean of the training data.
 
