@@ -26,7 +26,7 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
 
   // Uniform call to load any resource referenced by URI
   def this(uris: URI*) = this(water.util.FrameUtils.parseFrame(
-                                Key.make(ParseSetup.createHexName(uris(0).toString)),
+                                Key.make(ParseSetup.createHexName(H2OFrame.baseName(uris(0)))),
                                 uris : _*))
 
   // Scala DataFrame by reading a CSV file
@@ -57,4 +57,8 @@ object H2OFrame {
   def apply(s : String) = new H2OFrame(s)
   def apply(file : File) = new H2OFrame(file)
   def apply(uri : URI) = new H2OFrame(uri)
+  def baseName(uri: URI) = {
+    val s = uri.toString
+    s.substring(s.lastIndexOf('/')+1)
+  }
 }
