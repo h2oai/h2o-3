@@ -195,7 +195,7 @@ The following parameters have been removed:
  - `class_sampling_factors`: Specify an array containing real numbers to define how much each class should be over- or under-sampled.
  - `validation_frame`: Specify the validation dataset. 
  - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
- - `solver`: Select ADMM or LBFGS. 
+ - `solver`: Select IRLSM or LBFGS. 
 
 ###GLM Algorithm Comparison
 
@@ -216,7 +216,7 @@ H2O  | H2O-Dev
 `intercept = TRUE,` | 
 &nbsp; | `max_after_balance_size = 5,`
 `non_negative = FALSE,` | 
-&nbsp; | `solver = c("ADMM", "L_BFGS"),`
+&nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
 `family,` | `family = c("gaussian", "binomial", "poisson", "gamma"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse"),`
@@ -280,12 +280,6 @@ H2O Parameter Name | H2O-Dev Parameter Name
 
 **Note** In H2O, the `normalize` parameter was disabled by default.The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
 
-###Deprecated K-Means Parameters
-
-The following parameters have been removed: 
-
-- `dropNACols`:   Drop columns with more than 20% missing values. (may be re-added)
-
 ###New K-Means Parameters
 
 The following parameters have been added:
@@ -306,7 +300,6 @@ H2O  | H2O-Dev
 `normalize = FALSE,`  | `standardize = TRUE,`
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
 `seed = 0,` | `seed)`
-`dropNACols = FALSE)` |
 
 ###Output
 

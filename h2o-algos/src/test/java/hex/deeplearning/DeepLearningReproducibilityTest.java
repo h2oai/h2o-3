@@ -9,6 +9,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FrameUtils;
 import water.util.Log;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -36,6 +37,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       Scope.enter();
       Frame[] preds = new Frame[N];
       long[] checksums = new long[N];
+      double[] numbers = new double[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
@@ -51,7 +53,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
-          p._destination_key = Key.make();
+          p._model_id = Key.make();
           p._response_column = train.names()[train.names().length-1];
           int ci = train.names().length-1;
           Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);
@@ -80,8 +82,14 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
+          for (int i=0; i<5; ++i) {
+            Frame tmp = mymodel.score(test);
+            Assert.assertTrue("Prediction #" + i + " for repeat #" + repeat + " differs!", isBitIdentical(preds[repeat],tmp));
+            tmp.delete();
+          }
+          Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());
+          numbers[repeat] = mymodel.model_info().get_weights(0).get(23,4);
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.error());
 
@@ -109,6 +117,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       try {
         if (repro) {
           // check reproducibility
+          for (double error : numbers)
+            assertTrue(Arrays.toString(numbers), error == numbers[0]);
           for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
           for (long cs : checksums)

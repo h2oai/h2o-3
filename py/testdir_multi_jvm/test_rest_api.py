@@ -143,7 +143,7 @@ def validate_model_exists(model_name, models=None):
         result = a_node.models()
         models = result['models']
 
-    models_dict = list_to_dict(models, 'key/name')
+    models_dict = list_to_dict(models, 'model_id/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
     return models_dict[model_name]
 
@@ -156,7 +156,7 @@ def validate_frame_exists(frame_name, frames=None):
         result = a_node.frames()
         frames = result['frames']
 
-    frames_dict = list_to_dict(frames, 'key/name')
+    frames_dict = list_to_dict(frames, 'frame_id/name')
     assert frame_name in frames_dict, "FAIL: Failed to find " + frame_name + " in frames list: " + repr(frames_dict.keys())
     return frames_dict[frame_name]
 
@@ -232,7 +232,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     # TODO: training_frame, validation_frame
 
 
-def validate_predictions(result, model_name, frame_key, expected_rows, destination_key=None):
+def validate_predictions(result, model_name, frame_key, expected_rows, predictions_frame=None):
     '''
     Validate a /Predictions result.
     '''
@@ -243,13 +243,13 @@ def validate_predictions(result, model_name, frame_key, expected_rows, destinati
     #assert 'auc' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an AUC."
     #assert 'cm' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a CM."
     assert 'predictions' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an predictions section."
-    assert 'key' in mm['predictions'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key."
-    assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
+    assert 'frame_id' in mm['predictions'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key."
+    assert 'name' in mm['predictions']['frame_id'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
 
-    predictions_key = mm['predictions']['key']['name']
+    predictions_key = mm['predictions']['frame_id']['name']
     f = a_node.frames(key=predictions_key, find_compatible_models=True, row_count=5)
     frames = f['frames']
-    frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+    frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
     assert predictions_key in frames_dict, "FAIL: Failed to find predictions key" + predictions_key + " in Frames list."
 
     predictions = mm['predictions']
@@ -260,11 +260,11 @@ def validate_predictions(result, model_name, frame_key, expected_rows, destinati
     assert 'predict' == predictions['columns'][0]['label'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " column 0 is not 'predict'."
     assert expected_rows == predictions['rows'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " has an unexpected number of rows."
 
-    assert 'destination_key' in result, "FAIL: failed to find 'destination_key' in predict result:" + h2o_util.dump_json(result)
-    assert 'name' in result['destination_key'], "FAIL: failed to find name in 'destination_key' in predict result:" + h2o_util.dump_json(result)
+    assert 'predictions_frame' in result, "FAIL: failed to find 'predictions_frame' in predict result:" + h2o_util.dump_json(result)
+    assert 'name' in result['predictions_frame'], "FAIL: failed to find name in 'predictions_frame' in predict result:" + h2o_util.dump_json(result)
 
-    if destination_key is not None:
-        assert destination_key == result['destination_key']['name'], "FAIL: bad value for 'destination_key' in predict result; expected: " + destination_key + ", got: " + result['destination_key']['name']
+    if predictions_frame is not None:
+        assert predictions_frame == result['predictions_frame']['name'], "FAIL: bad value for 'predictions_frame' in predict result; expected: " + predictions_frame + ", got: " + result['predictions_frame']['name']
 
 def cleanup(a_node, models=None, frames=None):
     '''
@@ -284,7 +284,7 @@ def cleanup(a_node, models=None, frames=None):
     else:
         for model in models:
             for m in ms['models']:
-                assert m['key'] != model, 'FAIL: Found model that we tried to delete in the models list: ' + model
+                assert m['model_id'] != model, 'FAIL: Found model that we tried to delete in the models list: ' + model
 
     ###################
     # test delete_frame
@@ -295,13 +295,13 @@ def cleanup(a_node, models=None, frames=None):
 
             found = False;
             for m in ms['frames']:
-                assert m['key'] != frame, 'FAIL: Found frame that we tried to delete in the frames list: ' + frame
+                assert m['frame_id'] != frame, 'FAIL: Found frame that we tried to delete in the frames list: ' + frame
 
 
     # TODO
     ####################
     # test delete_models
-    # jobs = a_node.build_model(algo='kmeans', destination_key='dummy', training_frame='prostate_binomial', parameters={'k': 2 }, timeoutSecs=240) # synchronous
+    # jobs = a_node.build_model(algo='kmeans', model_id='dummy', training_frame='prostate_binomial', parameters={'k': 2 }, timeoutSecs=240) # synchronous
     # a_node.delete_models()
     # models = a_node.models()
 
@@ -343,7 +343,7 @@ class ModelSpec(dict):
     def build_and_validate_model(self, a_node):
         before = time.time()
         if verbose: print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params'])
-        result = a_node.build_model(algo=self['algo'], destination_key=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
+        result = a_node.build_model(algo=self['algo'], model_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
 
         model = validate_model_exists(self['dest_key'], a_node.models()['models'])
@@ -393,18 +393,18 @@ class DatasetSpec(dict):
             print "import_result: "
             pp.pprint(import_result)
             print "frames: "
-            pp.pprint(a_node.frames(key=import_result['keys'][0], row_count=5))
+            pp.pprint(a_node.frames(key=import_result['destination_frames'][0], row_count=5))
 
-        frames = a_node.frames(key=import_result['keys'][0], row_count=5)['frames']
+        frames = a_node.frames(key=import_result['destination_frames'][0], row_count=5)['frames']
         assert frames[0]['is_text'], "FAIL: Raw imported Frame is not is_text: " + repr(frames[0])
-        parse_result = a_node.parse(key=import_result['keys'][0], dest_key=self['dest_key']) # TODO: handle multiple files
-        key = parse_result['frames'][0]['key']['name']
+        parse_result = a_node.parse(key=import_result['destination_frames'][0], dest_key=self['dest_key']) # TODO: handle multiple files
+        key = parse_result['frames'][0]['frame_id']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
         assert self['expected_rows'] == parse_result['frames'][0]['rows'], 'FAIL: Imported frame number of rows is wrong; expected: ' + str(self['expected_rows']) + ', got: ' + str(parse_result['frames'][0]['rows'])
 
         self['dataset'] = parse_result['frames'][0]  # save the imported dataset object
 
-        if verbose: print "Imported and validated key: " + self['dataset']['key']['name']
+        if verbose: print "Imported and validated key: " + self['dataset']['frame_id']['name']
         return self['dataset']
 
 
@@ -561,7 +561,7 @@ a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get Cr
 
 frames = a_node.frames(key='created')['frames']
 assert len(frames) == 1, "FAIL: expected to find 1 frame called 'created', found: " + str(len(frames))
-assert frames[0]['key']['name'] == 'created', "FAIL: expected to find 1 frame called 'created', found: " + repr(frames)
+assert frames[0]['frame_id']['name'] == 'created', "FAIL: expected to find 1 frame called 'created', found: " + repr(frames)
 
 created = frames[0]
 assert 'rows' in created, "FAIL: failed to find 'rows' field in CreateFrame result."
@@ -593,7 +593,7 @@ for dataset_spec in datasets_to_import:
 ################################################
 # Test /Frames for prostate.csv
 frames = a_node.frames(row_count=5)['frames']
-frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
 
 # TODO: remove:
 if h2o.H2O.verbose:
@@ -610,7 +610,7 @@ assert not frames_dict['prostate_binomial']['is_text'], "FAIL: Parsed Frame is i
 
 # Test /Frames/{key} for prostate.csv
 frames = a_node.frames(key='prostate_binomial', row_count=5)['frames']
-frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'CAPSULE' in columns_dict, "FAIL: Failed to find CAPSULE in Frames/prostate.hex."
@@ -661,8 +661,8 @@ assert col['percentiles'][10] == 79, 'FAIL: Failed to find 79 as the 99.9% perce
 # NB: col['percentiles'] corresponds to probs=[0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999]
 
 # Test /SplitFrame for prostate.csv
-if verbose: print 'Testing SplitFrame with named dest_keys. . .'
-splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], dest_keys=['bigger', 'smaller'])
+if verbose: print 'Testing SplitFrame with named destination_frames. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], destination_frames=['bigger', 'smaller'])
 frames = a_node.frames()['frames']
 validate_frame_exists('bigger', frames)
 validate_frame_exists('smaller', frames)
@@ -670,19 +670,19 @@ bigger = a_node.frames(key='bigger')['frames'][0]
 smaller = a_node.frames(key='smaller')['frames'][0]
 assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
 assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
-# TODO: validate_job_exists(splits['key']['name'])
+# TODO: validate_job_exists(splits['frame_id']['name'])
 
-if verbose: print 'Testing SplitFrame with generated dest_keys. . .'
+if verbose: print 'Testing SplitFrame with generated destination_frames. . .'
 splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
 frames = a_node.frames()['frames']
-validate_frame_exists(splits['dest_keys'][0]['name'], frames)
-validate_frame_exists(splits['dest_keys'][1]['name'], frames)
+validate_frame_exists(splits['destination_frames'][0]['name'], frames)
+validate_frame_exists(splits['destination_frames'][1]['name'], frames)
 
-first = a_node.frames(key=splits['dest_keys'][0]['name'])['frames'][0]
-second = a_node.frames(key=splits['dest_keys'][1]['name'])['frames'][0]
+first = a_node.frames(key=splits['destination_frames'][0]['name'])['frames'][0]
+second = a_node.frames(key=splits['destination_frames'][1]['name'])['frames'][0]
 assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
 assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
-# TODO: validate_job_exists(splits['key']['name'])
+# TODO: validate_job_exists(splits['frame_id']['name'])
 
 ####################################################################################################
 # Build and do basic validation checks on models
@@ -792,7 +792,7 @@ assert 0 != parameters_validation['validation_error_count'], "FAIL: 0 == validat
 # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
 if verbose: print 'About to try to build a DeepLearning model with bad parameters. . .'
 dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
-parameters_validation = a_node.build_model(algo='deeplearning', destination_key='deeplearning_prostate_binomial_bad', training_frame='prostate_binomial', parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+parameters_validation = a_node.build_model(algo='deeplearning', model_id='deeplearning_prostate_binomial_bad', training_frame='prostate_binomial', parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
 validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
 assert parameters_validation['__http_response']['status_code'] == requests.codes.precondition_failed, "FAIL: expected 412 Precondition Failed from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
 if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
@@ -800,8 +800,8 @@ if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 #####################################
 # Early test of predict()
 # TODO: remove after we remove the early exit
-p = a_node.predict(model='deeplearning_airlines_binomial', frame='airlines_binomial', destination_key='deeplearning_airlines_binomial_predictions')
-validate_predictions(p, 'deeplearning_airlines_binomial', 'airlines_binomial', 43978, destination_key='deeplearning_airlines_binomial_predictions')
+p = a_node.predict(model='deeplearning_airlines_binomial', frame='airlines_binomial', predictions_frame='deeplearning_airlines_binomial_predictions')
+validate_predictions(p, 'deeplearning_airlines_binomial', 'airlines_binomial', 43978, predictions_frame='deeplearning_airlines_binomial_predictions')
 validate_frame_exists('deeplearning_airlines_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_airlines_binomial', " on: ", 'airlines_binomial', ":  ", repr(p))
 
@@ -857,8 +857,8 @@ assert len(mms['model_metrics']) == 0, "FAIL: expected 0 ModelMetrics, found: " 
 
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
-p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', destination_key='deeplearning_prostate_binomial_predictions')
-validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380, destination_key='deeplearning_prostate_binomial_predictions')
+p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', predictions_frame='deeplearning_prostate_binomial_predictions')
+validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380, predictions_frame='deeplearning_prostate_binomial_predictions')
 validate_frame_exists('deeplearning_prostate_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(p))
 
@@ -906,11 +906,11 @@ assert 'prostate_binomial' in model['models'][0]['compatible_frames'], "FAIL: Fa
 # Now look for 'prostate_binomial' using the one-frame API and find_compatible_models, and check it
 result = a_node.frames(key='prostate_binomial', find_compatible_models=True, row_count=5)
 frames = result['frames']
-frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 
 compatible_models = result['compatible_models']
-models_dict = h2o_util.list_to_dict(compatible_models, 'key/name')
+models_dict = h2o_util.list_to_dict(compatible_models, 'model_id/name')
 assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list: " + repr(result)
 
 assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models'], "FAIL: failed to find deeplearning_prostate_binomial in compatible_models for prostate."

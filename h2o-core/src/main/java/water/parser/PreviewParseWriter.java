@@ -1,10 +1,11 @@
 package water.parser;
 
 import water.Iced;
+import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 /** Class implementing ParseWriter, on behalf ParseSetup
  * to examine the contents of a file for guess the column types.
@@ -17,7 +18,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   protected int _invalidLines;
   private   String []   _colNames;
   protected String [][] _data = new String[MAX_PREVIEW_LINES][];
-  transient private HashSet<String>[] _domains;
+  private IcedHashMap<String,String>[] _domains;  //used in leiu of a HashSet
   int [] _nnums;
   int [] _nstrings;
   int [] _ndates;
@@ -47,9 +48,9 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       _ndates = new int[n];
       _nnums = new int[n];
       _nempty = new int[n];
-      _domains = new HashSet[n];
+      _domains = new IcedHashMap[n];
       for(int i = 0; i < n; ++i)
-        _domains[i] = new HashSet<String>();
+        _domains[i] = new IcedHashMap<>();
       for(int i =0; i < MAX_PREVIEW_LINES; i++)
         _data[i] = new String[n];
     } /*else if (n > _ncols) { // resize
@@ -112,7 +113,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
 
       //Add string to domains list for later determining string, NA, or enum
       ++_nstrings[colIdx];
-      _domains[colIdx].add(str.toString());
+      _domains[colIdx].put(str.toString(),"");
 
       if (_nlines < MAX_PREVIEW_LINES)
         _data[_nlines][colIdx] = str.toString();
@@ -143,8 +144,11 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         continue;
       }
 
-      // All same string, declare enum
-      if (_domains[i].size() <= 1
+      // All same string, but not obvious NA, declare enum
+      if (_domains[i].size() == 1
+              && !_domains[i].containsKey("NA")
+              && !_domains[i].containsKey("na")
+              && !_domains[i].containsKey("Na")
               &&  _nstrings[i] >= nonemptyLines) {
         types[i] = Vec.T_ENUM;
         continue;
@@ -216,5 +220,33 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       }
     }
     return na_strings;
+  }
+
+  public static PreviewParseWriter unifyColumnPreviews(PreviewParseWriter prevA, PreviewParseWriter prevB) {
+    if (prevA == null) return prevB;
+    else if (prevB == null) return prevA;
+    else {
+      //sanity checks
+      if (prevA._ncols != prevB._ncols)
+        throw new H2OParseSetupException("Files conflict in number of columns. "
+                + prevA._ncols + " vs. " + prevB._ncols + ".");
+      prevA._nlines += prevB._nlines;
+      prevA._invalidLines += prevB._invalidLines;
+      for (int i = 0; i < prevA._ncols; i++) {
+        prevA._nnums[i] += prevB._nnums[i];
+        prevA._nstrings[i] += prevB._nstrings[i];
+        prevA._ndates[i] += prevB._ndates[i];
+        prevA._nUUID[i] += prevB._nUUID[i];
+        prevA._nzeros[i] += prevB._nzeros[i];
+        prevA._nempty[i] += prevB._nempty[i];
+        if (prevA._domains[i] != null) {
+          if (prevB._domains[i] != null)
+            for(String s:prevB._domains[i].keySet())
+              prevA._domains[i].put(s,"");
+        } else if (prevB._domains[i] != null)
+          prevA._domains = prevB._domains;
+      }
+    }
+    return prevA;
   }
 }

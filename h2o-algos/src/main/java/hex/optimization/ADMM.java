@@ -18,6 +18,7 @@ public class ADMM {
     public double [] gradient(double [] beta);
     public void setRho(double [] rho);
     public boolean canSetRho();
+    public int iter();
   }
 
   public static class L1Solver {
@@ -28,8 +29,6 @@ public class ADMM {
     final double _eps;
     final int max_iter;
 
-    public L1Solver(){this(1e-4,5000);}
-    public L1Solver(double eps){this(eps,5000);}
     public L1Solver(double eps, int max_iter) {
       _eps = eps; this.max_iter = max_iter;
     }
@@ -59,25 +58,24 @@ public class ADMM {
       return gerr;
     }
 
-    public boolean solve(ProximalSolver solver, double[] z, double lambda, boolean hasIntercept, double[] lb, double[] ub) {
+    public boolean solve(ProximalSolver solver, double[] z, double l1pen, boolean hasIntercept, double[] lb, double[] ub) {
       gerr = Double.POSITIVE_INFINITY;
-      if (lambda == 0 && lb == null && ub == null) {
+      if (l1pen == 0 && lb == null && ub == null) {
         solver.solve(null, z);
         return true;
       }
       int ii = hasIntercept?1:0;
-      double[] zbest = null;
+      double [] zbest = null;
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
-
-      double[] u = MemoryManager.malloc8d(N);
-      double[] x = MemoryManager.malloc8d(N);
-      double[] beta_given = MemoryManager.malloc8d(N);
-      double  [] kappa = MemoryManager.malloc8d(rho.length);
-      if(lambda > 0)
+      double [] u = MemoryManager.malloc8d(N);
+      double [] x = z.clone();
+      double [] beta_given = MemoryManager.malloc8d(N);
+      double [] kappa = MemoryManager.malloc8d(rho.length);
+      if(l1pen > 0)
         for(int i = 0; i < N-ii; ++i)
-          kappa[i] = lambda/rho[i];
+          kappa[i] = l1pen/rho[i];
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
@@ -85,6 +83,8 @@ public class ADMM {
       for (i = 0; i < max_iter; ++i) {
         // updated x
         solver.solve(beta_given, x);
+        if(i == 0)
+          System.out.println("initial solve took " + solver.iter() + " iterations");
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
         boolean allzeros = true;
@@ -125,9 +125,9 @@ public class ADMM {
           unorm += rho[idx] * rho[idx] * u[idx] * u[idx];
           z[idx] = icpt;
         }
-        if (solver.hasGradient() || rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
+        if (rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
-          computeErr(z, solver.gradient(z), lambda, lb, ub);
+          computeErr(z, solver.gradient(z), l1pen, lb, ub);
           if (gerr > _eps && (allzeros || Math.abs(oldGerr - gerr) > _eps * 0.5)) {
             Log.debug("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
             // try gg to improve the solution...
@@ -140,22 +140,52 @@ public class ADMM {
             continue;
           }
           iter = i;
-          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr);
+          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iteartions");
           return true;
         }
       }
-      computeErr(z, solver.gradient(z), lambda, lb, ub);
+      computeErr(z, solver.gradient(z), l1pen, lb, ub);
       if (zbest != null && best_err < gerr) {
         System.arraycopy(zbest, 0, z, 0, zbest.length);
-        computeErr(z, solver.gradient(z), lambda, lb, ub);
+        computeErr(z, solver.gradient(z), l1pen, lb, ub);
         assert Math.abs(best_err - gerr) < 1e-8 : " gerr = " + gerr + ", best_err = " + best_err + " zbest = " + Arrays.toString(zbest) + ", z = " + Arrays.toString(z);
       }
-      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr);
+      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr + ", inner solver took " + solver.iter() + " iteartions");
       iter = max_iter;
       return false;
     }
+
+    /**
+     * Estimate optimal rho based on l1 penalty and (estimate of) soltuion x without the l1penalty
+     * @param x
+     * @param l1pen
+     * @return
+     */
+    public static double estimateRho(double x, double l1pen){
+      double rho = 0;
+      if(l1pen == 0 || x == 0) return 0;
+      if (x > 0) {
+        double D = l1pen * (l1pen + 4 * x);
+        if (D >= 0) {
+          D = Math.sqrt(D);
+          double r = (l1pen + D) / (2 * x);
+          if (r > 0) rho = r;
+          else Log.warn("negative rho estimate(1)! r = " + r);
+        }
+      } else if (x < 0) {
+        double D = l1pen * (l1pen - 4 * x);
+        if (D >= 0) {
+          D = Math.sqrt(D);
+          double r = - (l1pen + D) / (2 * x);
+          if (r > 0) rho = r;
+          else Log.warn("negative rho estimate(2)!  r = " + r);
+        }
+      }
+      return .25*rho;
+    }
   }
-  protected static double shrinkage(double x, double kappa) {
+
+  public static double shrinkage(double x, double kappa) {
     double sign = x < 0?-1:1;
     double sx = x*sign;
     if(sx <= kappa) return 0;

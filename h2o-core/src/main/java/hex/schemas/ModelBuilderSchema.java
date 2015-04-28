@@ -100,13 +100,13 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
         if (null != parameters) {
           _parameters = (Model.Parameters) parameters.createImpl();
-          if (null != parameters.destination_key)
-            _parameters._destination_key = Key.make(parameters.destination_key.name);
+          if (null != parameters.model_id)
+            _parameters._model_id = Key.make(parameters.model_id.name);
         }
         Constructor builder_constructor = builder_class.getConstructor(new Class[]{parameters_class});
         impl = (B) builder_constructor.newInstance(_parameters);
         impl.clearInitState(); // clear out validation errors from default parameters
-        impl._parms._destination_key = null;
+        impl._parms._model_id = null;
       } catch (Exception e) {
         throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
       }

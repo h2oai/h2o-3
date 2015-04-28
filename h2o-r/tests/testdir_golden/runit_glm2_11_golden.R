@@ -10,7 +10,7 @@ function(conn) {
     str(rr)
     dim(rr)
     
-    mfrmr=h2o.uploadFile(conn,filepath,key = "mfrmr")
+    mfrmr=h2o.uploadFile(conn,filepath,destination_frame = "mfrmr")
     str(mfrmr)
     myX = 2:13
     myY = 1 
@@ -20,7 +20,7 @@ function(conn) {
     #H2O GLM model  
     hh=h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",nfolds=0, alpha = alpha, lambda = lambda)
 
-    res_dev = hh@model$residual_deviance
+    res_dev = hh@model$training_metrics@metrics$residual_deviance
     obs = nrow(mfrmr)
     # lambda = hh@model$params$lambda
     alpha = hh@parameters$alpha
@@ -36,8 +36,7 @@ function(conn) {
 
 	# Sanity Check whether comparing models built on the same dataset
 	expect_equal( nrow(mfrmr), nrow(rr))
-	expect_equal(gg$nulldev,hh@model$null_deviance)
-
+	expect_true(abs(gg$nulldev-hh@model$training_metrics@metrics$null_deviance) < 1e-8*gg$nulldev)
 	res_dev_R = deviance(gg)
 	obs = nrow(mfrmr)
 	cof_R = coef(gg,s= lambda)
@@ -57,9 +56,7 @@ function(conn) {
 	print(paste("penalty on model from H2O:  ",penalty, sep = ""))
 	print(paste("Objective function for model from R:  ",objective_R, sep = ""))
 	print(paste("Objective function for model from H2O:  ",objective, sep = ""))
-
-	expect_true(objective<=objective_R)
-
+	expect_true(objective < objective_R + 1e-5*gg$nulldev)
     testEnd()
 }
 doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)

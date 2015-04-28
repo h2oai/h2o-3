@@ -16,19 +16,18 @@ def binop_plus(ip,port):
     # LHS: scaler, RHS: H2OFrame
     res = 2 + iris
     res_rows, res_cols = res.dim()
-    res = h2o.as_list(res)
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    for x, y in zip([sum([res[r][c] for r in range(rows)]) for c in range(cols-1)], [469.9, 342.6, 266.9, 162.2]):
+    for x, y in zip([res[c].sum() for c in range(cols-1)], [469.9, 342.6, 266.9, 162.2]):
         assert abs(x - y) < 1e-1,  "expected same values"
 
     # LHS: scaler, RHS: H2OVec
-    res = h2o.as_list(2 + iris[1])
-    assert abs(sum([res[i][0] for i in range(rows)]) - 342.6) < 1e-1, "expected same values"
+    res = 2 + iris[1]
+    assert abs(sum([res[i,0] for i in range(rows)]) - 342.6) < 1e-1, "expected same values"
 
     # LHS: scaler, RHS: Expr
     res = 2 + iris[0]
-    res2 = h2o.as_list(1.1 + res[21])
-    assert abs(res2 - 8.2) < 1e-1, "expected same values"
+    res2 = 1.1 + res[21]
+    assert abs(res2.eager() - 8.2) < 1e-1, "expected same values"
 
     ###################################################################
 
@@ -45,13 +44,13 @@ def binop_plus(ip,port):
 
     # LHS: Expr, RHS: Expr
     res = 1.1 + iris[2]
-    res2 = h2o.as_list(res[21] + res[10])
-    assert abs(res2 - 5.2) < 1e-1, "expected same values"
+    res2 = res[21] + res[10]
+    assert abs(res2.eager() - 5.2) < 1e-1, "expected same values"
 
     # LHS: Expr, RHS: scaler
     res = 2 + iris[0]
-    res2 = h2o.as_list(res[21] + 3)
-    assert abs(res2 - 10.1) < 1e-1, "expected same values"
+    res2 = res[21] + 3
+    assert abs(res2.eager() - 10.1) < 1e-1, "expected same values"
 
     ###################################################################
 
@@ -64,11 +63,11 @@ def binop_plus(ip,port):
         pass
 
     # LHS: H2OVec, RHS: H2OVec
-    res = h2o.as_list(iris[0] + iris[1])
-    assert abs(sum([res[i][0] for i in range(rows)]) - 552.5) < 1e-1, "expected same values"
+    res = iris[0] + iris[1]
+    assert abs(sum([res[i,0] for i in range(rows)]) - 552.5) < 1e-1, "expected same values"
 
-    res = h2o.as_list(iris[2] + iris[1])
-    assert abs(sum([res[i][0] for i in range(rows)]) - 349.5) < 1e-1, "expected same values"
+    res = iris[2] + iris[1]
+    assert abs(sum([res[i,0] for i in range(rows)]) - 349.5) < 1e-1, "expected same values"
 
     # LHS: H2OVec, RHS: Expr
     res = 1.2 + iris[2]
@@ -76,8 +75,8 @@ def binop_plus(ip,port):
     res2.show()
 
     # LHS: H2OVec, RHS: scaler
-    res = h2o.as_list(iris[0] + 2)
-    assert abs(sum([res[i][0] for i in range(rows)]) - 469.9) < 1e-2, "expected different column sum"
+    res = iris[0] + 2
+    assert abs(sum([res[i,0] for i in range(rows)]) - 469.9) < 1e-2, "expected different column sum"
 
     ###################################################################
 
@@ -113,9 +112,8 @@ def binop_plus(ip,port):
     # LHS: H2OFrame, RHS: scaler
     res = iris + 2
     res_rows, res_cols = res.dim()
-    res = h2o.as_list(res)
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    for x, y in zip([sum([res[r][c] for r in range(rows)]) for c in range(cols-1)], [469.9, 342.6, 266.9, 162.2]):
+    for x, y in zip([res[c].sum() for c in range(cols-1)], [469.9, 342.6, 266.9, 162.2]):
         assert abs(x - y) < 1e-1,  "expected same values"
 
     ###################################################################

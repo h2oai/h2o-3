@@ -8,7 +8,7 @@ test.RF.nfolds <- function(conn) {
                                   ntrees = 50, nfolds = 5)
   print(iris.nfolds)
 
-  iris.nfolds <- h2o.getModel(conn, iris.noflds@key)
+  iris.nfolds <- h2o.getModel(conn, iris.noflds@model_id)
 
   print(iris.nfolds)
 

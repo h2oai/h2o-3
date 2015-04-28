@@ -17,7 +17,6 @@ def emptyclusKmeans(ip,port):
 
     ncent = 10
     nempty = random.randint(1,ncent/2)
-    #TODO: implement row slicing
     initial_centers = [[41,190,67,7.4],
                        [36,118,72,8],
                        [12,149,74,12.6],

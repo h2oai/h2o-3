@@ -5,7 +5,7 @@ test.rdocglm.golden <- function(H2Oserver) {
 	
 
 
-prostate.hex <- h2o.importURL(H2Oserver, path = locate("smalldata/logreg/prostate.csv"), key = "prostate.hex")
+prostate.hex <- h2o.importURL(H2Oserver, path = locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
 h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
 myX <- setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
 h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian", nfolds = 5, alpha = 0.1)

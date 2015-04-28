@@ -15,10 +15,10 @@ public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
         extends ModelSchema<M, S, P, PS, O, OS> {
 
   public static class SharedTreeModelOutputV3<O extends SharedTreeModel.SharedTreeOutput, SO extends SharedTreeModelOutputV3<O,SO>> extends ModelOutputSchema<O, SO> {
-    @API(help="Variable Importances", direction=API.Direction.OUTPUT)
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableBase variable_importances;
 
     @API(help="The Intercept term, the initial model function value to which trees make adjustments", direction=API.Direction.OUTPUT)
-    double initF;
+    double init_f;
   }
 }

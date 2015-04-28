@@ -117,7 +117,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    this((parms==null || parms._destination_key== null) ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key, desc,parms);
+    this((parms==null || parms._model_id == null) ? Key.make(desc + "Model_" + Key.rand()) : parms._model_id, desc,parms);
   }
 
   /** Default constructor, given all arguments */
@@ -211,7 +211,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }.doIt(_train,"Dropping constant columns: ",expensive);
 
     // Drop cols with >20% NAs
-    if( _parms._dropNA20Cols )
+    if( _parms._drop_na20_cols )
       new FilterCols() { 
         @Override protected boolean filter(Vec v) { return ((float)v.naCnt() / v.length()) > 0.2; }
       }.doIt(_train,"Dropping columns with too many missing values: ",expensive);

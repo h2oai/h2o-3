@@ -89,7 +89,7 @@ public final class PersistNFS extends Persist {
 
   @Override
   public Key uriToKey(URI uri) {
-    return NFSFileVec.make(new File(uri))._key;
+    return NFSFileVec.make(uri.getScheme() == null ? new File(uri.toString()) : new File(uri))._key;
   }
 
   @Override

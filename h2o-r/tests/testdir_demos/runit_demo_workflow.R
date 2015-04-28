@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 demo_workflow <- function(conn) {
     Log.info("Import small iris data...")
-    hex <- as.h2o(conn, iris, key = "iris")
+    hex <- as.h2o(conn, iris, destination_frame = "iris")
     k <- 3
     setSeed <- 148008988978
     

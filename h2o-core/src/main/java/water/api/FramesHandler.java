@@ -10,14 +10,15 @@ import water.persist.PersistManager;
 import water.util.FileUtils;
 import water.util.Log;
 
-import java.io.*;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
 
   /** Class which contains the internal representation of the frames list and params. */
   protected static final class Frames extends Iced {
-    Key key;
+    Key frame_id;
     long offset;
     int len;
     Frame[] frames;
@@ -130,11 +131,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single column from the frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
-    Frame frame = getFromDKV("key", s.key.key());
+    Frame frame = getFromDKV("key", s.frame_id.key());
 
     Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
+      throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
 
     Vec[] vecs = { vec };
     String[] names = { s.column };
@@ -147,10 +148,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnDomain(int version, FramesV3 s) {
-    Frame frame = getFromDKV("key", s.key.key());
+    Frame frame = getFromDKV("key", s.frame_id.key());
     Vec vec = frame.vec(s.column);
     if (vec == null)
-      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
+      throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
     s.domain = new String[1][];
     s.domain[0] = vec.domain();
     return s;
@@ -158,10 +159,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
-    Frame frame = getFromDKV("key", s.key.key()); // safe
+    Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
+      throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
     if (!vec.isString()) {
@@ -170,7 +171,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), true);
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, true);
     return s;
   }
 
@@ -196,10 +197,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   private FramesV3 doFetch(int version, FramesV3 s, boolean force_summary) {
     Frames f = s.createAndFillImpl();
 
-    Frame frame = getFromDKV("key", s.key.key()); // safe
+    Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, force_summary);  // TODO: Refactor with FrameBase
-
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, force_summary);  // TODO: Refactor with FrameBase
+    
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
       s.compatible_models = new ModelSchema[compatible.length];
@@ -216,11 +217,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** Export a single frame to the specified path. */
   public FramesV3 export(int version, FramesV3 s) {
-    Frame fr = getFromDKV("key", s.key.key());
+    Frame fr = getFromDKV("key", s.frame_id.key());
 
     Log.info("ExportFiles processing (" + s.path + ")");
     InputStream csv = (fr).toCSV(true,false);
-    export(csv,s.path, s.key.key().toString(),s.force);
+    export(csv,s.path, s.frame_id.key().toString(),s.force);
     return s;
   }
 
@@ -247,7 +248,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 summary(int version, FramesV3 s) {
-    Frame frame = getFromDKV("key", s.key.key()); // safe
+    Frame frame = getFromDKV("key", s.frame_id.key()); // safe
 
     for (Vec vec : frame.vecs()) {
       // Compute second pass of rollups: the histograms.
@@ -262,7 +263,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 delete(int version, FramesV3 frames) {
-    Frame frame = getFromDKV("key", frames.key.key()); // safe
+    Frame frame = getFromDKV("key", frames.frame_id.key()); // safe
     frame.delete();             // lock & remove
     return frames;
   }
