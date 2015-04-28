@@ -22,7 +22,6 @@
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
 #' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
-#' library(h2o)
 #' localH2O <- h2o.init()
 #' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
 #' votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)

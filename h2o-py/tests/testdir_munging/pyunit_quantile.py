@@ -17,7 +17,7 @@ def quantile(ip,port):
 
     for e in range(9):
         h2o_val = h2o_quants[e,1]
-        np_val = np_quants[e,0]
+        np_val = np_quants[e][0]
         assert abs(h2o_val - np_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal quantile values between h2o " \
         "and numpy".format(h2o_val,np_val)

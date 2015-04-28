@@ -428,12 +428,12 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     verboseprint("importPattern:", importPattern)
     verboseprint("importResult", dump_json(importResult))
 
-    assert len(importResult['keys']) >= 1, "No keys imported, maybe bad bucket %s or path %s" % (bucket, path)
+    assert len(importResult['destination_frames']) >= 1, "No keys imported, maybe bad bucket %s or path %s" % (bucket, path)
     # print "importResult:", importResult
 
     # get rid of parse timing in tests now
     start = time.time()
-    parseResult = parse_only(node, importPattern, hex_key, importResult['keys'],
+    parseResult = parse_only(node, importPattern, hex_key, importResult['destination_frames'],
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
         benchmarkLogging, noPoll, **kwargs)
     elapsed = time.time() - start
@@ -629,8 +629,8 @@ def delete_keys_from_import_result(node=None, pattern=None, importResult=None, t
                 print "Removing", key
                 removeKeyResult = node.remove_key(key=key)
                 deletedCnt += 1
-    elif 'keys' in importResult:
-        kDict = importResult['keys']
+    elif 'destination_frames' in importResult:
+        kDict = importResult['destination_frames']
         for k in kDict:
             key = k
             if (pattern in key) or pattern is None:

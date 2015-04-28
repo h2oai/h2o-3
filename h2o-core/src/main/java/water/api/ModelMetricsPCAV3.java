@@ -1,6 +1,6 @@
 package water.api;
 
-import hex.pca.PCAModel.ModelMetricsPCA;
+import hex.ModelMetricsPCA;
 
 public class ModelMetricsPCAV3 extends ModelMetricsBase<ModelMetricsPCA, ModelMetricsPCAV3> {
   // Empty since PCA has no model metrics

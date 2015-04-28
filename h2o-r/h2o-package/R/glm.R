@@ -43,10 +43,46 @@
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
-#'        coefficients.
-#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
+#'        coefficients.
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
+#' @examples
+#' localH2O = h2o.init()
+#'
+#' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
+#' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prostatePath, destination_frame = "prostate.hex")
+#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
+#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE,
+#'         use_all_factor_levels = FALSE)
+#'
+#' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
+#' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
+#' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE,
+#'         use_all_factor_levels = FALSE)
+#'
+#' \dontrun{
+#'  # GLM variable importance
+#'  # Also see:
+#'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
+#'  data.hex = h2o.importFile(
+#'    localH2O,
+#'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
+#'    destination_frame = "data.hex")
+#'  myX = 1:20
+#'  myY="y"
+#'  my.glm = h2o.glm(x=myX, y=myY, data=data.hex, family="binomial",
+#'                  standardize=TRUE, use_all_factor_levels=TRUE,
+#'                  higher_accuracy=TRUE, lambda_search=TRUE,
+#'                  return_all_lambda=TRUE, variable_importances=TRUE)
+#' best_model = my.glm@@best_model
+#' n_coeff = abs(my.glm@@models[[best_model]]@@model$normalized_coefficients)
+#' VI = abs(n_coeff[-length(n_coeff)])
+#' glm.VI = VI[order(VI,decreasing=T)]
+#' print(glm.VI)
+#' }
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     max_iterations = 50,
@@ -132,7 +168,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
     delete <- !.is.eval(beta_constraints)
     if (delete) {
         temp_key <- beta_constraints@frame_id
-        .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, key = temp_key)
+        .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, frame_id = temp_key)
     }
     parms$beta_constraints <- beta_constraints
   }
