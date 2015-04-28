@@ -89,6 +89,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
+  parms$validation_frame <- validation_frame
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
