@@ -117,6 +117,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _beta_epsilon = 1e-4;
     public int _max_iterations = -1;
     public int _n_folds;
+    boolean _intercept = true;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
@@ -560,7 +561,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       String[] cnames = glm._dinfo.coefNames();
       _names = glm._dinfo._adaptedFrame.names();
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
-      _coefficient_names[cnames.length] = "Intercept";
+      _coefficient_names[_coefficient_names.length-1] = "Intercept";
       _binomial = glm._parms._family == Family.binomial;
     }
 
@@ -576,13 +577,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       return _binomial ? binomialClassNames : null;
     }
 
-    void addNullSubmodel(double lmax, double icept, GLMValidation val) {
-      assert _submodels == null;
-      double[] beta = MemoryManager.malloc8d(_names.length);
-      beta[beta.length - 1] = icept;
-      _submodels = new Submodel[]{new Submodel(lmax, beta, beta, 0, 0, _names.length > 750)};
-      _submodels[0].trainVal = val;
-    }
+
 
     public int submodelIdForLambda(double lambda) {
       if (lambda >= _submodels[0].lambda_value) return 0;
