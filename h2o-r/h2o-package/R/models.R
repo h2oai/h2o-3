@@ -394,9 +394,8 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, ...) {
     l <- .trainOrValid(l)
     l$train <- l$train || train
     l$valid <- l$valid || valid
-    if(      l$train ) return(object@model$training_metrics$AUC  )
-    else if( l$valid ) return(object@model$validation_metrics$AUC)
-    else               return(NULL)
+    if( l$valid ) return(object@model$validation_metrics$AUC)
+    else          return(object@model$training_metrics$AUC  )
   } else {
     warning(paste0("No AUC for ",class(object)))
     return(NULL)
@@ -470,9 +469,8 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, ...) {
     l <- .trainOrValid(l)
     l$train <- l$train || train
     l$valid <- l$valid || valid
-    if(      l$train ) m <- object@model$training_metrics@metrics
-    else if( l$valid ) m <- object@model$validation_metrics@metrics
-    else return(NULL)
+    if( l$valid ) m <- object@model$validation_metrics@metrics
+    else          m <- object@model$training_metrics@metrics
 
     if( is(object, "H2OClusteringModel") ) return( m$centroid_stats$within_sum_of_squares )
     else if(      is(object, "H2OModel") ) return( m$MSE                                  )
@@ -502,9 +500,9 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, ...) {
     l <- .trainOrValid(l)
     l$train <- l$train || train
     l$valid <- l$valid || valid
-    if(      l$train ) return(object@model$training_metrics@metrics$logloss  )
-    else if( l$valid ) return(object@model$validation_metrics@metrics$logloss)
-    else               return(NULL)
+    if( l$valid ) return(object@model$validation_metrics@metrics$logloss)
+    else          return(object@model$training_metrics@metrics$logloss  )
+
   } else  {
     warning(paste("No log loss for",class(object)))
     return(NULL)
@@ -581,15 +579,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, ...) {
   else warning( paste0("No hit ratio table for ", class(o)) )
 
   # if hrt not NULL, pretty print
-  if( !is.null(hrt) ) {
-    nr  <- nrow(hrt)
-    if( is.null(hrt) ) return(NULL)
-    if( nr > 20L ) {
-      print(hrt[1L:5L,])
-      cat("\n---\n")
-      print(data.frame(hrt[(nr-5L):nr,]))
-    } else print(hrt)
-  }
+  if( !is.null(hrt) ) print(hrt)
   invisible( hrt )  # return something
 }
 
@@ -807,9 +797,9 @@ h2o.avg_within_ss <- function(object, train=FALSE, valid=FALSE, ...) {
   l <- .trainOrValid(l)
   l$train <- l$train || train
   l$valid <- l$valid || valid
-  if(      l$train ) return(object@model$training_metrics@metrics$avg_within_ss  )
-  else if( l$valid ) return(object@model$validation_metrics@metrics$avg_within_ss)
-  else               return(NULL)
+  if( l$valid ) return(object@model$validation_metrics@metrics$avg_within_ss)
+  else          return(object@model$training_metrics@metrics$avg_within_ss  )
+
 }
 
 #'
@@ -825,9 +815,8 @@ h2o.avg_between_ss <- function(object, train=FALSE, valid=FALSE, ...) {
   l <- .trainOrValid(l)
   l$train <- l$train || train
   l$valid <- l$valid || valid
-  if(      l$train ) return(object@model$training_metrics@metrics$avg_between_ss)
-  else if( l$valid ) return(object@model$validation_metrics@metrics$avg_between_ss)
-  else               return(NULL)
+  if( l$valid ) return(object@model$validation_metrics@metrics$avg_between_ss)
+  else          return(object@model$training_metrics@metrics$avg_between_ss  )
 }
 
 #'
@@ -843,9 +832,8 @@ h2o.avg_ss <- function(object,train=FALSE, valid=FALSE, ...) {
   l <- .trainOrValid(l)
   l$train <- l$train || train
   l$valid <- l$valid || valid
-  if(      l$train ) return(object@model$training_metrics@metrics$avg_ss)
-  else if( l$valid ) return(object@model$validation_metrics@metrics$avg_ss)
-  else               return(NULL)
+  if( l$valid ) return(object@model$validation_metrics@metrics$avg_ss)
+  else          return(object@model$training_metrics@metrics$avg_ss  )
 }
 
 #'
@@ -869,9 +857,8 @@ h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
   l <- .trainOrValid(l)
   l$train <- l$train || train
   l$valid <- l$valid || valid
-  if(      l$train ) return(object@model$training_metrics@metrics$centroid_stats$size)
-  else if( l$valid ) return(object@model$validation_metrics@metrics$centroid_stats$size)
-  else               return(NULL)
+  if( l$valid ) return(object@model$validation_metrics@metrics$centroid_stats$size)
+  else          return(object@model$training_metrics@metrics$centroid_stats$size  )
 }
 
 #'
@@ -957,9 +944,8 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, train=FAL
     l <- .trainOrValid(l)
     l$train <- l$train || train
     l$valid <- l$valid || valid
-    if(      l$train )  return( h2o.confusionMatrix(object@model$training_metrics)   )
-    else if( l$valid )  return( h2o.confusionMatrix(object@model$validation_metrics) )
-    else               return(NULL)
+    if( l$valid ) return( h2o.confusionMatrix(object@model$validation_metrics) )
+    else          return( h2o.confusionMatrix(object@model$training_metrics)   )
   }
   tmp <- !.is.eval(newdata)
   if( tmp ) {
@@ -1013,7 +999,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
     col1 <- c(row$tns, row$fns)
     col2 <- c(row$fps, row$tps)
     col3 <- c(row$fps/(row$tns+row$fps), row$fns/(row$fns+row$tps))
-    col4 <- c(paste0(row$fps, "/", row$tns+row$fps), paste0(row$fns, "/", row$fns+row$tps))
+    col4 <- c(paste0(" = ",row$fps, "/", row$tns+row$fps), paste0(" = ", row$fns, "/", row$fns+row$tps))
     fmts <- c("%s", "%i", "%i", "%f", "%s")
     tbl <- data.frame(col0,col1,col2,col3,col4)
     rownames(tbl) <- row.names
