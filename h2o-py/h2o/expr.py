@@ -352,14 +352,14 @@ class Expr(object):
     if tmps:
       cmd = "(, " + cmd + tmps + ")"
     j = h2o.rapids(cmd)
-    if j['result_type']  == 0:
+    if j['result_type'] in [0,3,4]:
       pass  # Big Data Key is the result
     # Small data result pulled locally
     elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
-    elif j['result_type'] in [2,4]:
+    elif j['result_type'] in [1,2]:
       if isinstance(j['string'], str): self._data = j['string']
     else:
       if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
