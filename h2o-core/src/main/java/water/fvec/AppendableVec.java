@@ -141,7 +141,7 @@ public class AppendableVec extends Vec {
     // Compute #chunks
     int nchunk = _espc.length;
     DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
-    while( nchunk > 0 && _espc[nchunk-1] == 0 ) {
+    while( nchunk > 1 && _espc[nchunk-1] == 0 ) {
       nchunk--;
       DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
     }
