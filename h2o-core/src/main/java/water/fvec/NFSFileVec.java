@@ -1,6 +1,7 @@
 package water.fvec;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 
 import water.*;
 import water.persist.PersistNFS;
@@ -33,6 +34,7 @@ public class NFSFileVec extends FileVec {
    *  is used by the Chunks to load data on-demand.
    *  @return  A NFSFileVec mapped to this file. */
   public static NFSFileVec make(File f, Futures fs) {
+    if( !f.exists() ) throw new IllegalArgumentException("File not found: "+f.toString());
     long size = f.length();
     Key k = Vec.newKey(PersistNFS.decodeFile(f));
     // Insert the top-level FileVec key into the store
