@@ -6,7 +6,7 @@ myIP = readline("Enter IP address of H2O server: ")
 myPort = readline("Enter port number of H2O server: ")
 remoteH2O = h2o.init(ip = myIP, port = as.numeric(myPort), startH2O = FALSE)
 
-prostate.hex = h2o.uploadFile(remoteH2O, path = system.file("extdata", "prostate.csv", package="h2o"), key = "prostate.hex")
+prostate.hex = h2o.uploadFile(remoteH2O, path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
 summary(prostate.hex)
 prostate.glm = h2o.glm(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 print(prostate.glm)

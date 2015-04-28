@@ -28,7 +28,7 @@
 #' @param conn an \linkS4class{H2OConnection} class object.
 #' @param pattern (Optional) Character string containing a regular expression to match file(s) in
 #'        the folder.
-#' @param key (Optional) The unique hex key assigned to the imported file. If
+#' @param destination_frame (Optional) The unique hex key assigned to the imported file. If
 #'        none is given, a key will automatically be generated based on the URL
 #'        path.
 #' @param parse (Optional) A logical value indicating whether the file should be
@@ -47,7 +47,7 @@
 #' @examples
 #' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.uploadFile(localH2O, path = prosPath, key = "prostate.hex")
+#' prostate.hex = h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
 #' class(prostate.hex)
 #' summary(prostate.hex)
 #' @name h2o.importFile
@@ -160,7 +160,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath, key = "prostate.hex")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
 #' prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
 #' glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")

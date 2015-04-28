@@ -301,7 +301,7 @@ h2o.table <- function(x, y = NULL) {
 #' @examples
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, key = "prostate.hex")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
 #' @export
 setMethod("median", "H2OFrame", function(x, na.rm = TRUE) {
   .h2o.nary_frame_op("median", x, na.rm)
@@ -458,7 +458,7 @@ h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
 h2o.getTimezone <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, key = .key.make(conn, "getTimeZone"), linkToGC = TRUE, mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "getTimeZone"), linkToGC = TRUE, mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@frame_id, fr@conn)
   ret
@@ -471,7 +471,7 @@ h2o.getTimezone <- function(conn=h2o.getConnection()) {
 h2o.listTimezones <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "listTimeZones"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, key = .key.make(conn, "listTimeZones"), linkToGC = TRUE, mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "listTimeZones"), linkToGC = TRUE, mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@frame_id, fr@conn)
   ret
@@ -498,7 +498,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath, key = "prostate.hex")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
 #' s = h2o.runif(prostate.hex)
 #' summary(s)
 #'
@@ -2098,7 +2098,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #' @examples
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath, destination_frame = "iris.hex")
 #' summary(apply(iris.hex, 1, sum))
 #' @export
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {

@@ -1,3 +1,10 @@
+#' Starting H2O For examples
+#'
+#' @name aaa
+#' @examples
+#' h2o.init()
+NULL
+
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {

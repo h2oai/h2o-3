@@ -1,10 +1,8 @@
-#'
-#' Data Export
-#'
-#' Export data to local disk or HDFS.
-#' Save models to local disk or HDFS.
-#' @name Export intro
-NULL
+#`
+#` Data Export
+#`
+#` Export data to local disk or HDFS.
+#` Save models to local disk or HDFS.
 
 #' Export an H2O Data Frame to a File
 #'
