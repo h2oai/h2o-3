@@ -147,12 +147,12 @@ public class RapidsTest extends TestUtil {
       fr.delete();
       pr.delete();
       f = env.popAry();
-      Assert.assertEquals(1,f.numCols());
+      Assert.assertEquals(2,f.numCols());
       // Expected values computed as golden values from R's quantile call
       double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
                          1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
       for( int i=0; i<exp.length; i++ )
-        Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(0).at(i), water.util.MathUtils.compare(exp[i],f.vec(0).at(i),1e-6,1e-6) );
+        Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(1).at(i), water.util.MathUtils.compare(exp[i],f.vec(1).at(i),1e-6,1e-6) );
     } finally {
       if( f != null ) f.delete();
     }
