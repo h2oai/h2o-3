@@ -116,6 +116,34 @@ def metric_json_check(ip, port):
                                                                             bin_metric_json_keys_desired,
                                                                             bin_metric_diff)
 
+    # Multinomial metric json
+    df = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    myX = ["Origin", "Dest", "IsDepDelayed", "UniqueCarrier", "Distance", "fDayofMonth", "fDayOfWeek"]
+    myY = "fYear"
+    mul_mod = h2o.gbm(x=df[myX], y=df[myY], training_frame=df, distribution="multinomial")
+    mul_met = mul_mod.model_performance()
+    mul_metric_json_keys_have = mul_met._metric_json.keys()
+    mul_metric_json_keys_desired = [u'cm',
+                                    u'model_category',
+                                    u'description',
+                                    u'r2',
+                                    u'frame',
+                                    u'model_checksum',
+                                    u'MSE',
+                                    u'__meta',
+                                    u'logloss',
+                                    u'scoring_time',
+                                    u'predictions',
+                                    u'hit_ratio_table',
+                                    u'model',
+                                    u'duration_in_ms',
+                                    u'frame_checksum']
+    mul_metric_diff = list(set(mul_metric_json_keys_have) - set(mul_metric_json_keys_desired))
+    assert not mul_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) multinomial " \
+                                "metric json. The difference is {2}".format(mul_metric_json_keys_have,
+                                                                            mul_metric_json_keys_desired,
+                                                                            mul_metric_diff)
+
     # Clustering metric json
     df = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
     clus_mod = h2o.kmeans(x=df[0:4], k=3, standardize=False)
