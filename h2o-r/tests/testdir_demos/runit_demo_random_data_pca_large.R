@@ -15,8 +15,8 @@ conn <- h2o.init(ip=myIP, port=myPort)
 ## This causes Jenkins timeout
 #rows = c(1e3,1e4,1e5)
 #cols = c(50,100,200)
-rows = c(1e3,1e4,1e5)
-cols = c(50,100,150)
+rows = c(1e3,1e4)
+cols = c(50,100)
 
 ## This runs... but is too small -> FIXME: Improve PCA algo!
 #rows = c(100)
