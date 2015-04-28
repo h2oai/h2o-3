@@ -22,9 +22,10 @@ import java.util.concurrent.Future;
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, output);
     _ymu = ymu;
+    _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
@@ -520,6 +521,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   
   public final double _lambda_max;
   public final double _ymu;
+  public final double _ySigma;
+
   public final long   _nobs;
   long   _run_time;
   
@@ -642,7 +645,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
       if (_submodels[l].trainVal != null && tFrame != null)
-        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,Double.NaN);
+        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,m._ymu);
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
         _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m,vFrame,Double.NaN);
@@ -693,13 +696,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double [] _likelihoods;
     final double [] _objectives;
     final int [] _scoring_iters;
+    final int [] _scoring_times;
 
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int [] scoring_iters, double [] likelihoods, double [] objectives){
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int [] scoring_iters, int [] scoring_times, double [] likelihoods, double [] objectives){
       super(cmp, modelKey);
       _jobKey = jobKey;
       _validFrame = validFrame;
       _trainFrame = trainFrame;
       _scoring_iters = scoring_iters;
+      _scoring_times = scoring_times;
       _likelihoods = likelihoods;
       _objectives = objectives;
     }
@@ -718,11 +723,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output._model_summary.set(0,2,_trainFrame.toString());
       glmModel._output._model_summary.set(0,3,Integer.toString(glmModel.beta().length));
       if(_scoring_iters != null) {
-        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "likelihood", "objective"}, new String[]{"int", "double", "double"}, new String[]{"%d", "%.5f", "%.5f"}, "");
+        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
         for (int i = 0; i < _scoring_iters.length; ++i) {
           glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
-          glmModel._output._scoring_history.set(i,1,_likelihoods[i]);
-          glmModel._output._scoring_history.set(i,2,_objectives[i]);
+          glmModel._output._scoring_history.set(i,1,_scoring_iters[i]);
+          glmModel._output._scoring_history.set(i,2,_likelihoods[i]);
+          glmModel._output._scoring_history.set(i,3,_objectives[i]);
         }
       }
       glmModel.update(_jobKey);

@@ -67,11 +67,22 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   private transient ArrayList<Integer> _scoring_times = new ArrayList<>();
   private transient ArrayList<Double> _likelihoods = new ArrayList<>();
   private transient ArrayList<Double> _objectives = new ArrayList<>();
-  private transient ArrayList<Double> _gradients = new ArrayList<>();
+
+  long _t0 = System.currentTimeMillis();
+
+  public void addScoringHistory(int i, double l, double o) {
+    long t = System.currentTimeMillis();
+    _scoring_times.add((int)(_t0-t));
+    _scoring_iters.add(i);
+    _likelihoods.add(l);
+    _objectives.add(o);
+    _t0 = t;
+  }
 
   private transient double _iceptAdjust = 0;
 
   @Override public void init(boolean expensive) {
+    _t0 = System.currentTimeMillis();
     super.init(expensive);
     hide("_score_each_iteration", "Not used by GLM.");
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
@@ -226,7 +237,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       double l2pen = .5 * lmax * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gtBetastart._beta, _dinfo._intercept);
       l2pen += _bc.proxPen(gtBetastart._beta);
       objval += l2pen;
-      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(gtBetastart._likelihood,objval, gtBetastart._gradient), objVal(gtBetastart._likelihood,gtBetastart._beta, lmax, gtBetastart._nobs,_dinfo._intercept));
+      double objStart = objVal(gtBetastart._likelihood,gtBetastart._beta, lmax, gtBetastart._nobs,_parms._intercept);
+      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(gtBetastart._likelihood,objval, gtBetastart._gradient),objStart);
 
       if (_parms._lambda != null) { // check the lambdas
         ArrayUtils.mult(_parms._lambda, -1);
@@ -254,7 +266,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         } else
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
-      GLMModel m = new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _tInfos[0]._lambdaMax, _tInfos[0]._nobs);
+      GLMModel m = new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       m.delete_and_lock(GLM.this._key);
       m.adaptTestForTrain(_valid, true);
       // _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
@@ -489,14 +501,17 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override public void onCompletion(CountedCompleter cc){
       getCompleter().addToPendingCount(1);
       int    [] its = null;
+      int    [] tms = null;
       double [] lgs = null;
       double [] obs = null;
       if(!_scoring_iters.isEmpty()) {
         its = new int[_scoring_iters.size()];
+        tms = new int[_scoring_iters.size()];
         lgs = new double[its.length];
         obs = new double[its.length];
         for(int i = 0; i < its.length; ++i) {
           its[i] = _scoring_iters.get(i);
+          tms[i] = _scoring_times.get(i);
           lgs[i] = _likelihoods.get(i);
           obs[i] = _objectives.get(i);
         }
@@ -515,7 +530,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new RemoveCall(null, _dest).invokeTask();
           return true;
         }
-      }, _dest, _key, _parms._train, _parms._valid,its, lgs, obs));
+      }, _dest, _key, _parms._train, _parms._valid,its, tms, lgs, obs));
     }
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
@@ -751,9 +766,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               public boolean progress(double[] beta, GradientInfo ginfo) {
                 if(ginfo instanceof GLMGradientInfo) {
                   GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-                  _scoring_iters.add(_taskInfo._iter);
-                  _likelihoods.add(gginfo._likelihood);
-                  _objectives.add(gginfo._objVal);
+                  addScoringHistory(_taskInfo._iter,gginfo._likelihood,gginfo._objVal);
                 }
                 if ((_taskInfo._iter & 7) == 0) {
                   _taskInfo._worked += _taskInfo._workPerIteration*8;
@@ -968,17 +981,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
-          _scoring_iters.add(_taskInfo._iter);
-          _likelihoods.add(logl);
-          _objectives.add(objVal);
+          addScoringHistory(_taskInfo._iter,logl,objVal);
           if (lastObjVal > objVal) {
             ++_taskInfo._iter; // =new IterationInfo(_iter, glmt._beta, glmt._objVal);
             _taskInfo._beta = glmt._beta;
             _taskInfo._objVal = objVal;
             _taskInfo._ginfo = null;
-            _scoring_iters.add(_taskInfo._iter);
-            _likelihoods.add(logl);
-            _objectives.add(objVal);
           }
         }
         final double[] newBeta = MemoryManager.malloc8d(glmt._xy.length);

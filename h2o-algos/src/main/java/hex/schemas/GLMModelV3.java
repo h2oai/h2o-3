@@ -92,6 +92,6 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 
   @Override public GLMModel createImpl() {
     GLMModel.GLMParameters parms = parameters.createImpl();
-    return new GLMModel( model_id.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0);
+    return new GLMModel( model_id.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0.0, 0);
   }
 }
