@@ -23,6 +23,6 @@ public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDPa
   // Version&Schema-specific filling into the impl
   @Override public SVDModel createImpl() {
     SVDModel.SVDParameters parms = parameters.createImpl();
-    return new SVDModel( key.key(), parms, null );
+    return new SVDModel( model_id.key(), parms, null );
   }
 }

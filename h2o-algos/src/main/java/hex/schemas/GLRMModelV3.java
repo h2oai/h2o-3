@@ -41,6 +41,6 @@ public class GLRMModelV3 extends ModelSchema<GLRMModel, GLRMModelV3, GLRMModel.G
   // Version&Schema-specific filling into the impl
   @Override public GLRMModel createImpl() {
     GLRMModel.GLRMParameters parms = parameters.createImpl();
-    return new GLRMModel( key.key(), parms, null );
+    return new GLRMModel( model_id.key(), parms, null );
   }
 }
