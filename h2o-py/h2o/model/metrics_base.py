@@ -31,6 +31,12 @@ class MetricsBase(object):
     """
     return self._metric_json['AUC']
 
+  def aic(self):
+    """
+    :return: Retrieve the AIC for this set of metrics.
+    """
+    return self._metric_json['AIC']
+
   def giniCoef(self):
     """
     :return: Retrieve the Gini coefficeint for this set of metrics.
@@ -51,12 +57,28 @@ class MetricsBase(object):
       return self._metric_json["residual_deviance"]
     return None
 
+  def residual_degrees_of_freedom(self):
+    """
+    :return: the residual dof if the model has residual deviance, or None if no residual dof.
+    """
+    if ModelBase._has(self._metric_json, "residual_degrees_of_freedom"):
+      return self._metric_json["residual_degrees_of_freedom"]
+    return None
+
   def null_deviance(self):
     """
     :return: the null deviance if the model has residual deviance, or None if no null deviance.
     """
     if ModelBase._has(self._metric_json, "null_deviance"):
       return self._metric_json["null_deviance"]
+    return None
+
+  def null_degrees_of_freedom(self):
+    """
+    :return: the null dof if the model has residual deviance, or None if no null dof.
+    """
+    if ModelBase._has(self._metric_json, "null_degrees_of_freedom"):
+      return self._metric_json["null_degrees_of_freedom"]
     return None
 
 class H2ORegressionModelMetrics(MetricsBase):
@@ -68,6 +90,33 @@ class H2ORegressionModelMetrics(MetricsBase):
   def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
     super(H2ORegressionModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
 
+  def __repr__(self):
+    self.show()
+    return ""
+
+  def show(self):
+    """
+    Display a short summary of the regression metrics.
+    :return: None
+    """
+    print
+    print "H2ORegressionMetrics: " + self._algo
+    reported_on = "** Reported on {} data. **"
+    if self._on_train:
+      print reported_on.format("train")
+    elif self._on_valid:
+      print reported_on.format("validation")
+    else:
+      print reported_on.format("test")
+    print
+    print "MSE: "                          + str(self.mse())
+    print "R^2: "                          + str(self.r2())
+    if self._metric_json['__meta']['schema_type'] == 'ModelMetricsRegressionGLM':
+      print "Null degrees of freedom: "      + str(self.null_degrees_of_freedom())
+      print "Residual degrees of freedom: "  + str(self.residual_degrees_of_freedom())
+      print "Null deviance: "                + str(self.null_deviance())
+      print "Residual deviance: "            + str(self.residual_deviance())
+      print "AIC: "                          + str(self.aic())
 
 class H2OClusteringModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
@@ -76,6 +125,31 @@ class H2OClusteringModelMetrics(MetricsBase):
 class H2OMultinomialModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OMultinomialModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
+
+  def __repr__(self):
+    self.show()
+    return ""
+
+  def show(self):
+    """
+    Display a short summary of the multinomial metrics.
+    :return: None
+    """
+    print
+    print "H2OMultinomialMetrics: " + self._algo
+    reported_on = "** Reported on {} data. **"
+    if self._on_train:
+      print reported_on.format("train")
+    elif self._on_valid:
+      print reported_on.format("validation")
+    else:
+      print reported_on.format("test")
+    print
+    print "MSE: "     + str(self.mse())
+    print "R^2: "     + str(self.r2())
+    print "LogLoss: " + str(self.logloss())
+    print self._metric_json['cm']['table']
+    print self._metric_json['hit_ratio_table']
 
 class H2OBinomialModelMetrics(MetricsBase):
   """
@@ -120,6 +194,12 @@ class H2OBinomialModelMetrics(MetricsBase):
     print "LogLoss: " + str(self.logloss())
     print "AUC: " + str(self.auc())
     print "Gini: " + str(self.giniCoef())
+    if self._metric_json['__meta']['schema_type'] == 'ModelMetricsRegressionGLM':
+      print "Null degrees of freedom: "      + str(self.null_degrees_of_freedom())
+      print "Residual degrees of freedom: "  + str(self.residual_degrees_of_freedom())
+      print "Null deviance: "                + str(self.null_deviance())
+      print "Residual deviance: "            + str(self.residual_deviance())
+      print "AIC: "                          + str(self.aic())
     print self._metric_json["max_criteria_and_metric_scores"]
 
   def F1(self, thresholds=None):
