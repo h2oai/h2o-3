@@ -2,12 +2,6 @@ package hex.kmeans;
 
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.Comparator;
 import org.junit.*;
 import water.DKV;
 import water.Key;
@@ -15,10 +9,16 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MathUtils;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -327,10 +327,10 @@ public class KMeansTest extends TestUtil {
         SplitFrame sf = new SplitFrame(Key.make());
         sf.dataset = fr;
         sf.ratios = new double[] { 0.5 };
-        sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+        sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
         // Invoke the job
         sf.exec().get();
-        Key[] ksplits = sf.dest_keys;
+        Key[] ksplits = sf.destination_frames;
         tr = DKV.get(ksplits[0]).get();
         te = DKV.get(ksplits[1]).get();
 

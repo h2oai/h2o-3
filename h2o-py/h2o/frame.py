@@ -46,7 +46,7 @@ class H2OFrame:
       rawkey = h2o.import_file(remote_fname)
       setup = h2o.parse_setup(rawkey)
       parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-      veckeys = parse['vec_keys']
+      veckeys = parse['vec_ids']
       rows = parse['rows']
       cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
@@ -131,11 +131,11 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_keys'])+1)]
+    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_ids'])+1)]
     # set the rows
     rows = parse['rows']
     # set the vector keys
-    veckeys = parse['vec_keys']
+    veckeys = parse['vec_ids']
     # create a new vec[] array
     self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
     # print some information on the *uploaded* data
@@ -147,7 +147,7 @@ class H2OFrame:
     # create a random name for the data
     dest_key = H2OFrame.py_tmp_key()
     # do the POST -- blocking, and "fast" (does not real data upload)
-    H2OConnection.post_json("PostFile", fui, destination_key=dest_key)
+    H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)
     # actually parse the data and setup self._vecs
     self._handle_text_key(dest_key, column_names)
 
@@ -704,7 +704,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
     rows = fr['rows']         # Row count
-    veckeys = fr['vec_keys']  # List of h2o vec keys
+    veckeys = fr['vec_ids']  # List of h2o vec keys
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -749,7 +749,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
-    veckeys = fr['vec_keys']# List of h2o vec keys
+    veckeys = fr['vec_ids']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -796,7 +796,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
     rows = fr['rows']         # Row count
-    veckeys = fr['vec_keys']  # List of h2o vec keys
+    veckeys = fr['vec_ids']  # List of h2o vec keys
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -833,7 +833,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key)  # Fetch the frame as JSON
     fr = j['frames'][0]     # Just the first (only) frame
     rows = fr['rows']       # Row count
-    veckeys = fr['vec_keys']# List of h2o vec keys
+    veckeys = fr['vec_ids']# List of h2o vec keys
     cols = fr['columns']    # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -878,7 +878,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
-    veckeys = fr['vec_keys']
+    veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -978,7 +978,7 @@ class H2OVec:
     j = h2o.frame(fr)
     fr = j['frames'][0]
     rows = fr['rows']
-    veckeys = fr['vec_keys']
+    veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
     result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))

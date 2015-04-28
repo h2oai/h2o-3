@@ -6,7 +6,7 @@ test.kmslice.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing iris.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
-  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), key = "irisH2O")
+  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), destination_frame = "irisH2O")
   # iris has some duplicated rows. Want to guarantee unique init centers
   # Still failing intermittently..a random init from the data, is the same as kmeans rand init ..
   # So that doesn't guarantee one true answer.

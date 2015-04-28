@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 rf.vi.test<-
 function(conn) {
-    data.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/toy_data_RF.csv"), key="data.hex")
+    data.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/toy_data_RF.csv"), destination_frame="data.hex")
     print(summary(data.hex))
     x <- 1:6
     y <- 7

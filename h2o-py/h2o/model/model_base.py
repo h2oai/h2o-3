@@ -51,17 +51,17 @@ class ModelBase(object):
     # this job call is blocking
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
     # retrieve the prediction frame
-    prediction_frame_key = j["model_metrics"][0]["predictions"]["key"]["name"]
+    prediction_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     # get the actual frame meta dta
     pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
-    # collect the vec_keys
-    vec_keys = pred_frame_meta["vec_keys"]
+    # collect the vec_ids
+    vec_ids = pred_frame_meta["vec_ids"]
     # get the number of rows
     rows = pred_frame_meta["rows"]
     # get the column names
     cols = [col["label"] for col in pred_frame_meta["columns"]]
     # create a set of H2OVec objects
-    vecs = H2OVec.new_vecs(zip(cols, vec_keys), rows)
+    vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # toast the cbound frame
     h2o.remove(test_data_key)
     # return a new H2OFrame object
@@ -93,13 +93,13 @@ class ModelBase(object):
     # get the deepfeatures of the dataset
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key, deep_features_hidden_layer=layer)
     # retreive the frame data
-    deepfeatures_frame_key = j["destination_key"]["name"]
+    deepfeatures_frame_key = j["predictions_name"]["name"]
     df_frame_meta = h2o.frame(deepfeatures_frame_key)["frames"][0]
-    # create vecs by extracting vec_keys, col length, and col names
-    vec_keys = df_frame_meta["vec_keys"]
+    # create vecs by extracting vec_ids, col length, and col names
+    vec_ids = df_frame_meta["vec_ids"]
     rows = df_frame_meta["rows"]
     cols = [col["label"] for col in df_frame_meta["columns"]]
-    vecs = H2OVec.new_vecs(zip(cols, vec_keys), rows)
+    vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # remove test data from kv
     h2o.remove(test_data_key)
     # finally return frame

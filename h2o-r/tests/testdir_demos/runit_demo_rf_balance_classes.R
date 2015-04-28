@@ -26,7 +26,7 @@ test.h2o.rf.balance.classes <- function(conn) {
 
     #uploading test file to h2o
     testFilePath <-locate("smalldata/airlines/AirlinesTest.csv.zip")
-    air.test <- h2o.uploadFile(conn,testFilePath,key="air.test")
+    air.test <- h2o.uploadFile(conn,testFilePath,destination_frame="air.test")
 
     func <- function(model_object) {
         #predicting on test file

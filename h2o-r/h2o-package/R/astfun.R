@@ -1,70 +1,70 @@
-#'
-#' Transmogrify A User Defined Function Into A Rapids AST
-#'
-#' A function has three parts:
-#'  1. A name
-#'  2. Arguments
-#'  3. A body
-#'
-#' If it has been deteremined that a function is user-defined, then it must become a Rapids AST.
-#'
-#' The overall strategy for collecting up a function is to avoid densely packed recursive calls, each attempting to handle
-#' the various corner cases.
-#'
-#' Instead, the thinking is that there are a limited number of statement types in a function body:
-#'  1. control flow: if, else, while, for, return
-#'  2. assignments
-#'  3. operations/function calls
-#'  4. Implicit return statement
-#'
-#' Implicit return statements are the last statement in a closure. Statements that are not implicit return statements
-#' are optimized away by the back end.
-#'
-#' Since the statement types can be explicitly defined, there is only a need for processing a statement of the 3rd kind.
-#' Therefore, all recursive calls are funneled into a single statement processing function.
-#'
-#' From now on, statements will refer to statemets of the 3rd kind.
-#'
-#' Simple statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
-#'
-#'  1. Unary operations  (dispatch to .h2o.unary_op )
-#'  2. Binary Operations (dispatch to .h2o.binary_op)
-#'  3. Prefix Operations (dispatch to .h2o.nary_op)
-#'  4. User Defined Function Call
-#'  5. Anonymous closure
-#'
-#' Of course "real" statements are mixtures of these simple statements, but these statements are handled recursively.
-#'
-#' Case 4 spins off a new transmogrification for the encountered udf. If the udf is already defined in this **scope**, or in
-#' some parent scope, then there is nothing to do.
-#'
-#' Case 5 spins off a new transmogrification for the encountered closure and replaced by an invocation of that closure.
-#' If there's no assignment resulting from the closure, the closure is simply dropped (modification can only happen in the
-#' global scope (scope used in usual sense here)).
-#'
-#'
-#' NB:
-#' **scope**: Here scopes are defined in terms of a closure.
-#'            *this* scope knows about all functions and all of its parents functions.
-#'            They are implemented as nested environments.
-#'
-#' The Finer Points
-#' ----------------
-#'
-#' Mutually recursive functions:
-#'
-#'  For processing a raw function:
-#'   .process.stmnt <=> .stmnt.to.ast.switchboard
-#'
-#'  For postprocessing the ast:
-#'   .body.visitor <=> .stmnt.visitor
+#`
+#` Transmogrify A User Defined Function Into A Rapids AST
+#`
+#` A function has three parts:
+#`  1. A name
+#`  2. Arguments
+#`  3. A body
+#`
+#` If it has been deteremined that a function is user-defined, then it must become a Rapids AST.
+#`
+#` The overall strategy for collecting up a function is to avoid densely packed recursive calls, each attempting to handle
+#` the various corner cases.
+#`
+#` Instead, the thinking is that there are a limited number of statement types in a function body:
+#`  1. control flow: if, else, while, for, return
+#`  2. assignments
+#`  3. operations/function calls
+#`  4. Implicit return statement
+#`
+#` Implicit return statements are the last statement in a closure. Statements that are not implicit return statements
+#` are optimized away by the back end.
+#`
+#` Since the statement types can be explicitly defined, there is only a need for processing a statement of the 3rd kind.
+#` Therefore, all recursive calls are funneled into a single statement processing function.
+#`
+#` From now on, statements will refer to statemets of the 3rd kind.
+#`
+#` Simple statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
+#`
+#`  1. Unary operations  (dispatch to .h2o.unary_op )
+#`  2. Binary Operations (dispatch to .h2o.binary_op)
+#`  3. Prefix Operations (dispatch to .h2o.nary_op)
+#`  4. User Defined Function Call
+#`  5. Anonymous closure
+#`
+#` Of course "real" statements are mixtures of these simple statements, but these statements are handled recursively.
+#`
+#` Case 4 spins off a new transmogrification for the encountered udf. If the udf is already defined in this **scope**, or in
+#` some parent scope, then there is nothing to do.
+#`
+#` Case 5 spins off a new transmogrification for the encountered closure and replaced by an invocation of that closure.
+#` If there's no assignment resulting from the closure, the closure is simply dropped (modification can only happen in the
+#` global scope (scope used in usual sense here)).
+#`
+#`
+#` NB:
+#` **scope**: Here scopes are defined in terms of a closure.
+#`            *this* scope knows about all functions and all of its parents functions.
+#`            They are implemented as nested environments.
+#`
+#` The Finer Points
+#` ----------------
+#`
+#` Mutually recursive functions:
+#`
+#`  For processing a raw function:
+#`   .process.stmnt <=> .stmnt.to.ast.switchboard
+#`
+#`  For postprocessing the ast:
+#`   .body.visitor <=> .stmnt.visitor
 
 
-#'
-#' Helper function for .is.udf
-#'
-#' Carefully examine an environment and determine if it's a user-defined closure.
-#'
+#`
+#` Helper function for .is.udf
+#`
+#` Carefully examine an environment and determine if it's a user-defined closure.
+#`
 .is.closure <- function(e) {
   # if env is defined in the global environment --> it is user defined
   if (identical(e, .GlobalEnv)) return(TRUE)
@@ -78,10 +78,10 @@
   .is.closure(parent.env(e))
 }
 
-#'
-#' Check if the call is user defined.
-#'
-#' A call is user defined if its environment is the Global one, or it's a closure inside of a call existing in the Global env.
+#`
+#` Check if the call is user defined.
+#`
+#` A call is user defined if its environment is the Global one, or it's a closure inside of a call existing in the Global env.
 .is.udf<-
 function(fun) {
   if (.is.op(fun)) return(FALSE)
@@ -103,38 +103,38 @@ function(o, map) {
 .is.slice     <- function(o) .is.in(o, .slice.map)
 .is.op        <- function(o) .is.unary_op(o) || .is.binary_op(o) || .is.nary_op(o) || .is.prefix(o)
 
-#'
-#' Statement Processor
-#'
-#' Converts the statement into an AST.
-#'
-#'
-#' The possible types of statements to process:
-#'
-#'  1. A unary operation (calls .h2o.unary_op)
-#'      A. `!` operator
-#'
-#'  2. A binary operation  (calls .h2o.binary_op)
-#'      A. ‘"+"’, ‘"-"’, ‘"*"’, ‘"^"’, ‘"%%"’, ‘"%/%"’, ‘"/"’
-#'         ‘"=="’, ‘">"’, ‘"<"’, ‘"!="’, ‘"<="’, ‘">="’
-#'         ‘"&"’, ‘"|"’, ‘"**"’
-#'
-#'  3. A prefix operation
-#'      A. Unary Prefix:  ‘"abs"’,   ‘"sign"’,   ‘"sqrt"’,   ‘"ceiling"’, ‘"floor"’,
-#'                        ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
-#'                        ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
-#'                        ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
-#'                        ‘"cos"’,   ‘"cosh"’,   ‘"cospi"’,  ‘"sin"’,     ‘"sinh"’, ‘"sinpi"’,
-#'                        ‘"tan"’,   ‘"tanh"’,   ‘"tanpi"’,
-#'                        ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’, ‘"is.na"’
-#'
-#'      B. .h2o.nary_op: ‘"round"’, ‘"signif"’
-#'
-#'      C. .h2o.nary_op: ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
-#'
-#'      D. .h2o.nary_op: ‘"trunc"’, ‘"log"’  (could be either unary_op or nary_op)
-#'
-#' Each of the above types of statements will handle their own arguments and return an appropriate AST
+#`
+#` Statement Processor
+#`
+#` Converts the statement into an AST.
+#`
+#`
+#` The possible types of statements to process:
+#`
+#`  1. A unary operation (calls .h2o.unary_op)
+#`      A. `!` operator
+#`
+#`  2. A binary operation  (calls .h2o.binary_op)
+#`      A. '"+"', '"-"', '"*"', '"^"', '"%%"', '"%/%"', '"/"'
+#`         '"=="', '">"', '"<"', '"!="', '"<="', '">="'
+#`         '"&"', '"|"', '"**"'
+#`
+#`  3. A prefix operation
+#`      A. Unary Prefix:  '"abs"',   '"sign"',   '"sqrt"',   '"ceiling"', '"floor"',
+#`                        '"trunc"', '"cummax"', '"cummin"', '"cumprod"', '"cumsum"',
+#`                        '"log"',   '"log10"',  '"log2"',   '"log1p"',   '"acos"', '"acosh"',
+#`                        '"asin"',  '"asinh"',  '"atan"',   '"atanh"',   '"exp"',  '"expm1"',
+#`                        '"cos"',   '"cosh"',   '"cospi"',  '"sin"',     '"sinh"', '"sinpi"',
+#`                        '"tan"',   '"tanh"',   '"tanpi"',
+#`                        '"gamma"', '"lgamma"', '"digamma"','"trigamma"', '"is.na"'
+#`
+#`      B. .h2o.nary_op: '"round"', '"signif"'
+#`
+#`      C. .h2o.nary_op: '"max"', '"min"', '"range"', '"prod"', '"sum"', '"any"', '"all"'
+#`
+#`      D. .h2o.nary_op: '"trunc"', '"log"'  (could be either unary_op or nary_op)
+#`
+#` Each of the above types of statements will handle their own arguments and return an appropriate AST
 .process.stmnt<-
 function(stmnt) {
   # convenience variable
@@ -291,25 +291,25 @@ function(stmnt) {
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))
 }
 
-#'
-#' Statement Parser Switchboard
-#'
-#' This function acts as a switchboard for the various types of statements that may exist in the body of a function.
-#'
-#' The possible types of statements:
-#'
-#'  1. Control Flow Statements:
-#'      A. If
-#'      B. Else
-#'      C. for  -- to handle iterator-for (i in 1:5) (x in vector)
-#'      D. return -- return the result
-#'      E. while -- stops processing immediately. while loops are unsupported
-#'
-#'  2. Assignment
-#'
-#'  3. Function call / Operation
-#'
-#' This switchboard takes exactly ONE statement at a time.
+#`
+#` Statement Parser Switchboard
+#`
+#` This function acts as a switchboard for the various types of statements that may exist in the body of a function.
+#`
+#` The possible types of statements:
+#`
+#`  1. Control Flow Statements:
+#`      A. If
+#`      B. Else
+#`      C. for  -- to handle iterator-for (i in 1:5) (x in vector)
+#`      D. return -- return the result
+#`      E. while -- stops processing immediately. while loops are unsupported
+#`
+#`  2. Assignment
+#`
+#`  3. Function call / Operation
+#`
+#` This switchboard takes exactly ONE statement at a time.
 .stmnt.to.ast.switchboard<-
 function(stmnt) {
   if (is.null(stmnt)) return(NULL)
@@ -343,34 +343,34 @@ function(b, is.single = FALSE) {
   new("ASTBody", statements = stmnts)
 }
 
-#'
-#' Transmogrify A User Defined Function Into A Rapids AST
-#'
-#' A function has three parts:
-#'  1. A name
-#'  2. Arguments
-#'  3. A body
-#'
-#' At this point, it's been determined that `fun` is a user defined function, and it must become an AST.
-#' Pack the function call up into an AST.
-#'
-#' Two interesting cases to handle:
-#'
-#'  1. A closure defined in the body.
-#'  2. A different UDF is called within the body.
-#'
-#'  1.
-#'      A. Recognize closure declaration
-#'      B. Parse the closure AST and store it to be shipped to H2O
-#'      C. Swap out the declaration in the body of this function with an invocation of the closure.
-#'
-#'  2.
-#'      A. Recognize the call
-#'      B. If there's not an existing definition *in the current scope*, make one. TODO: handle closures more gracefully -- they aren't handled at all currently.
-#'
-#'
-#' The result is something like the following:
-#' (def "f" (slist arg1 arg2 arg3) (, (stmnt1) (stmnt2) (stmnt3) (stmnt4)))
+#`
+#` Transmogrify A User Defined Function Into A Rapids AST
+#`
+#` A function has three parts:
+#`  1. A name
+#`  2. Arguments
+#`  3. A body
+#`
+#` At this point, it's been determined that `fun` is a user defined function, and it must become an AST.
+#` Pack the function call up into an AST.
+#`
+#` Two interesting cases to handle:
+#`
+#`  1. A closure defined in the body.
+#`  2. A different UDF is called within the body.
+#`
+#`  1.
+#`      A. Recognize closure declaration
+#`      B. Parse the closure AST and store it to be shipped to H2O
+#`      C. Swap out the declaration in the body of this function with an invocation of the closure.
+#`
+#`  2.
+#`      A. Recognize the call
+#`      B. If there's not an existing definition *in the current scope*, make one. TODO: handle closures more gracefully -- they aren't handled at all currently.
+#`
+#`
+#` The result is something like the following:
+#` (def "f" (slist arg1 arg2 arg3) (, (stmnt1) (stmnt2) (stmnt3) (stmnt4)))
 .fun.to.ast<-
 function(fun, name) {
   args <- paste0('(slist ', paste0(unlist(lapply(names(formals(fun)), deparse)), collapse=" "), ')')

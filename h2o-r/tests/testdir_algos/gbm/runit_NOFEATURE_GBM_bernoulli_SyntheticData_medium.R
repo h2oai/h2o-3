@@ -45,8 +45,8 @@ test.GBM.bernoulli.SyntheticData <- function(conn) {
 
     #  Parse data to H2O
     print("Parse data to H2O")
-    system.time(alldata <- as.h2o(conn,all.data2,key = "alldata"))
-    system.time(test <- as.h2o(conn,test.data2,key = "test"))
+    system.time(alldata <- as.h2o(conn,all.data2, destination_frame = "alldata"))
+    system.time(test <- as.h2o(conn,test.data2, destination_frame = "test"))
 
     str(alldata)
 

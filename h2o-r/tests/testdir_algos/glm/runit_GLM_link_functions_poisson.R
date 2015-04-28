@@ -11,7 +11,7 @@ source('../../h2o-runit.R')
 test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), key="h2o.data")    
+	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
 	R.data = as.data.frame(as.matrix(h2o.data))
 	
 	print("Testing for family: POISSON")

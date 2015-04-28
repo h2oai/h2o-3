@@ -134,10 +134,12 @@ class Expr(object):
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
     self.eager()
-    if isinstance(self._data, unicode):
+    if self.is_remote(): # potentially big data
       frame = h2o.frame(self._data)
       return [frame['frames'][0]['rows'], len(frame['frames'][0]['columns'])]
-    raise ValueError("data must be a (unicode) key")
+    elif self.is_local(): # small data
+      return [1,1] if not hasattr(self._data, '__len__') else [1,len(self._data)]
+    raise ValueError("data must be local or remote")
 
   def debug(self):
     """

@@ -20,8 +20,8 @@ test.cbind <- function(conn) {
     colnames(index) <- c("index")
 
     # Sys.sleep(2)
-    df.hex <- as.h2o(conn, df, key="df")
-    index.h2o <- as.h2o(conn, index, key="index.h2o")
+    df.hex <- as.h2o(conn, df, destination_frame="df")
+    index.h2o <- as.h2o(conn, index, destination_frame="index.h2o")
 
     # Sys.sleep(2)
     df.hex <- h2o.cbind(df.hex,index.h2o)

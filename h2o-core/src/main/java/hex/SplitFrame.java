@@ -12,7 +12,7 @@ public class SplitFrame extends Transformer<SplitFrame> {
   /** Split ratios */
   public double[]  ratios;
   /** Output destination keys. */
-  public Key<Frame>[] dest_keys;
+  public Key<Frame>[] destination_frames;
 
   public SplitFrame() { this(Key.make()); }
   public SplitFrame(Key<SplitFrame> dest) { this(dest, "SplitFrame job"); }
@@ -24,16 +24,16 @@ public class SplitFrame extends Transformer<SplitFrame> {
     if (ratios.length > 100)    throw new IllegalArgumentException("Too many frame splits demanded!");
     for( double p : ratios )
       if( p < 0.0 || p > 1.0 )  throw new IllegalArgumentException("Ratios must be between 0 and 1!");
-    if (dest_keys != null && ratios.length != dest_keys.length-1)
+    if (destination_frames != null && ratios.length != destination_frames.length-1)
                                 throw new IllegalArgumentException("Number of destination keys has to match to a number of split ratios!");
 
     // Create destinatio keys if not specified
-    if (dest_keys == null) dest_keys = generateNumKeys(dataset._key, ratios.length+1);
+    if (destination_frames == null) destination_frames = generateNumKeys(dataset._key, ratios.length+1);
 
     H2O.H2OCountedCompleter hcc = new H2O.H2OCountedCompleter() {
       @Override
       protected void compute2() {
-        FrameSplitter fs = new FrameSplitter(this, dataset, ratios, dest_keys, _key);
+        FrameSplitter fs = new FrameSplitter(this, dataset, ratios, destination_frames, _key);
         H2O.submitTask(fs);
       }
 
