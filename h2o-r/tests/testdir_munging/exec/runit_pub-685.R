@@ -22,7 +22,7 @@ test.apply <- function(conn) {
     b <- apply(a, 1, sum)
 
 
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
     b.h2o <- apply(a.h2o, 1, sum)
 
     b.h2o.R <- as.matrix(b.h2o)

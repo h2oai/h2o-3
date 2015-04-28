@@ -1,19 +1,23 @@
 """
-AutoEncoder Models should be comparable.
+AutoEncoder Models
 """
 
 from model_base import *
+from metrics_base import *
 
 class H2OAutoEncoderModel(ModelBase):
   """
-  Class for Binomial models.
+  Class for AutoEncoder models.
   """
   def __init__(self, dest_key, model_json):
     super(H2OAutoEncoderModel, self).__init__(dest_key, model_json,H2OAutoEncoderModelMetrics)
 
   def anomaly(self,test_data):
     """
-    Return the reconstruction error for an AutoEncoder models
+    Obtain the reconstruction error for the input test_data.
+
+    :param test_data: The dataset upon which the reconstruction error is computed.
+    :return: Return the reconstruction error.
     """
     if not test_data: raise ValueError("Must specify test data")
     # cbind the test_data vecs together and produce a temp key
@@ -32,10 +36,3 @@ class H2OAutoEncoderModel(ModelBase):
     h2o.remove(test_data_key)
     # return new H2OFrame object
     return H2OFrame(vecs=vecs)
-
-class H2OAutoEncoderModelMetrics(object):
-  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
-    self._metric_json = metric_json
-    self._on_train = on_train   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._on_valid = on_valid   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._algo = algo

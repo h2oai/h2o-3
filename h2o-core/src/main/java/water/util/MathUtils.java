@@ -189,4 +189,24 @@ public class MathUtils {
     int ival = (int)(Math.round(d * Math.pow(10,exp)));
     return ival/Math.pow(10,exp);
   }
+
+  public static double[] min_max_mean_stddev(long[] counts) {
+    double min = Float.MAX_VALUE;
+    double max = Float.MIN_VALUE;
+    double mean = 0;
+    for (long tmp : counts) {
+      min = Math.min(tmp, min);
+      max = Math.max(tmp, max);
+      mean += tmp;
+    }
+    mean /= counts.length;
+    double stddev = 0;
+    for (long tmp : counts) {
+      stddev += Math.pow(tmp - mean, 2);
+    }
+    stddev /= counts.length;
+    stddev = Math.sqrt(stddev);
+    return new double[] {min,max,mean,stddev};
+  }
+
 }

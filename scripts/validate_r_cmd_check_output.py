@@ -45,12 +45,13 @@ class Check:
             r"^Maintainer:",
             r"^New maintainer:",
             r"^\s*Tom Kraljevic",
-            r"Insufficient package version .*",
+            r"^Insufficient package version .*",
             r"^\Days since last update: .*",
             r"^Old maintainer\(s\):",
             r"^\s*Anqi Fu",
             r"^NOTE: There was 1 note.",
 
+            r"^\n",
             r"^New submission",
 
             r"^Package was archived on CRAN",
@@ -63,6 +64,11 @@ class Check:
             r"^  sub-directories of 1Mb or more:",
             r"^    java  .*Mb",
             r"^NOTE: There were 2 notes.",
+            r"^Status: 1 WARNING, .* NOTEs",
+            r"^See",
+            r"^ .*/h2o-r/h2o\.Rcheck/00check\.log.*",
+            r"^for details.",
+            r"^\sRunning .*",
 
             r"^Package has FOSS license, installs .class/.jar but has no 'java' directory.",
             r"^\* DONE",
