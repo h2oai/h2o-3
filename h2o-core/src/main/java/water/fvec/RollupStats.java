@@ -460,7 +460,7 @@ class RollupStats extends Iced {
             double pdouble = 1.0 + P*(rows-1);   // following stats:::quantile.default type 7
             long pint = (long) pdouble;          // 1-based into bin vector
             double h = pdouble - pint;           // any fraction h to linearly interpolate between?
-            if (P==1) assert h==0.0 && pint==rows;  // i.e. max
+            assert P!=1 || (h==0.0 && pint==rows);  // i.e. max
             while (hsum < pint) hsum += rs._bins[j++];
             // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
             // pint now falls in bin j-1, grab that bin value now
@@ -474,7 +474,7 @@ class RollupStats extends Iced {
               // and ii) h>0 so we do need to find the next non-zero bin
               if (k<j) k=j; // if j jumped over the k needed for the last P, catch k up to j
                             // Saves potentially winding k forward over the same zero stretch many times
-              while (rs._bins[k]==0) k++;  // the next non-zero bin
+              while (rs._bins[k]==0) k++;  // find the next non-zero bin
               rs._pctiles[i] += h * stride * (k-j+1);
             } // otherwise either h==0 or both pint and pint+1 fall in the same bin, so no need to interpolate
           }
