@@ -147,7 +147,6 @@ class ModelBase(object):
     """
     model = self._model_json["output"]
     if model["model_summary"]:
-      print
       model["model_summary"].show()  # H2OTwoDimTable object
 
 
@@ -167,14 +166,12 @@ class ModelBase(object):
     self.summary()
 
     print
-    if self.__class__.__name__ == "H2OMultinomialModel":
-      # training metrics
-      tm = model["training_metrics"]
-      if tm: ModelBase._show_multi_metrics(tm)
-      vm = model["validation_metrics"]
-      if vm: ModelBase._show_multi_metrics(vm)
+    # training metrics
+    tm = model["training_metrics"]
+    if tm: tm.show()
+    vm = model["validation_metrics"]
+    if vm: vm.show()
 
-    print
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
@@ -196,6 +193,24 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].residual_deviance()
 
+  def residual_degrees_of_freedom(self,train=False,valid=False):
+    """
+    Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
+
+    :param train: Get the residual dof for the training set. If both train and valid are False, then train is selected by default.
+    :param valid: Get the residual dof for the validation set. If both train and valid are True, then train is selected by default.
+    :return: Return the residual dof, or None if it is not present.
+    """
+    if not train and not valid:
+      train = True
+    if train and valid:
+      train = True
+
+    if train:
+      return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
+    else:
+      return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
+
   def null_deviance(self,train=False,valid=False):
     """
     Retreive the null deviance if this model has the attribute, or None otherwise.
@@ -213,6 +228,24 @@ class ModelBase(object):
       return self._model_json["output"]["training_metrics"].null_deviance()
     else:
       return self._model_json["output"]["validation_metrics"].null_deviance()
+
+  def null_degrees_of_freedom(self,train=False,valid=False):
+    """
+    Retreive the null degress of freedom if this model has the attribute, or None otherwise.
+
+    :param train: Get the null dof for the training set. If both train and valid are False, then train is selected by default.
+    :param valid: Get the null dof for the validation set. If both train and valid are True, then train is selected by default.
+    :return: Return the null dof, or None if it is not present.
+    """
+    if not train and not valid:
+      train = True
+    if train and valid:
+      train = True
+
+    if train:
+      return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
+    else:
+      return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
 
   def pprint_coef(self):
     """
@@ -293,6 +326,21 @@ class ModelBase(object):
     tm = tm._metric_json
     return tm.auc()
 
+  def aic(self, train=False, valid=False):
+    """
+    Get the AIC.
+    If both train and valid are False, return the train.
+    If both train and valid are True, return the valid.
+
+    :param train: Return the AIC for training data.
+    :param valid: Return the AIC for the validation data.
+    :return: Retrieve the AIC for this set of metrics
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    if tm is None: return None
+    tm = tm._metric_json
+    return tm.aic()
+
   def giniCoef(self, train=False, valid=False):
     """
     Get the Gini.
@@ -307,20 +355,6 @@ class ModelBase(object):
     if tm is None: return None
     tm = tm._metric_json
     return tm.giniCoef()
-
-  @staticmethod
-  def _show_multi_metrics(metrics, train_or_valid="Training"):
-    tm = metrics._metric_json
-    print train_or_valid, " Metrics: "
-    print "==================="
-    print
-
-    if ModelBase._has(tm,"description"):     print tm["description"]
-    if ModelBase._has(tm,"frame"):           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
-    if ModelBase._has(tm,"MSE"):             print "MSE on ", train_or_valid, ": ", tm["MSE"]
-    if ModelBase._has(tm,"logloss"):         print "logloss on ", train_or_valid, ": ", tm["logloss"]
-    if ModelBase._has(tm,"cm"):              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
-    if ModelBase._has(tm,"hit_ratio_table"): print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
 
   @staticmethod
   def _get_metrics(o, train, valid):

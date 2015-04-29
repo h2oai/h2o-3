@@ -240,10 +240,20 @@ class H2OFrame:
         print tabulate.tabulate(to_show, headers=self.names())
       else:
         vecs = [vec.show(noprint=True) for vec in self]
-        vecs.insert(0, range(1, len(vecs[0]) + 1, 1))
-        print "Displaying " + str(len(vecs[0])) + " row(s):"
-        print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
-        print
+        # vecs = self._vecs
+        l=1
+        if isinstance(vecs[0], float):
+          vecs.insert(0,1)
+          print "Displaying " + str(l) + " row(s):"
+          vecs = [[v] for v in vecs]
+          print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
+          print
+        else:
+          l = len(vecs[0])
+          vecs.insert(0, range(1, len(vecs[0])+1, 1))
+          print "Displaying " + str(l) + " row(s):"
+          print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
+          print
 
   def head(self, rows=10, cols=200, **kwargs):
     """
@@ -1036,8 +1046,12 @@ class H2OVec:
     :return: A new H2OVec.
     """
     e = Expr("[", self, vec)
-    j = h2o.frame(e.eager())
-    e.set_len(j['frames'][0]['rows'])
+    r = e.eager()
+    if isinstance(r, (float,int)):
+      e.set_len(1)
+    else:
+      j = h2o.frame(r)
+      e.set_len(j['frames'][0]['rows'])
     return H2OVec(self._name, e)
 
   def __setitem__(self, b, c):

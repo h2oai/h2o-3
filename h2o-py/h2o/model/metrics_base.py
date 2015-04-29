@@ -13,6 +13,57 @@ class MetricsBase(object):
     self._on_valid = on_valid
     self._algo = algo
 
+  def __repr__(self):
+    self.show()
+    return ""
+
+  def show(self):
+    """
+    Display a short summary of the metrics.
+    :return: None
+    """
+    metric_type = self._metric_json['__meta']['schema_type']
+    types_w_glm =        ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM']
+    types_w_clustering = ['ModelMetricsClustering']
+    types_w_mult =       ['ModelMetricsMultinomial']
+    types_w_bin =        ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
+    types_w_r2 =         ['ModelMetricsBinomial', 'ModelMetricsRegression'] + types_w_glm + types_w_mult
+    types_w_logloss =    types_w_bin + types_w_mult
+
+    print
+    print metric_type + ": " + self._algo
+    reported_on = "** Reported on {} data. **"
+    if self._on_train:
+      print reported_on.format("train")
+    elif self._on_valid:
+      print reported_on.format("validation")
+    else:
+      print reported_on.format("test")
+    print
+    print   "MSE: "                                           + str(self.mse())
+    if metric_type in types_w_r2:
+      print "R^2: "                                           + str(self.r2())
+    if metric_type in types_w_logloss:
+      print "LogLoss: "                                       + str(self.logloss())
+    if metric_type in types_w_glm:
+      print "Null degrees of freedom: "                       + str(self.null_degrees_of_freedom())
+      print "Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom())
+      print "Null deviance: "                                 + str(self.null_deviance())
+      print "Residual deviance: "                             + str(self.residual_deviance())
+      print "AIC: "                                           + str(self.aic())
+    if metric_type in types_w_bin:
+      print "AUC: "                                           + str(self.auc())
+      print "Gini: "                                          + str(self.giniCoef())
+      print                                                     self._metric_json["max_criteria_and_metric_scores"]
+    if metric_type in types_w_mult:
+      print                                                     self._metric_json['cm']['table']
+      print                                                     self._metric_json['hit_ratio_table']
+    if metric_type in types_w_clustering:
+      print "Average within cluster Mean Square Error: "      + str(self.avg_within_ss())
+      print "Average Mean Square Error to grand mean: "       + str(self.avg_ss())
+      print "Average between cluster Mean Square Error: "     + str(self.avg_between_ss())
+      self._metric_json['centroid_stats'].show()
+
   def r2(self):
     """
     :return: Retrieve the R^2 coefficient for this set of metrics
@@ -30,6 +81,12 @@ class MetricsBase(object):
     :return: Retrieve the AUC for this set of metrics.
     """
     return self._metric_json['AUC']
+
+  def aic(self):
+    """
+    :return: Retrieve the AIC for this set of metrics.
+    """
+    return self._metric_json['AIC']
 
   def giniCoef(self):
     """
@@ -51,12 +108,28 @@ class MetricsBase(object):
       return self._metric_json["residual_deviance"]
     return None
 
+  def residual_degrees_of_freedom(self):
+    """
+    :return: the residual dof if the model has residual deviance, or None if no residual dof.
+    """
+    if ModelBase._has(self._metric_json, "residual_degrees_of_freedom"):
+      return self._metric_json["residual_degrees_of_freedom"]
+    return None
+
   def null_deviance(self):
     """
     :return: the null deviance if the model has residual deviance, or None if no null deviance.
     """
     if ModelBase._has(self._metric_json, "null_deviance"):
       return self._metric_json["null_deviance"]
+    return None
+
+  def null_degrees_of_freedom(self):
+    """
+    :return: the null dof if the model has residual deviance, or None if no null dof.
+    """
+    if ModelBase._has(self._metric_json, "null_degrees_of_freedom"):
+      return self._metric_json["null_degrees_of_freedom"]
     return None
 
 class H2ORegressionModelMetrics(MetricsBase):
@@ -72,6 +145,30 @@ class H2ORegressionModelMetrics(MetricsBase):
 class H2OClusteringModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
+
+  def avg_within_ss(self):
+    """
+    :return: the Average within cluster Mean Square Error, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "avg_within_ss"):
+      return self._metric_json["avg_within_ss"]
+    return None
+
+  def avg_ss(self):
+    """
+    :return: the Average Mean Square Error to grand mean, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "avg_ss"):
+      return self._metric_json["avg_ss"]
+    return None
+
+  def avg_between_ss(self):
+    """
+    :return: the Average between cluster Mean Square Error, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "avg_between_ss"):
+      return self._metric_json["avg_between_ss"]
+    return None
 
 class H2OMultinomialModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
@@ -95,32 +192,6 @@ class H2OBinomialModelMetrics(MetricsBase):
       :return: A new H2OBinomialModelMetrics object.
       """
     super(H2OBinomialModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
-
-  def __repr__(self):
-    self.show()
-    return ""
-
-  def show(self):
-    """
-    Display a short summary of the binomial metrics.
-    :return: None
-    """
-    print
-    print "H2OBinomialMetrics: " + self._algo
-    reported_on = "** Reported on {} data. **"
-    if self._on_train:
-      print reported_on.format("train")
-    elif self._on_valid:
-      print reported_on.format("validation")
-    else:
-      print reported_on.format("test")
-    print
-    print "MSE: " + str(self.mse())
-    print "R^2: "  + str(self.r2())
-    print "LogLoss: " + str(self.logloss())
-    print "AUC: " + str(self.auc())
-    print "Gini: " + str(self.giniCoef())
-    print self._metric_json["max_criteria_and_metric_scores"]
 
   def F1(self, thresholds=None):
     """

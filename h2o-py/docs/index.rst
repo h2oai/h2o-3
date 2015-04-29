@@ -14,6 +14,7 @@ Contents:
    h2o
    frame
    h2o.model
+   h2o.metrics
    other
 
 Indices and tables

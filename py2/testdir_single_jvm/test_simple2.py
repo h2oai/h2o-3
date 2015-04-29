@@ -26,7 +26,7 @@ class Basic(unittest.TestCase):
         import_result = h2o.n0.import_files(path=csvPathname)
         # print dump_json(import_result)
 
-        k = import_result['keys'][0]
+        k = import_result['destination_frames'][0]
         frames_result = h2o.n0.frames(key=k)
 
         frame = frames_result['frames'][0]
@@ -42,7 +42,7 @@ class Basic(unittest.TestCase):
 
         # let's see what ray's util does
         frames = h2o.n0.frames()['frames']
-        frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+        frames_dict = h2o_util.list_to_dict(frames, 'frame_id/name')
         # print "frames:", dump_json(frames)
         # print "frames_dict:", dump_json(frames_dict)
         for k,v in frames_dict.items():
@@ -55,7 +55,7 @@ class Basic(unittest.TestCase):
         parse_result = h2o.n0.parse(key=k, intermediateResults=DO_INTERMEDIATE_RESULTS)
 
         frame = parse_result['frames'][0]
-        hex_key = frame['key']['name']
+        hex_key = frame['frame_id']['name']
 
         colCount = 9
         rowCount = 380

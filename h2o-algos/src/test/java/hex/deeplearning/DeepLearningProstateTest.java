@@ -14,6 +14,7 @@ import water.rapids.Env;
 import water.rapids.Exec;
 import water.util.Log;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Random;
@@ -24,7 +25,7 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() throws Exception { runFraction(0.00002f); }
+  @Test public void run() throws Exception { runFraction(0.000025f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -53,6 +54,7 @@ public class DeepLearningProstateTest extends TestUtil {
             DKV.put(frame._key, frame);
           }
           for (DeepLearningParameters.Loss loss : new DeepLearningParameters.Loss[]{
+                  DeepLearningParameters.Loss.Automatic,
                   DeepLearningParameters.Loss.CrossEntropy,
                   DeepLearningParameters.Loss.Huber,
                   DeepLearningParameters.Loss.Absolute,
@@ -70,7 +72,7 @@ public class DeepLearningProstateTest extends TestUtil {
                       DeepLearningParameters.Activation.Rectifier,
                       DeepLearningParameters.Activation.RectifierWithDropout,
                       DeepLearningParameters.Activation.Maxout,
-                      DeepLearningParameters.Activation.MaxoutWithDropout
+//                      DeepLearningParameters.Activation.MaxoutWithDropout
               }) {
                 for (boolean load_balance : new boolean[]{
                         true,
@@ -117,8 +119,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             rng.nextInt(200), // <1 epoch per iteration
                                             500, //>1 epoch per iteration
                                     }) {
-                                      DeepLearningModel model1 = null, model2 = null, tmp_model = null;
-                                      Key dest, dest_tmp;
+                                      DeepLearningModel model1 = null, model2 = null;
                                       count++;
                                       if (fraction < rng.nextFloat()) continue;
 
@@ -134,18 +135,17 @@ public class DeepLearningProstateTest extends TestUtil {
                                         else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
 
                                         // build the model, with all kinds of shuffling/rebalancing/sampling
+                                        DeepLearningParameters p = new DeepLearningParameters();
                                         {
                                           Log.info("Using seed: " + seed);
-                                          DeepLearningParameters p = new DeepLearningParameters();
                                           p._model_id = Key.make(Key.make().toString() + "first");
-                                          dest_tmp = p._model_id;
-                                          p._checkpoint = null;
-
                                           p._train = frame._key;
                                           p._response_column = frame._names[resp];
                                           p._valid = valid==null ? null : valid._key;
 
                                           p._hidden = hidden;
+                                          p._input_dropout_ratio = 0.1;
+                                          p._hidden_dropout_ratios = null;
                                           p._activation = activation;
 //                                      p.best_model_key = best_model_key;
                                           p._override_with_best_model = override_with_best_model;
@@ -195,38 +195,75 @@ public class DeepLearningProstateTest extends TestUtil {
                                           }
                                         }
 
+                                        assert(model1.model_info().get_params()._l1 == 0);
+                                        assert(model1.model_info().get_params()._l2 == 0);
+
                                         // Do some more training via checkpoint restart
                                         // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
-                                        DeepLearningParameters p = new DeepLearningParameters();
-                                        tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
-                                        Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
-                                        assert (tmp_model != null);
+                                        DeepLearningParameters p2 = new DeepLearningParameters();
+                                        Assert.assertTrue(model1.model_info().get_processed_total() >= frame.numRows() * epochs);
 
-                                        p._model_id = Key.make();
-                                        dest = p._model_id;
-                                        p._checkpoint = dest_tmp;
-                                        // p._n_folds = 0;
-
-                                        p._valid = valid == null ? null : valid._key;
-                                        p._response_column = frame._names[resp];
-                                        p._override_with_best_model = override_with_best_model;
-                                        p._epochs = epochs;
-                                        p._loss = loss;
-                                        p._seed = seed;
-                                        p._train_samples_per_iteration = train_samples_per_iteration;
-                                        p._balance_classes = classification && balance_classes;
-                                        p._train = frame._key;
-                                        DeepLearning dl = new DeepLearning(p);
-                                        try {
-                                          model1 = dl.trainModel().get();
-                                        } catch (Throwable t) {
-                                          throw t;
-                                        } finally {
-                                          dl.remove();
+                                        {
+                                          p2._model_id = Key.make();
+                                          p2._checkpoint = model1._key;
+                                          // p._n_folds = 0;
+                                          p2._train = frame._key;
+                                          p2._activation = activation;
+                                          p2._hidden = hidden;
+                                          p2._valid = valid == null ? null : valid._key;
+                                          p2._l1 = 1e-3;
+                                          p2._l2 = 1e-3;
+                                          p2._response_column = frame._names[resp];
+                                          p2._override_with_best_model = override_with_best_model;
+                                          p2._epochs = epochs;
+                                          p2._seed = seed;
+                                          p2._train_samples_per_iteration = train_samples_per_iteration;
+                                          p2._balance_classes = classification && balance_classes;
+                                          DeepLearning dl = new DeepLearning(p2);
+                                          try {
+                                            model2 = dl.trainModel().get();
+                                          } catch (Throwable t) {
+                                            throw t;
+                                          } finally {
+                                            dl.remove();
+                                          }
                                         }
 
-                                        // score and check result (on full data)
-                                        model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in DKV (because of DataInfo...)
+                                        assert(model1._parms != p2);
+                                        assert(model1.model_info().get_params() != model2.model_info().get_params());
+
+                                        assert(model1.model_info().get_params()._l1 == 0);
+                                        assert(model1.model_info().get_params()._l2 == 0);
+
+                                        Assert.assertTrue(model2.model_info().get_processed_total() >= frame.numRows() * 2 * epochs);
+
+                                        assert(p != p2);
+                                        assert(p != model1.model_info().get_params());
+                                        assert(p2 != model2.model_info().get_params());
+
+                                        if (p._loss == DeepLearningParameters.Loss.Automatic) {
+                                          assert(p._loss == DeepLearningParameters.Loss.Automatic);
+                                          assert(p2._loss == DeepLearningParameters.Loss.Automatic);
+                                          assert(model1.model_info().get_params()._loss != DeepLearningParameters.Loss.Automatic);
+                                          assert(model2.model_info().get_params()._loss != DeepLearningParameters.Loss.Automatic);
+                                        }
+                                        assert(p._hidden_dropout_ratios == null);
+                                        assert(p2._hidden_dropout_ratios == null);
+                                        if (p._activation.toString().contains("WithDropout")) {
+                                          assert(model1.model_info().get_params()._hidden_dropout_ratios != null);
+                                          assert(model2.model_info().get_params()._hidden_dropout_ratios != null);
+                                          assert(Arrays.equals(
+                                                  model1.model_info().get_params()._hidden_dropout_ratios,
+                                                  model2.model_info().get_params()._hidden_dropout_ratios));
+                                        }
+                                        assert(p._l1 == 0);
+                                        assert(p._l2 == 0);
+                                        assert(p2._l1 == 1e-3);
+                                        assert(p2._l2 == 1e-3);
+                                        assert(model1.model_info().get_params()._l1 == 0);
+                                        assert(model1.model_info().get_params()._l2 == 0);
+                                        assert(model2.model_info().get_params()._l1 == 1e-3);
+                                        assert(model2.model_info().get_params()._l2 == 1e-3);
 
                                         if (valid == null) valid = frame;
                                         double threshold = 0;
@@ -277,7 +314,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         else {
                                           Frame pred = model2.score(valid);
                                           // Build a POJO, validate same results
-                                          Assert.assertTrue(model1.testJavaScoring(frame,pred,1e-6));
+                                          Assert.assertTrue(model2.testJavaScoring(frame,pred,1e-6));
                                           pred.delete();
                                         }
                                         Log.info("Parameters combination " + count + ": PASS");
@@ -293,10 +330,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                         if (model2 != null) {
                                           model2.delete_xval_models();
                                           model2.delete();
-                                        }
-                                        if (tmp_model != null) {
-                                          tmp_model.delete_xval_models();
-                                          tmp_model.delete();
                                         }
                                         Scope.exit();
                                       }

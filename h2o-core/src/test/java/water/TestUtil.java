@@ -237,7 +237,7 @@ public class TestUtil extends Iced {
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
-      assertEquals(expecteds.at8(i), actuals.at8(i), delta);
+      assertEquals(expecteds.at(i), actuals.at(i), delta);
     }
   }
 
