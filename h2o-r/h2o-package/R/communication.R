@@ -434,16 +434,18 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  nr <- nrow(xx)
   if( header && !is.null(attr(x, "header")) )
     cat(attr(x, "header"), ":\n", sep = "")
 
+  # pretty print the frame if it is large (e.g. > 20 rows)
+  nr <- nrow(xx)
   if( nr > 20L ) {
-    print(xx[1L:5L,])
+    print(xx[1L:5L,],...)
     cat("\n---\n")
-    print(xx[(nr-5L):nr,])
-  } else { print(xx, ...) }
-
+    print(xx[(nr-5L):nr,],...)
+  } else {
+    print(xx, ...)
+  }
   # return original object
   invisible(x)
 }
