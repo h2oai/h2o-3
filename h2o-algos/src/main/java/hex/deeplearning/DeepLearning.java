@@ -104,8 +104,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       model_size += _parms._hidden[layer];
     model_size += Math.abs(_train.lastVec().cardinality());
 
-    Log.info("Model size: " + model_size);
-    if (model_size > 256e6/4/3) {
+    if (model_size > 1e8) {
       error("_hidden", "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers.");
     }
   }
@@ -113,12 +112,20 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
+        byte[] cs = new AutoBuffer().put(_parms).buf();
+
         Scope.enter();
         _parms.read_lock_frames(DeepLearning.this);
+
         init(true);
         if (error_count() > 0)
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         buildModel();
+
+        //check that _parms isn't changed during DL model training
+        byte[] cs2 = new AutoBuffer().put(_parms).buf();
+        assert(Arrays.equals(cs, cs2));
+
         done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
@@ -348,14 +355,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           model = DKV.get(dest()).get();
         }
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
-        new ProgressUpdate("Setting up training data...").fork(_progressKey);
+        final long model_size = model.model_info().size();
+        Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         model.write_lock(self());
+        new ProgressUpdate("Setting up training data...").fork(_progressKey);
         final DeepLearningModel.DeepLearningParameters mp = model.model_info().get_params();
         Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
         Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
 
-        final long model_size = model.model_info().size();
-        if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = tra_fr;
         if (mp._force_load_balance) {
           new ProgressUpdate("Load balancing training data...").fork(_progressKey);
