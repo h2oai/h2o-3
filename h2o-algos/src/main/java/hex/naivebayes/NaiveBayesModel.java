@@ -1,6 +1,7 @@
 package hex.naivebayes;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
@@ -96,13 +97,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     }
 
     // Select class with highest conditional probability
-    double max = -1;
-    for(int i = 1; i < preds.length; i++) {
-      if(preds[i] > max) {
-        max = preds[i];
-        preds[0] = i-1;
-      }
-    }
+    preds[0] = GenModel.getPrediction(preds, data);
     return preds;
   }
 }

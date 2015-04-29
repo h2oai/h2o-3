@@ -12,7 +12,10 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Naive Bayes
@@ -129,6 +132,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       Arrays.fill(colFormats, "%5f");
       model._output._apriori = new TwoDimTable("Y", null, new String[1], _response.domain(), colTypes, colFormats, "",
               new String[1][], new double[][] {apriori});
+
+      model._output._model_summary = createModelSummaryTable(model._output);
     }
 
     @Override
@@ -172,6 +177,37 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       }
       tryComplete();
     }
+  }
+
+  private TwoDimTable createModelSummaryTable(NaiveBayesModel.NaiveBayesOutput output) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Number of Response Levels"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Min Apriori Probability"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Max Apriori Probability"); colTypes.add("double"); colFormat.add("%.5f");
+
+    double apriori_min = output._apriori_raw[0];
+    double apriori_max = output._apriori_raw[0];
+    for(int i = 1; i < output._apriori_raw.length; i++) {
+      if(output._apriori_raw[i] < apriori_min) apriori_min = output._apriori_raw[i];
+      else if(output._apriori_raw[i] > apriori_max) apriori_max = output._apriori_raw[i];
+    }
+
+    final int rows = 1;
+    TwoDimTable table = new TwoDimTable(
+            "Model Summary", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    int col = 0;
+    table.set(row, col++, output._apriori_raw.length);
+    table.set(row, col++, apriori_min);
+    table.set(row, col++, apriori_max);
+    return table;
   }
 
   // Note: NA handling differs from R for efficiency purposes
