@@ -127,8 +127,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // The model to be built
         model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
-        model.delete_and_lock(_key);
-        _train.read_lock(_key);
+        model.delete_and_lock(self());
+        //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
         dinfo = new DataInfo(Key.make(), _train, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
@@ -204,7 +204,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           double[][] lmat = ArrayUtils.multArrArr(ivv_sum, gram);
           gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
 
-          model.update(_key); // Update model in K/V store
+          model.update(self()); // Update model in K/V store
           update(1);          // One unit of work
         }
 
@@ -227,6 +227,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             model._output._u_key = _parms._u_key;
           }
         }
+        model.update(self());
         done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
@@ -244,6 +245,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( u != null & !_parms._keep_u ) u.delete();
         _parms.read_unlock_frames(SVD.this);
       }
+
+      //Job thisJob = DKV.getGet(_key);
+      //System.out.println("------------- JOB status: " + Arrays.toString(Job.jobs()));
       tryComplete();
     }
 
