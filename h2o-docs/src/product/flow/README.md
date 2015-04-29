@@ -237,25 +237,13 @@ Since we've submitted a couple of jobs (data import & parse) to H2O now, let's t
 <a name="ViewJobs"></a>
 # Viewing Jobs
 
-Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference. 
+Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference.
 
-## Viewing Recent Jobs
+## Viewing All Jobs
 
-To view all recent jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
+To view all jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
 
  ![View Jobs](images/Flow_getJobs.png)
-
-The following information displays: 
-
-- Key (linked to the specified job)
-- Description of the type of job (for example, `GLM` or `Parse`)
-- Status (`RUNNING` or `DONE`)
-
-## Viewing Specific Jobs
-
-To view a specific job, click the link in the "Destination" column. 
-
-![View Job - Model](images/Flow_ViewJob_Model.png)
 
 The following information displays: 
 
@@ -266,8 +254,22 @@ The following information displays:
 - End time
 - Run time
 
-
 To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button. 
+
+## Viewing Specific Jobs
+
+To view a specific job, click the link in the "Destination" column. 
+
+![View Job - Model](images/Flow_ViewJob_Model.png)
+
+The following information displays: 
+
+- Type (for example, `Frame`)
+- Link to object (key)
+- Description (for example, `Parse`)
+- Status
+- Run time
+- Progress
 
 **NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
  
@@ -586,7 +588,6 @@ To view a specific frame, click the "Key" link for the specified frame, or enter
 
  ![Viewing specified frame](images/Flow_getFrame.png) 
 
-You can also view all current frames by clicking the drop-down **Data** menu and selecting **List All Frames**. 
 
 From the `getFrame` cell, you can: 
 
@@ -606,7 +607,9 @@ This screenshot displays the results of clicking the **Summary** link for the fi
 ![Inspecting Columns](images/Flow_inspectCol.png)
 
 
-To view all frames, click the **Assist Me!** button, then click the **getFrames** link, or enter `getFrames` in the cell in CS mode and press **Ctrl+Enter**. A list of the current frames in H2O displays that includes the following information for each frame: 
+To view all frames, click the **Assist Me!** button, then click the **getFrames** link, or enter `getFrames` in the cell in CS mode and press **Ctrl+Enter**. You can also view all current frames by clicking the drop-down **Data** menu and selecting **List All Frames**. 
+
+A list of the current frames in H2O displays that includes the following information for each frame: 
 
 
 - Column headings
@@ -640,6 +643,11 @@ In H2O Flow, you can split datasets within Flow for use in training and testing.
 0. In the **Key** entry field, specify a name for the new frame. 
 0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
 0. Click the **Create** button.  
+
+---
+##Creating Frames
+
+To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
 ---
 
@@ -740,7 +748,7 @@ The location specified in `flow_dir` may be either an hdfs or regular filesystem
 
 ## Duplicating Flows
 
-To create a copy of the current flow, select the **Flow** menu, then click **Duplicate**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
+To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
 
 ## Downloading Flows
@@ -781,6 +789,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Cluster health
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
+  **Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
 - H2O version
 - Number of used and available nodes
 - When the cluster was created
@@ -845,6 +854,7 @@ To view network test results, click the **Admin** menu, then click **Network Tes
 
 ## Accessing the Profiler
 
+The Profiler looks across the cluster to see where the same stack trace occurs, and can be helpful for identifying what the currently used CPU is doing. 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
 
  ![Profiler](images/Flow_profiler.png)

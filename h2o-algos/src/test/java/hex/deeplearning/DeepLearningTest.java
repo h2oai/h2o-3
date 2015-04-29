@@ -366,7 +366,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            0.07948414889955241,
+            0.012242754628809,
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
 

@@ -362,6 +362,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
         (sinceLastScore > 4000 && // Limit scoring updates to every 4sec
          (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
+
+      checkMemoryFootPrint();
+
       // If validation is specified we use a model for scoring, so we need to
       // update it!  First we save model with trees (i.e., make them available
       // for scoring) and then update it with resulting error
@@ -528,5 +531,34 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     table.set(row, col++, _output._treeStats._max_leaves);
     table.set(row, col++, _output._treeStats._mean_leaves);
     return table;
+  }
+
+  @Override protected void checkMemoryFootPrint() {
+    if (_model._output._ntrees == 0) return;
+    int model_mem_size = 0; //only need to count the compressed trees
+    int trees_so_far = _model._output._ntrees; //existing trees
+    for (int i=0; i< trees_so_far; ++i) {
+      Key<CompressedTree>[] per_class = _model._output._treeKeys[i];
+      for (int j=0; j<per_class.length; ++j) {
+        if (per_class[j] == null) continue; //GBM binomial
+        model_mem_size += DKV.get(per_class[j]).memOrLoad().length;
+      }
+    }
+    double avg_tree_mem_size = (double)model_mem_size / trees_so_far;
+    Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
+
+    long mem_per_node = Long.MAX_VALUE;
+    for (int i=0; i<H2O.CLOUD.size(); ++i) {
+      mem_per_node = Math.min(H2O.CLOUD._memary[i]._heartbeat.get_max_mem(), mem_per_node);
+    }
+    if (_parms._ntrees * avg_tree_mem_size > H2O.CLOUD.size() * mem_per_node) {
+      String msg = "The tree model will not fit in this cluster's memory ("
+              + PrettyPrint.bytes((long)avg_tree_mem_size)
+              + " per tree x " + _parms._ntrees + " > "
+              + PrettyPrint.bytes(H2O.CLOUD.size() * mem_per_node)
+              + ") - try decreasing ntrees and/or max_depth or increasing min_rows!";
+      error("_ntrees", msg);
+      throw new IllegalArgumentException(msg);
+    }
   }
 }

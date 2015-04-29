@@ -409,7 +409,19 @@ class H2OConnection(object):
                              .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
     # TODO: is.logging? -> write to logs
-    # print "Time to perform REST call (millis): " + str(elapsed_time_millis)
+    # TODO: basically transform this R into Python
+    #   if (.h2o.isLogging()) {
+    #   .h2o.logRest("")
+    #   .h2o.logRest(sprintf("curlError:         %s", as.character(.__curlError)))
+    #   .h2o.logRest(sprintf("curlErrorMessage:  %s", .__curlErrorMessage))
+    #   .h2o.logRest(sprintf("httpStatusCode:    %d", httpStatusCode))
+    #   .h2o.logRest(sprintf("httpStatusMessage: %s", httpStatusMessage))
+    #   .h2o.logRest(sprintf("millis:            %s", as.character(as.integer(deltaMillis))))
+    #   .h2o.logRest("")
+    #   .h2o.logRest(payload)
+    #   .h2o.logRest("")
+    #   }
+
     return http_result
 
   # Low level request call
