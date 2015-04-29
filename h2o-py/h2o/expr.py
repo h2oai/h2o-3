@@ -352,7 +352,7 @@ class Expr(object):
     if tmps:
       cmd = "(, " + cmd + tmps + ")"
     j = h2o.rapids(cmd)
-    if j['result_type'] in [0,3,4]:
+    if j['result_type'] == 0:
       pass  # Big Data Key is the result
     # Small data result pulled locally
     elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
