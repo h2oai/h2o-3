@@ -276,7 +276,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
         // FIXME: Remove (most of) this code - once it passes...
         // PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
-        if (true) {
+        if (false) {
           assert((ArrayUtils.sum(model._output._size) - _parms.train().numRows()) <= 1);
 
 //          Log.info(model._output._model_summary);
