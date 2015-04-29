@@ -1099,12 +1099,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     public TwoDimTable createSummaryTable() {
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
+      long byte_size = new AutoBuffer().put(this).buf().length;
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers",
                   (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
-                      (get_params()._autoencoder ? "auto-encoder" :
-                              _classification ? (units[units.length-1] + "-class classification") : "regression" )
-                      + ", " + get_params()._loss.toString() + " loss, " + String.format("%,d", size()) + " weights/biases",
+                          (get_params()._autoencoder ? "auto-encoder" :
+                                  _classification ? (units[units.length-1] + "-class classification") : "regression" )
+                          + ", " + get_params()._loss.toString() + " loss, "
+                          + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size),
               new String[neurons.length],
               new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                       "Mean Rate", "Rate RMS", "Momentum",
@@ -1517,6 +1519,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
     assert _key.equals(destKey);
+    long byte_size = new AutoBuffer().put(this).buf().length;
+    if (byte_size > Value.MAX)
+      throw new IllegalArgumentException("Model is too large: PUBDEV-941");
   }
 
   /**
