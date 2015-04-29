@@ -265,8 +265,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           assert(actualNewP != oldP);
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
-            throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+            throw new IllegalArgumentException("Predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns.");
           }
+          if (!Arrays.deepEquals(cp._output._domains, previous._output._domains))
+            throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
 
           for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
             if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
