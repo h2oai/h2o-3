@@ -105,7 +105,9 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     model_size += Math.abs(_train.lastVec().cardinality());
 
     if (model_size > 1e8) {
-      error("_hidden", "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers.");
+      String msg = "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers.";
+      error("_hidden", msg);
+      cancel(msg);
     }
   }
 
