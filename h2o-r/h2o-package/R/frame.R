@@ -1212,6 +1212,7 @@ setMethod("summary", "H2OFrame", function(object, ...) {
           if(!is.null(col$missing_count) && col$missing_count > 0) paste0("NA's   :", col$missing_count, "  ") else NA)
       } else {
         top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
+        domains <- NULL
         if( col$sigma == 0 ) {  # constant column, pick the correct domain level
           if( !is.null(col$domain) ) {  # have domain, col$data is 0-based index into the domain...
             domains <- col$domain[top.ix+1]
