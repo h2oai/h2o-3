@@ -15,6 +15,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     public double _min_sdev = 0.001;   // Minimum standard deviation to use for observations without enough data
     public double _eps_prob = 0;   // Cutoff below which probability is replaced with _min_prob
     public double _min_prob = 0.001;   // Minimum conditional probability to use for observations without enough data
+    public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
   }
 
   public static class NaiveBayesOutput extends SupervisedModel.SupervisedOutput {

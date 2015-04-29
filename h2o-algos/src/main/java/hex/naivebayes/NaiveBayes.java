@@ -1,8 +1,6 @@
 package hex.naivebayes;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.SupervisedModelBuilder;
+import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import water.*;
@@ -66,6 +64,10 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
 
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
+      model._output._levels = _response.domain();
+      model._output._rescnt = tsk._rescnt;
+      model._output._ncats = dinfo._cats;
+
       // String[][] domains = dinfo._adaptedFrame.domains();
       String[][] domains = model._output._domains;
       double[] apriori = new double[tsk._nrescat];
@@ -134,6 +136,11 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
               new String[1][], new double[][] {apriori});
 
       model._output._model_summary = createModelSummaryTable(model._output);
+      if(_parms._compute_metrics) {
+        model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
+        ModelMetricsSupervised mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model._output._training_metrics = mm;
+      }
     }
 
     @Override
@@ -154,10 +161,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
 
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
-
-        model._output._rescnt = tsk._rescnt;
-        model._output._levels = _response.domain();
-        model._output._ncats = dinfo._cats;
         model.update(_key);
         done();
       } catch (Throwable t) {
