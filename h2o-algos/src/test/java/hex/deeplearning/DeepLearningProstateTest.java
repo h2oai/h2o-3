@@ -208,6 +208,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                           p2._checkpoint = model1._key;
                                           // p._n_folds = 0;
                                           p2._train = frame._key;
+                                          p2._activation = activation;
+                                          p2._hidden = hidden;
                                           p2._valid = valid == null ? null : valid._key;
                                           p2._l1 = 1e-3;
                                           p2._l2 = 1e-3;
