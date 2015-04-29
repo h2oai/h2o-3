@@ -472,8 +472,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
         if (!_quiet_mode) dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       }
+      else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
+        dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
+      }
       if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
         dl.error("_input_dropout_ratio", "Input dropout must be >= 0 and <1.");
+      if (_score_duty_cycle < 0 || _score_duty_cycle > 1)
+        dl.error("_score_duty_cycle", "Score duty cycle must be >= 0 and <=1.");
+      if (_l1 < 0)
+        dl.error("_l1", "L1 penalty must be >= 0.");
+      if (_l2 < 0)
+        dl.error("_l2", "L2 penalty must be >= 0.");
       if (H2O.CLOUD.size() == 1 && _replicate_training_data)
         dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
       if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data))

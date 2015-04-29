@@ -138,13 +138,13 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
     // the following parameters can be modified when restarting from a checkpoint
     transient final String [] cp_modifiable = new String[] {
-            "_expert_mode",
             "_seed",
             "_epochs",
             "_score_interval",
             "_train_samples_per_iteration",
             "_target_ratio_comm_to_comp",
             "_score_duty_cycle",
+            "_score_training_samples",
             "_classification_stop",
             "_regression_stop",
             "_quiet_mode",
@@ -156,12 +156,41 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             "_replicate_training_data",
             "_shuffle_training_data",
             "_single_node_mode",
-            "_sparse",
-            "_col_major",
+            "_fast_mode",
             // Allow modification of the regularization parameters after a checkpoint restart
             "_l1",
             "_l2",
             "_max_w2",
+            "_input_dropout_ratio",
+            "_hidden_dropout_ratios",
+            "_loss",
+            "_override_with_best_model",
+            "_missing_values_handling",
+            "_reproducible",
+            "_export_weights_and_biases"
+    };
+    // the following parameters must not be modified when restarting from a checkpoint
+    transient final String [] cp_not_modifiable = new String[] {
+            "_drop_na20_cols",
+            "_response_column",
+            "_activation",
+//            "_hidden", //this must be checked via Arrays.equals(a,b), not via String.equals()
+//            "_ignored_columns", //this must be checked via Arrays.equals(a,b), not via String.equals()
+            "_use_all_factor_levels",
+            "_adaptive_rate",
+            "_autoencoder",
+            "_rho",
+            "_epsilon",
+            "_sparse",
+            "_sparsity_beta",
+            "_col_major",
+            "_rate",
+            "_momentum_start",
+            "_momentum_ramp",
+            "_momentum_stable",
+            "_nesterov_accelerated_gradient",
+            "_ignore_const_cols",
+            "_max_categorical_features"
     };
 
     /**
@@ -179,6 +208,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
 
+        if( isClassifier() != previous._output.isClassifier() )
+          throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
+        if( isSupervised() != previous._output.isSupervised() )
+          throw new IllegalArgumentException("Model type must be the same as for the checkpointed model.");
+
         // check the user-given arguments for consistency
         DeepLearningModel.DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
         DeepLearningModel.DeepLearningParameters newP = _parms; //user-given parameters for restart
@@ -188,7 +222,34 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
         if ((_parms._valid == null) != (previous._parms._valid == null)
                 || (_parms._valid != null  && !_parms._valid.equals(previous._parms._valid))) {
-          throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
+          throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
+        }
+        if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
+          throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+        }
+        if (!Arrays.equals(newP._hidden, oldP._hidden)) {
+          throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
+        }
+        if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
+          throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+        }
+
+        //compare the user-given parameters before and after and check that they are not changed
+        for (Field fBefore : oldP.getClass().getDeclaredFields()) {
+          if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
+            for (Field fAfter : newP.getClass().getDeclaredFields()) {
+              if (fBefore.equals(fAfter)) {
+                try {
+                  if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
+                    if (fBefore.get(oldP) == null && fAfter.get(newP) == null) continue; //if both parameters are null, we don't need to do anything
+                    throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
+                  }
+                } catch (IllegalAccessException e) {
+                  e.printStackTrace();
+                }
+              }
+            }
+          }
         }
 
         try {
@@ -203,21 +264,9 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           assert(actualNewP != newP);
           assert(actualNewP != oldP);
 
-          // Automatically set some parameters
-          if (oldP._autoencoder != newP._autoencoder) {
-            newP._autoencoder = oldP._autoencoder;
-            Log.warn("Automatically " + (newP._autoencoder ? "enabling" : "disabling") + " autoencoder (same as the checkpointed model).");
+          if (!Arrays.equals(cp._output._names, previous._output._names)) {
+            throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
           }
-          if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
-            throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
-          }
-          if (ArrayUtils.difference(newP._ignored_columns, oldP._ignored_columns).length != 0
-                  || ArrayUtils.difference(newP._ignored_columns, oldP._ignored_columns).length != 0) {
-            actualNewP._ignored_columns = oldP._ignored_columns;
-            Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
-          }
-          if( isClassifier() != previous._output.isClassifier() )
-            Log.warn("Automatically switching to " + (isClassifier() ? "regression" : "classification") + " (same as the checkpointed model).");
 
           for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
             if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
