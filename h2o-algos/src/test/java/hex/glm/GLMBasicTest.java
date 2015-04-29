@@ -89,7 +89,7 @@ public class GLMBasicTest extends TestUtil {
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-    File f = find_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    File f = find_test_file_static("smalldata/glm_test/prostate_cat_replaced.csv");
     assert f.exists();
 
     NFSFileVec nfs = NFSFileVec.make(f);
