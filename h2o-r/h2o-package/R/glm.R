@@ -46,7 +46,19 @@
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
-#' @seealso \code{\link{predict.H2OModel}} for prediction.
+#'
+#' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
+#'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
+#'          \code{\linkS4class{H2ORegressionModel}} is returned). The default print-out of the models is shown, but further GLM-specifc
+#'          information can be queried out of the object. To access these various items, please refer to the seealso section below.
+#'
+#'          Upon completion of the GLM, the resulting object has coefficients, normalized coefficients, residual/null deviance, aic,
+#'          and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please
+#'          refer to the more in-depth GLM documentation available here: \url{http://docs2.h2o.ai/datascience/glm.html},
+#'
+#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}}, \code{\link{h2o.aic}},
+#'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
+#'          \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
 #' localH2O = h2o.init()
 #'
