@@ -63,7 +63,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
 
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
-      String[][] domains = dinfo._adaptedFrame.domains();
+      // String[][] domains = dinfo._adaptedFrame.domains();
+      String[][] domains = model._output._domains;
       double[] apriori = new double[tsk._nrescat];
       double[][][] pcond = new double[tsk._npreds][][];
       for(int i = 0; i < pcond.length; i++) {
@@ -139,7 +140,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
         init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
-        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesModel.NaiveBayesOutput(NaiveBayes.this));
@@ -149,6 +150,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
+        model._output._rescnt = tsk._rescnt;
         model._output._levels = _response.domain();
         model._output._ncats = dinfo._cats;
         model.update(_key);

@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
+import static hex.deeplearning.DeepLearning.makeDataInfo;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
@@ -454,26 +455,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
 //          dl.hide("_balance_classes", "balance_classes is used only with classification.");
         }
-
 //        if( !classification || !_balance_classes )
 //          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
-
-
         if (!classification && _valid != null || _valid == null)
           dl.hide("_score_validation_sampling", "score_validation_sampling requires classification and a validation frame.");
       }
 
-      // Auto-fill defaults
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
         dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       if (_hidden_dropout_ratios == null) {
-        if (_activation == Activation.TanhWithDropout || _activation == Activation.MaxoutWithDropout || _activation == Activation.RectifierWithDropout) {
-          if (expensive) {
-            _hidden_dropout_ratios = new double[_hidden.length];
-            dl.info("_hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
-            Arrays.fill(_hidden_dropout_ratios, 0.5);
-          }
-        }
+        // ok - nothing to check
       }
       else if (_hidden_dropout_ratios.length != _hidden.length) {
         dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
@@ -481,44 +472,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
         if (!_quiet_mode) dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       }
-
+      else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
+        dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
+      }
       if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
         dl.error("_input_dropout_ratio", "Input dropout must be >= 0 and <1.");
-
-      if (H2O.CLOUD.size() == 1 && _replicate_training_data) {
+      if (_score_duty_cycle < 0 || _score_duty_cycle > 1)
+        dl.error("_score_duty_cycle", "Score duty cycle must be >= 0 and <=1.");
+      if (_l1 < 0)
+        dl.error("_l1", "L1 penalty must be >= 0.");
+      if (_l2 < 0)
+        dl.error("_l2", "L2 penalty must be >= 0.");
+      if (H2O.CLOUD.size() == 1 && _replicate_training_data)
         dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
-        if (expensive) {
-          dl.info("_replicate_training_data", "Disabling replicate_training_data on 1 node.");
-          _replicate_training_data = false;
-        }
-      }
-      if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data)) {
+      if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data))
         dl.hide("_single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
-        if (expensive) {
-          dl.info("_single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
-          _single_node_mode = false;
-        }
-      }
-
-      if (_autoencoder) {
+      if (_autoencoder)
         dl.hide("_use_all_factor_levels", "use_all_factor_levels is mandatory in combination with autoencoder.");
-      }
-      if (!_use_all_factor_levels && _autoencoder ) {
-        if (expensive) {
-          dl.warn("_use_all_factor_levels", "Automatically enabling all_factor_levels for auto-encoders.");
-          _use_all_factor_levels = true;
-        }
-      }
-
       if (getNumFolds() != 0)
         dl.hide("_override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
-      if(_override_with_best_model && getNumFolds() != 0) {
-        if (expensive) {
-          dl.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
-          _override_with_best_model = false;
-        }
-      }
-
       if (_adaptive_rate) {
         dl.hide("_rate", "rate is not used with adaptive_rate.");
         dl.hide("_rate_annealing", "rate_annealing is not used with adaptive_rate.");
@@ -532,64 +504,29 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.hide("_rho", "rho is only used with adaptive_rate.");
         dl.hide("_epsilon", "epsilon is only used with adaptive_rate.");
       }
-      if (_adaptive_rate) {
-        if (expensive) {
-          dl.info("_adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
-                  + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
-          _momentum_start = 0;
-          _momentum_stable = 0;
-        }
-      } else {
-        if (expensive) {
-          dl.info("_adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
-                  + "rho, epsilon.");
-          _rho = 0;
-          _epsilon = 0;
-        }
-      }
-
       if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
         dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
       }
-      if (getNumFolds() != 0) {
+      if (getNumFolds() != 0)
         dl.error("_n_folds", "n_folds is not yet implemented.");
-        if (expensive) {
-          if (_override_with_best_model) {
-            dl.warn("_override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
-            _override_with_best_model = false;
-          }
-        }
-      }
-
-      if (_loss == Loss.Automatic) {
-        if (expensive) {
-          _loss = (classification && !_autoencoder) ? Loss.CrossEntropy : Loss.MeanSquare;
-          dl.info("_loss", "Automatically setting loss function to " + _loss);
-        }
-      }
 
       if (_loss == null) {
         if (expensive || dl._nclass != 0) {
           dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
         }
         //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
-      } else {
+      } else if (_loss != Loss.Automatic) {
         if (_autoencoder && _loss == Loss.CrossEntropy)
           dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
         if (!classification && _loss == Loss.CrossEntropy)
           dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
       }
-
       if (!classification && _loss == Loss.CrossEntropy)
         dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
-
-      if (_score_training_samples < 0) {
+      if (_score_training_samples < 0)
         dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
-      }
-      if (_score_validation_samples < 0) {
+      if (_score_validation_samples < 0)
         dl.error("_score_validation_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
-      }
-
       if(_autoencoder && _sparsity_beta > 0) {
         if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout) {
           if (_average_activation >= 1 || _average_activation <= -1)
@@ -615,18 +552,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
-        }
-      }
-      if (_reproducible) {
-        if (expensive) {
-          dl.info("_reproducibility",
-                  "Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                          +"and setting train_samples_per_iteration to -1 to enforce reproducibility.");
-          _force_load_balance = true;
-          _single_node_mode = false;
-          _train_samples_per_iteration = -1;
-          _replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
-          //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
         }
       }
     }
@@ -682,9 +607,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // return the most up-to-date model metrics
   DeepLearningScoring last_scored() { return errors == null ? null : errors[errors.length-1]; }
 
-//  @Override
-  public final DeepLearningParameters get_params() { return _parms; }
-//  @Override public final Request2 job() { return get_params(); }
+  /**
+   * Get the parameters actually used for model building, not the user-given ones (_parms)
+   * They might differ since some defaults are filled in, and some invalid combinations are auto-disabled in modifyParams
+   * @return actually used parameters
+   */
+  public final DeepLearningParameters get_params() { return model_info.get_params(); }
 
 //  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
@@ -1044,7 +972,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       _train = train;
       _valid = valid;
       data_info = dinfo;
-      parameters = params;
+      parameters = (DeepLearningParameters)params.clone();
+      modifyParms(parameters, parameters, _classification);
+
       final int num_input = dinfo.fullN();
       final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
       assert(num_input > 0);
@@ -1516,20 +1446,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   /** Constructor to restart from a checkpointed model
    * @param destKey New destination key for the model
+   *  @param parms User-given parameters for checkpoint restart
    *  @param cp Checkpoint to restart from
    * @param store_best_model Store only the best model instead of the latest one  */
-  public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
-    super(destKey, (DeepLearningParameters)cp._parms.clone(), (DeepLearningModelOutput)cp._output.clone());
+  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
+    super(destKey, parms == null ? (DeepLearningParameters)cp._parms.clone() : parms, (DeepLearningModelOutput)cp._output.clone());
+    assert(_parms != cp._parms); //make sure we have a clone
+    model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
     if (store_best_model) {
-      model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
       model_info.data_info = dataInfo.deep_clone(); //replace previous data_info with updated version that's passed in (contains enum for classification)
     } else {
-      model_info = (DeepLearningModelInfo) cp.model_info.clone(); //shallow clone is ok (won't modify the Checkpoint in K-V store during checkpoint restart)
       model_info.data_info = dataInfo; //shallow clone is ok
-      // Ok to modify (the normally immutable read-only) parameters, because
-      // this is a private copy just cloned above in the super() call.
-      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
+      if (parms != null) {
+        assert (_parms == parms);
+        assert (_parms._checkpoint == parms._checkpoint);
+        assert (_parms._checkpoint == cp._key);
+      }
+//      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
+    assert(model_info().get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
     run_time = cp.run_time;
@@ -1545,6 +1480,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     makeWeightsBiases(destKey);
     _output._scoring_history = createScoringHistoryTable(errors);
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
+    _output._names = dataInfo._adaptedFrame.names();
+    _output._domains = dataInfo._adaptedFrame.domains();
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1557,11 +1494,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
     super(destKey, parms, output);
     boolean classification = train.lastVec().isEnum();
-    final DataInfo dinfo = new DataInfo(Key.make(), train, valid, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            classification    ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip);
-    output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
-    output._domains= train.domains();
+    final DataInfo dinfo = makeDataInfo(train, valid, _parms);
+    _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
+    _output._domains= train.domains();
+    _output._names = dinfo._adaptedFrame.names();
+    _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo._key,dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
     actual_best_model_key = Key.makeUserHidden(Key.make());
@@ -1580,6 +1517,78 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
     assert _key.equals(destKey);
+  }
+
+  /**
+   * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
+   * @param fromParms raw user-given parameters from the REST API
+   * @param toParms modified set of parameters, with defaults filled in
+   * @param classification
+   */
+  public static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, boolean classification) {
+    if (fromParms._hidden_dropout_ratios == null) {
+      if (fromParms._activation == DeepLearningParameters.Activation.TanhWithDropout
+              || fromParms._activation == DeepLearningParameters.Activation.MaxoutWithDropout
+              || fromParms._activation == DeepLearningParameters.Activation.RectifierWithDropout) {
+        toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
+        if (!fromParms._quiet_mode)
+          Log.warn("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
+        Arrays.fill(toParms._hidden_dropout_ratios, 0.5);
+      }
+    } else {
+      toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
+    }
+    if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
+      Log.warn("_replicate_training_data: Disabling replicate_training_data on 1 node.");
+      toParms._replicate_training_data = false;
+    }
+    if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
+      Log.warn("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
+      toParms._single_node_mode = false;
+    }
+    if (!fromParms._use_all_factor_levels && fromParms._autoencoder ) {
+      Log.warn("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
+      toParms._use_all_factor_levels = true;
+    }
+    if(fromParms._override_with_best_model && fromParms.getNumFolds() != 0) {
+      Log.warn("_override_with_best_model: Disabling override_with_best_model in combination with n-fold cross-validation.");
+      toParms._override_with_best_model = false;
+    }
+    if (fromParms._adaptive_rate) {
+      Log.warn("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
+              + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+      toParms._rate = 0;
+      toParms._rate_decay = 0;
+      toParms._rate_annealing = 0;
+      toParms._momentum_start = 0;
+      toParms._momentum_ramp = 0;
+      toParms._momentum_stable = 0;
+      toParms._nesterov_accelerated_gradient = false;
+    } else {
+      Log.warn("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
+              + "rho, epsilon.");
+      toParms._rho = 0;
+      toParms._epsilon = 0;
+    }
+    if (fromParms.getNumFolds() != 0) {
+      if (fromParms._override_with_best_model) {
+        Log.warn("_override_with_best_model: Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+        toParms._override_with_best_model = false;
+      }
+    }
+    if (fromParms._loss == DeepLearningParameters.Loss.Automatic) {
+        toParms._loss = (classification && !fromParms._autoencoder) ? DeepLearningParameters.Loss.CrossEntropy : DeepLearningParameters.Loss.MeanSquare;
+        Log.warn("_loss: Automatically setting loss function to " + toParms._loss);
+    }
+    if (fromParms._reproducible) {
+      Log.warn("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+                      +"and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+      toParms._force_load_balance = true;
+      toParms._single_node_mode = false;
+      toParms._train_samples_per_iteration = -1;
+      toParms._replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+      //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
+    }
   }
 
   public long _timeLastScoreEnter; //not transient: needed for HTML display page
@@ -1619,7 +1628,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       run_time += time_last_iter_millis;
       _timeLastScoreEnter = now;
-      keep_running = (epoch_counter < get_params()._epochs);
+      keep_running = (epoch_counter < model_info().get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
       final long sinceLastPrint = now -_timeLastPrintStart;
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
@@ -2085,7 +2094,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
-    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
+    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
@@ -2132,10 +2141,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     String mname = JCodeGen.toJavaId(_key.toString());
 
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
+    final DeepLearningParameters p = model_info.get_params();
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
-    sb.ip("public int nclasses() { return "+ (_parms._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
+    sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
     sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
 
     if (model_info().data_info()._nums > 0) {
@@ -2151,8 +2161,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       JCodeGen.toStaticVar(sb, "NORMRESPMUL", model_info().data_info()._normRespMul, "Standardization/Normalization scaling factor for response.");
       JCodeGen.toStaticVar(sb, "NORMRESPSUB", model_info().data_info()._normRespSub, "Standardization/Normalization offset for response.");
     }
-    if (get_params()._hidden_dropout_ratios != null) {
-      JCodeGen.toStaticVar(sb, "HIDDEN_DROPOUT_RATIOS", get_params()._hidden_dropout_ratios, "Hidden layer dropout ratios.");
+    if (p._hidden_dropout_ratios != null) {
+      JCodeGen.toStaticVar(sb, "HIDDEN_DROPOUT_RATIOS", p._hidden_dropout_ratios, "Hidden layer dropout ratios.");
     }
 
     int[] layers = new int[neurons.length];
@@ -2231,6 +2241,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
     SB model = new SB();
+    final DeepLearningParameters p = model_info.get_params();
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     final int cats = model_info().data_info()._cats;
     final int nums = model_info().data_info()._nums;
@@ -2270,11 +2281,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       bodySb.i().p("}").nl();
     }
 
-    boolean tanh=(get_params()._activation == DeepLearningParameters.Activation.Tanh || get_params()._activation == DeepLearningParameters.Activation.TanhWithDropout);
-    boolean relu=(get_params()._activation == DeepLearningParameters.Activation.Rectifier || get_params()._activation == DeepLearningParameters.Activation.RectifierWithDropout);
-    boolean maxout=(get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout);
+    boolean tanh=(p._activation == DeepLearningParameters.Activation.Tanh || p._activation == DeepLearningParameters.Activation.TanhWithDropout);
+    boolean relu=(p._activation == DeepLearningParameters.Activation.Rectifier || p._activation == DeepLearningParameters.Activation.RectifierWithDropout);
+    boolean maxout=(p._activation == DeepLearningParameters.Activation.Maxout || p._activation == DeepLearningParameters.Activation.MaxoutWithDropout);
 
-    final String stopping = get_params()._autoencoder ? "(i<=ACTIVATION.length-1)" : "(i<ACTIVATION.length-1)";
+    final String stopping = p._autoencoder ? "(i<=ACTIVATION.length-1)" : "(i<ACTIVATION.length-1)";
 
     // make prediction: forward propagation
     bodySb.i().p("for (i=1; i<ACTIVATION.length; ++i) {").nl();
@@ -2334,7 +2345,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
       }
     }
-    if (get_params()._hidden_dropout_ratios != null) {
+    if (p._hidden_dropout_ratios != null) {
       bodySb.i(3).p("if (i<ACTIVATION.length-1) {").nl();
       bodySb.i(4).p("ACTIVATION[i][r] *= HIDDEN_DROPOUT_RATIOS[i-1];").nl();
       bodySb.i(3).p("}").nl();
@@ -2362,7 +2373,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       bodySb.i(2).p("}").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();
-    } else if (!get_params()._autoencoder) { //Regression
+    } else if (!p._autoencoder) { //Regression
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // regression: set preds[1], FillPreds0 will put it into preds[0]
       if (model_info().data_info()._normRespMul != null) {

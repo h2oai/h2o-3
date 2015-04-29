@@ -43,10 +43,58 @@
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
-#'        coefficients.
-#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
+#'        coefficients.
+#'
+#' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
+#'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
+#'          \code{\linkS4class{H2ORegressionModel}} is returned). The default print-out of the models is shown, but further GLM-specifc
+#'          information can be queried out of the object. To access these various items, please refer to the seealso section below.
+#'
+#'          Upon completion of the GLM, the resulting object has coefficients, normalized coefficients, residual/null deviance, aic,
+#'          and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please
+#'          refer to the more in-depth GLM documentation available here: \url{http://docs2.h2o.ai/datascience/glm.html},
+#'
+#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}}, \code{\link{h2o.aic}},
+#'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
+#'          \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
+#' @examples
+#' localH2O = h2o.init()
+#'
+#' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
+#' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prostatePath, destination_frame = "prostate.hex")
+#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
+#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE,
+#'         use_all_factor_levels = FALSE)
+#'
+#' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
+#' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
+#' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE,
+#'         use_all_factor_levels = FALSE)
+#'
+#' \dontrun{
+#'  # GLM variable importance
+#'  # Also see:
+#'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
+#'  data.hex = h2o.importFile(
+#'    localH2O,
+#'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
+#'    destination_frame = "data.hex")
+#'  myX = 1:20
+#'  myY="y"
+#'  my.glm = h2o.glm(x=myX, y=myY, data=data.hex, family="binomial",
+#'                  standardize=TRUE, use_all_factor_levels=TRUE,
+#'                  higher_accuracy=TRUE, lambda_search=TRUE,
+#'                  return_all_lambda=TRUE, variable_importances=TRUE)
+#' best_model = my.glm@@best_model
+#' n_coeff = abs(my.glm@@models[[best_model]]@@model$normalized_coefficients)
+#' VI = abs(n_coeff[-length(n_coeff)])
+#' glm.VI = VI[order(VI,decreasing=T)]
+#' print(glm.VI)
+#' }
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     max_iterations = 50,

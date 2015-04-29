@@ -273,12 +273,15 @@ public final class ParseSetup extends Iced {
       if(bits.length > 0) {
         _empty = false;
 
-          // get file size
-          float decompRatio = ZipUtil.decompressionRatio(bv);
-          if (decompRatio > 1.0)
-            _totalParseSize += bv.length() * decompRatio; // estimate file size
-          else  // avoid numerical distortion of file size when not compressed
-            _totalParseSize += bv.length();
+        // get file size
+        float decompRatio = ZipUtil.decompressionRatio(bv);
+        if (decompRatio > 1.0)
+          _totalParseSize += bv.length() * decompRatio; // estimate file size
+        else  // avoid numerical distortion of file size when not compressed
+          _totalParseSize += bv.length();
+
+        // Check for supported encodings
+        checkEncoding(bits);
 
         // only preview 1 DFLT_CHUNK_SIZE for ByteVecs, UploadFileVecs, compressed, and small files
 /*        if (ice instanceof ByteVec
@@ -507,5 +510,26 @@ public final class ParseSetup extends Iced {
     while(DKV.get(k) != null)
       k = Key.make(res = n + ++i + ".hex");
     return res;
+  }
+
+  /**
+   *  Reject unsupported encodings
+   *
+   * For the curious, this is hardly a complete test, it only catches the
+   * most polite UTF-16 cases.  Switch to jChardet or guessEncoding libraries
+   * for more robust solutions.  WARNING: not all UTF-16 files
+   * use BOM to indicate their encoding.  Even worse, some datasets may be
+   * made from disparate sources, and could used a mix that wouldn't be
+   * detected by this.
+   *
+   * @param bits data to be examined for encoding
+   */
+  private static final void checkEncoding(byte[] bits) {
+    if (bits.length >= 2) {
+      if ((bits[0] == (byte) 0xff && bits[1] == (byte) 0xfe) /* UTF-16, little endian */ ||
+              (bits[0] == (byte) 0xfe && bits[1] == (byte) 0xff) /* UTF-16, big endian */) {
+        throw new H2OParseSetupException("UTF16 encoding detected, but is not supported.");
+      }
+    }
   }
 } // ParseSetup state class
