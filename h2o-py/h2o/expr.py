@@ -162,6 +162,11 @@ class Expr(object):
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
         data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        domains  = [c['domain'] for c in j['frames'][0]['columns']]
+        for i in range(len(data)):
+          if domains[i] is not None:
+            for j in range(len(data[i])):
+              data[i][j] = domains[i][int(data[i][j])]
         data = map(list, zip(*data))
         return data[0:min(10,len(data))]
       return self._data
