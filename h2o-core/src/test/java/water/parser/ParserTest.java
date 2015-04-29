@@ -777,8 +777,7 @@ public class ParserTest extends TestUtil {
             Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
-            t.printStackTrace();
-            throw t;
+            Log.throwErr(t);
           }
         }
       }
