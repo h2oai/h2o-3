@@ -69,8 +69,8 @@ test <- function(conn){
     x <- cbind(as.matrix(data.standardize[,indVars]),1)
 
     Log.info("Calculate the gradient: ")
-    beta1 <- glm_bayesianp@model$coefficients_table$norm_coefficients
-    beta2 <- glm_nopriors@model$coefficients_table$norm_coefficients
+    beta1 <- glm_bayesianp@model$coefficients_table[,3]
+    beta2 <- glm_nopriors@model$coefficients_table[,3]
     ## Standardize beta given
     beta_given.df <- as.data.frame(betaConstraints$beta_given)
     col_sd <- apply(data.df[,1:22], 2, sd)
