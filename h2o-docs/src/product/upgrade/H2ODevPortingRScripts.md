@@ -78,7 +78,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `balance.classes` | `balance_classes`
 `max.after.balance.size` | `max_after_balance_size`
-`class.sampling.factors` | `class_sampling_factors`
+
 
 ###Deprecated GBM Parameters
 
@@ -273,7 +273,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `iter.max` | `max_iterations`
 `normalize` | `standardize`
 
-**Note** In H2O, the `normalize` parameter was disabled by default.The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
+**Note** In H2O, the `normalize` parameter was disabled by default. The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
 
 ###New K-Means Parameters
 
@@ -331,7 +331,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `key` | `model_id`
 `validation` | `validation_frame`
 `class.sampling.factors` | `class_sampling_factors`
-
+`nfolds` |  `n_folds`
 
 ###Deprecated DL Parameters
 
@@ -339,7 +339,6 @@ The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
-- `n_folds`:Number of folds for cross-validation (will be re-added).
 
 ###New DL Parameters
 
