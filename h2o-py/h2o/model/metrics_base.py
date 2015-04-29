@@ -45,6 +45,12 @@ class MetricsBase(object):
       print "R^2: "                                           + str(self.r2())
     if metric_type in types_w_logloss:
       print "LogLoss: "                                       + str(self.logloss())
+    if metric_type in types_w_glm:
+      print "Null degrees of freedom: "                       + str(self.null_degrees_of_freedom())
+      print "Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom())
+      print "Null deviance: "                                 + str(self.null_deviance())
+      print "Residual deviance: "                             + str(self.residual_deviance())
+      print "AIC: "                                           + str(self.aic())
     if metric_type in types_w_bin:
       print "AUC: "                                           + str(self.auc())
       print "Gini: "                                          + str(self.giniCoef())
@@ -52,12 +58,6 @@ class MetricsBase(object):
     if metric_type in types_w_mult:
       print                                                     self._metric_json['cm']['table']
       print                                                     self._metric_json['hit_ratio_table']
-    if metric_type in types_w_glm:
-      print "Null degrees of freedom: "                       + str(self.null_degrees_of_freedom())
-      print "Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom())
-      print "Null deviance: "                                 + str(self.null_deviance())
-      print "Residual deviance: "                             + str(self.residual_deviance())
-      print "AIC: "                                           + str(self.aic())
     if metric_type in types_w_clustering:
       print "Average within cluster Mean Square Error: "      + str(self.avg_within_ss())
       print "Average Mean Square Error to grand mean: "       + str(self.avg_ss())
