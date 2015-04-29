@@ -6,6 +6,8 @@ import java.net.URI
 import water._
 import water.parser.ParseSetup
 
+import scala.util.{Try,Success,Failure}
+
 /**
  * Wrapper around H2O Frame to provide more Scala-like API.
  */
@@ -46,6 +48,60 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
   override def toString(): String = super[Frame].toString()
 
   override def hashCode(): Int = super[Frame].hashCode()
+
+  /** *
+    * Transform columns in enum columns
+    * @param cols : Array[ String ] containing all the names of enum columns
+    */
+  def colToEnum(cols: Array[String]): Unit={
+    Try (!cols.map(name => { if (!this.names.contains(name)) false}).contains(false)) match {
+      case Success(_) => {
+        val indexes = this.find(cols)
+        indexes.zipWithIndex.map(i => this.replace(this.find(cols(i._2)),this.vec(i._1).toEnum))
+        this.update(null)
+      }
+      case Failure(_) => printf("One or several columns are not present in your DataFrame")
+    }
+  }
+
+  /** *
+    * Transform columns in enum columns
+    * @param cols : Array[ Int ] containing all the indexes of enum columns
+    */
+  def colToEnum(cols: Array[Int]): Unit = {
+    val colsNames = cols.map(i=>this.name(i))
+    colToEnum(colsNames)
+  }
+
+  /** *
+    * Rename a column of your DataFrame
+    * @param index : Index of the column to rename
+    * @param newName : New name
+    */
+  def rename(index: Int, newName: String): Unit ={
+  def rename(index: Int, newName: String): Unit ={
+    val tmp = this.names
+    Try(tmp.length+1 < index) match {
+      case Success(_) => {
+        tmp(index) = newName
+        this._names = tmp
+      }
+      case Failure(t) => println(t.toString)
+    }
+  }
+
+  /** *
+    * Rename a column of your DataFrame
+    * @param oldName : Old name
+    * @param newName : New name
+    */
+  def rename(oldName: String, newName: String): Unit ={
+    val index = this.find(oldName)
+    Try (index != -1) match {
+      case Success(_) => rename(index, newName)
+      case Failure(_) => println("Column missing")
+    }
+  }
 }
 
 /** Companion object providing factory methods to create frame
