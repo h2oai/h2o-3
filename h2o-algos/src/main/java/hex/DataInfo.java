@@ -65,7 +65,7 @@ public class DataInfo extends Keyed {
   public int _bins;
   public int _cats;
   public int [] _catOffsets;
-  public int [] _catMissing;
+  public int [] _catMissing; //bucket for missing categoricals
   public double [] _normMul;
   public double [] _normSub;
   public double [] _normRespMul;
@@ -257,7 +257,7 @@ public class DataInfo extends Keyed {
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing) {
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket) {
     super(selfKey);
     assert predictor_transform != null;
     assert  response_transform != null;
@@ -309,8 +309,8 @@ public class DataInfo extends Keyed {
       names[i]  =   train._names[cats[i]];
       if (valid != null) vvecs2         [i] = vvecs[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
-      _catMissing[i] = v.naCnt() > 0 ? 1 : 0; //needed for test time
-      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (v.naCnt()>0?1:0)); //missing values turn into a new factor level
+      _catMissing[i] = missingBucket ? 1 : 0; //needed for test time
+      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket ? 1 : 0)); //missing values turn into a new factor level
     }
 
     // Compute the mean/sigma for each predictor
@@ -434,7 +434,7 @@ public class DataInfo extends Keyed {
     for(int i = 0; i < _cats; ++i) {
       for (int j = _useAllFactorLevels ? 0 : 1; j < vecs[i].domain().length; ++j)
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
-      if (vecs[i].naCnt() > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if (_catMissing[i] > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
