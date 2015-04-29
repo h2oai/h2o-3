@@ -89,8 +89,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   @Override
   protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
-    int p = dinfo.fullN();
+    long p = _train.degreesOfFreedom() - _train.lastVec().cardinality();
 
     // weights
     long model_size = p * _parms._hidden[0];

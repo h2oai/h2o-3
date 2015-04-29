@@ -52,7 +52,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
   @Override
   protected void checkMemoryFootPrint() {
-    // won't run out of memory since L_BFGS is now triggered for > 6000 predictors
+    if (_parms._solver == Solver.IRLSM) {
+      long p = _train.degreesOfFreedom() - _train.lastVec().cardinality();
+      HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;
+      long mem_usage = hb._cpus_allowed * p * p * 8/*doubles*/; //one gram per core
+      long max_mem = hb.get_max_mem();
+      if (mem_usage > max_mem) {
+        String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
+                + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+                + ") - try reducing the number of columns and/or the number of categorical factors.";
+        error("_train", msg);
+        cancel(msg);
+      }
+    }
   }
 
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
