@@ -460,7 +460,7 @@ def build_model(self, algo, training_frame, parameters, destination_frame=None,
     frames = self.frames(key=training_frame)
     assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
 
-    key_name = frames['frames'][0]['key']['name'] 
+    key_name = frames['frames'][0]['frame_id']['name'] 
     assert key_name==training_frame, \
         "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
     parameters['training_frame'] = training_frame
@@ -479,7 +479,7 @@ def build_model(self, algo, training_frame, parameters, destination_frame=None,
     if noPoll:
         result = result1
     elif 'validation_error_count' in result1:
-        h2p.yellow_print("parameter error in model_builders: %s")
+        h2p.yellow_print("parameter error in model_builders: %s" % result1)
         # parameters validation failure
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
         result = result1
