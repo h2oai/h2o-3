@@ -102,7 +102,7 @@ public class TestUtil extends Iced {
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename
    *  @return      Found file or null */
-  protected File find_test_file( String fname ) {
+  protected static File find_test_file_static(String fname) {
     // When run from eclipse, the working directory is different.
     // Try pointing at another likely place
     File file = new File(fname);
@@ -117,6 +117,13 @@ public class TestUtil extends Iced {
     if( !file.exists() )
       file = null;
     return file;
+  }
+
+  /** Hunt for test files in likely places.  Null if cannot find.
+   *  @param fname Test filename
+   *  @return      Found file or null */
+  protected File find_test_file(String fname) {
+    return find_test_file_static(fname);
   }
 
   /** Find & parse a CSV file.  NPE if file not found.

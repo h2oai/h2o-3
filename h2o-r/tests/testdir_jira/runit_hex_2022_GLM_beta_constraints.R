@@ -54,10 +54,10 @@ test.GLM.betaConstraints <- function(conn){
         print("Glmnet betas:")
         print(glm_constraints.r$beta[,1])
         print(" ")
-        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[1:7],
+        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[2:8],
                            glm_constraints.r$beta[,1],
                            tolerance = 0.1)
-        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[1:7]) <= 1.0))
+        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[2:8]) <= 1.0))
 
         # Check null deviances
         print("H2O null deviance:")
