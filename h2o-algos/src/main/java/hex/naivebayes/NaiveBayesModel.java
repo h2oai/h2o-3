@@ -76,8 +76,9 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
       for(int col = _output._ncats; col < data.length; col++) {
         if(Double.isNaN(data[col])) continue;
         double x = data[col];
-        double mean = _output._pcond_raw[col][rlevel][0];
-        double stddev = _output._pcond_raw[col][rlevel][1] <= _parms._eps_sdev ? _parms._min_sdev : _output._pcond_raw[col][rlevel][1];
+        double mean = Double.isNaN(_output._pcond_raw[col][rlevel][0]) ? 0 : _output._pcond_raw[col][rlevel][0];
+        double stddev = Double.isNaN(_output._pcond_raw[col][rlevel][1]) ? 1.0 :
+          (_output._pcond_raw[col][rlevel][1] <= _parms._eps_sdev ? _parms._min_sdev : _output._pcond_raw[col][rlevel][1]);
         // double prob = Math.exp(new NormalDistribution(mean, stddev).density(data[col])); // slower
         double prob = Math.exp(-((x-mean)*(x-mean))/(2.*stddev*stddev)) / (stddev*Math.sqrt(2.*Math.PI)); // faster
         nums[rlevel] += Math.log(prob <= _parms._eps_prob ? _parms._min_prob : prob);

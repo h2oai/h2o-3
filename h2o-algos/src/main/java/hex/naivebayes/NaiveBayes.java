@@ -5,6 +5,7 @@ import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -136,10 +137,17 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
               new String[1][], new double[][] {apriori});
 
       model._output._model_summary = createModelSummaryTable(model._output);
-      if(_parms._compute_metrics) {
+      if (_parms._compute_metrics) {
         model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
         ModelMetricsSupervised mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
         model._output._training_metrics = mm;
+      }
+
+      // At the end: validation scoring (no need to gather scoring history)
+      if (_valid != null) {
+        Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
+        model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        pred.delete();
       }
     }
 
