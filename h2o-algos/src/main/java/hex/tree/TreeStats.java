@@ -9,10 +9,11 @@ public class TreeStats extends Iced {
   public int _min_leaves = Integer.MAX_VALUE;
   public int _max_leaves = Integer.MIN_VALUE;
   public float _mean_leaves;
+  public long _byte_size;
+  public int _num_trees = 0;
 
   transient long _sum_depth = 0;
   transient long _sum_leaves = 0;
-  transient int _num_trees = 0;
   public boolean isValid() { return _min_depth <= _max_depth; }
   public void updateBy(DTree[] ktrees) {
     if( ktrees==null ) return;
