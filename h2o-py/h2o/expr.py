@@ -359,10 +359,10 @@ class Expr(object):
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
-    elif j['result_type'] in [1,2]:
+    elif j['result_type'] in [1,2,3,4]:
       if isinstance(j['string'], str): self._data = j['string']
-    else:
-      if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
+      else:
+        if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
     return self._data
 
   def _do_child(self, child):
