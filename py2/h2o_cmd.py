@@ -58,7 +58,7 @@ def infoFromParse(parse):
     # need more info about this dataset for debug
     numCols = len(frame['columns'])
     numRows = frame['rows']
-    key_name = frame['key']['name']
+    key_name = frame['frame_id']['name']
 
     return numRows, numCols, key_name
 
@@ -79,7 +79,7 @@ def infoFromInspect(inspect):
 
     # need more info about this dataset for debug
     columns = frame['columns']
-    key_name = frame['key']['name']
+    key_name = frame['frame_id']['name']
     missingList = []
     labelList = []
     typeList = []
