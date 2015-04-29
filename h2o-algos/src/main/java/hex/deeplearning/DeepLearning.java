@@ -309,7 +309,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             }
           }
           // update parameters in place to set defaults etc.
-          cp.modifyParms(actualNewP, actualNewP, isClassifier());
+          DeepLearningModel.modifyParms(actualNewP, actualNewP, isClassifier());
 
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
