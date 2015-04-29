@@ -55,7 +55,7 @@
     },
     {
       "type": "cs",
-      "input": "grid inspect \"output - Coefficient Magnitudes\", getModel \"glm-c4d924ae-49e2-484a-a0d1-0a5ff3b3fe99\""
+      "input": "grid inspect \"output - Coefficients\", getModel \"glm-c4d924ae-49e2-484a-a0d1-0a5ff3b3fe99\""
     }
   ]
 }

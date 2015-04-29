@@ -24,8 +24,8 @@ function(conn) {
     obs = nrow(mfrmr)
     # lambda = hh@model$params$lambda
     alpha = hh@parameters$alpha
-    cof = hh@model$coefficients_table$norm_coefficients
-    cof = cof[1:length(cof)-1] # drop the intercept!
+    cof = hh@model$coefficients_table[,3]
+    cof = cof[2:length(cof)] # drop the intercept!
     L1 = sum(abs(cof))
     L2 = sqrt(sum(cof^2)) 
     penalty = ( 0.5*(1-alpha)*L2^2 ) + ( alpha*L1 )

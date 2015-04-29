@@ -691,7 +691,7 @@ public abstract class GLMTask  {
       if(_validate) {
         int rank = 0;
         if(_beta != null)for(double d:_beta)if(d != 0)++rank;
-        _val = new GLMValidation(_domain, _ymu, _glm, rank,.5); // todo pass correct threshold
+        _val = new GLMValidation(_domain, _ymu, _glm, rank, .5); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){
