@@ -29,7 +29,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   final double _threshold;
   AUC2 _auc2;
   MetricBuilder _metricBuilder;
-
+  boolean _intercept = true;
   public GLMValidation(String[] domain, double ymu, GLMParameters glm, int rank, double threshold){
     super(domain);
     _rank = rank;
@@ -40,6 +40,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       ?new MetricBuilderBinomial(domain)
       :new MetricBuilderRegression();
   }
+
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
@@ -101,7 +102,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
   public final double nullDeviance(){return null_deviance;}
   public final double residualDeviance(){return residual_deviance;}
-  public final long nullDOF(){return nobs-1;}
+  public final long nullDOF(){return nobs - (_intercept?1:0);}
   public final long resDOF(){return nobs - _rank;}
 
   protected double computeAUC(GLMModel m, Frame f){

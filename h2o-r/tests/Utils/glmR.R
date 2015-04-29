@@ -38,12 +38,12 @@ checkGLMModel2 <- function(myGLM.h2o,myGLM.r){
     lambda = myGLM.h2o@allparameters$lambda
     alpha = myGLM.h2o@allparameters$alpha
     numfeat = length(myGLM.h2o@model$coefficients)
-    beta = myGLM.h2o@model$coefficients[-numfeat]
+    beta = myGLM.h2o@model$coefficients[-1]
 
     r_lambda = myGLM.r$lambda
     r_dev = myGLM.r$nulldev*(1-myGLM.r$dev.ratio[length(r_lambda)])
     r_nobs = myGLM.r$nobs
-    r_beta = myGLM.r$beta[-numfeat,length(r_lambda)]
+    r_beta = myGLM.r$beta[-1,length(r_lambda)]
   }
 
   if(f == "gaussian"){

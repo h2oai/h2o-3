@@ -9,6 +9,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -41,6 +42,24 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     return new Model.ModelCategory[]{ Model.ModelCategory.Unknown };
   }
 
+  @Override
+  protected void checkMemoryFootPrint() {
+    // compute memory usage for pcond matrix
+    long mem_usage = (_train.numCols() - 1) * _train.lastVec().cardinality();
+    String[][] domains = _train.domains();
+    long count=0;
+    for(int i = 0; i < _train.numCols()-1; i++) {
+      count += domains[i] == null ? 2 : domains[i].length;
+    }
+    mem_usage *= count;
+    mem_usage *= 8; //doubles
+    long max_mem = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat.get_max_mem();
+    if (mem_usage > max_mem)
+      cancel("Conditional probabilities won't fit in the driver node's memory ("
+              + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+              + ") - try reducing the number of columns, the number of response classes or the number of categorical factors of the predictors.");
+  }
+
   // Called from an http request
   public NaiveBayes(NaiveBayesModel.NaiveBayesParameters parms) {
     super("NaiveBayes", parms);
@@ -59,6 +78,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     hide("_balance_classes", "Balance classes is not applicable to NaiveBayes.");
     hide("_class_sampling_factors", "Class sampling factors is not applicable to NaiveBayes.");
     hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
+    if (expensive) checkMemoryFootPrint();
   }
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
