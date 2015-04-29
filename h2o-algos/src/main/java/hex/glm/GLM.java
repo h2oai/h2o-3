@@ -50,12 +50,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
-  @Override
-  protected void checkMemoryFootPrint() {
-    if (_parms._solver == Solver.IRLSM) {
-      long p = _train.degreesOfFreedom() - _train.lastVec().cardinality();
+  protected void checkMemoryFootPrint(DataInfo dinfo) {
+    if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
       HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;
-      long mem_usage = hb._cpus_allowed * p * p * 8/*doubles*/; //one gram per core
+      double p = dinfo.fullN() - dinfo.largestCat();
+      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
       long max_mem = hb.get_max_mem();
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
@@ -114,6 +113,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _parms._link = _parms._family.defaultLink;
       _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
       DKV.put(_dinfo._key, _dinfo);
+      checkMemoryFootPrint(_dinfo);
       // handle BetaConstraints if I got them
       double[] betaStart = null;
       double[] betaGiven = null;
