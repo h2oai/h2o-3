@@ -100,8 +100,8 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     '''
     # these should override what parse setup gets below
     params_dict = {
-        'source_keys': None,
-        'destination_key': hex_key, 
+        'source_frames': None,
+        'destination_frame': hex_key, 
         'parse_type': None, # file type 
         'separator': None,
         'single_quotes': None,
@@ -127,36 +127,36 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
         # have to put double quotes around the individual list items (single not legal)
-        source_keys = "[" + ",".join(map((lambda x: '"' + x + '"'), key)) + "]"
+        source_frames = "[" + ",".join(map((lambda x: '"' + x + '"'), key)) + "]"
 
     else:
         # what if None here
-        source_keys = '["' + key + '"]' # quotes required on key
+        source_frames = '["' + key + '"]' # quotes required on key
 
-    params_dict['source_keys'] = source_keys
+    params_dict['source_frames'] = source_frames
 
     # merge kwargs into params_dict
     # =None overwrites params_dict
 
     # columnTypeDict not used here
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
-    # Call ParseSetup?source_keys=[keys] . . .
+    # Call ParseSetup?source_frames=[keys] . . .
 
     # if benchmarkLogging:
     #     cloudPerfH2O.get_log_save(initOnly=True)
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
-    params_setup = {'source_keys': source_keys}
+    params_setup = {'source_frames': source_frames}
     setup_result = self.do_json_request(jsonRequest="3/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
     # this should match what we gave as input?
-    if setup_result['source_keys']:
+    if setup_result['source_frames']:
         # should these be quoted?
-        source_keysStr = "[" + ",".join([('"%s"' % src['name']) for src in setup_result['source_keys'] ]) + "]"
+        source_framesStr = "[" + ",".join([('"%s"' % src['name']) for src in setup_result['source_frames'] ]) + "]"
     else:
-        source_keysStr = None
+        source_framesStr = None
 
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
@@ -200,8 +200,8 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
 
 
     parse_params = {
-        'source_keys': source_keysStr,
-        'destination_key': setup_result['destination_key'],
+        'source_frames': source_framesStr,
+        'destination_frame': setup_result['destination_frame'],
         'parse_type': setup_result['parse_type'],
         'separator': setup_result['separator'],
         'single_quotes': setup_result['single_quotes'],
@@ -227,7 +227,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
-    print "parse source_keys is length:", len(parse_params['source_keys'])
+    print "parse source_frames is length:", len(parse_params['source_frames'])
     # This can be null now? parseSetup doesn't return default colnames?
     # print "parse column_names is length:", len(parse_params['column_names'])
 
@@ -236,7 +236,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['key']['name']
-    hex_key = parse_params['destination_key']
+    hex_key = parse_params['destination_frame']
 
     # TODO: dislike having different shapes for noPoll and poll
     if noPoll:
@@ -438,9 +438,9 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
     return result
 
 
-# should training_frame be required? or in parameters. same with destination_key
+# should training_frame be required? or in parameters. same with destination_frame
 # because validation_frame is in parameters
-def build_model(self, algo, training_frame, parameters, destination_key=None, 
+def build_model(self, algo, training_frame, parameters, destination_frame=None, 
     timeoutSecs=60, noPoll=False, **kwargs):
     '''
     Build a model on the h2o cluster using the given algorithm, training 
@@ -465,8 +465,8 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
         "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
     parameters['training_frame'] = training_frame
 
-    if destination_key is not None:
-        parameters['destination_key'] = destination_key
+    if destination_frame is not None:
+        parameters['destination_frame'] = destination_frame
 
     print "build_model parameters", parameters
     start = time.time()

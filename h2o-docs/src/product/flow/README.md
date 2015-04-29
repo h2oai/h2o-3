@@ -645,6 +645,11 @@ In H2O Flow, you can split datasets within Flow for use in training and testing.
 0. Click the **Create** button.  
 
 ---
+##Creating Frames
+
+To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
+
+---
 
 ## Plotting Frames
 
@@ -849,6 +854,7 @@ To view network test results, click the **Admin** menu, then click **Network Tes
 
 ## Accessing the Profiler
 
+The Profiler looks across the cluster to see where the same stack trace occurs, and can be helpful for identifying what the currently used CPU is doing. 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
 
  ![Profiler](images/Flow_profiler.png)
