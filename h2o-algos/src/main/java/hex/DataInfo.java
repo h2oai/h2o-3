@@ -434,7 +434,7 @@ public class DataInfo extends Keyed {
     for(int i = 0; i < _cats; ++i) {
       for (int j = _useAllFactorLevels ? 0 : 1; j < vecs[i].domain().length; ++j)
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
-      if (vecs[i].naCnt() > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if (_catMissing[i] > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
