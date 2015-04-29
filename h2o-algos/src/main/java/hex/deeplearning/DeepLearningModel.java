@@ -1480,6 +1480,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     makeWeightsBiases(destKey);
     _output._scoring_history = createScoringHistoryTable(errors);
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
+    _output._names = dataInfo._adaptedFrame.names();
+    _output._domains = dataInfo._adaptedFrame.domains();
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1493,8 +1495,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     super(destKey, parms, output);
     boolean classification = train.lastVec().isEnum();
     final DataInfo dinfo = makeDataInfo(train, valid, _parms);
-    output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
-    output._domains= train.domains();
+    _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
+    _output._domains= train.domains();
+    _output._names = dinfo._adaptedFrame.names();
+    _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo._key,dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
     actual_best_model_key = Key.makeUserHidden(Key.make());

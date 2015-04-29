@@ -82,11 +82,13 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
-            parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip); //whether to skip missing
+            parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
+            true); //always add a bucket for missing values
   }
 
   @Override
   public void checkMemoryFootPrint() {
+    if (_parms._checkpoint != null) return;
     final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
     int p = dinfo.fullN();
 
@@ -267,8 +269,12 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
             throw new IllegalArgumentException("Predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns.");
           }
-          if (!Arrays.deepEquals(cp._output._domains, previous._output._domains))
+          if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
             throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
+          }
+          if (dinfo.fullN() != previous.model_info().data_info().fullN()) {
+            throw new IllegalArgumentException("Total number of predictors is different than for the checkpointed model.");
+          }
 
           for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
             if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {

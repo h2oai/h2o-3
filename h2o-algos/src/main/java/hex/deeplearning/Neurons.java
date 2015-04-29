@@ -773,6 +773,7 @@ public abstract class Neurons {
             _a.set(cM + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
         }
       } else {
+        assert(_a.size() == _dinfo.fullN());
         for (int i = 0; i < numcat; ++i) _a.set(cats[i], 1f); // one-hot encode categoricals
         for (int i = 0; i < nums.length; ++i)
           _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
