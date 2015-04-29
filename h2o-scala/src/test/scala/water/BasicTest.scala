@@ -126,5 +126,5 @@ class BasicTest extends TestUtil {
 }
 
 object BasicTest extends TestUtil {
-  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(1)
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(5)
 }
