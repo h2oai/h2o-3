@@ -79,7 +79,6 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
     * @param newName : New name
     */
   def rename(index: Int, newName: String): Unit ={
-  def rename(index: Int, newName: String): Unit ={
     val tmp = this.names
     Try(tmp.length+1 < index) match {
       case Success(_) => {
