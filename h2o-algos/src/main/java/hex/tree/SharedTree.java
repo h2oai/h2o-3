@@ -544,7 +544,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Key<CompressedTree>[] per_class = _model._output._treeKeys[i];
       for (int j=0; j<per_class.length; ++j) {
         if (per_class[j] == null) continue; //GBM binomial
-        model_mem_size += DKV.get(per_class[j]).memOrLoad().length;
+        model_mem_size += DKV.get(per_class[j])._max;
         _model._output._treeStats._byte_size += (long)model_mem_size;
       }
     }
@@ -560,7 +560,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
               + PrettyPrint.bytes(max_mem)
               + ") - try decreasing ntrees and/or max_depth or increasing min_rows!";
       error("_ntrees", msg);
-      throw new IllegalArgumentException(msg);
+      cancel(msg);
     }
   }
 }
