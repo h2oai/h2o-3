@@ -167,7 +167,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
-  public void checkMemoryFootPrint() {}
+  protected void checkMemoryFootPrint() {}
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the

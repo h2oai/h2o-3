@@ -50,6 +50,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
+  @Override
+  protected void checkMemoryFootPrint() {
+    // won't run out of memory since L_BFGS is now triggered for > 6000 predictors
+  }
+
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
   public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); init(false); }
 
