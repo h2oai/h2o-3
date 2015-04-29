@@ -756,6 +756,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
   res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]
+  if( nrow(res) > 1  ) res <- res[1]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
 }
@@ -963,7 +964,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, train=FAL
 
 # TODO: Need to put this in a better place
 .trainOrValid <- function(l) {
-  if( is.null(l)  || length(l) == 0) { l$train <- TRUE }    # do train by default
+  if( is.null(l)  || length(l) == 0) l$train      <- TRUE   # do train by default
   if( is.null(l$train)             ) l$train      <- FALSE
   if( is.null(l$training)          ) l$training   <- FALSE
   if( is.null(l$validation)        ) l$validation <- FALSE
@@ -993,24 +994,23 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   n <- max_metrics[match("fps",max_metrics$Metric),3]
   m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
-    row.names <- c("X0", "X1")
-    col.names <- c("Act/Pred", row.names, "Error", "Rate")
-    col0 <- row.names
-    col1 <- c(row$tns, row$fns)
-    col2 <- c(row$fps, row$tps)
-    col3 <- c(row$fps/(row$tns+row$fps), row$fns/(row$fns+row$tps))
-    col4 <- c(paste0(" = ",row$fps, "/", row$tns+row$fps), paste0(" = ", row$fns, "/", row$fns+row$tps))
+    tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
+    rnames <- c("X0", "X1")
+    cnames <- c("Act/Pred", rnames, "Error", "Rate")
+    col0 <- rnames
+    col1 <- c(tns, fns)
+    col2 <- c(fps, tps)
+    col3 <- c(fps/(fps+tns), fns/(fns+tps))
+    col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps) )
     fmts <- c("%s", "%i", "%i", "%f", "%s")
     tbl <- data.frame(col0,col1,col2,col3,col4)
-    rownames(tbl) <- row.names
-    colnames(tbl) <- col.names
+    colnames(tbl) <- cnames
     attr(tbl, "header") <- "Confusion Matrix"
     attr(tbl, "formats") <- fmts
     oldClass(tbl) <- c("H2OTable", "data.frame")
-    rownames(tbl) <- NULL
     tbl
   })
-  if( length(m)==1L ) return( m[[1L]] )  # just the one matrix... return it raw (unlisted)
+  if( length(m) == 1L ) return( m[[1L]] )
   m
 })
 

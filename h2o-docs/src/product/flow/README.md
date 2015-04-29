@@ -63,7 +63,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 
 ![Edit Mode](images/Flow_EditMode.png)
  
-
+<a name="CmdMode"></a>
 ##Using Command Mode
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
@@ -114,7 +114,7 @@ Here are some important keyboard shortcuts to remember:
 - To exit edit mode, press **Esc**. 
 - To execute the contents of a cell, press the **Ctrl** and **Enter** buttons at the same time.
 
-The following commands must be entered in command mode.  
+The following commands must be entered in [command mode](#CmdMode).  
 
 - To add a new cell *above* the current cell, press **a**. 
 - To add a new cell *below* the current cell, press **b**. 
@@ -131,6 +131,7 @@ There are also a series of buttons at the top of the page below the flow name th
 You can also use the menus at the top of the screen to edit the cells, view specific format types (such as input or output), change the cell's format, or run the cell. You can also access troubleshooting information or obtain help with Flow.  
  ![Flow menus](images/Flow_menus.png)
 
+**Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**. 
 
 Now that you are familiar with the cell modes, let's import some data. 
 
@@ -171,7 +172,7 @@ After you click the **Import** button, the raw code for the current job displays
 
 ##Uploading Data
 
-To upload a local file, click the **Flow** menu and select **Upload File...**. Click the **Choose File** button, select the file, click the **Choose** button, then click the **Upload** button. 
+To upload a local file, click the **Data** menu and select **Upload File...**. Click the **Choose File** button, select the file, click the **Choose** button, then click the **Upload** button. 
   
   ![File Upload Pop-Up](images/Flow_UploadDataset.png)
   
@@ -236,35 +237,39 @@ Since we've submitted a couple of jobs (data import & parse) to H2O now, let's t
 <a name="ViewJobs"></a>
 # Viewing Jobs
 
-Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference. 
+Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference.
 
-## Viewing Recent Jobs
+## Viewing All Jobs
 
-To view all recent jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
+To view all jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
 
  ![View Jobs](images/Flow_getJobs.png)
 
 The following information displays: 
 
-- Key (linked to the specified job)
-- Description of the type of job (for example, `GLM` or `Parse`)
-- Status (`RUNNING` or `DONE`)
+- Type (for example, `Frame` or `Model`)
+- Link to the object 
+- Description of the job type (for example, `Parse` or `GBM`)
+- Start time
+- End time
+- Run time
+
+To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button. 
 
 ## Viewing Specific Jobs
 
-To view a specific job, click the **Destination Key** link. 
+To view a specific job, click the link in the "Destination" column. 
 
 ![View Job - Model](images/Flow_ViewJob_Model.png)
 
 The following information displays: 
 
-- Current status
-- Key (for example, `$0301ac10021432d4ffffffff$_8590b37303844cca7c603512c4064b04`)
-- Destination key, which is linked to the originally imported data set (for example, AirlinesTest.hex)
+- Type (for example, `Frame`)
+- Link to object (key)
+- Description (for example, `Parse`)
+- Status
 - Run time
 - Progress
-
-To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button. 
 
 **NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
  
@@ -283,38 +288,49 @@ To build a model:
 
 - Click the **Assist Me!** button, select **getFrames**, then click the **Build Model...** button below the parsed .hex data set
 
+  or 
+
+- Click the **View** button after parsing data, then click the **Build Model** button
+
+  or 
+
+- Click the drop-down **Model** menu and select the model type from the list
+
+
 The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). 
  
 In the **Build a Model** cell, select an algorithm from the drop-down menu: 
 
 <a name="Kmeans"></a>
-- **K-means**: Create a K-Means model
-**Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
+- **K-means**: Create a K-Means model.
+
+  **Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 <a name="GLM"></a>
-- **Generalized Linear Model**: Create a Generalized Linear model
+- **Generalized Linear Model**: Create a Generalized Linear model.
 
-<a name="drf"></a>
+<a name="DRF"></a>
 - **Distributed RF**: Create a distributed Random Forest model.  
 
-<a name="nb"></a>
+<a name="NB"></a>
 - **Naive Bayes**: Create a Naive Bayes model. 
 
-<a name="pca"></a> 
+<a name="PCA"></a> 
 - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
 
 <a name="GBM"></a>
 - **Gradient Boosting Machine**: Create a Gradient Boosted model
 
 <a name="DL"></a>
-- **Deep Learning**: Create a Deep Learning model
+- **Deep Learning**: Create a Deep Learning model.
 
 The available options vary depending on the selected model. If an option is only available for a specific model type, the model type is listed. If no model type is specified, the option is applicable to all model types. 
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_ID**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates an ID containing the model type (for example, `gbm-6f6bdc8b-ccbc-474a-b590-4579eea44596`). 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
-**NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
+
+  **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
@@ -322,28 +338,28 @@ The available options vary depending on the selected model. If an option is only
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
 
-- **User_points**: [(K-Means](#Kmeans), [PCA)](#pca) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
+- **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
-- **Transform**: [(PCA)](#pca) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
+- **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
 
-- **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [NaiveBayes](#nb)) Select the column to use as the independent variable.
+- **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [NaiveBayes](#NB)) Select the column to use as the independent variable.
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is IRLSM. 
 
-- **Ntrees**: [(GBM](#GBM), [DRF)](#drf) Specify the number of trees. The default value is 50. 
+- **Ntrees**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of trees. The default value is 50. 
 
-- **Max\_depth**: [(GBM](#GBM), [DRF)](#drf) Specify the maximum tree depth. For GBM, the default value is 5. For DRF, the default value is 20. 
+- **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth. For GBM, the default value is 5. For DRF, the default value is 20. 
 
-- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#drf) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10.
+- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10.
 
-- **Nbins**: [(GBM](#GBM), [DRF)](#drf) Specify the number of bins for the histogram. The default value is 20. 
+- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of bins for the histogram. The default value is 20. 
 
-- **Mtries**: [(DRF)](#drf) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
+- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
-- **Sample\_rate**: [(DRF)](#drf) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.6666667. 
+- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.6666667. 
 
-- **Build\_tree\_one\_node**: [(DRF)](#drf) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
+- **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
@@ -351,18 +367,19 @@ The available options vary depending on the selected model. If an option is only
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
-- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#drf), [NaiveBayes](#nb), [PCA](#pca), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
+- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [NaiveBayes](#NB), [PCA](#PCA), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
 
-- **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
+- **K**: [(K-Means)](#Kmeans), [(PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
 
-- **Gamma**: [(PCA)](#pca) Specify the regularization weight for PCA. The default is 0. 
+- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. The default is 0. 
 
-- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#pca),[GLM)](#GLM) Specify the number of training iterations. For K-Means and PCA, the default is 1000. For GLM, the default is -1. 
+- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA),[GLM)](#GLM) Specify the number of training iterations. For K-Means and PCA, the default is 1000. For GLM, the default is -1. 
  
 - **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
-- **Init**: [(K-Means](#Kmeans), [PCA)](#pca) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
-**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+- **Init**: [(K-Means](#Kmeans), [PCA)](#PCA) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
+
+  **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -374,15 +391,15 @@ The available options vary depending on the selected model. If an option is only
 
 - **Variable_importances**: ([DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **Laplace**: [(NaiveBayes)](#nb) Specify the Laplace smoothing parameter. The default value is 0. 
+- **Laplace**: [(NaiveBayes)](#NB) Specify the Laplace smoothing parameter. The default value is 0. 
 
-- **Min\_sdev**: [(NaiveBayes)](#nb) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
+- **Min\_sdev**: [(NaiveBayes)](#NB) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
 
-- **Eps\_sdev**: [(NaiveBayes)](#nb) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_sdev**: [(NaiveBayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
 
-- **Min\_prob**: [(NaiveBayes)](#nb) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
+- **Min\_prob**: [(NaiveBayes)](#NB) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
 
-- **Eps\_prob**: [(NaiveBayes)](#nb) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_prob**: [(NaiveBayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
@@ -416,11 +433,11 @@ The available options vary depending on the selected model. If an option is only
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
    **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#DRF), [DL](#DL), [NaiveBayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
-- **Max\_confusion\_matrix\_size**: ([DRF](#drf), [NaiveBayes](#nb), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+- **Max\_confusion\_matrix\_size**: ([DRF](#DRF), [NaiveBayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
-- **Max\_hit\_ratio\_k**: ([DRF](#drf), [NaiveBayes](#nb)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+- **Max\_hit\_ratio\_k**: ([DRF](#DRF), [NaiveBayes](#NB)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
 - **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
 
@@ -502,9 +519,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **Export\_weights\_and\_biases**: [(DL)](#DL) To export the neural network weights and biases as H2O frames, check this checkbox. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#drf), [NaiveBayes)](#nb), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [NaiveBayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
 
-- **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#drf)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is -1. 
 
@@ -520,6 +537,8 @@ The available options vary depending on the selected model. If an option is only
 Click the **Assist Me!** button, then click the **getModels** link, or enter `getModels` in the cell in CS mode and press **Ctrl+Enter**. A list of available models displays. 
 
  ![Flow Models](images/Flow_getModels.png)
+
+To view all current models, you can also click the **Model** menu and click **List All Models**. 
 
 To inspect a model, check its checkbox then click the **Inspect** button, or click the **Inspect** button to the right of the model name. 
 
@@ -542,10 +561,11 @@ To learn how to make predictions, continue to the next section.
 <a name="Predict"></a>
 # Making Predictions
 
-After creating your model, click the destination key link for the model, then click the **Predict** button. 
+After creating your model, click the key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
 
  ![Making Predictions](images/Flow_makePredict.png)
+
 
 ---
  
@@ -557,14 +577,17 @@ To view a prediction, click the **View** button to the right of the model name.
 
  ![Viewing Predictions](images/Flow_getPredict.png)
 
+You can also view predictions by clicking the drop-down **Score** menu and selecting **List All Predictions**. 
+
 ---
 
 <a name="ViewFrame"></a>
 # Viewing Frames
 
-To view a specific frame, click the "Destination Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
+To view a specific frame, click the "Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
 
  ![Viewing specified frame](images/Flow_getFrame.png) 
+
 
 From the `getFrame` cell, you can: 
 
@@ -584,7 +607,9 @@ This screenshot displays the results of clicking the **Summary** link for the fi
 ![Inspecting Columns](images/Flow_inspectCol.png)
 
 
-To view all frames, click the **Assist Me!** button, then click the **getFrames** link, or enter `getFrames` in the cell in CS mode and press **Ctrl+Enter**. A list of the current frames in H2O displays that includes the following information for each frame: 
+To view all frames, click the **Assist Me!** button, then click the **getFrames** link, or enter `getFrames` in the cell in CS mode and press **Ctrl+Enter**. You can also view all current frames by clicking the drop-down **Data** menu and selecting **List All Frames**. 
+
+A list of the current frames in H2O displays that includes the following information for each frame: 
 
 
 - Column headings
@@ -609,7 +634,8 @@ In H2O Flow, you can split datasets within Flow for use in training and testing.
 
  ![splitFrame cell](images/Flow_splitFrame.png)
 
-0. To split a frame, click the **Assist Me** button, then click **splitFrame**. 
+0. To split a frame, click the **Assist Me** button, then click **splitFrame**.
+  **Note**: You can also click the drop-down **Data** menu and select **Split Frame...**.
 0. From the drop-down **Frame:** list, select the frame to split. 
 0. In the second **Ratio** entry field, specify the fractional value to determine the split. The first **Ratio** field is automatically calculated based on the values entered in the second **Ratio** field. 
    
@@ -617,6 +643,11 @@ In H2O Flow, you can split datasets within Flow for use in training and testing.
 0. In the **Key** entry field, specify a name for the new frame. 
 0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
 0. Click the **Create** button.  
+
+---
+##Creating Frames
+
+To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
 ---
 
@@ -717,7 +748,7 @@ The location specified in `flow_dir` may be either an hdfs or regular filesystem
 
 ## Duplicating Flows
 
-To create a copy of the current flow, select the **Flow** menu, then click **Duplicate**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
+To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
 
 ## Downloading Flows
@@ -758,6 +789,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Cluster health
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
+  **Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
 - H2O version
 - Number of used and available nodes
 - When the cluster was created
@@ -822,6 +854,7 @@ To view network test results, click the **Admin** menu, then click **Network Tes
 
 ## Accessing the Profiler
 
+The Profiler looks across the cluster to see where the same stack trace occurs, and can be helpful for identifying what the currently used CPU is doing. 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
 
  ![Profiler](images/Flow_profiler.png)
