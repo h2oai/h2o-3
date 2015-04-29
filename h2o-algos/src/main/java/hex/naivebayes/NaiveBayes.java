@@ -79,7 +79,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     hide("_balance_classes", "Balance classes is not applicable to NaiveBayes.");
     hide("_class_sampling_factors", "Class sampling factors is not applicable to NaiveBayes.");
     hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
-    if (expensive) checkMemoryFootPrint();
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 

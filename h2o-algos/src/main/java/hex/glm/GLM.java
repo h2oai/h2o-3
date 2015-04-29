@@ -50,6 +50,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
+  @Override protected void checkMemoryFootPrint() {/* see below */ }
   protected void checkMemoryFootPrint(DataInfo dinfo) {
     if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
       HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;

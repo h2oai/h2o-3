@@ -71,7 +71,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       }
     }
-    if (expensive) checkMemoryFootPrint();
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   // ----------------------

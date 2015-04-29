@@ -110,7 +110,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         break;
       }
     }
-    checkMemoryFootPrint();
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   /**
