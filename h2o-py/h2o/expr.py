@@ -318,7 +318,8 @@ class Expr(object):
     assert self.is_remote(), "Data wasn't remote. Hrm..."
     global __CMD__
     if __CMD__ is None:
-      h2o.remove(self._data)
+      if h2o is not None:
+        h2o.remove(self._data)
     else:
       s = " (del '" + self._data + "' #0)"
       global __TMPS__
