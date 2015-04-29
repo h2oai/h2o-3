@@ -56,7 +56,7 @@
 #'          and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please
 #'          refer to the more in-depth GLM documentation available here: \url{http://docs2.h2o.ai/datascience/glm.html},
 #'
-#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}}, \code{\link{h2o.aic}},
+#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
 #'          \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
@@ -85,15 +85,8 @@
 #'    destination_frame = "data.hex")
 #'  myX = 1:20
 #'  myY="y"
-#'  my.glm = h2o.glm(x=myX, y=myY, data=data.hex, family="binomial",
-#'                  standardize=TRUE, use_all_factor_levels=TRUE,
-#'                  higher_accuracy=TRUE, lambda_search=TRUE,
-#'                  return_all_lambda=TRUE, variable_importances=TRUE)
-#' best_model = my.glm@@best_model
-#' n_coeff = abs(my.glm@@models[[best_model]]@@model$normalized_coefficients)
-#' VI = abs(n_coeff[-length(n_coeff)])
-#' glm.VI = VI[order(VI,decreasing=T)]
-#' print(glm.VI)
+#'  my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
+#'                  use_all_factor_levels=TRUE, lambda_search=TRUE, return_all_lambda=TRUE)
 #' }
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, validation_frame,

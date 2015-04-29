@@ -14,12 +14,12 @@ import water.util.ArrayUtils;
 import java.util.Arrays;
 
 public final class Gram extends Iced<Gram> {
-  final boolean _hasIntercept;
+  boolean _hasIntercept;
   public double[][] _xx;
   double[] _diag;
   public final int _diagN;
   final int _denseN;
-  final int _fullN;
+  int _fullN;
   final static int MIN_TSKSZ=10000;
 
   public Gram() {_diagN = _denseN = _fullN = 0; _hasIntercept = false; }
@@ -56,6 +56,15 @@ public final class Gram extends Iced<Gram> {
     }
   }
 
+  public void dropIntercept(){
+    if(!_hasIntercept) throw new IllegalArgumentException("Has no intercept");
+    double [][] xx = new double[_xx.length-1][];
+    for(int i = 0; i < xx.length; ++i)
+      xx[i] = _xx[i];
+    _xx = xx;
+    _hasIntercept = false;
+    --_fullN;
+  }
   public final int fullN(){return _fullN;}
   public double _diagAdded;
 
@@ -685,12 +694,11 @@ public final class Gram extends Iced<Gram> {
      */
     public final void   solve(double[] y) {
       if( !isSPD() ) throw new NonSPDMatrixException();
-      assert _xx.length + _diag.length == y.length:"" + _xx.length + " + " + _diag.length + " != " + y.length;
       // diagonal
       for( int k = 0; k < _diag.length; ++k )
         y[k] /= _diag[k];
       // rest
-      final int n = y.length;
+      final int n = _xx[_xx.length-1].length;
       // Solve L*Y = B;
       for( int k = _diag.length; k < n; ++k ) {
         double d = 0;

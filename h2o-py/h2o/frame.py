@@ -717,7 +717,9 @@ class H2OFrame:
     veckeys = fr['vec_ids']  # List of h2o vec keys
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   # H2OFrame Mutating cbind
   def cbind(self,data):
@@ -762,7 +764,9 @@ class H2OFrame:
     veckeys = fr['vec_ids']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   def group_by(self,cols,a):
     """
@@ -809,7 +813,9 @@ class H2OFrame:
     veckeys = fr['vec_ids']  # List of h2o vec keys
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   def merge(self, other, allLeft=False, allRite=False):
     """
@@ -846,7 +852,9 @@ class H2OFrame:
     veckeys = fr['vec_ids']# List of h2o vec keys
     cols = fr['columns']    # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   # generic reducers (min, max, sum, var)
   def min(self):
@@ -891,7 +899,9 @@ class H2OFrame:
     veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
 class H2OVec:
   """
