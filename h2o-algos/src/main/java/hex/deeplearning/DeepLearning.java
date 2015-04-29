@@ -113,12 +113,20 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
+        byte[] cs = new AutoBuffer().put(_parms).buf();
+
         Scope.enter();
         _parms.read_lock_frames(DeepLearning.this);
+
         init(true);
         if (error_count() > 0)
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         buildModel();
+
+        //check that _parms isn't changed during DL model training
+        byte[] cs2 = new AutoBuffer().put(_parms).buf();
+        assert(Arrays.equals(cs, cs2));
+
         done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
