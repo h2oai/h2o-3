@@ -13,7 +13,7 @@ import tempfile
 import tabulate
 import subprocess
 import atexit
-import h2o
+import pkg_resources
 from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
