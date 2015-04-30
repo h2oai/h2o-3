@@ -4,9 +4,6 @@
 # Purpose:  Demonstrate basic imputation example with H2O driven from R.
 #----------------------------------------------------------------------
 
-# make a copy of a dataframe
-cp <- function(this) this[(1:nrow(this)),(1:ncol(this))]
-
 # Source setup code to define myIP and myPort and helper functions.
 # If you are having trouble running this, just set the condition to FALSE
 # and hardcode myIP and myPort.
@@ -37,7 +34,7 @@ conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 # Uploading data file to h2o.
 air <- h2o.importFile(conn, filePath, "air")
-airCopy <- cp(air)  # make a copy so we can revert our imputations easily
+airCopy <- air[,1L:ncol(air)]  # make a copy so we can revert our imputations easily
 
 # Print dataset size.
 dim(air)
@@ -57,27 +54,27 @@ DepTime_mean <- mean(air$DepTime, na.rm = TRUE)
 DepTime_mean
 
 # impute the column in place with h2o.impute(...)
-h2o.impute(air, "DepTime", method = "mean")   # can also have method = "median"
+h2o.impute(air, "DepTime", method = "median", combine_method="lo")   
 numNAs <- sum(is.na(air$DepTime))
 stopifnot(numNAs == 0)
 
 # revert imputations
-air <- cp(airCopy)
+air <- airCopy[,1L:ncol(airCopy)]
 
 # impute the column in place using a grouping based on the Origin and Distance
 # NB: If the Origin and Distance produce groupings of NAs, then no imputation will be done (NAs will result).
-h2o.impute(air, .(DepTime), method = "median", groupBy = c("Origin", "Distance"))
+h2o.impute(air, "DepTime", method = "mean", by = c("Origin", "Distance"))
 
 # revert imputations
-air <- cp(airCopy)
+air <- airCopy[,1L:ncol(airCopy)]
 
 # impute a factor column by the most common factor in that column
 h2o.impute(air, "TailNum", method = "mode")
 
 # revert imputations
-air <- cp(airCopy)
+air <- airCopy[,1L:ncol(airCopy)]
 
 # impute a factor column using a grouping based on the Month and Year
-h2o.impute(air, "TailNum", method = "mode", .(Month, Year))
+h2o.impute(air, "TailNum", method = "mode", by=c("Month", "Year"))
 
 PASS_BANNER()
