@@ -9,10 +9,10 @@ test.PCA.australia <- function(conn) {
   print(australia.sum)
   
   Log.info("H2O PCA on Australia coastline data:\n")
-  australia.pca = h2o.prcomp(australia.hex, center = TRUE, scale. = TRUE)
+  australia.pca = h2o.prcomp(australia.hex, k = 8, transform = "STANDARDIZE")
 
-  Log.info("H2O PCA on Australia coastline data returning a maximum of 2 components:\n")
-  australia.pca2 = h2o.prcomp(australia.hex, k = 2, center = TRUE, scale. = TRUE)
+  Log.info("H2O PCA on Australia coastline data returning only first 2 components:\n")
+  australia.pca2 = h2o.prcomp(australia.hex, k = 2, transform = "STANDARDIZE")
   
   expect_equal(ncol(australia.pca@model$eigenvectors), 8)
   expect_equal(ncol(australia.pca2@model$eigenvectors), 2)

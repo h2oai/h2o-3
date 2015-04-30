@@ -1519,8 +1519,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
     assert _key.equals(destKey);
-    long byte_size = new AutoBuffer().put(this).buf().length;
-    if (byte_size > Value.MAX)
+    boolean fail = false;
+    long byte_size = 0;
+    try {
+      byte_size = new AutoBuffer().put(this).buf().length;
+    } catch(Throwable t) {
+      fail = true;
+    }
+    if (byte_size > Value.MAX || fail)
       throw new IllegalArgumentException("Model is too large: PUBDEV-941");
   }
 

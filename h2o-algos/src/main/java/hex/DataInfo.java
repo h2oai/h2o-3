@@ -74,7 +74,7 @@ public class DataInfo extends Keyed {
   public int _nfolds;
   public boolean _intercept = true;
   public boolean _offset = false;
-  final boolean _skipMissing;
+  public final boolean _skipMissing;
   final int [][] _catLvls;
 
 
@@ -110,7 +110,7 @@ public class DataInfo extends Keyed {
     _useAllFactorLevels = dinfo._useAllFactorLevels;
     _catLvls = null;
     _skipMissing = dinfo._skipMissing;
-    if(_normMul != null)
+    if(_normMul != null && _normSub != null)
       for(int i = 0; i < _normMul.length; ++i)
         _etaOffset -= _normSub[i] * _normMul[i];
   }
@@ -181,7 +181,7 @@ public class DataInfo extends Keyed {
         }
         break;
       case DEMEAN:
-        _normMul = null;
+        _normMul = MemoryManager.malloc8d(_nums); Arrays.fill(_normMul, 1);
         _normSub = MemoryManager.malloc8d(_nums);
         for (int i = 0; i < _nums; ++i) {
           Vec v = fr.vec(catLevels.length+i);
@@ -190,7 +190,7 @@ public class DataInfo extends Keyed {
         break;
       case DESCALE:
         _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = null;
+        _normSub = MemoryManager.malloc8d(_nums);
         for (int i = 0; i < _nums; ++i) {
           Vec v = fr.vec(catLevels.length+i);
           _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
@@ -225,15 +225,16 @@ public class DataInfo extends Keyed {
           }
           break;
         case DEMEAN:
-          _normRespMul = null;
+          _normRespMul = MemoryManager.malloc8d(responses);
           _normRespSub = MemoryManager.malloc8d(responses);
           for (int i = 0; i < responses; ++i) {
             Vec v = fr.vec(fr.numCols()-responses+i);
+            _normRespMul[i] = 1.0;
             _normRespSub[i] = v.mean();
           }
           break;
         case DESCALE:
-          _normRespSub = null;
+          _normRespSub = MemoryManager.malloc8d(responses);
           _normRespMul = MemoryManager.malloc8d(responses);
           for (int i = 0; i < responses; ++i) {
             Vec v = fr.vec(fr.numCols()-responses+i);
@@ -252,6 +253,10 @@ public class DataInfo extends Keyed {
     _adaptedFrame.reloadVecs();
     _nfolds = nfolds;
     _foldId = foldId;
+    if(_normMul != null)
+      for(double d:_normMul) assert !Double.isNaN(d);
+    if(_normSub != null)
+      for(double d:_normSub) assert !Double.isNaN(d);
   }
 
   // Modify the train & valid frames directly; sort the categorical columns
@@ -317,8 +322,8 @@ public class DataInfo extends Keyed {
     switch(predictor_transform) {
     case STANDARDIZE:
     case NORMALIZE:  _normSub = MemoryManager.malloc8d(nnums);  _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);  break;
-    case DEMEAN:     _normSub = MemoryManager.malloc8d(nnums);  _normMul = null;                                                     break;
-    case DESCALE:    _normSub = null;                           _normMul = MemoryManager.malloc8d(nnums);                            break;
+    case DEMEAN:     _normSub = MemoryManager.malloc8d(nnums);  _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);  break;
+    case DESCALE:    _normSub = MemoryManager.malloc8d(nnums);  _normMul = MemoryManager.malloc8d(nnums);                            break;
     case NONE:       _normSub = null;                           _normMul = null;                                                     break;
     default:         throw H2O.unimpl();
     }
@@ -343,8 +348,8 @@ public class DataInfo extends Keyed {
       switch(response_transform){
       case STANDARDIZE:
       case NORMALIZE: _normRespSub = MemoryManager.malloc8d(_responses);  _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);  break;
-      case DEMEAN:    _normRespSub = MemoryManager.malloc8d(_responses);  _normRespMul = null;                                                              break;
-      case DESCALE:   _normRespSub = null;                                _normRespMul = MemoryManager.malloc8d(_responses);                                break;
+      case DEMEAN:    _normRespSub = MemoryManager.malloc8d(_responses);  _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);  break;
+      case DESCALE:   _normRespSub = MemoryManager.malloc8d(_responses);  _normRespMul = MemoryManager.malloc8d(_responses);                                break;
       case NONE:      _normRespSub = null;                                _normRespMul = null;                                                              break;
       default:        throw H2O.unimpl();
       }
@@ -364,7 +369,10 @@ public class DataInfo extends Keyed {
         }
       }
     }
-
+    if(_normMul != null)
+      for(double d:_normMul) assert !Double.isNaN(d);
+    if(_normSub != null)
+      for(double d:_normSub) assert !Double.isNaN(d);
     train.restructure(names,tvecs2);
     if (valid != null) valid.restructure(names,vvecs2);
     _adaptedFrame = train;
@@ -551,7 +559,7 @@ public class DataInfo extends Keyed {
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
       double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
-      if (_normMul != null)
+      if (_normMul != null && _normSub != null)
         d = (d - _normSub[i]) * _normMul[i];
       row.numVals[i] = d;
     }
@@ -580,7 +588,7 @@ public class DataInfo extends Keyed {
       throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
     double etaOffset = 0;
-    if(_normMul != null && beta != null)
+    if(_normMul != null && _normSub != null && beta != null)
       for(int i = 0; i < _nums; ++i)
         etaOffset -= beta[i] * _normSub[i] * _normMul[i];
 //    Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;

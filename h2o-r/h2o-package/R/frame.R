@@ -690,6 +690,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     stop("`i` must be missing or a numeric vector")
   if(!missingJ && !is.numeric(j) && !is.character(j))
     stop("`j` must be missing or a numeric or character vector")
+  if( !is(value, "H2OFrame") && is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
     stop("`value` can only be an H2OFrame object or a numeric or character vector")
 
@@ -746,6 +747,8 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if (is(value, "H2OFrame")) {
     finalizers <- c(finalizers, value@finalizers)
     rhs <- .get(value)
+  } else if( is.na(value) ) {
+    rhs <- "%NA"
   } else
     rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
@@ -1212,7 +1215,14 @@ setMethod("summary", "H2OFrame", function(object, ...) {
           if(!is.null(col$missing_count) && col$missing_count > 0) paste0("NA's   :", col$missing_count, "  ") else NA)
       } else {
         top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
-        if(is.null(col$domain)) domains <- top.ix[1:6] else domains <- col$domain[top.ix]
+        domains <- NULL
+        if( col$sigma == 0 ) {  # constant column, pick the correct domain level
+          if( !is.null(col$domain) ) {  # have domain, col$data is 0-based index into the domain...
+            domains <- col$domain[top.ix+1]
+          } else {
+            domains <- top.ix[1:6]
+          }
+        }
         counts <- col$histogram_bins[top.ix]
 
         # TODO: Make sure "NA's" isn't a legal domain level.
@@ -1855,7 +1865,6 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
                 finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 }
 
-
 # old version of h2o.groupBy -- not user friendly.
 #h2o.groupBy <- function(data, columns, aggregates=list()) {
 #  if( !is(data, "H2OFrame") )
@@ -1927,6 +1936,103 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 #  .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "group_by"),
 #                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 #}
+
+#'
+#' Basic Imputation of H2O Vectors
+#'
+#'  Perform simple imputation on a single vector by filling missing values with aggregates
+#'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
+#'  based on groupings of columns from within data; these columns can be passed by index or
+#'  name to the by parameter. If a factor column is supplied, then the method must be one
+#'  "mode". Anything else results in a full stop.
+#'
+#'  The default method is selected based on the type of the column to impute. If the column
+#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Otherwise
+#'  column types (e.g. String, Time, UUID) are not supported.
+#'
+#'  @param column The column to impute.
+#'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
+#'                "mode" replaces with the most common factor (for factor columns only);
+#'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
+#'  @param by group by columns
+#'
+#'  @return a H2OFrame with imputed values
+#' @examples
+#' h2o.init()
+#' fr <- as.h2o(iris, destination_frame="iris")
+#' fr[sample(nrow(fr),40),5] <- NA  # randomly replace 50 values with NA
+#' h2o.impute(fr, "Species", "mode", inplace=FALSE, by=c("Sepal.Length", "Sepal.Width"))  # impute with a group by
+#' @export
+h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
+                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL) {
+  # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
+  # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
+  # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
+
+  # this AST: (h2o.impute %fr #colidx method combine_method inplace max_gap by)
+  inplace <- FALSE  # TODO inplace param  #'  @param inplace  If TRUE, then perform the imputation in place. This will mutate the Frame in place and not result in a copy. If FALSE, then the imputed frame is copied.
+  if( !is(data, "H2OFrame") )
+      stop("`data` must be of type H2OFrame")
+
+  # sanity check `column` then convert to 0-based index.
+  if( length(column) > 1L ) stop("`column` must be a single column.")
+  col.id <- match(column,colnames(data)) - 1L
+  if( col.id < 0L || col.id > (ncol(data)-1L) ) stop("Column ", col.idx, " out of range.")
+
+  # choose "mean" by default for numeric columns. "mode" for factor columns
+  if( length(method) > 1) {
+    if( is.factor(data[column]) ) method <- "mode"
+    method <- "mean"
+  }
+
+  # choose "interplate" by default for combine_method
+  if( length(combine_method) > 1L ) combine_method <- "interpolate"
+
+  # sanity check method, column type, by parameters
+  if( method=="median" ) {
+    # no by and median
+    if( !is.null(by) ) stop("Unimplemented: No `by` and `median`. Please select a different method.")
+  }
+
+  # check that method isn't median or mean for factor columns.
+  if( is.factor(data[column]) && !(method %in% c("ffill", "bfill", "mode")) )
+    stop("Column is categorical, method must not be mean or median.")
+
+  # handle the data
+  mktmp <- !.is.eval(data)
+  if( mktmp ) {
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
+  }
+  gb.cols <- NULL
+  if( !is.null(by) ) {
+    if(is.character(by)) {
+      vars <- match(by, colnames(data))
+      if( any(is.na(vars)) )
+        stop('No column named ', by, ' in ', substitute(data), '.')
+      } else if(is.integer(by)) { vars <- by }
+      else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
+      # 1-index -> 0-index and sanity check
+      vars <- vars - 1L
+      if(vars < 0L || vars > (ncol(data)-1L))
+        stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+      gb.cols <- vars
+  }
+
+  args <- list(data, col.id, method, combine_method, inplace, max_gap, gb.cols)
+  op <- new("ASTApply", op="h2o.impute")
+  children <- list(unlist(.args.to.ast(.args=args)))
+
+  IMPUTE <- new("ASTNode", root=op, children=children)
+
+  if( inplace ) {
+    .h2o.raw_expr_op(expr=.visitor(IMPUTE), key=data@frame_id)
+  } else {
+    mutable <- new("H2OFrameMutableState", ast=IMPUTE, nrows=NA_integer_, ncols=NA_integer_, col_names=NA_character_)
+    finalizers <- data@finalizers
+    conn <- h2o.getConnection()
+    .newH2OFrame("H2OFrame", conn=conn, frame_id=.key.make(conn, "impute"), finalizers=finalizers, linkToGC=TRUE, mutable=mutable)
+  }
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,

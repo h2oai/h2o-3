@@ -20,6 +20,8 @@
 #' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
+#' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
+#'        FALSE to reduce the runtime of the algorithm.
 #' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
 #' localH2O <- h2o.init()
@@ -31,7 +33,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            model_id,
                            laplace = 0,
                            threshold = 0.001,
-                           eps = 0)
+                           eps = 0,
+                           compute_metrics = TRUE)
 {
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -57,6 +60,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$min_sdev <- threshold
   if(!missing(eps))
     parms$eps_sdev <- eps
+  if(!missing(compute_metrics))
+    parms$compute_metrics <- compute_metrics
 
   # In R package, cutoff and threshold for probability and standard deviation are the same
   parms$min_prob <- threshold
