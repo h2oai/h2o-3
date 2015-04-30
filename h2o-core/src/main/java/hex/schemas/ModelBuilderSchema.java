@@ -38,6 +38,9 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
   public Model.ModelCategory[] can_build;
 
+  @API(help="Should the builder always be visible, be marked as beta, or only visible if the user starts up with the experimental flag?", values = { "Experimental", "Beta", "AlwaysVisible" }, direction = API.Direction.OUTPUT)
+  public ModelBuilder.BuilderVisibility visibility;
+
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
   public JobV3 job;
 
@@ -128,6 +131,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
 
     this.can_build = builder.can_build();
+    this.visibility = builder.builderVisibility();
     job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
@@ -190,6 +194,8 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     ab.putJSONStr("algo_full_name", algo_full_name);
     ab.put1(',');
     ab.putJSONAEnum("can_build", can_build);
+    ab.put1(',');
+    ab.putJSONEnum("visibility", visibility);
     ab.put1(',');
     ab.putJSONA("validation_messages", validation_messages);
     ab.put1(',');

@@ -37,6 +37,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+
   @Override
   public boolean isSupervised() {
     return !_parms._autoencoder;
