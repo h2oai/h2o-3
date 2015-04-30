@@ -65,11 +65,7 @@ class Basic(unittest.TestCase):
                 'response_column': 'C55', 
                 'max_iterations': 3,
                 'solver': 'L_BFGS', 
-                'ignored_columns': '[1]', 
-                'prior1': 1, 
-                'tweedie_variance_power': 0, 
-                'beta_eps': 0.0001, 
-                'n_folds': 0, 
+                'ignored_columns': '["C1"]', 
                 'alpha': '[0.1]', 
                 'max_after_balance_size': 1000.0, 
                 'class_sampling_factors': '[0.2]', 
@@ -87,7 +83,7 @@ class Basic(unittest.TestCase):
             model_key = 'rand_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=bHack,
                 parameters=parameters,
                 timeoutSecs=10)
