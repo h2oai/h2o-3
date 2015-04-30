@@ -1,5 +1,6 @@
 
 from model_base import ModelBase
+from h2o.model.confusion_matrix import ConfusionMatrix
 
 class MetricsBase(object):
   """
@@ -54,6 +55,7 @@ class MetricsBase(object):
     if metric_type in types_w_bin:
       print "AUC: "                                           + str(self.auc())
       print "Gini: "                                          + str(self.giniCoef())
+      ConfusionMatrix(cm=self.confusion_matrices()[0], domains=self._metric_json['domain']).show()
       print                                                     self._metric_json["max_criteria_and_metric_scores"]
     if metric_type in types_w_mult:
       print                                                     self._metric_json['cm']['table']
