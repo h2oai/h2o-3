@@ -20,6 +20,8 @@
 #' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
+#' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
+#'        FALSE to reduce the runtime of the algorithm.
 #' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
 #' localH2O <- h2o.init()
