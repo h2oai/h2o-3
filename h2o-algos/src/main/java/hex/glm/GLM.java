@@ -448,6 +448,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     Vec _zVec; // z
     Vec _iVec; // intercept - all 1s
     final int _fullN;
+    public boolean _lineSearch;
+    public int _lsCnt;
 
     public GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, int fullN, GLMGradientInfo ginfo, double objVal){
       _dstKey = dstKey;
@@ -993,6 +995,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         LogInfo("-log(l) = " + logl + ", obj = " + objVal);
 
         if (_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))) {
+          _taskInfo._lineSearch = true;
+          // nedded line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
@@ -1040,9 +1044,44 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (glmt._beta != null) {
               setSubmodel(glmt._beta, glmt._val, null, (H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
             }
-            final boolean validate = (_taskInfo._iter % 5) == 0;
-            getCompleter().addToPendingCount(1);
-            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
+            if(_taskInfo._lineSearch){
+              getCompleter().addToPendingCount(1);
+              LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
+              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
+                @Override
+                public void callback(GLMLineSearchTask lst) {
+                  double t = 1;
+                  for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
+                    double[] beta = ArrayUtils.wadd(lst._beta.clone(), lst._direction, t);
+                    double newObj = objVal(lst._likelihoods[i], beta, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
+                    if (_taskInfo._objVal > newObj) {
+                      LogInfo("step = " + t + ",  objval = " + newObj);
+                      if(t == 1) {
+                        if(++_taskInfo._lsCnt == 2) { // if we do not need line search in 2 consecutive iterations turn it off
+                          _taskInfo._lineSearch = false;
+                          _taskInfo._lsCnt = 0;
+                        }
+                      } else
+                        _taskInfo._lsCnt = 0;
+                      getCompleter().addToPendingCount(1);
+                      new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _parms._intercept?_taskInfo._ymu:.5, _rowFilter, new Iteration(getCompleter(), true, true)).asyncExec(_activeData._adaptedFrame);
+                      return;
+                    }
+                  }
+                  // converged
+                  int nzs = 0;
+                  for (int i = 0; i < glmt._beta.length; ++i)
+                    if (glmt._beta[i] != 0) ++nzs;
+                  LogInfo("converged (no more progress), got " + nzs + " nzs");
+                  _taskInfo._beta = glmt._beta;
+                  checkKKTsAndComplete();
+                }
+              }).asyncExec(_activeData._adaptedFrame);
+            } else {
+              final boolean validate = (_taskInfo._iter % 5) == 0;
+              getCompleter().addToPendingCount(1);
+              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
+            }
           }
         }
       }
