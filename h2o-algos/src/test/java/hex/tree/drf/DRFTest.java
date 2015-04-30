@@ -217,7 +217,9 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.vecs()[1] = fr.vecs()[1].toEnum();
+                Vec resp = fr.remove("C2");
+                fr.add("C2", resp.toEnum());
+                resp.remove();
                 return fr.find("C3");
               }
             },
