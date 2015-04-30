@@ -690,7 +690,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     stop("`i` must be missing or a numeric vector")
   if(!missingJ && !is.numeric(j) && !is.character(j))
     stop("`j` must be missing or a numeric or character vector")
-  if( !is(value, "H2OFrame") && is.na(value) ) value <- NA_integer_  # pick an NA any NA (the damned numeric one will do)
+  if( !is(value, "H2OFrame") && is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
     stop("`value` can only be an H2OFrame object or a numeric or character vector")
 
