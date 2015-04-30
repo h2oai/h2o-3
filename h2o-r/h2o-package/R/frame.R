@@ -1232,13 +1232,13 @@ setMethod("summary", "H2OFrame", function(object, ...) {
           counts[idx] <- col$missing_count
         }
 
-        width <- c(max(nchar(domains)), max(nchar(counts)))
+        width <- c(max(nchar(domains),0), max(nchar(counts),0))
         result <- paste0(domains,
                         sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),
                           ":",
                         sapply(counts, function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }),
                           counts, " ")
-        result[is.na(domains)] <- NA
+        if(!is.null(domains)) result[is.na(domains)] <- NA
         result <- c(result, NA)   # Pad end to accommodate potential additional row of NA counts in numeric cols
         result
       }
