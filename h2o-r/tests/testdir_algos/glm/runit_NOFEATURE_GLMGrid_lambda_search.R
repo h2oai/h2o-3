@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.GLMGrid.lambda.search <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex = h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), key = "prostate.hex")
+  prostate.hex = h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
   prostate.sum = summary(prostate.hex)
   print(prostate.sum)
   

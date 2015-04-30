@@ -78,6 +78,6 @@ pred_dl = predict(air.dl, data.hex)
 perf_dl <- h2o.performance(air.dl, data.hex)
 auc_dl <- h2o.auc(perf_dl)
 print(auc_dl)
-expect_true(abs(auc_dl - 0.80) < 0.01)
+expect_true(abs(auc_dl - 0.80) <= 0.02)
 
 PASS_BANNER()

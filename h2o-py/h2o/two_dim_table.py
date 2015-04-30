@@ -25,8 +25,14 @@ class H2OTwoDimTable(object):
     if header: print self.table_header + ":"
     print
     table = copy.deepcopy(self.cell_values)
-    print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")
-    print
+    nr = len(table)
+    if nr > 20:
+      print tabulate.tabulate(table[:5], headers=self.col_header, numalign="left", stralign="left")
+      print "==="
+      print tabulate.tabulate(table[(nr-5):], headers=self.col_header, numalign="left", stralign="left")
+    else:
+      print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")
+      print
 
   def __repr__(self):
     self.show()

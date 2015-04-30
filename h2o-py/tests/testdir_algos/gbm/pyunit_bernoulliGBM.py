@@ -29,12 +29,15 @@ def bernoulliGBM(ip,port):
   depth = 5
   min_rows = 10
   # Build H2O GBM classification model:
-  #Log.info(paste("H2O GBM with parameters:\ndistribution = 'bernoulli', ntrees = ", ntrees, ", max_depth = 5, min_rows = 10, learn_rate = 0.1\n", sep = ""))
-  gbm_h2o = h2o.gbm(x=prostate_train[1:], y=prostate_train["CAPSULE"], ntrees=ntrees, learn_rate=learning_rate, max_depth=depth, min_rows=min_rows, distribution="bernoulli")
+  #Log.info(paste("H2O GBM with parameters:\ndistribution = 'bernoulli', ntrees = ", ntrees, ", max_depth = 5,
+  # min_rows = 10, learn_rate = 0.1\n", sep = ""))
+  gbm_h2o = h2o.gbm(x=prostate_train[1:], y=prostate_train["CAPSULE"], ntrees=ntrees, learn_rate=learning_rate,
+                    max_depth=depth, min_rows=min_rows, distribution="bernoulli")
 
   # Build scikit GBM classification model
   #Log.info("scikit GBM with same parameters\n")
-  gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learning_rate, n_estimators=ntrees, max_depth=depth, min_samples_leaf=min_rows, max_features=None)
+  gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learning_rate, n_estimators=ntrees, max_depth=depth,
+                                                min_samples_leaf=min_rows, max_features=None)
   gbm_sci.fit(trainDataFeatures,trainDataResponse)
 
   #Log.info("Importing prostate_test.csv data...\n")

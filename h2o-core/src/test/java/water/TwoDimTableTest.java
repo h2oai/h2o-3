@@ -13,9 +13,37 @@ public class TwoDimTableTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test
-  public void run1() {
+  public void run0() {
     TwoDimTable table = new TwoDimTable(
             "My foo bar table", null,
+            new String[4],
+            new String[]{"DoubleValue", "S2", "My Terrible Percent Value"},
+            new String[]{"double", "string", "double"},
+            new String[]{"%5.8e", "%s", "%5.8g %%"}, "",
+            new String[][]{
+                    new String[]{null,             "One",    null        },
+                    new String[]{null,             null,     null        },
+                    new String[]{null,             "Three",  null        },
+                    new String[]{null,             "FooBar", null        }
+            },
+            new double[][]{
+                    new double[]{1.123,            emptyDouble,    3200034.00001},
+                    new double[]{123.34,           emptyDouble,    1.0          },
+                    new double[]{emptyDouble,      emptyDouble,    3234.00001   },
+                    new double[]{3.33420923423423, emptyDouble,    3.40234234   }
+            });
+    String ts = table.toString();
+    assertTrue(ts.length() > 0);
+    Log.info(ts);
+
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    Log.info(json);
+  }
+
+  @Test
+  public void run1() {
+    TwoDimTable table = new TwoDimTable(
+            "My foo bar table", "Corner value",
             new String[]{"First row", "R2", "Row #3", "Last row is here:"},
             new String[]{"DoubleValue", "S2", "My Terrible Percent Value"},
             new String[]{"double", "string", "double"},
@@ -170,7 +198,7 @@ public class TwoDimTableTest extends TestUtil {
             "Mixed", "description",
             new String[]{"R0", "R1", "R2", "R3"},
             new String[]{"C0", "C1", "C2", "C3"},
-            new String[]{"double", "float", "integer", "long"},
+            new String[]{"double", "float", "int", "long"},
             new String[]{"%f", "%f", "%d", "%d"},
             "");
     table.set(0, 0, Double.NEGATIVE_INFINITY);

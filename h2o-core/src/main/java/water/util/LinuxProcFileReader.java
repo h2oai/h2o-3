@@ -234,18 +234,26 @@ public class LinuxProcFileReader {
 
       // Read aggregate cpu values
       {
-        Pattern p = Pattern.compile("cpu\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
+        Pattern p = Pattern.compile("cpu\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
         Matcher m = p.matcher(line);
         boolean b = m.matches();
         if (!b) {
           return;
         }
 
-        long systemUserTicks = Long.parseLong(m.group(1));
-        long systemNiceTicks = Long.parseLong(m.group(2));
-        long systemSystemTicks = Long.parseLong(m.group(3));
-        _systemIdleTicks = Long.parseLong(m.group(4));
-        _systemTotalTicks = systemUserTicks + systemNiceTicks + systemSystemTicks + _systemIdleTicks;
+        int matchGroupBase = 0;
+        long systemUserTicks = 0;
+        long systemSystemTicks = 0;
+        long systemOtherTicks = 0;
+        _systemIdleTicks = 0;
+        systemUserTicks    += Long.parseLong(m.group(1 + matchGroupBase));
+        systemOtherTicks   += Long.parseLong(m.group(2 + matchGroupBase));
+        systemSystemTicks  += Long.parseLong(m.group(3 + matchGroupBase));
+        _systemIdleTicks   += Long.parseLong(m.group(4 + matchGroupBase));
+        systemOtherTicks   += Long.parseLong(m.group(5 + matchGroupBase));
+        systemSystemTicks  += Long.parseLong(m.group(6 + matchGroupBase));
+        systemSystemTicks  += Long.parseLong(m.group(7 + matchGroupBase));
+        _systemTotalTicks   = systemUserTicks + systemOtherTicks + systemSystemTicks + _systemIdleTicks;
       }
 
       // Read individual cpu values
@@ -262,17 +270,18 @@ public class LinuxProcFileReader {
         // Copying algorithm from http://gee.cs.oswego.edu/dl/code/
         // See perfbar.c in gtk_perfbar package.
         // int cpuNum = Integer.parseInt(m.group(1));
+        int matchGroupBase = 1;
         long cpuUserTicks = 0;
         long cpuSystemTicks = 0;
         long cpuOtherTicks = 0;
         long cpuIdleTicks = 0;
-        cpuUserTicks    += Long.parseLong(m.group(2));
-        cpuOtherTicks   += Long.parseLong(m.group(3));
-        cpuSystemTicks  += Long.parseLong(m.group(4));
-        cpuIdleTicks    += Long.parseLong(m.group(5));
-        cpuOtherTicks   += Long.parseLong(m.group(6));
-        cpuSystemTicks  += Long.parseLong(m.group(7));
-        cpuSystemTicks  += Long.parseLong(m.group(8));
+        cpuUserTicks    += Long.parseLong(m.group(1 + matchGroupBase));
+        cpuOtherTicks   += Long.parseLong(m.group(2 + matchGroupBase));
+        cpuSystemTicks  += Long.parseLong(m.group(3 + matchGroupBase));
+        cpuIdleTicks    += Long.parseLong(m.group(4 + matchGroupBase));
+        cpuOtherTicks   += Long.parseLong(m.group(5 + matchGroupBase));
+        cpuSystemTicks  += Long.parseLong(m.group(6 + matchGroupBase));
+        cpuSystemTicks  += Long.parseLong(m.group(7 + matchGroupBase));
         long[] oneCpuTicks = {cpuUserTicks, cpuSystemTicks, cpuOtherTicks, cpuIdleTicks};
         _cpuTicks.add(oneCpuTicks);
 

@@ -34,67 +34,70 @@ class RapidsHandler extends Handler {
       env = water.rapids.Exec.exec(rapids.ast);
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
-      if (env.isAry()) {
-        Frame fr = env.popAry();
-        Key[] keys = fr.keys();
-        if(keys != null && keys.length > 0) {
-          rapids.vec_keys = new KeyV3.VecKeyV3[keys.length];
-          for (int i = 0; i < keys.length; i++)
-            rapids.vec_keys[i] = new KeyV3.VecKeyV3(keys[i]);
-        }
-        if (fr.numRows() == 1 && fr.numCols() == 1) {
-          rapids.key = new KeyV3.FrameKeyV3(fr._key);
-          rapids.num_rows = 0;
-          rapids.num_cols = 0;
-          if (fr.anyVec().isEnum()) {
-            rapids.string = fr.anyVec().domain()[(int) fr.anyVec().at(0)];
-            sb.append(rapids.string);
-            rapids.result_type = RapidsV3.ARYSTR;
-          } else if (fr.anyVec().isString()) {
-            rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
-            sb.append(rapids.string);
-            rapids.result_type = RapidsV3.ARYSTR;
-          } else if (fr.anyVec().isUUID()) {
-            rapids.string = PrettyPrint.UUID(fr.anyVec().at16l(0), fr.anyVec().at16h(0));
-            sb.append(rapids.string);
-            rapids.result_type = RapidsV3.ARYSTR;
-          } else {
-            rapids.scalar = fr.anyVec().at(0);
-            sb.append(Double.toString(rapids.scalar));
-            rapids.string = null;
-            rapids.result_type = RapidsV3.ARYNUM;
+
+      if( !env.isEmpty() ) {
+        if (env.isAry()) {
+          Frame fr = env.popAry();
+          Key[] keys = fr.keys();
+          if (keys != null && keys.length > 0) {
+            rapids.vec_ids = new KeyV3.VecKeyV3[keys.length];
+            for (int i = 0; i < keys.length; i++)
+              rapids.vec_ids[i] = new KeyV3.VecKeyV3(keys[i]);
           }
-        } else {
-          rapids.result_type = RapidsV3.ARY;
-          rapids.key = new KeyV3.FrameKeyV3(fr._key);
-          rapids.num_rows = fr.numRows();
-          rapids.num_cols = fr.numCols();
-          rapids.col_names = fr.names();
-          rapids.string = null;
-          String[][] head = rapids.head = new String[Math.min(200, fr.numCols())][(int) Math.min(100, fr.numRows())];
-          for (int r = 0; r < head[0].length; ++r) {
-            for (int c = 0; c < head.length; ++c) {
-              if (fr.vec(c).isNA(r))
-                head[c][r] = "";
-              else if (fr.vec(c).isUUID())
-                head[c][r] = PrettyPrint.UUID(fr.vec(c).at16l(r), fr.vec(c).at16h(r));
-              else if (fr.vec(c).isString())
-                head[c][r] = String.valueOf(fr.vec(c).atStr(new ValueString(), r));
-              else
-                head[c][r] = String.valueOf(fr.vec(c).at(r));
+          if (fr.numRows() == 1 && fr.numCols() == 1) {
+            rapids.key = new KeyV3.FrameKeyV3(fr._key);
+            rapids.num_rows = 0;
+            rapids.num_cols = 0;
+            if (fr.anyVec().isEnum()) {
+              rapids.string = fr.anyVec().domain()[(int) fr.anyVec().at(0)];
+              sb.append(rapids.string);
+              rapids.result_type = RapidsV3.ARYSTR;
+            } else if (fr.anyVec().isString()) {
+              rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
+              sb.append(rapids.string);
+              rapids.result_type = RapidsV3.ARYSTR;
+            } else if (fr.anyVec().isUUID()) {
+              rapids.string = PrettyPrint.UUID(fr.anyVec().at16l(0), fr.anyVec().at16h(0));
+              sb.append(rapids.string);
+              rapids.result_type = RapidsV3.ARYSTR;
+            } else {
+              rapids.scalar = fr.anyVec().at(0);
+              sb.append(Double.toString(rapids.scalar));
+              rapids.string = null;
+              rapids.result_type = RapidsV3.ARYNUM;
+            }
+          } else {
+            rapids.result_type = RapidsV3.ARY;
+            rapids.key = new KeyV3.FrameKeyV3(fr._key);
+            rapids.num_rows = fr.numRows();
+            rapids.num_cols = fr.numCols();
+            rapids.col_names = fr.names();
+            rapids.string = null;
+            String[][] head = rapids.head = new String[Math.min(200, fr.numCols())][(int) Math.min(100, fr.numRows())];
+            for (int r = 0; r < head[0].length; ++r) {
+              for (int c = 0; c < head.length; ++c) {
+                if (fr.vec(c).isNA(r))
+                  head[c][r] = "";
+                else if (fr.vec(c).isUUID())
+                  head[c][r] = PrettyPrint.UUID(fr.vec(c).at16l(r), fr.vec(c).at16h(r));
+                else if (fr.vec(c).isString())
+                  head[c][r] = String.valueOf(fr.vec(c).atStr(new ValueString(), r));
+                else
+                  head[c][r] = String.valueOf(fr.vec(c).at(r));
+              }
             }
           }
+          //TODO: colSummary  cols = new Inspect2.ColSummary[num_cols];
+        } else if (env.isNum()) {
+          rapids.scalar = env.popDbl();
+          sb.append(Double.toString(rapids.scalar));
+          rapids.string = null;
+          rapids.result_type = RapidsV3.NUM;
+        } else if (env.isStr()) {
+          rapids.string = env.popStr();
+          sb.append(rapids.string);
+          rapids.result_type = RapidsV3.STR;
         }
-        //TODO: colSummary  cols = new Inspect2.ColSummary[num_cols];
-      } else if (env.isNum()) {
-        rapids.scalar = env.popDbl();
-        sb.append(Double.toString(rapids.scalar));
-        rapids.string = null;
-        rapids.result_type = RapidsV3.NUM;
-      } else if (env.isStr()) {
-        rapids.string = env.popStr();
-        sb.append(rapids.string);
-        rapids.result_type = RapidsV3.STR;
       }
       rapids.result = sb.toString();
       return rapids;

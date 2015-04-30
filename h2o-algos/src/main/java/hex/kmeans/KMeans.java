@@ -10,10 +10,7 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.RandomUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -43,7 +40,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   public ModelBuilderSchema schema() { return new KMeansV3(); }
 
-
+  @Override
+  protected void checkMemoryFootPrint() {
+    long mem_usage = 8 /*doubles*/ * _parms._k * _train.degreesOfFreedom() * (_parms._standardize ? 2 : 1);
+    long max_mem = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat.get_max_mem();
+    if (mem_usage > max_mem) {
+      String msg = "Centroids won't fit in the driver node's memory ("
+              + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+              + ") - try reducing the number of columns and/or the number of categorical factors.";
+      error("_train", msg);
+      cancel(msg);
+    }
+  }
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> trainModel() {
     return start(new KMeansDriver(), _parms._max_iterations);
@@ -63,9 +71,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       }
     }
-    if (_parms._standardize && _parms._valid != null) {
-      error("_valid", "Validation dataset can only be specified if standardization is disabled.");
-    }
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   // ----------------------
@@ -148,7 +154,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       long row = task._worst_row;
       Log.warn("KMeans: Re-initializing cluster " + clu + " to row " + row);
       data(centers[clu] = task._cMeans[clu], vecs, row, means, mults);
-      task._size[clu] = 1;
+      task._size[clu] = 1; //FIXME: PUBDEV-871 Some other cluster had their membership count reduced by one! (which one?)
 
       // Find any MORE bad clusters; we only fixed the first one
       for( clu=0; clu<_parms._k; clu++ )
@@ -172,20 +178,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
-      String[] rowHeaders = new String[_parms._k];
-      for(int i = 0; i < _parms._k; i++)
-        rowHeaders[i] = String.valueOf(i+1);
-      String[] colTypes = new String[_train.numCols()];
-      String[] colFormats = new String[_train.numCols()];
-      Arrays.fill(colTypes, "double");
-      Arrays.fill(colFormats, "%5f");
       if (model._parms._standardize) {
         model._output._centers_std_raw = centers;
-        model._output._centers_std = new TwoDimTable("Cluster means (standardized)", null, rowHeaders, _train.names(), colTypes, colFormats, "Centroid", new String[_parms._k][], model._output._centers_std_raw);
       }
       model._output._centers_raw = destandardize(centers, _isCats, means, mults);
-      model._output._centers = new TwoDimTable("Cluster means", null, rowHeaders, _train.names(), colTypes, colFormats, "Centroid", new String[_parms._k][], model._output._centers_raw);
-
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -200,10 +196,24 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model._output._avg_ss = model._output._avg_within_ss;
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults).doAll(vecs);
+        TotSS totss = new TotSS(means,mults, _parms.train().domains()).doAll(vecs);
         model._output._avg_ss = totss._tss/_train.numRows(); // MSE with respect to grand mean
       }
       model._output._avg_between_ss = model._output._avg_ss - model._output._avg_within_ss;  // MSE between-cluster
+      model._output._iterations++;
+
+      // add to scoring history
+      model._output._history_avg_within_ss = ArrayUtils.copyAndFillOf(
+          model._output._history_avg_within_ss,
+          model._output._history_avg_within_ss.length+1, model._output._avg_within_ss);
+
+      // Two small TwoDimTables - cheap
+      model._output._model_summary = createModelSummaryTable(model._output);
+      model._output._scoring_history = createScoringHistoryTable(model._output);
+
+      // Take the cluster stats from the model, and assemble them into a model metrics object
+      model._output._training_metrics = makeTrainingMetrics(model);
+
       return task._cMeans;      // New centers
     }
 
@@ -264,31 +274,43 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
           // Compute model stats; update standardized cluster centers
           oldCenters = centers;
-          centers = computeStatsFillModel(task,model,vecs,centers,means,mults);
+          centers = computeStatsFillModel(task, model, vecs, centers, means, mults);
 
-          model._output._iterations++;
-
-          // add to scoring history
-          model._output._history_avg_within_ss = ArrayUtils.copyAndFillOf(
-                  model._output._history_avg_within_ss,
-                  model._output._history_avg_within_ss.length+1, model._output._avg_within_ss);
-
-          model._output._model_summary = createModelSummaryTable(model._output);
-          model._output._scoring_history = createScoringHistoryTable(model._output);
-          model._output._training_metrics = makeTrainingMetrics(model);
-          if (_valid != null) {
-            Frame pred = model.score(_parms.valid());
-            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
-            pred.delete();
-          }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
-
           if (model._parms._score_each_iteration)
             Log.info(model._output._model_summary);
         }
+
         Log.info(model._output._model_summary);
 //        Log.info(model._output._scoring_history);
+//        Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
+
+        // FIXME: Remove (most of) this code - once it passes...
+        // PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
+        if (false) {
+          assert((ArrayUtils.sum(model._output._size) - _parms.train().numRows()) <= 1);
+
+//          Log.info(model._output._model_summary);
+//          Log.info(model._output._scoring_history);
+//          Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
+          model.score(_parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
+          ModelMetricsClustering mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          assert(Arrays.equals(mm._size, ((ModelMetricsClustering) model._output._training_metrics)._size));
+          for (int i=0; i<_parms._k; ++i) {
+            assert(MathUtils.compare(mm._within_mse[i], ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i], 1e-6, 1e-6));
+          }
+          assert(MathUtils.compare(mm._avg_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_ss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._avg_between_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._avg_within_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss, 1e-6, 1e-6));
+        }
+        // At the end: validation scoring (no need to gather scoring history)
+        if (_valid != null) {
+          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
+          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
+          pred.delete();
+          model.update(_key); // Update model in K/V store
+        }
         done();                 // Job done!
 
       } catch( Throwable t ) {
@@ -367,31 +389,51 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
   }
 
+  static public TwoDimTable createCenterTable(KMeansModel.KMeansOutput output, boolean standardized) {
+    String[] rowHeaders = new String[output._size.length];
+    for(int i = 0; i < rowHeaders.length; i++)
+      rowHeaders[i] = String.valueOf(i+1);
+    String[] colTypes = new String[output._names.length];
+    String[] colFormats = new String[output._names.length];
+    Arrays.fill(colTypes, "double");
+    Arrays.fill(colFormats, "%5f");
+    String name = standardized ? "Cluster means (standardized)" : "Cluster means";
+    return new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid", new String[rowHeaders.length][],
+        standardized ? output._centers_std_raw : output._centers_raw);
+  }
+
   // -------------------------------------------------------------------------
   // Initial sum-of-square-distance to nearest cluster center
   private static class TotSS extends MRTask<TotSS> {
     // IN
-    double[] _means, _mults;
+    final double[] _means, _mults;
+    final String[][] _isCats;
 
     // OUT
     double _tss;
 
-    TotSS(double[] means, double[] mults) {
+    TotSS(double[] means, double[] mults, String[][] isCats) {
       _means = means;
       _mults = mults;
       _tss = 0;
+      _isCats = isCats;
     }
 
     @Override public void map(Chunk[] cs) {
+      // de-standardize the cluster means
+      double[] means = Arrays.copyOf(_means, _means.length);
+
+      if (_mults!=null)
+        for (int i=0; i<means.length; ++i)
+          means[i] = (means[i] - _means[i])/_mults[i];
+
       for( int row = 0; row < cs[0]._len; row++ ) {
-        for( int i = 0; i < cs.length; i++ ) {
-          double d = cs[i].atd(row);
-          if(Double.isNaN(d)) continue;
-          d = (d - _means[i]) * (_mults == null ? 1 : _mults[i]);
-          _tss += d * d;
-        }
+        double[] values = new double[cs.length];
+        // fetch the data - using consistent NA and categorical data handling (same as for training)
+        data(values, cs, row, _means, _mults);
+        // compute the distance from the (standardized) cluster centroids
+        _tss += hex.genmodel.GenModel.KMeans_distance(means, values, _isCats, null, null);
       }
-      _means = null;
     }
 
     @Override public void reduce(TotSS other) { _tss += other._tss; }
@@ -695,8 +737,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
     } else {
       // TODO: If NaN, then replace with majority class?
-      if(Double.isNaN(d))
+      if(Double.isNaN(d)) {
         d = Math.min(Math.round(means[i]), cardinality-1);
+        if( mults != null ) {
+          d = 0;
+        }
+      }
     }
     return d;
   }

@@ -5,11 +5,11 @@ test.svd.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), key = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   
-  Log.info("Compare with SVD when center = FALSE, scale. = FALSE")
+  Log.info("Compare with SVD")
   fitR <- svd(arrestsR, nv = 4)
-  fitH2O <- h2o.svd(arrestsH2O, nv = 4, center = FALSE, scale. = FALSE)
+  fitH2O <- h2o.svd(arrestsH2O, nv = 4, transform = "NONE")
   
   Log.info("Compare singular values (D)")
   Log.info(paste("R Singular Values:", paste(fitR$d, collapse = ", ")))
@@ -22,7 +22,7 @@ test.svd.golden <- function(H2Oserver) {
   isFlipped1 <- checkSignedCols(fitH2O@model$v, fitR$v)
   
   Log.info("Compare left singular vectors (U)")
-  uH2O <- h2o.getFrame(fitH2O@model$ukey$name)
+  uH2O <- h2o.getFrame(fitH2O@model$u_key$name)
   Log.info("R Left Singular Vectors:"); print(head(fitR$u))
   Log.info("H2O Left Singular Vectors:"); print(head(uH2O))
   isFlipped2 <- checkSignedCols(as.data.frame(uH2O), fitR$u)

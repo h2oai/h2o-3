@@ -30,13 +30,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
-    double _logloss;
+    protected double _logloss;
     protected AUC2.AUCBuilder _auc;
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public double[] perRow(double ds[], float[] yact, Model m, double[] mean) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       _count++;

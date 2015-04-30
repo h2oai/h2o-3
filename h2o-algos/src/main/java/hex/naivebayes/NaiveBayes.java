@@ -1,18 +1,21 @@
 package hex.naivebayes;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.SupervisedModelBuilder;
+import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Naive Bayes
@@ -39,6 +42,27 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     return new Model.ModelCategory[]{ Model.ModelCategory.Unknown };
   }
 
+  @Override
+  protected void checkMemoryFootPrint() {
+    // compute memory usage for pcond matrix
+    long mem_usage = (_train.numCols() - 1) * _train.lastVec().cardinality();
+    String[][] domains = _train.domains();
+    long count = 0;
+    for (int i = 0; i < _train.numCols() - 1; i++) {
+      count += domains[i] == null ? 2 : domains[i].length;
+    }
+    mem_usage *= count;
+    mem_usage *= 8; //doubles
+    long max_mem = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat.get_max_mem();
+    if (mem_usage > max_mem) {
+      String msg = "Conditional probabilities won't fit in the driver node's memory ("
+              + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+              + ") - try reducing the number of columns, the number of response classes or the number of categorical factors of the predictors.";
+      error("_train", msg);
+      cancel(msg);
+    }
+  }
+
   // Called from an http request
   public NaiveBayes(NaiveBayesModel.NaiveBayesParameters parms) {
     super("NaiveBayes", parms);
@@ -54,13 +78,22 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
     if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
     if (_parms._eps_prob < 0) error("_eps_prob", "Threshold for probability must be positive");
+    hide("_balance_classes", "Balance classes is not applicable to NaiveBayes.");
+    hide("_class_sampling_factors", "Class sampling factors is not applicable to NaiveBayes.");
+    hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
 
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
-      String[][] domains = dinfo._adaptedFrame.domains();
+      model._output._levels = _response.domain();
+      model._output._rescnt = tsk._rescnt;
+      model._output._ncats = dinfo._cats;
+
+      // String[][] domains = dinfo._adaptedFrame.domains();
+      String[][] domains = model._output._domains;
       double[] apriori = new double[tsk._nrescat];
       double[][][] pcond = new double[tsk._npreds][][];
       for(int i = 0; i < pcond.length; i++) {
@@ -125,6 +158,20 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       Arrays.fill(colFormats, "%5f");
       model._output._apriori = new TwoDimTable("Y", null, new String[1], _response.domain(), colTypes, colFormats, "",
               new String[1][], new double[][] {apriori});
+
+      model._output._model_summary = createModelSummaryTable(model._output);
+      if (_parms._compute_metrics) {
+        model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
+        ModelMetricsSupervised mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model._output._training_metrics = mm;
+      }
+
+      // At the end: validation scoring (no need to gather scoring history)
+      if (_valid != null) {
+        Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
+        model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        pred.delete();
+      }
     }
 
     @Override
@@ -136,7 +183,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
         init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
-        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesModel.NaiveBayesOutput(NaiveBayes.this));
@@ -145,9 +192,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
 
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
-
-        model._output._levels = _response.domain();
-        model._output._ncats = dinfo._cats;
         model.update(_key);
         done();
       } catch (Throwable t) {
@@ -167,6 +211,37 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       }
       tryComplete();
     }
+  }
+
+  private TwoDimTable createModelSummaryTable(NaiveBayesModel.NaiveBayesOutput output) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Number of Response Levels"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Min Apriori Probability"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Max Apriori Probability"); colTypes.add("double"); colFormat.add("%.5f");
+
+    double apriori_min = output._apriori_raw[0];
+    double apriori_max = output._apriori_raw[0];
+    for(int i = 1; i < output._apriori_raw.length; i++) {
+      if(output._apriori_raw[i] < apriori_min) apriori_min = output._apriori_raw[i];
+      else if(output._apriori_raw[i] > apriori_max) apriori_max = output._apriori_raw[i];
+    }
+
+    final int rows = 1;
+    TwoDimTable table = new TwoDimTable(
+            "Model Summary", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    int col = 0;
+    table.set(row, col++, output._apriori_raw.length);
+    table.set(row, col++, apriori_min);
+    table.set(row, col++, apriori_max);
+    return table;
   }
 
   // Note: NA handling differs from R for efficiency purposes

@@ -1,3 +1,10 @@
+#' Starting H2O For examples
+#'
+#' @name aaa
+#' @examples
+#' h2o.init()
+NULL
+
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {
@@ -24,6 +31,21 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
   # Legacy.  Do nothing.
 }
 
+#' Start Writing H2O R Logs
+#'
+#' Begin logging H2o R POST commands and error responses to local disk. Used
+#' primarily for debuggin purposes.
+#'
+#' @param file a character string name for the file, automatically generated
+#' @seealso \code{\link{h2o.stopLogging}, \link{h2o.clearLog},
+#'          \link{h2o.openLog}}
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
 #' @export
 h2o.startLogging <- function(file) {
   if (missing(file)) {
@@ -37,18 +59,69 @@ h2o.startLogging <- function(file) {
   cat("Appending REST API transactions to log file", logFileName, "\n")
 }
 
+#' Stop Writing H2O R Logs
+#'
+#' Halt logging of H2O R POST commands and error responses to local disk. Used
+#' primarily for debugging purposes.
+#'
+#' @seealso \code{\link{h2o.startLogging}, \link{h2o.clearLog},
+#'          \link{h2o.openLog}}
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
 #' @export
 h2o.stopLogging <- function() {
   assign("IS_LOGGING", FALSE, envir = .pkg.env)
   cat("Logging stopped\n")
 }
 
+#' Delete All H2O R Logs
+#'
+#' Clear all H2O R command and error response logs from the local disk. Used
+#' primarily for debugging purposes.
+#'
+#' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
+#'          \link{h2o.openLog}}
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
+#' h2o.clearLog()
 #' @export
 h2o.clearLog <- function() {
   file.remove(.h2o.getLogFileName())
   cat("Removed file ", .h2o.getLogFileName(), "\n")
 }
 
+#' View H2O R Logs
+#'
+#' Open existing logs of H2O R POST commands and error resposnes on local disk.
+#' Used primarily for debugging purposes.
+#'
+#' @param type Currently unimplemented.
+#' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
+#'          \link{h2o.clearLog}}
+#' @examples
+#' \dontrun{
+#' # Skip running this to avoid windows being opened during R CMD check
+#' library(h2o)
+#' localH2O = h2o.init()
+#'
+#' h2o.startLogging()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' h2o.stopLogging()
+#'
+#' h2o.openLog("Command")
+#' h2o.openLog("Error")
+#' }
 #' @export
 h2o.openLog <- function(type) {
   myFile <- .h2o.getLogFileName()

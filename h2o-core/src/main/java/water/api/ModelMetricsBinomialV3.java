@@ -4,6 +4,8 @@ import hex.AUC2;
 import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
+
 public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>> extends ModelMetricsBase<I,S> {
 //  @API(help="The standard deviation of the training response.", direction=API.Direction.OUTPUT)
 //  public double sigma; // Belongs in a mythical ModelMetricsSupervisedV3
@@ -20,13 +22,16 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The Gini score for this scoring run.", direction=API.Direction.OUTPUT)
   public double Gini;
 
+  @API(help="The class labels of the response.", direction=API.Direction.OUTPUT)
+  public String[] domain;
+
 //  @API(help = "The ConfusionMatrix at the threshold for maximum F1.", direction = API.Direction.OUTPUT)
 //  public ConfusionMatrixBase cm;
 
-  @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
+  @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT, level = API.Level.expert)
   public TwoDimTableBase thresholds_and_metric_scores;
 
-  @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
+  @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
   public TwoDimTableBase max_criteria_and_metric_scores;
 
   @Override
@@ -46,29 +51,33 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       for( int i=0; i<auc._nBins; i++ )
         thresholds[i] = Double.toString(auc._ths[i]);
       AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
-      String[] colHeaders = new String[crits.length+1];
-      String[] types      = new String[crits.length+1];
-      String[] formats    = new String[crits.length+1];
-      int i=0;
+      String[] colHeaders = new String[crits.length+2];
+      String[] types      = new String[crits.length+2];
+      String[] formats    = new String[crits.length+2];
+      colHeaders[0] = "Threshold";
+      types[0] = "double";
+      formats[0] = "%f";
+      int i;
       for( i=0; i<crits.length; i++ ) {
-        colHeaders[i] = crits[i].toString();
-        types     [i] = crits[i]._isInt ? "long" : "double";
-        formats   [i] = crits[i]._isInt ? "%d"   : "%f"    ;
+        colHeaders[i+1] = crits[i].toString();
+        types     [i+1] = crits[i]._isInt ? "long" : "double";
+        formats   [i+1] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
-      colHeaders[i] = "idx"; types[i] = "integer"; formats[i] = "%d";
-      TwoDimTable thresholdsByMetrics = new TwoDimTable("Thresholds x Metric Scores", null, thresholds, colHeaders, types, formats, "Thresholds" );
+      colHeaders[i+1] = "idx"; types[i+1] = "int"; formats[i+1] = "%d";
+      TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Binomial metrics as a function of classification thresholds", new String[auc._nBins], colHeaders, types, formats, null );
       for( i=0; i<auc._nBins; i++ ) {
-        int j;
+        int j=0;
+        thresholdsByMetrics.set(i, j, thresholds[i]);
         for (j = 0; j < crits.length; j++) {
           double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
-          thresholdsByMetrics.set(i, j, crits[j]._isInt ? (Object) ((long) d) : d);
+          thresholdsByMetrics.set(i, 1+j, crits[j]._isInt ? (Object) ((long) d) : d);
         }
-        thresholdsByMetrics.set(i, j, i);
+        thresholdsByMetrics.set(i, 1+j, i);
       }
       this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
 
       // Fill TwoDimTable
-      TwoDimTable maxMetrics = new TwoDimTable("Maximum Metric", null, colHeaders,
+      TwoDimTable maxMetrics = new TwoDimTable("Maximum Metrics", "Maximum metrics at their respective thresholds", Arrays.copyOfRange(colHeaders, 1, crits.length+1),
               new String[]{"Threshold","Value","idx"},
               new String[]{"double",   "double","long"},
               new String[]{"%f",       "%f",    "%d"},

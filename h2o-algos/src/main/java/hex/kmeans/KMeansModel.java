@@ -20,12 +20,6 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
-    /** Cluster centers built on standardized data. Null if standardize = false.
-     *  During model init, might be null or might have a "k" which is oversampled a lot. */
-    public TwoDimTable _centers_std;    // Row = cluster ID, Column = feature
-    public double[/*k*/][/*features*/] _centers_std_raw;
-    public double[/*k*/][/*features*/] _centers_raw;
-
     // Iterations executed
     public int _iterations;
 
@@ -47,10 +41,6 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
     // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
     public double _avg_between_ss;    // Total between-cluster MSE (avgss - avgwithinss)
-
-    // For internal use only: means and 1/(std dev) of each training col
-    public double[] _normSub;
-    public double[] _normMul;
 
     // Number of categorical columns trained on
     public int _categorical_column_count;

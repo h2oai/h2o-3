@@ -46,8 +46,7 @@ class H2OFrame:
       rawkey = h2o.import_file(remote_fname)
       setup = h2o.parse_setup(rawkey)
       parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-      veckeys = parse['vec_keys']
-      print "Veckeys", veckeys
+      veckeys = parse['vec_ids']
       rows = parse['rows']
       cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
@@ -132,11 +131,11 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_keys'])+1)]
+    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_ids'])+1)]
     # set the rows
     rows = parse['rows']
     # set the vector keys
-    veckeys = parse['vec_keys']
+    veckeys = parse['vec_ids']
     # create a new vec[] array
     self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
     # print some information on the *uploaded* data
@@ -148,68 +147,125 @@ class H2OFrame:
     # create a random name for the data
     dest_key = H2OFrame.py_tmp_key()
     # do the POST -- blocking, and "fast" (does not real data upload)
-    H2OConnection.post_json("PostFile", fui, destination_key=dest_key)
+    H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)
     # actually parse the data and setup self._vecs
     self._handle_text_key(dest_key, column_names)
 
   def __iter__(self):
+    """
+    Allows for list comprehensions over an H2OFrame
+
+    :return: An iterator over the H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return (vec for vec in self._vecs.__iter__() if vec is not None)
 
   def vecs(self):
     """
     Retrieve the array of H2OVec objects comprising this H2OFrame.
+
     :return: The array of H2OVec objects.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return self._vecs
+
+  def keys(self):
+    """
+    Retrieve the keys for each of the H2OVec objects comrpising this H2OFrame.
+
+    :return: the array of keys.
+    """
+    return [i.key() for i in self._vecs]
 
   def col_names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
+
     :return: A character list[] of column names.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return [i._name for i in self._vecs]
 
   def names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
+
     :return: A character list[] of column names.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return self.col_names()
 
   def nrow(self):
     """
     Get the number of rows in this H2OFrame.
+
     :return: The number of rows in this dataset.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return len(self._vecs[0])
 
   def ncol(self):
     """
     Get the number of columns in this H2OFrame.
+
     :return: The number of columns in this H2OFrame.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return len(self)
 
   def dim(self):
     """
     Get the number of rows and columns in the H2OFrame.
+
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return [self.nrow(), self.ncol()]
 
   # Print [col, cols...]
   def show(self):
-    if len(self) == 1:
-      to_show = [[v] for v in self._vecs[0].show(noprint=True)]
-      print tabulate.tabulate(to_show, headers=self.names())
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+
     else:
-      vecs = [vec.show(noprint=True) for vec in self]
-      vecs.insert(0, range(1, len(vecs[0]) + 1, 1))
-      print "Displaying " + str(len(vecs[0])) + " row(s):"
-      print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
-      print
+      if len(self) == 1:
+        to_show = [[v] for v in self._vecs[0].show(noprint=True)]
+        print tabulate.tabulate(to_show, headers=self.names())
+      else:
+        vecs = [vec.show(noprint=True) for vec in self]
+        # vecs = self._vecs
+        l=1
+        if isinstance(vecs[0], float):
+          vecs.insert(0,1)
+          print "Displaying " + str(l) + " row(s):"
+          vecs = [[v] for v in vecs]
+          print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
+          print
+        else:
+          l = len(vecs[0])
+          vecs.insert(0, range(1, len(vecs[0])+1, 1))
+          print "Displaying " + str(l) + " row(s):"
+          print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
+          print
 
   def head(self, rows=10, cols=200, **kwargs):
+    """
+    Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
+
+    :param rows: Number of rows to display.
+    :param cols: Number of columns to display.
+    :param kwargs: Extra arguments passed from other methods.
+    :return: None
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
@@ -227,6 +283,16 @@ class H2OFrame:
     print
 
   def tail(self, rows=10, cols=200, **kwargs):
+    """
+    Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
+
+    :param rows: Number of rows to display.
+    :param cols: Number of columns to display.
+    :param kwargs: Extra arguments passed from other methods.
+    :return: None
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
@@ -248,6 +314,14 @@ class H2OFrame:
     print
 
   def levels(self, col=0):
+    """
+    Get the factor levels for this frame and the specified column index.
+
+    :param col: A column index in this H2OFrame.
+    :return: a list of strings that are the factor levels for the column.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if col < 0: col = 0
     if col >= self.ncol(): col = self.ncol() - 1
     vec = self._vecs[col]
@@ -255,6 +329,14 @@ class H2OFrame:
     return res["domain"][0]
 
   def setNames(self,names):
+    """
+    Change the column names to `names`.
+
+    :param names: A list of strings equal to the number of columns in the H2OFrame.
+    :return: None. Rename the column names in this H2OFrame.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if not names or not isinstance(names,list):
       raise ValueError("names parameter must be a list of strings")
     if len(names) != self.ncol():
@@ -274,6 +356,8 @@ class H2OFrame:
 
     :return: None (print to stdout)
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     print "Rows:", len(self._vecs[0]), "Cols:", len(self)
     headers = [vec._name for vec in self._vecs]
     table = [
@@ -297,9 +381,11 @@ class H2OFrame:
     print chunk_summary
     print
 
-  #def __repr__(self):
-  #  self.show()
-  #  return ""
+  # def __repr__(self):
+  #   if self._vecs is None or self._vecs == []:
+  #     raise ValueError("Frame Removed")
+  #   self.show()
+  #   return ""
 
   # Find a named H2OVec and return it.  Error is name is missing
   def _find(self,name):
@@ -316,6 +402,15 @@ class H2OFrame:
   # Column selection via slice returns a subset Frame
   # Multi-dimensional slicing via 2-tuple
   def __getitem__(self, i):
+    """
+    Column selection via integer, string(name)
+    Column selection via slice returns a subset of the H2OFrame
+
+    :param i: An int, str, slice, H2OVec, or list/tuple
+    :return: An H2OVec, an H2OFrame, or scalar depending on the input slice.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if isinstance(i, int):   return self._vecs[i]
     if isinstance(i, str):   return self._find(i)
     # Slice; return a Frame not a Vec
@@ -336,22 +431,29 @@ class H2OFrame:
 
     # multi-dimensional slicing via 2-tuple
     if isinstance(i, tuple):
-      j = h2o.frame(self.send_frame())
-      fr = j['frames'][0]
-      veckeys = [str(v['name']) for v in fr['vec_keys']]
+      veckeys = [str(v._expr._data) for v in self._vecs]
       left = Expr(veckeys)
       rite = Expr((i[0], i[1]))
-      return Expr("[", left, rite, length=2)
+      res = Expr("[", left, rite, length=2)
+      if not isinstance(i[0], int) or not isinstance(i[1], int): return res # possible big data
+      # small data (single value)
+      res.eager()
+      if res.is_local(): return res._data
+      j = h2o.frame(res._data) # data is remote
+      return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))[0][0]
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
   def __setitem__(self, b, c):
     """
     Replace a column in an H2OFrame.
+
     :param b: A 0-based index or a column name.
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     #  b is a named column, fish out the H2OVec and its index
     ncols = len(self._vecs)
     if isinstance(b, str):
@@ -375,6 +477,14 @@ class H2OFrame:
 
   # Modifies the collection in-place to remove a named item
   def __delitem__(self, i):
+    """
+    Remove a vec specified at the index i.
+
+    :param i: The index of the vec to delete.
+    :return: The Vec to be deleted.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if isinstance(i, str):
       return self._vecs.pop(self._find_idx(i))
     raise NotImplementedError
@@ -384,9 +494,12 @@ class H2OFrame:
     """
     Column selection via integer, string(name) returns a Vec
     Column selection via slice returns a subset Frame
+
     :param i: Column to select
     :return: Returns an H2OVec or H2OFrame.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     # i is a named column
     if isinstance(i, str):
       for v in self._vecs:
@@ -404,25 +517,37 @@ class H2OFrame:
     """
     :return: Number of columns in this H2OFrame
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     return len(self._vecs)
 
   def _simple_frames_bin_op(self, data, op):
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data.send_frame(), length=data.nrow()))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
-    elif isinstance(data, Expr)        : return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
-    elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
-    elif isinstance(data, str)         : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr("cbind", Expr(data._vecs)))
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr("cbind", Expr([data])))
+    elif isinstance(data, Expr)        : return Expr(op, Expr("cbind",Expr(self._vecs)),data)
+    elif isinstance(data, (int, float)): return Expr(op, Expr("cbind",Expr(self._vecs)),Expr(data))
+    elif isinstance(data, str)         : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr(None, data))
     else: raise NotImplementedError
 
   def _simple_frames_bin_rop(self, data, op):
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, Expr)        : return Expr(op, data, Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), length=self.nrow())
-    elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr("cbind",Expr(data._vecs)), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr("cbind",Expr([data])), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
+    elif isinstance(data, Expr)        : return Expr(op, data, Expr("cbind",Expr(self._vecs)), length=self.nrow())
+    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
+    elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr("cbind",Expr(self._vecs)),
+                                                     length=self.nrow())
     else: raise NotImplementedError
+
+  def logical_negation(self):  return Expr("not", Expr("cbind",Expr(self._vecs)), length=self.nrow())
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
@@ -462,8 +587,11 @@ class H2OFrame:
   def send_frame(self):
     """
     Send a frame description to H2O, returns a key.
+
     :return: A key
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     rapids_call = "(, "  # fold into a single rapids call
@@ -559,22 +687,39 @@ class H2OFrame:
     return self._vecs[0]._len_check(x)
 
   # Quantiles
-  def quantile(self, prob=None):
+  def quantile(self, prob=None, combine_method="interpolate"):
+    """
+    Compute quantiles over a given H2OFrame.
+
+    :param prob: A list of probabilties, default is [0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]. You may provide any sequence of any length.
+    :param combine_method: For even samples, how to combine quantiles. Should be one of ["interpolate", "average", "low", "hi"]
+    :return: an H2OFrame containing the quantiles and probabilities.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if len(self) == 0: return self
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
     if not isinstance(prob, list): raise ValueError("prob must be a list")
     probs = "(dlist #"+" #".join([str(p) for p in prob])+")"
+    if combine_method not in ["interpolate","average","low","high"]:
+      raise ValueError("combine_method must be one of: [" + ",".join(["interpolate","average","low","high"])+"]")
+
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (quantile '{}' {}".format(tmp_key, key, probs)
+    expr = "(= !{} (quantile '{}' {} '{}'".format(tmp_key,key,probs,combine_method)
     h2o.rapids(expr)
+    # Remove h2o temp frame after groupby
+    h2o.remove(key)
+    # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
     rows = fr['rows']         # Row count
-    veckeys = fr['vec_keys']  # List of h2o vec keys
+    veckeys = fr['vec_ids']  # List of h2o vec keys
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   # H2OFrame Mutating cbind
   def cbind(self,data):
@@ -582,6 +727,8 @@ class H2OFrame:
     :param data: H2OFrame or H2OVec to cbind to self
     :return: void
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     if isinstance(data, H2OFrame):
       num_vecs = len(data._vecs)
       for vidx in range(num_vecs):
@@ -598,6 +745,8 @@ class H2OFrame:
     :param fun: Function to execute on each group.  Right now limited to textual Rapids expression
     :return: New frame with 1 row per-group, of results from 'fun'
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     # Confirm all names present in dataset; collect column indices
     rapids_series = "(llist #"+" #".join([str(self._find_idx(name)) for name in cols])+")"
 
@@ -612,27 +761,31 @@ class H2OFrame:
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
-    veckeys = fr['vec_keys']# List of h2o vec keys
+    veckeys = fr['vec_ids']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   def group_by(self,cols,a):
     """
     GroupBy
     :param cols: The columns to group on.
-    :param a: A dictionary of aggregates having the following shape:
-              {"colname":[aggregate, column, naMethod]}
-              e.g.: {"bikes":["count", 0, "all"]}
+    :param a: A dictionary of aggregates having the following shape: \
+    {"colname":[aggregate, column, naMethod]}\
+    e.g.: {"bikes":["count", 0, "all"]}\
 
-              The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
-              NAs that appear in columns that are being aggregated.
+    The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
+    NAs that appear in columns that are being aggregated.
 
-              "all" - include NAs
-              "rm"  - exclude NAs
-              "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    "all" - include NAs
+    "rm"  - exclude NAs
+    "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
     :return: The group by frame.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     rapids_series = "(llist #"+" #".join([str(self._find_idx(name)) for name in cols])+")"
     aggregates = copy.deepcopy(a)
     key = self.send_frame()
@@ -651,25 +804,30 @@ class H2OFrame:
 
     expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
     h2o.rapids(expr)  # group by
+    # Remove h2o temp frame after groupby
+    h2o.remove(key)
+    # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
     rows = fr['rows']         # Row count
-    veckeys = fr['vec_keys']  # List of h2o vec keys
+    veckeys = fr['vec_ids']  # List of h2o vec keys
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   def merge(self, other, allLeft=False, allRite=False):
     """
     Merge two datasets based on common column names
-    :param other: Other dataset to merge.  Must have at least one column in
-    common with self, and all columns in common are used as the merge key.  If
-    you want to use only a subset of the columns in common, rename the other
-    columns so the columns are unique in the merged result.
+
+    :param other: Other dataset to merge.  Must have at least one column in common with self, and all columns in common are used as the merge key.  If you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
     :param allLeft: If true, include all rows from the left/self frame
     :param allRite: If true, include all rows from the right/other frame
     :return: Original self frame enhanced with merged columns and rows
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     for v0 in self._vecs:
       for v1 in other._vecs:
         if v0._name==v1._name: break
@@ -691,34 +849,44 @@ class H2OFrame:
     j = h2o.frame(tmp_key)  # Fetch the frame as JSON
     fr = j['frames'][0]     # Just the first (only) frame
     rows = fr['rows']       # Row count
-    veckeys = fr['vec_keys']# List of h2o vec keys
+    veckeys = fr['vec_ids']# List of h2o vec keys
     cols = fr['columns']    # List of columns
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
   # generic reducers (min, max, sum, var)
   def min(self):
     """
     :return: The minimum value of all frame entries
     """
-    return Expr("min", Expr(self.send_frame(), length=self.nrow()))
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    return Expr("min", Expr("cbind",Expr(self._vecs)))
 
   def max(self):
     """
-    :return: The minimum value of all frame entries
+    :return: The maximum value of all frame entries
     """
-    return Expr("max", Expr(self.send_frame(), length=self.nrow()))
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    return Expr("max", Expr("cbind",Expr(self._vecs)))
 
   def sum(self):
     """
-    :return: The minimum value of all frame entries
+    :return: The sum of all frame entries
     """
-    return Expr("sum", Expr(self.send_frame(), length=self.nrow()))
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    return Expr("sum", Expr("cbind",Expr(self._vecs)))
 
   def var(self):
     """
     :return: The covariance matrix of the columns in this H2OFrame.
     """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
@@ -728,10 +896,12 @@ class H2OFrame:
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
-    veckeys = fr['vec_keys']
+    veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.rapids("(removeframe !{})".format(tmp_key))
+    return H2OFrame(vecs=vecs)
 
 class H2OVec:
   """
@@ -757,15 +927,35 @@ class H2OVec:
     return [H2OVec(str(col), Expr(op=veckey['name'], length=rows))  for idx, (col, veckey) in enumerate(vecs)]
 
   def name(self):
+    """
+    :return: Return the column name for this H2OVec
+    """
     return self._name
 
+  def key(self):
+    """
+    :return: Return the H2O Key for this Vec.
+    """
+    return self._expr._data if isinstance(self._expr._data, (unicode, str)) else ""
+
   def setName(self,name):
+    """
+    Set the column name for this column.
+
+    :param name: The new name for this column.
+    :return: None
+    """
     if name and isinstance(name,str):
       self._name = name
     else:
         raise ValueError("name parameter must be a string")
 
   def get_expr(self):
+    """
+    Helper method to obtain the expr object in self. Can also get it directly  @ ._expr.
+
+    :return: the _expr member of this H2OVec
+    """
     return self._expr
 
   def append(self, data):
@@ -808,7 +998,7 @@ class H2OVec:
     j = h2o.frame(fr)
     fr = j['frames'][0]
     rows = fr['rows']
-    veckeys = fr['vec_keys']
+    veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
     result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -818,6 +1008,7 @@ class H2OVec:
   def show(self, noprint=False):
     """
     Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame
+
     :param noprint: A boolean stating whether to print or to return data.
     :return: If noprint is False, then self._expr is returned.
     """
@@ -832,13 +1023,14 @@ class H2OVec:
       print tabulate.tabulate(to_show, headers=["Row ID", header])
       print
 
-  #def __repr__(self):
-  #  self.show()
-  #  return ""
+  # def __repr__(self):
+  #   self.show()
+  #   return ""
 
   def summary(self):
     """
     Compute the rollup data summary (min, max, mean, etc.)
+
     :return: the summary from this Expr object
     """
     return self._expr.summary()
@@ -846,6 +1038,7 @@ class H2OVec:
   def __getitem__(self, i):
     """
     Basic index/sliced lookup
+
     :param i: An Expr or an H2OVec
     :return: A new Expr object corresponding to the input query
     """
@@ -858,12 +1051,17 @@ class H2OVec:
   def row_select(self, vec):
     """
     Boolean column select lookup
+
     :param vec: An H2OVec.
     :return: A new H2OVec.
     """
     e = Expr("[", self, vec)
-    j = h2o.frame(e.eager())
-    e.set_len(j['frames'][0]['rows'])
+    r = e.eager()
+    if isinstance(r, (float,int)):
+      e.set_len(1)
+    else:
+      j = h2o.frame(r)
+      e.set_len(j['frames'][0]['rows'])
     return H2OVec(self._name, e)
 
   def __setitem__(self, b, c):
@@ -895,13 +1093,14 @@ class H2OVec:
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
-    if op == "n" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
+    if op == "n" and i is None    :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
   def _simple_vec_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
     raise NotImplementedError
 
+  def logical_negation(self):  return H2OVec(self._name, Expr("not", self))
 
   def __add__(self, i):  return self._simple_vec_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_vec_bin_op(i,"-" )
@@ -933,6 +1132,12 @@ class H2OVec:
     """
     return len(self._expr)
 
+  def dim(self):
+    """
+    :return: The length of the H2OVec
+    """
+    return len(self), 1
+
   def floor(self):
     """
     :return: A lazy Expr representing the Math.floor() of this H2OVec.
@@ -942,52 +1147,52 @@ class H2OVec:
   # generic reducers (min, max, sum, sd, var, mean, median)
   def min(self):
     """
-    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    :return: Min value of the H2OVec elements.
     """
-    return Expr("min", self._expr)
+    return Expr("min", self._expr).eager()
 
   def max(self):
     """
-    :return: A lazy Expr representing the variance of this H2OVec.
+    :return: Max value of the H2OVec elements.
     """
-    return Expr("max", self._expr)
+    return Expr("max", self._expr).eager()
 
   def sum(self):
     """
-    :return: A lazy Expr representing the variance of this H2OVec.
+    :return: Sum of the H2OVec elements.
     """
-    return Expr("sum", self._expr)
+    return Expr("sum", self._expr).eager()
 
   def sd(self):
     """
-    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    :return: Standard deviation of the H2OVec elements.
     """
-    return Expr("sd", self._expr)
+    return Expr("sd", self._expr).eager()
 
   def var(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr)
+    return Expr("var", self._expr).eager()
 
   def mean(self):
     """
-    :return: A lazy Expr representing the mean of this H2OVec.
+    :return: Mean of this H2OVec.
     """
-    return Expr("mean", self._expr)
+    return Expr("mean", self._expr).eager()
 
   def median(self):
     """
-    :return: A lazy Expr representing the median of this H2OVec.
+    :return: Median of this H2OVec.
     """
-    return Expr("median", self._expr)
+    return Expr("median", self._expr).eager()
 
-  def quantile(self,prob=None):
+  def quantile(self,prob=None,combine_method="interpolate"):
     """
     :return: A lazy Expr representing the quantiles of this H2OVec.
     """
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    return H2OFrame(vecs=[self]).quantile(prob)
+    return H2OFrame(vecs=[self]).quantile(prob,combine_method)
 
   def asfactor(self):
     """
@@ -999,7 +1204,7 @@ class H2OVec:
     """
     :return: A lazy Expr representing the truth of whether or not this vec is a factor.
     """
-    return Expr("is.factor", self._expr, None, length=1)
+    return Expr("is.factor", self._expr, None, length=1).eager()
 
   def isna(self):
     """
@@ -1043,6 +1248,7 @@ class H2OVec:
   def mktime(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0):
     """
     All units are zero-based (including months and days).  Missing year is 1970.
+
     :return: Returns msec since the Epoch.
     """
     # Some error checking on length

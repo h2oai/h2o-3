@@ -26,6 +26,6 @@ public class NaiveBayesModelV3 extends ModelSchema<NaiveBayesModel, NaiveBayesMo
   // Version&Schema-specific filling into the impl
   @Override public NaiveBayesModel createImpl() {
     NaiveBayesModel.NaiveBayesParameters parms = parameters.createImpl();
-    return new NaiveBayesModel( key.key(), parms, null );
+    return new NaiveBayesModel( model_id.key(), parms, null );
   }
 }

@@ -14,6 +14,8 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
+import java.util.Arrays;
+
 /**
  * All GLM related distributed tasks:
  *
@@ -43,13 +45,12 @@ public abstract class GLMTask  {
 
    @Override public void map(Chunk [] chunks) {
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
-     for(int i = 0; i < chunks.length-1; ++i)
+     for(int i = 0; i < chunks.length; ++i)
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
          skip[r] |= chunks[i].isNA(r);
      Chunk response = chunks[chunks.length-1];
      for(int r = 0; r < response._len; ++r) {
        if(skip[r]) continue;
-       if(skip[r] = response.isNA(r))continue;
        double d = response.atd(r);
        assert !Double.isNaN(d);
        assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
@@ -97,6 +98,7 @@ public abstract class GLMTask  {
     final GLMParameters _params;
     final double _reg;
     Vec _rowFilter;
+    boolean _useFasterMetrics = false;
 
     public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter){this(dinfo, params, reg, beta, direction, step, nsteps, rowFilter, null);}
     public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
@@ -110,7 +112,10 @@ public abstract class GLMTask  {
       _params = params;
       _rowFilter = rowFilter;
     }
-
+    public GLMLineSearchTask setFasterMetrics(boolean b){
+      _useFasterMetrics = b;
+      return this;
+    }
     long _nobs;
     double [] _likelihoods; // result
 
@@ -131,6 +136,15 @@ public abstract class GLMTask  {
       double [][] eta = new double[responseChunk._len][_nSteps];
       double [] beta = _beta;
       double [] pk = _direction;
+      // intercept
+      if(_dinfo._intercept) {
+        for (int r = 0; r < eta.length; ++r) {
+          int off = beta.length - 1;
+          double t = 1;
+          for (int j = 0; j < _nSteps; ++j, t *= _step)
+            eta[r][j] += beta[off] + pk[off] * t;
+        }
+      }
       // categoricals
       for(int i = 0; i < _dinfo._cats; ++i) {
         Chunk c = chks[i];
@@ -185,16 +199,10 @@ public abstract class GLMTask  {
         _nobs++;
         double y = responseChunk.atd(r);
         double yy = -1 + 2*y;
-        double b = 0, s = 0;
-        if(_dinfo._intercept) {
-          b = beta[beta.length-1];
-          s = pk[pk.length-1];
-        }
-        for(int i = 0; i < _nSteps; ++i, s*= _step) {
-          double e = eta[r][i] + off[i] + b + s;
-          if(_params._family == Family.binomial) {
+        for(int i = 0; i < _nSteps; ++i) {
+          double e = eta[r][i] + off[i];
+          if(_params._family == Family.binomial && _useFasterMetrics) {
             _likelihoods[i] += Math.log(1 + Math.exp(-yy * e));
-            double mu = _params.linkInv(e);
           } else {
             double mu = _params.linkInv(e);
             _likelihoods[i] += _params.likelihood(y, e, mu);
@@ -214,7 +222,7 @@ public abstract class GLMTask  {
     final protected DataInfo _dinfo;
     final double _reg;
     public double [] _gradient;
-    public double    _objVal;
+    public double _likelihood;
     protected transient boolean [] _skip;
     boolean _validate;
     double _ymu;
@@ -239,51 +247,20 @@ public abstract class GLMTask  {
       return this;
     }
 
-//    private final void goByRowsLogistic(Chunk [] chks){
-//      Row row = _dinfo.newDenseRow();
-//      double [] g = _gradient;
-//      double [] b = _beta;
-//      for(int rid = 0; rid < chks[0]._len; ++rid) {
-//        double y = row.response(0);
-//        row = _dinfo.extractDenseRow(chks, rid, row);
-//        if(row.bad) continue;
-//        double eta = row.innerProduct(b);
-//        double mu =  1.0 / (Math.exp(-eta) + 1.0);
-//        double l = y == mu?0:-y * eta - Math.log(1 - mu);
-//        _objVal += l;
-//        double var = mu * (1 - mu);//_params.variance(mu);
-//        if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
-//        double d = (mu * (1 - mu));
-//        d = d == 0?1e9:1/d;
-//        double gval = (mu-y) / (var * d);
-//        // categoricals
-//        for(int i = 0; i < row.nBins; ++i)
-//          g[row.binIds[i]] += gval;
-//        int off = _dinfo.numStart();
-//        // numbers
-//        for(int j = 0; j < _dinfo._nums; ++j)
-//          g[j + off] += row.numVals[j] * gval;
-//        // intercept
-//        if(_dinfo._intercept)
-//          g[g.length-1] += gval;
-//      }
-//    }
-    protected void goByRows(Chunk [] chks){
+    protected void goByRows(Chunk [] chks, boolean [] skp){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
       double [] b = _beta;
-      Chunk rowFilter = _rowFilter != null?_rowFilter.chunkForChunkIdx(chks[0].cidx()):null;
       for(int rid = 0; rid < chks[0]._len; ++rid) {
-        if(rowFilter != null && rowFilter.at8(rid) == 1)
-          continue;
-        _nobs++;
+        if(skp[rid]) continue;
         row = _dinfo.extractDenseRow(chks, rid, row);
         if(row.bad) continue;
+        _nobs++;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
         if(_validate)
-          _val.add(row.response(0),eta, mu);
-        _objVal += _params.likelihood(row.response(0), eta, mu);
+          _val.add(row.response(0), mu);
+        _likelihood += _params.likelihood(row.response(0), eta, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
@@ -301,10 +278,8 @@ public abstract class GLMTask  {
     }
     @Override
     public void postGlobal(){
-      _objVal = _objVal*_reg + .5 * _currentLambda * ArrayUtils.l2norm2(_beta,_dinfo._intercept);
       if(_validate) {
         _val.computeAIC();
-        _val.computeAUC();
       }
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
         _gradient[j] = _gradient[j]*_reg + _currentLambda * _beta[j];
@@ -316,6 +291,8 @@ public abstract class GLMTask  {
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     protected final double [] computeEtaByCols(Chunk [] chks, boolean [] skip) {
       double [] eta = MemoryManager.malloc8d(chks[0]._len);
+      if(_dinfo._intercept)
+        Arrays.fill(eta,_beta[_beta.length-1]);
       double [] b = _beta;
       // do categoricals first
       for(int i = 0; i < _dinfo._cats; ++i) {
@@ -356,14 +333,8 @@ public abstract class GLMTask  {
       return eta;
     }
 
-    protected void goByCols(Chunk [] chks){
+    protected void goByCols(Chunk [] chks, boolean [] skp){
       int numStart = _dinfo.numStart();
-      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
-      if(_rowFilter != null) {
-        Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
-        for(int r = 0; r < chks[0]._len; ++r)
-          skp[r] = c.at8(r) == 1;
-      }
       double  [] eta = computeEtaByCols(chks,skp);
       double  [] b = _beta;
       double  [] g = _gradient;
@@ -382,11 +353,11 @@ public abstract class GLMTask  {
         _nobs++;
         double off = (_dinfo._offset?offsetChunk.atd(r):0);
         double y = responseChunk.atd(r);
-        double offset = off + (_dinfo._intercept?b[b.length-1]:0);
+        double offset = off;
         double mu = _params.linkInv(eta[r] + offset);
         if(_validate)
-          _val.add(y,eta[r] + offset, mu);
-        _objVal += _params.likelihood(y,eta[r],mu);
+          _val.add(y, mu);
+        _likelihood += _params.likelihood(y,eta[r],mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         eta[r] = (mu-y) / (var * _params.linkDeriv(mu));
@@ -445,29 +416,62 @@ public abstract class GLMTask  {
       _forceRows = true;
       return this;
     }
+
+    private String [] _domain = new String[]{"0","1"};
+
     public void map(Chunk [] chks){
       int rank = 0;
       for(int i = 0; i < _beta.length; ++i)
         if(_beta[i] != 0)
           ++rank;
       if(_validate)
-        _val = new GLMValidation(_dinfo._key,_ymu,_params,rank);
+        _val = new GLMValidation(_domain, _ymu,_params,rank, .5);
       _gradient = MemoryManager.malloc8d(_beta.length);
 
+      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
+      if(_rowFilter != null) {
+        Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
+        for(int r = 0; r < chks[0]._len; ++r)
+          skp[r] = c.at8(r) == 1;
+      }
       if(_forceCols || (!_forceRows && (chks.length >= 100 || mostlySparse(chks))))
-        goByCols(chks);
+        goByCols(chks, skp);
       else
-        goByRows(chks);
+        goByRows(chks, skp);
       // apply reg
     }
     public void reduce(GLMGradientTask grt) {
-      _objVal += grt._objVal;
+      _likelihood += grt._likelihood;
       _nobs += grt._nobs;
       if(_validate)
-        _val.add(grt._val);
+        _val.reduce(grt._val);
       ArrayUtils.add(_gradient, grt._gradient);
     }
   }
+
+
+  static class GLMWeightsTask extends MRTask<GLMWeightsTask> {
+    final GLMParameters _params;
+    GLMWeightsTask(GLMParameters params){_params = params;}
+
+    @Override public void map(Chunk [] chks) {
+      Chunk yChunk = chks[0];
+      Chunk zChunk = chks[1];
+      Chunk wChunk = chks[2];
+      Chunk eChunk = chks[3];
+      for(int i = 0; i < yChunk._len; ++i) {
+        double y = yChunk.atd(i);
+        double eta = eChunk.atd(i);
+        double mu = _params.linkInv(eta);
+        double var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+        double d = _params.linkDeriv(mu);
+        zChunk.set(i,eta + (y-mu)*d);
+        wChunk.set(i,1.0/(var*d*d));
+      }
+    }
+    @Override public void reduce(GLMWeightsTask gwt) {}
+  }
+
 
   /**
    * Tassk with simplified gradient computation for logistic regression (and least squares)
@@ -479,7 +483,7 @@ public abstract class GLMTask  {
       super(dinfo, params, lambda, beta, reg, rowFilter);
     }
 
-    @Override   protected void goByRows(Chunk [] chks){
+    @Override   protected void goByRows(Chunk [] chks, boolean [] skp){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
       double [] b = _beta;
@@ -487,18 +491,12 @@ public abstract class GLMTask  {
         row = _dinfo.extractDenseRow(chks, rid, row);
         double y = -1 + 2*row.response(0);
         if(row.bad) continue;
+        ++_nobs;
         double eta = row.innerProduct(b);
-        double xp = -y*eta;
         double gval;
-        if(xp > 20) {
-          _objVal += xp;
-          gval = -y;
-        } else if(xp > -20) {
-          double d = 1 + Math.exp(-y * eta);
-          _objVal += Math.log(d);
-          gval = -y*(1-1.0/d);
-        } else // gval and objval ~ 0
-          gval = 0;
+        double d = 1 + Math.exp(-y * eta);
+        _likelihood += Math.log(d);
+        gval = -y*(1-1.0/d);
         // categoricals
         for(int i = 0; i < row.nBins; ++i)
           g[row.binIds[i]] += gval;
@@ -512,11 +510,9 @@ public abstract class GLMTask  {
       }
     }
 
-    @Override protected void goByCols(Chunk [] chks){
+    @Override protected void goByCols(Chunk [] chks, boolean [] skp){
       int numStart = _dinfo.numStart();
-      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       double  [] eta = computeEtaByCols(chks,skp);
-      double  [] b = _beta;
       double  [] g = _gradient;
       Chunk offsetChunk = null;
       int nxs = chks.length-1; // -1 for response
@@ -530,20 +526,19 @@ public abstract class GLMTask  {
       for(int r = 0; r < chks[0]._len; ++r){
         if(skp[r] || responseChunk.isNA(r))
           continue;
+        ++_nobs;
         double off = (_dinfo._offset?offsetChunk.atd(r):0);
-
-        double e = eta[r]  + off + (_dinfo._intercept?b[b.length-1]:0);
-
+        double e = eta[r]  + off;
         switch(_params._family) {
           case gaussian:
             double diff = e - responseChunk.atd(r);
-            _objVal += diff*diff;
+            _likelihood += diff*diff;
             eta[r] = diff;
             break;
           case binomial:
             double y = -1 + 2*responseChunk.atd(r);
             double d = 1 + Math.exp(-y * e);
-            _objVal += Math.log(d);
+            _likelihood += Math.log(d);
             eta[r] = -y * (1 - 1.0 / d);
             break;
           default:
@@ -584,6 +579,65 @@ public abstract class GLMTask  {
     }
   }
 
+
+
+  public static class GLMCoordinateDescentTask extends MRTask<GLMCoordinateDescentTask> {
+    final double [] _betaUpdate;
+    final double [] _beta;
+    final double _xOldSub;
+    final double _xOldMul;
+    final double _xNewSub;
+    final double _xNewMul;
+
+    double [] _xy;
+
+    public GLMCoordinateDescentTask(double [] betaUpdate, double [] beta, double xOldSub, double xOldMul, double xNewSub, double xNewMul) {
+      _betaUpdate = betaUpdate;
+      _beta = beta;
+      _xOldSub = xOldSub;
+      _xOldMul = xOldMul;
+      _xNewSub = xNewSub;
+      _xNewMul = xNewMul;
+    }
+
+    public void map(Chunk [] chks) {
+      Chunk xOld = chks[0];
+      Chunk xNew = chks[1];
+      if(xNew.vec().isEnum()){
+        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
+      } else
+      _xy = new double[1];
+      Chunk eta = chks[2];
+      Chunk weights = chks[3];
+      Chunk res = chks[4];
+      for(int i = 0; i < eta._len; ++i) {
+        double w = weights.atd(i);
+        double e = eta.atd(i);
+        if(_betaUpdate != null) {
+          if (xOld.vec().isEnum()) {
+            int cid = (int) xOld.at8(i);
+            e = +_betaUpdate[cid];
+          } else
+            e += _betaUpdate[0] * (xOld.atd(i) - _xOldSub) * _xOldMul;
+          eta.set(i, e);
+        }
+        int cid = 0;
+        double x = w;
+        if(xNew.vec().isEnum()) {
+          cid = (int) xNew.at8(i);
+          e -= _beta[cid];
+        } else {
+          x = (xNew.atd(i) - _xNewSub) * _xNewMul;
+          e -= _beta[0] * x;
+          x *= w;
+        }
+        _xy[cid] += x * (res.atd(i) - e);
+      }
+    }
+    @Override public void reduce(GLMCoordinateDescentTask t) {
+      ArrayUtils.add(_xy, t._xy);
+    }
+  }
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *
@@ -603,10 +657,8 @@ public abstract class GLMTask  {
     final boolean _validate;
     int [] _ti;
     public double _likelihood;
-
     final double _lambda;
-    double _zsum;
-    final boolean _sparse;
+    boolean _sparse;
     Vec _rowFilter;
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
@@ -622,6 +674,12 @@ public abstract class GLMTask  {
       _rowFilter = rowFilter;
     }
 
+    public GLMIterationTask setSparse(boolean b){
+      _sparse = b;
+      return this;
+    }
+
+    private String [] _domain = new String[]{"0","1"}; // todo pass correct domain
     @Override
     public void map(Chunk [] chks) {
       if(_jobKey != null && !Job.isRunning(_jobKey))
@@ -633,7 +691,7 @@ public abstract class GLMTask  {
       if(_validate) {
         int rank = 0;
         if(_beta != null)for(double d:_beta)if(d != 0)++rank;
-        _val = new GLMValidation(null, _ymu, _glm, rank);
+        _val = new GLMValidation(_domain, _ymu, _glm, rank, .5); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){
@@ -643,7 +701,7 @@ public abstract class GLMTask  {
       if(_sparse) {
         Row row = _dinfo.newDenseRow();
         for(Row r:_dinfo.extractSparseRows(chks, _beta))
-          if(rowFilter == null || rowFilter.at8(r.rid) == 0)
+          if(rowFilter == null || rowFilter.at8((int)(r.rid - chks[0].start())) == 0)
             processRow(r);
         // need to adjust gradient by centered zeros
         int numStart = _dinfo.numStart();
@@ -682,9 +740,8 @@ public abstract class GLMTask  {
         z = eta + (y-mu)*d;
         w = 1.0/(var*d*d);
       }
-      _zsum += w*z;
       if(_validate) {
-        _val.add(y, eta, mu);
+        _val.add(y, mu);
       }
       _likelihood += _glm.likelihood(y,eta,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
@@ -705,13 +762,12 @@ public abstract class GLMTask  {
 
     @Override
     public void reduce(GLMIterationTask git){
-      _zsum += git._zsum;
       if(_jobKey == null || Job.isRunning(_jobKey)) {
         ArrayUtils.add(_xy, git._xy);
         _gram.add(git._gram);
         _yy += git._yy;
         _nobs += git._nobs;
-        if (_validate) _val.add(git._val);
+        if (_validate) _val.reduce(git._val);
         _likelihood += git._likelihood;
         super.reduce(git);
       }
@@ -721,16 +777,20 @@ public abstract class GLMTask  {
       if(_sparse && _dinfo._normSub != null) { // need to adjust gram for missing centering!
         int ns = _dinfo.numStart();
         int interceptIdx = _xy.length-1;
+        double [] interceptRow = _gram._xx[interceptIdx-_gram._diagN];
+        double nobs = interceptRow[interceptRow.length-1]; // weighted nobs
         for(int i = ns; i < _dinfo.fullN(); ++i) {
           double iMean = _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
-          for (int j = 0; j <= i; ++j) {
-            double jMean = (j >= ns)?_dinfo._normSub[j - ns] * _dinfo._normMul[j - ns]:1;
-            _gram._xx[i - _gram._diagN][j] = _gram.get(i,j) -  _gram.get(interceptIdx,i)*jMean - _gram.get(interceptIdx,j)*iMean + _gram.get(interceptIdx,interceptIdx) * iMean * jMean;
+          for (int j = 0; j < ns; ++j)
+            _gram._xx[i - _gram._diagN][j] -= interceptRow[j]*iMean;
+          for (int j = ns; j <= i; ++j) {
+            double jMean = _dinfo._normSub[j - ns] * _dinfo._normMul[j - ns];
+            _gram._xx[i - _gram._diagN][j] -=  interceptRow[i]*jMean + interceptRow[j]*iMean - nobs * iMean * jMean;
           }
         }
         if(_dinfo._intercept) { // do the intercept row
-          for(int j = 0; j < _dinfo.fullN(); ++j)
-            _gram._xx[_gram._xx.length-1][j] -= _gram.get(interceptIdx,interceptIdx)*_dinfo._normSub[j-ns]*_dinfo._normMul[j-ns];
+          for(int j = ns; j < _dinfo.fullN(); ++j)
+            interceptRow[j] -= nobs * _dinfo._normSub[j-ns]*_dinfo._normMul[j-ns];
         }
         // and the xy vec as well
         for(int i = ns; i < _dinfo.fullN(); ++i)
@@ -738,7 +798,6 @@ public abstract class GLMTask  {
       }
       if(_val != null){
         _val.computeAIC();
-        _val.computeAUC();
       }
     }
 

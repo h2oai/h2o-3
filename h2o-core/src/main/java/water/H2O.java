@@ -96,9 +96,6 @@ final public class H2O {
             "          Maximum number of threads in the low priority batch-work queue.\n" +
             "          (The default is 99.)\n" +
             "\n" +
-            "    -md5skip\n" +
-            "          Skip comparing MD5 of jar path while joining cloud.\n" +
-            "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
@@ -184,9 +181,6 @@ final public class H2O {
     //-----------------------------------------------------------------------------------
     /** -hdfs=hdfs; HDFS backend */
     public String hdfs = null;
-
-    /** -hdfs_version=hdfs_version; version of the filesystem */
-    public String hdfs_version = null;
 
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
@@ -333,10 +327,6 @@ final public class H2O {
       else if (s.matches("hdfs")) {
         i = s.incrementAndCheck(i, args);
         ARGS.hdfs = args[i];
-      }
-      else if (s.matches("hdfs_version")) {
-        i = s.incrementAndCheck(i, args);
-        ARGS.hdfs_version = args[i];
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);

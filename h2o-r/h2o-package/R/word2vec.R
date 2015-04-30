@@ -1,30 +1,29 @@
-#'
-#' Word2Vec
-#'
-#' Create a word2vec object.
-#'
-#' Two cases below: 1. Negative Sampling; 2. Hierarchical Softmax
-#'
-#' * Constructor used for specifying the number of negative sampling cases.
-#'  @param wordModel - SkipGram or CBOW
-#'  @param normModel - Hierarchical softmax or Negative sampling
-#'  @param numNegEx - Number of negative samples used per word
-#'  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
-#'  @param vecSize - Size of word vectors
-#'  @param winSize - Size of word window
-#'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
-#'  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
-#'  @param epochs - Number of iterations data is run through.
-#'
-#' * Constructor used for hierarchical softmax cases.
-#'  @param wordModel - SkipGram or CBOW
-#'  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
-#'  @param vecSize - Size of word vectors
-#'  @param winSize - Size of word window
-#'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
-#'  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
-#'  @param epochs - Number of iterations data is run through.
-#' @export
+##
+## Word2Vec
+##
+## Create a word2vec object.
+##
+## Two cases below: 1. Negative Sampling; 2. Hierarchical Softmax
+##
+## * Constructor used for specifying the number of negative sampling cases.
+##  @param wordModel - SkipGram or CBOW
+##  @param normModel - Hierarchical softmax or Negative sampling
+##  @param numNegEx - Number of negative samples used per word
+##  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
+##  @param vecSize - Size of word vectors
+##  @param winSize - Size of word window
+##  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
+##  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
+##  @param epochs - Number of iterations data is run through.
+##
+## * Constructor used for hierarchical softmax cases.
+##  @param wordModel - SkipGram or CBOW
+##  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
+##  @param vecSize - Size of word vectors
+##  @param winSize - Size of word window
+##  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
+##  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
+##  @param epochs - Number of iterations data is run through.
 h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
@@ -44,7 +43,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (!is(trainingFrame, "H2OFrame")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
   if (!is(trainingFrame, "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2OFrame object")
 
-  params <- list(training_frame = trainingFrame@key,
+  params <- list(training_frame = trainingFrame@frame_id,
                  wordModel = wordModel,
                  normModel = normModel,
                  minWordFreq = minWordFreq,
@@ -62,14 +61,13 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   new("H2OW2V", h2o = trainingFrame@conn, key = dest_key, train.data=trainingFrame)
 }
 
-#'
-#' Find Synonyms Using an H2OW2V object
-#'
-#'  @param word2vec: An H2OW2V model.
-#'  @param target: A single word, or a vector of words.
-#'  @param count: The top `count` synonyms will be returned.
-#'
-#' @export
+##
+## Find Synonyms Using an H2OW2V object
+##
+##  @param word2vec: An H2OW2V model.
+##  @param target: A single word, or a vector of words.
+##  @param count: The top `count` synonyms will be returned.
+##
 h2o.synonym<-
 function(word2vec, target, count) {
   if (!is(word2vec, "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vec")
@@ -78,7 +76,7 @@ function(word2vec, target, count) {
   if (missing(count)) stop("`count` must be specified")
   if (!is.numeric(count)) stop("`count` must be numeric")
 
-  params <- list(key = word2vec@key, target=target, cnt=count)
+  params <- list(key = word2vec@model_id, target=target, cnt=count)
   if (length(target) == 1L) {
     res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
@@ -104,7 +102,7 @@ function(word2vec, target, count) {
 #  if (!is.character(target)) stop("`target` must be character")
 #  if (length(target) > 1) stop("`target` must be a single word")
 #
-#  params <- params <- c(data = word2vec@word2vec@key, target = target, word2vec@params)
+#  params <- params <- c(data = word2vec@word2vec@model_id, target = target, word2vec@params)
 #  res <- .h2o.__remoteSend(data@conn, .h2o.__TRANSFORM, params)
 #  res$vec
 #})

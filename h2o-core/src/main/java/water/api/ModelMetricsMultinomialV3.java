@@ -8,7 +8,7 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
   @API(help="The R^2 for this scoring run.", direction=API.Direction.OUTPUT)
   public double r2;
 
-  @API(help="The hit ratio table for this scoring run.", direction=API.Direction.OUTPUT)
+  @API(help="The hit ratio table for this scoring run.", direction=API.Direction.OUTPUT, level= API.Level.expert)
   public TwoDimTableBase hit_ratio_table;
 
   @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)

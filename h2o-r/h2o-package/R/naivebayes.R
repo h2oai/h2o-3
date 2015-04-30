@@ -3,34 +3,36 @@
 #'
 #' Compute naive Bayes probabilities on an H2O dataset.
 #'
+#' The naive Bayes classifier assumes independence between predictor variables conditional
+#' on the response, and a Gaussian distribution of numeric predictors with mean and standard
+#' deviation computed from the training dataset. When building a naive Bayes classifier,
+#' every row in the training dataset that contains at least one NA will be skipped completely.
+#' If the test dataset has missing values, then those predictors are omitted in the probability
+#' calculation during prediction.
+#'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
 #'        column index number starting at 0, and increasing from left to right.
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
-#' @param destination_key (Optional) The unique hex key assigned to the resulting model. Automatically generated
-#'        if none is provided.
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#'        none is given, an id will automatically be generated.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
-#' @param min_sdev The minimum standard deviation to use for observations without enough data. Must be
+#' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
-#' @details The naive Bayes classifier assumes independence between predictor variables conditional
-#'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
-#'        deviation computed from the training dataset. When building a naive Bayes classifier,
-#'        every row in the training dataset that contains at least one NA will be skipped completely.
-#'        If the test dataset has missing values, then those predictors are omitted in the probability
-#'        calculation during prediction.
-#' @return Returns an object of class \linkS4class{H2ONaiveBayesModel}.
+#' @param eps A threshold cutoff to deal with numeric instability, must be positive.
+#' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
-#' library(h2o)
 #' localH2O <- h2o.init()
 #' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
 #' votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)
 #' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
-                           destination_key,
+                           model_id,
                            laplace = 0,
                            threshold = 0.001,
-                           eps = 0)
+                           eps = 0,
+                           compute_metrics = TRUE)
 {
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -47,8 +49,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(destination_key))
-    parms$destination_key <- destination_key
+  if(!missing(model_id))
+    parms$model_id <- model_id
   if(!missing(laplace))
     parms$laplace <- laplace
   # TODO: These params have different names than h2o, don't think this should be the case
@@ -56,6 +58,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$min_sdev <- threshold
   if(!missing(eps))
     parms$eps_sdev <- eps
+  if(!missing(compute_metrics))
+    parms$compute_metrics <- compute_metrics
 
   # In R package, cutoff and threshold for probability and standard deviation are the same
   parms$min_prob <- threshold

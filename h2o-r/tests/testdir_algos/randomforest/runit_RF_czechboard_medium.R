@@ -6,7 +6,7 @@ test.DRF.Czechboard <- function(conn) {
   Log.info("Importing czechboard_300x300.csv data...\n")
   board.hex <- h2o.uploadFile(conn,
       locate("smalldata/gbm_test/czechboard_300x300.csv"),
-      key = "board.hex")
+      destination_frame = "board.hex")
   board.hex[,3] <- as.factor(board.hex[,3])
 
   Log.info("Summary of czechboard_300x300.csv from H2O:\n")

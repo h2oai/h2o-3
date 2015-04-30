@@ -1,10 +1,7 @@
 package hex.schemas;
 
 import hex.svd.SVDModel;
-import water.api.API;
-import water.api.KeyV3;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
+import water.api.*;
 
 public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDParameters, SVDV3.SVDParametersV3, SVDModel.SVDOutput, SVDModelV3.SVDModelOutputV3> {
   public static final class SVDModelOutputV3 extends ModelOutputSchema<SVDModel.SVDOutput, SVDModelOutputV3> {
@@ -16,7 +13,7 @@ public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDPa
     public double[] d;
 
     @API(help = "Frame key of left singular vectors")
-    public KeyV3.FrameKeyV3 ukey;
+    public KeyV3.FrameKeyV3 u_key;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
@@ -26,6 +23,6 @@ public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDPa
   // Version&Schema-specific filling into the impl
   @Override public SVDModel createImpl() {
     SVDModel.SVDParameters parms = parameters.createImpl();
-    return new SVDModel( key.key(), parms, null );
+    return new SVDModel( model_id.key(), parms, null );
   }
 }

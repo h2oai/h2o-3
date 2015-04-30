@@ -21,7 +21,7 @@ test.GLM.betaConstraints <- function(conn){
     upperbound <- rep(1, times = length(myX))
     colnames <- my_glm@model$coefficients_table$names[my_glm@model$coefficients_table$names != "Intercept"]
     betaConstraints <- data.frame(names = colnames, lower_bounds = lowerbound, upper_bounds = upperbound)
-    betaConstraints.hex <- as.h2o(conn, betaConstraints, key = "betaConstraints.hex")
+    betaConstraints.hex <- as.h2o(conn, betaConstraints, destination_frame = "betaConstraints.hex")
     Log.info("Pull data frame into R to run GLMnet...")
     prostate.r <- as.data.frame(prostate.hex)
 
@@ -54,33 +54,33 @@ test.GLM.betaConstraints <- function(conn){
         print("Glmnet betas:")
         print(glm_constraints.r$beta[,1])
         print(" ")
-        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[1:7],
+        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[2:8],
                            glm_constraints.r$beta[,1],
                            tolerance = 0.1)
-        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[1:7]) <= 1.0))
+        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[2:8]) <= 1.0))
 
         # Check null deviances
         print("H2O null deviance:")
-        print(glm_constraints.h2o@model$null_deviance)
+        print(glm_constraints.h2o@model$training_metrics@metrics$null_deviance)
         print("Glmnet null deviance:")
         print(glm_constraints.r$nulldev)
-        checkEqualsNumeric(glm_constraints.h2o@model$null_deviance,
+        checkEqualsNumeric(glm_constraints.h2o@model$training_metrics@metrics$null_deviance,
                            glm_constraints.r$nulldev,
                            tolerance = 0.05)
 
         # Check residual deviances
         print("H2O resid deviance:")
-        print(glm_constraints.h2o@model$residual_deviance)
+        print(glm_constraints.h2o@model$training_metrics@metrics$residual_deviance)
         print("Glmnet resid deviance:")
         glm_constraints_resid <- glm_constraints.r$nulldev*(1-glm_constraints.r$dev.ratio)
         print(glm_constraints_resid)
-        checkEqualsNumeric(glm_constraints.h2o@model$residual_deviance,
+        checkEqualsNumeric(glm_constraints.h2o@model$training_metrics@metrics$residual_deviance,
                            glm_constraints_resid,
                            tolerance = 0.05)
 
         # Check objective values (gaussian)
         if(family_type == "gaussian"){
-            h2o_obj_val <- (glm_constraints.h2o@model$residual_deviance / nrow(prostate.hex)) + (1 - alpha) * 1e-05 *
+            h2o_obj_val <- (glm_constraints.h2o@model$training_metrics@metrics$residual_deviance / nrow(prostate.hex)) + (1 - alpha) * 1e-05 *
                             (t(glm_constraints.h2o@model$coefficients[1:7]) %*%
                             glm_constraints.h2o@model$coefficients[1:7]) + alpha * 1e-05 *
                             sum(abs(glm_constraints.h2o@model$coefficients[1:7]))

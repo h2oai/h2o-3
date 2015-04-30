@@ -8,7 +8,7 @@
 #' @import RCurl
 #' @importFrom graphics barplot lines
 #' @importFrom rjson fromJSON
-#' @importFrom stats binomial Gamma gaussian poisson runif
+#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
@@ -21,8 +21,8 @@
 .skip_if_not_developer <- function() {
   # TODO: Verify this function serves a useful purpose
   if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
-    stop("Not a developer")
-  invisible(NULL)
+    return(TRUE)
+  FALSE
 }
 
 .h2o.calcBaseURL <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix) {
@@ -385,7 +385,7 @@
 
         for (j in seq_along(tbl)) {
           switch(x$columns[[j]]$type,
-                 integer = {
+                 int = {
                    tbl[[j]] <- as.integer(tbl[[j]])
                  },
                  long   =,
@@ -412,10 +412,13 @@
 
 #' Print method for H2OTable objects
 #'
+#' This will print a truncated view of the table if there are more than 20 rows.
+#'
 #' @param x An H2OTable object
+#' @param header A logical value dictating whether or not the table name should be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
-print.H2OTable <- function(x, ...) {
+print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
@@ -431,10 +434,18 @@ print.H2OTable <- function(x, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  if (!is.null(attr(x, "header")))
+  if( header && !is.null(attr(x, "header")) )
     cat(attr(x, "header"), ":\n", sep = "")
-  print(xx, ...)
 
+  # pretty print the frame if it is large (e.g. > 20 rows)
+  nr <- nrow(xx)
+  if( nr > 20L ) {
+    print(xx[1L:5L,],...)
+    cat("\n---\n")
+    print(xx[(nr-5L):nr,],...)
+  } else {
+    print(xx, ...)
+  }
   # return original object
   invisible(x)
 }
@@ -490,6 +501,7 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
 #'
 #' A poor man's profiler, but effective.
 #'
+#' @param conn an \linkS4class{H2OConnection} class object.
 #' @export
 h2o.killMinus3 <- function(conn = h2o.getConnection()) {
   rv <- .h2o.doSafeGET(conn=conn, urlSuffix="KillMinus3")

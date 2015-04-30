@@ -50,8 +50,8 @@ abstract public class AST extends Iced {
       } else if (this instanceof ASTReducerOp) {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
         ((ASTReducerOp) this).apply(e);
-      } else if (this instanceof ASTLs) {
-        ((ASTLs) this).apply(e);
+      } else if (this instanceof ASTLs || this instanceof ASTSetTimeZone || this instanceof ASTListTimeZones || this instanceof ASTGetTimeZone) {
+        ((ASTOp) this).apply(e);
       } else if (this instanceof ASTFunc) {
         ((ASTFunc) this).apply(e);
       } else if (this instanceof ASTApply) {
@@ -452,7 +452,7 @@ class ASTSeries extends AST {
 
 class ASTStatement extends AST {
   @Override ASTStatement make() { return new ASTStatement(); }
-  String opStr() {return ","; }
+  String opStr() { return ","; }
   // must parse all statements: {(ast);(ast);(ast);...;(ast)}
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
@@ -476,7 +476,7 @@ class ASTStatement extends AST {
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      env.pop();
+      if( !(_asts[i+1] instanceof ASTDelete) ) env.pop();
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
@@ -1187,7 +1187,9 @@ class ASTSlice extends AST {
       // Use them directly, throwing a runtime error if OOB.
       long row = (long)((ValNum)rows)._d;
       int  col = (int )((ValNum)cols)._d;
-      Frame ary=env.popAry();
+      Frame ary;
+      if( env.isNum() ) ary=new Frame(Vec.makeCon(env.popDbl(),1));
+      else ary = env.popAry();
       try {
         if (ary.vecs()[col].isEnum()) {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
@@ -1402,7 +1404,6 @@ class ASTDelete extends AST {
             ? ((ASTFrame)ast)._key
             : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
     DKV.remove(Key.make(s));
-    env.push(new ValNum(0));
   }
 }
 

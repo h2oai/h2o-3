@@ -484,7 +484,7 @@ h2o.shim <- function(enable = TRUE) {
       # Fix up parameters for H2ODev
       paramsDev <- .dep.params(paramsIn, .km.dep.map)
       paramsDev <- append(paramsDev, list(...))
-      m <- do.call("h2o.dev.kmeans", dots)
+      m <- do.call("h2o.dev.kmeans", list(...))
       m@model <- .dep.model(m)
       m
     },
@@ -667,7 +667,7 @@ h2o.shim <- function(enable = TRUE) {
           model$accuracy <- scores$accuracy
           model$error <- warning("error output field is not currently supported", call.=FALSE)
           model$precision <- scores$precision
-          model$recall <- scores$recall
+          model$recall <- scores$tpr
           model$mcc <- scores$absolute_MCC
           model$max_per_class_error <- 1 - scores$min_per_class_accuracy
         }

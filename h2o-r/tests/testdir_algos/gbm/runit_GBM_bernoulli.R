@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.GBM.bernoulli <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), key="prostate.hex")
+  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
   Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
   prostate.hex$RACE <- as.factor(prostate.hex$RACE)
@@ -50,8 +50,8 @@ test.GBM.bernoulli <- function(conn) {
   # PUBDEV-515
   f0 = log(mean(prostate.data$CAPSULE)/(1-mean(prostate.data$CAPSULE)))
   print(f0)
-  print(prostate.h2o@model$initF)
-  expect_equal(prostate.h2o@model$initF, f0, tolerance=1e-4) ## check the intercept term
+  print(prostate.h2o@model$init_f)
+  expect_equal(prostate.h2o@model$init_f, f0, tolerance=1e-4) ## check the intercept term
 
   testEnd()
 }

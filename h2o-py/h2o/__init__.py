@@ -13,7 +13,8 @@ The H2O JVM sports a web server such that all communication occurs on a socket (
 by an IP address and a port) via a series of REST calls (see connection.py for the REST
 layer implementation and details). There is a single active connection to the H2O JVM at
 any one time, and this handle is stashed away out of sight in a singleton instance of
-:class:`H2OConnection` (this is the global  :envvar:`__H2OConn__`).
+:class:`H2OConnection` (this is the global  :envvar:`__H2OConn__`). In other words,
+this package does not rely on Jython, and there is no direct manipulation of the JVM.
 
 The H2O python module is not intended as a replacement for other popular machine learning
 modules such as scikit-learn, pylearn2, and their ilk. This module is a complementary
@@ -22,7 +23,10 @@ to production as seamless as possible. Additionally, it is designed to bring H2O
 wider audience of data and machine learning devotees that work exclusively with Python
 (rather than R or scala or Java -- which are other popular interfaces that H2O supports),
 and are wanting another tool for building applications or doing data munging in a fast,
-scalable environment without any extra mental anguish about threads and parallelism.
+scalable environment without any extra mental anguish about threads and parallelism. There
+are additional treasures that H2O incorporates meant to alleviate the pain of doing some
+basic feature manipulation (e.g. automatic categorical handling and not having to one-hot
+encode).
 
 
 What is H2O?
@@ -121,22 +125,22 @@ with lazy expressions to compute the column means for all columns in the H2OFram
 
   >>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
-  >>> colmeans = [v.mean().eager() for v in a]                     # compute column means eagerly
+  >>> colmeans = [v.mean() for v in df]                            # compute column means
   >>>
   >>> colmeans                                                     # print the results
   [5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
 
-Lazy expressions will be discussed in detail in the coming sections, but their primary
+Lazy expressions will be discussed lightly in the coming sections, as they are not
+necessarily going to be front-and-center to the practicing data scientist, but their primary
 purpose is to cut down on the chatter between the client (a.k.a this python interface) and
-H2O. Lazy expressions are
-`Katamari'd <http://www.urbandictionary.com/define.php?term=Katamari>`_ together and only
+H2O. Lazy expressions are `Katamari'd <http://www.urbandictionary.com/define.php?term=Katamari>`_ together and only
 ever evaluated when some piece of output is requested (e.g. print-to-screen).
 
 The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
 performed on an R data.frame. This includes all manner of slicing (with complex
 conditionals), broadcasting operations, and a slew of math operations for transforming and
-mutating a Frame (the actual Big Data sitting in the H2O cloud). The semantics for
+mutating a Frame (all the while the actual Big Data is sitting in the H2O cloud). The semantics for
 modifying a Frame closely resembles R's copy-on-modify semantics, except when it comes
 to mutating a Frame in place. For example, it's possible to assign all occurrences of the
 number `0` in a column to missing (or `NA` in R parlance) as demonstrated in the following
@@ -154,46 +158,247 @@ After this operation, `vol` has been permanently mutated in place (it is not a c
 H2OVec
 ++++++
 An H2OVec is a single column of data that is uniformly typed and possibly lazily computed.
+As with H2OFrame, an H2OVec is a pointer to a distributed java object residing in the H2O
+cloud (and truthfully, an H2OFrame is simply a collection of H2OVec pointers along with
+some metadata and various member methods).
 
 Expr
 ++++
+Deep in the guts of this module is the Expr class, which defines those objects holding
+the cumulative, unevaluated expressions that may become H2OFrame/H2OVec objects.
+For example:
 
-* Lazy expressions...
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> a = fr + 3.14159                                             # "a" is now an Expr
+  >>>
+  >>> type(a)                                                      # <class 'h2o.expr.Expr'>
+
+These objects are not too important to distinguish at the user level, and all operations
+can be performed with the mental model of operating on 2D frames (i.e. everything is an
+H2OFrame), but it is worth mentioning them here for completeness, as they will not discussed
+elsewhere.
+
+In the previous snippet, `a` has not yet triggered any big data evaluation and is, in
+fact, a pending computation. Once `a` is evaluated, it stays evaluated. Additionally,
+if all dependent subparts composing `a` are also evaluated.
+
+It is worthwhile mentioning at this point that this module relies on reference counting
+of python objects to dispose of out-of-scope objects. The Expr class destroys objects
+and their big data counterparts in the H2O cloud by way of a remove call:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> h2o.remove(fr)                                               # remove prostate data
+  >>> fr                                                           # attempting to use fr results in a ValueError
+
+Notice that when attempting to use the object after a remove call has been issued, it will
+result in a ValueError. Therefore, any working reference is not necessarily cleaned up,
+but it will no longer be functional. Note that deleting an unevaluated expression will not
+delete all subparts!
 
 Models
 ++++++
 
 The model-building experience with this module is unique, and is not the same experience
-for those coming from a background in scikit-learn.
-
-Rather than have each model define its own class, each model will belong to one of the following
-categories:
+for those coming from a background in scikit-learn. Instead of using objects to build the
+model, builder functions are provided in the top-level module, and the result of a call
+is an model object belonging to one of the following categories:
 
     * Regression
     * Binomial
     * Multinomial
     * Clustering
+    * Autoencoder
 
-This is not an entirely representative list of model categories (e.g., what about Time Series,
-and Grid Search, or PCA?); but it represents the core set of underlying model categories
-that form the foundation and current state of modeling in H2O.
+This is better demonstrated by way of an example:
 
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
+  >>>
+  >>> m = h2o.glm(x=fr[3:], y=fr[2])                               # build a glm with a method call
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
+  >>>
+  >>> m.show()                                                     # print the model details
+  >>>
+  >>> m.summary()                                                  # print a model summary
 
-* No explicit model objects -- have model categories
-* How to create new models
-* train and validation data
-* parameter specification
-* categoricals are dealt with internally (no need to one-hot expand them!)
-* what about categoricals in my response?
-* what about an integral response column that I want to do classification on
-* See more on the chapter on Models
+As you can see, the result of the glm call is a binomial model. This example also showcases
+an important feature-munging step in order to cause the glm to perform a classification task
+over a regression task. Namely, the second column is a numeric column when it's initially read in,
+but it must be cast to a factor by way of the H2OVec operation `asfactor`. Let's take a look
+at this more deeply:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> fr[1].isfactor()                                             # produces False
+  >>>
+  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
+  >>>
+  >>> m.__class__                                                  # <h2o.model.regression.H2ORegressionModel object at 0x104d07590>
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast the 2nd column to a factor column
+  >>>
+  >>> fr[1].isfactor()                                             # produces True
+  >>>
+  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
+  >>>
+  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104d18f50>
+
+The above example shows how to properly deal with numeric columns you would like to use in a
+classification setting. Additionally, H2O can perform on-the-fly scoring of validation
+data and provide a host of metrics on the validation and training data. Here's an example
+of doing this, where we additionally split the data set into three pieces for training, validation,
+and finally testing:
+
+  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast to factor
+  >>>
+  >>> r = fr[0].runif()                                            # Random UNIform numbers, one per row
+  >>>
+  >>> train = fr[ r < 0.6 ]                                        # 60% for training data
+  >>>
+  >>> valid = fr[ (0.6 <= r) & (r < 0.9) ]                         # 30% for validation
+  >>>
+  >>> test  = fr[ 0.9 <= r ]                                       # 10% for testing
+  >>>
+  >>> m = h2o.deeplearning(x=train[2:],y=train[1],validation_x=valid[2:],validation_y=valid[1])  # build a deeplearning with a validation set (yes it's this simple)
+  >>>
+  >>> m                                                            # display the model summary by default (can also call m.show())
+  >>>
+  >>> m.show()                                                     # equivalent to the above
+  >>>
+  >>> m.model_performance()                                        # show the performance on the training data, (can also be m.performance(train=True)
+  >>>
+  >>> m.model_performance(valid=True)                              # show the performance on the validation data
+  >>>
+  >>> m.model_performance(test_data=test)                          # score and compute new metrics on the test data!
+
+Continuing from this example, there are a number of ways of querying a model for its attributes.
+Here are some examples doing just that:
+
+  >>> m.mse()           # MSE on the training data
+  >>>
+  >>> m.mse(valid=True) # MSE on the validation data
+  >>>
+  >>> m.r2()            # R^2 on the training data
+  >>>
+  >>> m.r2(valid=True)  # R^2 on the validation data
+  >>>
+  >>> m.confusion_matrix()  # confusion matrix for max F1
+  >>>
+  >>> m.confusion_matrix("tpr") # confusion matrix for max true positive rate
+  >>>
+  >>> m.confusion_matrix("max_per_class_error")   # etc.
+
+All of our models support various accessor methods such as these. The following section will
+discuss model metrics in more greater detail.
+
+On a final note, each of H2O's algorithms handles missing (colloquially: "missing" or "NA")
+and categorical data automatically in a way that's specific to the algorithm. You can find
+out more about each of the individual differences at the following link: http://docs2.h2o.ai/datascience/top.html
 
 Metrics
 +++++++
 
-* Metrics for different types of model categories
-* See more in the chapter on Metrics
+H2O models exhibit a wide array of metrics for each of the model categories Clustering,
+Binomial, Multinomial, Regression, and AutoEncoder. In turn, each of these categories have
+a corresponding H2OModelMetrics class with which it is associated.
 
+All algorithm calls return at least one batch of metrics (the training set metrics). When building
+a model in H2O, it is possible to supply a validation set for on-the-fly evaluation of some
+hold-out data. If the validation set is given, then two batches of metrics are returned--the
+training set metrics AND the validation set metrics.
+
+In addition to the batches of metrics that can be retrieved at model-build time, there is a
+possibly third batch of metrics available post-build time for some final holdout test set
+containing data not appearing in either of the training and validation sets. These are the
+test set metrics, and while the returned object is not an H2O model (it is an H2OModelMetrics
+object), it can be queried in the same exact way. Here's an example:
+
+  >>> fr = h2o.import_frame(path="smalldata/iris/iris_wheader.csv")   # import iris
+  >>>
+  >>> r = fr[0].runif()                       # generate a random vector for splitting
+  >>>
+  >>> train = fr[ r < 0.6 ]                   # split out 60% for training
+  >>>
+  >>> valid = fr[ 0.6 <= r & r < 0.9 ]        # split out 30% for validation
+  >>>
+  >>> test = fr[ 0.9 <= r ]                   # split out 10% for testing
+  >>>
+  >>> my_model = h2o.glm(x=train[1:], y=train[0], validation_x=valid[1:], validation_y=valid[0])  # build a GLM
+  >>>
+  >>> my_model.coef()                         # print the GLM coefficients, can also perform my_model.coef_norm() to get the normalized coefficients
+  >>>
+  >>> my_model.null_deviance()                # get the null deviance from the training set metrics
+  >>>
+  >>> my_model.residual_deviance()            # get the residual deviance from the training set metrics
+  >>>
+  >>> my_model.null_deviance(valid=True)      # get the null deviance from the validation set metrics (similar for residual deviance)
+  >>>
+  >>> # now generate a new metrics object for the test hold-out data:
+  >>>
+  >>> my_metrics = my_model.model_performance(test_data=test) # create the new test set metrics
+  >>>
+  >>> my_metrics.null_degrees_of_freedom()    # returns the test null dof
+  >>>
+  >>> my_metrics.residual_deviance()          # returns the test res. deviance
+  >>>
+  >>> my_metrics.aic()                        # returns the test aic
+
+As you can see, the new model metrics object generated by calling `model_performance` on the
+model object supports all of the metric accessor methods as a model. For a complete list of
+the available metricsfor various model categories, please see the relevant documentation
+on metrics.
+
+Example of H2O on Hadoop
+------------------------
+
+Here is a small example (H2O on Hadoop) :
+
+.. code-block:: python
+
+  import h2o
+  h2o.init(ip="192.168.1.10", port=54321)
+  --------------------------  ------------------------------------
+  H2O cluster uptime:         2 minutes 1 seconds 966 milliseconds
+  H2O cluster version:        0.1.27.1064
+  H2O cluster name:           H2O_96762
+  H2O cluster total nodes:    4
+  H2O cluster total memory:   38.34 GB
+  H2O cluster total cores:    16
+  H2O cluster allowed cores:  80
+  H2O cluster healthy:        True
+  --------------------------  ------------------------------------
+  pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
+  pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
+  trainFrame = h2o.import_frame(path=pathDataTrain)
+  testFrame = h2o.import_frame(path=pathDataTest)
+
+  #Parse Progress: [##################################################] 100%
+  #Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols
+
+  #Parse Progress: [##################################################] 100%
+  #Imported ['hdfs://192.168.1.10/user/data/data_test.csv'] into cluster with 10000 rows and 500 cols
+
+  trainFrame[499]._name = "label"
+  testFrame[499]._name = "label"
+
+  model = h2o.gbm(x=trainFrame.drop("label"),
+              y=trainFrame["label"],
+              validation_x=testFrame.drop("label"),
+              validation_y=testFrame["label"],
+              ntrees=100,
+              max_depth=10
+              )
+
+  #gbm Model Build Progress: [##################################################] 100%
+
+  predictFrame = model.predict(testFrame)
+  model.model_performance(testFrame)
 """
 __version__ = "SUBST_PROJECT_VERSION"
 from h2o import *

@@ -27,6 +27,8 @@ test.glrm.missing <- function(conn) {
     obj_delta[i] <- arrests.glrm@model$avg_change_obj
     iters[i] <- arrests.glrm@model$iterations
     step[i] <- arrests.glrm@model$step_size
+    
+    h2o.rm(arrests.glrm@model$loading_key$name)    # Remove loading matrix to free memory
   }
   
   print(data.frame(Fraction = missing_frac, 

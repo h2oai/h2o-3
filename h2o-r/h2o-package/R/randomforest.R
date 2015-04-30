@@ -10,9 +10,8 @@
 #'        or a categorical variable).
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the
 #'        variables in the model.
-#' @param destination_key (Optional) The unique hex key assigned to the
-#'        resulting model. If none is given, a key will automatically be
-#'        generated.
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#'        none is given, an id will automatically be generated.
 #' @param mtries Columns to randomly select at each level, or -1 for
 #'        sqrt(#cols).
 #' @param sample_rate Sample rate, from 0. to 1.0.
@@ -23,16 +22,20 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param nbins Number of bins to use in building histogram.
-#' @param validation_frame
+#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the
+#'        model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
-#' @param max_after_balance_size
+#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
+#'        than 1.0)
 #' @param seed Seed for random numbers (affects sampling) - Note: only
 #'        reproducible when running single threaded
+#' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
 h2o.randomForest <- function( x, y, training_frame,
-                             destination_key,
+                             model_id,
                              validation_frame,
                              mtries = -1,
                              sample_rate = 2/3,
@@ -70,8 +73,8 @@ h2o.randomForest <- function( x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(destination_key))
-    parms$destination_key <- destination_key
+  if(!missing(model_id))
+    parms$model_id <- model_id
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if(!missing(mtries))

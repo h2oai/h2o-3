@@ -15,7 +15,7 @@ def define_params():
         # 'solver': ['ADMM', 'L_BFGS', None],
         'solver': ['L_BFGS', None],
         'max_iterations': [1, 3, 15, None],
-        'dropNA20Cols': [None, 0, 1],
+        'drop_na20_cols': [None, 0, 1],
         'standardize': [None, 0, 1],
         'tweedie_variance_power': [None, 0, 1],
         'tweedie_link_power': [None, 0, 1],

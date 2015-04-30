@@ -6,12 +6,6 @@ import water.api.*;
 public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAParameters, PCAV3.PCAParametersV3, PCAModel.PCAOutput, PCAModelV3.PCAModelOutputV3> {
   public static final class PCAModelOutputV3 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV3> {
     // Output fields; input fields are in the parameters list
-    @API(help = "Iterations executed")
-    public int iterations;
-
-    @API(help = "Mapping from training data to lower dimensional k-space")
-    public double[][] archetypes;
-
     @API(help = "Standard deviation of each principal component")
     public double[] std_deviation;
 
@@ -32,6 +26,6 @@ public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAPa
   // Version&Schema-specific filling into the impl
   @Override public PCAModel createImpl() {
     PCAModel.PCAParameters parms = parameters.createImpl();
-    return new PCAModel( key.key(), parms, null );
+    return new PCAModel( model_id.key(), parms, null );
   }
 }
