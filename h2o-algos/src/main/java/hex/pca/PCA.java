@@ -45,6 +45,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   @Override
   protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;

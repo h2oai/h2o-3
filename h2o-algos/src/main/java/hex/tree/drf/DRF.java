@@ -1,22 +1,31 @@
 package hex.tree.drf;
 
 import hex.Model;
-import static hex.genmodel.GenModel.getPrediction;
 import hex.schemas.DRFV3;
-import hex.tree.*;
+import hex.tree.DHistogram;
+import hex.tree.DTree;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import static hex.tree.drf.TreeMeasuresCollector.asSSE;
-import static hex.tree.drf.TreeMeasuresCollector.asVotes;
-import water.*;
+import hex.tree.ScoreBuildHistogram;
+import hex.tree.SharedTree;
+import water.AutoBuffer;
+import water.Job;
+import water.Key;
+import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.Log;
+import water.util.RandomUtils;
+import water.util.Timer;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import static hex.genmodel.GenModel.getPrediction;
+import static hex.tree.drf.TreeMeasuresCollector.asSSE;
+import static hex.tree.drf.TreeMeasuresCollector.asVotes;
 
 /** Gradient Boosted Trees
  *
@@ -33,6 +42,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Model.ModelCategory.Multinomial,
     };
   }
+
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
 
   static final boolean DEBUG_DETERMINISTIC = false; //for debugging only
 

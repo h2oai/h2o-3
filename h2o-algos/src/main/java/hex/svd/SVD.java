@@ -38,6 +38,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return new Model.ModelCategory[]{ Model.ModelCategory.DimReduction };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   // Called from an http request
   public SVD(SVDModel.SVDParameters parms) {
     super("SVD", parms);

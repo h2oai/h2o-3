@@ -34,6 +34,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     return new Model.ModelCategory[]{Model.ModelCategory.Unknown};
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
