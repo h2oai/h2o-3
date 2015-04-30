@@ -55,7 +55,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
       HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;
       double p = dinfo.fullN() - dinfo.largestCat();
-      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
+      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * (1+Math.log((double)_train.lastVec().nChunks())/Math.log(2.))); //one gram per core
       long max_mem = hb.get_max_mem();
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
