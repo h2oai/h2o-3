@@ -2028,6 +2028,7 @@ class ASTCbind extends ASTUniPrefixOp {
     AST a;
     a = E.parse();
     if( a instanceof ASTId ) _deepCopy = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+    else throw new IllegalArgumentException("First argument of cbind must be TRUE or FALSE for the deepCopy flag.");
     while( !E.isEnd() ) {
       a = E.parse();
       if( a instanceof ASTId ) {

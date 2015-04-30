@@ -271,7 +271,7 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
 
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %"
+    cbind = "(= !" + fr + " (cbind %FALSE %"
     cbind += " %".join([vec._expr.eager() for vec in self]) + "))"
     res = h2o.rapids(cbind)
     h2o.remove(fr)
@@ -301,7 +301,7 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(= !" + fr + " (cbind %"
+      cbind = "(= !" + fr + " (cbind %FALSE %"
       cbind += " %".join([expr.eager() for expr in exprs]) + "))"
       res = h2o.rapids(cbind)
       h2o.remove(fr)
@@ -1079,7 +1079,7 @@ class H2OVec:
     names = [vec.name() for vec in vecs]
 
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %"
+    cbind = "(= !" + fr + " (cbind %FALSE %"
     cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
     h2o.rapids(cbind)
 
