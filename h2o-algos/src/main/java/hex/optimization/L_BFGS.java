@@ -12,7 +12,7 @@ import java.util.Random;
 /**
  * Created by tomasnykodym on 9/15/14.
  *
- * Generic L-BFGS optmizer implementation.
+ * Generic L-BFGS optimizer implementation.
  *
  * NOTE: The solver object keeps its state and so the same object can not be reused to solve different problems.
  * (but can be used for warm-starting/continuation of the same problem)
@@ -22,14 +22,14 @@ import java.util.Random;
  * To apply L-BFGS to your optimization problem, provide a GradientSolver with following 2 methods:
  *   1) double [] getGradient(double []):
  *      evaluate gradient at given coefficients, typically an MRTask
- *   2) double [] getObjVals(double[] beta,double[] direction):
+ *   2) double [] getObjVals(double[] beta, double[] direction):
  *      evaluate objective value at line-search search points (e.g. objVals[k] = obj(beta + step(k)*direction), step(k) = .75^k)
  *      typically a single MRTask
  *   @see hex.glm.GLM.GLMGradientSolver
  *
  * L-BFGS will then perform following loop:
  *   while(not converged):
- *     coefs    := doLineSearch (coefs, dir)  // distributed, 1 pass over data
+ *     coefs    := doLineSearch(coefs, dir)   // distributed, 1 pass over data
  *     gradient := getGradient(coefs)         // distributed, 1 pass over data
  *     history  += (coefs, gradient)          // local
  *     dir      := newDir(history, gradient)  // local

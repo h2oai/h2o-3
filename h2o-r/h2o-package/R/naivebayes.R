@@ -31,7 +31,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            model_id,
                            laplace = 0,
                            threshold = 0.001,
-                           eps = 0)
+                           eps = 0,
+                           compute_metrics = TRUE)
 {
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -57,6 +58,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$min_sdev <- threshold
   if(!missing(eps))
     parms$eps_sdev <- eps
+  if(!missing(compute_metrics))
+    parms$compute_metrics <- compute_metrics
 
   # In R package, cutoff and threshold for probability and standard deviation are the same
   parms$min_prob <- threshold

@@ -16,7 +16,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
-    Key<Frame> _user_points;
+    public Key<Frame> _user_points;
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
