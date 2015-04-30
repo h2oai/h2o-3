@@ -9,6 +9,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.JCodeGen;
+import water.util.MathUtils;
 import water.util.SB;
 import water.util.TwoDimTable;
 
@@ -645,10 +646,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
       if (_submodels[l].trainVal != null && tFrame != null)
-        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,m._ymu);
+        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,tFrame.vec(m._output.responseName()).sigma());
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
-        _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m,vFrame,Double.NaN);
+        _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m, vFrame, vFrame.vec(m._output.responseName()).sigma());
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
@@ -719,12 +720,27 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Number of Iterations", "Training Frame","Number of Predictors"}, new String[]{"string","string","int","string","int"},new String[]{"%s","%s","%d","%s","%d"},"");
+
+
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link", "Regularization", "Number of Predictors Total","Number of Active Predictors", "Number of Iterations", "Training Frame"}, new String[]{"string","string","string","int","int","int","string"},new String[]{"%s","%s","%s","%d","%d","%d","%s"},"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
-      glmModel._output._model_summary.set(0,2,Integer.valueOf(_iter));
-      glmModel._output._model_summary.set(0,3,_trainFrame.toString());
-      glmModel._output._model_summary.set(0,4,Integer.toString(glmModel.beta().length));
+      String regularization = "None";
+      if(glmModel._parms._lambda != null && !(glmModel._parms._lambda.length == 1 &&  glmModel._parms._lambda[0] == 0)) { // have regularization
+        if(glmModel._parms._alpha[0] == 0)
+          regularization = "Ridge ( lambda = ";
+        else if(glmModel._parms._alpha[0] == 1)
+          regularization = "Lasso (lambda = ";
+        else
+          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(glmModel._parms._alpha[0],4)  +" lambda = ";
+        regularization = regularization + MathUtils.roundToNDigits(glmModel._parms._lambda[glmModel._output._best_lambda_idx],4) + " )";
+      }
+      glmModel._output._model_summary.set(0,2,regularization);
+      glmModel._output._model_summary.set(0,3,Integer.valueOf(_iter));
+      int intercept = glmModel._parms._intercept?1:0;
+      glmModel._output._model_summary.set(0,4,Integer.toString(glmModel.beta().length - intercept));
+      glmModel._output._model_summary.set(0,5,Integer.toString(glmModel._output.rank() - intercept));
+      glmModel._output._model_summary.set(0,6,_trainFrame.toString());
       if(_scoring_iters != null) {
         glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
         for (int i = 0; i < _scoring_iters.length; ++i) {
