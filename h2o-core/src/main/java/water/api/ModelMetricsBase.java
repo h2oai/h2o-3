@@ -32,8 +32,8 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
   @API(help="The category (e.g., Clustering) for the model used for this scoring run.", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"}, direction=API.Direction.OUTPUT)
   public Model.ModelCategory model_category;
 
-  @API(help="The duration in mS for this scoring run.", direction=API.Direction.OUTPUT)
-  public long duration_in_ms;
+//  @API(help="The duration in mS for this scoring run.", direction=API.Direction.OUTPUT)
+//  public long duration_in_ms;
 
   @API(help="The time in mS since the epoch for the start of this scoring run.", direction=API.Direction.OUTPUT)
   public long scoring_time;
