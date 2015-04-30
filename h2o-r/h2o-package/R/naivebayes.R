@@ -24,10 +24,12 @@
 #'        FALSE to reduce the runtime of the algorithm.
 #' @return Returns an object of class \linkS4class{H2OModel}.
 #' @examples
-#' localH2O <- h2o.init()
-#' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-#' votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)
-#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+#' \dontrun{
+#'  localH2O <- h2o.init()
+#'  votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
+#'  votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)
+#'  h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+#' }
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
                            model_id,
