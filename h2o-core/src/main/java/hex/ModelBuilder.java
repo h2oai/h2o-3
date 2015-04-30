@@ -158,6 +158,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  build.  Each ModelBuilder must have one of these. */
   abstract public Model.ModelCategory[] can_build();
 
+  /**
+   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
+   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
+   * at startup).
+   */
+  public enum BuilderVisibility {
+    Experimental,
+    Beta,
+    AlwaysVisible
+  }
+
+  /**
+   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
+   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
+   * at startup).
+   */
+  abstract public BuilderVisibility builderVisibility();
+
   /** Clear whatever was done by init() so it can be run again. */
   public void clearInitState() {
     clearValidationErrors();

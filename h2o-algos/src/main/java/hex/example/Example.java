@@ -23,6 +23,8 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(false); }
 
