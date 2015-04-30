@@ -1,7 +1,6 @@
 package water.fvec;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 
 import water.*;
 import water.persist.PersistNFS;

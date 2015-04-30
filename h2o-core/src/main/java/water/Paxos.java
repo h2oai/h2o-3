@@ -120,7 +120,7 @@ public abstract class Paxos {
   }
 
   // Before we start doing distributed writes... block until the cloud
-  // stablizes.  After we start doing distributed writes, it is an error to
+  // stabilizes.  After we start doing distributed writes, it is an error to
   // change cloud shape - the distributed writes will be in the wrong place.
   static void lockCloud(Object reason) {
     if( _cloudLocked ) return; // Fast-path cutout

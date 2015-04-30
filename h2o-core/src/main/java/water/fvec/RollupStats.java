@@ -440,7 +440,7 @@ class RollupStats extends Iced {
       // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
       // - unless the count gets too high; allow a very high count for enums.
       int nbins=MAX_SIZE;
-      if( rs._isInt && (int)span==span ) {
+      if( rs._isInt && span < Integer.MAX_VALUE ) {
         nbins = (int)span+1;      // 1 bin per int
         int lim = vec.isEnum() ? Categorical.MAX_ENUM_SIZE : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels

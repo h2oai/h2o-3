@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# Purpose:  This tests convergance of k-means on a large dataset.
+# Purpose:  This tests convergence of k-means on a large dataset.
 #----------------------------------------------------------------------
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))

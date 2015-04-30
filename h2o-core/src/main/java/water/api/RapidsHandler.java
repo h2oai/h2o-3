@@ -56,6 +56,10 @@ class RapidsHandler extends Handler {
               rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
               sb.append(rapids.string);
               rapids.result_type = RapidsV3.ARYSTR;
+            } else if (fr.anyVec().isUUID()) {
+              rapids.string = PrettyPrint.UUID(fr.anyVec().at16l(0), fr.anyVec().at16h(0));
+              sb.append(rapids.string);
+              rapids.result_type = RapidsV3.ARYSTR;
             } else {
               rapids.scalar = fr.anyVec().at(0);
               sb.append(Double.toString(rapids.scalar));

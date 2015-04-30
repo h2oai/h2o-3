@@ -1,6 +1,7 @@
 package hex.naivebayes;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
@@ -14,6 +15,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     public double _min_sdev = 0.001;   // Minimum standard deviation to use for observations without enough data
     public double _eps_prob = 0;   // Cutoff below which probability is replaced with _min_prob
     public double _min_prob = 0.001;   // Minimum conditional probability to use for observations without enough data
+    public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
   }
 
   public static class NaiveBayesOutput extends SupervisedModel.SupervisedOutput {
@@ -74,8 +76,9 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
       for(int col = _output._ncats; col < data.length; col++) {
         if(Double.isNaN(data[col])) continue;
         double x = data[col];
-        double mean = _output._pcond_raw[col][rlevel][0];
-        double stddev = _output._pcond_raw[col][rlevel][1] <= _parms._eps_sdev ? _parms._min_sdev : _output._pcond_raw[col][rlevel][1];
+        double mean = Double.isNaN(_output._pcond_raw[col][rlevel][0]) ? 0 : _output._pcond_raw[col][rlevel][0];
+        double stddev = Double.isNaN(_output._pcond_raw[col][rlevel][1]) ? 1.0 :
+          (_output._pcond_raw[col][rlevel][1] <= _parms._eps_sdev ? _parms._min_sdev : _output._pcond_raw[col][rlevel][1]);
         // double prob = Math.exp(new NormalDistribution(mean, stddev).density(data[col])); // slower
         double prob = Math.exp(-((x-mean)*(x-mean))/(2.*stddev*stddev)) / (stddev*Math.sqrt(2.*Math.PI)); // faster
         nums[rlevel] += Math.log(prob <= _parms._eps_prob ? _parms._min_prob : prob);
@@ -96,13 +99,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     }
 
     // Select class with highest conditional probability
-    double max = -1;
-    for(int i = 1; i < preds.length; i++) {
-      if(preds[i] > max) {
-        max = preds[i];
-        preds[0] = i-1;
-      }
-    }
+    preds[0] = GenModel.getPrediction(preds, data);
     return preds;
   }
 }

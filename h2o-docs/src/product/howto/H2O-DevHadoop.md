@@ -1,5 +1,13 @@
 #Running H2O-Dev on Hadoop
 
+Currently supported versions: 
+- CDH 5.2
+- CDH 5.3
+- HDP 2.1
+- HDP 2.2
+- MapR 3.1.1
+- MapR 4.0.1
+
 **Important Points to Remember**: 
 
 - Each H2O node runs as a mapper

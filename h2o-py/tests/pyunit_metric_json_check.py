@@ -77,7 +77,8 @@ def metric_json_check(ip, port):
                                     u'max_criteria_and_metric_scores',
                                     u'model',
                                     u'duration_in_ms',
-                                    u'frame_checksum']
+                                    u'frame_checksum',
+                                    u'domain']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) binomial " \
                                 "metric json. The difference is {2}".format(bin_metric_json_keys_have,
@@ -109,7 +110,8 @@ def metric_json_check(ip, port):
                                     u'scoring_time',
                                     u'null_degrees_of_freedom',
                                     u'model',
-                                    u'thresholds_and_metric_scores']
+                                    u'thresholds_and_metric_scores',
+                                    u'domain']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) glm-binomial " \
                                 "metric json. The difference is {2}".format(bin_metric_json_keys_have,

@@ -50,27 +50,61 @@ class Basic(unittest.TestCase):
             # link [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
             # can we do classification with probabilities?
             # are only lambda and alpha grid searchable?
+
+            # glm parameters:
+
+            # model_id Key<Model> False None []
+            # training_frame Key<Frame> False None []
+            # validation_frame Key<Frame> False None []
+            # ignored_columns string[] False None []
+            # drop_na20_cols boolean False False []
+            # score_each_iteration boolean False False []
+            # response_column VecSpecifier False None []
+            # balance_classes boolean False False []
+            # class_sampling_factors float[] False None []
+            # max_after_balance_size float False 5.0 []
+            # max_confusion_matrix_size int False 20 []
+            # max_hit_ratio_k int False 10 []
+            # family enum False gaussian [u'gaussian', u'binomial', u'poisson', u'gamma']
+            # solver enum False IRLSM [u'AUTO', u'IRLSM', u'L_BFGS']
+
+            # alpha double[] False None []
+
+            # lambda double[] False None []
+            # lambda_search boolean False False []
+            # lambda_min_ratio double False -1.0 []
+            # nlambdas int False -1 []
+
+            # standardize boolean False True []
+            # max_iterations int False -1 []
+            # beta_epsilon double False 0.0001 []
+            # link enum False family_default [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
+            # prior double False -1.0 []
+            # use_all_factor_levels boolean False False []
+            # beta_constraints Key<Frame> False None []
+            # max_active_predictors int False -1 []
+
             parameters = {
                 'validation_frame': parse_key,
-                'ignored_columns': '[STR]',
+                # 'ignored_columns': '["STR"]',
                 'response_column': 'FNDX',
                 # FIX! when is this needed? redundant for binomial?
-                'balance_classes': False,
-                'max_after_balance_size': None,
-                'standardize': False,
-                'family': 'binomial', 
-                'link': None, 
-                'tweedie_variance_power': None,
-                'tweedie_link_power': None,
-                'alpha': '[1e-4]',
-                'lambda': '[0.5]',
-                'prior1': None,
-                'lambda_search': None,
-                'nlambdas': None,
-                'lambda_min_ratio': None,
-                'use_all_factor_levels': False,
+                # 'balance_classes': False,
+                # 'max_after_balance_size': None,
+                # 'standardize': False,
+                # 'family': 'binomial', 
+                # 'link': None, 
+                # 'tweedie_variance_power': None,
+                # 'tweedie_link_power': None,
+                # 'alpha': '[1e-4]',
+                # 'lambda': '[0.5]',
+                # 'prior1': None,
+                # 'lambda_search': None,
+                # 'nlambdas': None,
+                # 'lambda_min_ratio': None,
+                # 'use_all_factor_levels': False,
                 # NPE with n_folds 2?
-                'n_folds': 1,
+                # 'n_folds': 1,
             }
 
             model_key = 'benign_glm.hex'

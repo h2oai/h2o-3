@@ -15,10 +15,12 @@ conn <- h2o.init(ip=myIP, port=myPort)
 ## This causes Jenkins timeout
 #rows = c(1e3,1e4,1e5)
 #cols = c(50,100,200)
+rows = c(1e3,1e4)
+cols = c(50,100)
 
 ## This runs... but is too small -> FIXME: Improve PCA algo!
-rows = c(100)
-cols = c(10)
+#rows = c(100)
+#cols = c(10)
 
 ## This NPEs: PUBDEV-921
 #rows = c(1e7)
@@ -61,7 +63,8 @@ for(i in 1:length(rows)){ # changing number of rows
     #myframe.pca<-h2o.prcomp(training_frame=myframe, k = 3)
 
     aat <- system.time(myframe.pca<-h2o.prcomp(training_frame=myframe, k=3))
-    algo_run_time[i,j] <- aat[3] 
+    algo_run_time[i,j] <- aat[3]
+    print(myframe.pca@model)
 
     #Run R's  PCA on same data
     #R# myframe.R <- as.data.frame(myframe)

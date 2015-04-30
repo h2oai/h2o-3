@@ -201,6 +201,23 @@ public class Frame extends Lockable<Frame> {
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
+  /**
+   * Number of degrees of freedom (#numerical columns + sum(#categorical levels))
+   * @return Number of overall degrees of freedom
+   */
+  public long degreesOfFreedom() {
+    long dofs = 0;
+    String[][] dom = domains();
+    for (int i=0; i<numCols(); ++i) {
+      if (dom[i] == null) {
+        dofs++;
+      } else {
+        dofs+=dom[i].length;
+      }
+    }
+    return dofs;
+  }
+
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
   public final Vec anyVec() {

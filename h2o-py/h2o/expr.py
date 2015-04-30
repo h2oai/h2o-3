@@ -161,7 +161,10 @@ class Expr(object):
     if noprint:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        if j['frames'][0]['columns'][0]['type'] == 'string':
+          data = [c['string_data'] for c in j['frames'][0]['columns'][:]]
+        else:
+          data = [c['data'] for c in j['frames'][0]['columns'][:]]
         data = map(list, zip(*data))
         return data[0:min(10,len(data))]
       return self._data
@@ -318,7 +321,8 @@ class Expr(object):
     assert self.is_remote(), "Data wasn't remote. Hrm..."
     global __CMD__
     if __CMD__ is None:
-      h2o.remove(self._data)
+      if h2o is not None:
+        h2o.remove(self._data)
     else:
       s = " (del '" + self._data + "' #0)"
       global __TMPS__

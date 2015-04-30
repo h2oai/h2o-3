@@ -13,6 +13,7 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
     for(i in 1:nrow(object))
       expect_equal(mult*object[i,j], expected[i,j], tolerance = tolerance)
   }
+  return(isFlipped)
 }
 
 checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {

@@ -50,9 +50,21 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
-  @Override
-  protected void checkMemoryFootPrint() {
-    // won't run out of memory since L_BFGS is now triggered for > 6000 predictors
+  @Override protected void checkMemoryFootPrint() {/* see below */ }
+  protected void checkMemoryFootPrint(DataInfo dinfo) {
+    if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
+      HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;
+      double p = dinfo.fullN() - dinfo.largestCat();
+      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
+      long max_mem = hb.get_max_mem();
+      if (mem_usage > max_mem) {
+        String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
+                + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+                + ") - try reducing the number of columns and/or the number of categorical factors.";
+        error("_train", msg);
+        cancel(msg);
+      }
+    }
   }
 
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
@@ -102,6 +114,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _parms._link = _parms._family.defaultLink;
       _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
       DKV.put(_dinfo._key, _dinfo);
+      checkMemoryFootPrint(_dinfo);
       // handle BetaConstraints if I got them
       double[] betaStart = null;
       double[] betaGiven = null;
