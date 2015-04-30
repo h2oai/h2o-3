@@ -287,7 +287,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
       for( int nl = tmax; nl<_tree.len(); nl ++ )
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
-      if (new_leafs>0) _tree._depth++; // Next layer done but update tree depth only if new leaves are generated
+      _tree._depth++;
     }
   }
 
