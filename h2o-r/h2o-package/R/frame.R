@@ -1955,6 +1955,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 #'                "mode" replaces with the most common factor (for factor columns only);
 #'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
 #'  @param by group by columns
+#'  @param inpace Perform the imputation inplace or make a copy. Default is to perform the imputation in place.
 #'
 #'  @return a H2OFrame with imputed values
 #'  @examples
@@ -1965,20 +1966,21 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 #'  h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
 #'  @export
 h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
-                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL) {
+                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=TRUE) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
   # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
   # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
 
   # this AST: (h2o.impute %fr #colidx method combine_method inplace max_gap by)
-  inplace <- FALSE  # TODO inplace param  #'  @param inplace  If TRUE, then perform the imputation in place. This will mutate the Frame in place and not result in a copy. If FALSE, then the imputed frame is copied.
   if( !is(data, "H2OFrame") )
       stop("`data` must be of type H2OFrame")
 
   # sanity check `column` then convert to 0-based index.
   if( length(column) > 1L ) stop("`column` must be a single column.")
-  col.id <- match(column,colnames(data)) - 1L
-  if( col.id < 0L || col.id > (ncol(data)-1L) ) stop("Column ", col.idx, " out of range.")
+  col.id <- -1L
+  if( is.numeric(column) ) col.id <- column - 1L
+  else                     col.id <- match(column,colnames(data)) - 1L
+  if( col.id < 0L || col.id > (ncol(data)-1L) ) stop("Column ", col.id, " out of range.")
 
   # choose "mean" by default for numeric columns. "mode" for factor columns
   if( length(method) > 1) {
@@ -1988,6 +1990,8 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 
   # choose "interplate" by default for combine_method
   if( length(combine_method) > 1L ) combine_method <- "interpolate"
+  if( combine_method=="lo" ) combine_method <- "low"
+  if( combine_method=="hi" ) combine_method <- "high"
 
   # sanity check method, column type, by parameters
   if( method=="median" ) {
@@ -2019,7 +2023,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
       gb.cols <- vars
   }
 
-  args <- list(data, col.id, method, combine_method, inplace, max_gap, gb.cols)
+  args <- list(data, col.id, method, combine_method, gb.cols, inplace)
   op <- new("ASTApply", op="h2o.impute")
   children <- list(unlist(.args.to.ast(.args=args)))
 
