@@ -353,7 +353,11 @@ class H2OBinomialModelMetrics(MetricsBase):
       row = thresh2d.cell_values[idx]
       tps = row[tidx]
       fps = row[fidx]
-      cms.append([[n-fps,fps],[p-tps,tps]])
+      c0  = float("nan") if isinstance(n, str) or isinstance(fps, str) else n - fps
+      c1  = float("nan") if isinstance(p, str) or isinstance(tps, str) else p - tps
+      fps = float("nan") if isinstance(fps,str) else fps
+      tps = float("nan") if isinstance(tps,str) else tps
+      cms.append([[c0,fps],[c1,tps]])
     return cms
 
   def find_threshold_by_max_metric(self,metric):
