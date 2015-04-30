@@ -1380,8 +1380,8 @@ class TestRunner:
         failures = 1 if failureType else 0
         skip = 1 if skipped else 0
         failure = "" if not failureType else """"<failure type="{}" message="{}">{}</failure>""".format(failureType, failureMessage, failureDescription)
-
-        xmlReport= """<?xml version="1.0" encoding="UTF-8"?>
+        
+	xmlReport= """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
   <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
   {failure}

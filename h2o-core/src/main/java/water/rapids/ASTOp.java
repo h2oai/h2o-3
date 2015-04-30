@@ -199,6 +199,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
     putPrefix(new ASTSetColNames());
+    putPrefix(new ASTRemoveFrame());
 
     // Date
     putPrefix(new ASTasDate());
@@ -2688,6 +2689,28 @@ class ASTSetColNames extends ASTUniPrefixOp {
       Log.info("AIOOBE!!! _idxs.length="+_idxs.length+ "; _names.length="+_names.length);
       throw e; //rethrow
     }
+  }
+}
+
+// Remove a frame key and NOT the internal Vecs.
+// Used by Python which tracks Vecs independently from Frames
+class ASTRemoveFrame extends ASTUniPrefixOp {
+  String _newname;
+  @Override String opStr() { return "removeframe"; }
+  ASTRemoveFrame() { super(new String[] {"", "ary"}); }
+  @Override ASTOp make() { return new ASTRemoveFrame(); }
+  ASTRemoveFrame parse_impl(Exec E) {
+    AST ary = E.parse();
+    E.eatEnd(); // eat the ending ')'
+    ASTRemoveFrame res = (ASTRemoveFrame) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env e) {
+    Frame fr = e.popAry();
+    fr.restructure(new String[0],new Vec[0]);
+    fr.remove();
   }
 }
 
