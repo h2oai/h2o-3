@@ -121,6 +121,21 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   return j.jobs
 
 
+def impute(data, column, method=["mean","median","mode"], # TODO: add "bfill","ffill"
+           combine_method=["interpolate", "average", "low", "high"], by=None, inplace=True):
+
+  """
+  Impute a column in this H2OFrame.
+
+  :param column: The column to impute
+  :param method: How to compute the imputation value.
+  :param combine_method: For even samples and method="median", how to combine quantiles.
+  :param by: Columns to group-by for computing imputation value per groups of columns.
+  :param inplace: Impute inplace?
+  :return: the imputed frame.
+  """
+  return data.impute(column,method,combine_method,by,inplace)
+
 def _quoted(key):
   if key == None: return "\"\""
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0

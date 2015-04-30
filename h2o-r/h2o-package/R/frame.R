@@ -1626,9 +1626,9 @@ h2o.cbind <- function(...) {
   klasses <- unlist(lapply(li, function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
   if( use.args ) {
-    .h2o.nary_frame_op("cbind", .args=li)
+    .h2o.nary_frame_op("cbind %TRUE", .args=li)
   } else {
-    .h2o.nary_frame_op("cbind", ...)
+    .h2o.nary_frame_op("cbind %TRUE", ...)
   }
 }
 

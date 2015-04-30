@@ -595,7 +595,7 @@ class H2OFrame:
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     rapids_call = "(, "  # fold into a single rapids call
-    cbind = "(= !" + fr + " (cbind '"
+    cbind = "(= !" + fr + " (cbind %FALSE '"  # false flag means no deep copy!
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
     rapids_call += cbind
     # h2o.rapids(cbind)
@@ -816,6 +816,20 @@ class H2OFrame:
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
     h2o.rapids("(removeframe !{})".format(tmp_key))
     return H2OFrame(vecs=vecs)
+
+  def impute(self,column,method,combine_method,by,inplace):
+    """
+    Impute a column in this H2OFrame.
+
+    :param column: The column to impute
+    :param method: How to compute the imputation value.
+    :param combine_method: For even samples and method="median", how to combine quantiles.
+    :param by: Columns to group-by for computing imputation value per groups of columns.
+    :param inplace: Impute inplace?
+    :return: the imputed frame.
+    """
+    raise ValueError("Unimpl")
+
 
   def merge(self, other, allLeft=False, allRite=False):
     """
