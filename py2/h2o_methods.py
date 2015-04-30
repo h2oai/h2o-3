@@ -17,7 +17,7 @@ import urllib
 def poll_job2(self, firstResult, algo=None, timeoutSecs=60, noPoll=False, **kwargs):
     if noPoll:
         result = firstResult
-    elif 'validation_error_count' in firstResult:
+    elif ('validation_error_count' in firstResult) and (firstResult['validation_error_count'] > 0):
         h2p.yellow_print("parameter error in %s" % algo)
         result = firstResult
     else:
