@@ -1957,12 +1957,13 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 #'  @param by group by columns
 #'
 #'  @return a H2OFrame with imputed values
-#' @examples
-#' h2o.init()
-#' fr <- as.h2o(iris, destination_frame="iris")
-#' fr[sample(nrow(fr),40),5] <- NA  # randomly replace 50 values with NA
-#' h2o.impute(fr, "Species", "mode", inplace=FALSE, by=c("Sepal.Length", "Sepal.Width"))  # impute with a group by
-#' @export
+#'  @examples
+#'  h2o.init()
+#'  fr <- as.h2o(iris, destination_frame="iris")
+#'  fr[sample(nrow(fr),40),5] <- NA  # randomly replace 50 values with NA
+#'  # impute with a group by
+#'  h2o.impute(fr, "Species", "mode", inplace=FALSE, by=c("Sepal.Length", "Sepal.Width"))
+#'  @export
 h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
                        combine_method=c("interpolate", "average", "lo", "hi"), by=NULL) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
