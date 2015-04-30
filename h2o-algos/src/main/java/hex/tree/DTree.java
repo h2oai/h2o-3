@@ -513,8 +513,8 @@ public class DTree extends Iced {
 
   public static abstract class LeafNode extends Node {
     public float _pred;
-    public LeafNode( DTree tree, int pid ) { super(tree,pid); }
-    public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); }
+    public LeafNode( DTree tree, int pid ) { super(tree,pid); tree._leaves++; }
+    public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); tree._leaves++; }
     @Override public String toString() { return "Leaf#"+_nid+" = "+_pred; }
     @Override public final StringBuilder toString2(StringBuilder sb, int depth) {
       for( int d=0; d<depth; d++ ) sb.append("  ");
