@@ -50,9 +50,23 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
-  @Override
-  protected void checkMemoryFootPrint() {
-    // won't run out of memory since L_BFGS is now triggered for > 6000 predictors
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+
+  @Override protected void checkMemoryFootPrint() {/* see below */ }
+  protected void checkMemoryFootPrint(DataInfo dinfo) {
+    if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
+      HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;
+      double p = dinfo.fullN() - dinfo.largestCat();
+      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * (1+Math.log((double)_train.lastVec().nChunks())/Math.log(2.))); //one gram per core
+      long max_mem = hb.get_max_mem();
+      if (mem_usage > max_mem) {
+        String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
+                + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+                + ") - try reducing the number of columns and/or the number of categorical factors.";
+        error("_train", msg);
+        cancel(msg);
+      }
+    }
   }
 
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
@@ -76,7 +90,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
   public void addScoringHistory(int i, double l, double o) {
     long t = System.currentTimeMillis();
-    _scoring_times.add((int)(_t0-t));
+    _scoring_times.add((int)(t-_t0));
     _scoring_iters.add(i);
     _likelihoods.add(l);
     _objectives.add(o);
@@ -102,6 +116,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _parms._link = _parms._family.defaultLink;
       _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
       DKV.put(_dinfo._key, _dinfo);
+      checkMemoryFootPrint(_dinfo);
       // handle BetaConstraints if I got them
       double[] betaStart = null;
       double[] betaGiven = null;
@@ -217,7 +232,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       assert itsk._ymut._nobs == 0 || itsk._ymut._nobs == itsk._gtNull._nobs:"unexpected nobs, " + itsk._ymut._nobs + " != " + itsk._gtNull._nobs;// +", filterVec = " + (itsk._gtNull._rowFilter != null) + ", nrows = " + itsk._gtNull._rowFilter.length() + ", mean = " + itsk._gtNull._rowFilter.mean()
       _rowFilter = itsk._ymut._fVec;
       assert _rowFilter.nChunks() == _dinfo._adaptedFrame.anyVec().nChunks();
-      assert (_dinfo._adaptedFrame.numRows() - _rowFilter.mean() * _rowFilter.length()) == itsk._ymut._nobs:"unexpected nobs, expected " + itsk._ymut._nobs + ", but got " + _rowFilter.mean() * _rowFilter.length();
+      assert Math.abs((_dinfo._adaptedFrame.numRows() - _rowFilter.mean() * _rowFilter.length()) - itsk._ymut._nobs) < 1e-8:"unexpected nobs, expected " + itsk._ymut._nobs + ", but got " + (_dinfo._adaptedFrame.numRows() - _rowFilter.mean() * _rowFilter.length());
       assert _rowFilter != null;
       if (itsk._ymut._nobs == 0) { // can happen if all rows have missing value and we're filtering missing out
         error("training_frame", "Got no data to run on after filtering out the rows with missing values.");
@@ -259,7 +274,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       } else { // fill in the default lambda(s)
         if (_parms._lambda_search) {
           if (_parms._nlambdas == 1)
-            error("nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
+             error("nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
           if (_parms._lambda_min_ratio == -1)
             _parms._lambda_min_ratio = _tInfos[0]._nobs > 25 * _dinfo.fullN() ? 1e-4 : 1e-2;
           final double d = Math.pow(_parms._lambda_min_ratio, 1.0 / (_parms._nlambdas - 1));
@@ -534,7 +549,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new RemoveCall(null, _dest).invokeTask();
           return true;
         }
-      }, _dest, _key, _parms._train, _parms._valid,its, tms, lgs, obs));
+      }, _dest, _key, _parms._train, _parms._valid, _tInfos[0]._iter, its, tms, lgs, obs));
     }
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
@@ -987,7 +1002,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         } else {
           addScoringHistory(_taskInfo._iter,logl,objVal);
           if (lastObjVal > objVal) {
-            ++_taskInfo._iter; // =new IterationInfo(_iter, glmt._beta, glmt._objVal);
             _taskInfo._beta = glmt._beta;
             _taskInfo._objVal = objVal;
             _taskInfo._ginfo = null;

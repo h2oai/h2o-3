@@ -287,7 +287,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
       for( int nl = tmax; nl<_tree.len(); nl ++ )
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
-      if (new_leafs>0) _tree._depth++; // Next layer done but update tree depth only if new leaves are generated
+      _tree._depth++;
     }
   }
 
@@ -504,6 +504,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     List<String> colFormat = new ArrayList<>();
 
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
 
     colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
@@ -524,6 +525,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     int row = 0;
     int col = 0;
     table.set(row, col++, _output._treeStats._num_trees);
+    table.set(row, col++, _output._treeStats._byte_size);
     table.set(row, col++, _output._treeStats._min_depth);
     table.set(row, col++, _output._treeStats._max_depth);
     table.set(row, col++, _output._treeStats._mean_depth);
@@ -537,28 +539,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_model._output._ntrees == 0) return;
     int model_mem_size = 0; //only need to count the compressed trees
     int trees_so_far = _model._output._ntrees; //existing trees
+    _model._output._treeStats._byte_size = 0;
     for (int i=0; i< trees_so_far; ++i) {
       Key<CompressedTree>[] per_class = _model._output._treeKeys[i];
       for (int j=0; j<per_class.length; ++j) {
         if (per_class[j] == null) continue; //GBM binomial
-        model_mem_size += DKV.get(per_class[j]).memOrLoad().length;
+        model_mem_size += DKV.get(per_class[j])._max;
+        _model._output._treeStats._byte_size += (long)model_mem_size;
       }
     }
     double avg_tree_mem_size = (double)model_mem_size / trees_so_far;
     Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
 
-    long mem_per_node = Long.MAX_VALUE;
-    for (int i=0; i<H2O.CLOUD.size(); ++i) {
-      mem_per_node = Math.min(H2O.CLOUD._memary[i]._heartbeat.get_max_mem(), mem_per_node);
-    }
-    if (_parms._ntrees * avg_tree_mem_size > H2O.CLOUD.size() * mem_per_node) {
-      String msg = "The tree model will not fit in this cluster's memory ("
+    // all the compressed trees are stored on the driver node
+    long max_mem = H2O.CLOUD._memary[H2O.CLOUD.SELF.index()]._heartbeat.get_max_mem();
+    if (_parms._ntrees * avg_tree_mem_size > max_mem) {
+      String msg = "The tree model will not fit in the driver node's memory ("
               + PrettyPrint.bytes((long)avg_tree_mem_size)
               + " per tree x " + _parms._ntrees + " > "
-              + PrettyPrint.bytes(H2O.CLOUD.size() * mem_per_node)
+              + PrettyPrint.bytes(max_mem)
               + ") - try decreasing ntrees and/or max_depth or increasing min_rows!";
       error("_ntrees", msg);
-      throw new IllegalArgumentException(msg);
+      cancel(msg);
     }
   }
 }

@@ -28,6 +28,8 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(false); }
 
   public ModelBuilderSchema schema() {

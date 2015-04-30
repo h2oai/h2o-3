@@ -162,6 +162,7 @@ public class ADMM {
      * @return
      */
     public static double estimateRho(double x, double l1pen){
+      if(Double.isInfinite(x))return 0; // happens for all zeros
       double rho = 0;
       if(l1pen == 0 || x == 0) return 0;
       if (x > 0) {
@@ -170,7 +171,8 @@ public class ADMM {
           D = Math.sqrt(D);
           double r = (l1pen + D) / (2 * x);
           if (r > 0) rho = r;
-          else Log.warn("negative rho estimate(1)! r = " + r);
+          else
+            Log.warn("negative rho estimate(1)! r = " + r);
         }
       } else if (x < 0) {
         double D = l1pen * (l1pen - 4 * x);

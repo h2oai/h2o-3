@@ -304,8 +304,6 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 <a name="Kmeans"></a>
 - **K-means**: Create a K-Means model.
 
-  **Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
-
 <a name="GLM"></a>
 - **Generalized Linear Model**: Create a Generalized Linear model.
 
@@ -363,7 +361,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
-- **Distribution**: [(DL)](#DL)[(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
+- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 

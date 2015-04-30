@@ -37,6 +37,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+
   @Override
   public boolean isSupervised() {
     return !_parms._autoencoder;
@@ -89,23 +91,32 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   @Override
   protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
-    int p = dinfo.fullN();
-
+    long p = _train.degreesOfFreedom() - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
+    String[][] dom = _train.domains();
+    // hack: add the factor levels for the NAs
+    for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
+      if (dom[i] != null) {
+        p++;
+      }
+    }
+//    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
+    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
     // weights
     long model_size = p * _parms._hidden[0];
     int layer=1;
     for (; layer < _parms._hidden.length; ++layer)
       model_size += _parms._hidden[layer-1] * _parms._hidden[layer];
-    model_size += _parms._hidden[layer-1] * Math.abs(_train.lastVec().cardinality());
+    model_size += _parms._hidden[layer-1] * output;
 
     // biases
     for (layer=0; layer < _parms._hidden.length; ++layer)
       model_size += _parms._hidden[layer];
-    model_size += Math.abs(_train.lastVec().cardinality());
+    model_size += output;
 
     if (model_size > 1e8) {
-      error("_hidden", "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers.");
+      String msg = "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers (or reduce the number of categorical factors).";
+      error("_hidden", msg);
+      cancel(msg);
     }
   }
 
@@ -301,7 +312,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             }
           }
           // update parameters in place to set defaults etc.
-          cp.modifyParms(actualNewP, actualNewP, isClassifier());
+          DeepLearningModel.modifyParms(actualNewP, actualNewP, isClassifier());
 
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");

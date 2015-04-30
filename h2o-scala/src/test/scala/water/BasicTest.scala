@@ -7,7 +7,7 @@ import water.fvec.{H2OFrame, MapReduce}
 class BasicTest extends TestUtil {
   @Test def basicTest() = {
     //val fr = new DataFrame(new File("../smalldata/iris/iris_wheader.csv"))
-    val fr = H2OFrame(new File("../smalldata/junit/cars_nice_header.csv"))
+    val fr = H2OFrame(find_test_file("../smalldata/junit/cars_nice_header.csv"))
     val fr2 = fr('cylinders,'displacement)   // Predict delay from year alone
     //val fr = new DataFrame(new File("../smalldata/airlines/allyears2k_headers.zip"))
     try {

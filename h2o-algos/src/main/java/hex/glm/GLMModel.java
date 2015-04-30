@@ -697,8 +697,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double [] _objectives;
     final int [] _scoring_iters;
     final int [] _scoring_times;
+    final int _iter;
 
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int [] scoring_iters, int [] scoring_times, double [] likelihoods, double [] objectives){
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, int [] scoring_iters, int [] scoring_times, double [] likelihoods, double [] objectives){
       super(cmp, modelKey);
       _jobKey = jobKey;
       _validFrame = validFrame;
@@ -707,6 +708,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       _scoring_times = scoring_times;
       _likelihoods = likelihoods;
       _objectives = objectives;
+      _iter = iter;
     }
 
     @Override
@@ -717,16 +719,17 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Training Frame","Number of Predictors"}, new String[]{"string","string","string","int"},new String[]{"%s","%s","%s","%d"},"");
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Number of Iterations", "Training Frame","Number of Predictors"}, new String[]{"string","string","int","string","int"},new String[]{"%s","%s","%d","%s","%d"},"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
-      glmModel._output._model_summary.set(0,2,_trainFrame.toString());
-      glmModel._output._model_summary.set(0,3,Integer.toString(glmModel.beta().length));
+      glmModel._output._model_summary.set(0,2,Integer.valueOf(_iter));
+      glmModel._output._model_summary.set(0,3,_trainFrame.toString());
+      glmModel._output._model_summary.set(0,4,Integer.toString(glmModel.beta().length));
       if(_scoring_iters != null) {
         glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
         for (int i = 0; i < _scoring_iters.length; ++i) {
           glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
-          glmModel._output._scoring_history.set(i,1,_scoring_iters[i]);
+          glmModel._output._scoring_history.set(i,1,_scoring_times[i]);
           glmModel._output._scoring_history.set(i,2,_likelihoods[i]);
           glmModel._output._scoring_history.set(i,3,_objectives[i]);
         }
