@@ -418,6 +418,7 @@
 #' @param header A logical value dictating whether or not the table name should be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
+#' @export
 print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
