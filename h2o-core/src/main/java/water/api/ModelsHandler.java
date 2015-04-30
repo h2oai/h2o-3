@@ -11,7 +11,7 @@ import java.util.*;
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
   /** Class which contains the internal representation of the models list and params. */
   protected static final class Models extends Iced {
-    public Key key;
+    public Key model_id;
     public Model[] models;
     public boolean find_compatible_frames = false;
 
@@ -121,7 +121,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 fetch(int version, ModelsV3 s) {
-    Model model = getFromDKV("key", s.key.key());
+    Model model = getFromDKV("key", s.model_id.key());
     s.models = new ModelSchema[1];
     s.models[0] = (ModelSchema)Schema.schema(version, model).fillFromImpl(model);
 
@@ -148,7 +148,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   /** Remove an unlocked model.  Fails if model is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 delete(int version, ModelsV3 s) {
-    Model model = getFromDKV("key", s.key.key());
+    Model model = getFromDKV("key", s.model_id.key());
     model.delete();             // lock & remove
     return s;
   }

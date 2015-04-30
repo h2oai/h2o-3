@@ -6,11 +6,11 @@ check.verify.parameters.slot <- function(conn) {
     iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"))
     
     Log.info("Create and and duplicate...")
-    iris.km <-  h2o.kmeans(x=1:4, training_frame=iris.hex, k = 3, seed = 1234, destination_key = "f00b4r")
+    iris.km <-  h2o.kmeans(x=1:4, training_frame=iris.hex, k = 3, seed = 1234, model_id = "f00b4r")
     parameters <- getParms(iris.km)
     parameters_unmunged <- getParms(iris.km)
 
-    parameters$destination_key <- NULL
+    parameters$model_id <- NULL
     iris.km.cpy <- do.call("h2o.kmeans", parameters)
 
     wmse.org <- sort.int(getWithinMSE(iris.km))
@@ -27,7 +27,7 @@ check.verify.parameters.slot <- function(conn) {
     print(wmse.cpy)
     expect_equal(wmse.org, wmse.cpy)
 
-    Log.info("check that we can replace the old model, and the destination_key parameter is mapped from Key<Model> to character properly")
+    Log.info("check that we can replace the old model, and the model_id parameter is mapped from Key<Model> to character properly")
 
     iris.km.cpy <- do.call("h2o.kmeans", parameters_unmunged)
     print(h2o.ls()[,1])

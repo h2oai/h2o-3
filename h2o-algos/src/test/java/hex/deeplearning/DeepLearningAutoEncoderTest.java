@@ -87,7 +87,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
           // manually compute L2
           Frame reconstr = mymodel.score(train); //this creates real values in original space
-          Assert.assertTrue(mymodel.testJavaScoring(train,reconstr,1e-4));
+          Assert.assertTrue(mymodel.testJavaScoring(train,reconstr,1e-6));
 
           l2_frame_train = mymodel.scoreAutoEncoder(train, Key.make());
           final Vec l2_train = l2_frame_train.anyVec();

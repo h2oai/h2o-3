@@ -1,16 +1,16 @@
-Others
-==========
+Other
+=====
 
-:mod:`connection` Module
-------------------------
+:mod:`Connection`
+-----------------
 
 .. automodule:: h2o.connection
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`expr` Module
-------------------------
+:mod:`Expr`
+-----------
 
 .. automodule:: h2o.expr
     :members:

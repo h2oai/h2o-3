@@ -17,7 +17,7 @@ import urllib
 def poll_job2(self, firstResult, algo=None, timeoutSecs=60, noPoll=False, **kwargs):
     if noPoll:
         result = firstResult
-    elif 'validation_error_count' in firstResult:
+    elif ('validation_error_count' in firstResult) and (firstResult['validation_error_count'] > 0):
         h2p.yellow_print("parameter error in %s" % algo)
         result = firstResult
     else:
@@ -146,11 +146,11 @@ def unlock (self, timeoutSecs=30, **kwargs):
     # pass
 
 def remove_all_keys(self, timeoutSecs=120):
-    return self.do_json_request('3/RemoveAll.json', cmd='delete', timeout=timeoutSecs)
+    return self.do_json_request('3/DKV', cmd='delete', timeout=timeoutSecs)
 
 # ignore errors on remove..key might already be gone due to h2o removing it now after parse
 def remove_key(self, key, timeoutSecs=120):
-    a = self.do_json_request('3/Remove.json',
+    a = self.do_json_request('3/DKV.json',
         params={"key": key}, ignoreH2oError=True, cmd='delete', timeout=timeoutSecs)
     self.unlock()
     return a

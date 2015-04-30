@@ -22,9 +22,10 @@ import java.util.concurrent.Future;
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, output);
     _ymu = ymu;
+    _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
@@ -74,15 +75,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
-    } else { // do not good any levels!
+        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk))-1];
+    } else { // do not skip any levels
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
-    final int noff = _dinfo.numStart() - _dinfo._cats;
+    final int noff = _dinfo.numStart() - _dinfo._cats ;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*chks[i].atd(row_in_chunk);
-    eta += b[b.length-1]; // reduce intercept
+    eta += b[b.length-1]; // intercept
     double mu = _parms.linkInv(eta);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
@@ -117,6 +118,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _beta_epsilon = 1e-4;
     public int _max_iterations = -1;
     public int _n_folds;
+    boolean _intercept = true;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
@@ -217,7 +219,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gaussian:
           return 1;
         case binomial:
-//        assert (0 <= mu && mu <= 1) : "mu out of bounds<0,1>:" + mu;
           return mu * (1 - mu);
         case poisson:
           return mu;
@@ -228,12 +229,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         default:
           throw new RuntimeException("unknown family Id " + this);
       }
-    }
-
-    public double [] nullModelBeta(DataInfo dinfo, double ymu){
-      double [] res = MemoryManager.malloc8d(dinfo.fullN() + 1);
-      res[res.length-1] = link(ymu);
-      return res;
     }
 
     public final boolean canonical(){
@@ -250,21 +245,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 //          return false;
         default:
           throw H2O.unimpl();
-      }
-    }
-
-    public final double mustart(double y, double ymu) {
-      switch(_family) {
-        case gaussian:
-        case binomial:
-        case poisson:
-          return ymu;
-        case gamma:
-          return y;
-//        case tweedie:
-//          return y + (y==0?0.1:0);
-        default:
-          throw new RuntimeException("unimplemented");
       }
     }
 
@@ -531,17 +511,19 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     if(cmp == null && f != null) try {
       f.get();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     } catch (ExecutionException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
   public int rank(double lambda){return -1;}
   
-  final double _lambda_max;
-  final double _ymu;
-  final long   _nobs;
+  public final double _lambda_max;
+  public final double _ymu;
+  public final double _ySigma;
+
+  public final long   _nobs;
   long   _run_time;
   
   public static class GLMOutput extends SupervisedModel.SupervisedOutput {
@@ -551,6 +533,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double _threshold;
     double[] _global_beta;
     public boolean _binomial;
+
 
     public int rank() {
       return _submodels[_best_lambda_idx].rank;
@@ -581,7 +564,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       String[] cnames = glm._dinfo.coefNames();
       _names = glm._dinfo._adaptedFrame.names();
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
-      _coefficient_names[cnames.length] = "Intercept";
+      _coefficient_names[_coefficient_names.length-1] = "Intercept";
       _binomial = glm._parms._family == Family.binomial;
     }
 
@@ -597,13 +580,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       return _binomial ? binomialClassNames : null;
     }
 
-    void addNullSubmodel(double lmax, double icept, GLMValidation val) {
-      assert _submodels == null;
-      double[] beta = MemoryManager.malloc8d(_names.length);
-      beta[beta.length - 1] = icept;
-      _submodels = new Submodel[]{new Submodel(lmax, beta, beta, 0, 0, _names.length > 750)};
-      _submodels[0].trainVal = val;
-    }
+
 
     public int submodelIdForLambda(double lambda) {
       if (lambda >= _submodels[0].lambda_value) return 0;
@@ -668,7 +645,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
       if (_submodels[l].trainVal != null && tFrame != null)
-        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,Double.NaN);
+        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,m._ymu);
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
         _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m,vFrame,Double.NaN);
@@ -678,9 +655,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       int j = 0;
       for(int i:_submodels[l].idxs)
         _global_beta[i] = _submodels[l].beta[j++];
-//      public TwoDimTable(String tableHeader, String tableDescription, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-//        String[] colFormats, String colHeaderForRowHeaders) {
-//      _model_summary = new TwoDimTable("Model Summary","Summary", new String[]{"Degrees Of Freedom", "Deviance"});
     }
 
     public double [] beta() { return _global_beta;}
@@ -722,15 +696,19 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double [] _likelihoods;
     final double [] _objectives;
     final int [] _scoring_iters;
+    final int [] _scoring_times;
+    final int _iter;
 
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int [] scoring_iters, double [] likelihoods, double [] objectives){
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, int [] scoring_iters, int [] scoring_times, double [] likelihoods, double [] objectives){
       super(cmp, modelKey);
       _jobKey = jobKey;
       _validFrame = validFrame;
       _trainFrame = trainFrame;
       _scoring_iters = scoring_iters;
+      _scoring_times = scoring_times;
       _likelihoods = likelihoods;
       _objectives = objectives;
+      _iter = iter;
     }
 
     @Override
@@ -741,17 +719,19 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Training Frame","Number of Predictors"}, new String[]{"string","string","string","int"},new String[]{"%s","%s","%s","%d"},"");
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Number of Iterations", "Training Frame","Number of Predictors"}, new String[]{"string","string","int","string","int"},new String[]{"%s","%s","%d","%s","%d"},"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
-      glmModel._output._model_summary.set(0,2,_trainFrame.toString());
-      glmModel._output._model_summary.set(0,3,Integer.toString(glmModel.beta().length));
+      glmModel._output._model_summary.set(0,2,Integer.valueOf(_iter));
+      glmModel._output._model_summary.set(0,3,_trainFrame.toString());
+      glmModel._output._model_summary.set(0,4,Integer.toString(glmModel.beta().length));
       if(_scoring_iters != null) {
-        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "likelihood", "objective"}, new String[]{"int", "double", "double"}, new String[]{"%d", "%.5f", "%.5f"}, "");
+        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
         for (int i = 0; i < _scoring_iters.length; ++i) {
           glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
-          glmModel._output._scoring_history.set(i,1,_likelihoods[i]);
-          glmModel._output._scoring_history.set(i,2,_objectives[i]);
+          glmModel._output._scoring_history.set(i,1,_scoring_times[i]);
+          glmModel._output._scoring_history.set(i,2,_likelihoods[i]);
+          glmModel._output._scoring_history.set(i,3,_objectives[i]);
         }
       }
       glmModel.update(_jobKey);

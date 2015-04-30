@@ -5,8 +5,7 @@ source('../../h2o-runit.R')
 rfReg.vi.test<-
 function(conn) {
 
-    data2.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/BostonHousing.csv"),
-        key="data2.hex")
+    data2.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/BostonHousing.csv"), destination_frame="data2.hex")
     x=1:13
     y=14
     rf <- h2o.randomForest(x, y, data2.hex, ntrees=100, max_depth=20,

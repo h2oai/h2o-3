@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.slice.colTail <- function(conn) {
   Log.info("Importing iris.csv data...\n")
-  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"),key="iris.hex")
+  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"),destination_frame="iris.hex")
   
   iris_nrows <- nrow(iris.hex)
   iris_ncols <- ncol(iris.hex)

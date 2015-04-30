@@ -238,14 +238,15 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
    *  @return desired quantile. */
   static double computeQuantile( double lo, double hi, long row, long nrows, double prob, QuantileModel.CombineMethod method ) {
     if( lo==hi ) return lo;     // Equal; pick either
+    if( method == null ) method= QuantileModel.CombineMethod.INTERPOLATE;
     switch( method ) {
-      case INTERPOLATE: return linearInterpolate(lo,hi,row,nrows,prob);
-      case AVERAGE:     return 0.5*(hi+lo);
-      case LOW:         return lo;
-      case HIGH:        return hi;
-      default:
-        Log.info("Unknown even sample size quantile combination type: " + method + ". Doing linear interpolation.");
-        return linearInterpolate(lo,hi,row,nrows,prob);
+    case INTERPOLATE: return linearInterpolate(lo,hi,row,nrows,prob);
+    case AVERAGE:     return 0.5*(hi+lo);
+    case LOW:         return lo;
+    case HIGH:        return hi;
+    default:
+      Log.info("Unknown even sample size quantile combination type: " + method + ". Doing linear interpolation.");
+      return linearInterpolate(lo,hi,row,nrows,prob);
     }
   }
 

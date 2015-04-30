@@ -21,7 +21,7 @@ test.GLM.betaConstraints <- function(conn){
     upperbound <- rep(1, times = length(myX))
     colnames <- my_glm@model$coefficients_table$names[my_glm@model$coefficients_table$names != "Intercept"]
     betaConstraints <- data.frame(names = colnames, lower_bounds = lowerbound, upper_bounds = upperbound)
-    betaConstraints.hex <- as.h2o(conn, betaConstraints, key = "betaConstraints.hex")
+    betaConstraints.hex <- as.h2o(conn, betaConstraints, destination_frame = "betaConstraints.hex")
     Log.info("Pull data frame into R to run GLMnet...")
     prostate.r <- as.data.frame(prostate.hex)
 
@@ -54,10 +54,10 @@ test.GLM.betaConstraints <- function(conn){
         print("Glmnet betas:")
         print(glm_constraints.r$beta[,1])
         print(" ")
-        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[1:7],
+        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[2:8],
                            glm_constraints.r$beta[,1],
                            tolerance = 0.1)
-        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[1:7]) <= 1.0))
+        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[2:8]) <= 1.0))
 
         # Check null deviances
         print("H2O null deviance:")

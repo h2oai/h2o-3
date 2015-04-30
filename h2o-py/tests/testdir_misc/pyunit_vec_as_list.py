@@ -8,10 +8,6 @@ def vec_as_list(ip,port):
     h2o.init(ip,port)
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    print "iris:"
-    iris.show()
-
-    ###################################################################
 
     res = h2o.as_list(iris[0])
     assert abs(res[3][0] - 4.6) < 1e-10 and abs(res[5][0] - 5.4) < 1e-10 and abs(res[9][0] - 4.9) < 1e-10, \

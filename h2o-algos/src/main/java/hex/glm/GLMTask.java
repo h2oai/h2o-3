@@ -691,7 +691,7 @@ public abstract class GLMTask  {
       if(_validate) {
         int rank = 0;
         if(_beta != null)for(double d:_beta)if(d != 0)++rank;
-        _val = new GLMValidation(_domain, _ymu, _glm, rank,.5); // todo pass correct threshold
+        _val = new GLMValidation(_domain, _ymu, _glm, rank, .5); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){
@@ -778,7 +778,7 @@ public abstract class GLMTask  {
         int ns = _dinfo.numStart();
         int interceptIdx = _xy.length-1;
         double [] interceptRow = _gram._xx[interceptIdx-_gram._diagN];
-        double nobs = interceptRow[interceptRow.length-1]; // wighted nobes
+        double nobs = interceptRow[interceptRow.length-1]; // weighted nobs
         for(int i = ns; i < _dinfo.fullN(); ++i) {
           double iMean = _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
           for (int j = 0; j < ns; ++j)

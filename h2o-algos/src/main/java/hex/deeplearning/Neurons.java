@@ -132,6 +132,7 @@ public abstract class Neurons {
   public final void init(Neurons[] neurons, int index, DeepLearningModel.DeepLearningParameters p, final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
     _index = index-1;
     params = (DeepLearningModel.DeepLearningParameters)p.clone();
+    params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     _a = new DenseVector(units);
     if (!(this instanceof Output) && !(this instanceof Input)) {
@@ -270,7 +271,6 @@ public abstract class Neurons {
       final int w = idx + col;
 
       if (have_ada) {
-        assert(!have_momenta);
         final float grad2 = grad*grad;
         avg_grad2 += grad2;
         float brate = computeAdaDeltaRateForWeight(grad, w, adaxg, rho, eps);
@@ -685,6 +685,7 @@ public abstract class Neurons {
       int    [] cats = MemoryManager.malloc4(_dinfo._cats); // a bit wasteful - reallocated each time
       int i = 0, ncats = 0;
       for(; i < _dinfo._cats; ++i){
+        assert(_dinfo._catMissing[i] != 0); //we now *always* have a categorical level for NAs, just in case.
         // This can occur when testing data has categorical levels that are not part of training (or if there's a missing value)
         if (Double.isNaN(data[i])) {
           if (_dinfo._catMissing[i]!=0) cats[ncats++] = (_dinfo._catOffsets[i+1]-1); //use the extra level made during training
@@ -773,6 +774,7 @@ public abstract class Neurons {
             _a.set(cM + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
         }
       } else {
+        assert(_a.size() == _dinfo.fullN());
         for (int i = 0; i < numcat; ++i) _a.set(cats[i], 1f); // one-hot encode categoricals
         for (int i = 0; i < nums.length; ++i)
           _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);

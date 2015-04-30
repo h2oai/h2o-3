@@ -285,7 +285,7 @@ public final class SchemaMetadata extends Iced {
           if ((schema instanceof FieldMetadataV3 || schema instanceof FieldMetadataBase) && "value".equals(field_name))
             return "Polymorphic";
 
-          if ((schema instanceof TwoDimTableV3 && "data".equals(field_name))) // IcedWrapper
+          if (((schema instanceof TwoDimTableBase || schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
             return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);

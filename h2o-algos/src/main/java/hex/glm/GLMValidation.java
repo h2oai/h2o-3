@@ -29,7 +29,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   final double _threshold;
   AUC2 _auc2;
   MetricBuilder _metricBuilder;
-
+  boolean _intercept = true;
   public GLMValidation(String[] domain, double ymu, GLMParameters glm, int rank, double threshold){
     super(domain);
     _rank = rank;
@@ -41,12 +41,13 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       :new MetricBuilderRegression();
   }
 
+
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
     if(_glm._family == Family.binomial)
-      add2(ds[2],yact[0]);
+      add2(yact[0],ds[2]);
     else
-      add2(ds[0],yact[0]);
+      add2(yact[0],ds[0]);
     return ds;
   }
 
@@ -69,9 +70,13 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   public void add(double yreal, double ymodel) {
     _yact[0] = (float) yreal;
-    _ds[0] = ymodel > _threshold ? 1 : 0;
-    _ds[1] = 1 - ymodel;
-    _ds[2] = ymodel;
+    if(_glm._family == Family.binomial) {
+      _ds[0] = ymodel > _threshold ? 1 : 0;
+      _ds[1] = 1 - ymodel;
+      _ds[2] = ymodel;
+    } else {
+      _ds[0] = ymodel;
+    }
     _metricBuilder.perRow(_ds, _yact, null);
     add2(yreal, ymodel);
   }
@@ -97,7 +102,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
   public final double nullDeviance(){return null_deviance;}
   public final double residualDeviance(){return residual_deviance;}
-  public final long nullDOF(){return nobs-1;}
+  public final long nullDOF(){return nobs - (_intercept?1:0);}
   public final long resDOF(){return nobs - _rank;}
 
   protected double computeAUC(GLMModel m, Frame f){
@@ -150,6 +155,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
       metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     }
+    DKV.put(metrics._key,metrics);
     return gm._output.addModelMetrics(metrics);
   }
 }

@@ -68,6 +68,9 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link;
 
+    @API(help="include constant term in the model", level = Level.expert)
+    public boolean intercept;
+
 //    @API(help = "Tweedie variance power", level = Level.secondary)
 //    public double tweedie_variance_power;
 //

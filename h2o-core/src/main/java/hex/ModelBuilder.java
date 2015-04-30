@@ -117,7 +117,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    this((parms==null || parms._destination_key== null) ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key, desc,parms);
+    this((parms==null || parms._model_id == null) ? Key.make(desc + "Model_" + Key.rand()) : parms._model_id, desc,parms);
   }
 
   /** Default constructor, given all arguments */
@@ -163,6 +163,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     clearValidationErrors();
 
   }
+
+  /**
+   * Override this method to call error() if the model is expected to not fit in memory, and say why
+   */
+  protected void checkMemoryFootPrint() {}
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the

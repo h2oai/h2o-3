@@ -17,4 +17,17 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
     _nullDegressOfFreedom = nDof;
     _residualDegressOfFreedom = rDof;
   }
+  public String toString(){
+    return "DOF = " + _nullDegressOfFreedom + " : " + _residualDegressOfFreedom + ", dev = " + _nullDev + " : " + _resDev;
+  }
+
+  @Override public boolean equals(Object o) {
+    if(!(o instanceof ModelMetricsBinomialGLM))
+      return false;
+    ModelMetricsBinomialGLM mm = (ModelMetricsBinomialGLM)o;
+    return
+      _residualDegressOfFreedom == mm._residualDegressOfFreedom &&
+      _nullDegressOfFreedom     == mm._nullDegressOfFreedom     &&
+      Math.abs(_resDev - mm._resDev) < 1e-8;
+  }
 }

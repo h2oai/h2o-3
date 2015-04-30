@@ -366,7 +366,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            0.07948414889955241,
+            0.012242754628809,
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -437,7 +437,7 @@ public class DeepLearningTest extends TestUtil {
       dl._train = frTrain._key;
       dl._response_column = ((Frame)DKV.getGet(dl._train)).lastVecName();
       dl._seed = (1L<<32)|2;
-      dl._destination_key = Key.make("DL_model_" + hexnametrain);
+      dl._model_id = Key.make("DL_model_" + hexnametrain);
       dl._reproducible = true;
       dl._epochs = epochs;
       dl._activation = activation;

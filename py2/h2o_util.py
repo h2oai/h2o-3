@@ -40,9 +40,9 @@ def followPath(d, path_elems):
         if "" != path_elem:
             idx = -1
             if path_elem.endswith("]"):
-                idx = int(path_elem[path_elem.find("[") + 1:path_elem.find("]")])
+                idx = int(path_elem[path_elem.find("[") + 1 : path_elem.find("]")])
                 path_elem = path_elem[:path_elem.find("[")]
-            assert path_elem in dCopy, "Failed to find key: " + path_elem + " in dict: " + dCopy
+            assert path_elem in dCopy, "Failed to find key: " + str(path_elem) + " in dict: " + str(dCopy)
 
             # does this create a new object so the caller is not affected?
             if -1 == idx:
