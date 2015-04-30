@@ -18,8 +18,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class IcedHashMap<K, V> extends Iced implements ConcurrentMap<K, V>, Cloneable, Serializable {
 
-  private NonBlockingHashMap<K, V> _map;
+  private Map<K,V> _map;
   public IcedHashMap() { _map = new NonBlockingHashMap<>(); }
+  public IcedHashMap(Map<K,V> what) { _map = what; }
   public V putIfAbsent(K key, V value)                  { return _map.putIfAbsent(key, value); }
   public boolean remove(Object key, Object value)       { return _map.remove(key, value);  }
   public boolean replace(K key, V oldValue, V newValue) { return _map.replace(key, oldValue, newValue); }

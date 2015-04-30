@@ -17,12 +17,17 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 
 public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
-  public static class IcedHashMapStringModelBuilderSchema extends IcedHashMap<String, ModelBuilderSchema> {}
+  public static class IcedHashMapStringModelBuilderSchema extends IcedHashMap<String, ModelBuilderSchema> {
+    public IcedHashMapStringModelBuilderSchema() {
+      super(new TreeMap<String, ModelBuilderSchema>());
+    }
+  }
 
   // Input fields
   @API(help="Model builder parameters.")
