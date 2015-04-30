@@ -1683,12 +1683,13 @@ class ASTImpute extends ASTUniPrefixOp {
     _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
 
     AST a = E.parse();
+    _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+
 
     // should be TRUE or FALSE next, for the inplace arg
-    if( a instanceof ASTId ) _inplace = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
-    _maxGap = (int)E.nextDbl();
     a = E.parse();
-    _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+    if( a instanceof ASTId ) _inplace = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+//    _maxGap = (int)E.nextDbl(); // TODO
     E.eatEnd();
     ASTImpute res = (ASTImpute) clone();
     res._asts = new AST[]{ary};
@@ -1715,34 +1716,63 @@ class ASTImpute extends ASTUniPrefixOp {
         default:
           throw H2O.unimpl("Unknown type: " + _method);
       }
-      // create a new vec by imputing the old.
-      f2 = new MRTask() {
-        @Override public void map(Chunk c, NewChunk n) {
-          for(int i=0;i<c._len;++i)
-            n.addNum( c.isNA(i) ? imputeValue : c.atd(i) );
-        }
-      }.doAll(1,v).outputFrame(null,new String[]{f.names()[_colIdx]},new String[][]{f.domains()[_colIdx]});
+      if( _inplace ) {
+        new MRTask() {
+          @Override public void map(Chunk c) {
+            for(int i=0;i<c._len;++i)
+              if( c.isNA(i) ) c.set(i, imputeValue);
+          }
+        }.doAll(v);
+        f2=f;
+      } else {
+        // create a new vec by imputing the old.
+        f2 = new MRTask() {
+          @Override public void map(Chunk c, NewChunk n) {
+            for (int i = 0; i < c._len; ++i)
+              n.addNum(c.isNA(i) ? imputeValue : c.atd(i));
+          }
+        }.doAll(1, v).outputFrame(null, new String[]{f.names()[_colIdx]}, new String[][]{f.domains()[_colIdx]});
+      }
     } else {
-      if(  _method==ImputeMethod.MEDIAN ) throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
-      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean",0,"rm","_avg",null,null) };
+      if (_method == ImputeMethod.MEDIAN)
+        throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
+      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", 0, "rm", "_avg", null, null)};
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
       final NonBlockingHashSet<ASTGroupBy.G> s = t._g;
       final long[] cols = _by;
       final int colIdx = _colIdx;
-      f2 = new MRTask() {
-        transient NonBlockingHashSet<ASTGroupBy.G> _s;
-        @Override public void setupLocal() { _s = s; }
-        @Override public void map(Chunk[] c, NewChunk n) {
-          ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
-          double impute_value;
-          Chunk ch = c[colIdx];
-          for( int i=0;i<c[0]._len;++i ) {
-            g.fill(i,c,cols);
-            impute_value = _s.get(g)._avs[0]; //currently only have the mean
-            n.addNum( ch.isNA(i) ? impute_value : ch.atd(i) );
+      if (_inplace) {
+        new MRTask() {
+          transient NonBlockingHashSet<ASTGroupBy.G> _s;
+          @Override public void setupLocal() { _s = s; }
+          @Override public void map(Chunk[] c, NewChunk n) {
+            ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
+            double impute_value;
+            Chunk ch = c[colIdx];
+            for (int i = 0; i < c[0]._len; ++i) {
+              g.fill(i, c, cols);
+              impute_value = _s.get(g)._avs[0]; //currently only have the mean
+              if( ch.isNA(i) ) ch.set(i,impute_value);
+            }
           }
-        }
-      }.doAll(1,f).outputFrame(null,new String[]{f.names()[_colIdx]},new String[][]{f.domains()[_colIdx]});
+        }.doAll(f);
+        f2 = f;
+      } else {
+        f2 = new MRTask() {
+          transient NonBlockingHashSet<ASTGroupBy.G> _s;
+          @Override public void setupLocal() { _s = s; }
+          @Override public void map(Chunk[] c, NewChunk n) {
+            ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
+            double impute_value;
+            Chunk ch = c[colIdx];
+            for (int i = 0; i < c[0]._len; ++i) {
+              g.fill(i, c, cols);
+              impute_value = _s.get(g)._avs[0]; //currently only have the mean
+              n.addNum(ch.isNA(i) ? impute_value : ch.atd(i));
+            }
+          }
+        }.doAll(1, f).outputFrame(null, new String[]{f.names()[_colIdx]}, new String[][]{f.domains()[_colIdx]});
+      }
     }
     e.push(new ValFrame(f2));
   }
@@ -1751,12 +1781,12 @@ class ASTImpute extends ASTUniPrefixOp {
   private static class ModeTask extends MRTask<ModeTask> {
     // compute the mode of an enum column as fast as possible
     int _m;   // max of the column... only for setting the size of _cnts
-    int _max; // updated atomically
-    int[] _cnts; // keep an array of counts, updated atomically
+    long _max; // updated atomically
+    long[] _cnts; // keep an array of counts, updated atomically , long for compareAndSwapLong
     static private final long _maxOffset;
     private static final Unsafe U = UtilUnsafe.getUnsafe();
-    private static final int _b = U.arrayBaseOffset(int[].class);
-    private static final int _s = U.arrayIndexScale(int[].class);
+    private static final int _b = U.arrayBaseOffset(long[].class);
+    private static final int _s = U.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
     static {
       try {
@@ -1768,7 +1798,7 @@ class ASTImpute extends ASTUniPrefixOp {
 
     ModeTask(int m) {_m=m;}
     @Override public void setupLocal() {
-      _cnts = MemoryManager.malloc4(_m+1);
+      _cnts = MemoryManager.malloc8(_m+1);
       _max = Integer.MIN_VALUE;
     }
     @Override public void map(Chunk c) {
@@ -1785,7 +1815,7 @@ class ASTImpute extends ASTUniPrefixOp {
     @Override public void postGlobal() {
       int maxIdx=0;
       assert _cnts!=null;
-      for(int i=0; i<_cnts.length;++i) {
+      for(int i=0; i<_cnts.length;++i) {  // FIXME: possibly horrible to do single threaded hunt... use FJ task to find indx with max.
         if( _cnts[i] > _max ) { _max=_cnts[i]; maxIdx=i; }
       }
 //      _cnts=null;

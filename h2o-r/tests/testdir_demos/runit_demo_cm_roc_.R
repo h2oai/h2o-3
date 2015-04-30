@@ -35,12 +35,12 @@ myY <- "IsDepDelayed"
 #gbm
 air.gbm <- h2o.gbm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
                    distribution = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
-print(air.gbm@model)
+print(air.gbm)
 print(air.gbm@model$variableImportances[1:10,])
 
 #glm
 air.glm <- h2o.glm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid, family = "binomial")
-print(air.glm@model)
+print(air.glm)
 print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
