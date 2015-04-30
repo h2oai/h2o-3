@@ -20,7 +20,15 @@
 #' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
-#' @return Returns an object of class \linkS4class{H2OModel}.
+#' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
+#'        FALSE to reduce the runtime of the algorithm.
+#' @details The naive Bayes classifier assumes independence between predictor variables conditional
+#'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
+#'        deviation computed from the training dataset. When building a naive Bayes classifier,
+#'        every row in the training dataset that contains at least one NA will be skipped completely.
+#'        If the test dataset has missing values, then those predictors are omitted in the probability
+#'        calculation during prediction.
+#' @return Returns an object of class \linkS4class{H2ONaiveBayesModel}.
 #' @examples
 #' localH2O <- h2o.init()
 #' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")

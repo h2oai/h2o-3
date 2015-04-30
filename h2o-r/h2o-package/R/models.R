@@ -755,9 +755,8 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
-  res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]
-  if( nrow(res) > 1  ) res <- res[1]
-  if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
+  res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]  # relax the tolerance
+  if( nrow(res) > 1  ) res <- res[1,]
   res
 }
 
@@ -945,8 +944,8 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, train=FAL
     l <- .trainOrValid(l)
     l$train <- l$train || train
     l$valid <- l$valid || valid
-    if( l$valid ) return( h2o.confusionMatrix(object@model$validation_metrics) )
-    else          return( h2o.confusionMatrix(object@model$training_metrics)   )
+    if( l$valid ) return( h2o.confusionMatrix(object@model$validation_metrics, ...) )
+    else          return( h2o.confusionMatrix(object@model$training_metrics, ...)   )
   }
   tmp <- !.is.eval(newdata)
   if( tmp ) {
@@ -986,26 +985,34 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
     return(NULL)
   }
   # H2OBinomial case
-  if( missing(thresholds) )
+  if( missing(thresholds) ) {
     thresholds <- list(h2o.find_threshold_by_max_metric(object,"f1"))
+    def <- TRUE
+  } else def <- FALSE
   thresh2d <- object@metrics$thresholds_and_metric_scores
   max_metrics <- object@metrics$max_criteria_and_metric_scores
+  d <- paste0("class_",object@metrics$domain)
   p <- max_metrics[match("tps",max_metrics$Metric),3]
   n <- max_metrics[match("fps",max_metrics$Metric),3]
   m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
     tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
-    rnames <- c("X0", "X1")
-    cnames <- c("Act/Pred", rnames, "Error", "Rate")
+    rnames <- c(d, "Totals")
+    cnames <- c("Act/Pred", d, "Error", "Rate")
     col0 <- rnames
-    col1 <- c(tns, fns)
-    col2 <- c(fps, tps)
-    col3 <- c(fps/(fps+tns), fns/(fns+tps))
-    col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps) )
+    col1 <- c(tns, fns, tns+fns)
+    col2 <- c(fps, tps, fps+tps)
+    col3 <- c(fps/(fps+tns), fns/(fns+tps), (fps+fns)/(fps+tns+fns+tps))
+    col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps), paste0(" =", fns+fps, "/", fps+tns+fns+tps) )
     fmts <- c("%s", "%i", "%i", "%f", "%s")
     tbl <- data.frame(col0,col1,col2,col3,col4)
     colnames(tbl) <- cnames
-    attr(tbl, "header") <- "Confusion Matrix"
+    header <-  "Confusion Matrix"
+    if(def)
+      header <- paste(header, "for max F1 @ threshold =", t)
+    else
+      header <- paste(header, "@ threshold =", t)
+    attr(tbl, "header") <- header
     attr(tbl, "formats") <- fmts
     oldClass(tbl) <- c("H2OTable", "data.frame")
     tbl
@@ -1045,10 +1052,10 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
       npcs = min(10, x@model$parameters$k)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
       stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
-  
+
+
     if(missing(main))
       main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
-  
     if(type == "barplot")
       barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
     else if(type == "lines")
@@ -1056,16 +1063,14 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
     else
       stop("type must be either 'barplot' or 'lines'")
   } else if(x@algorithm == "svd") {
-    if(is.null(x@model$std_deviation)) 
+    if(is.null(x@model$std_deviation))
       stop("PCA results not found in SVD model!")
     if(missing(npcs))
       npcs = min(10, x@model$parameters$nv)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$nv)
       stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$nv, "inclusive"))
-    
     if(missing(main))
       main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
-    
     if(type == "barplot")
       barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
     else if(type == "lines")

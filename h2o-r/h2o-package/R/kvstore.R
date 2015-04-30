@@ -268,7 +268,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-  foo = .newH2OModel(Class          = Class,
+  .newH2OModel(Class          = Class,
                 conn          = conn,
                 model_id      = json$model_id$name,
                 algorithm     = json$algo,
@@ -276,5 +276,4 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
                 allparameters = allparams,
                 model         = model,
                 linkToGC      = linkToGC)
-  foo
 }

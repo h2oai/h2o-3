@@ -1,6 +1,9 @@
 package hex.naivebayes;
 
-import hex.*;
+import hex.DataInfo;
+import hex.Model;
+import hex.ModelMetricsSupervised;
+import hex.SupervisedModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import water.*;
@@ -14,7 +17,6 @@ import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,6 +43,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{ Model.ModelCategory.Unknown };
   }
+
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
 
   @Override
   protected void checkMemoryFootPrint() {

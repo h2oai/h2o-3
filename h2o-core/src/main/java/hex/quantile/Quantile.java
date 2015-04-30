@@ -34,6 +34,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     return new Model.ModelCategory[]{Model.ModelCategory.Unknown};
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -238,6 +240,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
    *  @return desired quantile. */
   static double computeQuantile( double lo, double hi, long row, long nrows, double prob, QuantileModel.CombineMethod method ) {
     if( lo==hi ) return lo;     // Equal; pick either
+    if( method == null ) method= QuantileModel.CombineMethod.INTERPOLATE;
     switch( method ) {
     case INTERPOLATE: return linearInterpolate(lo,hi,row,nrows,prob);
     case AVERAGE:     return 0.5*(hi+lo);

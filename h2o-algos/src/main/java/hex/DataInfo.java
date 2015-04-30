@@ -74,9 +74,8 @@ public class DataInfo extends Keyed {
   public int _nfolds;
   public boolean _intercept = true;
   public boolean _offset = false;
-  final boolean _skipMissing;
-  public final int [][] _catLvls;
-
+  public final boolean _skipMissing;
+  final int [][] _catLvls;
 
   public double _etaOffset;
   public DataInfo deep_clone() {
@@ -253,6 +252,10 @@ public class DataInfo extends Keyed {
     _adaptedFrame.reloadVecs();
     _nfolds = nfolds;
     _foldId = foldId;
+    if(_normMul != null)
+      for(double d:_normMul) assert !Double.isNaN(d);
+    if(_normSub != null)
+      for(double d:_normSub) assert !Double.isNaN(d);
   }
 
   // Modify the train & valid frames directly; sort the categorical columns
@@ -365,7 +368,10 @@ public class DataInfo extends Keyed {
         }
       }
     }
-
+    if(_normMul != null)
+      for(double d:_normMul) assert !Double.isNaN(d);
+    if(_normSub != null)
+      for(double d:_normSub) assert !Double.isNaN(d);
     train.restructure(names,tvecs2);
     if (valid != null) valid.restructure(names,vvecs2);
     _adaptedFrame = train;

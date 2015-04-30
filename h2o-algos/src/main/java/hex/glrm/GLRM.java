@@ -55,6 +55,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   public enum Initialization {
     SVD, PlusPlus, User
   }

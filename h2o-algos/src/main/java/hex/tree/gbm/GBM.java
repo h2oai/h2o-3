@@ -26,6 +26,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; }
+
   // Called from an http request
   public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
 
@@ -292,7 +294,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
                   tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                   (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                   ((DecidedNode)tree.node(cnid))._split._col==-1) )
+                   ((DecidedNode)tree.node(cnid))._split.col()==-1) )
                 dn._nids[i] = new GBMLeafNode(tree,nid).nid(); // Mark a leaf here
             }
           }
@@ -354,12 +356,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         }
       }.doAll(_train);
 
-      // Collect leaves stats
-      for (int i=0; i<ktrees.length; i++)
-        if( ktrees[i] != null )
-          ktrees[i]._leaves = ktrees[i].len() - leafs[i];
-      // DEBUG: Print the generated K trees
-      //printGenerateTrees(ktrees);
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
     }

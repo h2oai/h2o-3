@@ -85,24 +85,23 @@ class Basic(unittest.TestCase):
             # max_active_predictors int False -1 []
 
             parameters = {
-                'validation_frame': parse_key,
-                # 'ignored_columns': '["STR"]',
+                'ignored_columns': '["STR"]',
                 'response_column': 'FNDX',
                 # FIX! when is this needed? redundant for binomial?
-                # 'balance_classes': False,
-                # 'max_after_balance_size': None,
-                # 'standardize': False,
-                # 'family': 'binomial', 
-                # 'link': None, 
-                # 'tweedie_variance_power': None,
-                # 'tweedie_link_power': None,
-                # 'alpha': '[1e-4]',
-                # 'lambda': '[0.5]',
-                # 'prior1': None,
-                # 'lambda_search': None,
-                # 'nlambdas': None,
-                # 'lambda_min_ratio': None,
-                # 'use_all_factor_levels': False,
+                'balance_classes': False,
+                'max_after_balance_size': None,
+                'standardize': False,
+                'family': 'binomial', 
+                'link': None, 
+                'tweedie_variance_power': None,
+                'tweedie_link_power': None,
+                'alpha': '[1e-4]',
+                'lambda': '[0.5]',
+                'prior1': None,
+                'lambda_search': None,
+                'nlambdas': None,
+                'lambda_min_ratio': None,
+                'use_all_factor_levels': False,
                 # NPE with n_folds 2?
                 # 'n_folds': 1,
             }
@@ -110,7 +109,7 @@ class Basic(unittest.TestCase):
             model_key = 'benign_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                destination_frame=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=10)
@@ -129,9 +128,8 @@ class Basic(unittest.TestCase):
             print "\nmcms", tabulate(m1, headers=h0)
 
             thms = OutputObj(cmm.thresholds_and_metric_scores, 'thms')
-            cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
-
             if 1==0:
+                cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
                 print ""
                 for i,c in enumerate(cmms.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)

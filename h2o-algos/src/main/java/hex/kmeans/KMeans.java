@@ -27,6 +27,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return new Model.ModelCategory[]{ Model.ModelCategory.Clustering };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+
   public enum Initialization {
     Random, PlusPlus, Furthest, User
   }
@@ -40,9 +42,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   public ModelBuilderSchema schema() { return new KMeansV3(); }
 
-  @Override
   protected void checkMemoryFootPrint() {
-    long mem_usage = 8 /*doubles*/ * _parms._k * _train.degreesOfFreedom() * (_parms._standardize ? 2 : 1);
+    long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
     long max_mem = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat.get_max_mem();
     if (mem_usage > max_mem) {
       String msg = "Centroids won't fit in the driver node's memory ("
@@ -52,6 +53,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       cancel(msg);
     }
   }
+
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> trainModel() {
     return start(new KMeansDriver(), _parms._max_iterations);
@@ -395,11 +397,26 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       rowHeaders[i] = String.valueOf(i+1);
     String[] colTypes = new String[output._names.length];
     String[] colFormats = new String[output._names.length];
-    Arrays.fill(colTypes, "double");
-    Arrays.fill(colFormats, "%5f");
-    String name = standardized ? "Cluster means (standardized)" : "Cluster means";
-    return new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid", new String[rowHeaders.length][],
-        standardized ? output._centers_std_raw : output._centers_raw);
+    for (int i=0; i<output._domains.length; ++i) {
+      colTypes[i] = output._domains[i] == null ? "double" : "String";
+      colFormats[i] = output._domains[i] == null ? "%f" : "%s";
+    }
+    String name = standardized ? "Standardized Cluster Means" : "Cluster Means";
+    TwoDimTable table = new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid");
+
+    for (int j=0; j<output._domains.length; ++j) {
+      boolean string = output._domains[j] != null;
+      if (string) {
+        for (int i=0; i<output._centers_raw.length; ++i) {
+          table.set(i, j, output._domains[j][(int)output._centers_raw[i][j]]);
+        }
+      } else {
+        for (int i=0; i<output._centers_raw.length; ++i) {
+          table.set(i, j, standardized ? output._centers_std_raw[i][j] : output._centers_raw[i][j]);
+        }
+      }
+    }
+    return table;
   }
 
   // -------------------------------------------------------------------------

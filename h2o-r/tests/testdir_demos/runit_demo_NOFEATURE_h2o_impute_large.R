@@ -20,7 +20,7 @@ if (TRUE) {
 
   source('../h2o-runit.R')
   options(echo=TRUE)
-  filePath <- locate("smalldata/airlines/airlines_all.csv")
+  filePath <- locate("smalldata/airlines/allyears2k_headers.zip")
 #  testFilePath <- normalizePath(locate("smalldata/airlines/allyears2k_headers.zip"))
 } else {
   stop("need to hardcode ip and port")
@@ -64,18 +64,18 @@ air <- h2o.importFile(conn, filePath, "air")
 
 # impute the column in place using a grouping based on the Origin and Distance
 # NB: If the Origin and Distance produce groupings of NAs, then no imputation will be done (NAs will result).
-h2o.impute(air, .(DepTime), method = "median", groupBy = c("Dest"))
+h2o.impute(air, "DepTime", method = "mean", by = c("Dest"))
 
 # revert imputations
 air <- h2o.importFile(conn, filePath, "air")
 
 # impute a factor column by the most common factor in that column
-h2o.impute(air, "TailNum", method = "mean")
+h2o.impute(air, "TailNum", method = "mode")
 
 # revert imputations
 air <- h2o.importFile(conn, filePath, "air")
 
 # impute a factor column using a grouping based on the Origin
-h2o.impute(air, "TailNum", method = "median", .(Month))
+h2o.impute(air, "TailNum", method = "mode", by=c("Month"))
 
 PASS_BANNER()
