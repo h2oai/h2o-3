@@ -8,9 +8,11 @@
 #' @param training_frame An \linkS4class{H2OFrame} object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
-#' @param nv The number of right singular vectors to be computed. This must be
+#' @param k The number of principal components to be computed. This must be
 #'        between 1 and min(ncol(training_frame), nrow(training_frame)) inclusive.
-#' @param destination_key (Optional) The unique hex key assigned to the
+#' @param retx A logical value indicating whether the projected variables should
+#'        be returned.
+#' @param model_id (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
 #' @param max_iterations The maximum number of iterations to run each power
 #'        iteration loop. Must be between 1 and 1e6 inclusive.
@@ -50,8 +52,8 @@ h2o.prcomp <- function(training_frame, x, k, retx = TRUE,
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(training_frame)
   if( delete ) {
-    temp_key <- training_frame@key
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, key = temp_key)
+    temp_key <- training_frame@frame_id
+    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
   }
   
   # Gather user input

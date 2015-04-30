@@ -49,8 +49,8 @@ h2o.svd <- function(training_frame, x, nv,
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(training_frame)
   if( delete ) {
-    temp_key <- training_frame@key
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, key = temp_key)
+    temp_key <- training_frame@frame_id
+    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
   }
   
   # Gather user input
