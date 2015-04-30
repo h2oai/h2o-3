@@ -227,6 +227,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new COp());
     putPrefix(new ROp());
     putPrefix(new O());
+    putPrefix(new ASTImpute());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -1667,6 +1668,9 @@ class ASTSum extends ASTReducerOp {
 class ASTImpute extends ASTUniPrefixOp {
   ImputeMethod _method;
   long[] _by;
+  int _colIdx;
+  boolean _inplace;
+  int _maxGap;
   QuantileModel.CombineMethod _combine_method;  // for quantile only
   private static enum ImputeMethod { MEAN , MEDIAN, MODE }
   @Override String opStr() { return "h2o.impute"; }
@@ -1674,11 +1678,18 @@ class ASTImpute extends ASTUniPrefixOp {
   public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by"}); }
   ASTImpute parse_impl(Exec E) {
     AST ary = E.parse();
-    _method = ImputeMethod.valueOf(E.nextStr());
+    _colIdx = (int)E.nextDbl();
+    _method = ImputeMethod.valueOf(E.nextStr().toUpperCase());
     _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
 
     AST a = E.parse();
+
+    // should be TRUE or FALSE next, for the inplace arg
+    if( a instanceof ASTId ) _inplace = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+    _maxGap = (int)E.nextDbl();
+    a = E.parse();
     _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+    E.eatEnd();
     ASTImpute res = (ASTImpute) clone();
     res._asts = new AST[]{ary};
     res._by = _by;    // just in case
@@ -1687,23 +1698,22 @@ class ASTImpute extends ASTUniPrefixOp {
   }
   @Override public void apply(Env e) {
     Frame f = e.popAry();
-    if( f.numCols() != 1 ) throw new IllegalArgumentException("Can only impute a single column at a time.");
-    Vec v = f.anyVec();
+    Vec v = f.vecs()[_colIdx];
     Frame f2;
     final double imputeValue;
 
     // vanilla impute. no group by
     if( _by == null ) {
-      if( !v.isNumeric() ) {
+      if( !v.isNumeric() && _method!=ImputeMethod.MODE ) {
         Log.info("Can only impute non-numeric columns with the mode.");
         _method = ImputeMethod.MODE;
       }
       switch( _method ) {
         case MEAN:   imputeValue = ASTVar.getMean(v,true,""); break;
-        case MEDIAN: imputeValue = ASTMedian.median(f, null); break;
-        case MODE:   imputeValue = mode(f); break;
+        case MEDIAN: imputeValue = ASTMedian.median(v, null); break;
+        case MODE:   imputeValue = mode(v); break;
         default:
-          throw new IllegalArgumentException("Unknown type: " + _method);
+          throw H2O.unimpl("Unknown type: " + _method);
       }
       // create a new vec by imputing the old.
       f2 = new MRTask() {
@@ -1711,40 +1721,42 @@ class ASTImpute extends ASTUniPrefixOp {
           for(int i=0;i<c._len;++i)
             n.addNum( c.isNA(i) ? imputeValue : c.atd(i) );
         }
-      }.doAll(1,f).outputFrame(null,f.names(),f.domains());
+      }.doAll(1,v).outputFrame(null,new String[]{f.names()[_colIdx]},new String[][]{f.domains()[_colIdx]});
     } else {
       if(  _method==ImputeMethod.MEDIAN ) throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
       ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean",0,"rm","_avg",null,null) };
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
       final NonBlockingHashSet<ASTGroupBy.G> s = t._g;
       final long[] cols = _by;
+      final int colIdx = _colIdx;
       f2 = new MRTask() {
         transient NonBlockingHashSet<ASTGroupBy.G> _s;
         @Override public void setupLocal() { _s = s; }
         @Override public void map(Chunk[] c, NewChunk n) {
           ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
           double impute_value;
+          Chunk ch = c[colIdx];
           for( int i=0;i<c[0]._len;++i ) {
             g.fill(i,c,cols);
             impute_value = _s.get(g)._avs[0]; //currently only have the mean
-            n.addNum( c[0].isNA(i) ? impute_value : c[0].atd(i) );
+            n.addNum( ch.isNA(i) ? impute_value : ch.atd(i) );
           }
         }
-      }.doAll(1,f).outputFrame(null,f.names(),f.domains());
+      }.doAll(1,f).outputFrame(null,new String[]{f.names()[_colIdx]},new String[][]{f.domains()[_colIdx]});
     }
     e.push(new ValFrame(f2));
   }
 
-  private double mode(Frame f) { return (new ModeTask((int)f.anyVec().max())).doAll(f)._max; }
+  private double mode(Vec v) { return (new ModeTask((int)v.max())).doAll(v)._max; }
   private static class ModeTask extends MRTask<ModeTask> {
     // compute the mode of an enum column as fast as possible
     int _m;   // max of the column... only for setting the size of _cnts
     int _max; // updated atomically
-    long[] _cnts; // keep an array of counts, updated atomically
+    int[] _cnts; // keep an array of counts, updated atomically
     static private final long _maxOffset;
     private static final Unsafe U = UtilUnsafe.getUnsafe();
-    private static final int _b = U.arrayBaseOffset(long[].class);
-    private static final int _s = U.arrayIndexScale(long[].class);
+    private static final int _b = U.arrayBaseOffset(int[].class);
+    private static final int _s = U.arrayIndexScale(int[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
     static {
       try {
@@ -1756,23 +1768,29 @@ class ASTImpute extends ASTUniPrefixOp {
 
     ModeTask(int m) {_m=m;}
     @Override public void setupLocal() {
-      _cnts = MemoryManager.malloc8(_m+1);
+      _cnts = MemoryManager.malloc4(_m+1);
       _max = Integer.MIN_VALUE;
     }
     @Override public void map(Chunk c) {
       for( int i=0;i<c._len;++i ) {
-        int h = (int)c.at8(i);
-        long offset = ssid(h);
-        long cnt = _cnts[h];
-        while( !U.compareAndSwapLong(_cnts,offset,cnt,cnt+1))
-          cnt=_cnts[h];
-        int max=(int)cnt;
-        int omax = _max;
-        while( max > omax && !U.compareAndSwapInt(this,_maxOffset,omax,max))
-          omax=_max;
+        if( !c.isNA(i) ) {
+          int h = (int) c.at8(i);
+          long offset = ssid(h);
+          long cnt = _cnts[h];
+          while (!U.compareAndSwapLong(_cnts, offset, cnt, cnt + 1))
+            cnt = _cnts[h];
+        }
       }
     }
-    @Override public void postGlobal() { _cnts=null; }
+    @Override public void postGlobal() {
+      int maxIdx=0;
+      assert _cnts!=null;
+      for(int i=0; i<_cnts.length;++i) {
+        if( _cnts[i] > _max ) { _max=_cnts[i]; maxIdx=i; }
+      }
+//      _cnts=null;
+      _max=maxIdx;
+    }
   }
 }
 
@@ -2064,6 +2082,13 @@ class ASTMedian extends ASTReducerOp {
     double median = q._output._quantiles[0][0];
     q.delete();
     return median;
+  }
+  static double median(Vec v, QuantileModel.CombineMethod combine_method) {
+    Frame f = new Frame(Key.make(), null, new Vec[]{v});
+    DKV.put(f);
+    double res=median(f,combine_method);
+    DKV.remove(f._key);
+    return res;
   }
 }
 

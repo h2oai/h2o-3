@@ -161,10 +161,13 @@ class Expr(object):
     if noprint:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        if j['frames'][0]['columns'][0]['type'] == 'string':
-          data = [c['string_data'] for c in j['frames'][0]['columns'][:]]
-        else:
-          data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        domains  = [c['domain'] for c in j['frames'][0]['columns']]
+        for i in range(len(data)):
+          if domains[i] is not None:
+            for j in range(len(data[i])):
+              if data[i][j] == "NaN": continue
+              data[i][j] = domains[i][int(data[i][j])]
         data = map(list, zip(*data))
         return data[0:min(10,len(data))]
       return self._data
