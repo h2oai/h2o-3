@@ -211,7 +211,7 @@ class RollupStats extends Iced {
     _ninfs += rs._ninfs;
     double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
-    else {
+    else if(rs._rows != 0){
       _mean = (_mean * _rows + rs._mean * rs._rows) / (_rows + rs._rows);
       _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }

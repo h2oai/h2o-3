@@ -10,8 +10,6 @@
 #'        which k-means operates.
 #' @param k The rank of the resulting decomposition. This must be
 #'        between 1 and the number of columns in the training frame, inclusive.
-#' @param max_iterations The maximum number of iterations to run each power
-#'        iteration loop. Must be between 1 and 1e6 inclusive.
 #' @param destination_key (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
 #' @param loading_key (Optional) The unique hex key assigned to the loading matrix X
@@ -72,8 +70,8 @@ h2o.glrm <- function(training_frame, x, k,
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(training_frame)
   if( delete ) {
-    temp_key <- training_frame@key
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, key = temp_key)
+    temp_key <- training_frame@frame_id
+    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
   }
   
   # Gather user input

@@ -112,7 +112,7 @@ public class PersistManager {
       I[Value.HDFS] = (Persist) constructor.newInstance();
       Log.info("HDFS subsystem successfully initialized");
     }
-    catch (Exception ignore) {
+    catch (Throwable ignore) {
       Log.info("HDFS subsystem not available");
     }
 
