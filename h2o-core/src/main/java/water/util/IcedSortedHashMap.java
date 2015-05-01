@@ -7,7 +7,7 @@ import java.util.TreeMap;
  *  all its operations.
  */
 public class IcedSortedHashMap<K, V> extends IcedHashMapBase<K,V> {
-  TreeMap<K,V> _map;
+  transient TreeMap<K,V> _map;
   public IcedSortedHashMap() { init(); }
   @Override protected Map<K, V> map() { return _map; }
   @Override protected Map<K, V> init() { return _map = new TreeMap<>(); }
