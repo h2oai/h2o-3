@@ -8,10 +8,7 @@ import water.Job;
 import water.Key;
 import water.api.*;
 import water.api.ModelParametersSchema.ValidationMessageBase;
-import water.util.DocGen;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.ReflectionUtils;
+import water.util.*;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -22,7 +19,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
-  public static class IcedHashMapStringModelBuilderSchema extends IcedHashMap<String, ModelBuilderSchema> {}
+  public static class IcedHashMapStringModelBuilderSchema extends IcedSortedHashMap<String, ModelBuilderSchema> {}
 
   // Input fields
   @API(help="Model builder parameters.")

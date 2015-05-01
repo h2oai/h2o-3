@@ -2,6 +2,8 @@ package hex.tree;
 
 import hex.*;
 import jsr166y.CountedCompleter;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
@@ -471,6 +473,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (valid() != null) {
@@ -490,6 +494,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       int col = 0;
       assert(row < table.getRowDim());
       assert(col < table.getColDim());
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      table.set(row, col++, fmt.print(_output._training_time_ms[i]));
+      table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _start_time, true));
       table.set(row, col++, i);
       table.set(row, col++, _output._mse_train[i]);
       if (_valid != null) table.set(row, col++, _output._mse_valid[i]);
