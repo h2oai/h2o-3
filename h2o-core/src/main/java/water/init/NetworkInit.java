@@ -358,6 +358,8 @@ public class NetworkInit {
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http://", H2O.getIpPortString() + "/");
+    try { Log.debug("Interface MTU: ",  (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
+    } catch (SocketException se) { Log.debug("No MTU due to SocketException. "+se.toString()); }
 
     String embeddedConfigFlatfile = null;
     AbstractEmbeddedH2OConfig ec = H2O.getEmbeddedH2OConfig();
