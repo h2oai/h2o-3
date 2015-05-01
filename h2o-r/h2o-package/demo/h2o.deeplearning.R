@@ -20,5 +20,5 @@ head(predictions.R)
 tail(predictions.R)
 
 # Check performance of classification model.
-performance = h2o.performance(model = model, data = prostate.hex)
+performance = h2o.performance(model = model)
 print(performance)

@@ -415,12 +415,12 @@ class Expr(object):
       if isinstance(c, int): return "'" + self._left._data[c] + "'"
       if isinstance(c, slice):
         cols = self._left._data[c]
-        cmd = "(cbind"
+        cmd = "(cbind %FALSE"
         for col in cols: cmd += " '" + str(col) + "'"
         cmd += ")"
         return cmd
       if c == "()":
-        cmd = "(cbind"
+        cmd = "(cbind %FALSE"
         for col in self._left._data: cmd += " '" + str(col) + "'"
         cmd += ")"
         return cmd
@@ -565,6 +565,7 @@ class Expr(object):
 
     elif self._op == "cbind":
       if left.is_local():
+        __CMD__ += " %FALSE "
         for v in left._data: __CMD__ += "'" + str(v._expr._data) + "'"
       else:                 pass
 

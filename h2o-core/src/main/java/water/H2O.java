@@ -1,5 +1,6 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -211,6 +212,9 @@ final public class H2O {
 
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
+
+    /** -beta, -experimental */
+    public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
   }
 
   private static void parseFailed(String message) {
@@ -358,6 +362,12 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
+      }
+      else if (s.matches("beta")) {
+        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Beta;
+      }
+      else if (s.matches("experimental")) {
+        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");

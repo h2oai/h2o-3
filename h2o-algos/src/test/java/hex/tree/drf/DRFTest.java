@@ -210,6 +210,24 @@ public class DRFTest extends TestUtil {
     );
 
   }
+  @Ignore //PUBDEV-1001
+  @Test public void testCzechboard() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                Vec resp = fr.remove("C2");
+                fr.add("C2", resp.toEnum());
+                resp.remove();
+                return fr.find("C3");
+              }
+            },
+            50,
+            a(a(45000, 0),
+              a(0, 45000)),
+            s("0", "1"));
+  }
   @Test public void testAlphabet() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
