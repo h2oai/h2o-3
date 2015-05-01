@@ -25,9 +25,10 @@
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #'
-#' h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
-#' h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
-#' h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
+#' # These aren't real paths
+#' # h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
+#' # h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
+#' # h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE) {
@@ -103,7 +104,7 @@ h2o.downloadCSV <- function(data, filename) {
 #'
 #' Save an H2O Model Object to Disk
 #'
-#' Save an \linkS4class{H2OModel} to disk.
+#' Save an \linkS4class{H2OModel} to disk. Currnetly not implemented.
 #'
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
@@ -116,13 +117,14 @@ h2o.downloadCSV <- function(data, filename) {
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
-#'   "0xdata/h2o/master/smalldata/logreg/prostate.csv", sep = "/"), key = "prostate.hex")
-#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
-#' h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE, force = TRUE)
+#' # library(h2o)
+#' # localH2O <- h2o.init()
+#' # prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
+#' #   "0xdata/h2o/master/smalldata/logreg/prostate.csv", sep = "/"),
+#' #   destination_frame = "prostate.hex")
+#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training+frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE, force = TRUE)
 #' }
 #' @export
 h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
