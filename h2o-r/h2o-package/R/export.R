@@ -124,7 +124,8 @@ h2o.downloadCSV <- function(data, filename) {
 #' #   destination_frame = "prostate.hex")
 #' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training+frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE, force = TRUE)
+#' # h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE,
+#' # force = TRUE)
 #' }
 #' @export
 h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
