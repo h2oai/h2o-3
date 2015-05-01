@@ -338,7 +338,7 @@ def cbind(left,right):
   names = [vec.name() for vec in vecs]
 
   fr = H2OFrame.py_tmp_key()
-  cbind = "(= !" + fr + " (cbind %"
+  cbind = "(= !" + fr + " (cbind %TRUE %"
   cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
   rapids(cbind)
 
