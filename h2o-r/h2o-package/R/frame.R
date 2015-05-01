@@ -1950,12 +1950,13 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 #'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Otherwise
 #'  column types (e.g. String, Time, UUID) are not supported.
 #'
+#'  @param data The dataset containing the column to impute.
 #'  @param column The column to impute.
 #'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
 #'                "mode" replaces with the most common factor (for factor columns only);
 #'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
 #'  @param by group by columns
-#'  @param inpace Perform the imputation inplace or make a copy. Default is to perform the imputation in place.
+#'  @param inplace Perform the imputation inplace or make a copy. Default is to perform the imputation in place.
 #'
 #'  @return a H2OFrame with imputed values
 #'  @examples

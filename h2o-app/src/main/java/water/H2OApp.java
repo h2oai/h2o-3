@@ -69,7 +69,7 @@ public class H2OApp {
     H2O.registerPOST("/3/ModelBuilders/svd", SVDBuilderHandler.class, "train",                                                        "Train a SVD model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/svd/parameters", SVDBuilderHandler.class, "validate_parameters",                               "Validate a set of SVD model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("naivebayes", "Beta - Naive Bayes", NaiveBayes.class);
+    ModelBuilder.registerModelBuilder("naivebayes", "Naive Bayes", NaiveBayes.class);
     H2O.registerPOST("/3/ModelBuilders/naivebayes", NaiveBayesBuilderHandler.class, "train",                                          "Train a Naive Bayes model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/naivebayes/parameters", NaiveBayesBuilderHandler.class, "validate_parameters",                 "Validate a set of Naive Bayes model builder parameters.");
 
