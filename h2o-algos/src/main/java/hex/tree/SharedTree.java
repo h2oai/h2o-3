@@ -178,8 +178,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _parms.read_unlock_frames(SharedTree.this);
         if( _model==null ) Scope.exit();
         else {
-          Key[] mms = _model._output._model_metrics;
-          Scope.exit(_model._key,mms.length==0 ? null : mms[mms.length-1]);
+          Scope.exit(_model._key, ModelMetrics.buildKey(_model,_parms.train()), ModelMetrics.buildKey(_model,_parms.valid()));
         }
       }
       tryComplete();
