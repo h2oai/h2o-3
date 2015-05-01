@@ -721,8 +721,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
 
-
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link", "Regularization", "Number of Predictors Total","Number of Active Predictors", "Number of Iterations", "Training Frame"}, new String[]{"string","string","string","int","int","int","string"},new String[]{"%s","%s","%s","%d","%d","%d","%s"},"");
+      String [] names   = new String[]{"Family","Link", "Regularization", "Number of Predictors Total","Number of Active Predictors", "Number of Iterations", "Training Frame"};
+      String [] types   = new String[]{"string","string","string","int","int","int","string"};
+      String [] formats = new String[]{"%s","%s","%s","%d","%d","%d","%s"};
+      if(glmModel._parms._lambda_search) {
+        names = new String[]{"Family", "Link", "Regularization", "Lambda Search", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+        types   = new String[]{"string","string","string","string","int","int","int","string"};
+        formats = new String[]{"%s","%s","%s","%s","%d","%d","%d","%s"};
+      }
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, names , types , formats,"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
       String regularization = "None";
@@ -732,15 +739,20 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         else if(glmModel._parms._alpha[0] == 1)
           regularization = "Lasso (lambda = ";
         else
-          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(glmModel._parms._alpha[0],4)  +" lambda = ";
+          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(glmModel._parms._alpha[0],4)  +", lambda = ";
         regularization = regularization + MathUtils.roundToNDigits(glmModel._parms._lambda[glmModel._output._best_lambda_idx],4) + " )";
       }
       glmModel._output._model_summary.set(0,2,regularization);
-      glmModel._output._model_summary.set(0,3,Integer.valueOf(_iter));
+      int lambdaSearch = 0;
+      if(glmModel._parms._lambda_search) {
+        lambdaSearch = 1;
+        glmModel._output._model_summary.set(0,3,"nlambda = " + glmModel._parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(glmModel._lambda_max,4)  + ", best_lambda_id = " + glmModel._output._best_lambda_idx);
+      }
       int intercept = glmModel._parms._intercept?1:0;
-      glmModel._output._model_summary.set(0,4,Integer.toString(glmModel.beta().length - intercept));
-      glmModel._output._model_summary.set(0,5,Integer.toString(glmModel._output.rank() - intercept));
-      glmModel._output._model_summary.set(0,6,_trainFrame.toString());
+      glmModel._output._model_summary.set(0,3+lambdaSearch,Integer.toString(glmModel.beta().length - intercept));
+      glmModel._output._model_summary.set(0,4+lambdaSearch,Integer.toString(glmModel._output.rank() - intercept));
+      glmModel._output._model_summary.set(0,5+lambdaSearch,Integer.valueOf(_iter));
+      glmModel._output._model_summary.set(0,6+lambdaSearch,_trainFrame.toString());
       if(_scoring_iters != null) {
         glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
         for (int i = 0; i < _scoring_iters.length; ++i) {
