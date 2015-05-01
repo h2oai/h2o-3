@@ -2019,12 +2019,16 @@ class ASTRbind extends ASTUniPrefixOp {
 
 class ASTCbind extends ASTUniPrefixOp {
   int argcnt;
+  boolean _deepCopy;
   @Override String opStr() { return "cbind"; }
-  public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
+  public ASTCbind() { super(new String[]{"cbind","ary", "deepCopy", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
     AST a;
+    a = E.parse();
+    if( a instanceof ASTId ) _deepCopy = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+    else throw new IllegalArgumentException("First argument of cbind must be TRUE or FALSE for the deepCopy flag.");
     while( !E.isEnd() ) {
       a = E.parse();
       if( a instanceof ASTId ) {
@@ -2055,13 +2059,12 @@ class ASTCbind extends ASTUniPrefixOp {
     Frame fr = new Frame(new String[0],new Vec[0]);
     for(int i = 0; i < argcnt; i++) {
       Frame f = env.peekAryAt(i-argcnt+1);  // Reverse order off stack
-      Frame ff = f.deepSlice(null,null);  // deep copy the frame, R semantics...
+      Frame ff = _deepCopy ? f.deepCopy(null) : f; // deep copy the frame, R semantics...
       Frame new_frame = fr.makeCompatible(ff);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame);
     }
     env.pop(argcnt);
-
     env.pushAry(fr);
   }
 }
