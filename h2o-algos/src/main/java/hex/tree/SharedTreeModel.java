@@ -65,6 +65,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_train[/*_ntrees+1*/];
     public double _mse_valid[/*_ntrees+1*/];
 
+    /** Training time */
+    public long _training_time_ms[/*ntrees+1*/] = new long[]{System.currentTimeMillis()};
+
     /**
      * Variable importances computed during training
      */
@@ -97,6 +100,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
       _mse_train = ArrayUtils.copyAndFillOf(_mse_train, _ntrees+1, Double.NaN);
       _mse_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN) : null;
+      _training_time_ms = ArrayUtils.copyAndFillOf(_training_time_ms, _ntrees+1, System.currentTimeMillis());
       fs.blockForPending();
     }
 
