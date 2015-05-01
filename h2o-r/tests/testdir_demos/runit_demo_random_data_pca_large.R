@@ -12,17 +12,10 @@ conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size
 
-## This causes Jenkins timeout
-rows = c(1e3,1e4,1e5)
-cols = c(50,100,200)
-
-## This runs... but is too small -> FIXME: Improve PCA algo!
-#rows = c(100)
-#cols = c(10)
-
-## This NPEs: PUBDEV-921
-#rows = c(1e7)
-#cols = c(20)
+#rows = c(1e3,1e4,1e5)
+#cols = c(50,100,200)
+rows=c(1e5,1e6,1e7)
+cols=c(10,100,1000)
 
 rows
 cols
