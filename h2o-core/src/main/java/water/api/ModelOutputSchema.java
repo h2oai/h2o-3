@@ -17,7 +17,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Column names.", direction=API.Direction.OUTPUT)
   public String[] names;
 
-  @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT)
+  @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public String[][] domains;
 
   @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
