@@ -1,18 +1,14 @@
 package water.util;
 
-import water.AutoBuffer;
+import java.util.Map;
 import java.util.TreeMap;
 
 /** Iced / Freezable Sorted HashMap.  Delegates to a TreeMap for
  *  all its operations.
  */
 public class IcedSortedHashMap<K, V> extends IcedHashMapBase<K,V> {
-  public IcedSortedHashMap() { _map = new TreeMap<>(); }
-
-  @Override public IcedSortedHashMap read_impl( AutoBuffer ab ) {
-    assert _map == null; // Fresh from serializer, no constructor has run
-    _map = new TreeMap<>();
-    fillFrom(ab);
-    return this;
-  }
+  TreeMap<K,V> _map;
+  public IcedSortedHashMap() { init(); }
+  @Override protected Map<K, V> map() { return _map; }
+  @Override protected Map<K, V> init() { return _map = new TreeMap<>(); }
 }

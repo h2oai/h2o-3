@@ -4,35 +4,33 @@ import water.AutoBuffer;
 import water.Freezable;
 import water.H2O;
 import water.Iced;
-import water.nbhm.NonBlockingHashMap;
 import water.util.DocGen.HTML;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Iced / Freezable NonBlockingHashMap abstract base class.
  */
 public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
 
-  protected Map<K, V> _map;
-  public int size()                                     { return _map.size(); }
-  public boolean isEmpty()                              { return _map.isEmpty(); }
-  public boolean containsKey(Object key)                { return _map.containsKey(key); }
-  public boolean containsValue(Object value)            { return _map.containsValue(value); }
-  public V get(Object key)                              { return _map.get(key); }
-  public V put(K key, V value)                          { return _map.put(key, value); }
-  public V remove(Object key)                           { return _map.remove(key); }
-  public void putAll(Map<? extends K, ? extends V> m)   {        _map.putAll(m); }
-  public void clear()                                   {        _map.clear(); }
-  public Set<K> keySet()                                { return _map.keySet(); }
-  public Collection<V> values()                         { return _map.values(); }
-  public Set<Entry<K, V>> entrySet()                    { return _map.entrySet(); }
-  public boolean equals(Object o)                       { return _map.equals(o); }
-  public int hashCode()                                 { return _map.hashCode(); }
+  abstract protected Map<K,V> map();
+  public int size()                                     { return map().size(); }
+  public boolean isEmpty()                              { return map().isEmpty(); }
+  public boolean containsKey(Object key)                { return map().containsKey(key); }
+  public boolean containsValue(Object value)            { return map().containsValue(value); }
+  public V get(Object key)                              { return map().get(key); }
+  public V put(K key, V value)                          { return map().put(key, value); }
+  public V remove(Object key)                           { return map().remove(key); }
+  public void putAll(Map<? extends K, ? extends V> m)   {        map().putAll(m); }
+  public void clear()                                   {        map().clear(); }
+  public Set<K> keySet()                                { return map().keySet(); }
+  public Collection<V> values()                         { return map().values(); }
+  public Set<Entry<K, V>> entrySet()                    { return map().entrySet(); }
+  public boolean equals(Object o)                       { return map().equals(o); }
+  public int hashCode()                                 { return map().hashCode(); }
 
   // This comment is stolen from water.parser.Categorical:
   //
@@ -43,8 +41,8 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   // being deleted, they may be written anyways.  If the Values are changing, a
   // random Value is written.
   @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-    if( _map.size()==0 ) return ab.put1(0); // empty map
-    Entry<K,V> entry = _map.entrySet().iterator().next();
+    if( map().size()==0 ) return ab.put1(0); // empty map
+    Entry<K,V> entry = map().entrySet().iterator().next();
     K key = entry.getKey();  V val = entry.getValue();
     assert key != null && val != null;
     int mode;
@@ -57,7 +55,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       else { assert val instanceof Iced; mode = 4; }
     }
     ab.put1(mode);              // Type of hashmap being serialized
-    for( Entry<K, V> e : _map.entrySet() ) {
+    for( Entry<K, V> e : map().entrySet() ) {
       key = e.getKey();   assert key != null;
       val = e.getValue(); assert val != null;
       if( mode==1 || mode ==2 ) ab.putStr((String)key); else ab.put((Iced)key);
@@ -66,29 +64,30 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     return (mode==1 || mode==2) ? ab.putStr(null) : ab.put(null);
   }
 
+  abstract protected Map<K,V> init();
+
   /**
-   * Helper for serialization - fills the _map from K-V pairs in the AutoBuffer object
+   * Helper for serialization - fills the mymap() from K-V pairs in the AutoBuffer object
    * @param ab Contains the serialized K-V pairs
    */
-  protected void fillFrom(AutoBuffer ab) {
+  @Override public IcedHashMapBase read_impl(AutoBuffer ab) {
+    assert map() == null; // Fresh from serializer, no constructor has run
+    Map<K,V> map = init();
     int mode = ab.get1();
-    if (mode == 0) return;
+    if (mode == 0) return this;
     K key;
     V val;
     while ((key = ((mode == 1 || mode == 2) ? (K) ab.getStr() : (K) ab.get())) != null) {
       val = ((mode == 1 || mode == 3) ? (V) ab.getStr() : (V) ab.get());
-      _map.put(key, val);
+      map.put(key, val);
     }
-  }
-
-  @Override public IcedHashMapBase read_impl( AutoBuffer ab ) {
-    throw H2O.fail("Must be overridden.");
+    return this;
   }
 
   @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     // ab.put1('{'); // NOTE: the serialization framework adds this automagically
     boolean first = true;
-    for (Entry<K, V> entry : _map.entrySet()) {
+    for (Entry<K, V> entry : map().entrySet()) {
       K key = entry.getKey();
       V value = entry.getValue();
 
