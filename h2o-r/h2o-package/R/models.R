@@ -757,7 +757,14 @@ h2o.find_row_by_threshold <- function(object, threshold) {
   tmp <- object@metrics$thresholds_and_metric_scores
   if( is.null(tmp) ) return(NULL)
   res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]  # relax the tolerance
-  if( nrow(res) > 1  ) res <- res[1,]
+  if( nrow(res) == 0L ) {
+    # couldn't find any threshold within 1e-8 of the requested value, warn and return closest threshold
+    row_num <- which.min(abs(tmp$threshold - threshold))
+    closest_threshold <- tmp$threshold[row_num]
+    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Rerun `h2o.performance` with your desired threshold explicitly set.") )
+    return( tmp[row_num,] )
+  }
+  else if( nrow(res) > 1L ) res <- res[1L,]
   res
 }
 
@@ -1014,7 +1021,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
       if(def)
         header <- paste(header, "for max F1 @ threshold =", t)
       else
-        header <- paste(header, "@ threshold =", t)
+        header <- paste(header, "@ threshold =", row$threshold)
       attr(tbl, "header") <- header
       attr(tbl, "formats") <- fmts
       oldClass(tbl) <- c("H2OTable", "data.frame")
