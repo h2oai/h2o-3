@@ -110,8 +110,6 @@ h2o.clearLog <- function() {
 #'          \link{h2o.clearLog}}
 #' @examples
 #' \dontrun{
-#' # Skip running this to avoid windows being opened during R CMD check
-#' library(h2o)
 #' localH2O = h2o.init()
 #'
 #' h2o.startLogging()
@@ -119,8 +117,9 @@ h2o.clearLog <- function() {
 #' australia.hex = h2o.importFile(localH2O, path = ausPath)
 #' h2o.stopLogging()
 #'
-#' h2o.openLog("Command")
-#' h2o.openLog("Error")
+#' # Not run to avoid windows being opened during R CMD check
+#' # h2o.openLog("Command")
+#' # h2o.openLog("Error")
 #' }
 #' @export
 h2o.openLog <- function(type) {
