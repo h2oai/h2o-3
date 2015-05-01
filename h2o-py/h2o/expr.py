@@ -161,7 +161,7 @@ class Expr(object):
     if noprint:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+        data = [c['data'] if c['type']!="string" else c["string_data"] for c in j['frames'][0]['columns'][:]]
         domains  = [c['domain'] for c in j['frames'][0]['columns']]
         for i in range(len(data)):
           if domains[i] is not None:

@@ -18,8 +18,6 @@ summary(prostate.hex)
 
 print("Make a copy of the original dataset to play with.")
 hex <- cp(prostate.hex)
-print(hex@key)
-print(prostate.hex@key)
 print(prostate.hex)
 print(hex)
 
@@ -27,7 +25,7 @@ print(hex)
 print("Impute a numeric column with the mean")
 nas <- numNAs(hex[,"DPROS"])
 print(paste("NAs before imputation:", nas))
-h2o.impute(hex, .(DPROS), method = "mean")
+h2o.impute(hex, "DPROS", method = "mean")
 
 nas <- numNAs(hex[,"DPROS"])
 print(paste("NAs after imputation: ", nas))
@@ -48,7 +46,7 @@ h2o.impute(hex, "VOL", method = "mean")
 print("Impute a numeric column with the median")
 
 hex <- cp(prostate.hex)
-h2o.impute(hex, .(VOL), method = "median")
+h2o.impute(hex, "VOL", method = "median")
 
 hex <- cp(prostate.hex)
 h2o.impute(hex, 8, method = "median")

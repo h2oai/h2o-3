@@ -74,7 +74,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
 
       // For numeric predictors, assume Gaussian distribution with sample mean and variance from model
       for(int col = _output._ncats; col < data.length; col++) {
-        if(Double.isNaN(data[col])) continue;
+        if(Double.isNaN(data[col])) continue;   // Skip predictor in joint x_1,...,x_m if NA
         double x = data[col];
         double mean = Double.isNaN(_output._pcond_raw[col][rlevel][0]) ? 0 : _output._pcond_raw[col][rlevel][0];
         double stddev = Double.isNaN(_output._pcond_raw[col][rlevel][1]) ? 1.0 :

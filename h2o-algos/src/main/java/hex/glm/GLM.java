@@ -50,6 +50,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+
   @Override protected void checkMemoryFootPrint() {/* see below */ }
   protected void checkMemoryFootPrint(DataInfo dinfo) {
     if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {

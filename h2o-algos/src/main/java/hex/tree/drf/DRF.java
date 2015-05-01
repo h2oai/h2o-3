@@ -1,22 +1,31 @@
 package hex.tree.drf;
 
 import hex.Model;
-import static hex.genmodel.GenModel.getPrediction;
 import hex.schemas.DRFV3;
-import hex.tree.*;
+import hex.tree.DHistogram;
+import hex.tree.DTree;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import static hex.tree.drf.TreeMeasuresCollector.asSSE;
-import static hex.tree.drf.TreeMeasuresCollector.asVotes;
-import water.*;
+import hex.tree.ScoreBuildHistogram;
+import hex.tree.SharedTree;
+import water.AutoBuffer;
+import water.Job;
+import water.Key;
+import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.Log;
+import water.util.RandomUtils;
+import water.util.Timer;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import static hex.genmodel.GenModel.getPrediction;
+import static hex.tree.drf.TreeMeasuresCollector.asSSE;
+import static hex.tree.drf.TreeMeasuresCollector.asVotes;
 
 /** Gradient Boosted Trees
  *
@@ -33,6 +42,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Model.ModelCategory.Multinomial,
     };
   }
+
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
 
   static final boolean DEBUG_DETERMINISTIC = false; //for debugging only
 
@@ -193,13 +204,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         // TODO: parallelize more? build more than k trees at each time, we need to care about temporary data
         // Idea: launch more DRF at once.
         Timer kb_timer = new Timer();
-        ktrees = buildNextKTrees(_train,_mtry,_parms._sample_rate,rand,tid);
+        buildNextKTrees(_train,_mtry,_parms._sample_rate,rand,tid);
         Log.info((tid+1) + ". tree was built " + kb_timer.toString());
         DRF.this.update(1);
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
 
-        // Check latest predictions
-        _model._output.addKTrees(ktrees);
       }
       doScoringAndSaveModel(true, _valid==null, _parms._build_tree_one_node);
     }
@@ -208,7 +217,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
-    private DTree[] buildNextKTrees(Frame fr, int mtrys, float sample_rate, Random rand, int tid) {
+    private void buildNextKTrees(Frame fr, int mtrys, float sample_rate, Random rand, int tid) {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -255,7 +264,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Timer t_2 = new Timer();
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
-        if( !isRunning() ) return null;
+        if( !isRunning() ) return;
         hcs = buildLayer(fr, _parms._nbins, ktrees, leafs, hcs, true, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
@@ -272,20 +281,22 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         for( int nid=0; nid<leaf; nid++ ) {
           if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
+            if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
+              if( nid==0 )               // Handle the trivial non-splitting tree
+                new DRFLeafNode(tree,-1,0);
+              continue;
+            }
             for( int i=0; i<dn._nids.length; i++ ) {
               int cnid = dn._nids[i];
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
-                      tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
-                      (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
+                  tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
+                  (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
+                   ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
                 LeafNode ln = new DRFLeafNode(tree,nid);
                 ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
               }
             }
-            // Handle the trivial non-splitting tree
-            if( nid==0 && dn._split.col() == -1 )
-              new DRFLeafNode(tree,-1,0);
           }
         }
       } // -- k-trees are done
@@ -297,22 +308,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Timer t_4 = new Timer();
       CollectPreds cp = new CollectPreds(ktrees,leafs).doAll(fr,_parms._build_tree_one_node);
 
-      final boolean importance = true; //FIXME: cheap enough?
-
-      if (importance) {
-        if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
-        else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
-      }
+      if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
+      else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
       Log.debug("CollectPreds done: " + t_4);
 
-      // Collect leaves stats
-      for (int i=0; i<ktrees.length; i++)
-        if( ktrees[i] != null )
-          ktrees[i]._leaves = ktrees[i].len() - leafs[i];
-      // DEBUG: Print the generated K trees
-      //printGenerateTrees(ktrees);
-
-      return ktrees;
+      // Grow the model by K-trees
+      _model._output.addKTrees(ktrees);
     }
 
 

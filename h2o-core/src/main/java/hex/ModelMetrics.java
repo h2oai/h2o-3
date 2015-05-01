@@ -24,7 +24,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   transient Model _model;
   transient Frame _frame;
   public final long _scoring_time;
-  public long _duration_in_ms;
+//  public long _duration_in_ms;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
