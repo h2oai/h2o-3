@@ -117,7 +117,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    this((parms==null || parms._model_id == null) ? Key.make(desc + "Model_" + Key.rand()) : parms._model_id, desc,parms);
+    this((parms == null || parms._model_id == null) ? Key.make(desc + "Model_" + Key.rand()) : parms._model_id, desc, parms);
   }
 
   /** Default constructor, given all arguments */
@@ -130,8 +130,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public static ModelBuilder createModelBuilder(String algo) {
     ModelBuilder modelBuilder;
 
+    Class<? extends ModelBuilder> clz = null;
     try {
-      Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
+      clz = ModelBuilder.getModelBuilder(algo);
+    }
+    catch (Exception ignore) {}
+
+    if (clz == null) {
+      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
+    }
+
+    try {
       if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
         throw H2O.fail("Class is not parameterized as expected: " + clz);
       }
@@ -166,7 +175,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public enum BuilderVisibility {
     Experimental,
     Beta,
-    AlwaysVisible
+    Stable
   }
 
   /**

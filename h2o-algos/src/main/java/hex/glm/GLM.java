@@ -50,7 +50,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   @Override protected void checkMemoryFootPrint() {/* see below */ }
   protected void checkMemoryFootPrint(DataInfo dinfo) {

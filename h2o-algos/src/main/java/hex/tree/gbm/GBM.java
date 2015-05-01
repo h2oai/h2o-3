@@ -26,7 +26,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   // Called from an http request
   public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
