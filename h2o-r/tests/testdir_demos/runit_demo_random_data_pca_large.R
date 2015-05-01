@@ -12,10 +12,8 @@ conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size
 
-#rows = c(1e3,1e4,1e5)
-#cols = c(50,100,200)
-rows=c(1e5,1e6,1e7)
-cols=c(10,100,1000)
+rows = c(1e3,1e4,1e5)
+cols = c(50,100,200)
 
 rows
 cols
