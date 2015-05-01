@@ -53,7 +53,7 @@ function make_hadoop_zip {
 rm -fr target
 rm -fr h2o-dist/tmp
 
-if [ -n "$DO_RELEASE" ];
+if [ -n "$DO_RELEASE" ]; then
   DO_RELEASE="-PdoRelease"
 fi
 
