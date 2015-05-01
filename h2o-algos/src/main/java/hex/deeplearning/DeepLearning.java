@@ -318,7 +318,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
           if (actualNewP.getNumFolds() != 0) {
-            Log.warn("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
+            Log.info("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
 
             H2O.unimpl("writing to n_folds field needs to be uncommented");
             // actualNewP._n_folds = 0;
@@ -418,7 +418,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model.actual_train_samples_per_iteration = computeTrainSamplesPerIteration(mp, train.numRows(), model);
         // Determine whether shuffling is enforced
         if(mp._replicate_training_data && (model.actual_train_samples_per_iteration == train.numRows()*(mp._single_node_mode ?1:H2O.CLOUD.size())) && !mp._shuffle_training_data && H2O.CLOUD.size() > 1 && !mp._reproducible) {
-          Log.warn("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
+          Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
 
