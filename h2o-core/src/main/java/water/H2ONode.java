@@ -187,7 +187,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // max memory for this node.
   // no need to ask the (possibly not yet populated) heartbeat if we want to know the local max memory.
-  long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
+  public long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
 
   // ---------------
   // A queue of available TCP sockets
