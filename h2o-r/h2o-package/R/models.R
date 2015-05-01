@@ -991,22 +991,22 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   } else def <- FALSE
   thresh2d <- object@metrics$thresholds_and_metric_scores
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  d <- paste0("class_",object@metrics$domain)
+  d <- object@metrics$domain
   p <- max_metrics[match("tps",max_metrics$Metric),3]
   n <- max_metrics[match("fps",max_metrics$Metric),3]
   m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
     tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
     rnames <- c(d, "Totals")
-    cnames <- c("Act/Pred", d, "Error", "Rate")
-    col0 <- rnames
+    cnames <- c(d, "Error", "Rate")
     col1 <- c(tns, fns, tns+fns)
     col2 <- c(fps, tps, fps+tps)
     col3 <- c(fps/(fps+tns), fns/(fns+tps), (fps+fns)/(fps+tns+fns+tps))
     col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps), paste0(" =", fns+fps, "/", fps+tns+fns+tps) )
-    fmts <- c("%s", "%i", "%i", "%f", "%s")
-    tbl <- data.frame(col0,col1,col2,col3,col4)
+    fmts <- c("%i", "%i", "%f", "%s")
+    tbl <- data.frame(col1,col2,col3,col4)
     colnames(tbl) <- cnames
+    rownames(tbl) <- rnames
     header <-  "Confusion Matrix"
     if(def)
       header <- paste(header, "for max F1 @ threshold =", t)

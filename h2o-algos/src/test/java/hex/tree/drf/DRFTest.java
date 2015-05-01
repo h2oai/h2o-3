@@ -210,7 +210,7 @@ public class DRFTest extends TestUtil {
     );
 
   }
-  @Ignore //HEXDEV-294
+  @Ignore //PUBDEV-1001
   @Test public void testCzechboard() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
@@ -225,7 +225,7 @@ public class DRFTest extends TestUtil {
             },
             50,
             a(a(45000, 0),
-                    a(0, 45000)),
+              a(0, 45000)),
             s("0", "1"));
   }
   @Test public void testAlphabet() throws Throwable {
