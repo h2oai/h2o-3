@@ -22,7 +22,7 @@
     conn@mutable$key_count  <- 0L
   }
   conn@mutable$key_count <- conn@mutable$key_count + 1L
-  key <- sprintf("%s_%d%s", prefix, conn@mutable$key_count, conn@mutable$session_id) # session_id has leading underscore
+  key <- sprintf("%s_%d", prefix, conn@mutable$key_count)  # removed session_id
   key
 }
 
