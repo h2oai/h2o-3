@@ -116,7 +116,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
-  private static Key<ModelMetrics> buildKey(Model model, Frame frame) {
+  public static Key<ModelMetrics> buildKey(Model model, Frame frame) {
     return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 

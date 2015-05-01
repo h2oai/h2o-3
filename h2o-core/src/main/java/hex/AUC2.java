@@ -5,6 +5,7 @@ import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.fvec.Frame;
 
 /** One-pass approximate AUC
  *
@@ -323,4 +324,26 @@ public class AUC2 extends Iced {
       return true;
     }
   }
+
+  // Given a prediction frame: 0/1 in column 0, probs in col 1 (col 2 ignored),
+  // report the perfect AUC found by sorting the entire dataset.  Expensive,
+  // and only works for small data (probably caps out at about 10M rows).
+  public static double perfectAUC( Frame preds ) {
+    if( preds.numCols() < 2 ) throw new IllegalArgumentException("Must be predictions in col 0, probs in col 1 for class 0");
+    Vec vacts = preds.vecs()[0];
+    Vec vprob = preds.vecs()[1];
+    if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
+      throw new IllegalArgumentException("Actuals are either 0 or 1");
+    if( vprob.min() < 0 || vprob.max() > 1)
+      throw new IllegalArgumentException("Probabilities are between 0 and 1");
+
+    byte  [] as = new byte  [vacts.length()];
+    double[] ps = new double[vacts.length()];
+
+
+
+
+    throw water.H2O.unimpl();
+  }
+
 }
