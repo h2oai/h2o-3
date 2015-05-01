@@ -50,7 +50,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       // Compute log loss
       final double eps = 1e-15;
       _logloss += -Math.log(Math.max(eps,ds[iact+1]));
-
       _auc.perRow(ds[2],iact);
 
       return ds;                // Flow coding

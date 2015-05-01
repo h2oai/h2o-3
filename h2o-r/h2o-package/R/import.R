@@ -148,7 +148,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
-#' Load a saved H2O model from disk.
+#' Load a saved H2O model from disk. Currnetly not implemented.
 #' @param path The path of the H2O Model to be imported.
 #' @param conn an \linkS4class{H2OConnection} object contianing the IP address
 #'        and port of the server running H2O.
@@ -157,14 +157,14 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' localH2O = h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
-#' prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
-#' glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
-#' glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
+#' # library(h2o)
+#' # localH2O = h2o.init()
+#' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
+#' # prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
 #' }
 #' @export
 h2o.loadModel <- function(path, conn = h2o.getConnection()) {
