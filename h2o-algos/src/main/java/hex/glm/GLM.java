@@ -57,7 +57,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
       HeartBeat hb = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat;
       double p = dinfo.fullN() - dinfo.largestCat();
-      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * (1+Math.log((double)_train.lastVec().nChunks())/Math.log(2.))); //one gram per core
+      long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * (1+.5*Math.log((double)_train.lastVec().nChunks())/Math.log(2.))); //one gram per core
       long max_mem = hb.get_max_mem();
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
@@ -258,7 +258,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       objval += l2pen;
       double objStart = objVal(gtBetastart._likelihood,gtBetastart._beta, lmax, gtBetastart._nobs,_parms._intercept);
       _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(gtBetastart._likelihood,objval, gtBetastart._gradient),objStart);
-
+      addScoringHistory(0,gtBetastart._likelihood,objStart);
       if (_parms._lambda != null) { // check the lambdas
         ArrayUtils.mult(_parms._lambda, -1);
         Arrays.sort(_parms._lambda);
@@ -443,6 +443,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     // these are not strictly state variables
     // I put them here to have all needed info in state object (so I only need to keep State[] info when doing xval)
     final Key             _dstKey;
+    boolean _allIn;
 
     // vecs used by cooridnate descent
     Vec _eVec; // eta
@@ -450,6 +451,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     Vec _zVec; // z
     Vec _iVec; // intercept - all 1s
     final int _fullN;
+    public boolean _lineSearch;
+    public int _lsCnt;
 
     public GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, int fullN, GLMGradientInfo ginfo, double objVal){
       _dstKey = dstKey;
@@ -691,7 +694,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
 
-    boolean _allIn;
+
 
     /**
      * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -699,7 +702,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
      * @return indices of expected active predictors.
      */
     private int[] activeCols(final double l1, final double l2, final double[] grad) {
-      if (_allIn) return null;
+      if (_taskInfo._allIn) return null;
       int selected = 0;
       int[] cols = null;
       if (_parms._alpha[0] > 0) {
@@ -715,7 +718,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           }
       }
       if (_parms._alpha[0] == 0 || selected == _dinfo.fullN()) {
-        _allIn = true;
+        _taskInfo._allIn = true;
         _activeData = _dinfo;
         LogInfo("strong rule at lambda_value=" + l1 + ", all " + _dinfo.fullN() + " coefficients are active");
         return null;
@@ -940,6 +943,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _taskInfo._ginfo = new GLMGradientInfo(gt1._likelihood, gt1._likelihood/gt1._nobs + l2pen, gt1._gradient);
           assert _taskInfo._ginfo._gradient.length == _dinfo.fullN() + 1:_taskInfo._ginfo._gradient.length + " != " + _dinfo.fullN() + ", intercept = " + _parms._intercept;
           _taskInfo._objVal = objVal(gt1._likelihood,gt1._beta, _parms._lambda[_lambdaId],gt1._nobs,_dinfo._intercept);
+          addScoringHistory(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal);
           _taskInfo._beta = fullBeta;
         }
       }).setValidate(_parms._intercept?_taskInfo._ymu:0.5,true).asyncExec(_dinfo._adaptedFrame);
@@ -995,12 +999,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         LogInfo("-log(l) = " + logl + ", obj = " + objVal);
 
         if (_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))) {
+          _taskInfo._lineSearch = true;
+          // nedded line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
-          addScoringHistory(_taskInfo._iter,logl,objVal);
+          if(_taskInfo._iter != 1 && _parms._family != Family.gaussian)
+            addScoringHistory(_taskInfo._iter-1,logl,objVal);
           if (lastObjVal > objVal) {
             _taskInfo._beta = glmt._beta;
             _taskInfo._objVal = objVal;
@@ -1042,9 +1049,44 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (glmt._beta != null) {
               setSubmodel(glmt._beta, glmt._val, null, (H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
             }
-            final boolean validate = (_taskInfo._iter % 5) == 0;
-            getCompleter().addToPendingCount(1);
-            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
+            if(_taskInfo._lineSearch){
+              getCompleter().addToPendingCount(1);
+              LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
+              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
+                @Override
+                public void callback(GLMLineSearchTask lst) {
+                  double t = 1;
+                  for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
+                    double[] beta = ArrayUtils.wadd(lst._beta.clone(), lst._direction, t);
+                    double newObj = objVal(lst._likelihoods[i], beta, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
+                    if (_taskInfo._objVal > newObj) {
+                      LogInfo("step = " + t + ",  objval = " + newObj);
+                      if(t == 1) {
+                        if(++_taskInfo._lsCnt == 2) { // if we do not need line search in 2 consecutive iterations turn it off
+                          _taskInfo._lineSearch = false;
+                          _taskInfo._lsCnt = 0;
+                        }
+                      } else
+                        _taskInfo._lsCnt = 0;
+                      getCompleter().addToPendingCount(1);
+                      new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _parms._intercept?_taskInfo._ymu:.5, _rowFilter, new Iteration(getCompleter(), true, true)).asyncExec(_activeData._adaptedFrame);
+                      return;
+                    }
+                  }
+                  // converged
+                  int nzs = 0;
+                  for (int i = 0; i < glmt._beta.length; ++i)
+                    if (glmt._beta[i] != 0) ++nzs;
+                  LogInfo("converged (no more progress), got " + nzs + " nzs");
+                  _taskInfo._beta = glmt._beta;
+                  checkKKTsAndComplete();
+                }
+              }).asyncExec(_activeData._adaptedFrame);
+            } else {
+              final boolean validate = (_taskInfo._iter % 5) == 0;
+              getCompleter().addToPendingCount(1);
+              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
+            }
           }
         }
       }
