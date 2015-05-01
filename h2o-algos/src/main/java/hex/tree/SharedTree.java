@@ -275,7 +275,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 //        System.out.println((_st._nclass==1?"Regression":("Class "+_fr2.vecs()[_st._ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
-//        System.out.println("--> Decided node: " + dn +
+//        System.out.println(dn +
 //                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
         if( dn._split._col == -1 ) udn.do_not_split();
         else {
@@ -289,7 +289,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
       for( int nl = tmax; nl<_tree.len(); nl ++ )
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
-      _tree._depth++;
+      if (_did_split) _tree._depth++;
     }
   }
 
