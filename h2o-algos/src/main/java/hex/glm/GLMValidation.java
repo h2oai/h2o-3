@@ -141,7 +141,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   @Override
   public String toString(){
-    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics == null?_metrics:"");
+    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics != null?", metrics = " + _metrics:"");
   }
 
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {

@@ -258,7 +258,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       objval += l2pen;
       double objStart = objVal(gtBetastart._likelihood,gtBetastart._beta, lmax, gtBetastart._nobs,_parms._intercept);
       _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(gtBetastart._likelihood,objval, gtBetastart._gradient),objStart);
-
+      addScoringHistory(0,gtBetastart._likelihood,objStart);
       if (_parms._lambda != null) { // check the lambdas
         ArrayUtils.mult(_parms._lambda, -1);
         Arrays.sort(_parms._lambda);
@@ -443,6 +443,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     // these are not strictly state variables
     // I put them here to have all needed info in state object (so I only need to keep State[] info when doing xval)
     final Key             _dstKey;
+    boolean _allIn;
 
     // vecs used by cooridnate descent
     Vec _eVec; // eta
@@ -693,7 +694,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
 
-    boolean _allIn;
+
 
     /**
      * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -701,7 +702,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
      * @return indices of expected active predictors.
      */
     private int[] activeCols(final double l1, final double l2, final double[] grad) {
-      if (_allIn) return null;
+      if (_taskInfo._allIn) return null;
       int selected = 0;
       int[] cols = null;
       if (_parms._alpha[0] > 0) {
@@ -717,7 +718,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           }
       }
       if (_parms._alpha[0] == 0 || selected == _dinfo.fullN()) {
-        _allIn = true;
+        _taskInfo._allIn = true;
         _activeData = _dinfo;
         LogInfo("strong rule at lambda_value=" + l1 + ", all " + _dinfo.fullN() + " coefficients are active");
         return null;
@@ -942,6 +943,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _taskInfo._ginfo = new GLMGradientInfo(gt1._likelihood, gt1._likelihood/gt1._nobs + l2pen, gt1._gradient);
           assert _taskInfo._ginfo._gradient.length == _dinfo.fullN() + 1:_taskInfo._ginfo._gradient.length + " != " + _dinfo.fullN() + ", intercept = " + _parms._intercept;
           _taskInfo._objVal = objVal(gt1._likelihood,gt1._beta, _parms._lambda[_lambdaId],gt1._nobs,_dinfo._intercept);
+          addScoringHistory(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal);
           _taskInfo._beta = fullBeta;
         }
       }).setValidate(_parms._intercept?_taskInfo._ymu:0.5,true).asyncExec(_dinfo._adaptedFrame);
@@ -1004,7 +1006,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
-          addScoringHistory(_taskInfo._iter,logl,objVal);
+          if(_taskInfo._iter != 1 && _parms._family != Family.gaussian)
+            addScoringHistory(_taskInfo._iter-1,logl,objVal);
           if (lastObjVal > objVal) {
             _taskInfo._beta = glmt._beta;
             _taskInfo._objVal = objVal;
