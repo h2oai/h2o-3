@@ -38,7 +38,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   // Number of columns in training set (p)
   private transient int _ncolA;
-  private transient int _ncolAExp;    // With categoricals expanded into 0/1 indicator cols
+  private transient int _ncolY;    // With categoricals expanded into 0/1 indicator cols
 
   // Number of columns in fitted X matrix (k)
   private transient int _ncolX;
@@ -102,13 +102,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     // Currently, does not work on categorical data
-    Vec[] vecs = _train.vecs();
+    /* Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isNumeric()) throw H2O.unimpl();
-    }
+    } */
 
     _ncolA = _train.numCols();
-    _ncolAExp = _train.numColsExp();
     _ncolX = _parms._k;
   }
 
@@ -140,12 +139,69 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return value;
   }
 
+  // Expand categoricals into 0/1 indicator columns for each level
+  public static double[][] expandCategoricals(double[][] centers, String[][] domains) {
+    if(centers == null) return null;
+    assert domains != null && centers[0].length == domains.length;
+
+    // Column count for expanded matrix
+    int ncols = 0;
+    for(int j = 0; j < domains.length; j++)
+      ncols += domains[j] == null ? 1 : domains[j].length;
+
+    int s = 0;    // Keep track of col index in expanded matrix
+    double[][] cexp = new double[centers.length][ncols];
+    for(int j = 0; j < centers[0].length; j++) {
+      if(domains[j] == null) {    // If numeric col, just copy directly
+        for (int i = 0; i < centers.length; i++)
+          cexp[i][s] = centers[i][j];
+        s++;
+      } else {    // If categorical col, set corresponding indicator for level to 1
+        for (int i = 0; i < centers.length; i++) {
+          double cat = centers[i][j];
+          if(Double.isNaN(cat)) continue;   // TODO: Skip if entry missing? All indicators will be zero
+          cexp[i][s+(int)cat] = 1;
+        }
+        s += domains[j].length;
+      }
+    }
+    return cexp;
+  }
+
+  // More efficient implementation assuming cols reshuffled so categoricals sorted up front
+  public static double[][] expandCategoricals(double[][] sdata, DataInfo dinfo) {
+    if(sdata == null || dinfo._cats == 0) return sdata;
+    assert sdata[0].length == dinfo._adaptedFrame.numCols();
+
+    // Column count for expanded matrix
+    int catsexp = dinfo._catOffsets[dinfo._catOffsets.length-1];
+    double[][] cexp = new double[sdata.length][catsexp + dinfo._nums];
+
+    // Expand out categorical columns
+    int cidx;
+    for(int j = 0; j < dinfo._cats; j++) {
+      for(int i = 0; i < sdata.length; i++) {
+        if (Double.isNaN(sdata[i][j])) {
+          if (dinfo._skipMissing) continue;
+          else cidx = dinfo._catOffsets[j+1]-1;   // Missing value turns into extra (last) factor
+        } else
+          cidx = dinfo.getCategoricalId(j, (int)sdata[i][j]);
+        if(cidx >= 0) cexp[i][cidx] = 1;  // Ignore categorical levels outside domain
+      }
+    }
+
+    // Copy over numeric columns
+    for(int j = 0; j < dinfo._nums; j++) {
+      for(int i = 0; i < sdata.length; i++)
+        cexp[i][catsexp+j] = sdata[i][j];
+    }
+    return cexp;
+  }
+
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
     // Initialize Y matrix
-    // TODO: Modify so categoricals are expanded into 0/1 cols
-    // TODO: May need to pass in dinfo._adaptedFrame since cols reshuffled
-    public double[][] initialY() {
+    public double[][] initialY(DataInfo dinfo) {
       double[][] centers;
 
       if (null != _parms._user_points) { // User-specified starting points
@@ -153,8 +209,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = new double[_parms._k][_ncolA];
 
         // Get the centers and put into array
-        for (int r = 0; r < _parms._k; r++) {
-          for (int c = 0; c < _ncolA; c++)
+        for (int c = 0; c < _ncolA; c++) {
+          for (int r = 0; r < _parms._k; r++)
             centers[r][c] = centersVecs[c].at(r);
         }
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
@@ -180,7 +236,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
 
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-        parms._train = _parms._train;
+        parms._train = _parms._train;     // TODO: Better to pass in adapted frame from dinfo
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._drop_na20_cols = _parms._drop_na20_cols;
@@ -205,13 +261,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
       }
 
+      // Expand out categoricals to indicator columns
+      double[][] centers_exp = expandCategoricals(centers, dinfo);
+      _ncolY = centers_exp[0].length;
+
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
-      double frob = frobenius2(centers);
+      double frob = frobenius2(centers_exp);
       if(frob == 0 || Double.isNaN(frob)) {
         warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead...");
-        centers = ArrayUtils.gaussianArray(_parms._k, _ncolA);
+        centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
       }
-      return centers;
+      return centers_exp;
     }
 
     // Stopping criteria
@@ -307,7 +367,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override protected void compute2() {
       GLRMModel model = null;
-      DataInfo dinfo = null, xinfo = null;
+      DataInfo dinfo = null, xinfo = null, tinfo = null;
       Frame fr = null, x = null;
 
       try {
@@ -328,6 +388,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
         DKV.put(dinfo._key, dinfo);
+        // TODO: Why is catLvls null in DataInfo?
 
         // Save standardization vectors for use in scoring later
         model._output._normSub = dinfo._normSub == null ? new double[_ncolA] : Arrays.copyOf(dinfo._normSub, _ncolA);
@@ -340,7 +401,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        double[][] yt = ArrayUtils.transpose(initialY());
+        tinfo = new DataInfo(Key.make(), _train, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
+        DKV.put(tinfo._key, tinfo);
+        double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul).doAll(dinfo._adaptedFrame);
@@ -399,7 +462,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         if (_parms._recover_pca) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
-        // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
+        // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);
         // tsk.outputFrame(_parms._destination_key, _train._names, null);
         done();
       } catch (Throwable t) {
@@ -416,6 +479,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
+        if (tinfo != null) tinfo.remove();
         // if (x != null && !_parms._keep_loading) x.delete();
         // Clean up old copy of X matrix
         if (fr != null) {
@@ -434,8 +498,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // In chunk, first _ncolA cols are A, next _ncolX cols are X
   protected static int idx_xold(int c, int ncolA) { return ncolA+c; }
   protected static int idx_xnew(int c, int ncolA, int ncolX) { return ncolA+ncolX+c; }
-  protected static int idx_ycat(int c, int level, DataInfo dinfo) {
-    assert level >= 0 && level < dinfo._catLvls[c].length;
+  protected static int idx_ycat(int c, int level, DataInfo dinfo) {   // TODO: Deal with case of missing bucket
+    // assert !Double.isNaN(level) && level >= 0 && level < dinfo._catLvls[c].length;
+    int catlvls = dinfo._adaptedFrame.domains() == null ? 1 : dinfo._adaptedFrame.domains()[c].length;
+    assert !Double.isNaN(level) && level >= 0 && level < catlvls;
     return dinfo._catOffsets[c]+level;
   }
   protected static int idx_ynum(int c, DataInfo dinfo) {
@@ -445,10 +511,26 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   protected static Chunk chk_xnew(Chunk chks[], int c, int ncolA, int ncolX) { return chks[ncolA+ncolX+c]; }
 
   protected static double[][] yt_block(double[][] yt, int cidx, DataInfo dinfo) {
-    double[][] block = new double[dinfo._catLvls[cidx].length][yt[0].length];
-    for(int col = 0; col < block[0].length; col++) {
-      for(int level = 0; level < block.length; level++) {
-        block[level][col] = yt[idx_ycat(cidx, level, dinfo)][col];
+    return yt_block(yt, cidx, dinfo, false);
+  }
+  protected static double[][] yt_block(double[][] yt, int cidx, DataInfo dinfo, boolean transpose) {
+    int catlvls = dinfo._adaptedFrame.domains() == null ? 1 : dinfo._adaptedFrame.domains()[cidx].length;
+    // double[][] block = new double[dinfo._catLvls[cidx].length][yt[0].length];
+
+    double[][] block;
+    if(transpose) {
+      block = new double[yt[0].length][catlvls];
+      for (int col = 0; col < block.length; col++) {
+        for (int level = 0; level < block[0].length; level++) {
+          block[col][level] = yt[idx_ycat(cidx, level, dinfo)][col];
+        }
+      }
+    } else {
+      block = new double[catlvls][yt[0].length];
+      for (int col = 0; col < block[0].length; col++) {
+        for (int level = 0; level < block.length; level++) {
+          block[level][col] = yt[idx_ycat(cidx, level, dinfo)][col];
+        }
       }
     }
     return block;
@@ -471,7 +553,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double _xreg;    // Regularization evaluated on new X
 
     UpdateX(DataInfo dinfo, GLRMParameters parms, double[][] yt, double alpha, boolean update, int ncolA, int ncolX, double[] normSub, double[] normMul) {
-      assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
+      assert yt != null && yt[0].length == ncolX;
       _parms = parms;
       _yt = yt;
       _alpha = alpha;
@@ -508,7 +590,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-          double[] xy = new double[_dinfo._catLvls[j].length];
+          // double[] xy = new double[_dinfo._catLvls[j].length];
+          double[] xy = new double[_dinfo._adaptedFrame.domains()[j].length];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xold(cs,k,_ncolA).atd(row) * _yt[idx_ycat(j,level,_dinfo)][k];
@@ -553,7 +636,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Categorical columns
         for(int j = 0; j < _dinfo._cats; j++) {
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          double[] xy = ArrayUtils.multVecArr(xnew, yt_block(_yt,j,_dinfo));
+          double[] xy = ArrayUtils.multVecArr(xnew, yt_block(_yt,j,_dinfo,true));
           _loss += _parms.mloss(xy, (int) a[j]);
         }
 
@@ -588,7 +671,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double _yreg;       // Regularization evaluated on new Y
 
     UpdateY(DataInfo dinfo, GLRMParameters parms, double[][] yt, double alpha, int ncolA, int ncolX, double[] normSub, double[] normMul) {
-      assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
+      assert yt != null && yt[0].length == ncolX;
       _parms = parms;
       _alpha = alpha;
       _ncolA = ncolA;
@@ -606,7 +689,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
-      _ytnew = new double[_ncolA][_ncolX];
+      _ytnew = new double[_ytold.length][_ncolX];
 
       // Categorical columns
       for(int j = 0; j < _dinfo._cats; j++) {
@@ -616,7 +699,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if(Double.isNaN(a)) continue;   // Skip missing observations in column
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-          double[] xy = new double[_dinfo._catLvls[j].length];
+          // double[] xy = new double[_dinfo._catLvls[j].length];
+          double[] xy = new double[_dinfo._adaptedFrame.domains()[j].length];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold[idx_ycat(j,level,_dinfo)][k];
@@ -687,7 +771,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double _loss;
 
     ObjCalc(DataInfo dinfo, GLRMParameters parms, double[][] yt, int ncolA, int ncolX, double[] normSub, double[] normMul) {
-      assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
+      assert yt != null && yt[0].length == ncolX;
       _parms = parms;
       _yt = yt;
       _ncolA = ncolA;
@@ -710,7 +794,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (Double.isNaN(a)) continue;   // Skip missing observations in row
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-          double[] xy = new double[_dinfo._catLvls[j].length];
+          // double[] xy = new double[_dinfo._catLvls[j].length];
+          double[] xy = new double[_dinfo._adaptedFrame.domains()[j].length];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ycat(j,level,_dinfo)][k];
@@ -735,7 +820,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // Computes XY where X is n by k, Y is k by p, and k <= p
-  //  Resulting matrix Z = XY will have dimensions n by k
+  //  Resulting matrix Z = XY will have dimensions n by p
   private static class BMulTask extends FrameTask<BMulTask> {
     double[][] _yt;   // _yt = Y' (transpose of Y)
 
@@ -745,16 +830,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
-      double[] nums = row.numVals;
-      assert nums.length == _yt[0].length;
-
-      for(int k = 0; k < _yt[0].length; k++) {
-        double x = 0;
-        int c = _dinfo.numStart();
-        for(int d = 0; d < nums.length; d++)
-          x += nums[d] * _yt[k][c++];
-        assert c == _yt[0].length;
-        outputs[k].addNum(x);
+      assert row.nBins + _dinfo._nums == _yt[0].length;
+      for(int p = 0; p < _yt.length; p++) {
+        double x = row.innerProduct(_yt[p]);
+        outputs[p].addNum(x);
       }
     }
   }
