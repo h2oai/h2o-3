@@ -397,6 +397,25 @@ public class DeepLearningTest extends TestUtil {
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
 
+  @Ignore //PUBDEV-1001
+  @Test public void testCzechboard() throws Throwable {
+    basicDLTest_Classification(
+            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                Vec resp = fr.remove("C2");
+                fr.add("C2", resp.toEnum());
+                resp.remove();
+                return fr.find("C3");
+              }
+            },
+            1,
+            a(a(1, 44999),
+              a(0, 45000)),
+            s("0", "1"),
+            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+  }
 
 
   // Put response as the last vector in the frame and return possible frames to clean up later
