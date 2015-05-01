@@ -22,7 +22,7 @@
     conn@mutable$key_count  <- 0L
   }
   conn@mutable$key_count <- conn@mutable$key_count + 1L
-  key <- sprintf("%s_%d%s", prefix, conn@mutable$key_count, conn@mutable$session_id) # session_id has leading underscore
+  key <- sprintf("%s_%d", prefix, conn@mutable$key_count)  # removed session_id
   key
 }
 
@@ -175,10 +175,10 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
     frame_id <- conn
     conn <- temp
   }
-  # TODO: this should use /Frames.  It needs to be versioned, and we need to eat our own dogfood.
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", frame_id, ")"), method = "POST")
-  cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
-  .h2o.parsedData(conn, frame_id, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
+  if( is.null(frame_id) ) return(NULL)
+  res <- .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
+  cnames <- unlist(lapply(res$columns, function(c) c$label))
+  .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames, linkToGC = linkToGC)
 }
 
 #' Get an R reference to an H2O model
