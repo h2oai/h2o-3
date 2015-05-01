@@ -417,15 +417,19 @@ public abstract class GLMTask  {
       return this;
     }
 
-    private String [] _domain = new String[]{"0","1"};
 
     public void map(Chunk [] chks){
       int rank = 0;
       for(int i = 0; i < _beta.length; ++i)
         if(_beta[i] != 0)
           ++rank;
-      if(_validate)
-        _val = new GLMValidation(_domain, _ymu,_params,rank, .5);
+      if(_validate) {
+        String [] domain = _dinfo._adaptedFrame.lastVec().domain();
+        if(domain == null && _params._family == Family.binomial)
+          domain = new String[]{"0", "1"}; // hard-coded special case for binary cols
+
+        _val = new GLMValidation(domain, _ymu, _params, rank, .5);
+      }
       _gradient = MemoryManager.malloc8d(_beta.length);
 
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
@@ -679,7 +683,7 @@ public abstract class GLMTask  {
       return this;
     }
 
-    private String [] _domain = new String[]{"0","1"}; // todo pass correct domain
+
     @Override
     public void map(Chunk [] chks) {
       if(_jobKey != null && !Job.isRunning(_jobKey))
@@ -691,7 +695,10 @@ public abstract class GLMTask  {
       if(_validate) {
         int rank = 0;
         if(_beta != null)for(double d:_beta)if(d != 0)++rank;
-        _val = new GLMValidation(_domain, _ymu, _glm, rank, .5); // todo pass correct threshold
+        String [] domain = _dinfo._adaptedFrame.lastVec().domain();
+        if(domain == null && _glm._family == Family.binomial)
+          domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
+        _val = new GLMValidation(domain, _ymu, _glm, rank, .5); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){
@@ -699,12 +706,9 @@ public abstract class GLMTask  {
       }
       // compute
       if(_sparse) {
-        Row row = _dinfo.newDenseRow();
         for(Row r:_dinfo.extractSparseRows(chks, _beta))
           if(rowFilter == null || rowFilter.at8((int)(r.rid - chks[0].start())) == 0)
             processRow(r);
-        // need to adjust gradient by centered zeros
-        int numStart = _dinfo.numStart();
       } else {
         Row row = _dinfo.newDenseRow();
         for(int r = 0 ; r < chks[0]._len; ++r) {

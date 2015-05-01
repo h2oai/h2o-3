@@ -43,7 +43,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   static final boolean DEBUG_DETERMINISTIC = false; //for debugging only
 
