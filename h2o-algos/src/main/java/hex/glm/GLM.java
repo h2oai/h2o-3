@@ -652,8 +652,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         // launch the next lambda
         if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iterations) {
-          getCompleter().addToPendingCount(1);
           if(_parms._n_folds > 1) {
+            getCompleter().addToPendingCount(1);
             GLMSingleLambdaTsk[] tasks = new GLMSingleLambdaTsk[_tInfos.length];
             H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter());
             cmp.addToPendingCount(tasks.length-1);
@@ -667,6 +667,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               _tInfos[0].adjustToNewLambda(currentLambda, nextLambda, _parms._alpha[0], _dinfo._intercept);
             } while((_tInfos[0].gradientCheck(_parms._lambda[_lambdaId],_parms._alpha[0]) < GLM_GRAD_EPS) && ++_lambdaId  < (_parms._lambda.length-1));
             if(_lambdaId < _parms._lambda.length) {
+              getCompleter().addToPendingCount(1);
               Log.info("GLM next lambdaId = " + _lambdaId);
               assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + (_dinfo._intercept ? 1 : 0);
               new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _tInfos[0]).fork();
