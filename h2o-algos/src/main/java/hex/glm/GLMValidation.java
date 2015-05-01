@@ -42,6 +42,10 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       :new MetricBuilderRegression();
   }
 
+  public double explainedDev(){
+    return 1.0 - residualDeviance()/nullDeviance();
+  }
+
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);

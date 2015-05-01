@@ -8,10 +8,7 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.JCodeGen;
-import water.util.MathUtils;
-import water.util.SB;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -690,25 +687,60 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     return res;
   }
 
+  public static class ScoringHistory  extends Iced {
+    int [] _scoring_times;
+    double [] _likelihoods;
+    double [] _objectives;
+    int [] _scoring_iters;
+    int[] _scoring_lambda;
+    int[] _lambda_times;
+    int [] _lambda_iters;
+    double [] _explained_dev_train;
+    double [] _explained_dev_val;
+
+    public TwoDimTable to2dTable() {
+      String [] cnames = new String[]{"iteration", "time [ms]", " -log(l)", "objective"};
+      String [] ctypes = new String[]{"int", "int","double", "double"};
+      String []cformats = new String[]{"%d","%d", "%.5f", "%.5f"};
+      if(_lambda_times != null) { // lambda search info
+        cnames =   ArrayUtils.append(cnames, new String  [] {"lambdaId","time per lambda"," Explained Deviance (train)", "Explained Deviance (test)"});
+        ctypes =   ArrayUtils.append(ctypes,  new String [] {"int"                ,"int",                        "double",          "double"});
+        cformats = ArrayUtils.append(cformats, new String[] {"%d",            "%d",                          "%.3f",            "%.3f"});
+      }
+      TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], cnames , ctypes, cformats , "");
+      int j = 0;
+      for (int i = 0; i < _scoring_iters.length; ++i) {
+        res.set(i, 0, _scoring_iters[i]);
+        res.set(i, 1, _scoring_times[i]);
+        res.set(i, 2, _likelihoods[i]);
+        res.set(i, 3, _objectives[i]);
+        if(_lambda_iters != null && _scoring_iters[i] == _lambda_iters[j]) {
+          res.set(i, 4, _scoring_lambda[j]);
+          res.set(i, 5, _lambda_times[j]);
+          res.set(i, 6, _explained_dev_train[j]);
+          if(_explained_dev_val != null && j < _explained_dev_val.length)
+            res.set(i, 7, _explained_dev_val[j]);
+          j++;
+        }
+      }
+      return res;
+    }
+  }
+
   static class FinalizeAndUnlockTsk extends DKeyTask<FinalizeAndUnlockTsk,GLMModel> {
     final Key _jobKey;
     final Key _validFrame;
     final Key _trainFrame;
-    final double [] _likelihoods;
-    final double [] _objectives;
-    final int [] _scoring_iters;
-    final int [] _scoring_times;
+
+    ScoringHistory _scoring_history;
     final int _iter;
 
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, int [] scoring_iters, int [] scoring_times, double [] likelihoods, double [] objectives){
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, ScoringHistory scoring_history){
       super(cmp, modelKey);
       _jobKey = jobKey;
       _validFrame = validFrame;
       _trainFrame = trainFrame;
-      _scoring_iters = scoring_iters;
-      _scoring_times = scoring_times;
-      _likelihoods = likelihoods;
-      _objectives = objectives;
+      _scoring_history = scoring_history;
       _iter = iter;
     }
 
@@ -753,15 +785,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output._model_summary.set(0,4+lambdaSearch,Integer.toString(glmModel._output.rank() - intercept));
       glmModel._output._model_summary.set(0,5+lambdaSearch,Integer.valueOf(_iter));
       glmModel._output._model_summary.set(0,6+lambdaSearch,_trainFrame.toString());
-      if(_scoring_iters != null) {
-        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
-        for (int i = 0; i < _scoring_iters.length; ++i) {
-          glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
-          glmModel._output._scoring_history.set(i,1,_scoring_times[i]);
-          glmModel._output._scoring_history.set(i,2,_likelihoods[i]);
-          glmModel._output._scoring_history.set(i,3,_objectives[i]);
-        }
-      }
+      if(_scoring_history != null)
+        glmModel._output._scoring_history = _scoring_history.to2dTable();
       glmModel.update(_jobKey);
       glmModel.unlock(_jobKey);
     }
