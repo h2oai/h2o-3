@@ -83,38 +83,44 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   private transient DataInfo _validDinfo;
   private transient ArrayList<Integer> _scoring_iters = new ArrayList<>();
   // time per iteration in ms
-  private transient ArrayList<Integer> _scoring_times = new ArrayList<>();
+  private transient ArrayList<Long> _scoring_times = new ArrayList<>();
+  private transient ArrayList<Integer> _iteration_times = new ArrayList<>();
   private transient ArrayList<Double> _likelihoods = new ArrayList<>();
   private transient ArrayList<Double> _objectives = new ArrayList<>();
   private transient ArrayList<Integer> _lIds = new ArrayList<>();
   private transient ArrayList<Integer> _lambda_times = new ArrayList<>();
   private transient ArrayList<Integer> _lambda_iterations = new ArrayList<>();
+  private transient ArrayList<Integer> _lambda_nonzeros = new ArrayList<>();
   private transient ArrayList<Double> _explainedDevTrain = new ArrayList<>();
   private transient ArrayList<Double> _explainedDevVal = new ArrayList<>();
 
   long _t0 = System.currentTimeMillis();
   long _t1 = System.currentTimeMillis();
 
-  public void addLambdaScoringHistory(int iteration, int lambdaId, double eTrain) { // lambda search
+  public void addLambdaScoringHistory(int iteration, int lambdaId, int nonzeros,  double eTrain) { // lambda search
     long t = System.currentTimeMillis();
     _lIds.add(lambdaId);
     _explainedDevTrain.add(eTrain);
     _lambda_times.add((int)(t-_t1));
     _lambda_iterations.add(iteration);
+    _lambda_nonzeros.add(nonzeros);
     _t1 = t;
   }
-  public void addLambdaScoringHistory(int iteration, int lambdaId, double eTrain, double eVal) { // lambda search
-    addLambdaScoringHistory(iteration,lambdaId,eTrain);
+  public void addLambdaScoringHistory(int iteration, int lambdaId, int nonzeros, double eTrain, double eVal) { // lambda search
+    addLambdaScoringHistory(iteration,lambdaId,nonzeros,eTrain);
     _explainedDevVal.add(eVal);
   }
 
   public void addScoringHistory(int i, double l, double o) {
-    long t = System.currentTimeMillis();
-    _scoring_times.add((int)(t-_t0));
-    _scoring_iters.add(i);
-    _likelihoods.add(l);
-    _objectives.add(o);
-    _t0 = t;
+    if(_scoring_iters.isEmpty() || _scoring_iters.get(_scoring_iters.size()-1) < i) {
+      long t = System.currentTimeMillis();
+      _scoring_times.add(t);
+      _iteration_times.add((int) (t - _t0));
+      _scoring_iters.add(i);
+      _likelihoods.add(l);
+      _objectives.add(o);
+      _t0 = t;
+    }
   }
 
   private transient double _iceptAdjust = 0;
@@ -546,12 +552,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if (!_scoring_iters.isEmpty()) {
         int n = _scoring_iters.size();
         sch._scoring_iters = new int   [n];
-        sch._scoring_times = new int   [n];
+        sch._scoring_times = new long   [n];
+        sch._per_iteration_times = new int[n];
         sch._objectives    = new double[n];
         sch._likelihoods   = new double[n];
         for (int i = 0; i < n; ++i) {
           sch._scoring_iters[i] = _scoring_iters.get(i);
           sch._scoring_times[i] = _scoring_times.get(i);
+          sch._per_iteration_times[i] = _iteration_times.get(i);
           sch._likelihoods[i] = _likelihoods.get(i);
           sch._objectives[i] = _objectives.get(i);
         }
@@ -561,6 +569,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         sch._lambda_iters = new int[n];
         sch._lambda_times = new int[n];
         sch._scoring_lambda = new int[n];
+        sch._predictors = new int[n];
         sch._explained_dev_train = new double[n];
         if(_parms._valid != null)
           sch._explained_dev_val = new double[n];
@@ -568,6 +577,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           sch._lambda_iters[i] = _lambda_iterations.get(i);
           sch._lambda_times[i] = _lambda_times.get(i);
           sch._scoring_lambda[i] = _lIds.get(i);
+          sch._predictors[i] = _lambda_nonzeros.get(i);
           sch._explained_dev_train[i] = _explainedDevTrain.get(i);
           if(sch._explained_dev_val != null)
             sch._explained_dev_val[i] = _explainedDevVal.get(i);
@@ -592,6 +602,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       if(!_gotException.getAndSet(true)){
+        if( ex instanceof JobCancelledException) {
+          GLM.this.cancel();
+          tryComplete();
+          return false;
+        }
         if(ex instanceof TooManyPredictorsException){
           // TODO add a warning
           tryComplete();
@@ -642,8 +657,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         // launch the next lambda
         if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iterations) {
-          getCompleter().addToPendingCount(1);
           if(_parms._n_folds > 1) {
+            getCompleter().addToPendingCount(1);
             GLMSingleLambdaTsk[] tasks = new GLMSingleLambdaTsk[_tInfos.length];
             H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter());
             cmp.addToPendingCount(tasks.length-1);
@@ -655,10 +670,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               double currentLambda = _parms._lambda[_lambdaId-1];
               double nextLambda = _parms._lambda[_lambdaId];
               _tInfos[0].adjustToNewLambda(currentLambda, nextLambda, _parms._alpha[0], _dinfo._intercept);
-            } while((_tInfos[0].gradientCheck(_parms._lambda[_lambdaId],_parms._alpha[0]) < GLM_GRAD_EPS) && ++_lambdaId  < (_parms._lambda.length-1));
-            Log.info("GLM next lambdaId = " + _lambdaId);
-            assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN()+(_dinfo._intercept?1:0);
-            new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()),  _tInfos[0]).fork();
+            } while((_tInfos[0].gradientCheck(_parms._lambda[_lambdaId],_parms._alpha[0]) < GLM_GRAD_EPS) && ++_lambdaId  < (_parms._lambda.length));
+            if(_lambdaId < _parms._lambda.length) {
+              getCompleter().addToPendingCount(1);
+              Log.info("GLM next lambdaId = " + _lambdaId);
+              assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + (_dinfo._intercept ? 1 : 0);
+              new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _tInfos[0]).fork();
+            }
           }
         }
       }
@@ -780,7 +798,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       return fullBeta;
     }
 
-    protected void solve(){
+    protected void solve(boolean doLineSearch){
       if (_activeData.fullN() > _parms._max_active_predictors)
         throw new TooManyPredictorsException();
       Solver solverType = _parms._solver;
@@ -827,7 +845,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                 }
                 if ((_taskInfo._iter & 7) == 0) {
                   _taskInfo._worked += _taskInfo._workPerIteration*8;
-                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal + ", gradient norm = " + ArrayUtils.l2norm2(ginfo._gradient,false), GLM.this._key);
+                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(ginfo._objVal,4) + ", gradient norm = " + MathUtils.roundToNDigits(ArrayUtils.l2norm2(ginfo._gradient, false), 4), GLM.this._key);
                   LogInfo("LBFGS: objval = " + ginfo._objVal);
                 }
                 ++_taskInfo._iter;
@@ -898,7 +916,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           // done, compute the gradient and check KKTs
           break;
         case IRLSM:// fork off ADMM iteration
-          new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter, new Iteration(this, false)).asyncExec(_activeData._adaptedFrame);
+          new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter, new Iteration(this, doLineSearch)).asyncExec(_activeData._adaptedFrame);
           return;
         default:
           throw H2O.unimpl();
@@ -949,23 +967,33 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
               // [unlike at the start of nextLambda call when we're not inside onCompletion]))
               getCompleter().addToPendingCount(1);
-              solve();
+              solve(true);
               return;
             }
           }
+          int nzs = 0;
+          for(double d:_taskInfo._beta)
+            if(d != 0) ++nzs;
+          final int rank = nzs;
           if (_valid != null) {
             GLMSingleLambdaTsk.this.addToPendingCount(1);
+            final int iter = _taskInfo._iter;
+            final int lambdaId = _lambdaId;
             // public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
             new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], gt1._beta, 1.0 / _taskInfo._nobs, null /* no rowf filter for validation dataset */, new H2OCallback<GLMGradientTask>(GLMSingleLambdaTsk.this) {
               @Override
               public void callback(GLMGradientTask gt2) {
                 LogInfo("hold-out set validation: \n" + gt2._val.toString());
-                setSubmodel(_taskInfo._beta, gt1._val, gt2._val, GLMSingleLambdaTsk.this);
-                addLambdaScoringHistory(_taskInfo._iter,_lambdaId,gt1._val.explainedDev(),gt2._val.explainedDev());
+                gt1._val._intercept = _parms._intercept;
+                gt2._val._intercept = _parms._intercept;
+                // can not use any of the member variables, since computation will go on in parallell
+                // also, we have already fully expanded beta here -> different call than from in-between iterations
+                GLM.this.setSubmodel(_taskInfo._dstKey, iter, gt1._beta, gt1._val, gt2._val, GLMSingleLambdaTsk.this);
+                addLambdaScoringHistory(iter,lambdaId,rank,gt1._val.explainedDev(),gt2._val.explainedDev());
               }
             }).setValidate(_parms._intercept?_taskInfo._ymu:0, true).asyncExec(_validDinfo._adaptedFrame);
           } else {
-            addLambdaScoringHistory(_taskInfo._iter,_lambdaId,gt1._val.explainedDev());
+            addLambdaScoringHistory(_taskInfo._iter,_lambdaId,rank,gt1._val.explainedDev());
             setSubmodel(_taskInfo._beta, gt1._val, null, null);
           }
           // got valid solution, update the state and complete
@@ -999,7 +1027,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _taskInfo._beta = contractVec(_taskInfo._beta,activeCols);
       assert  activeCols == null || _activeData.fullN() == activeCols.length : LogInfo("mismatched number of cols, got " + activeCols.length + " active cols, but data info claims " + _activeData.fullN());
       assert DKV.get(_activeData._key) != null;
-      solve();
+      solve(false);
     }
     private class Iteration extends H2O.H2OCallback<GLMIterationTask> {
       public final long _iterationStartTime;
@@ -1043,8 +1071,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
-          if(_taskInfo._iter != 1 && _parms._family != Family.gaussian)
-            addScoringHistory(_taskInfo._iter-1,logl,objVal);
+          addScoringHistory(_taskInfo._iter-1,logl,objVal);
           if (lastObjVal > objVal) {
             _taskInfo._beta = glmt._beta;
             _taskInfo._objVal = objVal;
@@ -1068,7 +1095,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
         }
         _taskInfo._worked += _taskInfo._workPerIteration;
-        update(_taskInfo._workPerIteration, "lambdaId = " + _lambdaId + ", iteration = " + _taskInfo._iter + ", objective value = " + objVal);
+        update(_taskInfo._workPerIteration, "lambdaId = " + _lambdaId + ", iteration = " + _taskInfo._iter + ", objective value = " + MathUtils.roundToNDigits(objVal,4));
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
         } else {
@@ -1120,7 +1147,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                 }
               }).asyncExec(_activeData._adaptedFrame);
             } else {
-              final boolean validate = (_taskInfo._iter % 5) == 0;
+              final boolean validate = false; // too much overhead! (_taskInfo._iter % 5) == 0;
               getCompleter().addToPendingCount(1);
               new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
             }

@@ -12,6 +12,7 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
 public class H2OYarnDiagnostic {
     // These are known up front.
     Configuration conf;
+    String applicationId;
     String queueName;
     int numNodes;
     int nodeMemoryMb;
@@ -24,12 +25,12 @@ public class H2OYarnDiagnostic {
     int queueAvailableVirtualCores;
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 4) {
-            System.out.println("usage:  queueName numNodes nodeMemoryMb numNodesStarted");
+        if (args.length != 5) {
+            System.out.println("usage:  applicationId queueName numNodes nodeMemoryMb numNodesStarted");
             System.exit(1);
         }
 
-        diagnose(args[0], Integer.valueOf(args[1]), Integer.valueOf(args[2]), Integer.valueOf(args[3]));
+        diagnose(args[0], args[1], Integer.valueOf(args[2]), Integer.valueOf(args[3]), Integer.valueOf(args[4]));
     }
 
     /**
@@ -41,8 +42,9 @@ public class H2OYarnDiagnostic {
      * @param numNodesStarted Number of containers that actually got started before giving up
      * @throws Exception
      */
-	public static void diagnose(String queueName, int numNodes, int nodeMemoryMb, int numNodesStarted) throws Exception {
+	public static void diagnose(String applicationId, String queueName, int numNodes, int nodeMemoryMb, int numNodesStarted) throws Exception {
         H2OYarnDiagnostic client = new H2OYarnDiagnostic();
+        client.applicationId = applicationId;
         client.queueName = queueName;
         client.numNodes = numNodes;
         client.nodeMemoryMb = nodeMemoryMb;
@@ -203,6 +205,7 @@ public class H2OYarnDiagnostic {
                 System.out.println("        Application state:           " + ar.getYarnApplicationState());
             }
             System.out.println("        Tracking URL:                " + ar.getTrackingUrl());
+            System.out.println("        Queue name:                  " + ar.getQueue());
             ApplicationResourceUsageReport ur = ar.getApplicationResourceUsageReport();
             System.out.println("        Used/Reserved containers:    "
                     + ur.getNumUsedContainers()

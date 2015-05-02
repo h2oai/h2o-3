@@ -57,7 +57,7 @@ configurations {
 
 task signAll(type : Sign) {
     sign configurations.toPublish
-    //sign configurations.pom
+    required = project.ext.isRelease
 }
 
 //
@@ -97,15 +97,17 @@ publishing {
               artifact art
           }
 
-          signAll.signatures.all { Signature signature ->
-              logger.debug("Publishing signature for: " + signature.file + ", type=" + signature.type)
-              artifact(signature, new Action<MavenArtifact>() {
-                  @Override
-                  void execute(MavenArtifact t) {
-                      t.classifier = signature.toSignArtifact.classifier != "" ? signature.toSignArtifact.classifier : null
-                      t.extension = signature.type == "xml.asc" ? "pom.asc" : signature.type
-                  }
-              })
+          if (signAll.required) {
+              signAll.signatures.all { Signature signature ->
+                  logger.debug("Publishing signature for: " + signature.file + ", type=" + signature.type)
+                  artifact(signature, new Action<MavenArtifact>() {
+                      @Override
+                      void execute(MavenArtifact t) {
+                          t.classifier = signature.toSignArtifact.classifier != "" ? signature.toSignArtifact.classifier : null
+                          t.extension = signature.type == "xml.asc" ? "pom.asc" : signature.type
+                      }
+                  })
+              }
           }
 
           pom.withXml { provider ->
