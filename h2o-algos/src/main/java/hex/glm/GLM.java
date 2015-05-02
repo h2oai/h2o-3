@@ -1114,13 +1114,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               setSubmodel(glmt._beta, glmt._val, null, (H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
             }
             if(_taskInfo._lineSearch){
-              final double expectedLikelihood = glmt._likelihood;
               getCompleter().addToPendingCount(1);
               LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
               new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
                 @Override
                 public void callback(GLMLineSearchTask lst) {
-                  assert Math.abs(lst._likelihoods[0] - expectedLikelihood) < 1e-8;
                   assert lst._nobs == _taskInfo._nobs;
                   double t = 1;
                   for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
@@ -1169,7 +1167,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override
       public void callback(final GLMLineSearchTask lst) {
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
-        assert Math.abs(lst._likelihoods[0] - _expectedLikelihood) < 1e-8;
+        assert Double.isNaN(_expectedLikelihood) || Math.abs(lst._likelihoods[0] - _expectedLikelihood) < 1e-8:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
