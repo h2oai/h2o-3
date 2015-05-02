@@ -1063,12 +1063,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         double logl = glmt._likelihood;
         LogInfo("-log(l) = " + logl + ", obj = " + objVal);
 
-        if (_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))) {
+        if (_doLinesearch && (glmt.hasNaNsOrInf() || !((lastObjVal - objVal) > -1e-8))) {
           _taskInfo._lineSearch = true;
           // nedded line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
-          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
           addScoringHistory(_taskInfo._iter-1,logl,objVal);
@@ -1114,16 +1114,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               setSubmodel(glmt._beta, glmt._val, null, (H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
             }
             if(_taskInfo._lineSearch){
+              final double expectedLikelihood = glmt._likelihood;
               getCompleter().addToPendingCount(1);
               LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
               new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
                 @Override
                 public void callback(GLMLineSearchTask lst) {
+                  assert Math.abs(lst._likelihoods[0] - expectedLikelihood) < 1e-8;
+                  assert lst._nobs == _taskInfo._nobs;
                   double t = 1;
                   for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
                     double[] beta = ArrayUtils.wadd(lst._beta.clone(), lst._direction, t);
                     double newObj = objVal(lst._likelihoods[i], beta, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
-                    if (_taskInfo._objVal > newObj) {
+                    if (_taskInfo._objVal - newObj > 1e-8) {
                       LogInfo("step = " + t + ",  objval = " + newObj);
                       if(t == 1) {
                         if(++_taskInfo._lsCnt == 2) { // if we do not need line search in 2 consecutive iterations turn it off
@@ -1157,13 +1160,16 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     private class LineSearchIteration extends H2O.H2OCallback<GLMLineSearchTask> {
-      LineSearchIteration(CountedCompleter cmp) {
+      final double _expectedLikelihood;
+      LineSearchIteration(CountedCompleter cmp, double expectedLikelihood) {
         super((H2OCountedCompleter) cmp);
+        _expectedLikelihood = expectedLikelihood;
       }
 
       @Override
       public void callback(final GLMLineSearchTask lst) {
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
+        assert Math.abs(lst._likelihoods[0] - _expectedLikelihood) < 1e-8;
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
