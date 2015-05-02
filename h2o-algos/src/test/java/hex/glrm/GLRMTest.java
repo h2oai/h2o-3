@@ -2,8 +2,6 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.glrm.GLRMModel.GLRMParameters;
-import hex.svd.SVD;
-import hex.svd.SVDModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -17,7 +15,6 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
@@ -79,7 +76,7 @@ public class GLRMTest extends TestUtil {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._gamma = 0;
+      parms._gamma_x = parms._gamma_y = 0;
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_pca = false;
@@ -115,7 +112,7 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 14;
-      parms._gamma = 0;
+      parms._gamma_x = parms._gamma_y = 0;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._recover_pca = false;
@@ -162,7 +159,7 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._gamma = 0;
+      parms._gamma_x = parms._gamma_y = 0;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._max_iterations = 1000;
@@ -230,7 +227,7 @@ public class GLRMTest extends TestUtil {
         parms = new GLRMParameters();
         parms._train = train._key;
         parms._k = train.numCols();
-        parms._gamma = 0;
+        parms._gamma_x = parms._gamma_y = 0;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
@@ -281,7 +278,7 @@ public class GLRMTest extends TestUtil {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._gamma = 0;
+      parms._gamma_x = parms._gamma_y = 0;
       parms._k = 5;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.NONE;

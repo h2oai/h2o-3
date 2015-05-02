@@ -70,7 +70,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
-    if (_parms._gamma < 0) error("_gamma", "gambda must be a non-negative number");
+    if (_parms._gamma_x < 0) error("_gamma_x", "gamma must be a non-negative number");
+    if (_parms._gamma_y < 0) error("_gamma_y", "gamma_y must be a non-negative number");
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
     if (_parms._init_step_size <= 0)
@@ -388,7 +389,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
         DKV.put(dinfo._key, dinfo);
-        // TODO: Why is catLvls null in DataInfo?
 
         // Save standardization vectors for use in scoring later
         model._output._normSub = dinfo._normSub == null ? new double[_ncolA] : Arrays.copyOf(dinfo._normSub, _ncolA);
@@ -407,7 +407,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul).doAll(dinfo._adaptedFrame);
-        model._output._objective = objtsk._loss + _parms._gamma * _parms.regularize(yt);
+        model._output._objective = objtsk._loss + _parms._gamma_y * _parms.regularize_y(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
 
@@ -426,7 +426,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // 3) Compute average change in objective function
           objtsk = new ObjCalc(dinfo, _parms, ytnew, _ncolA, _ncolX, model._output._normSub, model._output._normMul).doAll(dinfo._adaptedFrame);
-          double obj_new = objtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
+          double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * ytsk._yreg;
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
           model._output._iterations++;
 
@@ -500,8 +500,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   protected static int idx_xnew(int c, int ncolA, int ncolX) { return ncolA+ncolX+c; }
   protected static int idx_ycat(int c, int level, DataInfo dinfo) {   // TODO: Deal with case of missing bucket
     // assert !Double.isNaN(level) && level >= 0 && level < dinfo._catLvls[c].length;
-    int catlvls = dinfo._adaptedFrame.domains() == null ? 1 : dinfo._adaptedFrame.domains()[c].length;
-    assert !Double.isNaN(level) && level >= 0 && level < catlvls;
+    assert dinfo._adaptedFrame.domains() != null : "Domain of categorical column cannot be null";
+    assert !Double.isNaN(level) && level >= 0 && level < dinfo._adaptedFrame.domains()[c].length;
     return dinfo._catOffsets[c]+level;
   }
   protected static int idx_ynum(int c, DataInfo dinfo) {
@@ -627,9 +627,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Update row x_i of working copy with new values
         for(int k = 0; k < _ncolX; k++) {
           double xold = chk_xold(cs,k,_ncolA).atd(row);   // Old value of x_i
-          xnew[k] = _parms.rproxgrad(xold - _alpha * grad[k], _alpha);  // Proximal gradient
+          xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
           chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
-          _xreg += _parms.regularize(xnew[k]);
+          _xreg += _parms.regularize_x(xnew[k]);
         }
 
         // Compute loss function using new x_i
@@ -749,8 +749,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       for(int j = 0; j < _ytnew.length; j++) {
         for(int k = 0; k < _ytnew[0].length; k++) {
           double u = _ytold[j][k] - _alpha * _ytnew[j][k];
-          _ytnew[j][k] = _parms.rproxgrad(u, _alpha);
-          _yreg += _parms.regularize(_ytnew[j][k]);
+          _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
+          _yreg += _parms.regularize_y(_ytnew[j][k]);
         }
       }
     }
