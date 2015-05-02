@@ -25,39 +25,32 @@ task javadocJar(type: Jar) {
 
 // Default task to bundle sources code as jar
 task sourcesJar(type: Jar) {
-  from sourceSets.main.allSource
   classifier = 'sources'
-}
-
-// Container for source code
-configurations {
-    sourcesJars
-}
-
-// Container for documentation
-configurations {
-    docsJars
+  from sourceSets.main.allSource
 }
 
 // Container for generated POMs (by default added into archive configuration)
 configurations {
-    pom
-}
-
-// Append source JAR to sourceCode container
-artifacts {
-    sourcesJars sourcesJar
-    docsJars javadocJar
-//    pom generatePom.destination
+    pom {
+        transitive = false
+    }
 }
 
 configurations {
-    toPublish.extendsFrom archives, docsJars, sourcesJars
+    toPublish
+}
+
+artifacts {
+    toPublish javadocJar
+    toPublish sourcesJar
 }
 
 task signAll(type : Sign) {
+    sign configurations.archives
+    // Sign additional artifacts
     sign configurations.toPublish
-    required = project.ext.isRelease
+    // Sign only in case of release
+    required = project.ext.isRelease || project.hasProperty("doSignAll")
 }
 
 //
@@ -74,11 +67,6 @@ project.tasks.whenTaskAdded({ t ->
     }
 })
 
-
-//publish.dependsOn(signAll)
-//publish.dependsOn sourcesJar
-
-
 // This is part of publish module responsible by putting jars into local Ivy cache
 // The code is here to support Spark assembly which expects modules in local Ivy cache
 publishing {
@@ -91,7 +79,11 @@ publishing {
           def projectVersion = bv.getProjectVersion()
           version "$projectVersion"
 
-          // Publish all sources
+          // Publish all artifacts
+          // NOTE: needs to be here to create a POM file with correct dependencies
+          from components.java
+
+          // Publish additional artifacts as documentaiton or source code
           configurations.toPublish.allArtifacts.each { art ->
               logger.debug("Publishing artifact for: " + art)
               artifact art
@@ -153,7 +145,6 @@ publishing {
                           email 'support@h2o.ai'
                       }
                   }
-
               }
               // Append basic POM information
               provider.asNode().children().last() + h2oPOM
