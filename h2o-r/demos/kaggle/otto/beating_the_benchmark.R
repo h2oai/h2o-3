@@ -25,7 +25,7 @@ if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools")
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 
 # Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1112/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1179/R")))
 
 
 ######################################################################
