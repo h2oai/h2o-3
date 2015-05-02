@@ -11,21 +11,21 @@
 ######################################################################
 
 # The following two commands remove any previously installed H2O packages for R.
-if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
-if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
-
-# Next, we download packages that H2O depends on.
-if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
-if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
-if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
-if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
-if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
-if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
-if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
-
-# Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1112/R")))
+#if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+#if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+#
+## Next, we download packages that H2O depends on.
+#if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
+#if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
+#if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
+#if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
+#if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+#if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+#if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
+#if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+#
+## Now we download, install and initialize the H2O package for R.
+#install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1112/R")))
 
 
 ######################################################################
@@ -52,8 +52,8 @@ dir <- paste0(path.expand("~"), "/h2o-kaggle/otto/")
 ## Step 3 - Import Data and create Train/Validation Splits
 ######################################################################
 
-train.hex <- h2o.importFile(paste0(dir,"train.csv"), key="train.hex")
-test.hex <- h2o.importFile(paste0(dir, "test.csv"), key="test.hex")
+train.hex <- h2o.importFile(paste0(dir,"train.csv"), destination_frame="train.hex")
+test.hex <- h2o.importFile(paste0(dir, "test.csv"), destination_frame="test.hex")
 dim(train.hex)
 summary(train.hex)
 
@@ -94,8 +94,8 @@ for (i in 1:10) {
                    y=response, 
                    training_frame=train_holdout.hex,
                    validation_frame=valid_holdout.hex,
-                   destination_key=model_name,
-                   loss="multinomial",
+                   model_id=model_name,
+                   distribution="multinomial",
                    ntrees=rand_numtrees, 
                    max_depth=rand_max_depth, 
                    min_rows=rand_min_rows, 
@@ -107,7 +107,7 @@ for (i in 1:10) {
 ## Find the best model (lowest logloss on the validation holdout set)
 best_err <- 1e3
 for (i in 1:length(models)) {
-  err <- h2o.performance(models[[i]], valid_holdout.hex)@metrics$logloss
+  err <- h2o.logloss( h2o.performance(models[[i]], valid_holdout.hex) )
   if (err < best_err) {
     best_err <- err
     best_model <- models[[i]]
@@ -123,13 +123,13 @@ parms$learn_rate
 
 ## Training set performance metrics
 train_perf <- h2o.performance(best_model, train_holdout.hex)
-train_perf@metrics$cm$table
-train_perf@metrics$logloss
+h2o.confusionMatrix(train_perf)
+h2o.logloss(train_perf)
 
 ## Validation set performance metrics
 valid_perf <- h2o.performance(best_model, valid_holdout.hex)
-valid_perf@metrics$cm$table
-valid_perf@metrics$logloss
+h2o.confusionMatrix(valid_perf)
+h2o.logloss(valid_perf)
 
 
 ######################################################################
@@ -138,9 +138,9 @@ valid_perf@metrics$logloss
 
 model <- h2o.gbm(x=predictors, 
                  y=response,
-                 destination_key="final_model",
+                 model_id="final_model",
                  training_frame=train.hex, 
-                 loss="multinomial",
+                 distribution="multinomial",
                  ntrees=42,
                  max_depth=10, 
                  min_rows=10,
