@@ -717,7 +717,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double [] _explained_dev_val;
 
     public TwoDimTable to2dTable() {
-      String [] cnames = new String[]{"timestamp", "duration","iteration", "log-likelihood", "objective"};
+      String [] cnames = new String[]{"timestamp", "duration","iteration", "log_likelihood", "objective"};
       String [] ctypes = new String[]{"string","string","int", "double", "double"};
       String []cformats = new String[]{"%s","%s","%d", "%.5f", "%.5f"};
       if(_lambda_times != null) { // lambda search info
