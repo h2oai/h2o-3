@@ -602,6 +602,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       if(!_gotException.getAndSet(true)){
+        if( ex instanceof JobCancelledException) {
+          GLM.this.cancel();
+          tryComplete();
+          return false;
+        }
         if(ex instanceof TooManyPredictorsException){
           // TODO add a warning
           tryComplete();
@@ -665,7 +670,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               double currentLambda = _parms._lambda[_lambdaId-1];
               double nextLambda = _parms._lambda[_lambdaId];
               _tInfos[0].adjustToNewLambda(currentLambda, nextLambda, _parms._alpha[0], _dinfo._intercept);
-            } while((_tInfos[0].gradientCheck(_parms._lambda[_lambdaId],_parms._alpha[0]) < GLM_GRAD_EPS) && ++_lambdaId  < (_parms._lambda.length-1));
+            } while((_tInfos[0].gradientCheck(_parms._lambda[_lambdaId],_parms._alpha[0]) < GLM_GRAD_EPS) && ++_lambdaId  < (_parms._lambda.length));
             if(_lambdaId < _parms._lambda.length) {
               getCompleter().addToPendingCount(1);
               Log.info("GLM next lambdaId = " + _lambdaId);
@@ -972,13 +977,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           final int rank = nzs;
           if (_valid != null) {
             GLMSingleLambdaTsk.this.addToPendingCount(1);
+            final int iter = _taskInfo._iter;
+            final int lambdaId = _lambdaId;
             // public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
             new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], gt1._beta, 1.0 / _taskInfo._nobs, null /* no rowf filter for validation dataset */, new H2OCallback<GLMGradientTask>(GLMSingleLambdaTsk.this) {
               @Override
               public void callback(GLMGradientTask gt2) {
                 LogInfo("hold-out set validation: \n" + gt2._val.toString());
-                setSubmodel(_taskInfo._beta, gt1._val, gt2._val, GLMSingleLambdaTsk.this);
-                addLambdaScoringHistory(_taskInfo._iter,_lambdaId,rank,gt1._val.explainedDev(),gt2._val.explainedDev());
+                gt1._val._intercept = _parms._intercept;
+                gt2._val._intercept = _parms._intercept;
+                // can not use any of the member variables, since computation will go on in parallell
+                // also, we have already fully expanded beta here -> different call than from in-between iterations
+                GLM.this.setSubmodel(_taskInfo._dstKey, iter, gt1._beta, gt1._val, gt2._val, GLMSingleLambdaTsk.this);
+                addLambdaScoringHistory(iter,lambdaId,rank,gt1._val.explainedDev(),gt2._val.explainedDev());
               }
             }).setValidate(_parms._intercept?_taskInfo._ymu:0, true).asyncExec(_validDinfo._adaptedFrame);
           } else {
