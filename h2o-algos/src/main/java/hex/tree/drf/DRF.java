@@ -284,7 +284,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
-                ln._pred = 0.5f; //PUBDEV-1001 - need to predict the mean here
+                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _response.mean());
               }
               continue;
             }
