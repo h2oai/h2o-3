@@ -2,6 +2,8 @@ package hex.glm;
 
 import hex.*;
 import hex.glm.GLMModel.GLMParameters.Family;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
@@ -27,6 +29,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
+  }
+
+  @Override
+  protected boolean toJavaCheckTooBig() {
+    if(beta().length > 10000) {
+      Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
+      return true;
+    }
+    return false;
   }
 
   public DataInfo dinfo() { return _dinfo; }
@@ -642,11 +653,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
-      if (_submodels[l].trainVal != null && tFrame != null)
+      if (_submodels[l].trainVal != null && tFrame != null) {
         _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,tFrame.vec(m._output.responseName()).sigma());
+        if(_binomial)
+          _threshold =_training_metrics.auc().maxF1();
+      }
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
         _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m, vFrame, vFrame.vec(m._output.responseName()).sigma());
+        if(_binomial)
+          _threshold = _validation_metrics.auc().maxF1();
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
@@ -688,38 +704,45 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
 
   public static class ScoringHistory  extends Iced {
-    int [] _scoring_times;
+    long [] _scoring_times;
+    int  [] _per_iteration_times;
     double [] _likelihoods;
     double [] _objectives;
     int [] _scoring_iters;
     int[] _scoring_lambda;
     int[] _lambda_times;
     int [] _lambda_iters;
+    int [] _predictors;
     double [] _explained_dev_train;
     double [] _explained_dev_val;
 
     public TwoDimTable to2dTable() {
-      String [] cnames = new String[]{"iteration", "time [ms]", " -log(l)", "objective"};
-      String [] ctypes = new String[]{"int", "int","double", "double"};
-      String []cformats = new String[]{"%d","%d", "%.5f", "%.5f"};
+      String [] cnames = new String[]{"timestamp", "duration","iteration", "log-likelihood", "objective"};
+      String [] ctypes = new String[]{"string","string","int", "double", "double"};
+      String []cformats = new String[]{"%s","%s","%d", "%.5f", "%.5f"};
       if(_lambda_times != null) { // lambda search info
-        cnames =   ArrayUtils.append(cnames, new String  [] {"lambdaId","time per lambda"," Explained Deviance (train)", "Explained Deviance (test)"});
-        ctypes =   ArrayUtils.append(ctypes,  new String [] {"int"                ,"int",                        "double",          "double"});
-        cformats = ArrayUtils.append(cformats, new String[] {"%d",            "%d",                          "%.3f",            "%.3f"});
+        cnames =   ArrayUtils.append(cnames, new String  [] {"lambdaId","time per lambda","Number of Predictors","Explained Deviance (train)", "Explained Deviance (test)"});
+        ctypes =   ArrayUtils.append(ctypes,  new String [] {"int"                ,"int", "int",                       "double",          "double"});
+        cformats = ArrayUtils.append(cformats, new String[] {"%d",            "%d",  "%d",                        "%.3f",            "%.3f"});
       }
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], cnames , ctypes, cformats , "");
       int j = 0;
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
       for (int i = 0; i < _scoring_iters.length; ++i) {
-        res.set(i, 0, _scoring_iters[i]);
-        res.set(i, 1, _scoring_times[i]);
-        res.set(i, 2, _likelihoods[i]);
-        res.set(i, 3, _objectives[i]);
+        int col = 0;
+        res.set(i, col++, fmt.print(_scoring_times[i]));
+        res.set(i, col++, PrettyPrint.msecs(_scoring_times[i] - _scoring_times[0], true));
+        res.set(i, col++, _scoring_iters[i]);
+        res.set(i, col++, _likelihoods[i]);
+        res.set(i, col++, _objectives[i]);
         if(_lambda_iters != null && _scoring_iters[i] == _lambda_iters[j]) {
-          res.set(i, 4, _scoring_lambda[j]);
-          res.set(i, 5, _lambda_times[j]);
-          res.set(i, 6, _explained_dev_train[j]);
+          res.set(i, col++, _scoring_lambda[j]);
+          res.set(i, col++, _lambda_times[j]);
+          res.set(i, col++, _predictors[j]);
+          res.set(i, col++, _explained_dev_train[j]);
           if(_explained_dev_val != null && j < _explained_dev_val.length)
-            res.set(i, 7, _explained_dev_val[j]);
+            res.set(i, col++, _explained_dev_val[j]);
           j++;
         }
       }

@@ -1,7 +1,6 @@
 package hex.schemas;
 
 import hex.glm.GLMModel;
-import water.MemoryManager;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
@@ -18,11 +17,11 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 
   public static final class GLMModelOutputV3 extends ModelOutputSchema<GLMModel.GLMOutput, GLMModelOutputV3> {
 
-    @API(help="Table of coefficients")
+    @API(help="Table of Coefficients")
     TwoDimTableBase coefficients_table;
 
-    @API(help="Coefficient magnitudes")
-    TwoDimTableBase coefficients_magnitude;
+    @API(help="Standardized Coefficient Magnitudes")
+    TwoDimTableBase standardized_coefficients_magnitude;
 
 
     @Override
@@ -65,11 +64,11 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         String [] names2 = new String[names.length];
         for(int i = 0; i < names2.length-1; ++i)
           names2[i] = names[indices[i]];
-        tdt = new TwoDimTable("Coefficient Magnitudes","coefficient magnitudes", names2, new String[]{"Coefficients"},new String[]{"double"},new String[]{"%5f"},"names");
+        tdt = new TwoDimTable("Standardized Coefficient Magnitudes","standardized coefficient magnitudes", names2, new String[]{"Coefficients"},new String[]{"double"},new String[]{"%5f"},"names");
         for(int i = 0; i < sm.beta.length-1; ++i)
           tdt.set(i, 0, magnitudes[indices[i]]);
-        coefficients_magnitude = new TwoDimTableBase();
-        coefficients_magnitude.fillFromImpl(tdt);
+        standardized_coefficients_magnitude = new TwoDimTableBase();
+        standardized_coefficients_magnitude.fillFromImpl(tdt);
       } else {
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double"};
