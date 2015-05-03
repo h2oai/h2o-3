@@ -1415,7 +1415,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
   types <- gsub("factor", "enum", types)
   types <- gsub("character", "string", types)
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE, na = "")
+  write.csv(object, file = tmpf, row.names = FALSE)
   h2f <- h2o.uploadFile(conn, tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(object, do.NULL=FALSE, prefix="C"))
   file.remove(tmpf)
