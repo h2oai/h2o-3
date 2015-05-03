@@ -271,10 +271,10 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
 
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %FALSE %"
-    cbind += " %".join([vec._expr.eager() for vec in self]) + "))"
+    cbind = "(, (gput " + fr + " (cbind %FALSE %"
+    cbind += " %".join([vec._expr.eager() for vec in self]) + ")) (del '"+fr+"'))"
     res = h2o.rapids(cbind)
-    h2o.remove(fr)
+    h2o.delete(fr)
     head_rows = [range(1, nrows + 1, 1)]
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
     head = zip(*head_rows)
@@ -301,10 +301,10 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(= !" + fr + " (cbind %FALSE %"
-      cbind += " %".join([expr.eager() for expr in exprs]) + "))"
+      cbind = "(, (gput " + fr + " (cbind %FALSE %"
+      cbind += " %".join([expr.eager() for expr in exprs]) + ")) (del '"+fr+"'))"
       res = h2o.rapids(cbind)
-      h2o.remove(fr)
+      h2o.delete(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
       tail = zip(*tail_rows)
@@ -374,7 +374,7 @@ class H2OFrame:
 
     chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
 
-    h2o.remove(chunk_summary_tmp_key)
+    h2o.delete(chunk_summary_tmp_key)
 
     print tabulate.tabulate(table, headers)
     print
@@ -595,7 +595,7 @@ class H2OFrame:
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     rapids_call = "(, "  # fold into a single rapids call
-    cbind = "(= !" + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
     rapids_call += cbind
     # h2o.rapids(cbind)
@@ -709,7 +709,7 @@ class H2OFrame:
     expr = "(= !{} (quantile '{}' {} '{}'".format(tmp_key,key,probs,combine_method)
     h2o.rapids(expr)
     # Remove h2o temp frame after groupby
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -756,7 +756,7 @@ class H2OFrame:
     expr = "(= !{} (h2o.ddply %{} {} {}))".format(tmp_key,key,rapids_series,fun)
     h2o.rapids(expr) # ddply in h2o
     # Remove h2o temp frame after ddply
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
@@ -805,7 +805,7 @@ class H2OFrame:
     expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
     h2o.rapids(expr)  # group by
     # Remove h2o temp frame after groupby
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -893,7 +893,7 @@ class H2OFrame:
     else:
       expr = "(= !{} (h2o.impute %{} #{} \"{}\" \"{}\" {} %FALSE))".format(tmp_key,key,col_id,method,combine_method,gb_cols)
       h2o.rapids(expr)  # exec the thing
-      h2o.remove(key)
+      h2o.delete(key)
       # Make backing H2OVecs for the remote h2o vecs
       j = h2o.frame(tmp_key)
       fr = j['frames'][0]       # Just the first (only) frame
@@ -980,7 +980,7 @@ class H2OFrame:
     expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
     h2o.rapids(expr)
     # Remove h2o temp frame after var
-    h2o.remove(key)
+    h2o.delete(key)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
