@@ -81,7 +81,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           }
 
           // Compute top-level histogram
-          Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length(),vec.isInt()).doAll(vec);
+          Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length()-vec.naCnt(),vec.isInt()).doAll(vec);
 
           // For each probability, see if we have it exactly - or else run
           // passes until we do.
