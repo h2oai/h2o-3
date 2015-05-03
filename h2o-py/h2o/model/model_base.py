@@ -258,7 +258,7 @@ class ModelBase(object):
     """
     :return: Return the coefficients for this model.
     """
-    tbl = self._model_json["output"]["coefficients_table"].cell_values
+    tbl = self._model_json["output"]["coefficients_table"]
     if tbl is None: return None
     tbl = tbl.cell_values
     return {a[0]:a[1] for a in tbl}

@@ -112,7 +112,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * results. Note that deterministic sampling and initialization might
      * still lead to some weak sense of determinism in the model.
      */
-    public long _seed = new Random().nextLong();
+    public long _seed = RandomUtils.getRNG(System.currentTimeMillis()).nextLong();
 
   /*Adaptive Learning Rate*/
     /**

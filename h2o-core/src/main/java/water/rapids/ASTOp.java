@@ -1683,7 +1683,9 @@ class ASTImpute extends ASTUniPrefixOp {
     _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
 
     AST a = E.parse();
-    _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+    if( a instanceof ASTLongList ) _by = ((ASTLongList)a)._l;
+    else if( a instanceof ASTNum ) _by = new long[]{(long)((ASTNum)a)._d};
+    else _by=null;
 
 
     // should be TRUE or FALSE next, for the inplace arg
@@ -1738,14 +1740,14 @@ class ASTImpute extends ASTUniPrefixOp {
         throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
       ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", 0, "rm", "_avg", null, null)};
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
-      final NonBlockingHashSet<ASTGroupBy.G> s = t._g;
+      final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
       final long[] cols = _by;
       final int colIdx = _colIdx;
-      if (_inplace) {
+      if( _inplace ) {
         new MRTask() {
-          transient NonBlockingHashSet<ASTGroupBy.G> _s;
+          transient ASTGroupBy.IcedNBHS<ASTGroupBy.G> _s;
           @Override public void setupLocal() { _s = s; }
-          @Override public void map(Chunk[] c, NewChunk n) {
+          @Override public void map(Chunk[] c) {
             ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
             double impute_value;
             Chunk ch = c[colIdx];
@@ -1759,7 +1761,7 @@ class ASTImpute extends ASTUniPrefixOp {
         f2 = f;
       } else {
         f2 = new MRTask() {
-          transient NonBlockingHashSet<ASTGroupBy.G> _s;
+          transient ASTGroupBy.IcedNBHS<ASTGroupBy.G> _s;
           @Override public void setupLocal() { _s = s; }
           @Override public void map(Chunk[] c, NewChunk n) {
             ASTGroupBy.G g = new ASTGroupBy.G(cols.length);

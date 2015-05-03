@@ -755,6 +755,7 @@ public class h2odriver extends Configured implements Tool {
     return s;
   }
 
+  private final int CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY = 5;
   private final int CLUSTER_ERROR_TIMEOUT = 3;
 
   private int waitForClusterToComeUp() throws Exception {
@@ -767,7 +768,7 @@ public class h2odriver extends Configured implements Tool {
       }
 
       if (job.isComplete()) {
-        break;
+        return CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY;
       }
 
       if (clusterIsUp) {
@@ -1018,7 +1019,9 @@ public class h2odriver extends Configured implements Tool {
 
     System.out.printf("Waiting for H2O cluster to come up...\n");
     int rv = waitForClusterToComeUp();
-    if (rv == CLUSTER_ERROR_TIMEOUT) {
+    if ((rv == CLUSTER_ERROR_TIMEOUT)
+        ||
+        (rv == CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY)) {
       // Try to print YARN diagnostics.
       try {
         // Wait a short time before trying to print diagnostics.
@@ -1027,7 +1030,7 @@ public class h2odriver extends Configured implements Tool {
 
         Class clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
         if (clazz != null) {
-          Method method = clazz.getMethod("diagnose", String.class, int.class, int.class, int.class);
+          Method method = clazz.getMethod("diagnose", String.class, String.class, int.class, int.class, int.class);
           String queueName;
           queueName = conf.get("mapreduce.job.queuename");
           if (queueName == null) {
@@ -1036,14 +1039,25 @@ public class h2odriver extends Configured implements Tool {
           if (queueName == null) {
             queueName = "default";
           }
-          method.invoke(null, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get());
+          method.invoke(null, applicationID, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get());
         }
 
         return rv;
       }
-      catch (Exception ignore) {}
+      catch (Exception e) {
+        if (System.getenv("H2O_DEBUG_HADOOP") != null) {
+          System.out.println();
+          e.printStackTrace();
+          System.out.println();
+        }
+      }
 
       System.out.println("ERROR: H2O cluster failed to come up");
+
+      if (job.isComplete()) {
+        ctrlc.setComplete();
+      }
+
       return rv;
     }
     else if (rv != 0) {

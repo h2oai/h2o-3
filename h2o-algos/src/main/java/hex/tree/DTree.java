@@ -400,7 +400,7 @@ public class DTree extends Iced {
       sb.append("_split:" + _split.toString());
       sb.append("_splat:" + _splat);
       if( _split._col == -1 ) {
-        sb.append("Decided has col = -1");
+        sb.append(" col = -1 ");
       } else {
         int col = _split._col;
         if (_split._equal == 1) {

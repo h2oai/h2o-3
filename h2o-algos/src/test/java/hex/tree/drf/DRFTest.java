@@ -243,7 +243,6 @@ public class DRFTest extends TestUtil {
     );
 
   }
-  @Ignore //PUBDEV-1001
   @Test public void testCzechboard() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
@@ -260,7 +259,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(45000, 0),
+            a(a(0, 45000),
               a(0, 45000)),
             s("0", "1"));
   }
@@ -268,18 +267,19 @@ public class DRFTest extends TestUtil {
   @Ignore // PUBDEV-1015
   @Test public void testProstate() throws Throwable {
     basicDRFTestOOBE_Classification(
-            "./smalldata/prostate/prostate.csv.zip", "prostate.zip.hex",
+            "./smalldata/prostate/prostate.csv.zip", "prostate2.zip.hex",
             new PrepData() {
               @Override
               int prep(Frame fr) {
                 String[] names = fr.names().clone();
                 Vec[] en = fr.remove(new int[]{1,4,5,8});
-                fr.add(names[1], en[0].toEnum());
-                fr.add(names[4], en[1].toEnum());
-                fr.add(names[5], en[2].toEnum());
-                fr.add(names[8], en[3].toEnum());
+                fr.add(names[1], en[0].toEnum()); //CAPSULE
+                fr.add(names[4], en[1].toEnum()); //DPROS
+                fr.add(names[5], en[2].toEnum()); //DCAPS
+                fr.add(names[8], en[3].toEnum()); //GLEASON
                 for (Vec v : en) v.remove();
-                return 1;
+                fr.remove(0).remove(); //drop ID
+                return 4; //CAPSULE
               }
             },
             4, //ntrees
@@ -289,6 +289,7 @@ public class DRFTest extends TestUtil {
             null,
             s("0", "1"));
   }
+
   @Test public void testAlphabet() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
