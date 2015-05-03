@@ -10,6 +10,7 @@ import water.Job;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -114,6 +115,45 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Quantile.this);
         Scope.exit(model == null ? null : model._key);
+      }
+      tryComplete();
+    }
+  }
+
+  // FIXME: This is sloppy, but want to run Quantile without Job... Basically, H2O architecture is not good for this so have to hack it!
+  public static class QTask extends H2OCountedCompleter<QTask> {
+    final double _probs[];
+    final Frame _train;
+    final QuantileModel.CombineMethod _combine_method;
+
+    public double[][] _quantiles;
+    public QTask(H2OCountedCompleter cc, double[] probs, Frame train, QuantileModel.CombineMethod combine_method) {
+      super(cc); _train=train; _probs=probs; _combine_method=combine_method;
+    }
+    @Override public void compute2() {
+      // Run the main Quantile Loop
+      _quantiles = new double[_train.numCols()][_probs.length];
+      Vec vecs[] = _train.vecs();
+      for( int n=0; n<vecs.length; n++ ) {
+        Vec vec = vecs[n];
+        if (vec.isBad()) {
+          _quantiles[n] = new double[_probs.length];
+          Arrays.fill(_quantiles[n], Double.NaN);
+          continue;
+        }
+
+        // Compute top-level histogram
+        Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length(),vec.isInt()).doAll(vec);
+
+        // For each probability, see if we have it exactly - or else run
+        // passes until we do.
+        for( int p = 0; p < _probs.length; p++ ) {
+          double prob = _probs[p];
+          Histo h = h1;  // Start from the first global histogram
+
+          while( Double.isNaN(_quantiles[n][p] = h.findQuantile(prob,_combine_method)) )
+            h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
+        }
       }
       tryComplete();
     }

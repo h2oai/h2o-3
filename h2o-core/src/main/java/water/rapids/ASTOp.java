@@ -228,6 +228,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ROp());
     putPrefix(new O());
     putPrefix(new ASTImpute());
+    putPrefix(new ASTQPFPC());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -2845,8 +2846,14 @@ class ASTVar extends ASTUniPrefixOp {
       env.push(new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();                   // number of rows
-      Frame y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
-      String use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      Frame y;
+      String use;
+      if( env.isEmpty() || env.sp() <= 1 ) { y=fr; use="everything"; }
+      else {
+                            y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
+        if( env.isEmpty() || env.sp() <= 1 ) use = "everything";
+        else                use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      }
 //      String[] rownames = fr.names();  TODO: Propagate rownames?
       String[] colnames = y.names();
 
