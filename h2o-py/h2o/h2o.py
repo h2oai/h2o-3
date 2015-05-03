@@ -273,6 +273,16 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
+def delete(key):
+  """
+  Do a shallow DKV remove of the key (does not remove any subparts)
+  :param key: A key to be DKV.removed
+  :return: None
+  """
+  expr = "(del '"+key+"')"
+  rapids(expr)
+  return None
+
 def rapids(expr):
   """
   Fire off a Rapids expression.
