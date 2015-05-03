@@ -580,7 +580,7 @@ public class Frame extends Lockable<Frame> {
    *  @return an array of the removed columns */
   public Vec[] remove( int[] idxs ) {
     for( int i : idxs )
-      if(i < 0 || i >= _vecs.length)
+      if(i < 0 || i >= vecs().length)
         throw new ArrayIndexOutOfBoundsException();
     Arrays.sort(idxs);
     Vec[] res = new Vec[idxs.length];
