@@ -595,7 +595,7 @@ class H2OFrame:
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     rapids_call = "(, "  # fold into a single rapids call
-    cbind = "(= !" + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
     rapids_call += cbind
     # h2o.rapids(cbind)
