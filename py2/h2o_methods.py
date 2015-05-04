@@ -174,10 +174,11 @@ def put_file(self, f, key=None, timeoutSecs=60):
 
     fileObj = open(f, 'rb')
     resp = self.do_json_request(
-        '3/PostFile.json',
+        # don't use .json suffix here...causes 404 (for now)
+        '3/PostFile',
         cmd='post',
         timeout=timeoutSecs,
-        params={"destination_key": key},
+        params={"destination_frame": key},
         files={"file": fileObj},
         extraComment=str(f))
 

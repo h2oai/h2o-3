@@ -4,24 +4,17 @@ source('../h2o-runit.R')
 test.bad.headers <- function(conn) {
   citibikePath <- locate("smalldata/jira/citibike_head.csv")
   # summary use to fail on datasets that had spaces in the headers during import.
-  f <- h2o.importFile(conn, citibikePath , key = "citibike.hex")  
+  f <- h2o.importFile(conn, citibikePath , destination_frame = "citibike.hex")  
   f.df <- read.csv(citibikePath)
 
   print(colnames(f))
 
   print(f$starttime)
 
-  print("foo1")
   r.median <- median(f.df$start.station.id)
 
-  print("WAKKA WAKKA")
   if(!class(f[,"start station id"])=="H2OFrame") stop("Didn't subset column correctly")
 
-  print("bar")
-  print(class(f))
-  f[,"start station id"]
-
-  print("HELLO WORLD")
   h2o.median <- median(f[,"start station id"])
   h2o.median <- as.data.frame(h2o.median)[1,1] 
    

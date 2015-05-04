@@ -99,9 +99,9 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
     raise NotImplementedError
 
   # Cleanup
-  h2o.remove(train_key)
+  h2o.delete(train_key)
   if validation_x:
-    h2o.remove(valid_key)
+    h2o.delete(valid_key)
 
   return model
 

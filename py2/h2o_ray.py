@@ -443,6 +443,10 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
 # destination_frame is old, model_id is new?
 def build_model(self, algo, training_frame, parameters, destination_frame=None, model_id=None,
     timeoutSecs=60, noPoll=False, **kwargs):
+
+    if 'destination_key' in kwargs:
+        raise Exception('Change destination_key in build_model() to model_id')
+
     '''
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.

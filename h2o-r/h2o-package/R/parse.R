@@ -17,10 +17,11 @@
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.
+#' @param na.strings H2O will interpret these strings as missing.
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL) {
-  parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types)
+                         col.types=NULL, na.strings=NULL) {
+  parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings)
 
   parse.params <- list(
             source_frames = .collapse.char(parse.params$source_frames),
@@ -54,52 +55,63 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 #' Get a parse setup back for the staged data.
 #' @inheritParams h2o.parseRaw
 #' @export
-h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL) {
+h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL) {
+
+  # quick sanity checking
   if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
-    .key.validate(destination_frame)
-    if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
-    if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
-  #  if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))
+  .key.validate(destination_frame)
+  if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
+  if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
 
-    parseSetup.params <- list()
-    # Prep srcs: must be of the form [src1,src2,src3,...]
-    parseSetup.params$source_frames = .collapse.char(data@frame_id)
-    if (nchar(sep) > 0) parseSetup.params$separator = sep
-    if(is.na(header) && is.null(col.names)) {
-      parseSetup.params$check_header = 0
-    } else if (!isTRUE(header)) {
-      parseSetup.params$check_header = -1
-    } else parseSetup.params$check_header = 1
-    if (!is.null(col.names)) {
-      if (is(col.names, "H2OFrame")) parseSetup.params$column_names = .collapse.char(colnames(col.names))
-      else parseSetup.params$column_names = .collapse.char(col.names)
-    }
-    if (!is.null(col.types)) parseSetup.params$column_types = .collapse.char(col.types)
+  # begin the setup
+  # setup the parse parameters here
+  parseSetup.params <- list()
 
-    # First go through ParseSetup
-    parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
-    ncols <- parseSetup$number_columns
-    col.names <- parseSetup$column_names
-    col.types <- parseSetup$column_types
-    na.strings <- parseSetup$na_strings
-    parsedSrcs <- sapply(parseSetup$source_frames, function(asrc) asrc$name)
-    linkToGC <- !nzchar(destination_frame)
-    if (linkToGC)
-        destination_frame <- .key.make(data@conn, parseSetup$destination_frame)
-    parse.params <- list(
-          source_frames = parsedSrcs,
-          destination_frame  = destination_frame,
-          separator = parseSetup$separator,
-          parse_type = parseSetup$parse_type,
-          single_quotes = parseSetup$single_quotes,
-          check_header = parseSetup$check_header,
-          number_columns = ncols,
-          column_names = col.names,
-          column_types = col.types,
-          na_strings = na.strings,
-          chunk_size = parseSetup$chunk_size,
-          delete_on_done = TRUE
-          )
+  # Prep srcs: must be of the form [src1,src2,src3,...]
+  parseSetup.params$source_frames = .collapse.char(data@frame_id)
+
+  # set field sep
+  if( nchar(sep) > 0 ) parseSetup.params$separator = sep
+
+  # check the header
+  if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
+  else if( !isTRUE(header) )                parseSetup.params$check_header <- -1
+  else                                      parseSetup.params$check_header <-  1
+
+  # set the column names
+  if( !is.null(col.names) ) {
+    if( is(col.names, "H2OFrame") ) parseSetup.params$column_names <- .collapse.char(colnames(col.names))
+    else                            parseSetup.params$column_names <- .collapse.char(col.names)
+  }
+
+  # check the types
+  if( !is.null(col.types) )  parseSetup.params$column_types <- .collapse.char(col.types)
+
+  # check the na.strings
+  if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.char(na.strings)
+
+  # pass through ParseSetup
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
+
+  # link it to GC only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
+  linkToGC <- !nzchar(destination_frame)
+  if( linkToGC ) destination_frame <- .key.make(data@conn, parseSetup$destination_frame)
+
+  # return the parse setup as a list of setup :D
+  parse.params <- list(
+        source_frames      = sapply(parseSetup$source_frames, function(asrc) asrc$name),
+        destination_frame  = destination_frame,
+        separator          = parseSetup$separator,
+        parse_type         = parseSetup$parse_type,
+        single_quotes      = parseSetup$single_quotes,
+        check_header       = parseSetup$check_header,
+        number_columns     = parseSetup$number_columns,
+        column_names       = parseSetup$column_names,
+        column_types       = parseSetup$column_types,
+        na_strings         = parseSetup$na_strings,
+        chunk_size         = parseSetup$chunk_size,
+        delete_on_done     = TRUE
+        )
 }
 
 #'
