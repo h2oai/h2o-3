@@ -54,7 +54,6 @@ class Basic(unittest.TestCase):
                 'response_column': 'FNDX', # string None
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
-                'n_folds': None, # int 0
 
                 'keep_cross_validation_splits': None, # boolean false
                 'checkpoint': None, # Key None
