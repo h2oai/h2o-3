@@ -4,6 +4,7 @@ import water.*;
 import water.api.FrameV3;
 import water.api.KeyV3;
 import water.api.Schema;
+import water.exceptions.H2ONotFoundArgumentException;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -151,9 +152,18 @@ public class PojoUtils {
               Class dest_component_class = dest_field.getType().getComponentType();
               Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
+              int version = ((Schema)dest).getSchemaVersion();
+
+              // Look up the schema for each element of the array; if not found fall back to the schema for the base class.
               for (Iced impl : ((Iced[])orig_field.get(origin))) {
-                translation[i++] = ((Schema)dest_field.getType().getComponentType().newInstance()).fillFromImpl(impl);
-                // ## TODO Add handling for subclasses ##
+                Schema s = null;
+                try {
+                  s = Schema.schema(version, impl);
+                }
+                catch (H2ONotFoundArgumentException e) {
+                  s = ((Schema)dest_field.getType().getComponentType().newInstance());
+                }
+                translation[i++] = s.fillFromImpl(impl);
               }
               dest_field.set(dest, translation);
             } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {
