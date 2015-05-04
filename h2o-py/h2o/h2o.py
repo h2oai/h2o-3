@@ -66,8 +66,6 @@ def parse_setup(raw_frames):
   # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
-  if not j['is_valid']:
-    raise ValueError("ParseSetup not Valid", j)
   return j
 
 

@@ -40,20 +40,11 @@ public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
   @API(help="Suggested name", direction=API.Direction.OUTPUT)
   public String destination_frame;
 
-  @API(help="The initial parse is sane", direction=API.Direction.OUTPUT)
-  boolean is_valid;
-
-  @API(help="Number of broken/invalid lines found", direction=API.Direction.OUTPUT)
-  long invalid_lines;
-
   @API(help="Number of header lines found", direction=API.Direction.OUTPUT)
   long header_lines;
 
   @API(help="Number of columns", direction=API.Direction.OUTPUT)
   public int number_columns = ParseSetup.GUESS_COL_CNT;
-
-  @API(help="Domains for categorical columns", direction=API.Direction.OUTPUT)
-  public String[][] domains = null;
 
   @API(help="Sample data", direction=API.Direction.OUTPUT)
   public String[][] data;
