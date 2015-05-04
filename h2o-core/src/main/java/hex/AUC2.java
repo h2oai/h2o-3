@@ -65,10 +65,10 @@ public class AUC2 extends Iced {
     min_per_class_accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
-    tns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
-    fns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
-    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
-    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
+    tns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
+    fns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
+    fps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
+    tps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
     tnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tn/(fp+tn); } },
     fnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fn/(fn+tp); } },
     fpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fp/(fp+tn); } },
@@ -332,47 +332,49 @@ public class AUC2 extends Iced {
       throw new IllegalArgumentException("Actuals are either 0 or 1");
     if( vprob.min() < 0 || vprob.max() > 1 )
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
-
-    int zeros = (int)vacts.nzCnt();
-    int ones  = vacts.length()-zeros;
-
-    //double[] ps = vprob.toDoubleArray();
-    //byte  [] as = vacts.toByteArray();
-    // very slow for 500K elements
-    //for( int i = 0; i < ps.length; i++ ) {
-    //  for( int j = i; j > 0 && ps[j-1] > ps[j]; j-- ) {
-    //    double tmpp = ps[j];  ps[j] = ps[j - 1];  ps[j - 1] = tmpp;
-    //    byte   tmpa = as[j];  as[j] = as[j - 1];  as[j - 1] = tmpa;
-    //  }
-    //}
-
-    // Horrible data replication into array of structs, to sort.  Sort by
-    // probs, then actuals - so tied probs have the 0 actuals before the 1
-    // actuals.
+    // Horrible data replication into array of structs, to sort.  
     Pair[] ps = new Pair[(int)vprob.length()];
     for( int i=0; i<ps.length; i++ )
       ps[i] = new Pair(vprob.at(i),(byte)vacts.at8(i));
+    return perfectAUC(ps);
+  }
+  public static double perfectAUC( double ds[], double[] acts ) {
+    Pair[] ps = new Pair[(int)ds.length];
+    for( int i=0; i<ps.length; i++ )
+      ps[i] = new Pair(ds[i],(byte)acts[i]);
+    return perfectAUC(ps);
+  }
+
+  private static double perfectAUC( Pair[] ps ) {
+    // Sort by probs, then actuals - so tied probs have the 0 actuals before
+    // the 1 actuals.  Sort probs from largest to smallest - so both the True
+    // and False Positives are zero to start.
     Arrays.sort(ps,new java.util.Comparator<Pair>() {
         @Override public int compare( Pair a, Pair b ) {
-          return a._prob<b._prob ? -1 : (a._prob==b._prob ? (a._act-b._act) : 1);
+          return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);
         }
       });
 
     // Compute Area Under Curve.  
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
-    //int tp0 = 0, fp0 = 0;
-    //double area = 0;
-    //for( int i=0; i<ps.length; i++ ) {
-    //  area += tp0*(_fps[i]-fp0); // Trapezoid: Square + 
-    //  area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0; // Right Triangle
-    //  tp0 = _tps[i];  fp0 = _fps[i];
-    //}
-    //// Descale
-    //return area/_p/_n;
+    int tp0=0, fp0=0, tp1=0, fp1=0;
+    double prob = 1.0;
+    double area = 0;
+    for( int i=0; i<ps.length; i++ ) {
+      if( ps[i]._prob!=prob ) { // Tied probabilities: build a diagonal line
+        area += (fp1-fp0)*(tp1+tp0)/2.0; // Trapezoid
+        tp0 = tp1; fp0 = fp1;
+        prob = ps[i]._prob;
+      }
+      if( ps[i]._act==1 ) tp1++; else fp1++;
+    }
+    area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
+    area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
 
-
-    throw water.H2O.unimpl();
+    // Descale
+    double auc = area/tp1/fp1;
+    return auc;
   }
 
   private static class Pair {

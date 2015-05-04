@@ -11,6 +11,17 @@ public class AUCTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Test public void testAUC0() {
+    double auc0 = AUC2.perfectAUC(new double[]{0,0.5,0.5,1}, new double[]{0,0,1,1});
+    Assert.assertEquals(0.875,auc0,1e-7);
+    // Flip the tied actuals
+    double auc1 = AUC2.perfectAUC(new double[]{0,0.5,0.5,1}, new double[]{0,1,0,1});
+    Assert.assertEquals(0.875,auc1,1e-7);
+
+    // Area is 10/12 (TPS=4, FPS=3, so area is 4x3 or 12 units; 10 are under).
+    double auc2 = AUC2.perfectAUC(new double[]{0.1,0.2,0.3,0.4,0.5,0.6,0.7}, new double[]{0,0,1,1,0,1,1});
+    Assert.assertEquals(0.8333333,auc2,1e-7);
+
+
     // Sorted probabilities.  At threshold 1e-6 flips from false to true, on
     // average.  However, there are a lot of random choices at 1e-3.
     double probs[] = new double[]{1e-8,1e-7,1e-6,1e-5,1e-4,1e-3,1e-3,1e-3,1e-3,1e-3,1e-3,1e-3,1e-3,1e-3,1e-3,1e-2,1e-1};
@@ -44,12 +55,14 @@ public class AUCTest extends TestUtil {
     System.out.println();
     // The AUC for this dataset, according to R's ROCR package, is 0.6363636363
     Assert.assertEquals(doAUC(probs,actls),0.636363636363,1e-5);
+    Assert.assertEquals(AUC2.perfectAUC(probs,actls),0.636363636363,1e-7);
 
     // Shuffle, check again
     swap(0, 5, probs, actls);
     swap(1, 6, probs, actls);
     swap(7, 15, probs, actls);
     Assert.assertEquals(doAUC(probs,actls),0.636363636363,1e-5);
+    Assert.assertEquals(AUC2.perfectAUC(probs,actls),0.636363636363,1e-7);
 
     // Now from a large test file
     double ROCR_auc = 0.7244389;

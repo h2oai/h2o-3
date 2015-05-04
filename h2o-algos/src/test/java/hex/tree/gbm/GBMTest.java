@@ -706,7 +706,10 @@ public class GBMTest extends TestUtil {
       double t_auc3 = AUC2.perfectAUC(t_pred.vecs()[2], tfr.vec("V55"));
       double v_auc3 = AUC2.perfectAUC(v_pred.vecs()[2], vfr.vec("V55"));
       System.out.println("train_AUC3= "+t_auc3+" , validation_AUC3= "+v_auc3);
-
+      Assert.assertEquals(t_auc3, t_auc , 1e-6);
+      Assert.assertEquals(t_auc3, t_auc2, 1e-6);
+      Assert.assertEquals(v_auc3, v_auc , 1e-6);
+      Assert.assertEquals(v_auc3, v_auc2, 1e-6);
 
     } finally {
       if (tfr  != null) tfr.remove();
