@@ -729,7 +729,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int[] omap = null;
       if( _output.isClassifier() ) {
         Vec actual = fr.vec(_output.responseName());
-        String sdomain[] = actual.domain(); // Scored/test domain; can be null
+        String sdomain[] = actual == null ? null : actual.domain(); // Scored/test domain; can be null
         String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
         if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
           EnumWrappedVec ewv = new EnumWrappedVec(mdomain,sdomain);
