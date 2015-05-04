@@ -418,8 +418,6 @@ public class Frame extends Lockable<Frame> {
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
-    if( DKV.get(vec._key) == null )
-      System.out.println();
     vec = makeCompatible(new Frame(vec)).anyVec();
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
