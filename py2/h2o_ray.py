@@ -277,7 +277,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
 
 
 # TODO: remove .json
-def frames(self, key=None, timeoutSecs=10, **kwargs):
+def frames(self, key=None, timeoutSecs=60, **kwargs):
     if not (key is None or isinstance(key, (basestring, Key))):
         raise Exception("frames: key should be string or Key type %s %s" % (type(key), key))
 
