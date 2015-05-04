@@ -703,8 +703,8 @@ public class GBMTest extends TestUtil {
       System.out.println("train_AUC2= "+t_auc2+" , validation_AUC2= "+v_auc2);
 
       // Compute the perfect AUC
-      double t_auc3 = AUC2.perfectAUC(t_pred);
-      double v_auc3 = AUC2.perfectAUC(v_pred);
+      double t_auc3 = AUC2.perfectAUC(t_pred.vecs()[2], tfr.vec("V55"));
+      double v_auc3 = AUC2.perfectAUC(v_pred.vecs()[2], vfr.vec("V55"));
       System.out.println("train_AUC3= "+t_auc3+" , validation_AUC3= "+v_auc3);
 
 

@@ -5,7 +5,6 @@ import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
-import water.fvec.Frame;
 
 /** One-pass approximate AUC
  *
@@ -325,25 +324,60 @@ public class AUC2 extends Iced {
     }
   }
 
-  // Given a prediction frame: 0/1 in column 0, probs in col 1 (col 2 ignored),
-  // report the perfect AUC found by sorting the entire dataset.  Expensive,
-  // and only works for small data (probably caps out at about 10M rows).
-  public static double perfectAUC( Frame preds ) {
-    if( preds.numCols() < 2 ) throw new IllegalArgumentException("Must be predictions in col 0, probs in col 1 for class 0");
-    Vec vacts = preds.vecs()[0];
-    Vec vprob = preds.vecs()[1];
+  // Given the probabilities of a 1, and the actuals (0/1) report the perfect
+  // AUC found by sorting the entire dataset.  Expensive, and only works for
+  // small data (probably caps out at about 10M rows).
+  public static double perfectAUC( Vec vprob, Vec vacts ) {
     if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
       throw new IllegalArgumentException("Actuals are either 0 or 1");
-    if( vprob.min() < 0 || vprob.max() > 1)
+    if( vprob.min() < 0 || vprob.max() > 1 )
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
 
-    byte  [] as = new byte  [vacts.length()];
-    double[] ps = new double[vacts.length()];
+    int zeros = (int)vacts.nzCnt();
+    int ones  = vacts.length()-zeros;
 
+    //double[] ps = vprob.toDoubleArray();
+    //byte  [] as = vacts.toByteArray();
+    // very slow for 500K elements
+    //for( int i = 0; i < ps.length; i++ ) {
+    //  for( int j = i; j > 0 && ps[j-1] > ps[j]; j-- ) {
+    //    double tmpp = ps[j];  ps[j] = ps[j - 1];  ps[j - 1] = tmpp;
+    //    byte   tmpa = as[j];  as[j] = as[j - 1];  as[j - 1] = tmpa;
+    //  }
+    //}
 
+    // Horrible data replication into array of structs, to sort.  Sort by
+    // probs, then actuals - so tied probs have the 0 actuals before the 1
+    // actuals.
+    Pair[] ps = new Pair[(int)vprob.length()];
+    for( int i=0; i<ps.length; i++ )
+      ps[i] = new Pair(vprob.at(i),(byte)vacts.at8(i));
+    Arrays.sort(ps,new java.util.Comparator<Pair>() {
+        @Override public int compare( Pair a, Pair b ) {
+          return a._prob<b._prob ? -1 : (a._prob==b._prob ? (a._act-b._act) : 1);
+        }
+      });
+
+    // Compute Area Under Curve.  
+    // All math is computed scaled by TP and FP.  We'll descale once at the
+    // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
+    //int tp0 = 0, fp0 = 0;
+    //double area = 0;
+    //for( int i=0; i<ps.length; i++ ) {
+    //  area += tp0*(_fps[i]-fp0); // Trapezoid: Square + 
+    //  area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0; // Right Triangle
+    //  tp0 = _tps[i];  fp0 = _fps[i];
+    //}
+    //// Descale
+    //return area/_p/_n;
 
 
     throw water.H2O.unimpl();
+  }
+
+  private static class Pair {
+    final double _prob; final byte _act;
+    Pair( double prob, byte act ) { _prob = prob; _act = act; }
   }
 
 }
