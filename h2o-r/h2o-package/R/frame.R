@@ -145,6 +145,11 @@ h2o.rep_len <- function(x, length.out) {
   .h2o.nary_frame_op("rep_len", x, length.out)
 }
 
+h2o.qpfpc <- function(data, class.col, probs=NULL) {
+  if( is.null(probs) ) probs <- seq(0,1,0.01)
+  .h2o.nary_frame_op("qpfpc", data, class.col-1, probs)
+}
+
 #' Inserting Missing Values to an H2O DataFrame
 #'
 #' *This is primarily used for testing*. Randomly replaces a user-specified fraction of
@@ -1410,9 +1415,9 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
   types <- gsub("factor", "enum", types)
   types <- gsub("character", "string", types)
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE, na = "")
+  write.csv(object, file = tmpf, row.names = FALSE, na="NA_h2o")
   h2f <- h2o.uploadFile(conn, tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                        col.names=colnames(object, do.NULL=FALSE, prefix="C"))
+                        col.names=colnames(object, do.NULL=FALSE, prefix="C"), na.strings=c("NA_h2o"))
   file.remove(tmpf)
   h2f
 }

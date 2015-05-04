@@ -53,12 +53,16 @@ function make_hadoop_zip {
 rm -fr target
 rm -fr h2o-dist/tmp
 
+if [ -n "$DO_RELEASE" ]; then
+  DO_RELEASE="-PdoRelease"
+fi
+
 if [ -z "$DO_FAST" ]; then
   # Run some required gradle tasks to produce final build output.
-  ./gradlew :h2o-core:javadoc
-  ./gradlew :h2o-algos:javadoc
-  ./gradlew :h2o-scala:scaladoc
-  ./gradlew publish
+  #./gradlew :h2o-core:javadoc
+  #./gradlew :h2o-algos:javadoc
+  #./gradlew :h2o-scala:scaladoc
+  ./gradlew $DO_RELEASE publish
 fi
 
 # Create target dir, which is uploaded to s3.
@@ -96,12 +100,14 @@ cp -rp build/repo target/maven
 
 # Add documentation to target.
 mkdir target/docs-website
+mkdir target/docs-website/h2o-docs
 mkdir target/docs-website/h2o-r
 mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 mkdir target/docs-website/h2o-scala
 cp -rp build/docs/REST target/docs-website
+cp -rp h2o-docs/web/* target/docs-website/h2o-docs
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
 cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos

@@ -28,16 +28,3 @@ test {
   // Defeat task 'test' by running no tests.
   exclude '**'
 }
-
-task acceptanceTest(description: "Runs acceptance tests for this project ${project.name}", group: 'Verification') << {
-    ant.taskdef(name: "easyb", classname:"org.easyb.ant.BehaviorRunnerTask", classpath: sourceSets.test.runtimeClasspath.asPath)
-    def reports = "${project.buildDir}/reports"
-    new File(reports).mkdirs()
-    ant.easyb( classpath: sourceSets.test.runtimeClasspath.asPath, failureProperty:'easyb_failed' ) {
-        report( location:"${reports}/algosAcceptance.html", format:"html" )
-        behaviors( dir: "src/test/easyb" ) {
-            include( name:"**/*.story" )
-        }
-    }
-    ant.fail( if:'easyb_failed', message: 'Failures in easyb stories' )
-}

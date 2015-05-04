@@ -38,7 +38,6 @@ configurations {
 // Explicitly
 artifacts {
     testArchives testJar
-    archives scaladocJar
 }
 
 // Enable support for multi-node testing

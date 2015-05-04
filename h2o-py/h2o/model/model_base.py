@@ -63,7 +63,7 @@ class ModelBase(object):
     # create a set of H2OVec objects
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # toast the cbound frame
-    h2o.remove(test_data_key)
+    h2o.delete(test_data_key)
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
 
@@ -101,7 +101,7 @@ class ModelBase(object):
     cols = [col["label"] for col in df_frame_meta["columns"]]
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # remove test data from kv
-    h2o.remove(test_data_key)
+    h2o.delete(test_data_key)
     # finally return frame
     return H2OFrame(vecs=vecs)
 
@@ -129,7 +129,7 @@ class ModelBase(object):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
       fr_key = H2OFrame.send_frame(test_data)
       res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
-      h2o.remove(fr_key)
+      h2o.delete(fr_key)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
@@ -258,7 +258,7 @@ class ModelBase(object):
     """
     :return: Return the coefficients for this model.
     """
-    tbl = self._model_json["output"]["coefficients_table"].cell_values
+    tbl = self._model_json["output"]["coefficients_table"]
     if tbl is None: return None
     tbl = tbl.cell_values
     return {a[0]:a[1] for a in tbl}
