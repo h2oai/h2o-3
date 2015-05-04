@@ -140,7 +140,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
     }
   }
 
-  public static final class ValidationMessageV2 extends ValidationMessageBase<ModelBuilder.ValidationMessage, ValidationMessageV2> {  }
+  public static final class ValidationMessageV3 extends ValidationMessageBase<ModelBuilder.ValidationMessage, ValidationMessageV3> {  }
 
   private static void compute_transitive_closure_of_is_mutually_exclusive(ModelParameterSchemaV3[] metadata) {
     // Form the transitive closure of the is_mutually_exclusive field lists by visiting

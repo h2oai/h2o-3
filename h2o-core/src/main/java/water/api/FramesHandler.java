@@ -183,7 +183,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {
-    FramesV3 frames = doFetch(version, s, FrameV3.ColV2.NO_SUMMARY);
+    FramesV3 frames = doFetch(version, s, FrameV3.ColV3.NO_SUMMARY);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
@@ -257,7 +257,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       }
     }
 
-    return doFetch(version, s, FrameV3.ColV2.FORCE_SUMMARY);
+    return doFetch(version, s, FrameV3.ColV3.FORCE_SUMMARY);
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */

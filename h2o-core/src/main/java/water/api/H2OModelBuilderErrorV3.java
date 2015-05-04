@@ -18,7 +18,7 @@ public class H2OModelBuilderErrorV3 extends H2OErrorV3<H2OModelBuilderError, H2O
   public ModelParametersSchema parameters;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ModelParametersSchema.ValidationMessageV2 validation_messages[];
+  public ModelParametersSchema.ValidationMessageV3 validation_messages[];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int validation_error_count;

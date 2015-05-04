@@ -134,7 +134,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
     for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.validation_messages[i++] = new ModelParametersSchema.ValidationMessageV2().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      this.validation_messages[i++] = new ModelParametersSchema.ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
     }
     // default fieldname hacks
     mapValidationMessageFieldNames(new String[] {"train", "valid"}, new String[] {"training_frame", "validation_frame"});

@@ -217,16 +217,16 @@ public class PojoUtils {
             // We are assigning a Pattern to a String.
             //
             dest_field.set(dest, orig_field.get(origin).toString());
-          } else if (dest_field.getType() == FrameV3.ColSpecifierV2.class && String.class.isAssignableFrom(orig_field.getType())) {
+          } else if (dest_field.getType() == FrameV3.ColSpecifierV3.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String to a ColSpecifier.  Note that we currently support only the colname, not a frame name too.
             //
-            dest_field.set(dest, new FrameV3.ColSpecifierV2((String) orig_field.get(origin)));
-          } else if (orig_field.getType() == FrameV3.ColSpecifierV2.class && String.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, new FrameV3.ColSpecifierV3((String) orig_field.get(origin)));
+          } else if (orig_field.getType() == FrameV3.ColSpecifierV3.class && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // We are assigning a ColSpecifierV2 to a String.  The column_name gets copied.
             //
-            dest_field.set(dest, ((FrameV3.ColSpecifierV2)orig_field.get(origin)).column_name);
+            dest_field.set(dest, ((FrameV3.ColSpecifierV3)orig_field.get(origin)).column_name);
           } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String into an enum field.

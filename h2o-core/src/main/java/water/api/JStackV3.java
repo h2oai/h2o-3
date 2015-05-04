@@ -5,10 +5,10 @@ import water.util.JStackCollectorTask.DStackTrace;
 
 public class JStackV3 extends Schema<JStack, JStackV3> {
   @API(help="Stacktraces", direction=API.Direction.OUTPUT)
-  public DStackTraceV2[] traces;
+  public DStackTraceV3[] traces;
 
-  public static class DStackTraceV2 extends Schema<DStackTrace, DStackTraceV2> {
-    public DStackTraceV2() { }
+  public static class DStackTraceV3 extends Schema<DStackTrace, DStackTraceV3> {
+    public DStackTraceV3() { }
 
     @API(help="Node name", direction=API.Direction.OUTPUT)
     public String node;
