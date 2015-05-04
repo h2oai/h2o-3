@@ -353,13 +353,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Throws {@code IllegalArgumentException} if no columns are in common, or
    *  if any factor column has no levels in common.
    */
-  public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain( _output._names, _output._domains, test, _parms.missingColumnsType(), expensive); }
+  public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain(_output._names, _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive); }
   /**
    *  @param names Training column names
    *  @param domains Training column levels
    *  @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain( String[] names, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain( String[] names, String responseName, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -377,10 +377,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
       Vec vec = test.vec(names[i]); // Search in the given validation set
-      // If the training set is missing in the validation set, complain and
-      // fill in with NAs.  If this is the response column for supervised
-      // learners, it is still made.
-      if( vec == null ) {
+
+      // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
+      boolean skipResponse = (responseName != null && names[i].equals(responseName) && vec == null);
+
+      // If a training set column is missing in the validation set, complain and fill in with NAs.
+      if( vec == null && !skipResponse) {
         String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
           str = str + ": substituting in a column of NAs";
@@ -461,7 +463,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
-    if( _output.isClassifier() ) {
+    if( _output.isClassifier() && adaptFr.find(_output.responseName()) != -1) {
 //      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
@@ -500,7 +502,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return A Frame containing the prediction column, and class distribution
    */
   protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
-    assert Arrays.equals(_output._names,adaptFrm._names); // Already adapted
+    final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
+    assert Arrays.equals(computeMetrics ? _output._names : Arrays.copyOf(_output._names, _output._names.length-1), adaptFrm._names);
+
     // Build up the names & domains.
     final int nc = _output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
@@ -509,10 +513,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     names[0] = "predict";
     for(int i = 1; i < names.length; ++i)
       names[i] = _output.classNames()[i-1];
-    domains[0] = nc==1 ? null : adaptFrm.lastVec().domain();
+    domains[0] = nc==1 || !computeMetrics ? null : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means()).doAll(ncols,adaptFrm);
-    bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),computeMetrics).doAll(ncols,adaptFrm);
+    if (computeMetrics)
+      bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
     Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
     DKV.put(res);
     return res;
@@ -523,8 +528,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
+    final boolean _computeMetrics;  // Column means of test frame
 
-    BigScore( String[] domain, int ncols, double[] mean ) { _domain = domain; _npredcols = ncols; _mean = mean; }
+    BigScore( String[] domain, int ncols, double[] mean, boolean computeMetrics ) { _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       double[] tmp = new double[_output.nfeatures()];
@@ -534,11 +540,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
         double[] p = score0(chks, row, tmp, preds);
-        float[] actual = new float[chks.length-startcol];
-        for (int c = startcol; c < chks.length; c++) {
-          actual[c-startcol] = (float)chks[c].atd(row);
+        if (_computeMetrics) {
+          float[] actual = new float[chks.length - startcol];
+          for (int c = startcol; c < chks.length; c++) {
+            actual[c - startcol] = (float) chks[c].atd(row);
+          }
+          _mb.perRow(preds, actual, Model.this);
         }
-        _mb.perRow(preds, actual, Model.this);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
