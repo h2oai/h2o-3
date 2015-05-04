@@ -68,6 +68,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
+    if (_parms._nbins <= 1) error ("_nbins", "_nbins must be > 1.");
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
