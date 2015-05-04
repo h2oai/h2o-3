@@ -847,7 +847,7 @@ class H2OFrame:
     if len(method) > 1:
       if self[col_id].isfactor():
         method = "mode"
-      method="mean"
+      else: method="mean"
 
     # choose "interpolate" by default for combine_method
     if len(combine_method) > 1: combine_method = "interpolate"
