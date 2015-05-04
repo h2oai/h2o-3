@@ -845,9 +845,8 @@ class H2OFrame:
 
     # setup the defaults, "mean" for numeric, "mode" for enum
     if len(method) > 1:
-      if self[col_id].isfactor():
-        method = "mode"
-      method="mean"
+      if self[col_id].isfactor(): method="mode"
+      else:                       method="mean"
 
     # choose "interpolate" by default for combine_method
     if len(combine_method) > 1: combine_method = "interpolate"
@@ -858,7 +857,7 @@ class H2OFrame:
     if method=="median":
       # no by and median!
       if by is not None:
-        raise ValueError("Unimplemented: No `by` and `median`. Please select a different method.")
+        raise ValueError("Unimplemented: No `by` and `median`. Please select a different method (e.g. `mean`).")
 
     # method cannot be median or mean for factor columns
     if self[col_id].isfactor() and method not in ["ffill", "bfill", "mode"]:
