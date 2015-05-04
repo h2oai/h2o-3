@@ -52,7 +52,6 @@ class Basic(unittest.TestCase):
 
             parameters = {
                 'response_column': 'C2', 
-                'n_folds': 0,
                 'alpha': '[0]', 
                 'lambda': '[0]',
             }

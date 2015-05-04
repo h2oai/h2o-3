@@ -63,16 +63,12 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
         'standardize': False,
         'family': 'binomial', 
         'link': None, 
-        'tweedie_variance_power': None,
-        'tweedie_link_power': None,
         'alpha': '[1e-4]',
         'lambda': '[0.5,0.25, 0.1]',
-        'prior1': None,
         'lambda_search': None,
         'nlambdas': None,
         'lambda_min_ratio': None,
         'use_all_factor_levels': False,
-        'n_folds': 1,
     }
 
 
@@ -80,7 +76,7 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
     model_key = 'hastie_glm.hex'
     bmResult = h2o.n0.build_model(
         algo='glm',
-        destination_key=model_key,
+        model_id=model_key,
         training_frame=parse_key,
         parameters=parameters,
         timeoutSecs=60)
