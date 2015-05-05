@@ -12,10 +12,8 @@ public class WaterMeterCpuTicks extends Iced {
   public void doIt() {
     H2ONode node = H2O.CLOUD._memary[nodeidx];
     GetTicksTask ppt = new GetTicksTask();
-    Log.trace("GetTicksTask starting to node " + nodeidx + "...");
     // Synchronous RPC call to get ticks from remote (possibly this) node.
     new RPC<>(node, ppt).call().get();
-    Log.trace("GetTicksTask completed to node " + nodeidx);
     cpu_ticks = ppt._cpuTicks;
   }
 
