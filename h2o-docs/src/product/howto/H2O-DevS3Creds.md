@@ -6,7 +6,7 @@ To make use of Amazon Web Services (AWS) storage solution S3 you will need to pa
 
 When running H2O on standalone mode aka using the simple java launch command, we can pass in the S3 credentials in two ways. 
 
-- You can pass in credentials in standalone mode the same way we access data from hdfs on Hadoop mode. You'll need to create a `core-site.xml` file and pass it in with the flag `-hdfs_config`.
+You can pass in credentials in standalone mode the same way we access data from hdfs on Hadoop mode. You'll need to create a `core-site.xml` file and pass it in with the flag `-hdfs_config`.
 
     To edit the properties in the core-site.xml file:
 
