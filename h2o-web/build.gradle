@@ -144,6 +144,13 @@ task cleanUpSmokeTest << {
     new File(["results"].join(File.separator)).deleteDir()
 }
 
+task compileAndInstallDocFiles(type: Exec) {
+    commandLine = getOsSpecificCommandLine(['.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee', 'help.coffee'])
+}
+
+task deleteDocFiles(type: Delete) {
+    delete '../h2o-docs/web'
+}
 
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
@@ -158,5 +165,9 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 
+compileAndInstallDocFiles.dependsOn installNpmPackages
+processResources.dependsOn compileAndInstallDocFiles
+
+
 // Hook clean stage
-clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot
+clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles

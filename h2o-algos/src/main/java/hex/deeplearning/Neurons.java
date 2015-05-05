@@ -767,7 +767,6 @@ public abstract class Neurons {
           for (int i = 0; i < numcat; ++i) {
             ByteBuffer buf = ByteBuffer.allocate(4);
             int hashval = murmur.hash(buf.putInt(cats[i]).array(), 4, (int)params._seed); // turn horizontalized categorical integer into another integer, based on seed
-//            int hashval = cats[i] ^ (int)params.seed; // turn horizontalized categorical integer into another integer, based on seed
             _a.add(Math.abs(hashval % cM), 1f); // restrict to limited range
           }
           for (int i = 0; i < nums.length; ++i)

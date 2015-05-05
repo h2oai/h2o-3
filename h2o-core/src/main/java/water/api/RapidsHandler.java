@@ -82,6 +82,8 @@ class RapidsHandler extends Handler {
                   head[c][r] = PrettyPrint.UUID(fr.vec(c).at16l(r), fr.vec(c).at16h(r));
                 else if (fr.vec(c).isString())
                   head[c][r] = String.valueOf(fr.vec(c).atStr(new ValueString(), r));
+                else if( fr.vec(c).isEnum() )
+                  head[c][r] = fr.domains()[c][(int)fr.vec(c).at(r)];
                 else
                   head[c][r] = String.valueOf(fr.vec(c).at(r));
               }

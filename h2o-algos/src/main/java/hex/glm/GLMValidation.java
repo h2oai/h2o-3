@@ -42,10 +42,14 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       :new MetricBuilderRegression();
   }
 
+  public double explainedDev(){
+    return 1.0 - residualDeviance()/nullDeviance();
+  }
+
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
-    if(!ArrayUtils.hasNaNsOrInfs(ds)) {
+    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if (_glm._family == Family.binomial)
         add2(yact[0], ds[2]);
       else

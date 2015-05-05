@@ -45,6 +45,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // Number of categorical columns trained on
     public int _categorical_column_count;
 
+    // Training time
+    public long[/*iterations*/] _training_time_ms = new long[]{System.currentTimeMillis()};
+
     public KMeansOutput( KMeans b ) { super(b); }
   }
 

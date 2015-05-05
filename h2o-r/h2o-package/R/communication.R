@@ -365,21 +365,25 @@
           tbl <- t(x$data)
         else
           tbl <- do.call(cbind, lapply(x$data, sapply, function(cell) if (is.null(cell)) "" else cell))
-
         cnms <- sapply(x$columns, `[[`, "name")
         fmts <- sapply(x$columns, `[[`, "format")
-        if (nzchar(cnms[1L]))
+        if( x$name=="Confusion Matrix" ) {
           colnames(tbl) <- make.unique(cnms)
-        else {
-          x$columns <- x$columns[-1L]
-          rnms <- tbl[, 1L, drop = TRUE]
-          cnms <- cnms[-1L]
-          fmts <- fmts[-1L]
-          tbl <- tbl[, -1L, drop = FALSE]
-          if (length(rnms) > 0 && all(nzchar(rnms)))
-            dimnames(tbl) <- list(make.unique(rnms), make.unique(cnms))
-          else
+          rownames(tbl) <- make.unique(c(cnms[1:(length(cnms)-2)], "Totals"))
+        } else {
+          if (nzchar(cnms[1L]))
             colnames(tbl) <- make.unique(cnms)
+          else {
+            x$columns <- x$columns[-1L]
+            rnms <- tbl[, 1L, drop = TRUE]
+            cnms <- cnms[-1L]
+            fmts <- fmts[-1L]
+            tbl <- tbl[, -1L, drop = FALSE]
+            if (length(rnms) > 0 && all(nzchar(rnms)))
+              dimnames(tbl) <- list(make.unique(rnms), make.unique(cnms))
+            else
+              colnames(tbl) <- make.unique(cnms)
+          }
         }
         tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
 
@@ -396,7 +400,8 @@
                  string = {},
                  {})
         }
-        attr(tbl, "header")  <- x$name
+        if( x$name == "Confusion Matrix") attr(tbl, "header") <- paste0(x$name, " - (", x$description, ")")
+        else                              attr(tbl, "header")  <- x$name
         attr(tbl, "formats") <- fmts
         oldClass(tbl) <- c("H2OTable", "data.frame")
         x <- tbl

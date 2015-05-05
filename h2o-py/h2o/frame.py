@@ -271,10 +271,10 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
 
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec._expr.eager() for vec in self]) + "))"
+    cbind = "(, (gput " + fr + " (cbind %FALSE %"
+    cbind += " %".join([vec._expr.eager() for vec in self]) + ")) (del '"+fr+"'))"
     res = h2o.rapids(cbind)
-    h2o.remove(fr)
+    h2o.delete(fr)
     head_rows = [range(1, nrows + 1, 1)]
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
     head = zip(*head_rows)
@@ -301,10 +301,10 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(= !" + fr + " (cbind %"
-      cbind += " %".join([expr.eager() for expr in exprs]) + "))"
+      cbind = "(, (gput " + fr + " (cbind %FALSE %"
+      cbind += " %".join([expr.eager() for expr in exprs]) + ")) (del '"+fr+"'))"
       res = h2o.rapids(cbind)
-      h2o.remove(fr)
+      h2o.delete(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
       tail = zip(*tail_rows)
@@ -374,7 +374,7 @@ class H2OFrame:
 
     chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
 
-    h2o.remove(chunk_summary_tmp_key)
+    h2o.delete(chunk_summary_tmp_key)
 
     print tabulate.tabulate(table, headers)
     print
@@ -595,7 +595,7 @@ class H2OFrame:
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     rapids_call = "(, "  # fold into a single rapids call
-    cbind = "(= !" + fr + " (cbind '"
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
     rapids_call += cbind
     # h2o.rapids(cbind)
@@ -709,7 +709,7 @@ class H2OFrame:
     expr = "(= !{} (quantile '{}' {} '{}'".format(tmp_key,key,probs,combine_method)
     h2o.rapids(expr)
     # Remove h2o temp frame after groupby
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -756,7 +756,7 @@ class H2OFrame:
     expr = "(= !{} (h2o.ddply %{} {} {}))".format(tmp_key,key,rapids_series,fun)
     h2o.rapids(expr) # ddply in h2o
     # Remove h2o temp frame after ddply
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
@@ -805,7 +805,7 @@ class H2OFrame:
     expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
     h2o.rapids(expr)  # group by
     # Remove h2o temp frame after groupby
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -816,6 +816,94 @@ class H2OFrame:
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
     h2o.rapids("(removeframe !{})".format(tmp_key))
     return H2OFrame(vecs=vecs)
+
+  def impute(self,column,method,combine_method,by,inplace):
+    """
+    Impute a column in this H2OFrame.
+
+    :param column: The column to impute
+    :param method: How to compute the imputation value.
+    :param combine_method: For even samples and method="median", how to combine quantiles.
+    :param by: Columns to group-by for computing imputation value per groups of columns.
+    :param inplace: Impute inplace?
+    :return: the imputed frame.
+    """
+    # sanity check columns, get the column index
+    col_id = -1
+    if isinstance(column, (unicode,str)):
+      col_id = self._find_idx(column)
+    elif isinstance(column, int):
+      col_id = column
+    elif isinstance(column, H2OVec):
+      try:
+        col_id = [a._name==v._name for a in self].index(True)
+      except:
+        raise ValueError("No column found to impute.")
+
+    if col_id < 0 or col_id >= self.ncol():
+      raise ValueError("Column at index: " + str(col_id) + " is out of range of the data.")
+
+    # setup the defaults, "mean" for numeric, "mode" for enum
+    if len(method) > 1:
+      if self[col_id].isfactor():
+        method = "mode"
+      method="mean"
+
+    # choose "interpolate" by default for combine_method
+    if len(combine_method) > 1: combine_method = "interpolate"
+    if combine_method == "lo": combine_method = "low"
+    if combine_method == "hi": combine_method = "high"
+
+    # sanity check method
+    if method=="median":
+      # no by and median!
+      if by is not None:
+        raise ValueError("Unimplemented: No `by` and `median`. Please select a different method.")
+
+    # method cannot be median or mean for factor columns
+    if self[col_id].isfactor() and method not in ["ffill", "bfill", "mode"]:
+      raise ValueError("Column is categorical, method must not be mean or median.")
+
+
+    # setup the group by columns
+    gb_cols = "()"
+    if by is not None:
+      if not isinstance(by, list):
+        by = [by]  # just make it into a list...
+      if isinstance(by[0], (unicode,str)):
+        by = [self._find_idx(name) for name in by]
+      elif isinstance(by[0], int):
+        by = by
+      elif isinstance(by[0], H2OVec):
+        by = [[a._name==v._name for a in self].index(True) for v in by]  # nested list comp. WOWZA
+      else:
+        raise ValueError("`by` is not a supported type")
+
+    if by is not None:
+      gb_cols = "(llist #"+" #".join([str(b) for b in by])+")"
+
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+
+    if inplace:
+      # frame, column, method, combine_method, gb_cols, inplace
+      expr = "(h2o.impute %{} #{} \"{}\" \"{}\" {} %TRUE".format(key, col_id, method, combine_method, gb_cols)
+      h2o.rapids(expr)  # exec the thing
+      return self
+    else:
+      expr = "(= !{} (h2o.impute %{} #{} \"{}\" \"{}\" {} %FALSE))".format(tmp_key,key,col_id,method,combine_method,gb_cols)
+      h2o.rapids(expr)  # exec the thing
+      h2o.delete(key)
+      # Make backing H2OVecs for the remote h2o vecs
+      j = h2o.frame(tmp_key)
+      fr = j['frames'][0]       # Just the first (only) frame
+      rows = fr['rows']         # Row count
+      veckeys = fr['vec_ids']   # List of h2o vec keys
+      cols = fr['columns']      # List of columns
+      colnames = [col['label'] for col in cols]
+      vecs = H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+      if not inplace: h2o.rapids("(removeframe !{})".format(tmp_key))
+      return H2OFrame(vecs=vecs)
 
   def merge(self, other, allLeft=False, allRite=False):
     """
@@ -892,7 +980,7 @@ class H2OFrame:
     expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
     h2o.rapids(expr)
     # Remove h2o temp frame after var
-    h2o.remove(key)
+    h2o.delete(key)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
@@ -991,7 +1079,7 @@ class H2OVec:
     names = [vec.name() for vec in vecs]
 
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %"
+    cbind = "(= !" + fr + " (cbind %FALSE %"
     cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
     h2o.rapids(cbind)
 
