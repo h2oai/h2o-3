@@ -64,13 +64,13 @@ class MultiReceiverThread extends Thread {
         sock.receive(pack);
         UDPReceiverThread.basic_packet_handling(new AutoBuffer(pack));
       } catch( SocketException e ) {
-        Log.info("H2O.CLOUD_MULTICAST_IF: "+ H2O.CLOUD_MULTICAST_IF);
-        Log.info("H2O.CLOUD_MULTICAST_PORT: "+ H2O.CLOUD_MULTICAST_PORT);
-        Log.info("H2O.CLOUD_MULTICAST_GROUP: "+ H2O.CLOUD_MULTICAST_GROUP);
+        Log.err("Trying Multicast Interface, Group, Port - "+
+          H2O.CLOUD_MULTICAST_IF+" "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
         throw new RuntimeException(e);
       } catch( Exception e ) {
+        Log.err("Trying Multicast Interface, Group, Port - "+
+          H2O.CLOUD_MULTICAST_IF+" "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
         // On any error from anybody, close all sockets & re-open
-        Log.err("Multicast "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
         saw_error = true;
         errsock  = sock ;  sock  = null; // Signal error recovery on the next loop
         errgroup = group;  group = null;
