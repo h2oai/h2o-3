@@ -8,7 +8,7 @@ source('../../h2o-runit.R')
 
 test <- function(conn) {
   Log.info("Importing prostate dataset...")
-  h2o_data <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
+  h2o_data <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
 
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
   myY <- "CAPSULE"

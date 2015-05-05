@@ -3,8 +3,8 @@ source('../h2o-runit.R')
 
 test.hex_1779_h2o.cbind <- function(H2Oserver) {
 
-#prostatePath <- system.file("extdata", "prostate.csv", package="h2o")
-prostate.hex <- h2o.importFile(path=locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
+prostatePath <- locate("smalldata/prostate/prostate.csv")
+prostate.hex <- h2o.importFile(H2Oserver, path = prostatePath, destination_frame = "prostate.hex")
 
 new_col <- vector(mode="numeric", dim(prostate.hex)[1])
 
