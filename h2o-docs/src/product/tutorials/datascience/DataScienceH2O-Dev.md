@@ -580,7 +580,7 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 
 ###References
 
-  >Do we have any references for Naive Bayes??
+[Ng, Andrew. "Generative Learning algorithms." (2008).](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
 
 ---
 
