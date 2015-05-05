@@ -42,7 +42,7 @@ test.pub.767 <- function(conn) {
   cnts <- h2o.ddply(cov, "V55", nrow)
   print(as.data.frame(cnts))
 
-  m <- h2o.randomForest(x = 1:54, y = 55, training_frame = cov, ntrees = 10,
+  m <- h2o.randomForest(x = 1:54, y = 55, training_frame = cov, ntrees = 2,
                         max_depth = 100)
 
   print(m)
