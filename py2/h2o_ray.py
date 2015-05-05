@@ -63,6 +63,10 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
         if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):
             h2o_sandbox.check_sandbox_for_errors()
             emsg = "Job:", job_key, "timed out in:", timeoutSecs
+
+            # for debug
+            a = h2o.nodes[0].get_cloud()
+            print "cloud.json:", dump_json(a)
             raise Exception(emsg)
             print emsg
             return None
