@@ -2753,9 +2753,13 @@ class ASTRemoveFrame extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env e) {
-    Frame fr = e.popAry();
-    fr.restructure(new String[0],new Vec[0]);
-    fr.remove();
+    Val v = e.pop();
+    Frame fr;
+    if( v instanceof ValFrame ) {
+      fr = ((ValFrame) v)._fr;
+      fr.restructure(new String[0], new Vec[0]);
+      fr.remove();
+    }
   }
 }
 
