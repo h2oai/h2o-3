@@ -54,6 +54,9 @@ class MultiReceiverThread extends Thread {
         if( sock == null ) {
           sock = new MulticastSocket(H2O.CLOUD_MULTICAST_PORT);
           if( H2O.CLOUD_MULTICAST_IF != null )
+            Log.info("kbn H2O.CLOUD_MULTICAST_IF"+H2O.CLOUD_MULTICAST_IF);
+            Log.info("kbn H2O.CLOUD_MULTICAST_PORT"+H2O.CLOUD_MULTICAST_PORT);
+            Log.info("kbn H2O.CLOUD_MULTICAST_GROUP"+H2O.CLOUD_MULTICAST_GROUP);
             sock.setNetworkInterface(H2O.CLOUD_MULTICAST_IF);
           sock.joinGroup(group);
         }
