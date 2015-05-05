@@ -35,17 +35,18 @@ if (n != 1166952590) {
     stop("nrows is wrong")
 }
 
-myY = "C31"
-myX = setdiff(names(data.hex), myY)
-
-
 ## Chose which col as response
-DepY <- "IsDepDelayed"
-
+## Response = Distance 
+myY = "C19"
+myX = setdiff(names(data.hex), myY)
 ## Build GLM Model and compare AUC with h2o1
 data_admm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "IRLSM")
 data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.hex, family = "gaussian", solver = "L_BFGS")
 
+## Chose which col as response
+## Response = IsDepDelayed
+myY = "C31"
+myX = setdiff(names(data.hex), myY)
 data.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.hex, distribution = "AUTO")
 
 PASS_BANNER()
