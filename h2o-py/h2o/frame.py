@@ -957,7 +957,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("min", Expr("cbind",Expr(self._vecs)))
+    return Expr("min", Expr("cbind",Expr(self._vecs))).eager()
 
   def max(self):
     """
@@ -965,7 +965,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("max", Expr("cbind",Expr(self._vecs)))
+    return Expr("max", Expr("cbind",Expr(self._vecs))).eager()
 
   def sum(self):
     """
@@ -973,7 +973,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("sum", Expr("cbind",Expr(self._vecs)))
+    return Expr("sum", Expr("cbind",Expr(self._vecs))).eager()
 
   def var(self):
     """
