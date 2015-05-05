@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.pub_699_negative_indexes <- function(H2Oserver) {
 
-prostatePath = system.file("extdata", "prostate.csv", package="h2o")
+prostatePath = locate("smalldata/prostate/prostate.csv")
 prostate.hex = h2o.importFile(H2Oserver, path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local = as.data.frame(prostate.hex)
