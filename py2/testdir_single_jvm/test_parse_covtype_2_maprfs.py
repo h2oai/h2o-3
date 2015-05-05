@@ -119,7 +119,7 @@ class Basic(unittest.TestCase):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=parse_key, column=i)
 
-            k = parseResult['frames'][0]['key']['name']
+            k = parseResult['frames'][0]['frame_id']['name']
             # print "parseResult:", dump_json(parseResult)
             a_node = h2o.nodes[0]
             frames_result = a_node.frames(key=k, row_count=5)

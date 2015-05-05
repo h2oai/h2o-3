@@ -88,7 +88,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     @Override public boolean isSupervised() { return true; }
 
     /** @return number of classes; illegal to call before setting distribution */
-    public int nclasses() { return _distribution.length; }
+    public int nclasses() { return _distribution == null ? 1 : _distribution.length; }
     public boolean isClassifier() { return nclasses()>1; }
     @Override public ModelCategory getModelCategory() {
       return nclasses()==1 

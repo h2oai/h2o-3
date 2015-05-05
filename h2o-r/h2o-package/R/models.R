@@ -243,10 +243,8 @@ predict.H2OModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
-  res <- res$model_metrics[[1L]]$predictions
-
-  # Grab info to make data frame
-  .h2o.parsedPredData(newdata@conn, res)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
 }
 #' @rdname predict.H2OModel
 #' @export
@@ -1050,7 +1048,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
     main <- paste(yaxis, "vs", xaxis)
     if( x@on_train ) main <- paste(main, "(on train)")
     else             main <- paste(main, "(on valid)")
-    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ...)
+    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
     abline(0, 1, lty = 2)
   }
 }
