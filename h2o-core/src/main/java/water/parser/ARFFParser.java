@@ -1,5 +1,6 @@
 package water.parser;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import water.fvec.Vec;
 
@@ -33,7 +34,7 @@ class ARFFParser extends CsvParser {
       if (bits[lineStart] == '#') continue; // Ignore      comment lines
       if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
       if (lineEnd > lineStart) {
-        String str = new String(bits, lineStart, lineEnd - lineStart).trim();
+        String str = new String(bits, lineStart, lineEnd - lineStart, Charset.defaultCharset()).trim();
         if (str.equalsIgnoreCase("@DATA")) {
           if (!CsvParser.isEOL(bits[offset])) {
             have_data = true; //more than just the header

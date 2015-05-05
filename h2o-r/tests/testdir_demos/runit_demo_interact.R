@@ -53,7 +53,7 @@ interact <- function(fr, l_vec, r_vec) {
 h <- h2o.init(ip=myIP, port=myPort)
 #uploading data file to h2o
 filePath <- locate("smalldata/logreg/prostate.csv")
-hex <- h2o.uploadFile(h, filePath, "prostate")
+hex <- h2o.uploadFile(h, filePath, "prostate")[1:10,]
 
 hex$RACE <- as.factor(hex$RACE)
 hex$GLEASON <- as.factor(hex$GLEASON)

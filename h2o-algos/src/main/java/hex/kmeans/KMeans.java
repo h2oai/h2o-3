@@ -5,6 +5,8 @@ import hex.Model;
 import hex.ModelMetricsClustering;
 import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
@@ -45,7 +47,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   @Override
   protected void checkMemoryFootPrint() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
-    long max_mem = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat.get_max_mem();
+    long max_mem = H2O.SELF.get_max_mem();
     if (mem_usage > max_mem) {
       String msg = "Centroids won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
@@ -234,6 +236,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       model._output._avg_centroids_chg = ArrayUtils.copyAndFillOf(
               model._output._avg_centroids_chg,
               model._output._avg_centroids_chg.length+1, average_change);
+      model._output._training_time_ms = ArrayUtils.copyAndFillOf(
+              model._output._training_time_ms,
+              model._output._training_time_ms.length+1, System.currentTimeMillis());
       return average_change < TOLERANCE;
     }
 
@@ -365,9 +370,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       List<String> colHeaders = new ArrayList<>();
       List<String> colTypes = new ArrayList<>();
       List<String> colFormat = new ArrayList<>();
-      colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Average Change of Standardized Centroids"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Average Within Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+      colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
+      colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Avg. Change of Std. Centroids"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Avg. Within Sum Of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = output._avg_centroids_chg.length;
       TwoDimTable table = new TwoDimTable(
@@ -382,6 +389,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         int col = 0;
         assert(row < table.getRowDim());
         assert(col < table.getColDim());
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        table.set(row, col++, fmt.print(output._training_time_ms[i]));
+        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_start_time, true));
         table.set(row, col++, i);
         table.set(row, col++, output._avg_centroids_chg[i]);
         table.set(row, col++, output._history_avg_within_ss[i]);

@@ -67,7 +67,7 @@ class Basic(unittest.TestCase):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
 
-            k = parseResult['frames'][0]['key']['name']
+            k = parseResult['frames'][0]['frame_id']['name']
             frames_result = h2o.nodes[0].frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
             parseKeyIndexedCheck(frames_result, multiplyExpected)

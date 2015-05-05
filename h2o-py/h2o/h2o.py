@@ -251,10 +251,10 @@ def ipy_lines(block):
 
 def remove(object):
   """
-  Remove object from H2O.
+  Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
 
   :param object: The object pointing to the object to be removed.
-  :return: Void
+  :return: None
   """
   if object is None:
     raise ValueError("remove with no object is not supported, for your protection")
@@ -272,6 +272,16 @@ def remove(object):
   #
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
+
+def delete(key):
+  """
+  Do a shallow DKV remove of the key (does not remove any subparts)
+  :param key: A key to be DKV.removed
+  :return: None
+  """
+  expr = "(del '"+key+"')"
+  rapids(expr)
+  return None
 
 def rapids(expr):
   """

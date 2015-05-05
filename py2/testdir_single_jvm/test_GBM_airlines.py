@@ -62,7 +62,7 @@ class Basic(unittest.TestCase):
 
             bmResult = h2o.n0.build_model(
                 algo='gbm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=360)

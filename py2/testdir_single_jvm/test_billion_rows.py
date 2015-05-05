@@ -52,14 +52,13 @@ class Basic(unittest.TestCase):
 
             parameters = {
                 'response_column': 'C2', 
-                'n_folds': 0,
                 'alpha': '[0]', 
                 'lambda': '[0]',
             }
             model_key = 'B.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=300)

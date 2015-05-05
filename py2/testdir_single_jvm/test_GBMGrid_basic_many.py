@@ -72,7 +72,7 @@ class Basic(unittest.TestCase):
             modelKey = 'GBMGrid_prostate_%s', i
             bmResult = h2o.n0.build_model(
                 algo='gbm',
-                destination_key=modelKey,
+                model_id=modelKey,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=60)

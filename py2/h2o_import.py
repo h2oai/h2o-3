@@ -234,7 +234,7 @@ def import_only(node=None, schema='local', bucket=None, path=None,
           "dels": [],\
           "fails": [],\
           "files": ["%s"],\
-          "keys": ["%s"],\
+          "destination_frames": ["%s"],\
           "path": "%s",\
           "schema_name": null, "schema_type": null, "schema_version": null\
         }'% (filename, src_key, filePath))
@@ -448,12 +448,6 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
         # if parse blows up, we want error isolation ..i.e. find stack traces here, rather than the next guy blowing up
         check_sandbox_for_errors()
         print "WARNING: not doing inspect/summary for now after parse"
-        ## inspect = node.inspect(parseResult['destination_key'], timeoutSecs=timeoutSecs)
-        ## numRows = inspect['numRows']
-        ## numCols = inspect['numCols']
-        # we pass numCols, for detecting whether the na cnt means a col is all NAs, (for ignoring min/max/mean/sigma)
-        ## node.summary_page(parseResult['destination_key'], timeoutSecs=timeoutSecs, noPrint=noPrint, numRows=numRows, numCols=numCols)
-        # for now, don't worry about error isolating summary 
     else:
         # isolate a parse from the next thing
         check_sandbox_for_errors()

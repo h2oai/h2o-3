@@ -357,6 +357,22 @@ public class Vec extends Keyed<Vec> {
    * @return a copy of the vector.
    */
   public Vec makeCopy(String[] domain){
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = _type;
+    DKV.put(v._key, v);
+    return v;
+  }
+
+  public Vec makeCopy(String[] domain, byte type) {
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = type;
+    DKV.put(v._key, v);
+    return v;
+  }
+
+  private Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
@@ -368,9 +384,6 @@ public class Vec extends Keyed<Vec> {
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
     return v;
   }
 

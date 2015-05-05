@@ -1,7 +1,7 @@
 # Change this global variable to match your own system's path
 ANQIS.ROOT.PATH <- "/Users/anqi_fu/Documents/workspace/"
 SPENCERS.ROOT.PATH <- "/Users/spencer/0xdata/"
-ROOT.PATH <- SPENCERS.ROOT.PATH
+ROOT.PATH <- ANQIS.ROOT.PATH
 DEV.PATH  <- "h2o-dev/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
@@ -19,6 +19,7 @@ src()
 
 
 h <- h2o.init()
+conn <- h
 #hex <- as.h2o(iris, h)
 #
 #hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))
