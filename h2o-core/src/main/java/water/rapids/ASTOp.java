@@ -659,8 +659,6 @@ class ASTLength extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
-//    env.cleanup(fr);
-//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -1676,7 +1674,7 @@ class ASTImpute extends ASTUniPrefixOp {
   private static enum ImputeMethod { MEAN , MEDIAN, MODE }
   @Override String opStr() { return "h2o.impute"; }
   @Override ASTOp make() { return new ASTImpute(); }
-  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by"}); }
+  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by", "inplace"}); }
   ASTImpute parse_impl(Exec E) {
     AST ary = E.parse();
     _colIdx = (int)E.nextDbl();
