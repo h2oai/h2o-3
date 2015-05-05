@@ -8,7 +8,7 @@ randomParams <- function(family, train, test, x, y) {
   if(identical(family, "gaussian"))
     family.links <- c("identity", "log", "inverse")
   else if (identical(family, "binomial"))
-    family.links <- c("logit", "log")
+    family.links <- c("logit")
   else if (identical(family, "poisson"))
     family.links <- c("log", "identity")
   else if (identical(family, "gamma"))
