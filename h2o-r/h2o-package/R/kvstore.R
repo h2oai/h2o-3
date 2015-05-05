@@ -160,7 +160,7 @@ h2o.assign <- function(data, key, deepCopy=FALSE) {
     res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
     .byref.update.frame(res)
   } else {
-    expr <- paste0("(, (gput ", key, "%", data@frame_id, ") (removeframe %",data@frame_id,"))")   # removes the original frame!
+    expr <- paste0("(, (gput '", key, "' %", data@frame_id, ") (removeframe %",data@frame_id,"))")   # removes the original frame!
     res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
     .byref.update.frame(res)
   }

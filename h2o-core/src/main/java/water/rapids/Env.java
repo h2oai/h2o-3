@@ -181,7 +181,12 @@ public class Env extends Iced {
   public void poppush(int n, Val v) { pop(n); push(v);}
   public Frame popAry () { return ((ValFrame)pop())._fr; }
   public double popDbl() { return ((ValNum)pop())._d;    }
-  public String popStr() { return ((ValStr)pop())._s;    }
+  public String popStr() {
+    Val v = pop();
+    if( v instanceof ValStr ) return ((ValStr)v)._s;
+    else if( v instanceof ValFrame ) return ((ValFrame)v)._fr._key.toString();
+    else throw new IllegalASTException("shouldn't be here.");
+  }
   public ValSeries popSeries() {return (ValSeries)pop(); }
   public ValSpan popSpan() { return (ValSpan)pop();      }
   public Frame peekAry() {return ((ValFrame)peek())._fr; }

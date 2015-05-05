@@ -476,7 +476,7 @@ class ASTStatement extends AST {
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      if( !(_asts[i+1] instanceof ASTDelete) ) env.pop();
+      if( !(_asts[i+1] instanceof ASTDelete || _asts[i+1] instanceof ASTRemoveFrame) ) env.pop();
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
