@@ -408,9 +408,12 @@ public class Frame extends Lockable<Frame> {
   }
 
   // Add a bunch of vecs
-  public void add( String[] names, Vec[] vecs ) {
+  public void add( String[] names, Vec[] vecs) {
+    add(names, vecs, vecs.length);
+  }
+  public void add( String[] names, Vec[] vecs, int cols ) {
     if (null == vecs || null == names) return;
-    for( int i=0; i<vecs.length; i++ )
+    for( int i=0; i<cols; i++ )
       add(names[i],vecs[i]);
   }
 
@@ -430,7 +433,7 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
@@ -654,13 +657,18 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Restructure a Frame completely */
-  public void restructure( String[] names, Vec[] vecs ) {
+  public void restructure( String[] names, Vec[] vecs) {
+    restructure(names, vecs, numCols());
+  }
+
+  /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
+  public void restructure( String[] names, Vec[] vecs, int cols) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
     _names = new String[0];
     _keys  = new Key   [0];
     _vecs  = new Vec   [0];
-    add(names,vecs);
+    add(names,vecs,cols);
   }
 
   // --------------------------------------------

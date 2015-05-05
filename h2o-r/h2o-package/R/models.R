@@ -243,10 +243,8 @@ predict.H2OModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
-  res <- res$model_metrics[[1L]]$predictions
-
-  # Grab info to make data frame
-  .h2o.parsedPredData(newdata@conn, res)
+  res <- res$predictions_frame
+  h2o.getFrame(res$frame$name)
 }
 #' @rdname predict.H2OModel
 #' @export

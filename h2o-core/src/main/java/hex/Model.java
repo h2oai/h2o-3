@@ -420,8 +420,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Validation set has no columns in common with the training set");
-    if( good == names.length )  // Only update if got something for all columns
-      test.restructure(names,vvecs);
+    if( good == names.length || (responseName != null && test.find(responseName) == -1 && good == names.length - 1) )  // Only update if got something for all columns
+      test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);
   }
 
