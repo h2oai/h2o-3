@@ -94,9 +94,9 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
  
  ![Cell executing](images/Flow_cellmode_runningflag.png)
 
-##Changing Cell Modes
+##Changing Cell Formats
 
-To change the cell's mode (for example, from code to Markdown), make sure you are in not in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the mode you want to use. The flag's text changes to display the current mode. 
+To change the cell's format (for example, from code to Markdown), make sure you are in not in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
 
 Cell Mode     | Keyboard Shortcut
 ------------- | -----------------
