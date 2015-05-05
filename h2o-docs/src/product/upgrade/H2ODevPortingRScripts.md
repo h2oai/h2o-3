@@ -305,8 +305,7 @@ H2O  | H2O-Dev
 ------------- | -------------
 `@model$params` | `@allparameters`
 `@model$centers` | `@model$centers`
-`@model$withinss` | `@model$within_mse`
-`@model$tot.withinss` | `@model$avg_within_ss`
+`@model$tot.withinss` | `@model$tot_withinss`
 `@model$size` | `@model$size`
 `@model$iter` | `@model$iterations`
 &nbsp; | `@model$_scoring_history`

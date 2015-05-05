@@ -407,14 +407,10 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #'        \describe{
 #'          \item{size }{The number of points in each cluster.}
-#'          \item{avg_ss }{Average sum of squared error. This is related to R's results by \code{totss = avg_ss * num_rows},
-#'              where \code{num_rows} is the number of rows in the training frame.}
-#'          \item{within_mse }{A vector of within-cluster mean sum of squared error. This is related to R's results by
-#'               \code{withinss[i] = within_mse[i] * size[i]}.}
-#'          \item{avg_within_ss }{Average within-cluster sum of squared error. This is related to R's results by
-#'              \code{tot.withinss = avg_within_ss * num_clusters}, where \code{num_clusters} is the number of clusters.}
-#'          \item{avg_between_ss }{Average between-cluster sum of squared error. This is related to R's results by
-#'              \code{betweenss = avg_between_ss * num_rows}.}
+#'          \item{totss }{Total sum of squared error to grand mean.}
+#'          \item{withinss }{A vector of within-cluster sum of squared error.}
+#'          \item{tot_withinss }{Total within-cluster sum of squared error.}
+#'          \item{betweenss }{Between-cluster sum of squared error.}
 #'        }
 #' @slot finalizers A \code{list} object containing environments with finalizers that
 #'                  remove keys from the H2O key-value store.
@@ -451,16 +447,16 @@ setGeneric("getCenters", function(object) { standardGeneric("getCenters") })
 setGeneric("getCentersStd", function(object) { standardGeneric("getCentersStd") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getWithinMSE", function(object) { standardGeneric("getWithinMSE") })
+setGeneric("getWithinSS", function(object) { standardGeneric("getWithinSS") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getAvgWithinSS", function(object) { standardGeneric("getAvgWithinSS") })
+setGeneric("getTotWithinSS", function(object) { standardGeneric("getTotWithinSS") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getAvgBetweenSS", function(object) { standardGeneric("getAvgBetweenSS") })
+setGeneric("getBetweenSS", function(object) { standardGeneric("getBetweenSS") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getAvgSS", function(object) { standardGeneric("getAvgSS") })
+setGeneric("getTotSS", function(object) { standardGeneric("getTotSS") })
 #' @rdname ModelAccessors
 #' @export
 setGeneric("getIterations", function(object) { standardGeneric("getIterations") })
@@ -476,16 +472,16 @@ setMethod("getCenters", "H2OClusteringModel", function(object) { as.data.frame(o
 setMethod("getCentersStd", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers_std)[,-1] })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$within_sum_of_squares })
+setMethod("getWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$within_cluster_sum_of_squares })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_within_ss })
+setMethod("getTotWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$tot_withinss })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_between_ss })
+setMethod("getBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$betweenss })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_ss } )
+setMethod("getTotSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$totss } )
 #' @rdname ModelAccessors
 #' @export
 setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
@@ -578,9 +574,9 @@ setMethod("show", "H2OClusteringMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)
     m <- object@metrics
-    cat("\nAvg Within SS: ", m$avg_within_ss)
-    cat("\nAvg Between SS: ", m$avg_between_ss)
-    cat("\nAvg SS: ", m$avg_ss, "\n")
+    cat("\nTotal Within SS: ", m$tot_withinss)
+    cat("\nBetween SS: ", m$betweenss)
+    cat("\nTotal SS: ", m$totss, "\n")
     print(m$centroid_stats)
   } else print(NULL)
 })
