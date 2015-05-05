@@ -138,5 +138,7 @@ class Basic(unittest.TestCase):
 
             parseKeyIndexedCheck(frames_result, multiplyExpected, expectedColumnNames)
 
+        h2o.nodes[0].log_download()
+
 if __name__ == '__main__':
     h2o.unit_main()

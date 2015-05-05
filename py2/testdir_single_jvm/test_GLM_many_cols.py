@@ -25,13 +25,14 @@ def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
 
 class Basic(unittest.TestCase):
     def tearDown(self):
+        h2o.nodes[0].log_download()
         h2o.check_sandbox_for_errors()
 
     @classmethod
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1,java_heap_GB=10)
+        h2o.init(1,java_heap_GB=13)
 
     @classmethod
     def tearDownClass(cls):
@@ -60,7 +61,7 @@ class Basic(unittest.TestCase):
             print "Creating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
 
-            parseResult = h2i.import_parse(path=csvPathname, hex_key=hex_key, timeoutSecs=180, doSummary=False)
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, timeoutSecs=180, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
             parse_key = pA.parse_key
@@ -105,7 +106,7 @@ class Basic(unittest.TestCase):
                     model_id=model_key,
                     training_frame=parse_key,
                     parameters=parameters,
-                    timeoutSecs=120)
+                    timeoutSecs=300)
                 bm = OutputObj(bmResult, 'bm')
 
                 modelResult = h2o.n0.models(key=model_key)
