@@ -38,7 +38,7 @@ if (n != 1166952590) {
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
-s <- h2o.runif(air)    # Useful when number of rows too large for R to handle
+s <- h2o.runif(data.hex)    # Useful when number of rows too large for R to handle
 data.train <- data.hex[s <= 0.8,]
 data.valid <- data.hex[s > 0.8,]
 
