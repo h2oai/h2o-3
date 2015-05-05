@@ -12,7 +12,7 @@ class ARFFParser extends CsvParser {
   ARFFParser(ParseSetup ps) { super(ps); }
 
   /** Try to parse the bytes as ARFF format  */
-  static ParseSetup guessSetup(byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[] naStrings) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
 
     // Parse all lines starting with @ until EOF or @DATA

@@ -63,7 +63,7 @@ def parse_setup(raw_frames):
   :return: A ParseSetup "object"
   """
 
-  # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
+  # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
   return j
@@ -102,7 +102,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [_quoted(name) for name in setup["na_strings"]]
+    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
     p["na_strings"] = None
 
 

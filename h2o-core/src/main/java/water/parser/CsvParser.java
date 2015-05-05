@@ -112,11 +112,15 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
-                  && _setup._na_strings.length < colIdx  // FIXME: < is suspicious PUBDEV-869
-                  && _setup._na_strings[colIdx] != null
-                  && str.equals(_setup._na_strings[colIdx]))
-            dout.addInvalidCol(colIdx);
-          else
+                  && _setup._na_strings.length < colIdx
+                  && _setup._na_strings[colIdx] != null) {
+            for (String s : _setup._na_strings[colIdx]) {
+              if (str.equals(s)) {
+                dout.addInvalidCol(colIdx);
+                break;
+              }
+            }
+          } else
             dout.addStrCol(colIdx, str);
           str.set(null, 0, 0);
           ++colIdx;
@@ -604,7 +608,7 @@ MAIN_LOOP:
    *  singleQuotes is honored in all cases (and not guessed).
    *
    */
-  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[] naStrings) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] naStrings) {
 
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )

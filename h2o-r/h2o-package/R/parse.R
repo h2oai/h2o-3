@@ -33,7 +33,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
             number_columns = parse.params$number_columns,
             column_names = .collapse.char(parse.params$column_names),
             column_types = .collapse.char(parse.params$column_types),
-            na_strings = .collapse.char(parse.params$na_strings),
+            na_strings = .collapse.array(parse.params$na_strings),
             chunk_size = parse.params$chunk_size,
             delete_on_done = parse.params$delete_on_done
             )
@@ -88,7 +88,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   if( !is.null(col.types) )  parseSetup.params$column_types <- .collapse.char(col.types)
 
   # check the na.strings
-  if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.char(na.strings)
+  if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
 
   # pass through ParseSetup
   parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
@@ -120,6 +120,10 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
+.collapse.array <- function(v) {
+  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char), collapse=','), ']') 
+  else "[]"
+}
 
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), frame_id) {
   .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]$rows

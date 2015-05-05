@@ -37,7 +37,7 @@ public final class ParseSetup extends Iced {
   String[] _column_names;
   byte[] _column_types;       // Column types
   String[][] _domains;        // Domains for each column (null if numeric)
-  String[] _na_strings;       // Strings for NA in a given column
+  String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
@@ -48,7 +48,7 @@ public final class ParseSetup extends Iced {
             ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data, ps._chunk_size);
   }
 
-  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[] naStrings, String[][] data, int chunkSize) {
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, int chunkSize) {
     _parse_type = t;
     _separator = sep;
     _single_quotes = singleQuotes;
@@ -86,7 +86,7 @@ public final class ParseSetup extends Iced {
    */
   public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
-                    String[][] domains, String[] naStrings, String[][] data) {
+                    String[][] domains, String[][] naStrings, String[][] data) {
     this(t, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
             domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
   }
@@ -349,7 +349,10 @@ public final class ParseSetup extends Iced {
     @Override public void postGlobal() {
       if (_gblSetup._column_previews != null && _gblSetup._parse_type != ParserType.ARFF) {
         _gblSetup._column_types = _gblSetup._column_previews.guessTypes();
-        _gblSetup._na_strings = _gblSetup._column_previews.guessNAStrings(_gblSetup._column_types);
+        if (_userSetup._na_strings == null)
+          _gblSetup._na_strings = _gblSetup._column_previews.guessNAStrings(_gblSetup._column_types);
+        else
+          _gblSetup._na_strings = _userSetup._na_strings;
       }
     }
 
@@ -438,7 +441,7 @@ public final class ParseSetup extends Iced {
   }
 
   private static final ParserType guessFileTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
-  public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[] naStrings ) {
+  public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
     switch( pType ) {
       case CSV:      return      CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, naStrings);
       case SVMLight: return SVMLightParser.guessSetup(bits);
