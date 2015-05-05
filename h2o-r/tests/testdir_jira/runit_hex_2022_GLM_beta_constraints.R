@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 test.GLM.betaConstraints <- function(conn){
 
     Log.info("Importing prostate dataset...")
-    prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
+    prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
 
     Log.info("Run gaussian model once to grab starting values for betas...")
     myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
@@ -31,7 +31,7 @@ test.GLM.betaConstraints <- function(conn){
                         alpha = 0.5,
                         standardization = T
                         ) {
-        prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
+        prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
         Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
                        standardization =", standardization, "..."))
         if(family_type == "binomial"){

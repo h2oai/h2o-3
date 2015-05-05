@@ -2,15 +2,15 @@ package hex.glm;
 
 import hex.*;
 import hex.glm.GLMModel.GLMParameters.Family;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.JCodeGen;
-import water.util.SB;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +29,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
+  }
+
+  @Override
+  protected boolean toJavaCheckTooBig() {
+    if(beta().length > 10000) {
+      Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
+      return true;
+    }
+    return false;
   }
 
   public DataInfo dinfo() { return _dinfo; }
@@ -73,12 +82,18 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk))-1];
-    } else { // do not skip any levels
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
-        eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
+    for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) {
+      if(chks[i].isNA(row_in_chunk)) {
+        eta = Double.NaN;
+        break;
+      }
+      long lval = chks[i].at8(row_in_chunk);
+      int ival = (int)lval;
+      if(ival != lval) throw new IllegalArgumentException("categorical value out of range");
+      if(_parms._use_all_factor_levels)
+        eta += b[_dinfo._catOffsets[i] + ival];
+      else if(ival != 0)
+        eta += b[_dinfo._catOffsets[i] + ival - 1];
     }
     final int noff = _dinfo.numStart() - _dinfo._cats ;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
@@ -644,11 +659,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
       _best_lambda_idx = l;
-      if (_submodels[l].trainVal != null && tFrame != null)
-        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,m._ymu);
+      if (_submodels[l].trainVal != null && tFrame != null) {
+        _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,tFrame.vec(m._output.responseName()).sigma());
+        if(_binomial)
+          _threshold =_training_metrics.auc().maxF1();
+      }
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
-        _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m,vFrame,Double.NaN);
+        _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m, vFrame, vFrame.vec(m._output.responseName()).sigma());
+        if(_binomial)
+          _threshold = _validation_metrics.auc().maxF1();
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
@@ -689,25 +709,67 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     return res;
   }
 
+  public static class ScoringHistory  extends Iced {
+    long [] _scoring_times;
+    int  [] _per_iteration_times;
+    double [] _likelihoods;
+    double [] _objectives;
+    int [] _scoring_iters;
+    int[] _scoring_lambda;
+    int[] _lambda_times;
+    int [] _lambda_iters;
+    int [] _predictors;
+    double [] _explained_dev_train;
+    double [] _explained_dev_val;
+
+    public TwoDimTable to2dTable() {
+      String [] cnames = new String[]{"timestamp", "duration","iteration", "log_likelihood", "objective"};
+      String [] ctypes = new String[]{"string","string","int", "double", "double"};
+      String []cformats = new String[]{"%s","%s","%d", "%.5f", "%.5f"};
+      if(_lambda_times != null) { // lambda search info
+        cnames =   ArrayUtils.append(cnames, new String  [] {"lambdaId","time per lambda","Number of Predictors","Explained Deviance (train)", "Explained Deviance (test)"});
+        ctypes =   ArrayUtils.append(ctypes,  new String [] {"int"                ,"int", "int",                       "double",          "double"});
+        cformats = ArrayUtils.append(cformats, new String[] {"%d",            "%d",  "%d",                        "%.3f",            "%.3f"});
+      }
+      TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], cnames , ctypes, cformats , "");
+      int j = 0;
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
+      for (int i = 0; i < _scoring_iters.length; ++i) {
+        int col = 0;
+        res.set(i, col++, fmt.print(_scoring_times[i]));
+        res.set(i, col++, PrettyPrint.msecs(_scoring_times[i] - _scoring_times[0], true));
+        res.set(i, col++, _scoring_iters[i]);
+        res.set(i, col++, _likelihoods[i]);
+        res.set(i, col++, _objectives[i]);
+        if(_lambda_iters != null && _scoring_iters[i] == _lambda_iters[j]) {
+          res.set(i, col++, _scoring_lambda[j]);
+          res.set(i, col++, _lambda_times[j]);
+          res.set(i, col++, _predictors[j]);
+          res.set(i, col++, _explained_dev_train[j]);
+          if(_explained_dev_val != null && j < _explained_dev_val.length)
+            res.set(i, col++, _explained_dev_val[j]);
+          j++;
+        }
+      }
+      return res;
+    }
+  }
+
   static class FinalizeAndUnlockTsk extends DKeyTask<FinalizeAndUnlockTsk,GLMModel> {
     final Key _jobKey;
     final Key _validFrame;
     final Key _trainFrame;
-    final double [] _likelihoods;
-    final double [] _objectives;
-    final int [] _scoring_iters;
-    final int [] _scoring_times;
+
+    ScoringHistory _scoring_history;
     final int _iter;
 
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, int [] scoring_iters, int [] scoring_times, double [] likelihoods, double [] objectives){
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, ScoringHistory scoring_history){
       super(cmp, modelKey);
       _jobKey = jobKey;
       _validFrame = validFrame;
       _trainFrame = trainFrame;
-      _scoring_iters = scoring_iters;
-      _scoring_times = scoring_times;
-      _likelihoods = likelihoods;
-      _objectives = objectives;
+      _scoring_history = scoring_history;
       _iter = iter;
     }
 
@@ -719,21 +781,41 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       glmModel._output.pickBestModel(glmModel._parms._family == Family.binomial, glmModel, tFrame, vFrame);
       //  String[] colTypes,
 //      /String[] colFormats, String colHeaderForRowHeaders) {
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, new String[]{"Family","Link","Number of Iterations", "Training Frame","Number of Predictors"}, new String[]{"string","string","int","string","int"},new String[]{"%s","%s","%d","%s","%d"},"");
+
+      String [] names   = new String[]{"Family","Link", "Regularization", "Number of Predictors Total","Number of Active Predictors", "Number of Iterations", "Training Frame"};
+      String [] types   = new String[]{"string","string","string","int","int","int","string"};
+      String [] formats = new String[]{"%s","%s","%s","%d","%d","%d","%s"};
+      if(glmModel._parms._lambda_search) {
+        names = new String[]{"Family", "Link", "Regularization", "Lambda Search", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+        types   = new String[]{"string","string","string","string","int","int","int","string"};
+        formats = new String[]{"%s","%s","%s","%s","%d","%d","%d","%s"};
+      }
+      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, names , types , formats,"");
       glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
       glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
-      glmModel._output._model_summary.set(0,2,Integer.valueOf(_iter));
-      glmModel._output._model_summary.set(0,3,_trainFrame.toString());
-      glmModel._output._model_summary.set(0,4,Integer.toString(glmModel.beta().length));
-      if(_scoring_iters != null) {
-        glmModel._output._scoring_history = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], new String[]{"iteration", "time [ms]", "likelihood", "objective"}, new String[]{"int", "int", "double", "double"}, new String[]{"%d","%d", "%.5f", "%.5f"}, "");
-        for (int i = 0; i < _scoring_iters.length; ++i) {
-          glmModel._output._scoring_history.set(i,0,_scoring_iters[i]);
-          glmModel._output._scoring_history.set(i,1,_scoring_times[i]);
-          glmModel._output._scoring_history.set(i,2,_likelihoods[i]);
-          glmModel._output._scoring_history.set(i,3,_objectives[i]);
-        }
+      String regularization = "None";
+      if(glmModel._parms._lambda != null && !(glmModel._parms._lambda.length == 1 &&  glmModel._parms._lambda[0] == 0)) { // have regularization
+        if(glmModel._parms._alpha[0] == 0)
+          regularization = "Ridge ( lambda = ";
+        else if(glmModel._parms._alpha[0] == 1)
+          regularization = "Lasso (lambda = ";
+        else
+          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(glmModel._parms._alpha[0],4)  +", lambda = ";
+        regularization = regularization + MathUtils.roundToNDigits(glmModel._parms._lambda[glmModel._output._best_lambda_idx],4) + " )";
       }
+      glmModel._output._model_summary.set(0,2,regularization);
+      int lambdaSearch = 0;
+      if(glmModel._parms._lambda_search) {
+        lambdaSearch = 1;
+        glmModel._output._model_summary.set(0,3,"nlambda = " + glmModel._parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(glmModel._lambda_max,4)  + ", best_lambda_id = " + glmModel._output._best_lambda_idx);
+      }
+      int intercept = glmModel._parms._intercept?1:0;
+      glmModel._output._model_summary.set(0,3+lambdaSearch,Integer.toString(glmModel.beta().length - intercept));
+      glmModel._output._model_summary.set(0,4+lambdaSearch,Integer.toString(glmModel._output.rank() - intercept));
+      glmModel._output._model_summary.set(0,5+lambdaSearch,Integer.valueOf(_iter));
+      glmModel._output._model_summary.set(0,6+lambdaSearch,_trainFrame.toString());
+      if(_scoring_history != null)
+        glmModel._output._scoring_history = _scoring_history.to2dTable();
       glmModel.update(_jobKey);
       glmModel.unlock(_jobKey);
     }

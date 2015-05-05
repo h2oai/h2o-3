@@ -121,6 +121,21 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   return j.jobs
 
 
+def impute(data, column, method=["mean","median","mode"], # TODO: add "bfill","ffill"
+           combine_method=["interpolate", "average", "low", "high"], by=None, inplace=True):
+
+  """
+  Impute a column in this H2OFrame.
+
+  :param column: The column to impute
+  :param method: How to compute the imputation value.
+  :param combine_method: For even samples and method="median", how to combine quantiles.
+  :param by: Columns to group-by for computing imputation value per groups of columns.
+  :param inplace: Impute inplace?
+  :return: the imputed frame.
+  """
+  return data.impute(column,method,combine_method,by,inplace)
+
 def _quoted(key):
   if key == None: return "\"\""
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
@@ -236,10 +251,10 @@ def ipy_lines(block):
 
 def remove(object):
   """
-  Remove object from H2O.
+  Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
 
   :param object: The object pointing to the object to be removed.
-  :return: Void
+  :return: None
   """
   if object is None:
     raise ValueError("remove with no object is not supported, for your protection")
@@ -257,6 +272,16 @@ def remove(object):
   #
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
+
+def delete(key):
+  """
+  Do a shallow DKV remove of the key (does not remove any subparts)
+  :param key: A key to be DKV.removed
+  :return: None
+  """
+  expr = "(del '"+key+"')"
+  rapids(expr)
+  return None
 
 def rapids(expr):
   """
@@ -323,7 +348,7 @@ def cbind(left,right):
   names = [vec.name() for vec in vecs]
 
   fr = H2OFrame.py_tmp_key()
-  cbind = "(= !" + fr + " (cbind %"
+  cbind = "(= !" + fr + " (cbind %FALSE %"
   cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
   rapids(cbind)
 

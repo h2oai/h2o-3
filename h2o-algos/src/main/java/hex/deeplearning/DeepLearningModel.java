@@ -32,6 +32,9 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
+
+    @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
+
     // public int _n_folds;
     public int getNumFolds() { return 0; }
 
@@ -112,7 +115,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * results. Note that deterministic sampling and initialization might
      * still lead to some weak sense of determinism in the model.
      */
-    public long _seed = new Random().nextLong();
+    public long _seed = RandomUtils.getRNG(System.currentTimeMillis()).nextLong();
 
   /*Adaptive Learning Rate*/
     /**
@@ -613,8 +616,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return actually used parameters
    */
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
-
-//  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -1543,30 +1544,30 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               || fromParms._activation == DeepLearningParameters.Activation.RectifierWithDropout) {
         toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
         if (!fromParms._quiet_mode)
-          Log.warn("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
+          Log.info("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
         Arrays.fill(toParms._hidden_dropout_ratios, 0.5);
       }
     } else {
       toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
     }
     if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
-      Log.warn("_replicate_training_data: Disabling replicate_training_data on 1 node.");
+      Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
       toParms._replicate_training_data = false;
     }
     if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
-      Log.warn("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
+      Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
       toParms._single_node_mode = false;
     }
     if (!fromParms._use_all_factor_levels && fromParms._autoencoder ) {
-      Log.warn("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
+      Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
       toParms._use_all_factor_levels = true;
     }
     if(fromParms._override_with_best_model && fromParms.getNumFolds() != 0) {
-      Log.warn("_override_with_best_model: Disabling override_with_best_model in combination with n-fold cross-validation.");
+      Log.info("_override_with_best_model: Disabling override_with_best_model in combination with n-fold cross-validation.");
       toParms._override_with_best_model = false;
     }
     if (fromParms._adaptive_rate) {
-      Log.warn("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
+      Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
               + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
       toParms._rate = 0;
       toParms._rate_decay = 0;
@@ -1576,23 +1577,23 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       toParms._momentum_stable = 0;
       toParms._nesterov_accelerated_gradient = false;
     } else {
-      Log.warn("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
+      Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
               + "rho, epsilon.");
       toParms._rho = 0;
       toParms._epsilon = 0;
     }
     if (fromParms.getNumFolds() != 0) {
       if (fromParms._override_with_best_model) {
-        Log.warn("_override_with_best_model: Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+        Log.info("_override_with_best_model: Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
         toParms._override_with_best_model = false;
       }
     }
     if (fromParms._loss == DeepLearningParameters.Loss.Automatic) {
         toParms._loss = (classification && !fromParms._autoencoder) ? DeepLearningParameters.Loss.CrossEntropy : DeepLearningParameters.Loss.MeanSquare;
-        Log.warn("_loss: Automatically setting loss function to " + toParms._loss);
+        Log.info("_loss: Automatically setting loss function to " + toParms._loss);
     }
     if (fromParms._reproducible) {
-      Log.warn("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+      Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
                       +"and setting train_samples_per_iteration to -1 to enforce reproducibility.");
       toParms._force_load_balance = true;
       toParms._single_node_mode = false;
@@ -2006,7 +2007,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(adaptFrm,true);
+    adaptTestForTrain(_output._names, null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

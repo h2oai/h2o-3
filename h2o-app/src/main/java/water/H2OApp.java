@@ -57,15 +57,15 @@ public class H2OApp {
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
     H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
 
-    ModelBuilder.registerModelBuilder("glrm", "Generalized Low Rank Model", GLRM.class);
+    ModelBuilder.registerModelBuilder("glrm", "Beta - Generalized Low Rank Model", GLRM.class);
     H2O.registerPOST("/3/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                        "Train a GLRM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLRM model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("pca", "Principal Component Analysis", PCA.class);
+    ModelBuilder.registerModelBuilder("pca", "Beta - Principal Component Analysis", PCA.class);
     H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/pca/parameters", PCABuilderHandler.class, "validate_parameters",                               "Validate a set of PCA model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("svd", "Singular Value Decomposition", SVD.class);
+    ModelBuilder.registerModelBuilder("svd", "Beta - Singular Value Decomposition", SVD.class);
     H2O.registerPOST("/3/ModelBuilders/svd", SVDBuilderHandler.class, "train",                                                        "Train a SVD model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/svd/parameters", SVDBuilderHandler.class, "validate_parameters",                               "Validate a set of SVD model builder parameters.");
 

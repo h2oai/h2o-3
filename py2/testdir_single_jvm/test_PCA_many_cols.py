@@ -96,7 +96,7 @@ class Basic(unittest.TestCase):
                 model_key = 'pca.hex'
                 bmResult = h2o.n0.build_model(
                     algo='pca',
-                    destination_key=model_key,
+                    model_id=model_key,
                     training_frame=parse_key,
                     parameters=parameters,
                     timeoutSecs=10)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
 #                 if DO_PCA_SCORE:
 #                     # just score with same data
 #                     score_params = {
-#                         'destination_key': scoreKey,
+#                         'model_id': scoreKey,
 #                         'model': modelKey,
 #                         'num_pc': num_pc,
 #                         'source':  hex_key,

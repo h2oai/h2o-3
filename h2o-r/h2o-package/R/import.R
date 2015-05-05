@@ -44,6 +44,8 @@
 #'        delimited line with the column names for the file.
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.
+#'
+#' @param na.strings H2O will interpret this list of strings as missing values.
 #' @examples
 #' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
@@ -54,7 +56,7 @@
 #' @export
 h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
                              destination_frame = "", parse = TRUE, header = NA, sep = "",
-                             col.names = NULL) {
+                             col.names = NULL, na.strings=NULL) {
   if (is(path, "H2OConnection")) {
     temp <- path
     path <- conn
@@ -78,7 +80,7 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
     if(parse) {
       srcKey <- res$destination_frames
       rawData <- .newH2ORawData("H2ORawData", conn=conn, frame_id=srcKey, linkToGC=FALSE)  # do not gc, H2O handles these nfs:// vecs
-      ret <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names)
+      ret <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, na.strings=na.strings)
     } else {
       myData <- lapply(res$destination_frames, function(x) .newH2ORawData("H2ORawData", conn=conn, frame_id=x, linkToGC=FALSE))  # do not gc, H2O handles these nfs:// vecs
       if(length(res$destination_frames) == 1L)
@@ -92,24 +94,24 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
 
 
 #' @export
-h2o.importFile <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL) {
-  h2o.importFolder(path, conn, pattern = "", destination_frame, parse, header, sep, col.names)
+h2o.importFile <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL, na.strings=NULL) {
+  h2o.importFolder(path, conn, pattern = "", destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.importURL <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
+h2o.importURL <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFile(path, conn, destination_frame, parse, header, sep, col.names)
+  h2o.importFile(path, conn, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
+h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFolder(path, conn, pattern, destination_frame, parse, header, sep, col.names)
+  h2o.importFolder(path, conn, pattern, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
@@ -117,7 +119,7 @@ h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", desti
 #' @export
 h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
-                           col.types = NULL) {
+                           col.types = NULL, na.strings = NULL) {
   if (is(path, "H2OConnection")) {
     temp <- path
     path <- conn
@@ -139,7 +141,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 
   rawData <- .newH2ORawData("H2ORawData", conn=conn, frame_id=srcKey, linkToGC=FALSE)
   if (parse) {
-    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types)
+    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings)
   } else {
     rawData
   }
@@ -148,7 +150,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
-#' Load a saved H2O model from disk.
+#' Load a saved H2O model from disk. Currnetly not implemented.
 #' @param path The path of the H2O Model to be imported.
 #' @param conn an \linkS4class{H2OConnection} object contianing the IP address
 #'        and port of the server running H2O.
@@ -157,14 +159,14 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' localH2O = h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
-#' prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
-#' glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
-#' glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
+#' # library(h2o)
+#' # localH2O = h2o.init()
+#' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
+#' # prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
 #' }
 #' @export
 h2o.loadModel <- function(path, conn = h2o.getConnection()) {

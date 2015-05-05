@@ -93,8 +93,6 @@ class Basic(unittest.TestCase):
                 'standardize': False,
                 'family': 'binomial', 
                 'link': None, 
-                'tweedie_variance_power': None,
-                'tweedie_link_power': None,
                 'alpha': '[1e-4]',
                 'lambda': '[0.5]',
                 'prior1': None,
@@ -102,14 +100,12 @@ class Basic(unittest.TestCase):
                 'nlambdas': None,
                 'lambda_min_ratio': None,
                 'use_all_factor_levels': False,
-                # NPE with n_folds 2?
-                # 'n_folds': 1,
             }
 
             model_key = 'benign_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_frame=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=10)

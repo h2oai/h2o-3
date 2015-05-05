@@ -178,6 +178,10 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll",
       "Delete all Models from the H2O distributed K/V store.");
 
+    register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility",
+      "Set Model Builders visibility level.");
+    register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
+      "Get Model Builders visibility level.");
     register("/3/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
       "Return the Model Builder metadata for the specified algorithm.");
     register("/3/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",

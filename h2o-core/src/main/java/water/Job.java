@@ -43,7 +43,7 @@ public class Job<T extends Keyed> extends Keyed {
     Key keys[] = new Key[j];
     for( int i=0; i<j; i++ ) keys[i] = jobs[i]._key;
     // One-shot throw-away attempt at remove dead jobs from the jobs list
-    DKV.DputIfMatch(LIST,val,new Value(LIST,new JobList(keys)),new Futures());
+    DKV.DputIfMatch(LIST,new Value(LIST,new JobList(keys)),val,new Futures());
     return jobs;
   }
 

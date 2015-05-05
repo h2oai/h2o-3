@@ -243,10 +243,8 @@ predict.H2OModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
-  res <- res$model_metrics[[1L]]$predictions
-
-  # Grab info to make data frame
-  .h2o.parsedPredData(newdata@conn, res)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
 }
 #' @rdname predict.H2OModel
 #' @export
@@ -755,8 +753,16 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
+  if( is.null(tmp) ) return(NULL)
   res <- tmp[abs(as.numeric(tmp$threshold) - threshold) < 1e-8,]  # relax the tolerance
-  if( nrow(res) > 1  ) res <- res[1,]
+  if( nrow(res) == 0L ) {
+    # couldn't find any threshold within 1e-8 of the requested value, warn and return closest threshold
+    row_num <- which.min(abs(tmp$threshold - threshold))
+    closest_threshold <- tmp$threshold[row_num]
+    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Rerun `h2o.performance` with your desired threshold explicitly set.") )
+    return( tmp[row_num,] )
+  }
+  else if( nrow(res) > 1L ) res <- res[1L,]
   res
 }
 
@@ -991,31 +997,34 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   } else def <- FALSE
   thresh2d <- object@metrics$thresholds_and_metric_scores
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  d <- paste0("class_",object@metrics$domain)
+  d <- object@metrics$domain
   p <- max_metrics[match("tps",max_metrics$Metric),3]
   n <- max_metrics[match("fps",max_metrics$Metric),3]
   m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
-    tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
-    rnames <- c(d, "Totals")
-    cnames <- c("Act/Pred", d, "Error", "Rate")
-    col0 <- rnames
-    col1 <- c(tns, fns, tns+fns)
-    col2 <- c(fps, tps, fps+tps)
-    col3 <- c(fps/(fps+tns), fns/(fns+tps), (fps+fns)/(fps+tns+fns+tps))
-    col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps), paste0(" =", fns+fps, "/", fps+tns+fns+tps) )
-    fmts <- c("%s", "%i", "%i", "%f", "%s")
-    tbl <- data.frame(col0,col1,col2,col3,col4)
-    colnames(tbl) <- cnames
-    header <-  "Confusion Matrix"
-    if(def)
-      header <- paste(header, "for max F1 @ threshold =", t)
-    else
-      header <- paste(header, "@ threshold =", t)
-    attr(tbl, "header") <- header
-    attr(tbl, "formats") <- fmts
-    oldClass(tbl) <- c("H2OTable", "data.frame")
-    tbl
+    if( is.null(row) ) NULL
+    else {
+      tns <- row$tns; fps <- row$fps; fns <- row$fns; tps <- row$tps;
+      rnames <- c(d, "Totals")
+      cnames <- c(d, "Error", "Rate")
+      col1 <- c(tns, fns, tns+fns)
+      col2 <- c(fps, tps, fps+tps)
+      col3 <- c(fps/(fps+tns), fns/(fns+tps), (fps+fns)/(fps+tns+fns+tps))
+      col4 <- c( paste0(" =", fps, "/", fps+tns), paste0(" =", fns, "/", fns+tps), paste0(" =", fns+fps, "/", fps+tns+fns+tps) )
+      fmts <- c("%i", "%i", "%f", "%s")
+      tbl <- data.frame(col1,col2,col3,col4)
+      colnames(tbl) <- cnames
+      rownames(tbl) <- rnames
+      header <-  "Confusion Matrix"
+      if(def)
+        header <- paste(header, "for max F1 @ threshold =", t)
+      else
+        header <- paste(header, "@ threshold =", row$threshold)
+      attr(tbl, "header") <- header
+      attr(tbl, "formats") <- fmts
+      oldClass(tbl) <- c("H2OTable", "data.frame")
+      tbl
+    }
   })
   if( length(m) == 1L ) return( m[[1L]] )
   m
@@ -1039,7 +1048,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
     main <- paste(yaxis, "vs", xaxis)
     if( x@on_train ) main <- paste(main, "(on train)")
     else             main <- paste(main, "(on valid)")
-    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ...)
+    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
     abline(0, 1, lty = 2)
   }
 }

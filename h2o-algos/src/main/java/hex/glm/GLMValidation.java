@@ -10,6 +10,7 @@ import water.DKV;
 import water.Iced;
 import water.Key;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 /**
  * Class for GLMValidation.
@@ -41,13 +42,19 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       :new MetricBuilderRegression();
   }
 
+  public double explainedDev(){
+    return 1.0 - residualDeviance()/nullDeviance();
+  }
+
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
-    if(_glm._family == Family.binomial)
-      add2(yact[0],ds[2]);
-    else
-      add2(yact[0],ds[0]);
+    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
+      if (_glm._family == Family.binomial)
+        add2(yact[0], ds[2]);
+      else
+        add2(yact[0], ds[0]);
+    }
     return ds;
   }
 
@@ -141,7 +148,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   @Override
   public String toString(){
-    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics == null?_metrics:"");
+    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics != null?", metrics = " + _metrics:"");
   }
 
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {

@@ -37,6 +37,8 @@ public class TypeMap {
     water.H2OError.class.getName(),
     H2OErrorV3.class.getName(),
     water.util.IcedHashMap.class.getName(),
+    water.util.IcedSortedHashMap.class.getName(),
+    water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringString.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringObject.class.getName(),
     hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),

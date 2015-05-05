@@ -228,6 +228,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ROp());
     putPrefix(new O());
     putPrefix(new ASTImpute());
+    putPrefix(new ASTQPFPC());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -1683,7 +1684,9 @@ class ASTImpute extends ASTUniPrefixOp {
     _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
 
     AST a = E.parse();
-    _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+    if( a instanceof ASTLongList ) _by = ((ASTLongList)a)._l;
+    else if( a instanceof ASTNum ) _by = new long[]{(long)((ASTNum)a)._d};
+    else _by=null;
 
 
     // should be TRUE or FALSE next, for the inplace arg
@@ -1738,14 +1741,14 @@ class ASTImpute extends ASTUniPrefixOp {
         throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
       ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", 0, "rm", "_avg", null, null)};
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
-      final NonBlockingHashSet<ASTGroupBy.G> s = t._g;
+      final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
       final long[] cols = _by;
       final int colIdx = _colIdx;
-      if (_inplace) {
+      if( _inplace ) {
         new MRTask() {
-          transient NonBlockingHashSet<ASTGroupBy.G> _s;
+          transient ASTGroupBy.IcedNBHS<ASTGroupBy.G> _s;
           @Override public void setupLocal() { _s = s; }
-          @Override public void map(Chunk[] c, NewChunk n) {
+          @Override public void map(Chunk[] c) {
             ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
             double impute_value;
             Chunk ch = c[colIdx];
@@ -1759,7 +1762,7 @@ class ASTImpute extends ASTUniPrefixOp {
         f2 = f;
       } else {
         f2 = new MRTask() {
-          transient NonBlockingHashSet<ASTGroupBy.G> _s;
+          transient ASTGroupBy.IcedNBHS<ASTGroupBy.G> _s;
           @Override public void setupLocal() { _s = s; }
           @Override public void map(Chunk[] c, NewChunk n) {
             ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
@@ -2019,12 +2022,16 @@ class ASTRbind extends ASTUniPrefixOp {
 
 class ASTCbind extends ASTUniPrefixOp {
   int argcnt;
+  boolean _deepCopy;
   @Override String opStr() { return "cbind"; }
-  public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
+  public ASTCbind() { super(new String[]{"cbind","ary", "deepCopy", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
     AST a;
+    a = E.parse();
+    if( a instanceof ASTId ) _deepCopy = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+    else throw new IllegalArgumentException("First argument of cbind must be TRUE or FALSE for the deepCopy flag.");
     while( !E.isEnd() ) {
       a = E.parse();
       if( a instanceof ASTId ) {
@@ -2055,13 +2062,12 @@ class ASTCbind extends ASTUniPrefixOp {
     Frame fr = new Frame(new String[0],new Vec[0]);
     for(int i = 0; i < argcnt; i++) {
       Frame f = env.peekAryAt(i-argcnt+1);  // Reverse order off stack
-      Frame ff = f.deepSlice(null,null);  // deep copy the frame, R semantics...
+      Frame ff = _deepCopy ? f.deepCopy(null) : f; // deep copy the frame, R semantics...
       Frame new_frame = fr.makeCompatible(ff);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame);
     }
     env.pop(argcnt);
-
     env.pushAry(fr);
   }
 }
@@ -2840,8 +2846,14 @@ class ASTVar extends ASTUniPrefixOp {
       env.push(new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();                   // number of rows
-      Frame y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
-      String use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      Frame y;
+      String use;
+      if( env.isEmpty() || env.sp() <= 1 ) { y=fr; use="everything"; }
+      else {
+                            y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
+        if( env.isEmpty() || env.sp() <= 1 ) use = "everything";
+        else                use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      }
 //      String[] rownames = fr.names();  TODO: Propagate rownames?
       String[] colnames = y.names();
 

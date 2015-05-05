@@ -30,7 +30,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
     shortenIt = resultExec
     if 'head' in shortenIt:
         shortenIt['head'] = 'chopped out by python exec_expr for print brevity'
-    print "exec:", dump_json(shortenIt)
+    # print "exec:", dump_json(shortenIt)
 
     # when do I get cols?
 
@@ -81,7 +81,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
                     raise Exception("Inspect of resultKey %s has zero rows %s But resultExec didn't have zero rows %s" % \
                         (resultKey, resultExec['num_rows'], rows))
                 
-                result = inspect['frames'][0]['columns'][0]['mins'][0]
+                result = inspect['frames'][0]['columns'][0]['mins']
         
     else: 
         if (resultExec['num_rows']==0) and 'key' in resultExec and resultExec['key']:

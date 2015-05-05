@@ -17,7 +17,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
     if( !(mm instanceof ModelMetricsBinomial) )
       throw new H2OIllegalArgumentException("Expected to find a Binomial ModelMetrics for model: " + model._key.toString() + " and frame: " + frame._key.toString(),
-              "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
+              "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + (mm == null ? null : mm.getClass()));
     return (ModelMetricsBinomial) mm;
   }
 
@@ -50,7 +50,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       // Compute log loss
       final double eps = 1e-15;
       _logloss += -Math.log(Math.max(eps,ds[iact+1]));
-
       _auc.perRow(ds[2],iact);
 
       return ds;                // Flow coding

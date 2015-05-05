@@ -44,7 +44,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     return new Model.ModelCategory[]{ Model.ModelCategory.Unknown };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.AlwaysVisible; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   @Override
   protected void checkMemoryFootPrint() {
@@ -57,7 +57,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     }
     mem_usage *= count;
     mem_usage *= 8; //doubles
-    long max_mem = H2O.CLOUD._memary[H2O.SELF.index()]._heartbeat.get_max_mem();
+    long max_mem = H2O.SELF.get_max_mem();
     if (mem_usage > max_mem) {
       String msg = "Conditional probabilities won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
