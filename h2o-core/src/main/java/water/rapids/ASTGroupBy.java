@@ -355,7 +355,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
   }
 
-  private static class ParallelPostGlobal extends H2O.H2OCountedCompleter<ParallelPostGlobal> {
+  public static class ParallelPostGlobal extends H2O.H2OCountedCompleter<ParallelPostGlobal> {
     private final G[] _g;
     private final int _maxP=50*1000; // burn 50K at a time
     private final AtomicInteger _ctr;
@@ -576,9 +576,9 @@ import java.util.concurrent.atomic.AtomicInteger;
       TM.put("sum",         (byte)9);
       TM.put("ss",          (byte)10);
       // na handling
-      TM.put("ignore"      ,(byte)0);
-      TM.put("rm"          ,(byte)1);
-      TM.put("all"         ,(byte)2);
+      TM.put("all"         ,(byte)0);
+      TM.put("ignore"      ,(byte)1);
+      TM.put("rm"          ,(byte)2);
     }
 
     private final byte _type;

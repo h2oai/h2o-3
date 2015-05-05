@@ -1712,7 +1712,7 @@ class ASTImpute extends ASTUniPrefixOp {
       }
       switch( _method ) {
         case MEAN:   imputeValue = ASTVar.getMean(v,true,""); break;
-        case MEDIAN: imputeValue = ASTMedian.median(v, null); break;
+        case MEDIAN: imputeValue = ASTMedian.median(v, _combine_method); break;
         case MODE:   imputeValue = mode(v); break;
         default:
           throw H2O.unimpl("Unknown type: " + _method);
@@ -1737,9 +1737,12 @@ class ASTImpute extends ASTUniPrefixOp {
     } else {
       if (_method == ImputeMethod.MEDIAN)
         throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
-      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", 0, "rm", "_avg", null, null)};
+      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", _colIdx, "rm", "_avg", null, null)};
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
       final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
+      final int nGrps = t._g.size();
+      final ASTGroupBy.G[] grps = t._g.keySet().toArray(new ASTGroupBy.G[nGrps]);
+      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps)).join();
       final long[] cols = _by;
       final int colIdx = _colIdx;
       if( _inplace ) {
