@@ -303,7 +303,6 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
-#' @param train A logical value indicating whether to return the training metrics (constructed during training).
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
 #' @param ... Extra args passed in for use by other functions.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
@@ -316,7 +315,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, data=prostate.hex)
 #' @export
-h2o.performance <- function(model, data=NULL, train=FALSE, valid=FALSE, ...) {
+h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
   if(!is.null(data) && !is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
@@ -364,7 +363,6 @@ h2o.performance <- function(model, data=NULL, train=FALSE, valid=FALSE, ...) {
 #' Retrieves the AUC value from an \linkS4class{H2OBinomialMetrics}.
 #'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
-#' @param train Retrieve the training AUC
 #' @param valid Retrieve the validation AUC
 #' @param \dots extra arguments to be passed if `object` is of type
 #'              \linkS4class{H2OModel} (e.g. train=TRUE)
@@ -384,15 +382,17 @@ h2o.performance <- function(model, data=NULL, train=FALSE, valid=FALSE, ...) {
 #' perf <- h2o.performance(model, hex)
 #' h2o.auc(perf)
 #' @export
-h2o.auc <- function(object, train=FALSE, valid=FALSE, ...) {
+h2o.auc <- function(object, valid=FALSE, ...) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$AUC
   } else if( is(object, "H2OModel") ) {
     l <- list(...)
     l <- .trainOrValid(l)
-    l$train <- l$train || train
     l$valid <- l$valid || valid
-    if( l$valid ) return(object@model$validation_metrics$AUC)
+    if( l$valid )
+      if(!is.null(object@model$validation_metrics@metrics))
+       return(object@model$validation_metrics$AUC)
+      else stop("This model has no validation metrics.", call. = FALSE)
     else          return(object@model$training_metrics$AUC  )
   } else {
     warning(paste0("No AUC for ",class(object)))
@@ -441,7 +441,6 @@ h2o.giniCoef <- function(object, ...) {
 #' \linkS4class{H2OMultinomialMetrics}, and \linkS4class{H2ORegressionMetrics} objects.
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @param ... Extra arguments to be passed if `object` is of type \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
@@ -459,15 +458,17 @@ h2o.giniCoef <- function(object, ...) {
 #' perf <- h2o.performance(model, hex)
 #' h2o.mse(perf)
 #' @export
-h2o.mse <- function(object, train=FALSE, valid=FALSE, ...) {
+h2o.mse <- function(object, valid=FALSE, ...) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$MSE
   } else {
     l <- list(...)
     l <- .trainOrValid(l)
-    l$train <- l$train || train
     l$valid <- l$valid || valid
-    if( l$valid ) m <- object@model$validation_metrics@metrics
+    if( l$valid )
+      if(!is.null(object@model$validation_metrics@metrics))
+       m <- object@model$validation_metrics@metrics
+      else stop("This model has no validation metrics.", call. = FALSE)
     else          m <- object@model$training_metrics@metrics
 
     if( is(object, "H2OClusteringModel") ) return( m$centroid_stats$within_sum_of_squares )
@@ -485,20 +486,21 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, ...) {
 #' \linkS4class{H2OMultinomialMetrics} object
 #'
 #' @param object a \linkS4class{H2OModelMetrics} object of the correct type.
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @param \dots Extra arguments to be passed if `object` is of type
 #'        \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @export
-h2o.logloss <- function(object, train=FALSE, valid=FALSE, ...) {
+h2o.logloss <- function(object, valid=FALSE, ...) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics"))
     object@metrics$logloss
   else if( is(object, "H2OModel") ) {
     l <- list(...)
     l <- .trainOrValid(l)
-    l$train <- l$train || train
     l$valid <- l$valid || valid
-    if( l$valid ) return(object@model$validation_metrics@metrics$logloss)
+    if( l$valid )
+      if(!is.null(object@model$validation_metrics@metrics))
+       return(object@model$validation_metrics@metrics$logloss)
+      else stop("This model has no validation metrics.", call. = FALSE)
     else          return(object@model$training_metrics@metrics$logloss  )
 
   } else  {
@@ -550,10 +552,9 @@ h2o.scoreHistory <- function(object, ...) {
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @param \dots further arguments to be passed on (currently unimplemented)
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @export
-h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, ...) {
+h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
   o <- object
   hrt <- NULL
 
@@ -567,7 +568,10 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, ...) {
     }
     if( length(l)!=0L ) {
       l <- .trainOrValid(l)
-      if( l$valid )  hrt <- o@model$validation_metrics@metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
+      if( l$valid )
+        if(!is.null(object@model$validation_metrics@metrics))
+          hrt <- o@model$validation_metrics@metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
+          else stop("This model has no validation metrics.", call. = FALSE)
     }
 
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
@@ -794,16 +798,17 @@ h2o.within_mse <- function(object, ...) { h2o.mse(object, ...) }
 #' Get the average wtihin sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.avg_within_ss <- function(object, train=FALSE, valid=FALSE, ...) {
+h2o.avg_within_ss <- function(object, valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
-  l$train <- l$train || train
   l$valid <- l$valid || valid
-  if( l$valid ) return(object@model$validation_metrics@metrics$avg_within_ss)
+  if( l$valid )
+    if(!is.null(object@model$validation_metrics@metrics))
+     return(object@model$validation_metrics@metrics$avg_within_ss)
+    else stop("This model has no validation metrics.", call. = FALSE)
   else          return(object@model$training_metrics@metrics$avg_within_ss  )
 
 }
@@ -812,16 +817,17 @@ h2o.avg_within_ss <- function(object, train=FALSE, valid=FALSE, ...) {
 #' Get the average between sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.avg_between_ss <- function(object, train=FALSE, valid=FALSE, ...) {
+h2o.avg_between_ss <- function(object, valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
-  l$train <- l$train || train
   l$valid <- l$valid || valid
-  if( l$valid ) return(object@model$validation_metrics@metrics$avg_between_ss)
+  if( l$valid )
+    if(!is.null(object@model$validation_metrics@metrics))
+     return(object@model$validation_metrics@metrics$avg_between_ss)
+    else stop("This model has no validation metrics.", call. = FALSE)
   else          return(object@model$training_metrics@metrics$avg_between_ss  )
 }
 
@@ -829,16 +835,17 @@ h2o.avg_between_ss <- function(object, train=FALSE, valid=FALSE, ...) {
 #' Get the average sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.avg_ss <- function(object,train=FALSE, valid=FALSE, ...) {
+h2o.avg_ss <- function(object,valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
-  l$train <- l$train || train
   l$valid <- l$valid || valid
-  if( l$valid ) return(object@model$validation_metrics@metrics$avg_ss)
+  if( l$valid )
+    if(!is.null(object@model$validation_metrics@metrics))
+     return(object@model$validation_metrics@metrics$avg_ss)
+    else stop("This model has no validation metrics.", call. = FALSE)
   else          return(object@model$training_metrics@metrics$avg_ss  )
 }
 
@@ -854,16 +861,17 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' Retrieve the cluster sizes
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param train Retrieve the training metric.
 #' @param valid Retrieve the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.cluster_sizes <- function(object, train=FALSE,valid=FALSE, ...) {
+h2o.cluster_sizes <- function(object,valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
-  l$train <- l$train || train
   l$valid <- l$valid || valid
-  if( l$valid ) return(object@model$validation_metrics@metrics$centroid_stats$size)
+  if( l$valid )
+    if(!is.null(object@model$validation_metrics@metrics))
+     return(object@model$validation_metrics@metrics$centroid_stats$size)
+    else stop("This model has no validation metrics.", call. = FALSE)
   else          return(object@model$training_metrics@metrics$centroid_stats$size  )
 }
 
@@ -915,10 +923,9 @@ setMethod("summary", "H2OModel", function(object, ...) {
 #'        \linkS4class{H2OModelMetrics} object.
 #' @param newdata An \linkS4class{H2OFrame} object that can be scored on.
 #'        Requires a valid response column.
-#' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
+#' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
 #'        \linkS4class{H2OBinomialMetrics} objects.
-#' @param train Retrieve the training metric.
 #' @param valid Retreive the validation metric.
 #' @param ... Extra arguments for extracting train or valid confusion matrices.
 #' @return Calling this function on \linkS4class{H2OModel} objects returns a
@@ -944,15 +951,20 @@ setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
 #' @rdname h2o.confusionMatrix
 #' @export
-setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, train=FALSE, valid=FALSE, ...) {
+setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FALSE, ...) {
+  l <- list(...)
+  l <- .trainOrValid(l)
+  l$valid <- l$valid || valid
   if( missing(newdata) ) {
-    l <- list(...)
-    l <- .trainOrValid(l)
-    l$train <- l$train || train
-    l$valid <- l$valid || valid
-    if( l$valid ) return( h2o.confusionMatrix(object@model$validation_metrics, ...) )
-    else          return( h2o.confusionMatrix(object@model$training_metrics, ...)   )
-  }
+    if( l$valid )
+      if(!is.null(object@model$validation_metrics@metrics))
+        return( h2o.confusionMatrix(object@model$validation_metrics, ...) )
+      else stop("This model has no validation metrics.", call. = FALSE)
+    else
+      return( h2o.confusionMatrix(object@model$training_metrics, ...)   )
+  } else if (l$valid)
+    stop("Cannot use both newdata and valid = TRUE.", call. = FALSE)
+
   tmp <- !.is.eval(newdata)
   if( tmp ) {
     temp_key <- newdata@frame_id
@@ -969,14 +981,10 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, train=FAL
 
 # TODO: Need to put this in a better place
 .trainOrValid <- function(l) {
-  if( is.null(l)  || length(l) == 0) l$train      <- TRUE   # do train by default
-  if( is.null(l$train)             ) l$train      <- FALSE
-  if( is.null(l$training)          ) l$training   <- FALSE
   if( is.null(l$validation)        ) l$validation <- FALSE
   if( is.null(l$test)              ) l$test       <- FALSE
   if( is.null(l$valid)             ) l$valid      <- FALSE
   if( is.null(l$testing)           ) l$testing    <- FALSE
-  l$train <- l$train || l$training
   l$valid <- l$valid || l$validation || l$test || l$testing
   l
 }
