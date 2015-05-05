@@ -61,6 +61,7 @@ There are two modes for cells: edit and command.
 ##Using Edit Mode
 In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
+
 ![Edit Mode](images/Flow_EditMode.png)
  
 <a name="CmdMode"></a>
@@ -73,15 +74,15 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
-- **CS**: Code
+- **CS**: Code (default)
 
  ![Flow - Code](images/Flow_parse_code_ex.png)
 
-- **RAW**: Raw format (for code comments)
+- **RAW**: Raw format (for code comments) 
 
  ![Flow - Raw](images/Flow_raw.png)
 
-- **H[1-5]**: Heading level (where 1 is a first-level heading)
+- **H[1-6]**: Heading level (where 1 is a first-level heading) 
 
  ![Flow - Heading Levels](images/Flow_headinglevels.png)
 
@@ -93,6 +94,21 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
  
  ![Cell executing](images/Flow_cellmode_runningflag.png)
 
+##Changing Cell Formats
+
+To change the cell's format (for example, from code to Markdown), make sure you are in not in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
+
+Cell Mode     | Keyboard Shortcut
+------------- | -----------------
+Code          | `y`
+Markdown      | `m`
+Raw text      | `r`
+Heading 1     | `1`
+Heading 2     | `2`
+Heading 3     | `3` 
+Heading 4     | `4` 
+Heading 5     | `5`
+Heading 6     | `6` 
 
 ##Running Flows
 When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
@@ -128,7 +144,7 @@ There are also a series of buttons at the top of the page below the flow name th
 
  ![Flow buttons](images/Flow_buttons.png)
  
-You can also use the menus at the top of the screen to edit the cells, view specific format types (such as input or output), change the cell's format, or run the cell. You can also access troubleshooting information or obtain help with Flow.  
+You can also use the menus at the top of the screen to edit the order of the cells, toggle specific format types (such as input or output), create models, or score models. You can also access troubleshooting information or obtain help with Flow.  
  ![Flow menus](images/Flow_menus.png)
 
 **Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**. 
