@@ -8,7 +8,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
   public static class SharedTreeParametersV3<P extends SharedTreeParameters, S extends SharedTreeParametersV3<P, S>> extends SupervisedModelParametersSchema<P, S> {
     static public String[] own_fields = new String[] {
-      "ntrees", "max_depth", "min_rows", "nbins", "seed"
+      "ntrees", "max_depth", "min_rows", "nbins", "r2_stopping", "seed"
     };
 
     @API(help="Number of trees.")
@@ -22,6 +22,9 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Build a histogram of this many bins, then split at the best point")
     public int nbins;
+
+    @API(help="Stop making trees when the r^2 metric equals or exceeds this")
+    public double r2_stopping;
 
     @API(help = "Seed for pseudo random number generator (if applicable)", level = API.Level.expert)
     public long seed;

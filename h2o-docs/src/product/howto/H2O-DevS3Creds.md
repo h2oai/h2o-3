@@ -1,19 +1,29 @@
 #How to Pass S3 Credentials to H2O
 
-To use Amazon Web Services (AWS) with H2O, you must pass your S3 credentials to H2O. If you do not pass your credentials to H2O, H2O will not be compatible with AWS. 
+To make use of Amazon Web Services (AWS) storage solution S3 you will need to pass your S3 access credentials to H2O. This will allow you to access your data on S3 when importing data frames with path prefixes `s3n://...`.
 
 ##Standalone Instance
 
-There are three ways to pass your S3 credentials to H2O: 
+When running H2O on standalone mode aka using the simple java launch command, we can pass in the S3 credentials in three ways. 
 
-- Specify the credentials by creating a `core-site.xml` file:
+- You can pass in credentials in standalone mode the same way we access data from hdfs on Hadoop mode. You'll need to create a `core-site.xml` file and pass it in with the flag `-hdfs_config`.
 
-  `java -jar h2o.jar -hdfs_config core-site.xml` 
-  `java -cp h2o.jar water.H2OApp -hdfs_config core-site.xml`
+    java -jar h2o.jar -hdfs_config core-site.xml
+or 
+    java -cp h2o.jar water.H2OApp -hdfs_config core-site.xml
+
+After which you can import the data with the S3 url path: `s3n://bucket/path/to/file.csv` with importFile.
   
-- Specify the credentials as part of the S3N URL using `importFile`:
-
-  `s3n://&lt;AWS_ACCESS_KEY&gt;:&lt;AWS_SECRET_KEY&gt;@bucket/path/file.csv` (where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password)
+- You can actually pass in the AWS Access Key and Secret Acess Key in S3N Url in Flow, R, or Python.
+  
+  To import the data from the Flow API:
+    importFiles [ "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv" ]
+  To import the data from the R API:
+    h2o.importFile(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
+  To import the data from the Python API:
+    h2o.import_frame(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
+  
+where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password.
   
 - Pass the S3 credentials using the `-D` parameters when launching H2O:
 
@@ -40,4 +50,25 @@ There are two ways to pass your S3 credentials to H2O:
 
 ##Sparkling Water Instance
 
-  >Amy, were you able to get the `-D` params method to work on SW?
+  To pass the s3 credentials to Sparkling Water, the credentials need to be passed via HADOOP_CONF_DIR that will point to a core-site.xml with the AWS_ACCESS_KEY AND AWS_SECRET_KEY. On Hadoop, typically the configuration directory is set to `/etc/hadoop/conf`:
+  
+    export HADOOP_CONF_DIR=/etc/hadoop/conf
+
+Edit the properties in the core-site.xml file:
+
+    <property>
+      <name>fs.s3n.awsAccessKeyId</name>
+      <value>[AWS SECRET KEY]</value>
+    </property>
+
+    <property>
+      <name>fs.s3n.awsSecretAccessKey</name>
+      <value>[AWS SECRET ACCESS KEY]</value>
+    </property>
+  
+  When running a local instance you can create a configuration directory locally with the core-site.xml and then export the path to the configuration directory:
+  
+    mkdir CONF
+    cd CONF
+    export HADOOP_CONF_DIR=`pwd`
+  
