@@ -676,7 +676,7 @@ MAIN_LOOP:
         labels = data[0];
       } else {
         checkHeader = NO_HEADER;
-        labels = null;
+        labels = columnNames;
       }
 
       // See if compatible headers

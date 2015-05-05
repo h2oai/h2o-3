@@ -81,7 +81,11 @@ class OutputObj(AttrDict):
                             v2 = copy(v)
                             del v2['__meta']
                         # print self.name, k, dump_json(v2)
-                        print self.name, k, v2
+                        # if the key has '_summary' in it, do a dump_jsvon
+                        if '_summary' in k:
+                            print self.name, k, dump_json(v2)
+                        else:
+                            print self.name, k, v2
 
     # these might be useful
     def rec_getattr(self, attr):

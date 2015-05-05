@@ -174,10 +174,11 @@ def put_file(self, f, key=None, timeoutSecs=60):
 
     fileObj = open(f, 'rb')
     resp = self.do_json_request(
-        '3/PostFile.json',
+        # don't use .json suffix here...causes 404 (for now)
+        '3/PostFile',
         cmd='post',
         timeout=timeoutSecs,
-        params={"destination_key": key},
+        params={"destination_frame": key},
         files={"file": fileObj},
         extraComment=str(f))
 
@@ -209,7 +210,7 @@ def log_download(self, logDir=None, timeoutSecs=30, **kwargs):
     if logDir == None:
         logDir = get_sandbox_name()
 
-    url = self.url('LogDownload.json')
+    url = self.url('Logs/download')
     log('Start ' + url);
     print "\nDownloading h2o log(s) using:", url
     r = requests.get(url, timeout=timeoutSecs, **kwargs)
