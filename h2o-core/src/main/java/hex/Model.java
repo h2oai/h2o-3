@@ -102,7 +102,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  Overload this method for models that have sparse data handling - a zero
      *  will preserve the sparseness.  Otherwise, NaN is used.
      *  @return real-valued number (can be NaN)  */
-    protected double missingColumnsType() { return Double.NaN; }
+    public double missingColumnsType() { return Double.NaN; }
 
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
@@ -356,10 +356,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain(_output._names, _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive); }
   /**
    *  @param names Training column names
+   *  @param colNameToSkip Name of column (typically the response) to NOT fill in if missing in test frame
    *  @param domains Training column levels
    *  @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain( String[] names, String responseName, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain( String[] names, String colNameToSkip, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -379,10 +380,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec vec = test.vec(names[i]); // Search in the given validation set
 
       // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
-      boolean skipResponse = (responseName != null && names[i].equals(responseName) && vec == null);
+      boolean skipCol = (colNameToSkip != null && names[i].equals(colNameToSkip) && vec == null);
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
-      if( vec == null && !skipResponse) {
+      if( vec == null && !skipCol) {
         String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
           str = str + ": substituting in a column of NAs";
@@ -420,7 +421,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Validation set has no columns in common with the training set");
-    if( good == names.length || (responseName != null && test.find(responseName) == -1 && good == names.length - 1) )  // Only update if got something for all columns
+    if( good == names.length || (colNameToSkip != null && test.find(colNameToSkip) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);
   }

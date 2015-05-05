@@ -27,7 +27,7 @@ public class AUC2 extends Iced {
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
   // Default bins, good answers on a highly unbalanced sorted (and reverse
   // sorted) datasets
-  public static final int NBINS = 256;
+  public static final int NBINS = 400;
 
   /** Criteria for 2-class Confusion Matrices
    *
@@ -65,10 +65,10 @@ public class AUC2 extends Iced {
     min_per_class_accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
-    tns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
-    fns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
-    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
-    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
+    tns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
+    fns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
+    fps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
+    tps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
     tnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tn/(fp+tn); } },
     fnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fn/(fn+tp); } },
     fpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fp/(fp+tn); } },
@@ -152,8 +152,7 @@ public class AUC2 extends Iced {
     long tp0 = 0, fp0 = 0;
     double area = 0;
     for( int i=0; i<_nBins; i++ ) {
-      area += tp0*(_fps[i]-fp0); // Trapezoid: Square + 
-      area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0; // Right Triangle
+      area += (_fps[i]-fp0)*(_tps[i]+tp0)/2.0; // Trapezoid
       tp0 = _tps[i];  fp0 = _fps[i];
     }
     // Descale
@@ -201,7 +200,7 @@ public class AUC2 extends Iced {
     long   _fps[];              // Histogram bins, false positives
     public AUCBuilder(int nBins) {
       _nBins = nBins;
-      _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
+      _ths = new double [nBins<<1]; // Threshold; also the mean for this bin
       _sqe = new double[nBins<<1]; // Squared error (variance) in this bin
       _tps = new long  [nBins<<1]; // True  positives
       _fps = new long  [nBins<<1]; // False positives
@@ -260,7 +259,7 @@ public class AUC2 extends Iced {
     }
 
 //    private boolean sorted() {
-//      double t = _ths[0];
+//      float t = _ths[0];
 //      for( int i=1; i<_n; i++ ) {
 //        if( _ths[i] < t )
 //          return false;
@@ -280,7 +279,11 @@ public class AUC2 extends Iced {
       for( int i=0; i<_n-1; i++ ) {
         long k0 = _tps[i  ]+_fps[i  ];
         long k1 = _tps[i+1]+_fps[i+1];
-        double delta = _ths[i+1]-_ths[i];
+        // If thresholds vary by less than a float ULP, treat them as the same.
+        // Some models only output predictions to within float accuracy (so a
+        // variance here is junk), and also it's not statistically sane to have
+        // a model which varies predictions by such a tiny change in thresholds.
+        double delta = (float)_ths[i+1]-(float)_ths[i];
         double sqe0 = _sqe[i]+_sqe[i+1]+delta*delta*k0*k1 / (k0+k1);
         if( sqe0 < minSQE || delta==0 ) {
           minI = i;  minSQE = sqe0;
@@ -310,7 +313,7 @@ public class AUC2 extends Iced {
       long k1 = _tps[minI+1]+_fps[minI+1];
       double d = (_ths[minI]*k0+_ths[minI+1]*k1)/(k0+k1);
       // Setup the new merged bin at index minI
-      _ths[minI] = d;
+      _ths[minI] = (float)d;
       _sqe[minI] = minSQE;
       _tps[minI] += _tps[minI+1];
       _fps[minI] += _fps[minI+1];
@@ -323,4 +326,62 @@ public class AUC2 extends Iced {
       return true;
     }
   }
+
+  // Given the probabilities of a 1, and the actuals (0/1) report the perfect
+  // AUC found by sorting the entire dataset.  Expensive, and only works for
+  // small data (probably caps out at about 10M rows).
+  public static double perfectAUC( Vec vprob, Vec vacts ) {
+    if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
+      throw new IllegalArgumentException("Actuals are either 0 or 1");
+    if( vprob.min() < 0 || vprob.max() > 1 )
+      throw new IllegalArgumentException("Probabilities are between 0 and 1");
+    // Horrible data replication into array of structs, to sort.  
+    Pair[] ps = new Pair[(int)vprob.length()];
+    for( int i=0; i<ps.length; i++ )
+      ps[i] = new Pair(vprob.at(i),(byte)vacts.at8(i));
+    return perfectAUC(ps);
+  }
+  public static double perfectAUC( double ds[], double[] acts ) {
+    Pair[] ps = new Pair[ds.length];
+    for( int i=0; i<ps.length; i++ )
+      ps[i] = new Pair(ds[i],(byte)acts[i]);
+    return perfectAUC(ps);
+  }
+
+  private static double perfectAUC( Pair[] ps ) {
+    // Sort by probs, then actuals - so tied probs have the 0 actuals before
+    // the 1 actuals.  Sort probs from largest to smallest - so both the True
+    // and False Positives are zero to start.
+    Arrays.sort(ps,new java.util.Comparator<Pair>() {
+        @Override public int compare( Pair a, Pair b ) {
+          return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);
+        }
+      });
+
+    // Compute Area Under Curve.  
+    // All math is computed scaled by TP and FP.  We'll descale once at the
+    // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
+    int tp0=0, fp0=0, tp1=0, fp1=0;
+    double prob = 1.0;
+    double area = 0;
+    for( Pair p : ps ) {
+      if( p._prob!=prob ) { // Tied probabilities: build a diagonal line
+        area += (fp1-fp0)*(tp1+tp0)/2.0; // Trapezoid
+        tp0 = tp1; fp0 = fp1;
+        prob = p._prob;
+      }
+      if( p._act==1 ) tp1++; else fp1++;
+    }
+    area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
+    area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
+
+    // Descale
+    return area/tp1/fp1;
+  }
+
+  private static class Pair {
+    final double _prob; final byte _act;
+    Pair( double prob, byte act ) { _prob = prob; _act = act; }
+  }
+
 }
