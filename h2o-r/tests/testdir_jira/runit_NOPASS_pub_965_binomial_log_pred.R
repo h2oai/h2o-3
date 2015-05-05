@@ -31,7 +31,8 @@ test.linkFunctions <- function(conn) {
 	print(head(prediction.h2o.binomial.log))
 
 	print("Check strength of predictions all within [0,1] domain")
-	ouside.domian <- prediction.h2o.binomial.log[,prediction.h2o.binomial.log$"0"<0 | prediction.h2o.binomial.log$"0">1]
+	outside.domain <- prediction.h2o.binomial.log[prediction.h2o.binomial.log$"0"<0 | prediction.h2o.binomial.log$"0">1,]
+	print(outside.domain)
 	stopifnot(dim(outside.domain)[1] == 0) # There should be no predictions with strength less than 0 or greater than 1
 
 testEnd()

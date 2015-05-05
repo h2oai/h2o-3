@@ -244,7 +244,7 @@ class ModelMetricsHandler extends Handler {
     mm.predictions_frame = new KeyV3.FrameKeyV3(predictions._key);
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
-      Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
+      // There was no response in the test set -> cannot make a model_metrics object
     } else {
       mm.model_metrics[0].predictions = new FrameV3(predictions, 0, 100); // TODO: Should call schema(version)
     }
