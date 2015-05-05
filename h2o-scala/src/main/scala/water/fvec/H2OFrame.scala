@@ -60,7 +60,7 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
         indexes.zipWithIndex.map(i => this.replace(this.find(cols(i._2)),this.vec(i._1).toEnum))
         this.update(null)
       }
-      case Failure(_) => printf("One or several columns are not present in your DataFrame")
+      case Failure(_) => println("One or several columns are not present in your DataFrame")
     }
   }
 
