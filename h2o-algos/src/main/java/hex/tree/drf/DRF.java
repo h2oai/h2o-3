@@ -197,7 +197,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Build trees until we hit the limit
       for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
-          doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          double training_r2 = doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          if( training_r2 >= _parms._r2_stopping )
+            return;             // Stop when approaching round-off error
         }
         // At each iteration build K trees (K = nclass = response column domain size)
 
