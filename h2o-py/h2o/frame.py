@@ -1192,6 +1192,7 @@ class H2OVec:
 
   def _simple_vec_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self, length=len(self)))
     raise NotImplementedError
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))
