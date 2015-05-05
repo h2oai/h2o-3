@@ -4,16 +4,26 @@ To make use of Amazon Web Services (AWS) storage solution S3 you will need to pa
 
 ##Standalone Instance
 
-There are three ways to pass your S3 credentials to H2O: 
+When running H2O on standalone mode aka using the simple java launch command, we can pass in the S3 credentials in three ways. 
 
-- Specify the credentials by creating a `core-site.xml` file:
+- You can pass in credentials in standalone mode the same way we access data from hdfs on Hadoop mode. You'll need to create a `core-site.xml` file and pass it in with the flag `-hdfs_config`.
 
-  `java -jar h2o.jar -hdfs_config core-site.xml` 
-  `java -cp h2o.jar water.H2OApp -hdfs_config core-site.xml`
+    java -jar h2o.jar -hdfs_config core-site.xml
+or 
+    java -cp h2o.jar water.H2OApp -hdfs_config core-site.xml
+
+After which you can import the data with the S3 url path: `s3n://bucket/path/to/file.csv` with importFile.
   
-- Specify the credentials as part of the S3N URL using `importFile`:
-
-  `s3n://&lt;AWS_ACCESS_KEY&gt;:&lt;AWS_SECRET_KEY&gt;@bucket/path/file.csv` (where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password)
+- You can actually pass in the AWS Access Key and Secret Acess Key in S3N Url in Flow, R, or Python.
+  
+  To import the data from the Flow API:
+    importFiles [ "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv" ]
+  To import the data from the R API:
+    h2o.importFile(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
+  To import the data from the Python API:
+    h2o.import_frame(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
+  
+where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password.
   
 - Pass the S3 credentials using the `-D` parameters when launching H2O:
 
