@@ -17,7 +17,7 @@ import water.fvec.Vec;
  */
 public class AUC2 extends Iced {
   public final int _nBins; // Max number of bins; can be less if there are fewer points
-  public final double[] _ths;   // Thresholds
+  public final float[] _ths;    // Thresholds
   public final long[] _tps;     // True  Positives
   public final long[] _fps;     // False Positives
   public final long _p, _n;     // Actual trues, falses
@@ -27,7 +27,7 @@ public class AUC2 extends Iced {
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
   // Default bins, good answers on a highly unbalanced sorted (and reverse
   // sorted) datasets
-  public static final int NBINS = 256;
+  public static final int NBINS = 400;
 
   /** Criteria for 2-class Confusion Matrices
    *
@@ -101,7 +101,7 @@ public class AUC2 extends Iced {
     public static final ThresholdCriterion[] VALUES = values();
   } // public enum ThresholdCriterion
 
-  public double threshold( int idx ) { return _ths[idx]; }
+  public float threshold( int idx ) { return _ths[idx]; }
   public long tp( int idx ) { return _tps[idx]; }
   public long fp( int idx ) { return _fps[idx]; }
   public long tn( int idx ) { return _n-_fps[idx]; }
@@ -126,7 +126,7 @@ public class AUC2 extends Iced {
     _fps = Arrays.copyOf(bldr._fps,_nBins);
     // Reverse everybody; thresholds from 1 down to 0, easier to read
     for( int i=0; i<((_nBins)>>1); i++ ) {
-      double tmp= _ths[i];  _ths[i] = _ths[_nBins-1-i]; _ths[_nBins-1-i] = tmp ;
+      float tmp = _ths[i];  _ths[i] = _ths[_nBins-1-i]; _ths[_nBins-1-i] = tmp ;
       long tmpt = _tps[i];  _tps[i] = _tps[_nBins-1-i]; _tps[_nBins-1-i] = tmpt;
       long tmpf = _fps[i];  _fps[i] = _fps[_nBins-1-i]; _fps[_nBins-1-i] = tmpf;
     }
@@ -170,7 +170,7 @@ public class AUC2 extends Iced {
   /** @return the default CM, or null for an empty AUC */
   public long[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
   /** @return the default threshold; threshold that maximizes the default criterion */
-  public double defaultThreshold( ) { return _ths[_max_idx]; }
+  public float defaultThreshold( ) { return _ths[_max_idx]; }
   /** @return the error of the default CM */
   public double defaultErr( ) { return ((double)fp(_max_idx)+fn(_max_idx))/(_p+_n); }
 
@@ -194,13 +194,13 @@ public class AUC2 extends Iced {
   public static class AUCBuilder extends Iced {
     final int _nBins;
     int _n;                     // Current number of bins
-    double _ths[];              // Histogram bins, center
+    float _ths[];               // Histogram bins, center
     double _sqe[];              // Histogram bins, squared error
     long   _tps[];              // Histogram bins, true  positives
     long   _fps[];              // Histogram bins, false positives
     public AUCBuilder(int nBins) {
       _nBins = nBins;
-      _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
+      _ths = new float [nBins<<1]; // Threshold; also the mean for this bin
       _sqe = new double[nBins<<1]; // Squared error (variance) in this bin
       _tps = new long  [nBins<<1]; // True  positives
       _fps = new long  [nBins<<1]; // False positives
@@ -211,7 +211,7 @@ public class AUC2 extends Iced {
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);
       assert act==0 || act==1; // Actual better be 0 or 1
-      int idx = Arrays.binarySearch(_ths,0,_n,pred);
+      int idx = Arrays.binarySearch(_ths,0,_n,(float)pred);
       if( idx >= 0 ) {        // Found already in histogram; merge results
         if( act==0 ) _fps[idx]++; else _tps[idx]++; // One more count; no change in squared error
         return;
@@ -223,7 +223,7 @@ public class AUC2 extends Iced {
       System.arraycopy(_tps,idx,_tps,idx+1,_n-idx);
       System.arraycopy(_fps,idx,_fps,idx+1,_n-idx);
       // Insert into the histogram
-      _ths[idx] = pred;         // New histogram center
+      _ths[idx] = (float)pred;  // New histogram center
       _sqe[idx] = 0;            // Only 1 point, so no squared error
       if( act==0 ) { _tps[idx]=0; _fps[idx]=1; }
       else         { _tps[idx]=1; _fps[idx]=0; }
@@ -259,7 +259,7 @@ public class AUC2 extends Iced {
     }
 
 //    private boolean sorted() {
-//      double t = _ths[0];
+//      float t = _ths[0];
 //      for( int i=1; i<_n; i++ ) {
 //        if( _ths[i] < t )
 //          return false;
@@ -309,7 +309,7 @@ public class AUC2 extends Iced {
       long k1 = _tps[minI+1]+_fps[minI+1];
       double d = (_ths[minI]*k0+_ths[minI+1]*k1)/(k0+k1);
       // Setup the new merged bin at index minI
-      _ths[minI] = d;
+      _ths[minI] = (float)d;
       _sqe[minI] = minSQE;
       _tps[minI] += _tps[minI+1];
       _fps[minI] += _fps[minI+1];
