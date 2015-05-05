@@ -630,6 +630,9 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 <a name="PCA"></a>
 ##PCA
 
+  >PCA is currently in progress in H2O-Dev. Once implementation of this algorithm is complete, this section of the document will be updated. 
+
+<!---
 ###Introduction
 
 Principal Components Analysis (PCA) is closely related to Principal Components Regression. The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
@@ -738,8 +741,8 @@ Solve for $$x$$ by Gaussian elimination.
 
 ###References
 
-  >Any references for PCA??
-
+  >Any references for PCA??)
+-->
 ---
 
 <a name="GBM"></a>
