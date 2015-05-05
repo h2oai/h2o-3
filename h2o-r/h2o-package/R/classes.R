@@ -389,7 +389,31 @@ setClass("H2OMultinomialModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2ORegressionModel",  contains="H2OModel")
-#' @rdname H2OModel-class
+#'
+#' The H2OClusteringModel object.
+#'
+#' This virtual class represents a clustering model built by H2O.
+#'
+#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
+#' the data used to build the model (an object of class H2OFrame).
+#'
+#' @slot conn Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
+#' @slot key A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot finalizers A \code{list} object containing environments with finalizers that
+#'                  remove keys from the H2O key-value store.
+#' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.
+#' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
+#' @slot allparameters A \code{list} containing all parameters used to fit the model.
+#' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
+#'        \item{size }{The number of points in each cluster.}
+#'        \item{avg_ss }{Average sum of squared error. This is related to R's results by \code{totss = avg_ss * num_rows},
+#'            where \code{num_rows} is the number of rows in the training frame.}
+#'        \item{within_mse }{A vector of within-cluster mean sum of squared error. This is related to R's results by
+#'                \code{withinss[i] = within_mse[i] * size[i]}.}
+#'        \item{avg_within_ss }{Average within-cluster sum of squared error. This is related to R's results by
+#'            \code{tot.withinss = avg_within_ss * num_clusters}, where \code{num_clusters} is the number of clusters.}
+#'        \item{avg_between_ss }{Average between-cluster sum of squared error. This is related to R's results by 
+#'            \code{betweenss = avg_between_ss * num_rows}.}
 #' @export
 setClass("H2OClusteringModel",  contains="H2OModel")
 #' @rdname H2OModel-class
