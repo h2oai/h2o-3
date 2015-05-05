@@ -9,6 +9,14 @@
 - [Deep Learning](#DL)
 
 
+#Commonalities 
+
+##Missing Value Handling for Training
+
+If missing values are found in the validation frame during model training or during the scoring process for creating predictions, the missing values are automatically imputed. 
+
+If the missing values are found during POJO scoring, the answer is converted to `NaN`. 
+
 
 <a name="Kmeans"></a>
 ##K-Means
@@ -972,11 +980,11 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **Does it matter if the data is sorted?** 
 
-  Yes, since the training set is processed in order. Depending whether `train\_samples\_per\_iteration` is enabled, some rows will be skipped. If `shuffle\_training\_data` is enabled, then each thread that is processing a small subset of rows will process rows randomly, but it is not a global shuffle.
+  Yes, since the training set is processed in order. Depending whether `train_samples_per_iteration` is enabled, some rows will be skipped. If `shuffle_training_data` is enabled, then each thread that is processing a small subset of rows will process rows randomly, but it is not a global shuffle.
 
 - **Should data be shuffled before training?**
 
-  Yes; it is an especially good idea if the dataset is sorted.
+  Yes, the data should be shuffled before training, especially if the dataset is sorted. 
 
 - **How does the algorithm handle highly imbalanced data in a response column?**
 
@@ -988,33 +996,37 @@ To view the results, click the View button. The output for the Deep Learning mod
   
 - **What if there are a large number of categorical factor levels?**
 
-This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max\_categorical\_features` to use feature hashing to reduce the dimensionality.
+This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max_categorical_features` to use feature hashing to reduce the dimensionality.
 
 ###Deep Learning Algorithm 
 
+For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](https://leanpub.com/deeplearning/read). 
+
 ###References
 
- [**Deep Learning**](http://en.wikipedia.org/wiki/Deep_learning)
+ ["Deep Learning." *Wikipedia: The free encyclopedia*. Wikimedia Foundation, Inc. 1 May 2015. Web. 4 May 2015.](http://en.wikipedia.org/wiki/Deep_learning)
 
- [**Artificial Neural Network**](http://en.wikipedia.org/wiki/Artificial_neural_network)
+ ["Artificial Neural Network." *Wikipedia: The free encyclopedia*. Wikimedia Foundation, Inc. 22 April 2015. Web. 4 May 2015.](http://en.wikipedia.org/wiki/Artificial_neural_network)
 
- [**ADADELTA**](http://arxiv.org/abs/1212.5701)
+ [Zeiler, Matthew D. 'ADADELTA: An Adaptive Learning Rate Method'. Arxiv.org. N.p., 2012. Web. 4 May 2015.](http://arxiv.org/abs/1212.5701)
 
- [**Momentum**](http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
+ [Sutskever, Ilya et al. "On the importance of initialization and momementum in deep learning." JMLR:W&CP vol. 28. (2013).](http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
 
- [**Dropout**](http://arxiv.org/pdf/1207.0580.pdf and http://arxiv.org/abs/1307.1493)
+ [Hinton, G.E. et. al. "Improving neural networks by preventing co-adaptation of feature detectors." University of Toronto. (2012).](http://arxiv.org/pdf/1207.0580.pdf)
 
- [**Feature Importance**](http://www.ncbi.nlm.nih.gov/pubmed/9327276)
+ [Wager, Stefan et. al. "Dropout Training as Adaptive Regularization." Advances in Neural Information Processing Systems. (2013).](http://arxiv.org/abs/1307.1493)
+
+ [Gedeon, TD. "Data mining of inputs: analysing magnitude and functional measures." University of New South Wales. (1997).](http://www.ncbi.nlm.nih.gov/pubmed/9327276)
     
- [**Deep Learning Vignette**](https://leanpub.com/deeplearning)
+ [Candel, Arno and Parmar, Viraj. "Deep Learning with H2O." H2O.ai, Inc. (2015).](https://leanpub.com/deeplearning)
     
-  [**Deep Learning Training**](http://learn.h2o.ai/content/hands-on_training/deep_learning.html)
+  [Deep Learning Training](http://learn.h2o.ai/content/hands-on_training/deep_learning.html)
     
-  [**Slideshare slide decks**](http://www.slideshare.net/0xdata/presentations?order=latest)
+  [Slideshare slide decks](http://www.slideshare.net/0xdata/presentations?order=latest)
     
-  [**Youtube channel**](https://www.youtube.com/user/0xdata)
+  [Youtube channel](https://www.youtube.com/user/0xdata)
     
-  [**The Definitive Performance Tuning Guide for H2O Deep Learning**](http://h2o.ai/blog/2015/02/deep-learning-performance/)
+  [Candel, Arno. "The Definitive Performance Tuning Guide for H2O Deep Learning." H2O.ai, Inc. (2015).](http://h2o.ai/blog/2015/02/deep-learning-performance/)
 
   [Niu, Feng, et al. "Hogwild!: A lock-free approach to parallelizing stochastic gradient descent." Advances in Neural Information Processing Systems 24 (2011): 693-701. (algorithm implemented is on p.5)](https://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent.pdf)
 
