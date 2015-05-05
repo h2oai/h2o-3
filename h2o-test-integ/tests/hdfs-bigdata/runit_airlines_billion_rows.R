@@ -54,8 +54,7 @@ data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validat
 myY = "C31"
 myX = setdiff(names(data1.hex), myY)
 data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "AUTO")
-data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "gaussian")
-data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "bernoulli")
-data4.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "multinomial
+data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "bernoulli")
+data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "multinomial
 
 PASS_BANNER()
