@@ -1,6 +1,6 @@
 #How to Pass S3 Credentials to H2O
 
-To use Amazon Web Services (AWS) with H2O, you must pass your S3 credentials to H2O. If you do not pass your credentials to H2O, H2O will not be compatible with AWS. 
+To make use of Amazon Web Services (AWS) storage solution S3 you will need to pass your S3 access credentials to H2O. This will allow you to access your data on S3 when importing data frames with path prefixes `s3n://...`.
 
 ##Standalone Instance
 
@@ -40,4 +40,25 @@ There are two ways to pass your S3 credentials to H2O:
 
 ##Sparkling Water Instance
 
-  >Amy, were you able to get the `-D` params method to work on SW?
+  To pass the s3 credentials to Sparkling Water, the credentials need to be passed via HADOOP_CONF_DIR that will point to a core-site.xml with the AWS_ACCESS_KEY AND AWS_SECRET_KEY. On Hadoop, typically the configuration directory is set to `/etc/hadoop/conf`:
+  
+    export HADOOP_CONF_DIR=/etc/hadoop/conf
+
+Edit the properties in the core-site.xml file:
+
+    <property>
+      <name>fs.s3n.awsAccessKeyId</name>
+      <value>[AWS SECRET KEY]</value>
+    </property>
+
+    <property>
+      <name>fs.s3n.awsSecretAccessKey</name>
+      <value>[AWS SECRET ACCESS KEY]</value>
+    </property>
+  
+  When running a local instance you can create a configuration directory locally with the core-site.xml and then export the path to the configuration directory:
+  
+    mkdir CONF
+    cd CONF
+    export HADOOP_CONF_DIR=`pwd`
+  
