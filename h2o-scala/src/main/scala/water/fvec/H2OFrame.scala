@@ -54,13 +54,12 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
     * @param cols : Array[ String ] containing all the names of enum columns
     */
   def colToEnum(cols: Array[String]): Unit={
-    Try (!cols.map(name => { if (!this.names.contains(name)) false}).contains(false)) match {
-      case Success(_) => {
-        val indexes = this.find(cols)
-        indexes.zipWithIndex.map(i => this.replace(this.find(cols(i._2)),this.vec(i._1).toEnum))
-        this.update(null)
-      }
-      case Failure(_) => printf("One or several columns are not present in your DataFrame")
+    if(!cols.map(name => { if (!this.names.contains(name)) false}).contains(false)){
+      val indexes = this.find(cols)
+      indexes.zipWithIndex.map(i => this.replace(this.find(cols(i._2)),this.vec(i._1).toEnum))
+      this.update(null)
+    }else{
+      throw new Exception("One or several columns are not present in your DataFrame")
     }
   }
 
@@ -69,8 +68,10 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
     * @param cols : Array[ Int ] containing all the indexes of enum columns
     */
   def colToEnum(cols: Array[Int]): Unit = {
-    val colsNames = cols.map(i=>this.name(i))
-    colToEnum(colsNames)
+    Try(cols.map(i=>this.name(i))) match {
+      case Success(s) => colToEnum(s)
+      case Failure(t) => println(t)
+    }
   }
 
   /** *
@@ -80,12 +81,9 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
     */
   def rename(index: Int, newName: String): Unit ={
     val tmp = this.names
-    Try(tmp.length+1 < index) match {
-      case Success(_) => {
-        tmp(index) = newName
-        this._names = tmp
-      }
-      case Failure(t) => println(t.toString)
+    Try(tmp(index) = newName) match {
+      case Success(_) => this._names = tmp
+      case Failure(t) => println(t)
     }
   }
 
@@ -96,9 +94,10 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
     */
   def rename(oldName: String, newName: String): Unit ={
     val index = this.find(oldName)
-    Try (index != -1) match {
-      case Success(_) => rename(index, newName)
-      case Failure(_) => println("Column missing")
+    if(index != -1){
+      rename(index, newName)
+    }else{
+      throw new Exception("Column missing")
     }
   }
 }
