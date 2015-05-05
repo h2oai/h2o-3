@@ -152,8 +152,7 @@ public class AUC2 extends Iced {
     long tp0 = 0, fp0 = 0;
     double area = 0;
     for( int i=0; i<_nBins; i++ ) {
-      area += tp0*(_fps[i]-fp0); // Trapezoid: Square + 
-      area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0; // Right Triangle
+      area += (_fps[i]-fp0)*(_tps[i]+tp0)/2.0; // Trapezoid
       tp0 = _tps[i];  fp0 = _fps[i];
     }
     // Descale
@@ -339,7 +338,7 @@ public class AUC2 extends Iced {
     return perfectAUC(ps);
   }
   public static double perfectAUC( double ds[], double[] acts ) {
-    Pair[] ps = new Pair[(int)ds.length];
+    Pair[] ps = new Pair[ds.length];
     for( int i=0; i<ps.length; i++ )
       ps[i] = new Pair(ds[i],(byte)acts[i]);
     return perfectAUC(ps);
@@ -361,20 +360,19 @@ public class AUC2 extends Iced {
     int tp0=0, fp0=0, tp1=0, fp1=0;
     double prob = 1.0;
     double area = 0;
-    for( int i=0; i<ps.length; i++ ) {
-      if( ps[i]._prob!=prob ) { // Tied probabilities: build a diagonal line
+    for( Pair p : ps ) {
+      if( p._prob!=prob ) { // Tied probabilities: build a diagonal line
         area += (fp1-fp0)*(tp1+tp0)/2.0; // Trapezoid
         tp0 = tp1; fp0 = fp1;
-        prob = ps[i]._prob;
+        prob = p._prob;
       }
-      if( ps[i]._act==1 ) tp1++; else fp1++;
+      if( p._act==1 ) tp1++; else fp1++;
     }
     area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
     area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
 
     // Descale
-    double auc = area/tp1/fp1;
-    return auc;
+    return area/tp1/fp1;
   }
 
   private static class Pair {
