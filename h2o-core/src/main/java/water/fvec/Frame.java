@@ -658,7 +658,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Restructure a Frame completely */
   public void restructure( String[] names, Vec[] vecs) {
-    restructure(names, vecs, numCols());
+    restructure(names, vecs, vecs.length);
   }
 
   /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
