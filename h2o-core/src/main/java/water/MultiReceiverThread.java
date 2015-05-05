@@ -63,6 +63,11 @@ class MultiReceiverThread extends Thread {
         DatagramPacket pack = new DatagramPacket(buf,buf.length);
         sock.receive(pack);
         UDPReceiverThread.basic_packet_handling(new AutoBuffer(pack));
+      } catch( SocketException e ) {
+        Log.info("H2O.CLOUD_MULTICAST_IF: "+ H2O.CLOUD_MULTICAST_IF);
+        Log.info("H2O.CLOUD_MULTICAST_PORT: "+ H2O.CLOUD_MULTICAST_PORT);
+        Log.info("H2O.CLOUD_MULTICAST_GROUP: "+ H2O.CLOUD_MULTICAST_GROUP);
+        throw new RuntimeException(e);
       } catch( Exception e ) {
         // On any error from anybody, close all sockets & re-open
         Log.err("Multicast "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
