@@ -17,11 +17,6 @@ library(h2o)
 
 running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
 
-if (!running_inside_hexdata) {
-    # hdp2.2 cluster
-    stop("0xdata internal test and data.")
-}
-
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
@@ -50,11 +45,16 @@ data1.glm
 
 #GBM on original dataset
 data1.gbm = h2o.gbm(x = myX, y = myY, training_frame = data.hex,
-                    ntrees = 50, max_depth = 10, distribution = "multinomial")
+                    ntrees = 10, max_depth = 5, distribution = "multinomial")
 data1.gbm 
 
 #Deep Learning
-data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex)
+data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex, epochs=.1, hidden=c(10,10))
 data1.dl 
+
+#Random Forest
+data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.hex,
+                    ntrees = 10, max_depth = 5)
+data1.rf
 
 PASS_BANNER()

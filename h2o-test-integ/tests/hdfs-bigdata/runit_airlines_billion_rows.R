@@ -53,8 +53,16 @@ data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validat
 ## Response = IsDepDelayed
 myY = "C31"
 myX = setdiff(names(data1.hex), myY)
-data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "AUTO")
-data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "bernoulli")
-data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, distribution = "multinomial
+data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "AUTO")
+data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "bernoulli")
+data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "multinomial")
+
+#Random Forest
+data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5)
+data1.rf
+
+#Deep Learning
+data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex, epochs=.1, hidden=c(5,5))
+data1.dl 
 
 PASS_BANNER()
