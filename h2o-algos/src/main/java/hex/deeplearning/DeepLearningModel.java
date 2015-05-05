@@ -32,6 +32,9 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
+
+    @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
+
     // public int _n_folds;
     public int getNumFolds() { return 0; }
 
@@ -613,8 +616,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return actually used parameters
    */
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
-
-//  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -2006,7 +2007,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(adaptFrm,true);
+    adaptTestForTrain(_output._names, null /*don't skip response*/, _output._domains, frame, _parms.missingColumnsType(), true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
