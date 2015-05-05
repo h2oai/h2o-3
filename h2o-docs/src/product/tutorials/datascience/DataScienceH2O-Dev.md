@@ -465,13 +465,13 @@ By default, the following output displays:
 ---
 
 <a name="NB"></a>
-##Naive Bayes
+##Naïve Bayes
 
 ###Introduction 
 
-Naive Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
+Naïve Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
 
-###Defining a Naive Bayes Model
+###Defining a Naïve Bayes Model
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -502,28 +502,68 @@ Naive Bayes (NB) is a classification algorithm that relies on strong assumptions
 
 
 
-###Interpreting a Naive Bayes Model
+###Interpreting a Naïve Bayes Model
+
+The output from Naïve Bayes is a list of tables containing the a-priori and conditional probabilities of each class of the response. The a-priori probability is the estimated probability of a particular class before observing any of the predictors. Each conditional probability table corresponds to a predictor column. The row headers are the classes of the response and the column headers are the classes of the predictor. Thus, in the table below, the probability of survival (y) given a person is male (x) is 0.91543624.
+
+```
+        		Sex
+Survived       Male     Female
+     No  0.91543624 0.08456376
+     Yes 0.51617440 0.48382560
+```
+
+
+When the predictor is numeric, Naïve Bayes assumes it is sampled from a Gaussian distribution given the class of the response. The first column contains the mean and the second column contains the standard deviation of the distribution.
 
 By default, the following output displays:
 
 - Output (model category, model summary, scoring history, training metrics, validation metrics)
-- Levels
-   > - Y ??
+- Y-Levels (levels of the response column)
 - P-conditionals 
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-- How does the algo handle missing values during testing?
-- What happens if the response has missing values?
-- What happens during prediction if the new sample has categorical levels not seen in training?
-- Does it matter if the data is sorted? 
-- Should data be shuffled before training?
-- How does the algo handle highly imbalanced data in a response column?
-- What if there are a large number of columns?
-- What if there are a large number of categorical factor levels?
+- **How does the algorithm handle missing values during training?**
+  
+  All rows with one or more missing values (either in the predictors or the response) will be skipped during model building. 
 
-###Naive Bayes Algorithm 
+- **How does the algorithm handle missing values during testing?**
+  
+  If a predictor is missing, it will be skipped when taking the product of conditional probabilities in calculating the joint probability conditional on the response.
+
+- **What happens if the response domain is different in the training and test datasets?**
+  
+  The response column in the test dataset is not used during scoring, so any response categories absent in the training data will not be predicted.
+
+- **What happens during prediction if the new sample has categorical levels not seen in training?**
+  
+  The conditional probability of that predictor level will be set according to the Laplace smoothing factor. If Laplace smoothing is disabled (set to zero), the joint probability will be zero. See pgs. 13-14 of Andrew Ng’s "Generative learning algorithms" in the References section for mathematical details.
+
+- **Does it matter if the data is sorted?**
+
+  No. 
+
+- **Should data be shuffled before training?**
+
+  This does not affect model building. 
+
+- **How does the algorithm handle highly imbalanced data in a response column?**
+
+  Unbalanced data will not affect the model. However, if one response category has very few observations compared to the total, the conditional probability may be very low. A cutoff (`eps_prob`) and minimum value (`min_prob`) are available for the user to set a floor on the calculated probability.
+
+
+- **What if there are a large number of columns?**
+
+   More memory will be allocated on each node to store the joint frequency counts and sums.
+
+- **What if there are a large number of categorical factor levels?**
+
+  More memory will be allocated on each node to store the joint frequency count of each categorical predictor level with the response’s level.
+
+
+
+###Naïve Bayes Algorithm 
 
 The algorithm is presented for the simplified binomial case without loss of generality.
 
@@ -579,6 +619,9 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 
 
 ###References
+
+
+[Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The Elements of Statistical Learning. Vol.1. N.p., Springer New York, 2001.](http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf) 
 
 [Ng, Andrew. "Generative Learning algorithms." (2008).](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
 

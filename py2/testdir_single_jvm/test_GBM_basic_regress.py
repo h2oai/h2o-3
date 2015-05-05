@@ -59,7 +59,7 @@ class Basic(unittest.TestCase):
         model_key = 'covtype_gbm.hex'
         bmResult = h2o.n0.build_model(
             algo='gbm',
-            destination_key=model_key,
+            model_id=model_key,
             training_frame=parse_key,
             parameters=parameters,
             timeoutSecs=60)

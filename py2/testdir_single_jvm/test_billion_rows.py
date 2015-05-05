@@ -58,7 +58,7 @@ class Basic(unittest.TestCase):
             model_key = 'B.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=300)
