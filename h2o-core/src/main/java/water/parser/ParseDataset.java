@@ -454,6 +454,7 @@ public final class ParseDataset extends Job<Frame> {
     private AppendableVec [] _vecs;
 
     @Override public void postGlobal(){
+      Log.trace("Begin file parse cleanup.");
       int n = _dout.length-1;
       while(_dout[n] == null && n != 0)--n;
       for(int i = 0; i <= n; ++i) {
@@ -489,6 +490,7 @@ public final class ParseDataset extends Job<Frame> {
         if (f != null) try { f.get(); } catch (InterruptedException e) { } catch (ExecutionException e) {}
       }
       _vecs = res;
+      Log.trace("Finished file parse cleanup.");
     }
     private AppendableVec[] vecs(){ return _vecs; }
 
@@ -536,6 +538,7 @@ public final class ParseDataset extends Job<Frame> {
       ParseSetup localSetup = new ParseSetup(_parseSetup);
       ByteVec vec = getByteVec(key);
       final int chunkStartIdx = _fileChunkOffsets[_lo];
+      Log.trace("Begin a map stage of a file parse with start index "+chunkStartIdx+".");
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
@@ -586,6 +589,7 @@ public final class ParseDataset extends Job<Frame> {
           break;
         }
         }
+        Log.trace("Finished a map stage of a file parse with start index "+chunkStartIdx+".");
       } catch( IOException ioe ) {
         throw new RuntimeException(ioe);
       } catch (H2OParseException pe) {
@@ -597,6 +601,7 @@ public final class ParseDataset extends Job<Frame> {
     // Roll-up other meta data
     @Override public void reduce( MultiFileParseTask mfpt ) {
       assert this != mfpt;
+      Log.trace("Begin a reduce stage of a file parse.");
 
       // Collect & combine columns across files
       if( _dout == null ) _dout = mfpt._dout;
@@ -609,6 +614,7 @@ public final class ParseDataset extends Job<Frame> {
         }
       }
       _errors = ArrayUtils.append(_errors,mfpt._errors);
+      Log.trace("Finished a reduce stage of a file parse.");
     }
 
     // ------------------------------------------------------------------------
@@ -660,6 +666,7 @@ public final class ParseDataset extends Job<Frame> {
         _espc = MemoryManager.malloc8(_nchunks);
       }
       @Override public void map( Chunk in ) {
+        Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
@@ -688,6 +695,7 @@ public final class ParseDataset extends Job<Frame> {
         // remove parsed data right away (each chunk is used by 2)
         freeMem(in,0);
         freeMem(in,1);
+        Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
       }
 
       private void freeMem(Chunk in, int off) {
@@ -698,8 +706,14 @@ public final class ParseDataset extends Job<Frame> {
         v.freePOJO();           // Eagerly toss from memory
         v.freeMem();
       }
-      @Override public void reduce(DistributedParse dp) { _dout.reduce(dp._dout); }
+      @Override public void reduce(DistributedParse dp) {
+        Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+        _dout.reduce(dp._dout);
+        Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+      }
+
       @Override public void postGlobal() {
+        Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         _dout = null;           // Reclaim GC eagerly
@@ -714,6 +728,7 @@ public final class ParseDataset extends Job<Frame> {
           if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,new Futures()).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
         }
+        Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
       }
     }
 
