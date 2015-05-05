@@ -141,9 +141,10 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
 #'
 #' @param data An \linkS4class{H2OFrame} object
 #' @param key The hex key to be associated with the H2O parsed data object
+#' @param deepCopy Should it do a deepCopy of the frame. Default is FALSE.
 #'
 #' @export
-h2o.assign <- function(data, key) {
+h2o.assign <- function(data, key, deepCopy=FALSE) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   t <- !.is.eval(data)
   if( t ) {
@@ -153,9 +154,16 @@ h2o.assign <- function(data, key) {
 
   .key.validate(key)
   if(key == data@frame_id) stop("Destination key must differ from input frame ", data@frame_id)
-  expr <- paste0("(= !", key, " %", data@frame_id, ")")
-  res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
-  .byref.update.frame(res)
+  expr <- NULL
+  if( deepCopy ) {
+    expr <- paste0("(= !", key, " %", data@frame_id, ")")   # this does a deepcopy!!
+    res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
+    .byref.update.frame(res)
+  } else {
+    expr <- paste0("(, (gput ", key, "%", data@frame_id, ") (removeframe %",data@frame_id,"))")   # removes the original frame!
+    res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
+    .byref.update.frame(res)
+  }
 }
 
 #'

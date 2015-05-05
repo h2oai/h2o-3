@@ -2241,12 +2241,16 @@ class ASTAND extends ASTBinOp {
 
 class ASTRename extends ASTUniPrefixOp {
   String _newname;
+  boolean _deepCopy;
   @Override String opStr() { return "rename"; }
-  ASTRename() { super(new String[] {"", "ary", "new_name"}); }
+  ASTRename() { super(new String[] {"", "ary", "new_name", "deepCopy"}); }
   @Override ASTOp make() { return new ASTRename(); }
   ASTRename parse_impl(Exec E) {
     AST ary = E.parse();
     _newname = ((ASTString)E.parse())._s;
+    AST a = E.parse();
+    if( a instanceof ASTId ) _deepCopy =   ((ASTNum)E._env.lookup( ((ASTId)a) ))._d==1;
+    else throw new IllegalASTException("Expected to get TRUE/FALSE for deepCopy argument");
     E.eatEnd(); // eat the ending ')'
     ASTRename res = (ASTRename) clone();
     res._asts = new AST[]{ary};
@@ -2255,9 +2259,16 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    Frame fr2 = fr.deepCopy(_newname);
-    DKV.put(fr2._key, fr2);
-    e.pushAry(fr2);
+    if( _deepCopy ) {
+      if( fr._key!=null )  // wack the old DKV mapping
+        DKV.remove(fr._key);
+      Frame fr2 = new Frame(Key.make(_newname),fr.names(),fr.vecs());
+      DKV.put(fr2._key, fr2);
+    } else {
+      Frame fr2 = fr.deepCopy(_newname);
+      DKV.put(fr2._key, fr2);
+      e.pushAry(fr2);
+    }
   }
 }
 
