@@ -82,12 +82,18 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk))-1];
-    } else { // do not skip any levels
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
-        eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
+    for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) {
+      if(chks[i].isNA(row_in_chunk)) {
+        eta = Double.NaN;
+        break;
+      }
+      long lval = chks[i].at8(row_in_chunk);
+      int ival = (int)lval;
+      if(ival != lval) throw new IllegalArgumentException("categorical value out of range");
+      if(_parms._use_all_factor_levels)
+        eta += b[_dinfo._catOffsets[i] + ival];
+      else if(ival != 0)
+        eta += b[_dinfo._catOffsets[i] + ival - 1];
     }
     final int noff = _dinfo.numStart() - _dinfo._cats ;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
