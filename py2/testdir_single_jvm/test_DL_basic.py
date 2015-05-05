@@ -118,7 +118,7 @@ class Basic(unittest.TestCase):
             model_key = 'benign_dl.hex'
             bmResult = h2o.n0.build_model(
                 algo='deeplearning', 
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 

@@ -123,7 +123,7 @@ class Basic(unittest.TestCase):
 
         bmResult = h2o.n0.build_model(
             algo='deeplearning',
-            destination_key=model_key,
+            model_id=model_key,
             training_frame=hex_key,
             parameters=parameters,
             timeoutSecs=timeoutSecs)

@@ -121,7 +121,7 @@ class Basic(unittest.TestCase):
             else:
                 parse_result = a_node.parse(key=kList2, timeoutSecs=timeoutSecs, **kwargs)
 
-            k = parse_result['frames'][0]['key']['name']
+            k = parse_result['frames'][0]['frame_id']['name']
             # print "parse_result:", dump_json(parse_result)
             frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parse_result key", dump_json(frames_result)

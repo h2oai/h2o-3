@@ -68,7 +68,7 @@ class Basic(unittest.TestCase):
             model_key = 'benign_k.hex'
             kmeansResult = h2o.n0.build_model(
                 algo='kmeans', 
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 
@@ -148,7 +148,7 @@ class Basic(unittest.TestCase):
             model_key = 'prostate_k.hex'
             bmResult = h2o.n0.build_model(
                 algo='kmeans', 
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 

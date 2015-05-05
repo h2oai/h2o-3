@@ -131,7 +131,7 @@ class Basic(unittest.TestCase):
             model_key = 'rand_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=bHack,
                 parameters=parameters,
                 timeoutSecs=10)
