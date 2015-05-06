@@ -435,6 +435,16 @@ class H2O(object):
         H2O.verboseprint("\nsplit_frame result:", h2o_util.dump_json(a))
         return a
 
+    '''
+    Create interactions.
+    '''
+    def interaction(self, timeoutSecs=180, **kwargs):
+        a = self.__do_json_request('/3/Interaction', cmd="post",
+                                   timeout=timeoutSecs,
+                                   postData=kwargs
+        )
+        H2O.verboseprint("\ninteraction result:", h2o_util.dump_json(a))
+        return a
 
     ''' 
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
