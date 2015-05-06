@@ -5,7 +5,6 @@ import hex.ClusteringModel.ClusteringParameters;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -14,24 +13,24 @@ import java.util.List;
 
 public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public long[/*k*/] _size;
-  public double[/*k*/] _within_mse;
-  public double _avg_ss;
-  public double _avg_within_ss;
-  public double _avg_between_ss;
+  public double[/*k*/] _withinss;
+  public double _totss;
+  public double _tot_withinss;
+  public double _betweenss;
 //  public TwoDimTable _centroid_stats;
 
   public ModelMetricsClustering(Model model, Frame frame) {
     super(model, frame, Double.NaN);
     _size = null;
-    _within_mse = null;
-    _avg_ss = _avg_within_ss = _avg_between_ss = Double.NaN;
+    _withinss = null;
+    _totss = _tot_withinss = _betweenss = Double.NaN;
   }
   /**
-   * Populate TwoDimTable from members _size and _within_mse
+   * Populate TwoDimTable from members _size and _withinss
    * @return TwoDimTable
    */
   public TwoDimTable createCentroidStatsTable() {
-    if (_size == null || _within_mse == null)
+    if (_size == null || _withinss == null)
       return null;
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
@@ -39,10 +38,10 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     colHeaders.add("Centroid"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Size"); colTypes.add("double"); colFormat.add("%.5f");
-    colHeaders.add("Within Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Within Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
     final int K = _size.length;
-    assert(_within_mse.length == K);
+    assert(_withinss.length == K);
 
     TwoDimTable table = new TwoDimTable(
             "Centroid Statistics", null,
@@ -55,7 +54,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       int col = 0;
       table.set(k, col++, k+1);
       table.set(k, col++, _size[k]);
-      table.set(k, col++, _within_mse[k]);
+      table.set(k, col++, _withinss[k]);
     }
     return table;
   }
@@ -124,21 +123,20 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       ModelMetricsClustering mm = new ModelMetricsClustering(m, f);
 
       mm._size = _size;
-      mm._avg_within_ss = _sumsqe / _count;
-      mm._within_mse = new double[_size.length];
-      for (int i = 0; i < mm._within_mse.length; i++)
-        mm._within_mse[i] = _within_sumsqe[i] / _size[i];
+      mm._tot_withinss = _sumsqe;
+      mm._withinss = new double[_size.length];
+      for (int i = 0; i < mm._withinss.length; i++)
+        mm._withinss[i] = _within_sumsqe[i];
 
       // Sum-of-square distance from grand mean
       if ( ((ClusteringParameters) clm._parms)._k == 1 )
-        mm._avg_ss = mm._avg_within_ss;
+        mm._totss = mm._tot_withinss;
       else {
-        mm._avg_ss = 0;
+        mm._totss = 0;
         for (int i = 0; i < _colSum.length; i++)
-          mm._avg_ss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / f.numRows();
-        mm._avg_ss /= f.numRows();
+          mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / f.numRows();
       }
-      mm._avg_between_ss = mm._avg_ss - mm._avg_within_ss;
+      mm._betweenss = mm._totss - mm._tot_withinss;
       return m.addMetrics(mm);
     }
   }
