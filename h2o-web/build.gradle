@@ -173,7 +173,7 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 
-compileAndInstallDocFiles.dependsOn installNpmPackages
+compileAndInstallDocFiles.dependsOn copyFlowToWebRoot
 processResources.dependsOn compileAndInstallDocFiles
 
 
