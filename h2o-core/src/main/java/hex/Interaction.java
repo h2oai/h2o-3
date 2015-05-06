@@ -52,7 +52,6 @@ public class Interaction extends Job<Frame> {
     }
   }
 
-
   @Override public String toString() {
     Frame res = get();
     if (res == null) return "Output frame not found";
