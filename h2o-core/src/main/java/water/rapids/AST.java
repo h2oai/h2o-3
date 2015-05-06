@@ -201,7 +201,7 @@ class ASTFrame extends AST {
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
     if (_key != null && DKV.get(_key)!=null ) e.lock(_fr); // add to list of things that cannot be DKV removed.
-    else                                      e.put(_key,_fr); // _key not in the DKV, have transient Frame
+    else                                      e.put(_key,_fr,isFrame); // _key not in the DKV, have transient Frame
     if( !isFrame ) e._tmpFrames.add(_fr);
     e.push(new ValFrame(_fr, !isFrame, _g));
   }

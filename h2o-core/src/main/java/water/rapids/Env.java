@@ -142,7 +142,10 @@ public class Env extends Iced {
   public void push(Val o) {
     if (o instanceof ValFrame) {
       ValFrame f = (ValFrame)o;
-      if( !_isGlobal ) _local.put(Key.make().toString(), f._fr);  // have a local Frame we're pushing -- not in the DKV yet!
+      if( !_isGlobal ) {
+        assert f._key==null || DKV.get(f._key)!=null;  // have a local Frame we're pushing -- not in the DKV yet!
+        _local.put(Key.make().toString(), f._fr, false /* any pushed Val _here_ is no longer isFrame */);
+      }
       addRef(f);
     }
     _stack.push(o);
@@ -242,7 +245,7 @@ public class Env extends Iced {
 
   // check that this scope and no parent scope has a "lock" on this key.
   // "locked" means shalt not be DKV removed.
-  private boolean hasLock(Key k) {
+  public boolean hasLock(Key k) {
     // recurse up the parent scopes,
     // return true if any scope has a lock
     // otherwise return false.
@@ -383,7 +386,7 @@ public class Env extends Iced {
     for( String name : local ) {
       Frame f;
       if( _local.getType(name)==LARY ) {
-        f=_local.getFrame(name);
+        f=_local.getFrame(name)._fr;
         if( isAry() && f==peekAry() ) continue;
         else cleanup(f);
       }
@@ -620,7 +623,11 @@ public class Env extends Iced {
         _table.put(name, (T)attributes);
       }
     }
-    public void put(String name, Frame localFrame) { _table.put(name, (T)localFrame); }
+    public void put(String name, Frame localFrame, boolean isFrame) {
+      ASTFrame fr = new ASTFrame(localFrame);
+      fr.isFrame = isFrame;  // was it a Vec or a Frame?
+      _table.put(name, (T)fr);
+    }
     public T get(String name) {
       if( !_table.containsKey(name) ) return null;
       return _table.get(name);
@@ -628,7 +635,7 @@ public class Env extends Iced {
     public int getType(String name) {
       if (!_table.containsKey(name)) return NULL;
       T V = get(name);
-      if( V instanceof Frame ) return LARY;  // special local array, all others come from the DKV!
+      if( V instanceof ASTFrame ) return LARY;  // special local array, all others come from the DKV!
       else return ((SymbolAttributes)V)._type;
     }
     public String getValue(String name) {  // caller knows exactly the type.
@@ -640,11 +647,11 @@ public class Env extends Iced {
         throw new ClassCastException("API Error in Symbol Attributes. Caller expected SymbolAttributes but got " + V.getClass());
       }
     }
-    public Frame getFrame(String name) {
+    public ASTFrame getFrame(String name) {
       if( !_table.containsKey(name) ) return null;
       T V = get(name);
       try {
-        return (Frame)V;
+        return (ASTFrame)V;
       } catch( ClassCastException e ) {
         throw new ClassCastException("API Error in Symbol Attributes. Caller expected Frame but got " + V.getClass());
       }
@@ -678,10 +685,11 @@ public class Env extends Iced {
     if( _isGlobal ) _global.put(name,type,value);
     else            _local.put(name,type,value);
   }
-  void put(String name, Frame f) {
-    if( _isGlobal ) _global.put(name,f);
-    else            _local.put(name,f);
+  void put(String name, Frame f, boolean isFrame) {
+    if( _isGlobal ) _global.put(name,f,isFrame);
+    else            _local.put(name,f,isFrame);
   }
+  void put(String name, Frame f) { put(name,f,true);}
 
   int getType(String name, boolean search_global) {
     if (name == null || name.equals("")) throw new IllegalArgumentException("Tried to lookup on a missing name. Are there free floating `%` in your AST?");
@@ -734,8 +742,8 @@ public class Env extends Iced {
     return res;
   }
 
-  Frame getFrame(String name, boolean search_global) {
-    Frame res=null;
+  ASTFrame getFrame(String name, boolean search_global) {
+    ASTFrame res=null;
 
     // check local scope first
     if( _local != null ) res = _local.getFrame(name);
@@ -744,7 +752,7 @@ public class Env extends Iced {
     if( res==null && search_global /* search DKV in this case.*/ ) {
       Value v = DKV.get(Key.make(name));
       if( v==null || v.get()==null ) res=null;
-      else          res = v.get();
+      else                           res=new ASTFrame(name);
     }
 
     // no dice in the DKV, try a transient Frame in the global symbol table (only if we're top level...
@@ -761,7 +769,7 @@ public class Env extends Iced {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());
-      case LARY:return new ASTFrame(getFrame(id.value(), false)); // pull the local frame out
+      case LARY:return getFrame(id.value(), false); // pull the local frame out
       case STR: return id.value().equals("()") ? new ASTNull() : new ASTString('\"', id.value());
       default: throw H2O.unimpl("Could not find appropriate type for identifier "+id);
     }
@@ -778,7 +786,7 @@ public class Env extends Iced {
 
   // Optimistically lookup strings in the K/V.  On hit, return the found Key as a Frame.
   // On a miss, return the String/Id.
-  static AST staticLookup(water.rapids.ASTId id) { return kvLookup(id.value())==ARY ? new ASTFrame(id.value()) : id; }
+  static AST staticLookup(water.rapids.ASTId id)      { return kvLookup(id.value())==ARY ? new ASTFrame(id.value()) : id; }
   static AST staticLookup(water.rapids.ASTString str) { return kvLookup(str.value())==ARY ? new ASTFrame(str.value()) : str; }
 }
 

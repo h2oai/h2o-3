@@ -324,7 +324,7 @@ abstract class ASTUniOp extends ASTUniOrBinOp {
 
   @Override void exec(Env e, AST[] args) {
     args[0].exec(e);
-    if (e.isAry()) e.put(Key.make().toString(), e.peekAry());
+    if( e.isAry() ) e.put(Key.make().toString(),e.peekAry());
     apply(e);
   }
 
