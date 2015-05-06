@@ -532,7 +532,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 
     private void doCleanup(){
-      _parms.read_unlock_frames(GLM.this);
+      try{
+        _parms.read_unlock_frames(GLM.this);
+      } catch(Throwable t) {}
       DKV.remove(_dinfo._key);
       if(_rowFilter != null)
         _rowFilter.remove();
