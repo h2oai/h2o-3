@@ -86,8 +86,17 @@ import java.util.concurrent.atomic.AtomicInteger;
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
     final int nGrps = p1._g.size();
-    final G[] grps = p1._g.keySet().toArray(new G[nGrps]);
-    H2O.submitTask(new ParallelPostGlobal(grps)).join();
+    final G[] grps = new G[nGrps]; //p1._g.keySet().toArray(new G[nGrps]);
+
+    // FIXME
+    int gnum=0;
+    for( G g:p1._g.keySet() ) {
+      if( g==null ) {
+        Log.info("GROUP IS NULL: #" + gnum);
+      }
+      grps[gnum++]=g;
+    }
+    H2O.submitTask(new ParallelPostGlobal(grps,nGrps)).join();
 
     // build the output
     final int nCols = _gbCols.length+_agg.length;
@@ -357,9 +366,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
   public static class ParallelPostGlobal extends H2O.H2OCountedCompleter<ParallelPostGlobal> {
     private final G[] _g;
+    private final int _ngrps;
     private final int _maxP=50*1000; // burn 50K at a time
     private final AtomicInteger _ctr;
-    ParallelPostGlobal(G[] g) { _g=g; _ctr=new AtomicInteger(_maxP-1); }
+    ParallelPostGlobal(G[] g, int ngrps) { _g=g; _ctr=new AtomicInteger(_maxP-1); _ngrps=ngrps; }
 
 
     @Override protected void compute2(){
@@ -367,7 +377,17 @@ import java.util.concurrent.atomic.AtomicInteger;
       for( int i=0;i<Math.min(_g.length,_maxP);++i) frkTsk(i);
     }
 
-    private void frkTsk(final int i) { new GTask(new Callback(), _g[i]).fork(); }
+    private void frkTsk(final int i) {
+
+      // FIXME
+      if( _g[i]==null ) {
+        Log.info("NULL Group: #" + i);
+        Log.info("Expected number of groups: " + _ngrps);
+        Log.info("Processing number of groups: " + _g.length);
+      }
+
+      new GTask(new Callback(), _g[i]).fork();
+    }
 
     private class Callback extends H2O.H2OCallback {
       public Callback(){super(ParallelPostGlobal.this);}
