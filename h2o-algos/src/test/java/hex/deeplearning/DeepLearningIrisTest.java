@@ -165,7 +165,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._shuffle_training_data = false;
                                 p._classification_stop = -1; //don't stop early -> need to compare against reference, which doesn't stop either
                                 p._force_load_balance = false; //keep just 1 chunk for reproducibility
-                                p._override_with_best_model = false; //keep just 1 chunk for reproducibility
+                                p._overwrite_with_best_model = false; //keep just 1 chunk for reproducibility
                                 p._replicate_training_data = false;
                                 p._single_node_mode = true;
                                 p._sparse = sparse;
@@ -312,7 +312,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 Log.info("Actual best error : " + best_err * 100 + "%.");
                                 
                                 // this is enabled by default
-                                if (p._override_with_best_model) {
+                                if (p._overwrite_with_best_model) {
                                   Frame bestPredict = null;
                                   try {
                                     bestPredict = mymodel.score(_train);

@@ -111,7 +111,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               }) {
                                 if (n_folds != 0 && vf != 0) continue;
                                 for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
-                                  for (boolean override_with_best_model : new boolean[]{false, true}) {
+                                  for (boolean overwrite_with_best_model : new boolean[]{false, true}) {
                                     for (int train_samples_per_iteration : new int[]{
                                             -2, //auto-tune
                                             -1, //N epochs per iteration
@@ -148,7 +148,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           p._hidden_dropout_ratios = null;
                                           p._activation = activation;
 //                                      p.best_model_key = best_model_key;
-                                          p._override_with_best_model = override_with_best_model;
+                                          p._overwrite_with_best_model = overwrite_with_best_model;
                                           p._epochs = epochs;
                                           p._loss = loss;
                                           if (n_folds > 0) {
@@ -214,7 +214,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           p2._l1 = 1e-3;
                                           p2._l2 = 1e-3;
                                           p2._response_column = frame._names[resp];
-                                          p2._override_with_best_model = override_with_best_model;
+                                          p2._overwrite_with_best_model = overwrite_with_best_model;
                                           p2._epochs = epochs;
                                           p2._seed = seed;
                                           p2._train_samples_per_iteration = train_samples_per_iteration;

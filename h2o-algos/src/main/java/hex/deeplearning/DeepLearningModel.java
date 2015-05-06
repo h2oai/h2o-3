@@ -51,7 +51,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * If enabled, store the best model under the destination key of this model at the end of training.
      * Only applicable if training is not cancelled.
      */
-    public boolean _override_with_best_model = true;
+    public boolean _overwrite_with_best_model = true;
 
     public boolean _autoencoder = false;
 
@@ -493,7 +493,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (_autoencoder)
         dl.hide("_use_all_factor_levels", "use_all_factor_levels is mandatory in combination with autoencoder.");
       if (getNumFolds() != 0)
-        dl.hide("_override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
+        dl.hide("_overwrite_with_best_model", "overwrite_with_best_model is unsupported in combination with n-fold cross-validation.");
       if (_adaptive_rate) {
         dl.hide("_rate", "rate is not used with adaptive_rate.");
         dl.hide("_rate_annealing", "rate_annealing is not used with adaptive_rate.");
@@ -1565,9 +1565,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
       toParms._use_all_factor_levels = true;
     }
-    if(fromParms._override_with_best_model && fromParms.getNumFolds() != 0) {
-      Log.info("_override_with_best_model: Disabling override_with_best_model in combination with n-fold cross-validation.");
-      toParms._override_with_best_model = false;
+    if(fromParms._overwrite_with_best_model && fromParms.getNumFolds() != 0) {
+      Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
+      toParms._overwrite_with_best_model = false;
     }
     if (fromParms._adaptive_rate) {
       Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
@@ -1586,9 +1586,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       toParms._epsilon = 0;
     }
     if (fromParms.getNumFolds() != 0) {
-      if (fromParms._override_with_best_model) {
-        Log.info("_override_with_best_model: Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
-        toParms._override_with_best_model = false;
+      if (fromParms._overwrite_with_best_model) {
+        Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+        toParms._overwrite_with_best_model = false;
       }
     }
     if (fromParms._loss == DeepLearningParameters.Loss.Automatic) {
@@ -1795,7 +1795,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
-          if (actual_best_model_key != null && get_params()._override_with_best_model && (
+          if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
                   // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
                   (DKV.get(actual_best_model_key) != null && (error() < DKV.get(actual_best_model_key).<DeepLearningModel>get().error() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
                           ||
