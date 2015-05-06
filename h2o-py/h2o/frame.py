@@ -830,6 +830,9 @@ class H2OFrame:
     """
     # sanity check columns, get the column index
     col_id = -1
+
+    if isinstance(column, list): column = column[0]  # only take the first one ever...
+
     if isinstance(column, (unicode,str)):
       col_id = self._find_idx(column)
     elif isinstance(column, int):

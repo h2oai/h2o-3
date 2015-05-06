@@ -285,3 +285,31 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
                 model         = model,
                 linkToGC      = linkToGC)
 }
+
+
+#'
+#' Download the Scoring POJO of An H2O Model
+#'
+#' @param model An H2OModel
+#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to console.
+#'             The file name will be a compilable java file name.
+#' @param conn An H2OClient object.
+#' @return If path is "", then pretty print the POJO to the console.
+#'         Otherwise save it to the specified directory.
+#' @examples
+#' library(h2o)
+#' h <- h2o.init(nthreads=-1)
+#' fr <- as.h2o(iris)
+#' my_model <- h2o.gbm(x=1:4, y=5, trainin_frame=fr)
+#'
+#' h2o.downloadPOJO(my_model)  # print the model to screen
+#' # h2o.downloadPOJO(my_model, getwd())  # save to the current working directory, NOT RUN
+h2o.downloadPOJO <- function(model, path="", conn=h2o.getConnection()) {
+  model_id <- model@model_id
+  java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", model_id, ".java"), raw=TRUE)
+  file.path <- paste0(path, "/", model_id, ".java")
+  if( path == "" ) cat(java)
+  else write(java, file=file.path)
+
+  if( path!="") print( paste0("POJO written to: ", file.path) )
+}
