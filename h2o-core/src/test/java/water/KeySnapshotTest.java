@@ -4,20 +4,14 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 import org.junit.*;
+import water.util.IcedDouble;
+import water.util.IcedInt;
+
 import java.util.ArrayList;
 import java.util.Map;
 
 public class KeySnapshotTest extends TestUtil {
   public KeySnapshotTest() { super(5); }
-  
-  private static class IcedInt extends Iced {
-    public final int value;
-    public IcedInt(int val){value = val;}
-  }
-  public static class IcedDouble extends Iced {
-    public final double value;
-    public IcedDouble (double v) {value = v;}
-  }
 
   @Test
   public void testGlobalKeySet(){
