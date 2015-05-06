@@ -133,6 +133,20 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
+    // \grad r_i(x_i): Gradient of regularization function for single entry x_i
+    public final double gradreg_x(double u) { return gradreg(u, _regularization_x); }
+    public final double gradreg_y(double u) { return gradreg(u, _regularization_y); }
+    public final double gradreg(double u, Regularizer regularization) {
+      switch(regularization) {
+        case L2:
+          return 2*u;
+        case L1:
+          return u == 0 ? 0 : (u > 0 ? 1 : -1);
+        default:
+          throw new RuntimeException("Unknown regularization function " + regularization);
+      }
+    }
+
     // \sum_i r_i(x_i): Sum of regularization function for all entries of X
     public final double regularize_x(double[][] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[][] u) { return regularize(u, _regularization_y); }

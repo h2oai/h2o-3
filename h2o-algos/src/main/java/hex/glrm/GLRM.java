@@ -280,7 +280,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (!isRunning()) return true;  // Stopped/cancelled
 
       // Stopped for running out of iterations
-      if (model._output._iterations > _parms._max_iterations) return true;
+      if (model._output._iterations >= _parms._max_iterations) return true;
 
       // Stopped for falling below minimum step size
       if (step <= _parms._min_step_size) return true;
@@ -406,8 +406,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
         // Compute initial objective function
-        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul).doAll(dinfo._adaptedFrame);
-        model._output._objective = objtsk._loss + _parms._gamma_y * _parms.regularize_y(yt);
+        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, true).doAll(dinfo._adaptedFrame);
+        model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
 
@@ -416,6 +416,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         int steps_in_row = 0;                   // Keep track of number of steps taken that decrease objective
 
         while (!isDone(model, steps_in_row, step)) {
+          // TODO: Should step be divided by number of original or expanded (with 0/1 categorical) cols?
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(dinfo, _parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
           xtsk.doAll(dinfo._adaptedFrame);
@@ -627,6 +628,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Update row x_i of working copy with new values
         for(int k = 0; k < _ncolX; k++) {
           double xold = chk_xold(cs,k,_ncolA).atd(row);   // Old value of x_i
+          grad[k] += _parms._gamma_x * _parms.gradreg_x(xold);  // Add regularization term for x_i
           xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
           chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
           _xreg += _parms.regularize_x(xnew[k]);
@@ -748,6 +750,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // Compute new y_j values using proximal gradient
       for(int j = 0; j < _ytnew.length; j++) {
         for(int k = 0; k < _ytnew[0].length; k++) {
+          _ytnew[j][k] += _parms._gamma_y * _parms.gradreg_y(_ytold[j][k]);   // Add regularization term on y_j
           double u = _ytold[j][k] - _alpha * _ytnew[j][k];
           _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
           _yreg += _parms.regularize_y(_ytnew[j][k]);
@@ -766,17 +769,23 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncolX;         // Number of cols in X (k)
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final boolean _regX;      // Should I calculate regularization of (old) X matrix?
 
     // Output
     double _loss;
+    double _xold_reg;
 
     ObjCalc(DataInfo dinfo, GLRMParameters parms, double[][] yt, int ncolA, int ncolX, double[] normSub, double[] normMul) {
+      this(dinfo, parms, yt, ncolA, ncolX, normSub, normMul, false);
+    }
+    ObjCalc(DataInfo dinfo, GLRMParameters parms, double[][] yt, int ncolA, int ncolX, double[] normSub, double[] normMul, boolean regX) {
       assert yt != null && yt[0].length == ncolX;
       _parms = parms;
       _yt = yt;
       _ncolA = ncolA;
       _ncolX = ncolX;
-      _loss = 0;
+      _regX = regX;
+      _loss = _xold_reg = 0;
 
       assert dinfo._cats <= ncolA;
       _dinfo = dinfo;
@@ -814,6 +823,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           for(int k = 0; k < _ncolX; k++)
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ynum(j-_dinfo._cats,_dinfo)][k];
           _loss += _parms.loss(xy, (a - _normSub[j]) * _normMul[j]);
+        }
+
+        // Calculate regularization term for old X if requested
+        if(_regX) {
+          for(int j = _ncolA; j < _ncolA+_ncolX; j++) {
+            double x = cs[j].atd(row);
+            _xold_reg += _parms.regularize_x(x);
+          }
         }
       }
     }

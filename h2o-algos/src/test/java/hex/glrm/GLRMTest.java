@@ -68,18 +68,25 @@ public class GLRMTest extends TestUtil {
   }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
+    // Initialize using first k rows of standardized training frame
+    Frame yinit = frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
+            ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
+            ard(0.07163341, 1.4788032, 0.9989801, 1.042878388)));
     GLRM job = null;
     GLRMModel model = null;
     Frame train = null;
+    long seed = 1234;
 
     try {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._gamma_x = parms._gamma_y = 0;
-      parms._k = 4;
-      parms._transform = DataInfo.TransformType.NONE;
+      parms._gamma_x = parms._gamma_y = 0.5;
+      parms._k = 3;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_pca = false;
+      parms._user_points = yinit._key;
+      parms._seed = seed;
 
       try {
         job = new GLRM(parms);
@@ -95,6 +102,7 @@ public class GLRMTest extends TestUtil {
       t.printStackTrace();
       throw new RuntimeException(t);
     } finally {
+      yinit.delete();
       if (train != null) train.delete();
       if (model != null) {
         model._parms._loading_key.get().delete();
