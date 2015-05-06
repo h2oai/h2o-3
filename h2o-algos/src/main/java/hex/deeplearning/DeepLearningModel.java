@@ -1922,7 +1922,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         preds[i + 1] = out[i];
         if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
       }
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
+      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     } else {
       if (model_info().data_info()._normRespMul != null)
         preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
@@ -2426,7 +2426,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     if (_output.autoencoder) return;
     if (_output.isClassifier()) {
       bodySb.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+      bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
     } else {
       bodySb.ip("preds[0] = (float)preds[1];").nl();
     }

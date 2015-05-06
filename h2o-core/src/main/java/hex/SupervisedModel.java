@@ -11,6 +11,20 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
 
+  /**
+   * Default threshold for assigning class labels to the target class (for binomial models)
+   * @return threshold in 0...1
+   */
+  public final double defaultThreshold() {
+    if (_output.nclasses() != 2 || _output._training_metrics == null)
+      return 0.5;
+    if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultThreshold();
+    if (_output._training_metrics != null && ((ModelMetricsBinomial)_output._training_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
+    return 0.5;
+  }
+
   /** Supervised Model Parameters includes a response column, and whether or
    *  not rebalancing classes is desirable.  Also includes a bunch of cheap
    *  cached convenience fields.  */
@@ -111,7 +125,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     if( _output.isClassifier() && _output._priorClassDist !=_output._modelClassDist ) {
       ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
-      scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp);
+      scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
     }
     return scored;
   }

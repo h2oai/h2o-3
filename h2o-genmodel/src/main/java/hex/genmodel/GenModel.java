@@ -79,9 +79,13 @@ public abstract class GenModel {
    *  values are unique.  In the case of tie, the implementation solve it in
    *  pseudo-random way.
    *  @param preds an array of prediction distribution.  Length of arrays is equal to a number of classes+1.
-   *  @return the best prediction (index of class, zero-based)
+   *  @param threshold threshold for binary classifier
+   * @return the best prediction (index of class, zero-based)
    */
-  public static int getPrediction( double[] preds, double data[] ) {
+  public static int getPrediction(double[] preds, double data[], double threshold) {
+    if (preds.length == 3) {
+      return (preds[1] >= threshold) ? 1 : 0; //no tie-breaking
+    }
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {
       if( preds[best] < preds[c] ) {
@@ -233,10 +237,9 @@ public abstract class GenModel {
   }
 
   // Build a class distribution from a log scale; find the top prediction
-  public static void GBM_rescale(double[] data, double[] preds) { 
+  public static void GBM_rescale(double[] preds) {
     double sum = log_rescale(preds);
     for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
-    preds[0] = getPrediction(preds, data); 
   }
 
   // --------------------------------------------------------------------------

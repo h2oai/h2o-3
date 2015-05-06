@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.ModelMetricsBinomial;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
@@ -44,7 +45,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       preds[2] = 1.0/(1.0+Math.exp(-fx));
       preds[1] = 1.0-preds[2];
       ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
+      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
       return preds;
     }
     if( _output.nclasses()==1 ) {
@@ -56,9 +57,9 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       preds[1] += _output._init_f;
       preds[2] = - preds[1];
     }
-    hex.genmodel.GenModel.GBM_rescale(data, preds);
+    hex.genmodel.GenModel.GBM_rescale(preds);
     ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-    preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
+    preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     return preds;
   }
 
@@ -70,7 +71,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
       body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + ");").nl();
       return;
     }
     if( _output.nclasses() == 1 ) { // Regression
@@ -82,9 +83,9 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       body.ip("preds[1] += ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = - preds[1];").nl();
     }
-    body.ip("hex.genmodel.GenModel.GBM_rescale(data,preds);").nl();
+    body.ip("hex.genmodel.GenModel.GBM_rescale(preds);").nl();
     body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + ");").nl();
   }
 
   @Override protected boolean binomialOpt() { return true; }
