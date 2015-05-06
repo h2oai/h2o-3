@@ -236,8 +236,8 @@ class Expr(object):
     raise NotImplementedError
 
   def _simple_expr_bin_op( self, i, op):
-    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_op(self,op)
-    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_op(self,op)
+    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_rop(self,op)
+    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_rop(self,op)
     if isinstance(i, Expr)        :
       e = self.eager()
       return  Expr(op, Expr(e), i) if isinstance(e, (int,float)) else Expr(op, self, i)
