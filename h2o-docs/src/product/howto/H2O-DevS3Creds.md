@@ -13,6 +13,7 @@ You can pass in credentials in standalone mode the same way we access data from 
 
 Edit the properties in the core-site.xml file to include your Access Key ID and Access Key as shown in the following example:
 
+   
     <property>
       <name>fs.s3n.awsAccessKeyId</name>
       <value>[AWS SECRET KEY]</value>
@@ -93,6 +94,7 @@ Then you can import the data with the S3 URL path:
 
 The following is an example core-site.xml file: 
 
+
     <?xml version="1.0"?>
     <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
@@ -116,3 +118,5 @@ The following is an example core-site.xml file:
             <name>fs.s3n.awsSecretAccessKey</name>
             <value>insert secret key here</value>
         </property>
+        </configuration> 
+    

@@ -615,8 +615,7 @@ h2o.shim <- function(enable = TRUE) {
     if(!identical(algo, "kmeans"))
       model$varimp <- model$variable_importances
     if(identical(algo, "kmeans")){
-      model$withinss <- model$within_mse
-      model$tot.withinss <- model$avg_within_ss
+      model$tot.withinss <- model$tot_withinss
       model$iter <- model$iterations
     }
 
