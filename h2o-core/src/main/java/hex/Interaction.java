@@ -15,7 +15,7 @@ import java.util.Arrays;
  */
 public class Interaction extends Job<Frame> {
   public Key<Frame> _source_frame;
-  public String[] _factor_columns = new String[0];
+  public String[] _factor_columns;
   public boolean _pairwise = false;
   public int _max_factors = 100;
   public int _min_occurrence = 1;
@@ -29,7 +29,7 @@ public class Interaction extends Job<Frame> {
     try {
       Frame source_frame = DKV.getGet(_source_frame);
       assert(source_frame != null);
-      if (_factor_columns.length == 0) throw new IllegalArgumentException("factors must be non-empty.");
+      if (_factor_columns == null || _factor_columns.length == 0) throw new IllegalArgumentException("factor_columns must be specified.");
       if (_pairwise && _factor_columns.length < 3) Log.info("Ignoring the pairwise option, requires 3 or more factors.");
       _factors = new int[_factor_columns.length];
       int count=0;
