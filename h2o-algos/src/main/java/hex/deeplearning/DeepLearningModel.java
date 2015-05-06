@@ -2425,7 +2425,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     fileCtxSb.p(model);
     if (_output.autoencoder) return;
     if (_output.isClassifier()) {
-      bodySb.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      bodySb.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
     } else {
       bodySb.ip("preds[0] = (float)preds[1];").nl();

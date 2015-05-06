@@ -69,7 +69,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       body.ip("double fx = preds[1] + ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
-      body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + ");").nl();
       return;
     }
@@ -83,7 +83,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       body.ip("preds[2] = - preds[1];").nl();
     }
     body.ip("hex.genmodel.GenModel.GBM_rescale(preds);").nl();
-    body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+    body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
     body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + ");").nl();
   }
 

@@ -62,7 +62,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       body.ip("double sum = 0;").nl();
       body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
       body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
-      body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + " );").nl();
     }
   }
