@@ -28,7 +28,7 @@ public class JobsHandler extends Handler {
     for (Job j : jobs) {
       if (j instanceof ModelBuilder) {
         // special case: need to add a ModelBuilderJobV3 next.
-        s.jobs[i] = new JobV3().fillFromImpl(j);  // TODO: new ModelBuilderJob
+        s.jobs[i] = new ModelBuilderJobV3().fillFromImpl(j);
       } else {
         try {
           s.jobs[i] = (JobV3) Schema.schema(version, j).fillFromImpl(j);
@@ -60,7 +60,7 @@ public class JobsHandler extends Handler {
 
     if (j instanceof ModelBuilder) {
       // special case: need to add a ModelBuilderJobV3 next.
-      s.jobs[0] = new JobV3().fillFromImpl(j);  // TODO: new ModelBuilderJob
+      s.jobs[0] = new ModelBuilderJobV3().fillFromImpl(j);
     } else {
       try {
         s.jobs[0] = (JobV3) Schema.schema(version, j).fillFromImpl(j);

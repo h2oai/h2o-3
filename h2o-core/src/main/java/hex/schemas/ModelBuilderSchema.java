@@ -8,12 +8,10 @@ import water.H2O;
 import water.Job;
 import water.Key;
 import water.api.*;
-import water.api.ModelParametersSchema.ValidationMessageBase;
+import water.api.ValidationMessageBase;
 import water.util.*;
 
 import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
@@ -134,44 +132,15 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
     for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.validation_messages[i++] = new ModelParametersSchema.ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      this.validation_messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
     }
     // default fieldname hacks
-    mapValidationMessageFieldNames(new String[] {"train", "valid"}, new String[] {"training_frame", "validation_frame"});
+    ValidationMessageBase.mapValidationMessageFieldNames(this.validation_messages, new String[]{"train", "valid"}, new String[]{"training_frame", "validation_frame"});
     this.validation_error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
     // parameters.destination_key = new KeyV1.ModelKeyV1(builder._dest);
     return (S)this;
-  }
-
-  /**
-   * Map impl field names in the validation messages to schema field names,
-   * called <i>after</i> behavior of stripping leading _ characters.
-   */
-  protected void mapValidationMessageFieldNames(String[] from, String[] to) {
-    if (null == from && null == to)
-      return;
-    if (null == from || null == to)
-      throw new IllegalArgumentException("Bad parameter name translation arrays; one is null and the other isn't.");
-    Map<String, String> translations = new HashMap();
-    for (int i = 0; i < from.length; i++) {
-      translations.put(from[i], to[i]);
-    }
-
-    for( ValidationMessageBase vm : this.validation_messages) {
-      if (null == vm) {
-        Log.err("Null ValidationMessageBase for ModelBuilderSchema: " + this);
-        continue;
-      }
-
-      if (null == vm.field_name) {
-        Log.err("Null field_name: " + vm);
-        continue;
-      }
-      if (translations.containsKey(vm.field_name))
-        vm.field_name = translations.get(vm.field_name);
-    }
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
