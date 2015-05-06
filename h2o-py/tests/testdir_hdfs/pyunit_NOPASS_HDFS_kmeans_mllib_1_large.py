@@ -21,14 +21,15 @@ def kmeans_mllib(ip, port):
         print "Import BigCross.data from HDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_cross_file)
         cross_h2o = h2o.import_frame(url)
+        n = cross_h2o.nrow()
 
         err_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
         ncent = [int(err_mllib[r][0]) for r in range(len(err_mllib))]
 
         for k in ncent:
             print "Run k-means++ with k = {0} and max_iterations = 10".format(k)
-            cross_km = h2o.kmeans(training_frame = cross_h2o, x = cross_h2o, k = k, init = "PlusPlus", max_iterations = 10,
-                                  standardize = False)
+            cross_km = h2o.kmeans(training_frame = cross_h2o, x = cross_h2o, k = k, init = "PlusPlus",
+                                  max_iterations = 10, standardize = False)
 
             clust_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
                                         delimiter=",").tolist()
@@ -44,11 +45,11 @@ def kmeans_mllib(ip, port):
             print clust_h2o
 
             wcsse_mllib = err_mllib[err_mllib[0:4,0].tolist().index(k)][1]
-            wcsse_h2o = cross_km.avg_within_ss()
+            wcsse_h2o = cross_km.tot_withinss() / n
             print "\nMLlib Average Within-Cluster SSE: \n".format(wcsse_mllib)
             print "H2O Average Within-Cluster SSE: \n".format(wcsse_h2o)
-            assert wcsse_h2o == wcsse_mllib, "Expected mllib and h2o to get the same wcsse. Mllib got {0}, and H2O got " \
-                                             "{1}".format(wcsse_mllib, wcsse_h2o)
+            assert wcsse_h2o == wcsse_mllib, "Expected mllib and h2o to get the same wcsse. Mllib got {0}, and H2O " \
+                                             "got {1}".format(wcsse_mllib, wcsse_h2o)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, kmeans_mllib)
