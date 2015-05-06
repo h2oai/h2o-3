@@ -356,6 +356,16 @@ class ModelBase(object):
     tm = tm._metric_json
     return tm.giniCoef()
 
+  def download_pojo(self,path=""):
+    """
+    Download the POJO for this model to the directory specified by path (no trailing slash!).
+    If path is "", then dump to screen.
+    :param model: Retrieve this model's scoring POJO.
+    :param path:  An absolute path to the directory where POJO should be saved.
+    :return: None
+    """
+    h2o.download_pojo(self,path)  # call the "package" function
+
   @staticmethod
   def _get_metrics(o, train, valid):
     if train:
