@@ -1,9 +1,6 @@
 package water.rapids;
 
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.*;
 
 import java.util.ArrayList;
@@ -44,7 +41,6 @@ public class ASTApply extends ASTOp {
     // PEEK everything from the stack (do not POP)
     Frame fr2 = null;  // results Frame
     Frame fr = env.popAry();
-    env.addRef(fr);
 
     // apply FUN to each column;
     // assume work is independent of Vec order => otherwise asking for trouble anyways.
@@ -102,7 +98,6 @@ public class ASTApply extends ASTOp {
       fr2 = mrt.doAll(outlen,fr).outputFrame(names, null);
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
-    env.addRef(fr);
     env.pushAry(fr2);
   }
 
@@ -121,13 +116,15 @@ public class ASTApply extends ASTOp {
     ParallelVecTask(H2O.H2OCountedCompleter cc, ASTOp FUN, Frame fr, int i, AST[] funArgs, Env env) { super(cc); _FUN = FUN; _f=fr; _i=i; _funArgs=funArgs; _env=env; }
     @Override protected void compute2() {
       // combine all function args:
+      ASTFrame f;
       AST[] args= new AST[_funArgs==null?1:_funArgs.length+1];
-      args[0]=new ASTFrame(_f.vec(_i)._key.toString());
+      args[0]=f=new ASTFrame(_f.vec(_i)._key.toString());
       if( _funArgs!=null )
         System.arraycopy(_funArgs, 0, args, 1, _funArgs.length);
       _FUN.exec(_env,args);
       if( _env.isNum() ) _row_result=_env.popDbl();
-      else               _vec_result=_env.popAry().anyVec();
+      else              {_vec_result=_env.popAry().anyVec(); _env.addRef(_vec_result); }
+      DKV.remove(f._fr._key);
       tryComplete();
     }
   }
@@ -148,7 +145,7 @@ public class ASTApply extends ASTOp {
       addToPendingCount((nTasks=_fr.numCols())-1);
       _applyTasks = new ParallelVecTask[nTasks];
       for(int i=0;i<nTasks;++i)
-        (_applyTasks[i] = new ParallelVecTask(this, _FUN, _fr, i, _funArgs,_env)).fork();
+        (_applyTasks[i] = new ParallelVecTask(this, _FUN, _fr, i, _funArgs,_env)).compute2();
     }
   }
 }

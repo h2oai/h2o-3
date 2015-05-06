@@ -208,10 +208,9 @@ public class Env extends Iced {
   /**
    *  Reference Counting API
    */
-  private void addRef(ValFrame o) { addRef(o._fr); }
+  public void addRef(ValFrame o) { addRef(o._fr); }
   public void addRef(Frame f) { for (Vec v : f.vecs()) addRef(v); }
-  public void subRef(Frame f) { for (Vec v : f.vecs()) subRef(v); }
-  private void addRef(Vec v) {
+  public void addRef(Vec v) {
     if( inScope(v) ) {
       IcedInt I = _refcnt.get(v);
       assert I == null || I._val >= 0;
@@ -294,8 +293,8 @@ public class Env extends Iced {
     if (delete) removeVec(v, null);
     return delete;
   }
+  public void subRef(Frame f) { for (Vec v : f.vecs()) subRef(v); }
 
-  void addVec(Vec v) { /*_locked.add(v._key);*/  addRef(v); }
   static Futures removeVec(Vec v, Futures fs) {
     if (fs == null) {
       fs = new Futures();

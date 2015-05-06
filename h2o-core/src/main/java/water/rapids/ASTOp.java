@@ -1576,11 +1576,11 @@ abstract class ASTReducerOp extends ASTOp {
   }
 
   @Override void exec(Env e, AST[] args) {
-    if( args==null ) {
-      _init = 0;
-      _narm = true;
-      _argcnt = 1;
-    } else args[0].exec(e);
+    _argcnt = args.length;
+    // extra args are init and narm
+    _init=0;
+    _narm=true;
+    args[0].exec(e);
     e.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
@@ -1740,7 +1740,7 @@ class ASTImpute extends ASTUniPrefixOp {
       final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
       final int nGrps = t._g.size();
       final ASTGroupBy.G[] grps = t._g.keySet().toArray(new ASTGroupBy.G[nGrps]);
-      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps)).join();
+      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps)).join();
       final long[] cols = _by;
       final int colIdx = _colIdx;
       if( _inplace ) {
@@ -3012,7 +3012,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (env.isNum()) return;
-    Frame fr = env.popAry(); // get the frame w/o sub-reffing
+      Frame fr = env.popAry(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
