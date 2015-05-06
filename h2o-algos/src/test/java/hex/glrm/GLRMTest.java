@@ -336,6 +336,10 @@ public class GLRMTest extends TestUtil {
                                   ard(6.0, 2.2, 5.0, 1.5, 0, 0, 1));
     String[] iris_cols = new String[] {"sepal_len", "sepal_wid", "petal_len", "petal_wid", "class"};
     String[][] iris_domains = new String[][] { null, null, null, null, new String[] {"setosa", "versicolor", "virginica"} };
+    double[][] iris_expand = GLRM.expandCats(iris, iris_domains);
+    Log.info("Original matrix:\n" + colFormat(iris_cols, " %7.7s") + ArrayUtils.pprint(iris));
+    Log.info("Expanded matrix:\n" + colExpFormat(iris_cols, iris_domains, " %7.7s") + ArrayUtils.pprint(iris_expand));
+    Assert.assertArrayEquals(iris_expandR, iris_expand);
 
     double[][] prostate = ard(ard(1, 75, 0, 0, 4.8, 26.3, 1, 7),
             ard(0, 67, 0, 2, 18.1, 0.0, 1, 8),
@@ -348,12 +352,6 @@ public class GLRMTest extends TestUtil {
     String[] pros_cols = new String[]{"Capsule", "Age", "Race", "Dpros", "PSA", "Vol", "Dcaps", "Gleason"};
     String[][] pros_domains = new String[][]{new String[]{"No", "Yes"}, null, new String[]{"White", "Black"},
             new String[]{"None", "UniLeft", "UniRight", "Bilobar"}, null, null, new String[]{"No", "Yes"}, null};
-
-    double[][] iris_expand = GLRM.expandCats(iris, iris_domains);
-    Log.info("Original matrix:\n" + colFormat(iris_cols, " %7.7s") + ArrayUtils.pprint(iris));
-    Log.info("Expanded matrix:\n" + colExpFormat(iris_cols, iris_domains, " %7.7s") + ArrayUtils.pprint(iris_expand));
-    Assert.assertArrayEquals(iris_expandR, iris_expand);
-
     double[][] pros_expand = GLRM.expandCats(prostate, pros_domains);
     Log.info("\nOriginal matrix:\n" + colFormat(pros_cols, " %7.7s") + ArrayUtils.pprint(prostate));
     Log.info("Expanded matrix:\n" + colExpFormat(pros_cols, pros_domains, " %7.7s") + ArrayUtils.pprint(pros_expand));

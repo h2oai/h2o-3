@@ -144,14 +144,15 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // Expand categoricals into 0/1 indicator columns for each level
-  public static double[][] expandCats(double[][] centers, String[][] domains) {
+  public static double[][] expandCats(double[][] centers, String[][] domains) { return expandCats(centers, domains, true, false); }
+  public static double[][] expandCats(double[][] centers, String[][] domains, boolean useAllFactorLevels, boolean missingBucket) {
     if(centers == null) return null;
     assert domains != null && centers[0].length == domains.length;
 
     // Column count for expanded matrix
     int ncols = 0;
     for(int j = 0; j < domains.length; j++)
-      ncols += domains[j] == null ? 1 : domains[j].length;
+      ncols += domains[j] == null ? 1 : domains[j].length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
 
     int s = 0;    // Keep track of col index in expanded matrix
     double[][] cexp = new double[centers.length][ncols];
@@ -161,12 +162,19 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           cexp[i][s] = centers[i][j];
         s++;
       } else {    // If categorical col, set corresponding indicator for level to 1
+        int len = domains[j].length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
         for (int i = 0; i < centers.length; i++) {
           double cat = centers[i][j];
-          if(Double.isNaN(cat)) continue;   // TODO: Skip if entry missing? All indicators will be zero
-          cexp[i][s+(int)cat] = 1;
+          if(Double.isNaN(cat)) {
+            if (!missingBucket) continue;  // Skip if entry missing and no NA bucket. All indicators will be zero.
+            else cexp[i][s+len-1] = 1;    // Otherwise, missing value turns into extra (last) factor
+          } else {
+            assert cat >= 0 && cat < domains[j].length : "User-specified categorical level out of bounds from training domain!";
+            if (useAllFactorLevels || cat != domains[j].length-1)    // Don't set col if skipping last factor level
+              cexp[i][s+(int)cat] = 1;
+          }
         }
-        s += domains[j].length;
+        s += len;
       }
     }
     return cexp;
@@ -186,10 +194,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     for(int j = 0; j < dinfo._cats; j++) {
       for(int i = 0; i < sdata.length; i++) {
         if (Double.isNaN(sdata[i][j])) {
-          if (dinfo._skipMissing) continue;
-          else cidx = dinfo._catOffsets[j+1]-1;   // Missing value turns into extra (last) factor
+          if (dinfo._catMissing[j] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
+          else cidx = dinfo._catOffsets[j+1]-1;     // Otherwise, missing value turns into extra (last) factor
         } else
-          cidx = dinfo.getCategoricalId(j, (int)sdata[i][j]);
+          cidx = dinfo.getCategoricalId(j, (int)sdata[i][j]);   // TODO: Need to deal with useAllFactorLevels case
         if(cidx >= 0) cexp[i][cidx] = 1;  // Ignore categorical levels outside domain
       }
     }
