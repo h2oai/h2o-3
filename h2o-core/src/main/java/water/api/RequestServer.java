@@ -935,7 +935,7 @@ public class RequestServer extends NanoHTTPD {
         boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
         if (healthy) {
           GetLogsFromNode g = new GetLogsFromNode();
-          g.nodeidx = 0;
+          g.nodeidx = i;
           g.doIt();
           bytes = g.bytes;
         } else {
