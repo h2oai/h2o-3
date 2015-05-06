@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import water.Key;
 import water.fvec.Chunk;
 import water.util.*;
@@ -123,7 +124,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
     if( _output.isClassifier() && _output._priorClassDist !=_output._modelClassDist ) {
-      ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
+      GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
       scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
     }

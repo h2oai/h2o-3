@@ -74,6 +74,30 @@ public abstract class GenModel {
     return score0(map(row,new double[nfeatures()]),new double[nclasses()+1]);
   }
 
+  /**
+   * Correct a given list of class probabilities produced as a prediction by a model back to prior class distribution
+   *
+   * <p>The implementation is based on Eq. (27) in  <a href="http://gking.harvard.edu/files/0s.pdf">the paper</a>.
+   *
+   * @param scored list of class probabilities beginning at index 1
+   * @param priorClassDist original class distribution
+   * @param modelClassDist class distribution used for model building (e.g., data was oversampled)
+   * @return corrected list of probabilities
+   */
+  public static double[] correctProbabilities(double[] scored, double[] priorClassDist, double[] modelClassDist) {
+    if( priorClassDist == modelClassDist ) return scored; // Shortcut if not correcting for probs
+    double probsum=0;
+    for( int c=1; c<scored.length; c++ ) {
+      final double original_fraction = priorClassDist[c-1];
+      final double oversampled_fraction = modelClassDist[c-1];
+      assert(!Double.isNaN(scored[c]));
+      if (original_fraction != 0 && oversampled_fraction != 0) scored[c] *= original_fraction / oversampled_fraction;
+      probsum += scored[c];
+    }
+    if (probsum>0) for (int i=1;i<scored.length;++i) scored[i] /= probsum;
+    return scored;
+  }
+
   /** Utility function to get a best prediction from an array of class
    *  prediction distribution.  It returns index of max value if predicted
    *  values are unique.  In the case of tie, the implementation solve it in
@@ -84,7 +108,7 @@ public abstract class GenModel {
    */
   public static int getPrediction(double[] preds, double data[], double threshold) {
     if (preds.length == 3) {
-      return (preds[1] >= threshold) ? 1 : 0; //no tie-breaking
+      return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
     }
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {

@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -333,7 +334,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     double sum = score1(chks, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-      ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+      GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
   }
 

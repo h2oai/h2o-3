@@ -1,11 +1,10 @@
 package hex.tree.drf;
 
-import hex.ModelMetricsBinomial;
+import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
 import water.util.MathUtils;
-import water.util.ModelUtils;
 import water.util.SB;
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
@@ -50,7 +49,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     else { // classification
       double sum = MathUtils.sum(preds);
       if (sum>0) MathUtils.div(preds, sum);
-      ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+      GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     }
     return preds;

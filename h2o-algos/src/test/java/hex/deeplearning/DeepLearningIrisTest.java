@@ -3,6 +3,7 @@ package hex.deeplearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import hex.genmodel.GenModel;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
@@ -12,7 +13,6 @@ import java.util.Random;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static hex.deeplearning.DeepLearningModel.DeepLearningScoring;
-import static water.util.ModelUtils.getPrediction;
 
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
@@ -273,7 +273,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                     // do the same as H2O here (compare float values and break ties based on row number)
                                     double[] preds = new double[ref_preds.length + 1];
                                     for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = ref_preds[j];
-                                    preds[0] = getPrediction(preds);
+                                    preds[0] = GenModel.getPrediction(preds, xValues, 0.5);
 
                                     // compare predicted label
                                     Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));

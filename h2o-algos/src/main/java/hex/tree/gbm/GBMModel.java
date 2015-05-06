@@ -1,10 +1,9 @@
 package hex.tree.gbm;
 
-import hex.ModelMetricsBinomial;
+import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
-import water.util.ModelUtils;
 import water.util.SB;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
@@ -44,7 +43,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       double fx = preds[1] + _output._init_f;
       preds[2] = 1.0/(1.0+Math.exp(-fx));
       preds[1] = 1.0-preds[2];
-      ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+      GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
       return preds;
     }
@@ -58,7 +57,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       preds[2] = - preds[1];
     }
     hex.genmodel.GenModel.GBM_rescale(preds);
-    ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+    GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
     preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     return preds;
   }
