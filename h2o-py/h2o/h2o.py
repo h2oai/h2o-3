@@ -7,6 +7,7 @@ import os
 import os.path
 import re
 import urllib
+import urllib2
 import json
 import random
 import numpy as np
@@ -166,6 +167,21 @@ if __name__ == "__main__":
 
 So each test must have an ip and port
 """
+
+
+# HDFS helpers
+def get_h2o_internal_hdfs_name_node():
+  return "172.16.2.176"
+
+def is_running_internal_to_h2o():
+  url = "http://{0}:50070".format(get_h2o_internal_hdfs_name_node())
+  try:
+    urllib2.urlopen(urllib2.Request(url))
+    internal = True
+  except:
+    internal = False
+  return internal
+
 def dim_check(data1, data2):
   """
   Check that the dimensions of the data1 and data2 are the same

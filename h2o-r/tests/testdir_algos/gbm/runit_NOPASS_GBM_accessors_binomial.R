@@ -23,7 +23,7 @@ test.gbm.bin.accessors <- function(conn) {
   mse.valid.T <- h2o.mse(pros.gbm.valid,valid = TRUE)
   print(mse.valid.T)
   expect_equal(mse.basic, mse.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(mse.basic, mse.valid.R))
+  expect_error(expect_equal(mse.basic, mse.valid.T))
 
   Log.info("R^2...")
   r2.basic <- h2o.r2(pros.gbm)
@@ -33,7 +33,7 @@ test.gbm.bin.accessors <- function(conn) {
   r2.valid.T <- h2o.r2(pros.gbm.valid,valid = TRUE)
   print(r2.valid.T)
   expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(r2.basic, r2.valid.R))
+  expect_error(expect_equal(r2.basic, r2.valid.T))
 
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(pros.gbm)
@@ -43,7 +43,7 @@ test.gbm.bin.accessors <- function(conn) {
   ll.valid.T <- h2o.logloss(pros.gbm.valid, valid = TRUE)
   print(ll.valid.T)
   expect_equal(ll.basic, ll.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(ll.basic, ll.valid.R))
+  expect_error(expect_equal(ll.basic, ll.valid.T))
 
   Log.info("AUC...")
   auc.basic <- h2o.auc(pros.gbm)
@@ -53,7 +53,7 @@ test.gbm.bin.accessors <- function(conn) {
   auc.valid.T <- h2o.auc(pros.gbm.valid, valid = TRUE)
   print(auc.valid.T)
   expect_equal(auc.basic, auc.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(auc.basic, auc.valid.R))
+  expect_error(expect_equal(auc.basic, auc.valid.T))
 
   Log.info("Gini...")
   gini.basic <- h2o.giniCoef(pros.gbm)
@@ -63,7 +63,7 @@ test.gbm.bin.accessors <- function(conn) {
   gini.valid.T <- h2o.giniCoef(pros.gbm.valid, valid = TRUE)
   print(gini.valid.T)
   expect_equal(gini.basic, gini.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(gini.basic, gini.valid.R))
+  expect_error(expect_equal(gini.basic, gini.valid.T))
 
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.gbm))
