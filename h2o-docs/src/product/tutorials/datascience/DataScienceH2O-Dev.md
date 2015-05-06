@@ -9,9 +9,9 @@
 - [Deep Learning](#DL)
 
 
-#Commonalities 
+##Commonalities 
 
-##Missing Value Handling for Training
+###Missing Value Handling for Training
 
 If missing values are found in the validation frame during model training or during the scoring process for creating predictions, the missing values are automatically imputed. 
 
