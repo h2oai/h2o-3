@@ -12,7 +12,7 @@ test.summary.numeric <- function(conn) {
   summary_ <- summary(arrests.hex)
 
   Log.info("Check that we get a table back from the summary(hex)")
-  expect_that(summary_, is_a("table"))
+  expect_that(summary_, is_a("data.frame"))
 
   summary_2 <- summary(tail(USArrests))
 

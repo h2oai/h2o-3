@@ -6,6 +6,7 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.EnumWrappedVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
 import water.util.IcedInt;
 import water.util.Log;
 
@@ -619,9 +620,9 @@ public class Env extends Iced {
    */
   class SymbolTable extends Iced {
 
-    HashMap<String, Frame> _frames; // these are not in the DKV!
-    HashMap<String, SymbolAttributes> _table;
-    public SymbolTable() { _table = new HashMap<>(); _frames = new HashMap<>(); }
+    IcedHashMap<String, Frame> _frames; // these are not in the DKV!
+    IcedHashMap<String, SymbolAttributes> _table;
+    public SymbolTable() { _table = new IcedHashMap<>(); _frames = new IcedHashMap<>(); }
     void clear() { _table.clear(); }
     public void copyOver(SymbolTable s) {
       _table = s._table;
@@ -667,7 +668,7 @@ public class Env extends Iced {
       _table.put(name, attrs);
     }
 
-    private class SymbolAttributes {
+    private class SymbolAttributes extends Iced {
       private int _type;
       private String _value;
 
