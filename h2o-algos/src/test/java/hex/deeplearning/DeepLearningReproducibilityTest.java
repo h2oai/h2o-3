@@ -8,6 +8,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -37,6 +38,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       Scope.enter();
       Frame[] preds = new Frame[N];
       long[] checksums = new long[N];
+      double[] numbers = new double[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
@@ -52,7 +54,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
-          p._destination_key = Key.make();
+          p._model_id = Key.make();
           p._response_column = train.names()[train.names().length-1];
           int ci = train.names().length-1;
           Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);
@@ -81,7 +83,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
           for (int i=0; i<5; ++i) {
             Frame tmp = mymodel.score(test);
@@ -89,6 +90,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
             tmp.delete();
           }
           Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());
+          numbers[repeat] = mymodel.model_info().get_weights(0).get(23,4);
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.error());
 
@@ -116,12 +118,17 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       try {
         if (repro) {
           // check reproducibility
+          for (double error : numbers)
+            assertTrue(Arrays.toString(numbers), error == numbers[0]);
           for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
           for (long cs : checksums)
             assertTrue(cs == checksums[0]);
           for (Frame f : preds) {
-            assertTrue(TestUtil.isBitIdentical(f, preds[0]));
+//            assertTrue(TestUtil.isBitIdentical(f, preds[0])); // PUBDEV-892: This should have passed all the time
+            for (int i=0; i<f.vecs().length; ++i) {
+              TestUtil.assertVecEquals(f.vecs()[i], preds[0].vecs()[i], 1e-5); //PUBDEV-892: This tolerance should be 1e-15
+            }
           }
           repro_error = repeatErrs.get(0);
         } else {

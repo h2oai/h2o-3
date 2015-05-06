@@ -54,11 +54,10 @@ class Basic(unittest.TestCase):
                 'response_column': 'FNDX', # string None
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
-                'n_folds': None, # int 0
 
                 'keep_cross_validation_splits': None, # boolean false
                 'checkpoint': None, # Key None
-                'override_with_best_model': None, # boolean true
+                'overwrite_with_best_model': None, # boolean true
                 'expert_mode': None, # boolean false
                 'autoencoder': None, # boolean false
                 'use_all_factor_levels': None, # boolean true
@@ -118,7 +117,7 @@ class Basic(unittest.TestCase):
             model_key = 'benign_dl.hex'
             bmResult = h2o.n0.build_model(
                 algo='deeplearning', 
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 

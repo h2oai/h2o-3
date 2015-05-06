@@ -1,7 +1,10 @@
 package hex.tree;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import jsr166y.CountedCompleter;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
@@ -58,7 +61,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       error("_ntrees", "Requested ntrees must be between 1 and 100000");
     _ntrees = _parms._ntrees;   // Total trees in final model
     if( _parms._checkpoint ) {  // Asking to continue from checkpoint?
-      Value cv = DKV.get(_parms._destination_key);
+      Value cv = DKV.get(_parms._model_id);
       if( cv!=null ) {          // Look for prior model
         M checkpointModel = cv.get();
         if( _parms._ntrees < checkpointModel._output._ntrees+1 )
@@ -66,6 +69,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
+    if (_parms._nbins <= 1) error ("_nbins", "_nbins must be > 1.");
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
@@ -88,7 +92,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
 
         // New Model?  Or continuing from a checkpoint?
-        if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {
+        if( _parms._checkpoint && DKV.get(_parms._model_id) != null ) {
           _model = DKV.get(_dest).get();
           _model.write_lock(_key); // do not delete previous model; we are extending it
         } else {                   // New Model
@@ -178,8 +182,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _parms.read_unlock_frames(SharedTree.this);
         if( _model==null ) Scope.exit();
         else {
-          Key[] mms = _model._output._model_metrics;
-          Scope.exit(_model._key,mms.length==0 ? null : mms[mms.length-1]);
+          Scope.exit(_model._key, ModelMetrics.buildKey(_model,_parms.train()), ModelMetrics.buildKey(_model,_parms.valid()));
         }
       }
       tryComplete();
@@ -273,7 +276,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 //        System.out.println((_st._nclass==1?"Regression":("Class "+_fr2.vecs()[_st._ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
-//        System.out.println("--> Decided node: " + dn +
+//        System.out.println(dn +
 //                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
         if( dn._split._col == -1 ) udn.do_not_split();
         else {
@@ -287,7 +290,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
       for( int nl = tmax; nl<_tree.len(); nl ++ )
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
-      if (new_leafs>0) _tree._depth++; // Next layer done but update tree depth only if new leaves are generated
+      if (_did_split) _tree._depth++;
     }
   }
 
@@ -331,7 +334,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     double sum = score1(chks, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-      ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+      GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
   }
 
@@ -362,6 +365,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
         (sinceLastScore > 4000 && // Limit scoring updates to every 4sec
          (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
+
+      checkMemoryFootPrint();
+
       // If validation is specified we use a model for scoring, so we need to
       // update it!  First we save model with trees (i.e., make them available
       // for scoring) and then update it with resulting error
@@ -371,7 +377,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       SharedTreeModel.SharedTreeOutput out = _model._output;
       _timeLastScoreStart = now;
       // Score on training data
-      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -384,7 +390,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._MSE; // Store score results in the model output
         out._validation_metrics = mmv;
@@ -468,6 +474,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (valid() != null) {
@@ -487,6 +495,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       int col = 0;
       assert(row < table.getRowDim());
       assert(col < table.getColDim());
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      table.set(row, col++, fmt.print(_output._training_time_ms[i]));
+      table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _start_time, true));
       table.set(row, col++, i);
       table.set(row, col++, _output._mse_train[i]);
       if (_valid != null) table.set(row, col++, _output._mse_valid[i]);
@@ -501,6 +512,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     List<String> colFormat = new ArrayList<>();
 
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
 
     colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
@@ -521,6 +533,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     int row = 0;
     int col = 0;
     table.set(row, col++, _output._treeStats._num_trees);
+    table.set(row, col++, _output._treeStats._byte_size);
     table.set(row, col++, _output._treeStats._min_depth);
     table.set(row, col++, _output._treeStats._max_depth);
     table.set(row, col++, _output._treeStats._mean_depth);
@@ -528,5 +541,34 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     table.set(row, col++, _output._treeStats._max_leaves);
     table.set(row, col++, _output._treeStats._mean_leaves);
     return table;
+  }
+
+  @Override protected void checkMemoryFootPrint() {
+    if (_model._output._ntrees == 0) return;
+    int model_mem_size = 0; //only need to count the compressed trees
+    int trees_so_far = _model._output._ntrees; //existing trees
+    _model._output._treeStats._byte_size = 0;
+    for (int i=0; i< trees_so_far; ++i) {
+      Key<CompressedTree>[] per_class = _model._output._treeKeys[i];
+      for (int j=0; j<per_class.length; ++j) {
+        if (per_class[j] == null) continue; //GBM binomial
+        model_mem_size += DKV.get(per_class[j])._max;
+        _model._output._treeStats._byte_size += (long)model_mem_size;
+      }
+    }
+    double avg_tree_mem_size = (double)model_mem_size / trees_so_far;
+    Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
+
+    // all the compressed trees are stored on the driver node
+    long max_mem = H2O.SELF.get_max_mem();
+    if (_parms._ntrees * avg_tree_mem_size > max_mem) {
+      String msg = "The tree model will not fit in the driver node's memory ("
+              + PrettyPrint.bytes((long)avg_tree_mem_size)
+              + " per tree x " + _parms._ntrees + " > "
+              + PrettyPrint.bytes(max_mem)
+              + ") - try decreasing ntrees and/or max_depth or increasing min_rows!";
+      error("_ntrees", msg);
+      cancel(msg);
+    }
   }
 }

@@ -22,13 +22,16 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The Gini score for this scoring run.", direction=API.Direction.OUTPUT)
   public double Gini;
 
+  @API(help="The class labels of the response.", direction=API.Direction.OUTPUT)
+  public String[] domain;
+
 //  @API(help = "The ConfusionMatrix at the threshold for maximum F1.", direction = API.Direction.OUTPUT)
 //  public ConfusionMatrixBase cm;
 
-  @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
+  @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT, level = API.Level.expert)
   public TwoDimTableBase thresholds_and_metric_scores;
 
-  @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
+  @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
   public TwoDimTableBase max_criteria_and_metric_scores;
 
   @Override

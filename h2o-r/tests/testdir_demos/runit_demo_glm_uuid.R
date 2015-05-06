@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
   print("Reading in data (tiny airline with UUIDs).")
-    airline.hex <- h2o.uploadFile(conn, locate("smalldata/airlines/uuid_airline.csv"), key="airline.hex", header=TRUE)
+    airline.hex <- h2o.uploadFile(conn, locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
     print("Summary of airline data: ")
     print(summary(airline.hex))
     print("Head of airline data: ")

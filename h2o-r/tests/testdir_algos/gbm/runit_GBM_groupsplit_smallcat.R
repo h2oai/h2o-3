@@ -8,7 +8,7 @@ test.GBM.smallcat <- function(conn) {
   # Categories B, D, F, H, ... are perfect predictors of y = 0
   
   Log.info("Importing alphabet_cattest.csv data...\n")
-  alphabet.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/alphabet_cattest.csv"), key = "alphabet.hex")
+  alphabet.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/alphabet_cattest.csv"), destination_frame = "alphabet.hex")
   alphabet.hex$y <- as.factor(alphabet.hex$y)
   Log.info("Summary of alphabet_cattest.csv from H2O:\n")
   print(summary(alphabet.hex))

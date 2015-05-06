@@ -6,7 +6,7 @@ test.kmstand.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing ozone.csv data...")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/ozone.csv"), key = "ozoneH2O")
+  ozoneH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/ozone.csv"), destination_frame = "ozoneH2O")
   startIdx <- sort(sample(1:nrow(ozoneR), 3))
   
   # H2O standardizes data (de-mean and scale so standard deviation is one)
@@ -26,16 +26,16 @@ test.kmstand.golden <- function(H2Oserver) {
   fitR_centstd <- sweep(sweep(fitR$centers, 2, std, '*'), 2, avg, "+")
   expect_equivalent(as.matrix(getCenters(fitH2O)), fitR_centstd)
   
-  wmseR <- sort.int(fitR$withinss/fitR$size)
-  wmseH2O <- sort.int(getWithinMSE(fitH2O))
+  wssR <- sort.int(fitR$withinss)
+  wssH2O <- sort.int(getWithinSS(fitH2O))
   totssR <- fitR$totss
-  totssH2O <- getAvgSS(fitH2O)*nrow(ozoneH2O)
+  totssH2O <- getTotSS(fitH2O)
   btwssR <- fitR$betweenss
-  btwssH2O <- getAvgBetweenSS(fitH2O)*nrow(ozoneH2O)
+  btwssH2O <- getBetweenSS(fitH2O)
   
-  Log.info(paste("H2O WithinMSE : ", wmseH2O, "\t\t", "R WithinMSE : ", wmseR))
-  Log.info("Compare Within-Cluster MSE between R and H2O\n")  
-  expect_equal(wmseH2O, wmseR, tolerance = 0.01)
+  Log.info(paste("H2O WithinSS : ", wssH2O, "\t\t", "R WithinSS : ", wssR))
+  Log.info("Compare Within-Cluster SS between R and H2O\n")  
+  expect_equal(wssH2O, wssR, tolerance = 0.01)
   
   Log.info(paste("H2O TotalSS : ", totssH2O, "\t\t", "R TotalSS : ", totssR))
   Log.info("Compare Total SS between R and H2O\n")

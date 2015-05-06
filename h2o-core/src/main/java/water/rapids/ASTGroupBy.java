@@ -3,9 +3,13 @@ package water.rapids;
 
 import sun.misc.Unsafe;
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
+import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.*;
@@ -82,7 +86,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
     final int nGrps = p1._g.size();
-    final G[] grps = p1._g.toArray(new G[nGrps]);
+    final G[] grps = p1._g.keySet().toArray(new G[nGrps]);
     H2O.submitTask(new ParallelPostGlobal(grps)).join();
 
     // build the output
@@ -180,13 +184,13 @@ import java.util.concurrent.atomic.AtomicInteger;
     NonBlockingHashSet<T> _g;
     IcedNBHS() {_g=new NonBlockingHashSet<>();}
     boolean add(T t) { return _g.add(t); }
-    boolean addAll(NonBlockingHashSet<T> g) { return _g.addAll(g); }
+    boolean addAll(Collection<? extends T> c) { return _g.addAll(c); }
     T get(T g) { return _g.get(g); }
     int size() { return _g.size(); }
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _g == null ) return ab.put4(0);
       ab.put4(_g.size());
-      for( T g: _g) ab.put(g);
+      for( T g: _g ) ab.put(g);
       return ab;
     }
     @Override public IcedNBHS read_impl(AutoBuffer ab) {
@@ -200,33 +204,43 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   public static class GBTask extends MRTask<GBTask> {
-    NonBlockingHashSet<G> _g;
+    IcedHashMap<G,String> _g;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new NonBlockingHashSet<>(); }
+    @Override public void setupLocal() { _g = new IcedHashMap<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
-      for (int i=0;i<c[0]._len;++i) {
-        G g = new G(i,c,_gbCols,_agg.length,naMethods);
-        if( !_g.add(g) ) g=_g.get(g);
+      G g = new G(_gbCols.length,_agg.length,naMethods);
+      G gOld;  // fill this one in for all the CAS'ing
+      for( int i=0;i<c[0]._len;++i ) {
+        g.fill(i,c,_gbCols);
+        String g_old = _g.putIfAbsent(g,"");
+        if( g_old==null ) {  // won the race w/ this group
+          gOld=g;
+          g=new G(_gbCols.length,_agg.length,naMethods); // need entirely new G
+        } else {
+          gOld=_g.getk(g);
+          if( gOld==null )   // FIXME: Why is gOld null!?
+            while( gOld==null ) gOld=_g.getk(g);
+        }
         // cas in COUNT
-        long r=g._N;
-        while(!G.CAS_N(g, r, r + 1))
-          r=g._N;
-        perRow(_agg,i,start,c,g);
+        long r=gOld._N;
+        while(!G.CAS_N(gOld, r, r + 1))
+          r=gOld._N;
+        perRow(_agg,i,start,c,gOld);
       }
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        NonBlockingHashSet<G> l = _g;
-        NonBlockingHashSet<G> r = t._g;
+        IcedHashMap<G,String> l = _g;
+        IcedHashMap<G,String> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
-        for( G rg:r ) {
-          G lg = l.get(rg);
-          if( !l.add(rg) ) {
+        for( G rg:r.keySet() ) {
+          G lg = l.getk(rg);
+          if( l.putIfAbsent(rg,"")!=null ) {
             assert lg!=null;
             long R = lg._N;
             while (!G.CAS_N(lg, R, R + rg._N))
@@ -237,31 +251,6 @@ import java.util.concurrent.atomic.AtomicInteger;
         _g=l;
         t._g=null;
       }
-    }
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _agg == null ) ab.put4(0);
-      else {
-        ab.put4(_agg.length);
-        for(AGG a:_agg) ab.put(a);
-      }
-      ab.putA8(_gbCols);
-      if( _g == null ) return ab.put4(0);
-      ab.put4(_g.size());
-      for( G g: _g) ab.put(g);
-      return ab;
-    }
-    @Override public GBTask read_impl(AutoBuffer ab) {
-      int naggs = ab.get4();
-      if( naggs!=0 ) {
-        _agg = new AGG[naggs];
-        for(int i=0;i<naggs;++i) _agg[i] = ab.get(AGG.class);
-      }
-      _gbCols = ab.getA8();
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _g = new NonBlockingHashSet<>();
-      for( int i=0;i<len;++i) _g.add(ab.get(G.class));
-      return this;
     }
     // task helper functions
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g) { perRow(agg,chkRow,rowOffset,c,g,null); }
@@ -430,14 +419,6 @@ import java.util.concurrent.atomic.AtomicInteger;
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
     }
-    public void reFill(int row, Chunk chks[], long cols[]) {
-      fill(row,chks,cols);
-      _N=0;
-      for(int i=0;i<_ND.length;++i) {
-        _sum[i] = _ss[i] = _ND[i] = _NA[i] = _f[i] = _l[i] = 0;
-        _min[i] = Double.POSITIVE_INFINITY; _max[i] = Double.NEGATIVE_INFINITY;
-      }
-    }
     private int hash() {
       long h=0;                 // hash is sum of field bits
       for( double d : _ds ) h += Double.doubleToRawLongBits(d);
@@ -488,8 +469,12 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     G(int row, Chunk[] cs, long[] cols,int aggs, byte[] naMethod) {
-      _ds=new double[cols.length];
-      this.fill(row, cs, cols);
+      this(cols.length,aggs,naMethod);
+      fill(row, cs, cols);
+    }
+
+    G(int len, int aggs, byte[] naMethod) {
+      _ds=new double[len];
       _NAMethod=naMethod;
 //      _nd=new NBHSAD(aggs);
       _ND=new long[aggs];
@@ -577,6 +562,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     static{
       // aggregates
       TM.put("count",       (byte)0);
+      TM.put("nrow",        (byte)0);
       TM.put("count_unique",(byte)1);
       TM.put("first",       (byte)2);
       TM.put("last",        (byte)3);

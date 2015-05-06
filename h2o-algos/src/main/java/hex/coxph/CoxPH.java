@@ -28,6 +28,8 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(false); }
 
   public ModelBuilderSchema schema() {
@@ -432,7 +434,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
 
         int nResponses = 1;
         boolean useAllFactorLevels = false;
-        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true);
+        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false);
         initStats(model, dinfo);
 
         final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;

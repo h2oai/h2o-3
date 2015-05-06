@@ -12,6 +12,7 @@ class ConfusionMatrix(object):
     if not cm: raise ValueError("Missing data, `cm_raw` is None")
     if not isinstance(cm, list):  raise ValueError("`cm` is not a list. Got: " + type(cm))
 
+    if len(cm)==2: cm=zip(*cm)  # transpose if 2x2
     nclass = len(cm)
     class_errs = [0] * nclass
     class_sums = [0] * nclass
@@ -49,8 +50,7 @@ class ConfusionMatrix(object):
         row_header = [str(i) for i in range(nclass)]
         col_header = [str(i) for i in range(nclass)]
 
-    row_header += ["Totals"]
-    col_header += ["Error"]
+    row_header += ["Error"]
 
     self.table = H2OTwoDimTable(row_header, col_header, None, table_header, None, None, cell_values)
 

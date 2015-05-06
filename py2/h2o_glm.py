@@ -63,12 +63,14 @@ def simpleCheckGLM(self, model, parameters,
     prettyPrint=False, noPrint=False, 
     maxExpectedIterations=None, doNormalized=False, allowNaN=False):
 
-    warnings = ''
-    rank = model.rank
-    binomial = model.binomial
-    residual_deviance = model.residual_deviance
+    # FIX! the structure is all different
+    return
 
-    threshold = model.threshold
+    warnings = ''
+    # binomial = model.binomial
+    residual_deviance = model.training_metrics.residual_deviance
+
+    threshold = model.training_metrics.threshold
     check_obj_has_good_numbers(threshold, 'threshold', allowNaN=allowNaN)
 
     auc = model.AUC

@@ -39,6 +39,16 @@ public class ArrayUtils {
       result += x[i] * y[i];
     return result;
   }
+  public static double[][] outerProduct(double[] x, double[] y){
+    double[][] result = new double[x.length][y.length];
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < y.length; j++)
+        result[i][j] = x[i] * y[j];
+    }
+    return result;
+  }
+
+  public static double l2norm2(double [] x){ return l2norm2(x,false); }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length - (skipLast?1:0);
@@ -46,7 +56,7 @@ public class ArrayUtils {
       sum += x[i]*x[i];
     return sum;
   }
-  public static double l1norm(double [] x){ return l1norm(x,false);}
+  public static double l1norm(double [] x){ return l1norm(x,false); }
   public static double l1norm(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length -(skipLast?1:0);
@@ -54,6 +64,7 @@ public class ArrayUtils {
       sum += x[i] >= 0?x[i]:-x[i];
     return sum;
   }
+  public static double l2norm(double[] x) { return Math.sqrt(l2norm2(x)); }
   public static double l2norm(double [] x, boolean skipLast){
     return Math.sqrt(l2norm2(x, skipLast));
   }
@@ -179,6 +190,29 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+  public static double[] multArrVec(double[][] ary, double[] nums) {
+    if(ary == null || nums == null) return null;
+    double[] res = new double[ary.length];
+    for(int i = 0; i < ary.length; i++)
+      res[i] = innerProduct(ary[i], nums);
+    return res;
+  }
+
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+    if(ary1 == null || ary2 == null) return null;
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + "!=" + ary2.length;   // Inner dimensions must match
+    double[][] res = new double[ary1.length][ary2[0].length];
+
+    for(int i = 0; i < ary1.length; i++) {
+      for(int j = 0; j < ary2[0].length; j++) {
+        double tmp = 0;
+        for(int k = 0; k < ary1[0].length; k++)
+          tmp += ary1[i][k] * ary2[k][j];
+        res[i][j] = tmp;
+      }
+    }
+    return res;
   }
 
   public static double[][] transpose(double[][] ary) {
@@ -434,6 +468,29 @@ public class ArrayUtils {
     }
   }
 
+  // Generate a n by m array of random numbers drawn from the standard normal distribution
+  public static double[][] gaussianArray(int n, int m) { return gaussianArray(n, m, System.currentTimeMillis()); }
+  public static double[][] gaussianArray(int n, int m, long seed) {
+    if(n <= 0 || m <= 0) return null;
+    double[][] result = new double[n][m];
+    Random random = getRNG(seed);
+
+    for(int i = 0; i < n; i++) {
+      for(int j = 0; j < m; j++)
+        result[i][j] = random.nextGaussian();
+    }
+    return result;
+  }
+  public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
+  public static double[] gaussianVector(int n, long seed) {
+    if(n <= 0) return null;
+    double[] result = new double[n];
+    Random random = getRNG(seed);
+
+    for(int i = 0; i < n; i++)
+      result[i] = random.nextGaussian();
+    return result;
+  }
 
   /** Returns number of strings which represents a number. */
   public static int numInts(String... a) {
@@ -640,6 +697,16 @@ public class ArrayUtils {
   static public double[] copyAndFillOf(double[] original, int newLength, double padding) {
     if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
     double[] newArray = new double[newLength];
+    if(original.length < newLength) {
+      System.arraycopy(original, 0, newArray, 0, original.length);
+      Arrays.fill(newArray, original.length, newArray.length, padding);
+    } else
+      System.arraycopy(original, 0, newArray, 0, newLength);
+    return newArray;
+  }
+  static public long[] copyAndFillOf(long[] original, int newLength, long padding) {
+    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
+    long[] newArray = new long[newLength];
     if(original.length < newLength) {
       System.arraycopy(original, 0, newArray, 0, original.length);
       Arrays.fill(newArray, original.length, newArray.length, padding);

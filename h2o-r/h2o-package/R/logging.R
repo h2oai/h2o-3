@@ -1,3 +1,10 @@
+#' Starting H2O For examples
+#'
+#' @name aaa
+#' @examples
+#' h2o.init()
+NULL
+
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {
@@ -102,9 +109,7 @@ h2o.clearLog <- function() {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
 #'          \link{h2o.clearLog}}
 #' @examples
-#' \donttest{
-#' # Skip running this to avoid windows being opened during R CMD check
-#' library(h2o)
+#' \dontrun{
 #' localH2O = h2o.init()
 #'
 #' h2o.startLogging()
@@ -112,8 +117,9 @@ h2o.clearLog <- function() {
 #' australia.hex = h2o.importFile(localH2O, path = ausPath)
 #' h2o.stopLogging()
 #'
-#' h2o.openLog("Command")
-#' h2o.openLog("Error")
+#' # Not run to avoid windows being opened during R CMD check
+#' # h2o.openLog("Command")
+#' # h2o.openLog("Error")
 #' }
 #' @export
 h2o.openLog <- function(type) {

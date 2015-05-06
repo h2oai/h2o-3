@@ -1,11 +1,10 @@
 Package: h2o
 Version: SUBST_PROJECT_VERSION
 Type: Package
-Title: H2O R Interface
-Date: 2014-12-12
-Branch: SUBST_PROJECT_BRANCH
+Title: R Interface for H2O
+Date: 2015-4-27
 Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
-Maintainer: Spencer Aiello <spencer@0xdata.com>
+Maintainer: Tom Kraljevic <tomk@0xdata.com>
 Description: This is a package for running H2O via its REST API from within R.
 License: Apache License (== 2.0)
 URL: http://www.h2o.ai
@@ -43,7 +42,9 @@ Collate:
          'kmeans.R'
          'gbm.R'
          'glm.R'
+         'glrm.R'
          'pca.R'
+         'svd.R'
          'deeplearning.R'
          'randomforest.R'
          'naivebayes.R'

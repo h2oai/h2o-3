@@ -60,8 +60,8 @@ class Basic(unittest.TestCase):
             ("and-testing.data", 23538333),
             ("arcene2_train.both", 2715738),
             ("arcene_train.both", 2715838),
-            ("bestbuy_test.csv", 152488777),
-            ("bestbuy_train.csv", 243806953),
+            # ("bestbuy_test.csv", 152488777),
+            # ("bestbuy_train.csv", 243806953),
             ("billion_rows.csv.gz", 1758523515),
             ("covtype.13x.data", 977210917),
             ("covtype.13x.shuffle.data", 977210917),
@@ -74,8 +74,8 @@ class Basic(unittest.TestCase):
             ("hhp2.os.noisy.9_4.data", 48397103),
             ("leads.csv", 2755),
             ("prostate_long_1G.csv", 1115287100),
-            ("3G_poker_shuffle", 3145728000),
-            ("covtype.169x.data", 12703751717),
+            # ("3G_poker_shuffle", 3145728000),
+            # ("covtype.169x.data", 12703751717),
         ]
 
         # pick 8 randomly!
@@ -119,7 +119,7 @@ class Basic(unittest.TestCase):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=parse_key, column=i)
 
-            k = parseResult['frames'][0]['key']['name']
+            k = parseResult['frames'][0]['frame_id']['name']
             # print "parseResult:", dump_json(parseResult)
             a_node = h2o.nodes[0]
             frames_result = a_node.frames(key=k, row_count=5)

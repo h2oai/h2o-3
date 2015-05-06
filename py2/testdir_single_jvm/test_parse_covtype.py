@@ -26,6 +26,8 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
         print "i:", i, "c:", c
         label = c['label']
         stype = c['type']
+
+        # information is no longer valid
         missing = c['missing_count']
         zeros = c['zero_count']
         domain = c['domain']
@@ -33,10 +35,10 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
             (i,label,stype,missing,zeros,domain)
 
         # files are concats of covtype. so multiply expected
-        assertEqualMsg(zeros, expectedZeros[i] * multiplyExpected)
+        # assertEqualMsg(zeros, expectedZeros[i] * multiplyExpected)
         assertEqualMsg(label,"C%s" % (i+1))
         assertEqualMsg(stype,"int")
-        assertEqualMsg(missing, 0)
+        # assertEqualMsg(missing, 0)
         assertEqualMsg(domain, None)
 
 class Basic(unittest.TestCase):
@@ -67,7 +69,7 @@ class Basic(unittest.TestCase):
             importResult = a_node.import_files(path=csvPathname)
 
             # print "importResult:", dump_json(importResult)
-            hex_key = importResult['keys'][0]
+            hex_key = importResult['destination_frames'][0]
 
             if CAUSE_FAIL:
                 frames_result = a_node.frames(key=k, row_count=5, timeoutSecs=timeoutSecs)
@@ -83,7 +85,7 @@ class Basic(unittest.TestCase):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
 
-            k = parseResult['frames'][0]['key']['name']
+            k = parseResult['frames'][0]['frame_id']['name']
             # print "parseResult:", dump_json(parseResult)
             frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)

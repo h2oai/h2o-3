@@ -8,7 +8,7 @@ function(conn) {
     Log.info("Slicing out some columns and rows from iris.hex")
     Log.info("Slicing out rows 20,40,60,80")
     Log.info("Slicing out columns, 3,4,5")
-    Log.info("Assigning to new hex key: slicedIris.hex")
+    Log.info("Assigning to new Frame: slicedIris.hex")
     irisSlice <- iris.hex[c(20,40,60,80),c(3,4,5)]
     print(dim(irisSlice))
     irisSlice <- h2o.assign(irisSlice, "slicedIris.hex")
@@ -17,7 +17,7 @@ function(conn) {
     print(h2o.ls(conn))
     keys <- as.vector(h2o.ls()[,1])
     expect_true(any(grepl("slicedIris.hex", keys)))
-    expect_true(grepl("slicedIris.hex", irisSlice@key))
+    expect_true(grepl("slicedIris.hex", irisSlice@frame_id))
     h2o.removeAll(conn)
 
     iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris.csv"), "iris.hex")
@@ -25,7 +25,7 @@ function(conn) {
     print(dim(iris.hex))
     iris.hex <- iris.hex[c(1:50), c(2,3,4,5)]
     print(dim(iris.hex))
-    Log.info("Assign the sliced dataset to the same key, \"iris.hex\"")
+    Log.info("Assign the sliced dataset to the same Frame, \"iris.hex\"")
     keyList <- h2o.ls(conn)
 
     Log.info("Check that the byte sizes of the temporary last.value and the new re-assigned iris.hex are the same")
@@ -38,5 +38,5 @@ function(conn) {
     testEnd()
 }
 
-doTest("Test h2o.assign(data,key)", test.eq2.h2o.assign)
+doTest("Test h2o.assign(data,frame_id)", test.eq2.h2o.assign)
 

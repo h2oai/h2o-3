@@ -1187,7 +1187,9 @@ class ASTSlice extends AST {
       // Use them directly, throwing a runtime error if OOB.
       long row = (long)((ValNum)rows)._d;
       int  col = (int )((ValNum)cols)._d;
-      Frame ary=env.popAry();
+      Frame ary;
+      if( env.isNum() ) ary=new Frame(Vec.makeCon(env.popDbl(),1));
+      else ary = env.popAry();
       try {
         if (ary.vecs()[col].isEnum()) {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));

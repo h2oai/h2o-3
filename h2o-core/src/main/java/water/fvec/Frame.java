@@ -201,6 +201,23 @@ public class Frame extends Lockable<Frame> {
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
+  /**
+   * Number of degrees of freedom (#numerical columns + sum(#categorical levels))
+   * @return Number of overall degrees of freedom
+   */
+  public long degreesOfFreedom() {
+    long dofs = 0;
+    String[][] dom = domains();
+    for (int i=0; i<numCols(); ++i) {
+      if (dom[i] == null) {
+        dofs++;
+      } else {
+        dofs+=dom[i].length;
+      }
+    }
+    return dofs;
+  }
+
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
   public final Vec anyVec() {
@@ -391,9 +408,12 @@ public class Frame extends Lockable<Frame> {
   }
 
   // Add a bunch of vecs
-  public void add( String[] names, Vec[] vecs ) {
+  public void add( String[] names, Vec[] vecs) {
+    add(names, vecs, vecs.length);
+  }
+  public void add( String[] names, Vec[] vecs, int cols ) {
     if (null == vecs || null == names) return;
-    for( int i=0; i<vecs.length; i++ )
+    for( int i=0; i<cols; i++ )
       add(names[i],vecs[i]);
   }
 
@@ -401,8 +421,6 @@ public class Frame extends Lockable<Frame> {
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
-    if( DKV.get(vec._key) == null )
-      System.out.println();
     vec = makeCompatible(new Frame(vec)).anyVec();
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
@@ -415,7 +433,7 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
@@ -563,7 +581,7 @@ public class Frame extends Lockable<Frame> {
    *  @return an array of the removed columns */
   public Vec[] remove( int[] idxs ) {
     for( int i : idxs )
-      if(i < 0 || i >= _vecs.length)
+      if(i < 0 || i >= vecs().length)
         throw new ArrayIndexOutOfBoundsException();
     Arrays.sort(idxs);
     Vec[] res = new Vec[idxs.length];
@@ -639,13 +657,18 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Restructure a Frame completely */
-  public void restructure( String[] names, Vec[] vecs ) {
+  public void restructure( String[] names, Vec[] vecs) {
+    restructure(names, vecs, vecs.length);
+  }
+
+  /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
+  public void restructure( String[] names, Vec[] vecs, int cols) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
     _names = new String[0];
     _keys  = new Key   [0];
     _vecs  = new Vec   [0];
-    add(names,vecs);
+    add(names,vecs,cols);
   }
 
   // --------------------------------------------

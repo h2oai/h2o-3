@@ -1,15 +1,13 @@
-#'
-#' Class definitions and their `show` & `summary` methods.
-#'
-#'
-#' To conveniently and safely pass messages between R and H2O, this package relies
-#' on S4 objects to capture and pass state. This R file contains all of the h2o
-#' package's classes as well as their complementary `show` methods. The end user
-#' will typically never have to reason with these objects directly, as there are
-#' S3 accessor methods provided for creating new objects.
-#'
-#' @name ClassesIntro
-NULL
+#`
+#` Class definitions and their `show` & `summary` methods.
+#`
+#`
+#` To conveniently and safely pass messages between R and H2O, this package relies
+#` on S4 objects to capture and pass state. This R file contains all of the h2o
+#` package's classes as well as their complementary `show` methods. The end user
+#` will typically never have to reason with these objects directly, as there are
+#` S3 accessor methods provided for creating new objects.
+#`
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Definitions
@@ -84,14 +82,14 @@ setMethod("show", "H2OConnection", function(object) {
 #' The H2OObject class
 #'
 #' @slot conn An \code{H2OConnection} object specifying the connection to an H2O cloud.
-#' @slot key A \code{character} string specifying the key in the H2O cloud's key-value store.
+#' @slot id A \code{character} string specifying the key in the H2O cloud's key-value store.
 #' @slot finalizers A \code{list} object containing environments with finalizers that
 #'                  remove keys from the H2O key-value store.
 #' @aliases H2OObject
 #' @export
 setClass("H2OObject",
-         representation(conn="H2OConnectionOrNULL", key="character", finalizers="list"),
-         prototype(conn=NULL, key=NA_character_, finalizers=list()),
+         representation(conn="H2OConnectionOrNULL", id="character", finalizers="list"),
+         prototype(conn=NULL, id=NA_character_, finalizers=list()),
          contains="VIRTUAL")
 
 #' @rdname H2OObject-class
@@ -106,24 +104,31 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 })
 
 .keyFinalizer <- function(envir) {
-  try(h2o.rm(get("key", envir), get("conn", envir)), silent=TRUE)
+  if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
+  if( !is.null(envir$id)      ) h2o.rm(envir$id, envir$conn)
+  if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id,envir$conn)
+  invisible(NULL)
 }
 
-.newH2OObject <- function(Class, ..., conn = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  if (linkToGC && !is.na(key) && is(conn, "H2OConnection")) {
+.newH2OObject <- function(Class, ..., conn = NULL, id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  if (linkToGC && !is.na(id) && is(conn, "H2OConnection")) {
     envir <- new.env()
-    assign("key", key, envir)
+    assign("id", id, envir)
     assign("conn", conn, envir)
     reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
     finalizers <- c(list(envir), finalizers)
   }
-  new(Class, ..., conn = conn, key = key, finalizers = finalizers)
+
+  if( Class == "H2OFrame" || Class == "H2ORawData" ) {
+    new(Class, ..., conn=conn, frame_id=id, finalizers=finalizers)
+  } else {
+    new(Class, ..., conn = conn, model_id = id, finalizers = finalizers)
+  }
 }
 
 #'
 #' The Node class.
 #'
-#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
 #' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
 #' has as its ancestor this class.
 #'
@@ -219,19 +224,24 @@ setRefClass("H2OFrameMutableState",
 #' The H2OFrame class
 #'
 #' @slot conn An \code{H2OConnection} object specifying the connection to an H2O cloud.
-#' @slot key A \code{character} string specifying the key for the frame in the H2O cloud's key-value store.
+#' @slot frame_id A \code{character} string specifying the identifier for the frame in the H2O cloud.
 #' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove keys from the H2O key-value store.
+#'                  remove objects from the H2O cloud.
 #' @slot mutable An \code{H2OFrameMutableState} object to hold the mutable state for the H2O frame.
 #' @aliases H2OFrame
 #' @export
 setClass("H2OFrame",
-         representation(mutable = "H2OFrameMutableState"),
+         representation(conn="H2OConnectionOrNULL", frame_id="character", finalizers="list", mutable = "H2OFrameMutableState"),
          prototype(conn       = NULL,
-                   key        = NA_character_,
+                   frame_id   = NA_character_,
                    finalizers = list(),
-                   mutable    = new("H2OFrameMutableState")),
-         contains ="H2OObject")
+                   mutable    = new("H2OFrameMutableState"))
+         )
+
+# TODO: make a more frame-specific constructor
+.newH2OFrame <- function(Class, conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE,mutable=new("H2OFrameMutableState")) {
+  .newH2OObject("H2OFrame", conn=conn,id=frame_id,finalizers=finalizers,mutable=mutable)
+}
 
 #' @rdname H2OFrame-class
 #' @param object An \code{H2OConnection} object.
@@ -264,17 +274,23 @@ setMethod("show", "H2OFrame", function(object) {
 #'
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
 #' @slot conn An \code{H2OConnection} object containing the IP address and port number of the H2O server.
-#' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
+#' @slot frame_id An object of class \code{"character"}, which is the name of the key assigned to the imported data.
+#' @slot finalizers A \code{list} object containing environments with finalizers that
+#'                  remove objects from the H2O cloud.
 #' @aliases H2ORawData
 #' @export
-setClass("H2ORawData", contains="H2OObject")
+setClass("H2ORawData", contains="H2OFrame")
+
+.newH2ORawData <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  .newH2OObject("H2ORawData", ..., conn=conn,id=frame_id,finalizers=finalizers,linkToGC=linkToGC)
+}
 
 #' @rdname H2ORawData-class
 #' @param object a \code{H2ORawData} object.
 #' @export
 setMethod("show", "H2ORawData", function(object) {
   print(object@conn)
-  cat("Raw Data Key:", object@key, "\n")
+  cat("Raw Data Destination Frame:", object@frame_id, "\n")
 })
 
 # No show method for this type of object.
@@ -286,7 +302,7 @@ setMethod("show", "H2ORawData", function(object) {
 #'
 #' @aliases H2OW2V
 #' @export
-setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
+setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OFrame")
 
 #'
 #' The H2OModel object.
@@ -297,7 +313,7 @@ setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
 #' the data used to build the model (an object of class H2OFrame).
 #'
 #' @slot conn Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
-#' @slot key A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
 #' @slot finalizers A \code{list} object containing environments with finalizers that
 #'                  remove keys from the H2O key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
@@ -307,8 +323,14 @@ setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(algorithm="character", parameters="list", allparameters="list", model="list"),
-                        contains=c("VIRTUAL", "H2OObject"))
+         representation(conn="H2OConnectionOrNULL", model_id="character", algorithm="character", parameters="list", allparameters="list", model="list", finalizers="list"),
+                        prototype(conn=NULL, model_id=NA_character_, finalizers=list()),
+                        contains=c("VIRTUAL"))
+
+# TODO: make a mode model-specific constructor
+.newH2OModel <- function(Class, ..., conn = NULL, model_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  .newH2OObject(Class, ..., conn=conn,id=model_id,finalizers=finalizers,linkToGC=linkToGC)
+}
 
 #' @rdname H2OModel-class
 #' @param object an \code{H2OModel} object.
@@ -319,7 +341,7 @@ setMethod("show", "H2OModel", function(object) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@key, "\n")
+  cat("Model ID: ", o@model_id, "\n")
 
   # summary
   print(m$model_summary)
@@ -367,7 +389,31 @@ setClass("H2OMultinomialModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2ORegressionModel",  contains="H2OModel")
-#' @rdname H2OModel-class
+#'
+#' The H2OClusteringModel object.
+#'
+#' This virtual class represents a clustering model built by H2O.
+#'
+#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
+#' the data used to build the model (an object of class H2OFrame).
+#'
+#' @slot conn Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
+#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot finalizers A \code{list} object containing environments with finalizers that
+#'                  remove keys from the H2O key-value store.
+#' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.
+#' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
+#' @slot allparameters A \code{list} containing all parameters used to fit the model.
+#' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
+#'        \describe{
+#'          \item{size }{The number of points in each cluster.}
+#'          \item{totss }{Total sum of squared error to grand mean.}
+#'          \item{withinss }{A vector of within-cluster sum of squared error.}
+#'          \item{tot_withinss }{Total within-cluster sum of squared error.}
+#'          \item{betweenss }{Between-cluster sum of squared error.}
+#'        }
+#' @slot finalizers A \code{list} object containing environments with finalizers that
+#'                  remove keys from the H2O key-value store.
 #' @export
 setClass("H2OClusteringModel",  contains="H2OModel")
 #' @rdname H2OModel-class
@@ -401,16 +447,16 @@ setGeneric("getCenters", function(object) { standardGeneric("getCenters") })
 setGeneric("getCentersStd", function(object) { standardGeneric("getCentersStd") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getWithinMSE", function(object) { standardGeneric("getWithinMSE") })
+setGeneric("getWithinSS", function(object) { standardGeneric("getWithinSS") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getAvgWithinSS", function(object) { standardGeneric("getAvgWithinSS") })
+setGeneric("getTotWithinSS", function(object) { standardGeneric("getTotWithinSS") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getAvgBetweenSS", function(object) { standardGeneric("getAvgBetweenSS") })
+setGeneric("getBetweenSS", function(object) { standardGeneric("getBetweenSS") })
 #' @rdname ModelAccessors
 #' @export
-setGeneric("getAvgSS", function(object) { standardGeneric("getAvgSS") })
+setGeneric("getTotSS", function(object) { standardGeneric("getTotSS") })
 #' @rdname ModelAccessors
 #' @export
 setGeneric("getIterations", function(object) { standardGeneric("getIterations") })
@@ -426,16 +472,16 @@ setMethod("getCenters", "H2OClusteringModel", function(object) { as.data.frame(o
 setMethod("getCentersStd", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers_std)[,-1] })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$within_sum_of_squares })
+setMethod("getWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$centroid_stats$within_cluster_sum_of_squares })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_within_ss })
+setMethod("getTotWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$tot_withinss })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_between_ss })
+setMethod("getBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$betweenss })
 #' @rdname ModelAccessors
 #' @export
-setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$avg_ss } )
+setMethod("getTotSS", "H2OClusteringModel", function(object) { object@model$training_metrics@metrics$totss } )
 #' @rdname ModelAccessors
 #' @export
 setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
@@ -488,6 +534,13 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
       cat("AIC:  ", object@metrics$AIC,"\n", sep="")
     }
     cat("\n")
+    cm <- h2o.confusionMatrix(object)
+    if( is.null(cm) ) print(NULL)
+    else {
+      attr(cm, "header") <- "Confusion Matrix for F1-optimal threshold"
+      print(cm)
+      cat("\n")
+    }
     print(object@metrics$max_criteria_and_metric_scores)
 })
 
@@ -521,9 +574,9 @@ setMethod("show", "H2OClusteringMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)
     m <- object@metrics
-    cat("\nAvg Within SS: ", m$avg_within_ss)
-    cat("\nAvg Between SS: ", m$avg_between_ss)
-    cat("\nAvg SS: ", m$avg_ss, "\n")
+    cat("\nTotal Within SS: ", m$tot_withinss)
+    cat("\nBetween SS: ", m$betweenss)
+    cat("\nTotal SS: ", m$totss, "\n")
     print(m$centroid_stats)
   } else print(NULL)
 })
@@ -551,7 +604,7 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #' A class to contain the information for background model jobs.
 #' @slot conn an \linkS4class{H2OConnection}
 #' @slot job_key a character key representing the identification of the job process.
-#' @slot destination_key the final identifier for the model
+#' @slot model_id the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", destination_key="character"))
+setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", model_id="character"))

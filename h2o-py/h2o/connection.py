@@ -8,12 +8,13 @@ import math
 import re
 import os
 import sys
+import string
 import time
 import tempfile
 import tabulate
 import subprocess
 import atexit
-import h2o
+import pkg_resources
 from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
@@ -32,9 +33,9 @@ class H2OConnection(object):
   """
 
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
+               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
     """
-        Instantiate the package handle to the H2O cluster.
+    Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
     :param port: A port, default is 54321
     :param size: THe expected number of h2o instances (ignored if start_h2o is True)
@@ -50,6 +51,7 @@ class H2OConnection(object):
     if not (isinstance(port, int) and 0 <= port <= sys.maxint):
        raise ValueError("Port out of range, "+port)
     global __H2OCONN__
+    self._cld = None
     self._ip = ip
     self._port = port
     self._session_id = None
@@ -77,12 +79,33 @@ class H2OConnection(object):
         else:
           print "No jar file found. Could not start local instance."
           raise
+    __H2OCONN__._cld = cld
+    self._cluster_info()
 
+    ver_h2o = cld['version']
+    try:
+      ver_pkg = pkg_resources.get_distribution("h2o").version
+    except:
+      ver_pkg = "UNKNOWN"
+
+    if ver_h2o != ver_pkg:
+      message = \
+        "Version mismatch. H2O is version {0}, but the python package is version {1}.".format(ver_h2o, str(ver_pkg))
+      if strict_version_check:
+        raise EnvironmentError, message
+      else:
+        print "Warning: {0}".format(message)
+
+  @staticmethod
+  def _cluster_info():
+    global __H2OCONN__
+    cld = __H2OCONN__._cld
     # self._session_id = self.get_session_id()
     ncpus = sum([n['num_cpus'] for n in cld['nodes']])
     allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
     mmax = sum([n['max_mem'] for n in cld['nodes']])
     cluster_health = all([n['healthy'] for n in cld['nodes']])
+    ip = "127.0.0.1" if __H2OCONN__._ip=="localhost" else __H2OCONN__._ip
     cluster_info = [
       ["H2O cluster uptime: ", get_human_readable_time(cld["cloud_uptime_millis"])],
       ["H2O cluster version: ", cld["version"]],
@@ -92,24 +115,13 @@ class H2OConnection(object):
       ["H2O cluster total cores: ", str(ncpus)],
       ["H2O cluster allowed cores: ", str(allowed_cpus)],
       ["H2O cluster healthy: ", str(cluster_health)],
-    ]
+      ["H2O Connection ip: ", ip],
+      ["H2O Connection port: ", __H2OCONN__._port],
+      ]
     print
     print tabulate.tabulate(cluster_info)
     print
-
-    ver_h2o = cld['version']
-    try:
-      ver_pkg = h2o.__version__
-    except AttributeError:
-      ver_pkg = "PKG_SOURCE"
-
-    if ver_h2o != ver_pkg and ver_pkg != "PKG_SOURCE":
-      message = \
-        "Version mismatch! H2O is running version {0} but python package is version {1}".format(ver_h2o, str(ver_pkg))
-      if strict_version_check:
-        raise EnvironmentError, message
-      else:
-        print "Warning: {0}".format(message)
+    __H2OCONN__._cld = H2OConnection.get_json(url_suffix="Cloud")   # update the cached version of cld
 
   def _connect(self, size, max_retries=5, print_dots=False):
     """
@@ -120,6 +132,7 @@ class H2OConnection(object):
     """
     max_retries = max_retries
     retries = 0
+
     while True:
       retries += 1
       if print_dots:
@@ -177,9 +190,10 @@ class H2OConnection(object):
       print "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html"
       print
 
-    vm_opts = ["-Xms{}g".format(mmin), "-Xmx{}g".format(mmax)]
-    if ea:
-      vm_opts += ["-ea"]
+    vm_opts = []
+    if mmin: vm_opts += ["-Xms{}g".format(mmin)]
+    if mmax: vm_opts += ["-Xmx{}g".format(mmax)]
+    if ea:   vm_opts += ["-ea"]
 
     h2o_opts = ["-jar", jar_file,
                 "-name", "H2O_started_from_python",
@@ -398,12 +412,24 @@ class H2OConnection(object):
                              .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
     # TODO: is.logging? -> write to logs
-    # print "Time to perform REST call (millis): " + str(elapsed_time_millis)
+    # TODO: basically transform this R into Python
+    #   if (.h2o.isLogging()) {
+    #   .h2o.logRest("")
+    #   .h2o.logRest(sprintf("curlError:         %s", as.character(.__curlError)))
+    #   .h2o.logRest(sprintf("curlErrorMessage:  %s", .__curlErrorMessage))
+    #   .h2o.logRest(sprintf("httpStatusCode:    %d", httpStatusCode))
+    #   .h2o.logRest(sprintf("httpStatusMessage: %s", httpStatusMessage))
+    #   .h2o.logRest(sprintf("millis:            %s", as.character(as.integer(deltaMillis))))
+    #   .h2o.logRest("")
+    #   .h2o.logRest(payload)
+    #   .h2o.logRest("")
+    #   }
+
     return http_result
 
   # Low level request call
   def _attempt_rest(self, url, method, post_body, file_upload_info):
-    headers = {'User-Agent': 'H2O Python client/'+sys.version}
+    headers = {'User-Agent': 'H2O Python client/'+string.replace(sys.version, '\n', '')}
     try:
       if method == "GET":
         return requests.get(url, headers=headers)

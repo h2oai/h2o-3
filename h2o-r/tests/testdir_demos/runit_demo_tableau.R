@@ -14,20 +14,20 @@ test.tableau <- function(conn) {
   data.hex <- h2o.importFile(conn, normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   
   Log.info ('Grouping flights by months...')
-  numFlights <- h2o.ddply(data.hex, 'Month', nrow)
+  numFlights <- h2o.group_by(data.hex, "Month", nrow("Month"))  #h2o.ddply(data.hex, 'Month', nrow)
   numFlights.R <- as.data.frame(numFlights)
 
   Log.info ('Grouping number of cancellations by months...')
-  fun2 <- function(df) {sum(df[22])}         # must be numeric
-  cancelledFlights <- h2o.ddply(data.hex, 'Month', fun2)
+  #fun2 <- function(df) {sum(df[22])}         # must be numeric
+  cancelledFlights <- h2o.group_by(data.hex, "Month", sum("Cancelled") )  # h2o.ddply(data.hex, 'Month', fun2)
   cancelledFlights.R <- as.data.frame(cancelledFlights)
   
   Log.info ('Grouping flights by airport...')
-  originFlights <- h2o.ddply(data.hex, 'Origin', nrow)
+  originFlights <- h2o.group_by(data.hex, "Origin", nrow("Origin"))    # h2o.ddply(data.hex, 'Origin', nrow)
   originFlights.R <- as.data.frame(originFlights)
   
   Log.info ('Grouping number of cancellations by airport...')
-  origin_cancelled <- h2o.ddply(data.hex, 'Origin', fun2)
+  origin_cancelled <- h2o.group_by(data.hex, "Origin", sum("Cancelled"))    #h2o.ddply(data.hex, 'Origin', fun2)
   origin_cancelled.R <- as.data.frame(origin_cancelled)
   
   .arg2 <- 'Origin,Dest,UniqueCarrier'

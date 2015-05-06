@@ -167,6 +167,19 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     } catch( SocketException e ) {
       throw Log.throwErr(e);
     }
+
+    // Selected multicast interface must support multicast, and be up and running!
+    try {
+      if( !H2O.CLOUD_MULTICAST_IF.supportsMulticast() ) {
+        Log.info("Selected H2O.CLOUD_MULTICAST_IF: "+H2O.CLOUD_MULTICAST_IF+ " doesn't support multicast");
+      }
+      if( !H2O.CLOUD_MULTICAST_IF.isUp() ) {
+        throw new RuntimeException("Selected H2O.CLOUD_MULTICAST_IF: "+H2O.CLOUD_MULTICAST_IF+ " is not up and running");
+      }
+    } catch( SocketException e ) {
+      throw Log.throwErr(e);
+    }
+
     try {
       assert water.init.NetworkInit.CLOUD_DGRAM == null;
       water.init.NetworkInit.CLOUD_DGRAM = DatagramChannel.open();
@@ -187,7 +200,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // max memory for this node.
   // no need to ask the (possibly not yet populated) heartbeat if we want to know the local max memory.
-  long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
+  public long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
 
   // ---------------
   // A queue of available TCP sockets

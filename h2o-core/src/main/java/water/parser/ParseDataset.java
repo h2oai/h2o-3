@@ -172,6 +172,7 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
+    Log.trace("Done ingesting files.");
 /*    if (mfpt._errors != null) {
       job.cancel();
       //TODO replace with H2OParseException
@@ -229,6 +230,7 @@ public final class ParseDataset extends Job<Frame> {
         emaps[nodeId] = new EnumMapping(emap);
       }
       fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(setup._number_columns),AppendableVec.closeAll(avs));
+      Log.trace("Done closing all Vecs.");
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -248,17 +250,16 @@ public final class ParseDataset extends Job<Frame> {
       Vec[] evecs = new Vec[j];
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
+      Log.trace("Done unifying categoricals across nodes.");
 
     } else {                    // No enums case
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
+      Log.trace("Done closing all Vecs.");
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
-    new SVFTask(fr).doAllNodes();
-
-    // unify any vecs with enums and strings to strings only
-    new UnifyStrVecTask().doAll(fr);
-
+    if (setup._parse_type == ParserType.SVMLight)
+      new SVFTask(fr).doAllNodes();
 
     // Log any errors
     if( mfpt._errors != null )
@@ -402,27 +403,6 @@ public final class ParseDataset extends Job<Frame> {
     }
     @Override public void reduce( SVFTask drt ) {}
   }
- 
-  // --------------------------------------------------------------------------
-  // Run once on all nodes; switch enum chunks over to string chunks
-  private static class UnifyStrVecTask extends MRTask<UnifyStrVecTask> {
-    private UnifyStrVecTask() {}
-
-    @Override public void map(Chunk[] chunks) {
-      for (Chunk c : chunks) {
-        Vec v = c.vec();
-        if (v.isString() && c instanceof C4Chunk) {
-          Key k = v.chunkKey(c.cidx());
-          NewChunk nc = new NewChunk(v, c.cidx());
-          for (int j = 0; j < c._len; ++j)
-            if (c.isNA(j)) nc.addNA();
-            else nc.addStr(new ValueString(v.domain()[(int) c.at8(j)]));
-
-          H2O.putIfMatch(k, new Value(k, nc.new_close()), H2O.get(k));
-        }
-      }
-    }
-  }
 
   // --------------------------------------------------------------------------
   // We want to do a standard MRTask with a collection of file-keys (so the
@@ -474,6 +454,7 @@ public final class ParseDataset extends Job<Frame> {
     private AppendableVec [] _vecs;
 
     @Override public void postGlobal(){
+      Log.trace("Begin file parse cleanup.");
       int n = _dout.length-1;
       while(_dout[n] == null && n != 0)--n;
       for(int i = 0; i <= n; ++i) {
@@ -509,6 +490,7 @@ public final class ParseDataset extends Job<Frame> {
         if (f != null) try { f.get(); } catch (InterruptedException e) { } catch (ExecutionException e) {}
       }
       _vecs = res;
+      Log.trace("Finished file parse cleanup.");
     }
     private AppendableVec[] vecs(){ return _vecs; }
 
@@ -556,6 +538,7 @@ public final class ParseDataset extends Job<Frame> {
       ParseSetup localSetup = new ParseSetup(_parseSetup);
       ByteVec vec = getByteVec(key);
       final int chunkStartIdx = _fileChunkOffsets[_lo];
+      Log.trace("Begin a map stage of a file parse with start index "+chunkStartIdx+".");
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
@@ -568,7 +551,7 @@ public final class ParseDataset extends Job<Frame> {
         switch( cpr ) {
         case NONE:
           if( _parseSetup._parse_type._parallelParseSupported ) {
-            DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
+            DistributedParse dp = new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
             addToPendingCount(1);
             dp.setCompleter(this);
             dp.asyncExec(vec);
@@ -606,6 +589,7 @@ public final class ParseDataset extends Job<Frame> {
           break;
         }
         }
+        Log.trace("Finished a map stage of a file parse with start index "+chunkStartIdx+".");
       } catch( IOException ioe ) {
         throw new RuntimeException(ioe);
       } catch (H2OParseException pe) {
@@ -617,6 +601,7 @@ public final class ParseDataset extends Job<Frame> {
     // Roll-up other meta data
     @Override public void reduce( MultiFileParseTask mfpt ) {
       assert this != mfpt;
+      Log.trace("Begin a reduce stage of a file parse.");
 
       // Collect & combine columns across files
       if( _dout == null ) _dout = mfpt._dout;
@@ -629,6 +614,7 @@ public final class ParseDataset extends Job<Frame> {
         }
       }
       _errors = ArrayUtils.append(_errors,mfpt._errors);
+      Log.trace("Finished a reduce stage of a file parse.");
     }
 
     // ------------------------------------------------------------------------
@@ -648,7 +634,7 @@ public final class ParseDataset extends Job<Frame> {
     }
 
     // ------------------------------------------------------------------------
-    private static class DParse extends MRTask<DParse> {
+    private static class DistributedParse extends MRTask<DistributedParse> {
       private final ParseSetup _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
@@ -662,7 +648,7 @@ public final class ParseDataset extends Job<Frame> {
       private transient long [] _espc;
       final int _nchunks;
 
-      DParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey,int nchunks) {
+      DistributedParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(mfpt);
         _vg = vg;
         _setup = setup;
@@ -680,6 +666,7 @@ public final class ParseDataset extends Job<Frame> {
         _espc = MemoryManager.malloc8(_nchunks);
       }
       @Override public void map( Chunk in ) {
+        Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
@@ -708,6 +695,7 @@ public final class ParseDataset extends Job<Frame> {
         // remove parsed data right away (each chunk is used by 2)
         freeMem(in,0);
         freeMem(in,1);
+        Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
       }
 
       private void freeMem(Chunk in, int off) {
@@ -718,8 +706,14 @@ public final class ParseDataset extends Job<Frame> {
         v.freePOJO();           // Eagerly toss from memory
         v.freeMem();
       }
-      @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
+      @Override public void reduce(DistributedParse dp) {
+        Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+        _dout.reduce(dp._dout);
+        Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+      }
+
       @Override public void postGlobal() {
+        Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         _dout = null;           // Reclaim GC eagerly
@@ -734,6 +728,7 @@ public final class ParseDataset extends Job<Frame> {
           if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,new Futures()).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
         }
+        Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
       }
     }
 
@@ -821,7 +816,7 @@ public final class ParseDataset extends Job<Frame> {
         }
 
         if (printLogSeparatorToStdout)
-          System.out.println("Additional column information only sent to log file...");
+          Log.info("Additional column information only sent to log file...");
 
         String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
         Log.info(s,printColumnToStdout);

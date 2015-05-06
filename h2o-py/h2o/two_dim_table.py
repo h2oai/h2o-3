@@ -25,8 +25,14 @@ class H2OTwoDimTable(object):
     if header: print self.table_header + ":"
     print
     table = copy.deepcopy(self.cell_values)
-    print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")
-    print
+    nr = len(table)
+    if nr > 20:
+      print tabulate.tabulate(table[:5], headers=self.col_header, numalign="left", stralign="left")
+      print "==="
+      print tabulate.tabulate(table[(nr-5):], headers=self.col_header, numalign="left", stralign="left")
+    else:
+      print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")
+      print
 
   def __repr__(self):
     self.show()
@@ -40,10 +46,10 @@ class H2OTwoDimTable(object):
     for col_index, column in enumerate(values):
       for row_index, row_value in enumerate(column):
         if types[col_index] == 'integer':
-          values[col_index][row_index]  = "" if not row_value else int(float(row_value))
+          values[col_index][row_index]  = "" if row_value is None else int(float(row_value))
 
         elif types[col_index] in ['double', 'float', 'long']:
-          values[col_index][row_index]  = "" if not row_value else float(row_value)
+          values[col_index][row_index]  = "" if row_value is None else float(row_value)
 
         else:  # string?
           continue

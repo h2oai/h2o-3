@@ -208,7 +208,7 @@ public class DTree extends Iced {
         if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
         if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
-        assert min < maxEx && n > 1 : ""+min+"<"+maxEx+" n="+n;
+        assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
         nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h.isBinom());
         cnt++;                    // At least some chance of splitting
       }
@@ -400,7 +400,7 @@ public class DTree extends Iced {
       sb.append("_split:" + _split.toString());
       sb.append("_splat:" + _splat);
       if( _split._col == -1 ) {
-        sb.append("Decided has col = -1");
+        sb.append(" col = -1 ");
       } else {
         int col = _split._col;
         if (_split._equal == 1) {
@@ -513,8 +513,8 @@ public class DTree extends Iced {
 
   public static abstract class LeafNode extends Node {
     public float _pred;
-    public LeafNode( DTree tree, int pid ) { super(tree,pid); }
-    public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); }
+    public LeafNode( DTree tree, int pid ) { super(tree,pid); tree._leaves++; }
+    public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); tree._leaves++; }
     @Override public String toString() { return "Leaf#"+_nid+" = "+_pred; }
     @Override public final StringBuilder toString2(StringBuilder sb, int depth) {
       for( int d=0; d<depth; d++ ) sb.append("  ");

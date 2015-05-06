@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 test.GLM.betaConstraints <- function(conn){
 
     Log.info("Importing prostate dataset...")
-    prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
+    prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
 
     Log.info("Run gaussian model once to grab starting values for betas...")
     myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
@@ -21,7 +21,7 @@ test.GLM.betaConstraints <- function(conn){
     upperbound <- rep(1, times = length(myX))
     colnames <- my_glm@model$coefficients_table$names[my_glm@model$coefficients_table$names != "Intercept"]
     betaConstraints <- data.frame(names = colnames, lower_bounds = lowerbound, upper_bounds = upperbound)
-    betaConstraints.hex <- as.h2o(conn, betaConstraints, key = "betaConstraints.hex")
+    betaConstraints.hex <- as.h2o(conn, betaConstraints, destination_frame = "betaConstraints.hex")
     Log.info("Pull data frame into R to run GLMnet...")
     prostate.r <- as.data.frame(prostate.hex)
 
@@ -31,7 +31,7 @@ test.GLM.betaConstraints <- function(conn){
                         alpha = 0.5,
                         standardization = T
                         ) {
-        prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
+        prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
         Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
                        standardization =", standardization, "..."))
         if(family_type == "binomial"){
@@ -54,10 +54,10 @@ test.GLM.betaConstraints <- function(conn){
         print("Glmnet betas:")
         print(glm_constraints.r$beta[,1])
         print(" ")
-        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[1:7],
+        checkEqualsNumeric(glm_constraints.h2o@model$coefficients[2:8],
                            glm_constraints.r$beta[,1],
                            tolerance = 0.1)
-        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[1:7]) <= 1.0))
+        checkTrue(all(abs(glm_constraints.h2o@model$coefficients[2:8]) <= 1.0))
 
         # Check null deviances
         print("H2O null deviance:")

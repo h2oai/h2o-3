@@ -32,7 +32,7 @@ public class DeepLearningMNIST extends TestUtil {
         DeepLearningParameters p = new DeepLearningParameters();
 
         // populate model parameters
-        p._destination_key = Key.make("dl_mnist_model");
+        p._model_id = Key.make("dl_mnist_model");
         p._train = frame._key;
         p._response_column = "C785"; // last column is the response
         p._activation = DeepLearningParameters.Activation.Tanh;
@@ -48,7 +48,7 @@ public class DeepLearningMNIST extends TestUtil {
         // speed up training
         p._adaptive_rate = false; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)
         p._replicate_training_data = false; //avoid extra communication cost upfront, got enough data on each node for load balancing
-        p._override_with_best_model = false; //no need to keep the best model around
+        p._overwrite_with_best_model = false; //no need to keep the best model around
         p._diagnostics = false; //no need to compute statistics during training
         p._score_interval = 20; //score and print progress report (only) every 20 seconds
         p._score_training_samples = 50; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)

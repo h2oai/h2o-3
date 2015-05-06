@@ -5,7 +5,7 @@
 library(h2o)
 localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
-prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), key = "prostate.hex")
+prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
 summary(prostate.hex)
 # Set the CAPSULE column to be a factor column then build model.
 prostate.hex$CAPSULE = as.factor(prostate.hex$CAPSULE)
@@ -20,5 +20,5 @@ head(predictions.R)
 tail(predictions.R)
 
 # Check performance of classification model.
-performance = h2o.performance(model = model, data = prostate.hex)
+performance = h2o.performance(model = model)
 print(performance)

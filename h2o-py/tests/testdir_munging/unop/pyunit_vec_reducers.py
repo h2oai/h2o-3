@@ -35,7 +35,7 @@ def frame_reducers(ip,port):
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sd values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o.as_list(h2o.var(h2o_data[c]))[0][0]
+    h2o_val = h2o.var(h2o_data[c])
     num_val = np.var(np_data[:,c], ddof=1)
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal var values between h2o and " \

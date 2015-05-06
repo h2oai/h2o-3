@@ -117,7 +117,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    this((parms==null || parms._destination_key== null) ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key, desc,parms);
+    this((parms == null || parms._model_id == null) ? Key.make(desc + "Model_" + Key.rand()) : parms._model_id, desc, parms);
   }
 
   /** Default constructor, given all arguments */
@@ -130,8 +130,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public static ModelBuilder createModelBuilder(String algo) {
     ModelBuilder modelBuilder;
 
+    Class<? extends ModelBuilder> clz = null;
     try {
-      Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
+      clz = ModelBuilder.getModelBuilder(algo);
+    }
+    catch (Exception ignore) {}
+
+    if (clz == null) {
+      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
+    }
+
+    try {
       if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
         throw H2O.fail("Class is not parameterized as expected: " + clz);
       }
@@ -158,11 +167,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  build.  Each ModelBuilder must have one of these. */
   abstract public Model.ModelCategory[] can_build();
 
+  /**
+   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
+   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
+   * at startup).
+   */
+  public enum BuilderVisibility {
+    Experimental,
+    Beta,
+    Stable
+  }
+
+  /**
+   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
+   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
+   * at startup).
+   */
+  abstract public BuilderVisibility builderVisibility();
+
   /** Clear whatever was done by init() so it can be run again. */
   public void clearInitState() {
     clearValidationErrors();
 
   }
+
+  /**
+   * Override this method to call error() if the model is expected to not fit in memory, and say why
+   */
+  protected void checkMemoryFootPrint() {}
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -234,7 +266,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (va != null)
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
+      String[] msgs = Model.adaptTestForTrain(_train._names,null,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
       if( expensive ) {
         for( String s : msgs ) {
           Log.info(s);

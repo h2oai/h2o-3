@@ -11,7 +11,7 @@ source('../h2o-runit.R')
 test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	prostate.data = h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), key="prostate.data")
+	prostate.data = h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
 
 	print("Run test/train split at 20/80.")
 	prostate.data$split <- ifelse(h2o.runif(prostate.data)>0.8, yes=1, no=0)
@@ -31,7 +31,8 @@ test.linkFunctions <- function(conn) {
 	print(head(prediction.h2o.binomial.log))
 
 	print("Check strength of predictions all within [0,1] domain")
-	ouside.domian <- prediction.h2o.binomial.log[,prediction.h2o.binomial.log$"0"<0 | prediction.h2o.binomial.log$"0">1]
+	outside.domain <- prediction.h2o.binomial.log[prediction.h2o.binomial.log$"0"<0 | prediction.h2o.binomial.log$"0">1,]
+	print(outside.domain)
 	stopifnot(dim(outside.domain)[1] == 0) # There should be no predictions with strength less than 0 or greater than 1
 
 testEnd()

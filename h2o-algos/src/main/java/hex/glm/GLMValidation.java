@@ -10,6 +10,7 @@ import water.DKV;
 import water.Iced;
 import water.Key;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 /**
  * Class for GLMValidation.
@@ -29,7 +30,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   final double _threshold;
   AUC2 _auc2;
   MetricBuilder _metricBuilder;
-
+  boolean _intercept = true;
   public GLMValidation(String[] domain, double ymu, GLMParameters glm, int rank, double threshold){
     super(domain);
     _rank = rank;
@@ -41,12 +42,19 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       :new MetricBuilderRegression();
   }
 
+  public double explainedDev(){
+    return 1.0 - residualDeviance()/nullDeviance();
+  }
+
+
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
-    if(_glm._family == Family.binomial)
-      add2(ds[2],yact[0]);
-    else
-      add2(ds[0],yact[0]);
+    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
+      if (_glm._family == Family.binomial)
+        add2(yact[0], ds[2]);
+      else
+        add2(yact[0], ds[0]);
+    }
     return ds;
   }
 
@@ -69,9 +77,13 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   public void add(double yreal, double ymodel) {
     _yact[0] = (float) yreal;
-    _ds[0] = ymodel > _threshold ? 1 : 0;
-    _ds[1] = 1 - ymodel;
-    _ds[2] = ymodel;
+    if(_glm._family == Family.binomial) {
+      _ds[0] = ymodel > _threshold ? 1 : 0;
+      _ds[1] = 1 - ymodel;
+      _ds[2] = ymodel;
+    } else {
+      _ds[0] = ymodel;
+    }
     _metricBuilder.perRow(_ds, _yact, null);
     add2(yreal, ymodel);
   }
@@ -97,7 +109,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
   public final double nullDeviance(){return null_deviance;}
   public final double residualDeviance(){return residual_deviance;}
-  public final long nullDOF(){return nobs-1;}
+  public final long nullDOF(){return nobs - (_intercept?1:0);}
   public final long resDOF(){return nobs - _rank;}
 
   protected double computeAUC(GLMModel m, Frame f){
@@ -136,7 +148,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   @Override
   public String toString(){
-    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics == null?_metrics:"");
+    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics != null?", metrics = " + _metrics:"");
   }
 
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
@@ -150,6 +162,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
       metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     }
+    DKV.put(metrics._key,metrics);
     return gm._output.addModelMetrics(metrics);
   }
 }

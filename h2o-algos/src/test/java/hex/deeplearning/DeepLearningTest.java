@@ -170,8 +170,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(57, 170),
-              a(16, 137)),
+            a(a(51, 176),
+              a(13, 140)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -187,7 +187,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(5, 222),
+            a(a(6, 221),
               a(0, 153)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout);
@@ -239,7 +239,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(56, 171),
+            a(a(57, 170),
               a( 8, 145)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Maxout);
@@ -366,7 +366,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            0.07948414889955241,
+            0.012242754628809,
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -397,6 +397,25 @@ public class DeepLearningTest extends TestUtil {
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
 
+  @Ignore //PUBDEV-1001
+  @Test public void testCzechboard() throws Throwable {
+    basicDLTest_Classification(
+            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                Vec resp = fr.remove("C2");
+                fr.add("C2", resp.toEnum());
+                resp.remove();
+                return fr.find("C3");
+              }
+            },
+            1,
+            a(a(1, 44999),
+              a(0, 45000)),
+            s("0", "1"),
+            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+  }
 
 
   // Put response as the last vector in the frame and return possible frames to clean up later
@@ -437,7 +456,7 @@ public class DeepLearningTest extends TestUtil {
       dl._train = frTrain._key;
       dl._response_column = ((Frame)DKV.getGet(dl._train)).lastVecName();
       dl._seed = (1L<<32)|2;
-      dl._destination_key = Key.make("DL_model_" + hexnametrain);
+      dl._model_id = Key.make("DL_model_" + hexnametrain);
       dl._reproducible = true;
       dl._epochs = epochs;
       dl._activation = activation;
@@ -500,4 +519,48 @@ public class DeepLearningTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Ignore
+  @Test public void testWhatever() {
+    DeepLearningModel.DeepLearningParameters dl;
+    Frame frTrain = null;
+    DeepLearningModel model = null;
+    while(true) {
+      dl = new DeepLearningModel.DeepLearningParameters();
+      Scope.enter();
+      try {
+        frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+        Vec resp = frTrain.lastVec().toEnum();
+        frTrain.remove(frTrain.vecs().length-1);
+        frTrain.add("Response", resp);
+        // Configure DL
+        dl._train = frTrain._key;
+        dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
+        dl._seed = 1234;
+        dl._reproducible = true;
+        dl._epochs = 0.0001;
+        dl._export_weights_and_biases = true;
+        dl._hidden = new int[]{188, 191};
+
+        // Invoke DL and block till the end
+        DeepLearning job = null;
+        try {
+          job = new DeepLearning(dl);
+          // Get the model
+          model = job.trainModel().get();
+          Log.info(model._output);
+        } finally {
+          if (job != null) job.remove();
+        }
+        Assert.assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+
+
+      } finally {
+        if (frTrain != null) frTrain.remove();
+        if (model != null) model.delete();
+        Scope.exit();
+      }
+    }
+  }
+
 }

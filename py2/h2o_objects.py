@@ -467,14 +467,16 @@ class H2O(object):
                     '-hdfs_config ' + self.hdfs_config
                 ]
 
-        if self.use_hdfs:
+        # UPDATE: no longer valid to h2o?
+        if 1==0 and self.use_hdfs:
             args += [
                 # it's fine if hdfs_name has a ":9000" port or something too
                 '-hdfs hdfs://' + self.hdfs_name_node,
                 '-hdfs_version ' + self.hdfs_version,
             ]
 
-        if self.use_maprfs:
+        # UPDATE: no longer valid to h2o?
+        if 1==0 and self.use_maprfs:
             args += [
                 # 3 slashes?
                 '-hdfs maprfs:///' + self.hdfs_name_node,

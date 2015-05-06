@@ -38,14 +38,14 @@ class OutputObj(AttrDict):
 
         self.name = name
 
-        if 'validation_messages' in self:
-            if self.validation_messages:
+        # just because validation_messages exist, doesn't mean there's a failure
+        if ('validation_error_count' in self) and (self.validation_error_count >= 1):
+            print "The h2o json response says something failed. validation_error_count: %s" % self.validation_error_count
+            if 'validation_messages' not in self:
+                raise Exception("No validation_messages for the validation_error_count!=0: %s")
+            else:
                 raise Exception("The h2o json response says something failed. validation_messages: %s" % \
                     dump_json(self.validation_messages))
-        if 'validation_error_count' in self:
-            if self.validation_error_count >= 1:
-                raise Exception("The h2o json response says something failed. validation_error_count: %s" % \
-                    self.validation_error_count)
             
         if not noPrint:
             for k,v in self.iteritems():
@@ -81,7 +81,11 @@ class OutputObj(AttrDict):
                             v2 = copy(v)
                             del v2['__meta']
                         # print self.name, k, dump_json(v2)
-                        print self.name, k, v2
+                        # if the key has '_summary' in it, do a dump_jsvon
+                        if '_summary' in k:
+                            print self.name, k, dump_json(v2)
+                        else:
+                            print self.name, k, v2
 
     # these might be useful
     def rec_getattr(self, attr):

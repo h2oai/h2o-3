@@ -13,7 +13,8 @@ def link_functions_gaussian(ip,port):
     h2o_data = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))
     h2o_data.head()
 
-    sm_data = pd.read_csv(zipfile.ZipFile(h2o.locate("smalldata/prostate/prostate_complete.csv.zip")).open("prostate_complete.csv")).as_matrix()
+    sm_data = pd.read_csv(zipfile.ZipFile(h2o.locate("smalldata/prostate/prostate_complete.csv.zip")).
+                          open("prostate_complete.csv")).as_matrix()
     sm_data_response = sm_data[:,9]
     sm_data_features = sm_data[:,1:9]
 
@@ -24,10 +25,11 @@ def link_functions_gaussian(ip,port):
 
     print("Create models with canonical link: IDENTITY")
     h2o_model = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gaussian", link="identity",alpha=[0.5], Lambda=[0])
-    sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Gaussian(sm.families.links.identity)).fit()
+    sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features,
+                      family=sm.families.Gaussian(sm.families.links.identity)).fit()
 
     print("Compare model deviances for link function identity")
-    h2o_deviance = h2o_model._model_json['output']['training_metrics']['residual_deviance'] / h2o_model._model_json['output']['training_metrics']['null_deviance']
+    h2o_deviance = h2o_model.residual_deviance() / h2o_model.null_deviance()
     sm_deviance = sm_model.deviance / sm_model.null_deviance
     assert h2o_deviance - sm_deviance < 0.01, "expected h2o to have an equivalent or better deviance measures"
 

@@ -4,11 +4,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
-import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.TwoDimTable;
-
-import java.util.Arrays;
 
 /**
  * Client-facing Schema of a TwoDimTable
@@ -110,14 +106,14 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
   }
 
   /**
-   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_mse"
-   * @param name
+   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_MSE"
+   * @param n
    * @return
    */
-  private String pythonify(String name) {
-    if (name == null) return null;
+  private String pythonify(String n) {
+    if (n == null || name.toLowerCase().contains("confusion")) return n;
     StringBuilder sb = new StringBuilder();
-    String [] modified = name.split("[\\s_]+");
+    String [] modified = n.split("[\\s_]+");
     for (int i=0; i<modified.length; ++i) {
       if (i!=0) sb.append("_");
       String s = modified[i];

@@ -19,14 +19,14 @@ test.h2o.rf.balance.classes <- function(conn) {
 
     # DRF2
     air.rf         <- h2o.randomForest(x = myX, y = myY, training_frame = air.train, seed = 12, validation_frame=air.valid, ntrees = 10, max_depth = 20, balance_classes=F)
-    print(air.rf@model)
+    print(air.rf)
 
     air.rf.balance <- h2o.randomForest(x = myX, y = myY, training_frame = air.train, seed = 12, validation_frame=air.valid, ntrees = 10, max_depth = 20, balance_classes=T)
-    print(air.rf.balance@model)
+    print(air.rf.balance)
 
     #uploading test file to h2o
     testFilePath <-locate("smalldata/airlines/AirlinesTest.csv.zip")
-    air.test <- h2o.uploadFile(conn,testFilePath,key="air.test")
+    air.test <- h2o.uploadFile(conn,testFilePath,destination_frame="air.test")
 
     func <- function(model_object) {
         #predicting on test file

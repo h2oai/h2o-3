@@ -13,7 +13,7 @@ interact.helper <- function(r_level, l_level, l_vec, r_vec) {
    v1 <- l_vec == l_level;
    v2 <- r_vec == r_level;
    vec <- v1 & v2
-   key <- vec@key
+   key <- vec@frame_id
    ret <- h2o.assign(vec, paste('l', l_level, '_', 'r', r_level, sep = ""))
    ret
 }
@@ -24,9 +24,23 @@ get.name <- function(r_level, l_level) paste('l', l_level, '_', 'r', r_level, se
 inner.names <- function(l_level, r_levels) lapply(r_levels, get.name, l_level)
 
 interact <- function(fr, l_vec, r_vec) {
+   print("interact 1")
+   first <- h2o.levels(fr, r_vec)
+   print("interact 1.1")
+   second <- h2o.levels(fr, r_vec)
+   print("interact 1.2")
+   foo <- fr[l_vec]
+   print("interact 1.2.1")
+   lapply(first, inner, second, fr[l_vec], fr[r_vec])
+   print("interact 1.3")
+   unlist(lapply(first, inner, second, fr[l_vec], fr[r_vec]))
+   print("interact 1.4")
    terms <- unlist(lapply(h2o.levels(fr, l_vec), inner, h2o.levels(fr, r_vec), fr[l_vec], fr[r_vec]))
+   print("interact 2")
    terms <- h2o.cbind(terms)
+   print("interact 3")
    print(terms)
+   print("interact 4")
    colnames(terms) <- unlist(inner.names(h2o.levels(fr, l_vec), h2o.levels(fr, r_vec)))
    terms
 }
@@ -39,7 +53,7 @@ interact <- function(fr, l_vec, r_vec) {
 h <- h2o.init(ip=myIP, port=myPort)
 #uploading data file to h2o
 filePath <- locate("smalldata/logreg/prostate.csv")
-hex <- h2o.uploadFile(h, filePath, "prostate")
+hex <- h2o.uploadFile(h, filePath, "prostate")[1:10,]
 
 hex$RACE <- as.factor(hex$RACE)
 hex$GLEASON <- as.factor(hex$GLEASON)

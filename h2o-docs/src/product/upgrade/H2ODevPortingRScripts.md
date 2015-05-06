@@ -69,8 +69,7 @@ The following parameters have been renamed, but retain the same functions:
 H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
-`distribution` | `loss`
+`key` | `model_id`
 `n.trees` | `ntrees`
 `interaction.depth` | `max_depth`
 `n.minobsinnode` | `min_rows`
@@ -79,7 +78,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `balance.classes` | `balance_classes`
 `max.after.balance.size` | `max_after_balance_size`
-`class.sampling.factors` | `class_sampling_factors`
+
 
 ###Deprecated GBM Parameters
 
@@ -105,8 +104,8 @@ H2O  | H2O-Dev
 `x,` |`x,`
 `y,` |`y,` 
 `data,` | `training_frame,`
-`key = "",` | `destination_key,` 
-`distribution = 'multinomial',` | `loss = c("bernoulli", "multinomial", "gaussian"),` 
+`key = "",` | `model_id,` 
+`distribution = 'multinomial',` | `distribution = c("bernoulli", "multinomial", "gaussian"),` 
 `n.trees = 10,` | `ntrees = 50`
 `interaction.depth = 5,` | `max_depth = 5,` 
 `n.minobsinnode = 10,` | `min_rows = 10,` 
@@ -167,7 +166,7 @@ The following parameters have been renamed, but retain the same functions:
 H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `nlambda` | `nlambdas`
 `lambda.min.ratio` | `lambda_min_ratio`
  `iter.max` | `max_iterations`
@@ -186,16 +185,13 @@ The following parameters have been removed:
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
  - `offset`: Specify a column as an offset. (may be re-added)
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. (may be re-added)
- - `n_folds`: Number of folds for cross-validation (will be re-added)
 
 ###New GLM Parameters
  
  The following parameters have been added: 
  
- - `class_sampling_factors`: Specify an array containing real numbers to define how much each class should be over- or under-sampled.
  - `validation_frame`: Specify the validation dataset. 
- - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
- - `solver`: Select ADMM or LBFGS. 
+ - `solver`: Select IRLSM or LBFGS. 
 
 ###GLM Algorithm Comparison
 
@@ -206,21 +202,20 @@ H2O  | H2O-Dev
 `x,` | `x,`
 `y,` | `y,` 
 `data,` |`training_frame,` 
-`key = "",` | `destination_key,` 
+`key = "",` | `model_id,` 
  &nbsp; | `validation_frame`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
 `return_all_lambda = FALSE,` | 
-&nbsp; | `class_sampling_factors,`
 `intercept = TRUE,` | 
-&nbsp; | `max_after_balance_size = 5,`
 `non_negative = FALSE,` | 
-&nbsp; | `solver = c("ADMM", "L_BFGS"),`
+&nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
-`family,` | `family = c("gaussian", "binomial", "poisson", "gamma"),` 
-`link,` | `link = c("family_default", "identity", "logit", "log", "inverse"),`
-`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  
+`family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
+`link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
+`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  `tweedie_variance_power = NaN,`
+&nbsp; | `tweedie_link_power = NaN,`
 `alpha = 0.5,` | `alpha = 0.5,` 
 `prior = NULL` | `prior = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
@@ -228,7 +223,7 @@ H2O  | H2O-Dev
 `nlambda = -1,` | `nlambdas = -1,` 
 `lambda.min.ratio = -1,` | `lambda_min_ratio = 1.0,` 
 `use_all_factor_levels = FALSE` | `use_all_factor_levels = FALSE,` 
-`nfolds = 0,` |  
+`nfolds = 0,` |  `nfolds = 0,`
 `beta_constraints = NULL,` | `beta_constraint = NULL)` 
 `higher_accuracy = FALSE,` |  
 `variable_importances = FALSE,` | 
@@ -272,19 +267,13 @@ The following parameters have been renamed, but retain the same functions:
 H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `centers` | `k`
 `cols` | `x`
 `iter.max` | `max_iterations`
 `normalize` | `standardize`
 
-**Note** In H2O, the `normalize` parameter was disabled by default.The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
-
-###Deprecated K-Means Parameters
-
-The following parameters have been removed: 
-
-- `dropNACols`:   Drop columns with more than 20% missing values. (may be re-added)
+**Note** In H2O, the `normalize` parameter was disabled by default. The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
 
 ###New K-Means Parameters
 
@@ -301,12 +290,11 @@ H2O  | H2O-Dev
 `data,` | `training_frame,` 
 `cols = '',` | `x,`
 `centers,` | `k,`
-`key = "",` | `destination_key,`
+`key = "",` | `model_id,`
 `iter.max = 10,` | `max_iterations = 1000,`
 `normalize = FALSE,`  | `standardize = TRUE,`
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
 `seed = 0,` | `seed)`
-`dropNACols = FALSE)` |
 
 ###Output
 
@@ -317,8 +305,7 @@ H2O  | H2O-Dev
 ------------- | -------------
 `@model$params` | `@allparameters`
 `@model$centers` | `@model$centers`
-`@model$withinss` | `@model$within_mse`
-`@model$tot.withinss` | `@model$avg_within_ss`
+`@model$tot.withinss` | `@model$tot_withinss`
 `@model$size` | `@model$size`
 `@model$iter` | `@model$iterations`
 &nbsp; | `@model$_scoring_history`
@@ -340,10 +327,10 @@ The following parameters have been renamed, but retain the same functions:
 H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `validation` | `validation_frame`
 `class.sampling.factors` | `class_sampling_factors`
-
+`nfolds` |  `n_folds`
 
 ###Deprecated DL Parameters
 
@@ -351,7 +338,6 @@ The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
-- `n_folds`:Number of folds for cross-validation (will be re-added).
 
 ###New DL Parameters
 
@@ -371,68 +357,66 @@ H2O  | H2O-Dev
 `h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
 `y,` | `y,`
 `data,` | `training_frame,` 
-`key = "",` | `destination_key = "",`
-`override_with_best_model,` | `_override_with_best_model = true,` 
+`key = "",` | `model_id = "",`
+`override_with_best_model,` | `override_with_best_model = true,` 
 `classification = TRUE,` | 
-`nfolds = 0,` |  
+`nfolds = 0,` |  `n_folds = 0`
 `validation,` | `validation_frame,` 
 `holdout_fraction = 0,` |  
-`checkpoint = " "` | `_checkpoint,` 
-`autoencoder,` | `_autoencoder = false,` 
-`use_all_factor_levels,` | `_use_all_factor_levels = true`
+`checkpoint = " "` | `checkpoint,` 
+`autoencoder,` | `autoencoder = false,` 
+`use_all_factor_levels,` | `use_all_factor_levels = true`
 `activation,` | `_activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),`
-`hidden,` | `_hidden= c(200, 200),`
-`epochs,` | `_epochs = 10.0,`
-`train_samples_per_iteration,` |`_train_samples_per_iteration = -2,`
-&nbsp; | `_target_ratio_comm_to_comp = 0.02,`
+`hidden,` | `hidden= c(200, 200),`
+`epochs,` | `epochs = 10.0,`
+`train_samples_per_iteration,` |`train_samples_per_iteration = -2,`
 `seed,` | `_seed,` 
-`adaptive_rate,` | `_adaptive_rate = true,` 
-`rho,` | `_rho = 0.99,` 
-`epsilon,` | `_epsilon = 1e-8,` 
-`rate,` | `_rate = .005,` 
-`rate_annealing,` | `_rate_annealing = 1e-6,` 
-`rate_decay,` | `_rate_decay = 1.0,` 
-`momentum_start,` | `_momentum_start = 0,`
-`momentum_ramp,` | `_momentum_ramp = 1e6,`
-`momentum_stable,` | `_momentum_stable = 0,` 
-`nesterov_accelerated_gradient,` | `_nesterov_accelerated_gradient = true,`
-`input_dropout_ratio,` | `_input_dropout_ratio = 0.0,` 
-`hidden_dropout_ratios,` | `_hidden_dropout_ratios,` 
-`l1,` | `_l1 = 0.0,` 
-`l2,` | `_l2 = 0.0,` 
-`max_w2,` | `_max_w2 = Inf,`
-`initial_weight_distribution,` | `_initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
-`initial_weight_scale,` | `_initial_weight_scale = 1.0,`
-`loss,` | `_loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
-`score_interval,` | `_score_interval = 5,` 
-`score_training_samples,` | `_score_training_samples = 10000l,` 
-`score_validation_samples,` | `_score_validation_samples = 0l,`
-`score_duty_cycle,` | `_score_duty_cycle = 0.1,` 
-`classification_stop,` | `_classification_stop = 0`
-`regression_stop,` | `_regression_stop = 1e-6,`
-`quiet_mode,` | `_quiet_mode = false,`
-`max_confusion_matrix_size,` | &nbsp;
-`max_hit_ratio_k,` | `_max_hit_ratio_k,`
-`balance_classes,` | `_balance_classes = false,`
-`class_sampling_factors,` | `_class_sampling_factors,`
-`max_after_balance_size,` | &nbsp; 
-`score_validation_sampling,` | `_score_validation_sampling,`
-`diagnostics,` | `_diagnostics = true,` 
-`variable_importances,` | `_variable_importances = false,`
-`fast_mode,` | `_fast_mode = true,` 
-`ignore_const_cols,` | `_ignore_const_cols = true,`
-`force_load_balance,` | `_force_load_balance = true,`
-`replicate_training_data,` | `_replicate_training_data = true,`
-`single_node_mode,` | `_single_node_mode = false,` 
-`shuffle_training_data,` | `_shuffle_training_data = false,`
- &nbsp; | `_missing_values_handling = MissingValuesHandling.MeanImputation`
-`sparse,` | `_sparse = false,` 
-`col_major,` | `_col_major = false,`
-`max_categorical_features,` | `_max_categorical_features = Integer.MAX_VALUE,`
-`reproducible)` | `_reproducible = false,` 
-`average_activation` | `_average_activation = 0,`
- &nbsp; | `_sparsity_beta = 0`
- &nbsp; | `_export_weights_and_biases = false)`
+`adaptive_rate,` | `adaptive_rate = true,` 
+`rho,` | `rho = 0.99,` 
+`epsilon,` | `epsilon = 1e-8,` 
+`rate,` | `rate = .005,` 
+`rate_annealing,` | `rate_annealing = 1e-6,` 
+`rate_decay,` | `rate_decay = 1.0,` 
+`momentum_start,` | `momentum_start = 0,`
+`momentum_ramp,` | `momentum_ramp = 1e6,`
+`momentum_stable,` | `momentum_stable = 0,` 
+`nesterov_accelerated_gradient,` | `nesterov_accelerated_gradient = true,`
+`input_dropout_ratio,` | `input_dropout_ratio = 0.0,` 
+`hidden_dropout_ratios,` | `hidden_dropout_ratios,` 
+`l1,` | `l1 = 0.0,` 
+`l2,` | `l2 = 0.0,` 
+`max_w2,` | `max_w2 = Inf,`
+`initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
+`initial_weight_scale,` | `initial_weight_scale = 1.0,`
+`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
+`score_interval,` | `score_interval = 5,` 
+`score_training_samples,` | `score_training_samples = 10000l,` 
+`score_validation_samples,` | `score_validation_samples = 0l,`
+`score_duty_cycle,` | `score_duty_cycle = 0.1,` 
+`classification_stop,` | `classification_stop = 0`
+`regression_stop,` | `regression_stop = 1e-6,`
+`quiet_mode,` | `quiet_mode = false,`
+`max_confusion_matrix_size,` | `max_confusion_matrix_size,`
+`max_hit_ratio_k,` | `max_hit_ratio_k,`
+`balance_classes,` | `balance_classes = false,`
+`class_sampling_factors,` | `class_sampling_factors,`
+`max_after_balance_size,` | `max_after_balance_size,` 
+`score_validation_sampling,` | `score_validation_sampling,`
+`diagnostics,` | `diagnostics = true,` 
+`variable_importances,` | `variable_importances = false,`
+`fast_mode,` | `fast_mode = true,` 
+`ignore_const_cols,` | `ignore_const_cols = true,`
+`force_load_balance,` | `force_load_balance = true,`
+`replicate_training_data,` | `replicate_training_data = true,`
+`single_node_mode,` | `single_node_mode = false,` 
+`shuffle_training_data,` | `shuffle_training_data = false,`
+`sparse,` | `sparse = false,` 
+`col_major,` | `col_major = false,`
+`max_categorical_features,` | `max_categorical_features = Integer.MAX_VALUE,`
+`reproducible)` | `reproducible=FALSE,` 
+`average_activation` | `average_activation = 0,`
+ &nbsp; | `sparsity_beta = 0`
+ &nbsp; | `export_weights_and_biases=FALSE)`
 
 ###Output
 
@@ -472,7 +456,7 @@ The following parameters have been renamed, but retain the same functions:
 H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `validation` | `validation_frame`
 `sample.rate` | `sample_rate`
 `ntree` | `ntrees` 
@@ -510,7 +494,7 @@ H2O  | H2O-Dev
 `x,` | `x,` 
 `y,` | `y,` 
 `data,` | `training_frame,` 
-`key="",` | `destination_key,` 
+`key="",` | `model_id,` 
 `validation,` | `validation_frame,` 
 `mtries = -1,` | `mtries = -1,` 
 `sample.rate=2/3,` | `sample_rate = 0.6666667,` 
@@ -521,14 +505,14 @@ H2O  | H2O-Dev
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
-`seed = -1,` | `_seed)` 
+`seed = -1,` | `seed` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size` 
-`class.sampling.factors = NULL,` | `class_sampling_factors` 
+`max.after.balance.size = 5,` | `max_after_balance_size)` 
+`class.sampling.factors = NULL,` | &nbsp; 
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 

@@ -1,18 +1,18 @@
-checkKMeansModel <- function(myKM.h2o, myKM.r, training_rows, tol = 0.01) {
+checkKMeansModel <- function(myKM.h2o, myKM.r, tol = 0.01) {
   Log.info("R Final Clusters:"); print(myKM.r$centers)
   Log.info("H2O Final Clusters:"); print(getCenters(myKM.h2o))
   expect_equivalent(as.matrix(getCenters(myKM.h2o)), myKM.r$centers)
   
-  wmseR <- sort.int(myKM.r$withinss/myKM.r$size)
-  wmseH2O <- sort.int(getWithinMSE(myKM.h2o))
+  wssR <- sort.int(myKM.r$withinss)
+  wssH2O <- sort.int(getWithinSS(myKM.h2o))
   totssR <- myKM.r$totss
-  totssH2O <- getAvgSS(myKM.h2o)*training_rows
+  totssH2O <- getTotSS(myKM.h2o)
   btwssR <- myKM.r$betweenss
-  btwssH2O <- getAvgBetweenSS(myKM.h2o)*training_rows
+  btwssH2O <- getBetweenSS(myKM.h2o)
   
-  Log.info(paste("H2O WithinMSE : ", wmseH2O, "\t\t", "R WithinMSE : ", wmseR))
-  Log.info("Compare Within-Cluster MSE between R and H2O\n")  
-  expect_equal(wmseH2O, wmseR, tolerance = tol)
+  Log.info(paste("H2O WithinSS : ", wssH2O, "\t\t", "R WithinSS : ", wssR))
+  Log.info("Compare Within-Cluster SS between R and H2O\n")  
+  expect_equal(wssH2O, wssR, tolerance = tol)
   
   Log.info(paste("H2O TotalSS : ", totssH2O, "\t\t", "R TotalSS : ", totssR))
   Log.info("Compare Total SS between R and H2O\n")
