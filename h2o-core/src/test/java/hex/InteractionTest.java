@@ -7,7 +7,7 @@ import water.fvec.Frame;
 import water.util.Log;
 
 public class InteractionTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   Frame makeFrame(long rows) {
     CreateFrame cf = new CreateFrame();
@@ -31,7 +31,7 @@ public class InteractionTest extends TestUtil {
 
     Interaction in = new Interaction();
     in._source_frame = frame._key;
-    in._factors = new int[]{3,7,5,2};
+    in._factor_columns = new String[]{"C5","C6","C4","C3"};
     in._max_factors = 20;
     in._min_occurrence = 1;
     in._pairwise = false;
@@ -47,7 +47,7 @@ public class InteractionTest extends TestUtil {
 
     Interaction in = new Interaction();
     in._source_frame = frame._key;
-    in._factors = new int[]{2,7,8};
+    in._factor_columns = new String[]{"C3","C8","C9"};
     in._max_factors = 10;
     in._min_occurrence = 1;
     in._pairwise = true;
@@ -63,7 +63,7 @@ public class InteractionTest extends TestUtil {
 
     Interaction in = new Interaction();
     in._source_frame = frame._key;
-    in._factors = new int[]{7,5,3};
+    in._factor_columns = new String[]{"C8","C6","C4"};
     in._max_factors = 106;
     in._min_occurrence = 4;
     in._pairwise = true;
@@ -79,7 +79,7 @@ public class InteractionTest extends TestUtil {
 
     Interaction in = new Interaction();
     in._source_frame = frame._key;
-    in._factors = new int[]{3,5,7};
+    in._factor_columns = new String[]{"C4","C6","C8"};
     in._max_factors = 20;
     in._min_occurrence = 2;
     in._pairwise = false;

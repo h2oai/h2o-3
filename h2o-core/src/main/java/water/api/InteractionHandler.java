@@ -7,7 +7,7 @@ public class InteractionHandler extends Handler {
   public InteractionV3 run(int version, InteractionV3 cf) {
     Interaction cfr = new Interaction();
     cf.fillImpl(cfr);
-    cfr.execImpl(); //non-blocking -> caller has to check Job progress
+    cfr.execImpl(); //blocking
     return (InteractionV3)Schema.schema(version, Interaction.class).fillFromImpl(cfr);
   }
 }

@@ -562,8 +562,7 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
   if( is(o, "H2OModel") ) {
     hrt <- o@model$training_metrics@metrics$hit_ratio_table  # by default grab the training metrics hrt
     l <- list(...)
-    if( length(l)==0 && (train || valid) ) {
-      l$train <- train
+    if( length(l)==0 && valid ) {
       l$valid <- valid
     }
     if( length(l)!=0L ) {
@@ -571,7 +570,7 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
       if( l$valid )
         if(!is.null(object@model$validation_metrics@metrics))
           hrt <- o@model$validation_metrics@metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
-          else stop("This model has no validation metrics.", call. = FALSE)
+        else stop("This model has no validation metrics.", call. = FALSE)
     }
 
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
