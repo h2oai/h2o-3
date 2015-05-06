@@ -32,9 +32,21 @@ response=1 #1:1000 imbalance
 predictors=c(3:ncol(data.hex))
 
 # Start modeling   
+# GLM
+mdl.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family = "binomial")
+mdl.glm
 
 # Gradient Boosted Trees
 mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "bernoulli")
 mdl.gbm
 
+#Random Forest
+mdl.rf = h2o.gbm(x=predictors, y=response, training_frame=data.hex, ntrees=10, max_depth=5)
+mdl.rf
+
+#  DL
+mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE)
+mdl.dl
+
 PASS_BANNER()
+

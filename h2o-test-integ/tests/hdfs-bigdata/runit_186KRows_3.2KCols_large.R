@@ -40,7 +40,7 @@ myX = setdiff(names(data.hex), myY)
 
 # Start modeling
 # GLM
-data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian") 
+data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS") 
 data1.glm
 
 #GBM on original dataset

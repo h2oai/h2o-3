@@ -62,7 +62,7 @@ data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.train, valid
 data1.rf
 
 #Deep Learning
-data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=false, epochs=.1, hidden=c(5,5))
-data1.dl 
+#data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5))
+#data1.dl 
 
 PASS_BANNER()
