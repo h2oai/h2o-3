@@ -16,11 +16,11 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
-import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.MathUtils;
 
@@ -277,7 +277,7 @@ public abstract class ASTOp extends AST {
   double[] map(Env env, double[] in, double[] out, AST[] args) { throw H2O.unimpl(); }
   @Override void exec(Env e) { throw H2O.unimpl(); }
   // special exec for apply calls
-  void exec(Env e, AST arg1, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
+  void exec(Env e, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
   @Override int type() { return -1; }
   @Override String value() { throw H2O.unimpl(); }
 
@@ -322,10 +322,9 @@ abstract class ASTUniOp extends ASTUniOrBinOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
-    arg1.exec(e);
-    if (e.isAry()) e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    args[0].exec(e);
+    if (e.isAry()) e.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -1576,14 +1575,13 @@ abstract class ASTReducerOp extends ASTOp {
     env.push(new ValNum(sum));
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    if (args == null) {
+  @Override void exec(Env e, AST[] args) {
+    if( args==null ) {
       _init = 0;
       _narm = true;
       _argcnt = 1;
-    }
-    arg1.exec(e);
-    e._global._frames.put(Key.make().toString(), e.peekAry());
+    } else args[0].exec(e);
+    e.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -2306,11 +2304,9 @@ class ASTGPut extends ASTUniPrefixOp {
       fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
     } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
     DKV.put(k, fr);
-    e._locked.add(k);
-    e.addKeys(fr);
-    e._global._frames.put(k.toString(), fr);
+    e.lock(fr);
+    e.put(k.toString(), fr);
     e.push(new ValFrame(fr, true /*isGlobalSet*/));
-    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -2333,12 +2329,9 @@ class ASTLPut extends ASTGPut {
       v.setDomain(new String[]{e.popStr()});
       fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
     } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
-    e._locked.add(k);
-    e.addKeys(fr);
-    e._local._frames.put(k.toString(), fr);
-    e._global._frames.put(k.toString(), fr);
+    e.lock(fr);
+    e.put(k.toString(), fr);
     e.push(new ValFrame(fr, false /*isGlobalSet*/));
-    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -3000,12 +2993,13 @@ class ASTMean extends ASTUniPrefixOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    arg1.exec(e);
-    e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    args[0].exec(e);
+    e.put(Key.make().toString(), e.peekAry());
     if (args != null) {
-      if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
-      for (AST a : args) {
+      if (args.length > 3) throw new IllegalArgumentException("Too many arguments passed to `mean`");
+      for(int i=1;i<args.length;++i) {
+        AST a = args[i];
         if (a instanceof ASTId) {
           _narm = ((ASTNum) e.lookup((ASTId) a)).dbl() == 1;
         } else if (a instanceof ASTNum) {
@@ -3207,7 +3201,7 @@ class ASTTable extends ASTUniPrefixOp {
       Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
       Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
-      final ASTddply.Group[] pairs = u._s.toArray(new ASTddply.Group[u._s.size()]);
+      final ASTddply.Group[] pairs = u._s._g.toArray(new ASTddply.Group[u._s.size()]);
       dataLayoutVec = Vec.makeCon(0, pairs.length);
 
       s = System.currentTimeMillis();
@@ -3278,10 +3272,10 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
-    NonBlockingHashSet<ASTddply.Group> _s;
+    ASTGroupBy.IcedNBHS<ASTddply.Group> _s;
     private long[] _cols;
     @Override public void setupLocal() {
-      _s = new NonBlockingHashSet<>();
+      _s = new ASTGroupBy.IcedNBHS<>();
       _cols = new long[_fr.numCols()];
       for(int i=0;i<_cols.length;++i) _cols[i]=i;
     }
@@ -3292,22 +3286,7 @@ class ASTTable extends ASTUniPrefixOp {
           g = new ASTddply.Group(_cols.length);
         }
     }
-    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
-
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _s == null ) return ab.put4(0);
-      ab.put4(_s.size());
-      for( ASTddply.Group g : _s ) {ab.put(g); }
-      return ab;
-    }
-
-    @Override public Uniq2ColTsk read_impl( AutoBuffer ab ) {
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _s = new NonBlockingHashSet<>();
-      for( int i=0; i<len; i++ ) { _s.add(ab.get(ASTddply.Group.class));}
-      return this;
-    }
+    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s._g); }
   }
 
   /** http://szudzik.com/ElegantPairing.pdf */
@@ -3329,36 +3308,21 @@ class ASTTable extends ASTUniPrefixOp {
 //  }
 
   private static class NewHashMap extends MRTask<NewHashMap> {
-    NonBlockingHashMap<ASTddply.Group, Integer> _s;
+    IcedHashMap<ASTddply.Group, Integer> _s;
     final ASTddply.Group[] _m;
     NewHashMap(ASTddply.Group[] m) { _m = m; }
-    @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
+    @Override public void setupLocal() { _s = new IcedHashMap<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
       for (int i = 0; i < c[0]._len; ++i)
         _s.put(_m[i + start], i+start);
     }
     @Override public void reduce(NewHashMap t) { if (_s != t._s) _s.putAll(t._s); }
-
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _s == null ) return ab.put4(0);
-      ab.put4(_s.size());
-      for( ASTddply.Group l : _s.keySet() ) {ab.put(l); ab.put4(_s.get(l)); }
-      return ab;
-    }
-
-    @Override public NewHashMap read_impl( AutoBuffer ab ) {
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _s = new NonBlockingHashMap<>();
-      for( int i=0;i<len;i++ ) _s.put(ab.get(ASTddply.Group.class), ab.get4());
-      return this;
-    }
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    final NonBlockingHashMap<ASTddply.Group, Integer> _m;
+    final IcedHashMap<ASTddply.Group, Integer> _m;
     private long[] _cols;
     // out
     long[] _cnts;
@@ -3366,7 +3330,7 @@ class ASTTable extends ASTUniPrefixOp {
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
-    CountUniq2ColTsk(NonBlockingHashMap<ASTddply.Group, Integer> s) {_m = s; }
+    CountUniq2ColTsk(IcedHashMap<ASTddply.Group, Integer> s) {_m = s; }
     @Override public void setupLocal() {
       _cnts = MemoryManager.malloc8(_m.size());
       _cols = new long[_fr.numCols()];

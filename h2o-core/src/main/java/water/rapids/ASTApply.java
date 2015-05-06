@@ -1,6 +1,7 @@
 package water.rapids;
 
 import water.Futures;
+import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.fvec.*;
@@ -12,95 +13,69 @@ import java.util.ArrayList;
 */
 public class ASTApply extends ASTOp {
   protected static int _margin;  // 1 => work on rows; 2 => work on columns
-  protected static String _fun;
-  protected static AST[] _fun_args;
+  protected static String _fun;  // the function to run on the frame
+  protected static AST[] _fun_args; // any additional args to _fun
   static final String VARS[] = new String[]{ "", "ary", "MARGIN", "FUN", "..."};
   public ASTApply( ) { super(VARS); }
   @Override String opStr(){ return "apply";}
   @Override ASTOp make() {return new ASTApply();}
   @Override ASTApply parse_impl(Exec E) {
-    AST ary = E.parse();
-    try {
-      _margin = (int) ((ASTNum) E.parse())._d;
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("`MARGIN` must be either 1 or 2, it cannot be both.");
-    }
-    _fun = ((ASTId)E.parse())._id;
+    AST ary = E.parse();    // parse the array
+    AST a = E.parse();      // parse the margin, must be 1 or 2
+    if( a instanceof ASTNum ) _margin=(int)((ASTNum)a)._d;
+    else throw new IllegalArgumentException("`MARGIN` must be either 1 or 2, it cannot be both.");
+    _fun = ((ASTId)E.parse())._id;  // parse the function
+
+    // parse any additional arguments
     ArrayList<AST> fun_args = new ArrayList<>();
-    while( !E.isEnd() ) fun_args.add(E.parse());
+    while( !E.isEnd() )fun_args.add(E.parse());
+    E.eatEnd();
+
     ASTApply res = (ASTApply)clone();
     res._asts = new AST[]{ary};
-    if (fun_args.size() > 0) {
-      _fun_args = fun_args.toArray(new AST[fun_args.size()]);
-    } else {
-      _fun_args = null;
-    }
-    E.eatEnd();
+    if (fun_args.size() > 0) _fun_args = fun_args.toArray(new AST[fun_args.size()]);
+    else                     _fun_args = null;
     return res;
   }
   @Override void apply(Env env) {
     String err="Result of function produced more than a single column!";
-    // Peek everything from the stack
-    final ASTOp op = ASTOp.get(_fun);
+    final ASTOp FUN = ASTOp.get(_fun);   // function never goes on the stack... distinctly not 1st class...
+
+    // PEEK everything from the stack (do not POP)
     Frame fr2 = null;  // results Frame
     Frame fr = env.popAry();
     env.addRef(fr);
-    if( _margin == 2) {     // Work on columns?
-      int ncols = fr.numCols();
-      double[] row_result = new double[0];
-      Vec[] vecs_result = new Vec[0];
 
-      // Apply the function across columns
-      // Types of results:
-      //   A single row: Each col produces a single number result.
-      //   A new array: Each column produces a new column
-      //   If a new array, columns must be align'able.
+    // apply FUN to each column;
+    // assume work is independent of Vec order => otherwise asking for trouble anyways.
+    // Types of results:
+    //   A single row: Each col produces a single number result.
+    //   A new array: Each column produces a new column
+    //   If a new array, columns must be align'able.
+    if( _margin == 2) {
+      double[] row_result;
+      Vec[] vecs_result;
+
       boolean isRow = false;
-
-      // do the first column to determine the results type (isRow or not)
-      Frame tmp = new Frame(new String[]{fr.names()[0]}, new Vec[]{fr.vecs()[0]});
-      op.exec(env, new ASTFrame(tmp), _fun_args);
-      if (env.isNum()) isRow = true;
-
-      // if isRow, then append to row_result[]
-      if (isRow) {
-        row_result = new double[ncols];
-        row_result[0] = env.popDbl();
-      }
-
-      // if !isRow, then append to vecs_result[]
-      else {
-        if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
-        vecs_result = new Vec[ncols];
-        Frame v = env.popAry();
-        vecs_result[0] = v.anyVec().makeCopy(null);
-      }
-
-      // loop over the columns and collect the results.
-      // Appending to row_result or vecs_result accordingly
-      for( int i=1; i<ncols; i++ ) {
-        tmp = new Frame(new String[]{fr.names()[i]}, new Vec[]{fr.vecs()[i]});
-        op.exec(env, new ASTFrame(tmp), _fun_args);
-        if (isRow) row_result[i] = env.popDbl();
-        else {
-          if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
-          Frame v = env.popAry();
-          vecs_result[i] = v.anyVec().makeCopy(null);
-        }
-      }
-
+      ParallelVecApply t;
+      H2O.submitTask(t=new ParallelVecApply(FUN,fr,_fun_args,env)).join();
+      if( t._applyTasks[0]._vec_result==null ) isRow = true;
       // Create the results frame.
       if (isRow) {
         Futures fs = new Futures();
         Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
         AppendableVec v = new AppendableVec(key);
         NewChunk chunk = new NewChunk(v, 0);
+        row_result=new double[t._applyTasks.length];
+        for(int i=0;i<row_result.length;++i) row_result[i] = t._applyTasks[i]._row_result;
         for (double aRow_result : row_result) chunk.addNum(aRow_result);
         chunk.close(0, fs);
         Vec vec = v.close(fs);
         fs.blockForPending();
         fr2 = new Frame(vec);
       } else {
+        vecs_result=new Vec[t._applyTasks.length];
+        for(int i=0; i<vecs_result.length;++i) vecs_result[i]=t._applyTasks[i]._vec_result;
         fr2 = new Frame(fr.names(), vecs_result);
       }
     }
@@ -109,7 +84,7 @@ public class ASTApply extends ASTOp {
       // find out return type
       double[] rowin = new double[fr.vecs().length];
       for (int c = 0; c < rowin.length; c++) rowin[c] = fr.vecs()[c].at(0);
-      final int outlen = op.map(env,rowin,null, _fun_args).length;
+      final int outlen = FUN.map(env,rowin,null, _fun_args).length;
       final Env env0 = env;
       MRTask mrt = new MRTask() {
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -117,7 +92,7 @@ public class ASTApply extends ASTOp {
           double rowout[] = new double[outlen];
           for (int row = 0; row < cs[0]._len; row++) {
             for (int c = 0; c < cs.length; c++) rowin[c] = cs[c].atd(row);
-            rowout = op.map(env0, rowin, rowout, _fun_args);
+            rowout = FUN.map(env0, rowin, rowout, _fun_args);
             for (int c = 0; c < ncs.length; c++) ncs[c].addNum(rowout[c]);
           }
         }
@@ -129,6 +104,52 @@ public class ASTApply extends ASTOp {
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
     env.addRef(fr);
     env.pushAry(fr2);
+  }
+
+  private static class ParallelVecTask extends H2O.H2OCountedCompleter<ParallelVecTask> {
+    // IN
+    private final ASTOp _FUN;
+    private final Frame _f;
+    private final int _i;
+    private final AST[] _funArgs;
+    private final Env _env;
+
+    // OUT
+    private double _row_result;
+    private Vec    _vec_result;
+
+    ParallelVecTask(H2O.H2OCountedCompleter cc, ASTOp FUN, Frame fr, int i, AST[] funArgs, Env env) { super(cc); _FUN = FUN; _f=fr; _i=i; _funArgs=funArgs; _env=env; }
+    @Override protected void compute2() {
+      // combine all function args:
+      AST[] args= new AST[_funArgs==null?1:_funArgs.length+1];
+      args[0]=new ASTFrame(_f.vec(_i)._key.toString());
+      if( _funArgs!=null )
+        System.arraycopy(_funArgs, 0, args, 1, _funArgs.length);
+      _FUN.exec(_env,args);
+      if( _env.isNum() ) _row_result=_env.popDbl();
+      else               _vec_result=_env.popAry().anyVec();
+      tryComplete();
+    }
+  }
+
+  private static class ParallelVecApply extends H2O.H2OCountedCompleter<ParallelVecApply> {
+    // IN
+    private final Frame _fr;
+    private final ASTOp _FUN;
+    private final AST[] _funArgs;
+    private final Env   _env;
+
+    // OUT
+    ParallelVecTask[] _applyTasks;
+
+    ParallelVecApply(ASTOp FUN, Frame fr, AST[] funArgs, Env env) { _FUN=FUN; _fr=fr; _funArgs=funArgs; _env=env; }
+    @Override protected void compute2() {
+      int nTasks;
+      addToPendingCount((nTasks=_fr.numCols())-1);
+      _applyTasks = new ParallelVecTask[nTasks];
+      for(int i=0;i<nTasks;++i)
+        (_applyTasks[i] = new ParallelVecTask(this, _FUN, _fr, i, _funArgs,_env)).fork();
+    }
   }
 }
 

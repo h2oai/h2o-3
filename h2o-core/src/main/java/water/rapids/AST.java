@@ -200,13 +200,10 @@ class ASTFrame extends AST {
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
-    if (_key != null) {
-      e._locked.add(Key.make(_key));
-      if (e.isGlobal()) e._global._frames.put(_key, _fr);
-      else e._local._frames.put(_key, _fr);
-    }
+    if (_key != null && DKV.get(_key)!=null ) e.lock(_fr); // add to list of things that cannot be DKV removed.
+    else                                      e.put(_key,_fr); // _key not in the DKV, have transient Frame
     if( !isFrame ) e._tmpFrames.add(_fr);
-    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
+    e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
@@ -904,15 +901,18 @@ class ASTAssign extends AST {
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
-        if (id.isGlobalSet()) vecs = f.deepCopy(null).vecs();
+        if( id.isGlobalSet() ) vecs = f.deepCopy(null).vecs(); // for non-blocking put, see ASTGPut
         Frame fr = new Frame(k, f.names(), vecs);
-        if (id.isGlobalSet()) DKV.put(k, fr);
-        e._locked.add(k);
-        e.addKeys(fr);
-        if (!e.isGlobal()) e._local._frames.put(k.toString(), fr);
-        else e._global._frames.put(k.toString(), fr);
+
+        // if global set, then dkv put this frame under the Key k
+        if( id.isGlobalSet() ) {
+          DKV.put(k, fr);
+          e.lock(fr);
+        } else {
+          // not a global set, push into transient set of Frames in the SymbolTable...
+          e.put(k.toString(),fr);
+        }
         e.push(new ValFrame(fr, id.isGlobalSet()));
-        e.put(id._id, Env.ARY, id._id);
       }
 
     // The other three cases of assignment follow

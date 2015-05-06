@@ -488,7 +488,10 @@ public class ASTddply extends ASTOp {
         // Clone a private copy of the environment for local execution
         Env env = new Env(new HashSet<Key>());
         final ASTOp op = (ASTOp) ASTOp.get(_fun).clone();
-        op.exec(env, new ASTFrame(aa), _fun_args);
+        AST[] args = new AST[_fun_args==null?1:_fun_args.length+1];
+        args[0]= new ASTFrame(aa);
+        if( _fun_args!=null ) System.arraycopy(_fun_args, 0, args, 1, _fun_args.length);
+        op.exec(env, args);
 
         // Inspect the results; figure the result column count
         Frame fr = null;

@@ -47,7 +47,7 @@ public class ASTMerge extends ASTOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
+  @Override void exec(Env e, AST[] args) {
     throw H2O.fail();
   }
 
