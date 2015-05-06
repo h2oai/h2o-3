@@ -556,6 +556,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
         }
+        if (_replicate_training_data && train().byteSize() > 1e10) {
+          dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
+        }
       }
     }
   }
