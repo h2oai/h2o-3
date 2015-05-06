@@ -1284,7 +1284,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
     }
   })
 
-  if( is.matrix(cols) && ncol(cols) == 1L ) { return(data.frame(cols)) }
+  if( is.matrix(cols) && ncol(cols) == 1L ) { return(data.frame(cols, stringsAsFactors=FALSE)) }
   # need to normalize the result
   max.len <- max(sapply(cols, function(col) { length(col) }))
   # here's where normalization is done
