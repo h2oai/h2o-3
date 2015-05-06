@@ -83,6 +83,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
     // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
+    // TODO: Use expanded cols to account for categoricals
     int k_min = (int) Math.min(_train.numCols(), _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
@@ -94,7 +95,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         int zero_vec = 0;
         Vec[] centersVecs = _parms._user_points.get().vecs();
         for (int c = 0; c < _train.numCols(); c++) {
-          if(centersVecs[c].isConst() && centersVecs[c].max() == 0)
+          if(centersVecs[c].naCnt() > 0) {
+            error("_user_points", "The user-specified points cannot contain any missing values"); break;
+          } else if(centersVecs[c].isConst() && centersVecs[c].max() == 0)
             zero_vec++;
         }
         if (zero_vec == _train.numCols())
@@ -141,7 +144,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // Expand categoricals into 0/1 indicator columns for each level
-  public static double[][] expandCategoricals(double[][] centers, String[][] domains) {
+  public static double[][] expandCats(double[][] centers, String[][] domains) {
     if(centers == null) return null;
     assert domains != null && centers[0].length == domains.length;
 
@@ -170,7 +173,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // More efficient implementation assuming cols reshuffled so categoricals sorted up front
-  public static double[][] expandCategoricals(double[][] sdata, DataInfo dinfo) {
+  public static double[][] expandSortedCats(double[][] sdata, DataInfo dinfo) {
     if(sdata == null || dinfo._cats == 0) return sdata;
     assert sdata[0].length == dinfo._adaptedFrame.numCols();
 
@@ -263,7 +266,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
 
       // Expand out categoricals to indicator columns
-      double[][] centers_exp = expandCategoricals(centers, dinfo);
+      // TODO: Align centers with the reshuffled training cols
+      double[][] centers_exp = expandSortedCats(centers, dinfo);
       _ncolY = centers_exp[0].length;
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
@@ -387,7 +391,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
         for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeRand(_parms._seed);
         fr = new Frame(null, vecs);
-        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false);
         DKV.put(dinfo._key, dinfo);
 
         // Save standardization vectors for use in scoring later
@@ -401,7 +405,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        tinfo = new DataInfo(Key.make(), _train, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
+        tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false);
         DKV.put(tinfo._key, tinfo);
         double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
@@ -453,7 +457,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Vec[] xvecs = new Vec[_ncolX];
         for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
         x = new Frame(_parms._loading_key, null, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;

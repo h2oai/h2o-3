@@ -199,11 +199,15 @@ public class Frame extends Lockable<Frame> {
   public int  numCols() { return _keys.length; }
   /** Number of columns with categoricals expanded
    * @return Number of columns with categoricals expanded into indicator columns */
-  public int  numColsExp() {
+  public int numColsExp() { return numColsExp(true, false); }
+  public int numColsExp(boolean useAllFactorLevels, boolean missingBucket) {
     if(_vecs == null) return 0;
     int cols = 0;
-    for(int i = 0; i < _vecs.length; i++)
-      cols += (_vecs[i].isEnum() && _vecs[i].domain() != null) ? _vecs[i].domain().length : 1;
+    for(int i = 0; i < _vecs.length; i++) {
+      if(_vecs[i].isEnum() && _vecs[i].domain() != null)
+        cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
+      else cols++;
+    }
     return cols;
   }
   /** Number of rows
