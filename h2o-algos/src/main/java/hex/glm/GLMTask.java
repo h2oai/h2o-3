@@ -492,6 +492,7 @@ public abstract class GLMTask  {
       double [] g = _gradient;
       double [] b = _beta;
       for(int rid = 0; rid < chks[0]._len; ++rid) {
+        if(skp[rid])continue;
         row = _dinfo.extractDenseRow(chks, rid, row);
         double y = -1 + 2*row.response(0);
         if(row.bad) continue;
