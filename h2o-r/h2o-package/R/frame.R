@@ -1381,19 +1381,28 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
     }
   })
 
-  if( is.matrix(cols) && ncol(cols) == 1L ) { return(data.frame(cols, stringsAsFactors=FALSE)) }
-  # need to normalize the result
-  max.len <- max(sapply(cols, function(col) { length(col) }))
-  # here's where normalization is done
-  cols <- data.frame( lapply(cols, function(col) {
-                if( length(col) < max.len ) c(col, rep("", max.len-length(col)))  # pad out result with "" for the prettiest of pretty printing... my pretty... and your little dog TOO! MUAHAHHAHA
-                else col                                                          # no padding necessary!
-              }), stringsAsFactors=FALSE)                                         # keep as strings...
+  result <- NULL
 
-  name.width <- min(sapply(names(cols), nchar))
-  names(cols) <- format(names(cols), width = name.width, justify = "centre")
-  rownames(cols) <- NULL
-  format(cols, width = name.width, justify = "centre", row.names=FALSE)
+  if( is.matrix(cols) && ncol(cols) == 1L ) {
+    result <- as.table(as.matrix(as.data.frame(cols, stringsAsFactors=FALSE)))
+  } else {
+    # need to normalize the result
+    max.len <- max(sapply(cols, function(col) { length(col) }))
+    # here's where normalization is done
+    if( is.matrix(cols) ) {
+      result <- as.table(cols)
+    } else {
+      cols <- data.frame( lapply(cols, function(col) {
+                  if( length(col) < max.len ) c(col, rep("", max.len-length(col)))  # pad out result with "" for the prettiest of pretty printing... my pretty... and your little dog TOO! MUAHAHHAHA
+                  else col                                                          # no padding necessary!
+                }), stringsAsFactors=FALSE)                                         # keep as strings...
+
+      result <- as.table(as.matrix(cols))
+    }
+  }
+  if( is.null(result) ) return(NULL)
+  rownames(result) <- rep("", nrow(result))
+  result
 })
 
 #-----------------------------------------------------------------------------------------------------------------------
