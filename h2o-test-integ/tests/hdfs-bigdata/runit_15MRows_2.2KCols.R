@@ -41,12 +41,12 @@ mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distributi
 mdl.gbm
 
 #Random Forest
-mdl.rf = h2o.gbm(x=predictors, y=response, training_frame=data.hex, ntrees=10, max_depth=5)
-mdl.rf
+#mdl.rf = h2o.gbm(x=predictors, y=response, training_frame=data.hex, ntrees=10, max_depth=5)
+#mdl.rf
 
 #  DL
-mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE)
-mdl.dl
+#mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE)
+#mdl.dl
 
 PASS_BANNER()
 

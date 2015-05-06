@@ -58,8 +58,8 @@ data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_f
 data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "multinomial")
 
 #Random Forest
-data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5)
-data1.rf
+#data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5)
+#data1.rf
 
 #Deep Learning
 #data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5))
