@@ -32,6 +32,9 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
+
+    @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
+
     // public int _n_folds;
     public int getNumFolds() { return 0; }
 
@@ -553,6 +556,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
         }
+        if (_replicate_training_data && train().byteSize() > 1e10) {
+          dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
+        }
       }
     }
   }
@@ -613,8 +619,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return actually used parameters
    */
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
-
-//  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -2006,7 +2010,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(adaptFrm,true);
+    adaptTestForTrain(_output._names, null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

@@ -9,6 +9,14 @@
 - [Deep Learning](#DL)
 
 
+##Commonalities 
+
+###Missing Value Handling for Training
+
+If missing values are found in the validation frame during model training or during the scoring process for creating predictions, the missing values are automatically imputed. 
+
+If the missing values are found during POJO scoring, the answer is converted to `NaN`. 
+
 
 <a name="Kmeans"></a>
 ##K-Means
@@ -457,13 +465,13 @@ By default, the following output displays:
 ---
 
 <a name="NB"></a>
-##Naive Bayes
+##Naïve Bayes
 
 ###Introduction 
 
-Naive Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
+Naïve Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
 
-###Defining a Naive Bayes Model
+###Defining a Naïve Bayes Model
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -494,28 +502,68 @@ Naive Bayes (NB) is a classification algorithm that relies on strong assumptions
 
 
 
-###Interpreting a Naive Bayes Model
+###Interpreting a Naïve Bayes Model
+
+The output from Naïve Bayes is a list of tables containing the a-priori and conditional probabilities of each class of the response. The a-priori probability is the estimated probability of a particular class before observing any of the predictors. Each conditional probability table corresponds to a predictor column. The row headers are the classes of the response and the column headers are the classes of the predictor. Thus, in the table below, the probability of survival (y) given a person is male (x) is 0.91543624.
+
+```
+        		Sex
+Survived       Male     Female
+     No  0.91543624 0.08456376
+     Yes 0.51617440 0.48382560
+```
+
+
+When the predictor is numeric, Naïve Bayes assumes it is sampled from a Gaussian distribution given the class of the response. The first column contains the mean and the second column contains the standard deviation of the distribution.
 
 By default, the following output displays:
 
 - Output (model category, model summary, scoring history, training metrics, validation metrics)
-- Levels
-   > - Y ??
+- Y-Levels (levels of the response column)
 - P-conditionals 
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-- How does the algo handle missing values during testing?
-- What happens if the response has missing values?
-- What happens during prediction if the new sample has categorical levels not seen in training?
-- Does it matter if the data is sorted? 
-- Should data be shuffled before training?
-- How does the algo handle highly imbalanced data in a response column?
-- What if there are a large number of columns?
-- What if there are a large number of categorical factor levels?
+- **How does the algorithm handle missing values during training?**
+  
+  All rows with one or more missing values (either in the predictors or the response) will be skipped during model building. 
 
-###Naive Bayes Algorithm 
+- **How does the algorithm handle missing values during testing?**
+  
+  If a predictor is missing, it will be skipped when taking the product of conditional probabilities in calculating the joint probability conditional on the response.
+
+- **What happens if the response domain is different in the training and test datasets?**
+  
+  The response column in the test dataset is not used during scoring, so any response categories absent in the training data will not be predicted.
+
+- **What happens during prediction if the new sample has categorical levels not seen in training?**
+  
+  The conditional probability of that predictor level will be set according to the Laplace smoothing factor. If Laplace smoothing is disabled (set to zero), the joint probability will be zero. See pgs. 13-14 of Andrew Ng’s "Generative learning algorithms" in the References section for mathematical details.
+
+- **Does it matter if the data is sorted?**
+
+  No. 
+
+- **Should data be shuffled before training?**
+
+  This does not affect model building. 
+
+- **How does the algorithm handle highly imbalanced data in a response column?**
+
+  Unbalanced data will not affect the model. However, if one response category has very few observations compared to the total, the conditional probability may be very low. A cutoff (`eps_prob`) and minimum value (`min_prob`) are available for the user to set a floor on the calculated probability.
+
+
+- **What if there are a large number of columns?**
+
+   More memory will be allocated on each node to store the joint frequency counts and sums.
+
+- **What if there are a large number of categorical factor levels?**
+
+  More memory will be allocated on each node to store the joint frequency count of each categorical predictor level with the response’s level.
+
+
+
+###Naïve Bayes Algorithm 
 
 The algorithm is presented for the simplified binomial case without loss of generality.
 
@@ -572,13 +620,19 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 
 ###References
 
-  >Do we have any references for Naive Bayes??
+
+[Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The Elements of Statistical Learning. Vol.1. N.p., Springer New York, 2001.](http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf) 
+
+[Ng, Andrew. "Generative Learning algorithms." (2008).](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
 
 ---
 
 <a name="PCA"></a>
 ##PCA
 
+  >PCA is currently in progress in H2O-Dev. Once implementation of this algorithm is complete, this section of the document will be updated. 
+
+<!---
 ###Introduction
 
 Principal Components Analysis (PCA) is closely related to Principal Components Regression. The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
@@ -687,8 +741,8 @@ Solve for $$x$$ by Gaussian elimination.
 
 ###References
 
-  >Any references for PCA??
-
+  >Any references for PCA??)
+-->
 ---
 
 <a name="GBM"></a>
@@ -894,7 +948,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
-- **Override\_with\_best\_model**: Check this checkbox to override the final model with the best model found during training. This option is selected by default. 
+- **Overwrite\_with\_best\_model**: Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
 - **Target\_ratio\_comm\_to\_comp**: Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). The default value is 0.02. 
 
@@ -972,11 +1026,11 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **Does it matter if the data is sorted?** 
 
-  Yes, since the training set is processed in order. Depending whether `train\_samples\_per\_iteration` is enabled, some rows will be skipped. If `shuffle\_training\_data` is enabled, then each thread that is processing a small subset of rows will process rows randomly, but it is not a global shuffle.
+  Yes, since the training set is processed in order. Depending whether `train_samples_per_iteration` is enabled, some rows will be skipped. If `shuffle_training_data` is enabled, then each thread that is processing a small subset of rows will process rows randomly, but it is not a global shuffle.
 
 - **Should data be shuffled before training?**
 
-  Yes; it is an especially good idea if the dataset is sorted.
+  Yes, the data should be shuffled before training, especially if the dataset is sorted. 
 
 - **How does the algorithm handle highly imbalanced data in a response column?**
 
@@ -988,33 +1042,37 @@ To view the results, click the View button. The output for the Deep Learning mod
   
 - **What if there are a large number of categorical factor levels?**
 
-This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max\_categorical\_features` to use feature hashing to reduce the dimensionality.
+This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max_categorical_features` to use feature hashing to reduce the dimensionality.
 
 ###Deep Learning Algorithm 
 
+For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](https://leanpub.com/deeplearning/read). 
+
 ###References
 
- [**Deep Learning**](http://en.wikipedia.org/wiki/Deep_learning)
+ ["Deep Learning." *Wikipedia: The free encyclopedia*. Wikimedia Foundation, Inc. 1 May 2015. Web. 4 May 2015.](http://en.wikipedia.org/wiki/Deep_learning)
 
- [**Artificial Neural Network**](http://en.wikipedia.org/wiki/Artificial_neural_network)
+ ["Artificial Neural Network." *Wikipedia: The free encyclopedia*. Wikimedia Foundation, Inc. 22 April 2015. Web. 4 May 2015.](http://en.wikipedia.org/wiki/Artificial_neural_network)
 
- [**ADADELTA**](http://arxiv.org/abs/1212.5701)
+ [Zeiler, Matthew D. 'ADADELTA: An Adaptive Learning Rate Method'. Arxiv.org. N.p., 2012. Web. 4 May 2015.](http://arxiv.org/abs/1212.5701)
 
- [**Momentum**](http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
+ [Sutskever, Ilya et al. "On the importance of initialization and momementum in deep learning." JMLR:W&CP vol. 28. (2013).](http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
 
- [**Dropout**](http://arxiv.org/pdf/1207.0580.pdf and http://arxiv.org/abs/1307.1493)
+ [Hinton, G.E. et. al. "Improving neural networks by preventing co-adaptation of feature detectors." University of Toronto. (2012).](http://arxiv.org/pdf/1207.0580.pdf)
 
- [**Feature Importance**](http://www.ncbi.nlm.nih.gov/pubmed/9327276)
+ [Wager, Stefan et. al. "Dropout Training as Adaptive Regularization." Advances in Neural Information Processing Systems. (2013).](http://arxiv.org/abs/1307.1493)
+
+ [Gedeon, TD. "Data mining of inputs: analysing magnitude and functional measures." University of New South Wales. (1997).](http://www.ncbi.nlm.nih.gov/pubmed/9327276)
     
- [**Deep Learning Vignette**](https://leanpub.com/deeplearning)
+ [Candel, Arno and Parmar, Viraj. "Deep Learning with H2O." H2O.ai, Inc. (2015).](https://leanpub.com/deeplearning)
     
-  [**Deep Learning Training**](http://learn.h2o.ai/content/hands-on_training/deep_learning.html)
+  [Deep Learning Training](http://learn.h2o.ai/content/hands-on_training/deep_learning.html)
     
-  [**Slideshare slide decks**](http://www.slideshare.net/0xdata/presentations?order=latest)
+  [Slideshare slide decks](http://www.slideshare.net/0xdata/presentations?order=latest)
     
-  [**Youtube channel**](https://www.youtube.com/user/0xdata)
+  [Youtube channel](https://www.youtube.com/user/0xdata)
     
-  [**The Definitive Performance Tuning Guide for H2O Deep Learning**](http://h2o.ai/blog/2015/02/deep-learning-performance/)
+  [Candel, Arno. "The Definitive Performance Tuning Guide for H2O Deep Learning." H2O.ai, Inc. (2015).](http://h2o.ai/blog/2015/02/deep-learning-performance/)
 
   [Niu, Feng, et al. "Hogwild!: A lock-free approach to parallelizing stochastic gradient descent." Advances in Neural Information Processing Systems 24 (2011): 693-701. (algorithm implemented is on p.5)](https://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent.pdf)
 

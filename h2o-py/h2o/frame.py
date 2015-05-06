@@ -830,6 +830,8 @@ class H2OFrame:
     """
     # sanity check columns, get the column index
     col_id = -1
+    if isinstance(column, list) and len(column) == 1:
+      column = column[0]
     if isinstance(column, (unicode,str)):
       col_id = self._find_idx(column)
     elif isinstance(column, int):
@@ -844,13 +846,17 @@ class H2OFrame:
       raise ValueError("Column at index: " + str(col_id) + " is out of range of the data.")
 
     # setup the defaults, "mean" for numeric, "mode" for enum
-    if len(method) > 1:
-      if self[col_id].isfactor():
-        method = "mode"
-      method="mean"
+    if method == ["mean","median","mode"]: # the default values
+      method = "mode" if self[col_id].isfactor() else "mean"
+    elif isinstance(method, list):
+      if len(method) == 1 and method in ["mean","median","mode"]: method = method[0]
+      else: raise ValueError("method {0} is not a valid method.".format(method[0]))
+    elif method not in ["mean","median","mode"]:
+      raise ValueError("method {0} is not a valid method.".format(method))
+
 
     # choose "interpolate" by default for combine_method
-    if len(combine_method) > 1: combine_method = "interpolate"
+    if combine_method == ["interpolate", "average", "low", "high"]: combine_method = "interpolate"
     if combine_method == "lo": combine_method = "low"
     if combine_method == "hi": combine_method = "high"
 
@@ -951,7 +957,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("min", Expr("cbind",Expr(self._vecs)))
+    return Expr("min", Expr("cbind",Expr(self._vecs))).eager()
 
   def max(self):
     """
@@ -959,7 +965,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("max", Expr("cbind",Expr(self._vecs)))
+    return Expr("max", Expr("cbind",Expr(self._vecs))).eager()
 
   def sum(self):
     """
@@ -967,7 +973,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("sum", Expr("cbind",Expr(self._vecs)))
+    return Expr("sum", Expr("cbind",Expr(self._vecs))).eager()
 
   def var(self):
     """
@@ -1186,6 +1192,7 @@ class H2OVec:
 
   def _simple_vec_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self, length=len(self)))
     raise NotImplementedError
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))

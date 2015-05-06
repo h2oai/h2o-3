@@ -18,7 +18,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
     if( !(mm instanceof ModelMetricsBinomial) )
       throw new H2OIllegalArgumentException("Expected to find a Binomial ModelMetrics for model: " + model._key.toString() + " and frame: " + frame._key.toString(),
-              "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
+              "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + (mm == null ? null : mm.getClass()));
     return (ModelMetricsBinomial) mm;
   }
 

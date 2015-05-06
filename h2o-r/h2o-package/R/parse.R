@@ -131,14 +131,3 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
   .newH2OFrame("H2OFrame", conn=conn, frame_id=destination_frame, mutable=mutable, linkToGC=linkToGC)
 }
-
-#'
-#' Create new H2OFrame object for predictions
-.h2o.parsedPredData <- function(conn = h2o.getConnection(), predictions, linkToGC = TRUE) {
-  key <- predictions$frame_id$name
-  col_names <- sapply(predictions$columns, function(column) column$label)
-  nrows <- predictions$rows
-  ncols <- length(col_names)
-  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", conn=conn, frame_id=key, mutable=mutable, linkToGC=linkToGC)
-}

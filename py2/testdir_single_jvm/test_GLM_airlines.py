@@ -45,7 +45,7 @@ class Basic(unittest.TestCase):
 
             parameters = {
                 'validation_frame': parse_key,
-                'ignored_columns': '[CRSDepTime,CRSArrTime,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed]',
+                'ignored_columns': '["CRSDepTime","CRSArrTime","ActualElapsedTime","CRSElapsedTime","AirTime","ArrDelay","DepDelay","TaxiIn","TaxiOut","Cancelled","CancellationCode","Diverted","CarrierDelay","WeatherDelay","NASDelay","SecurityDelay","LateAircraftDelay","IsArrDelayed"]',
                 'response_column': response,
                 # FIX! when is this needed? redundant for binomial?
                 'balance_classes': False,
@@ -53,8 +53,6 @@ class Basic(unittest.TestCase):
                 'standardize': False,
                 'family': 'binomial',
                 'link': None,
-                'tweedie_variance_power': None,
-                'tweedie_link_power': None,
                 'alpha': '[0]',
                 'lambda': '[0.5]',
                 'prior1': None,
@@ -62,14 +60,12 @@ class Basic(unittest.TestCase):
                 'nlambdas': None,
                 'lambda_min_ratio': None,
                 'use_all_factor_levels': False,
-                # NPE with n_folds 2?
-                'n_folds': 1,
             }
 
             model_key = 'airlines_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=300)

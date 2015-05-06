@@ -63,6 +63,10 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
         if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):
             h2o_sandbox.check_sandbox_for_errors()
             emsg = "Job:", job_key, "timed out in:", timeoutSecs
+
+            # for debug
+            a = h2o.nodes[0].get_cloud()
+            print "cloud.json:", dump_json(a)
             raise Exception(emsg)
             print emsg
             return None
@@ -277,7 +281,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
 
 
 # TODO: remove .json
-def frames(self, key=None, timeoutSecs=10, **kwargs):
+def frames(self, key=None, timeoutSecs=60, **kwargs):
     if not (key is None or isinstance(key, (basestring, Key))):
         raise Exception("frames: key should be string or Key type %s %s" % (type(key), key))
 
