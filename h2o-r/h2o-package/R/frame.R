@@ -191,7 +191,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 
   if (is.list(factors)) {
       res <- lapply(factors, function(factor) h2o.interaction(data, destination_frame=NULL, factor, pairwise, max_factors, min_occurrence))
-    if (!is.missing(destination_frame)) {
+    if (!missing(destination_frame)) {
       old <- h2o.cbind(res)
       new <- h2o.assign(old, destination_frame)
       return(new)
