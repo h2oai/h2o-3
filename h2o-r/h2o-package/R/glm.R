@@ -133,6 +133,8 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
+  if(!missing(validation_frame))
+    parms$validation_frame <- validation_frame
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(max_iterations))
