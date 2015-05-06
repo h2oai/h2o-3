@@ -15,10 +15,12 @@ import java.util.Arrays;
  */
 public class Interaction extends Job<Frame> {
   public Key<Frame> _source_frame;
-  public int[] _factors = new int[0];
+  public String[] _factor_columns = new String[0];
   public boolean _pairwise = false;
   public int _max_factors = 100;
   public int _min_occurrence = 1;
+
+  transient public int[] _factors = new int[0];
 
   public Interaction(Key<Frame> dest, String desc) { super(dest, (desc == null ? "CreateFrame" : desc)); }
   public Interaction() { super(Key.make(), "CreateFrame"); }
@@ -27,11 +29,19 @@ public class Interaction extends Job<Frame> {
     try {
       Frame source_frame = DKV.getGet(_source_frame);
       assert(source_frame != null);
-      if (_factors.length == 0) throw new IllegalArgumentException("factors must be non-empty.");
-      if (_pairwise && _factors.length < 3) Log.info("Ignoring the pairwise option, requires 3 or more factors.");
-      for (int v: _factors) {
-        if (!source_frame.vecs()[v].isEnum()) {
-          throw new IllegalArgumentException("Column " + source_frame.names()[v] + " is not a factor.");
+      if (_factor_columns.length == 0) throw new IllegalArgumentException("factors must be non-empty.");
+      if (_pairwise && _factor_columns.length < 3) Log.info("Ignoring the pairwise option, requires 3 or more factors.");
+      _factors = new int[_factor_columns.length];
+      int count=0;
+      for (String v: _factor_columns) {
+        int idx = source_frame.find(v);
+        if (idx >= 0) {
+          if (!source_frame.vecs()[idx].isEnum()) {
+            throw new IllegalArgumentException("Column " + v + " is not categorical.");
+          }
+          _factors[count++] = idx;
+        } else {
+          throw new IllegalArgumentException("Column " + v + " not found.");
         }
       }
       CreateInteractions in = new CreateInteractions(this, this._key);
