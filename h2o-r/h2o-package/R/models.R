@@ -471,7 +471,7 @@ h2o.mse <- function(object, valid=FALSE, ...) {
       else stop("This model has no validation metrics.", call. = FALSE)
     else          m <- object@model$training_metrics@metrics
 
-    if( is(object, "H2OClusteringModel") ) return( m$centroid_stats$within_sum_of_squares )
+    if( is(object, "H2OClusteringModel") ) return( m$centroid_stats$within_cluster_sum_of_squares )
     else if(      is(object, "H2OModel") ) return( m$MSE                                  )
     else {
       warning(paste0("No MSE for ",class(object)))
@@ -562,8 +562,7 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
   if( is(o, "H2OModel") ) {
     hrt <- o@model$training_metrics@metrics$hit_ratio_table  # by default grab the training metrics hrt
     l <- list(...)
-    if( length(l)==0 && (train || valid) ) {
-      l$train <- train
+    if( length(l)==0 && valid ) {
       l$valid <- valid
     }
     if( length(l)!=0L ) {
@@ -571,7 +570,7 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
       if( l$valid )
         if(!is.null(object@model$validation_metrics@metrics))
           hrt <- o@model$validation_metrics@metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
-          else stop("This model has no validation metrics.", call. = FALSE)
+        else stop("This model has no validation metrics.", call. = FALSE)
     }
 
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
@@ -787,66 +786,66 @@ h2o.centers <- function(object, ...) { as.data.frame(object@model$centers[,-1]) 
 h2o.centersSTD <- function(object, ...) { as.data.frame(object@model$centers_std)[,-1] }
 
 #'
-#' Get the Within MSE
+#' Get the Within SS
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.within_mse <- function(object, ...) { h2o.mse(object, ...) }
+h2o.withinss <- function(object, ...) { h2o.mse(object, ...) }
 
 #'
-#' Get the average wtihin sum of squares.
+#' Get the total within cluster sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param valid Retreive the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.avg_within_ss <- function(object, valid=FALSE, ...) {
+h2o.tot_withinss <- function(object, valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
   l$valid <- l$valid || valid
   if( l$valid )
     if(!is.null(object@model$validation_metrics@metrics))
-     return(object@model$validation_metrics@metrics$avg_within_ss)
-    else stop("This model has no validation metrics.", call. = FALSE)
-  else          return(object@model$training_metrics@metrics$avg_within_ss  )
-
+      return(object@model$validation_metrics@metrics$tot_withinss)
+  else stop("This model has no validation metrics.", call. = FALSE)
+  else          return(object@model$training_metrics@metrics$tot_withinss  )
+  
 }
 
 #'
-#' Get the average between sum of squares.
+#' Get the between cluster sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param valid Retreive the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.avg_between_ss <- function(object, valid=FALSE, ...) {
+h2o.betweenss <- function(object, valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
   l$valid <- l$valid || valid
   if( l$valid )
     if(!is.null(object@model$validation_metrics@metrics))
-     return(object@model$validation_metrics@metrics$avg_between_ss)
-    else stop("This model has no validation metrics.", call. = FALSE)
-  else          return(object@model$training_metrics@metrics$avg_between_ss  )
+      return(object@model$validation_metrics@metrics$betweenss)
+  else stop("This model has no validation metrics.", call. = FALSE)
+  else          return(object@model$training_metrics@metrics$betweenss  )
 }
 
 #'
-#' Get the average sum of squares.
+#' Get the total sum of squares.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param valid Retreive the validation metric.
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.avg_ss <- function(object,valid=FALSE, ...) {
+h2o.totss <- function(object,valid=FALSE, ...) {
   l <- list(...)
   l <- .trainOrValid(l)
   l$valid <- l$valid || valid
   if( l$valid )
     if(!is.null(object@model$validation_metrics@metrics))
-     return(object@model$validation_metrics@metrics$avg_ss)
-    else stop("This model has no validation metrics.", call. = FALSE)
-  else          return(object@model$training_metrics@metrics$avg_ss  )
+      return(object@model$validation_metrics@metrics$totss)
+  else stop("This model has no validation metrics.", call. = FALSE)
+  else          return(object@model$training_metrics@metrics$totss  )
 }
 
 #'

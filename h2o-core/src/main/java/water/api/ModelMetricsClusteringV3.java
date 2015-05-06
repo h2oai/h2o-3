@@ -4,14 +4,14 @@ import hex.ModelMetricsClustering;
 import water.util.TwoDimTable;
 
 public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClustering, ModelMetricsClusteringV3> {
-  @API(help="Average within cluster Mean Square Error")
-  public double avg_within_ss;       // Average within-cluster MSE, variance
+  @API(help="Within Cluster Sum of Square Error")
+  public double tot_withinss;       // Total within-cluster sum-of-square error
 
-  @API(help="Average Mean Square Error to grand mean")
-  public double avg_ss;    // Total MSE to grand mean centroid
+  @API(help="Total Sum of Square Error to Grand Mean")
+  public double totss;    // Total sum-of-square error to grand mean centroid
 
-  @API(help="Average between cluster Mean Square Error")
-  public double avg_between_ss;
+  @API(help="Between Cluster Sum of Square Error")
+  public double betweenss;
 
   @API(help="Centroid Statistics")
   public TwoDimTableBase centroid_stats;

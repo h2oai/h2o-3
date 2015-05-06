@@ -26,21 +26,21 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // Compute average change in standardized cluster centers
     public double[/*iterations*/] _avg_centroids_chg = new double[]{Double.NaN};
 
-    // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
-    public double[/*k*/] _within_mse;   // Within-cluster MSE, variance
+    // Sum squared distance between each point and its cluster center.
+    public double[/*k*/] _withinss;   // Within-cluster sum of square error
 
     // Cluster size. Defined as the number of rows in each cluster.
     public long[/*k*/] _size;
 
-    // Sum squared distance between each point and its cluster center, divided by total number of observations.
-    public double _avg_within_ss;      // Average within-cluster sum-of-square error
-    public double[/*iterations*/] _history_avg_within_ss = new double[0];
+    // Sum squared distance between each point and its cluster center.
+    public double _tot_withinss;      // Within-cluster sum-of-square error
+    public double[/*iterations*/] _history_withinss = new double[0];
 
-    // Sum squared distance between each point and grand mean, divided by total number of observations.
-    public double _avg_ss;            // Total MSE to grand mean centroid
+    // Sum squared distance between each point and grand mean.
+    public double _totss;            // Total sum-of-square error to grand mean centroid
 
     // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
-    public double _avg_between_ss;    // Total between-cluster MSE (avgss - avgwithinss)
+    public double _betweenss;    // Total between-cluster sum-of-square error (totss - tot_withinss)
 
     // Number of categorical columns trained on
     public int _categorical_column_count;
