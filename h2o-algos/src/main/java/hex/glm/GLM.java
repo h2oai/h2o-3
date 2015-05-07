@@ -1549,7 +1549,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, _reg, _rowFilter ).doAll(_dinfo._adaptedFrame)
         :
-      /*GLMGradientTask gt = */new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0, _rowFilter).doAll(_dinfo._adaptedFrame);
+      /*GLMGradientTask gt = */new GLMGradientTask(_dinfo, _glmp, _lambda, beta, _reg, _rowFilter).doAll(_dinfo._adaptedFrame);
       return new GLMGradientInfo(gt._likelihood, gt._likelihood * _reg +  .5 * _lambda * ArrayUtils.l2norm2(beta,_dinfo._intercept), gt._gradient);
     }
 

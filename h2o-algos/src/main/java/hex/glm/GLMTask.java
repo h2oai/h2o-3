@@ -281,10 +281,9 @@ public abstract class GLMTask  {
       if(_validate) {
         _val.computeAIC();
       }
+      ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
-        _gradient[j] = _gradient[j]*_reg + _currentLambda * _beta[j];
-      if(_dinfo._intercept)
-        _gradient[_gradient.length-1] *= _reg;
+        _gradient[j] += _currentLambda * _beta[j];
     }
 
     // compute linear estimate by summing contributions for all columns
