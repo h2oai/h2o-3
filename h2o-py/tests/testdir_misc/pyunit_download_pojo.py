@@ -25,4 +25,4 @@ def download_pojo(ip,port):
   iris[2].show()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, vec_show)
+  h2o.run_test(sys.argv, download_pojo)
