@@ -5,7 +5,6 @@ sources:
   - src/product/howto/H2O-DevEC2.md
   - src/product/howto/H2O-DevHadoop.md
   - src/product/howto/H2O-DevS3Creds.md
-  - src/product/flow/H2OAlgoRoadmap.md
   - src/product/tutorials/datascience/DataScienceH2O-Dev.md
 assets:
   - 
