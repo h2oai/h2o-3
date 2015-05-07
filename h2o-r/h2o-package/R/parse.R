@@ -71,7 +71,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup.params$source_frames = .collapse.char(data@frame_id)
 
   # set field sep
-  if( nchar(sep) > 0 ) parseSetup.params$separator = sep
+  if( nchar(sep) > 0 ) parseSetup.params$separator <- .asc(sep)
 
   # check the header
   if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
@@ -135,3 +135,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
   .newH2OFrame("H2OFrame", conn=conn, frame_id=destination_frame, mutable=mutable, linkToGC=linkToGC)
 }
+
+
+# ASCII lookup on sep
+.asc <- function(c) strtoi(charToRaw(c),16L)

@@ -328,7 +328,7 @@ public class Vec extends Keyed<Vec> {
     Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
     int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
     if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
-      Key newKey = Key.make(".makeConRebalance" + chunks);
+      Key newKey = Key.make(Key.rand()+".makeConRebalance" + chunks);
       Frame f = new Frame(v0);
       RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
       H2O.submitTask(rb);
