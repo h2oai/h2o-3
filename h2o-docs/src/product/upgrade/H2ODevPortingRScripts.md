@@ -331,6 +331,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `class.sampling.factors` | `class_sampling_factors`
 `nfolds` |  `n_folds`
+`override_with_best_model` | `overwrite_with_best_model`
 
 ###Deprecated DL Parameters
 
@@ -358,7 +359,7 @@ H2O  | H2O-Dev
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `model_id = "",`
-`override_with_best_model,` | `override_with_best_model = true,` 
+`override_with_best_model,` | `overwrite_with_best_model = true,` 
 `classification = TRUE,` | 
 `nfolds = 0,` |  `n_folds = 0`
 `validation,` | `validation_frame,` 

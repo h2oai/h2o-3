@@ -2,6 +2,10 @@ package water.parser;
 
 import java.io.*;
 import java.util.Arrays;
+
+import water.H2O;
+import water.exceptions.H2OParseException;
+import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
 
@@ -27,13 +31,15 @@ class SVMLightParser extends Parser {
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParseSetup(true, 0, null, ParserType.SVMLight,
-            ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,null,null,null,null,null));
+    SVMLightParser p = new SVMLightParser(new ParseSetup(ParserType.SVMLight,
+            ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
+            null,null,null,null,null));
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
-    return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, dout.errors(), ParserType.SVMLight, ParseSetup.GUESS_SEP,
-                                 false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data);
+    if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
+      return new ParseSetup(ParserType.SVMLight, ParseSetup.GUESS_SEP,
+            false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data);
+    else throw new H2OParseSetupException("Could not parse file as an SVMLight file.");
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}

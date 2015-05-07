@@ -1,6 +1,7 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
+import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import java.io.ByteArrayInputStream;
@@ -111,11 +112,15 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
-                  && _setup._na_strings.length < colIdx  // FIXME: < is suspicious PUBDEV-869
-                  && _setup._na_strings[colIdx] != null
-                  && str.equals(_setup._na_strings[colIdx]))
-            dout.addInvalidCol(colIdx);
-          else
+                  && _setup._na_strings.length < colIdx
+                  && _setup._na_strings[colIdx] != null) {
+            for (String s : _setup._na_strings[colIdx]) {
+              if (str.equals(s)) {
+                dout.addInvalidCol(colIdx);
+                break;
+              }
+            }
+          } else
             dout.addStrCol(colIdx, str);
           str.set(null, 0, 0);
           ++colIdx;
@@ -603,14 +608,13 @@ MAIN_LOOP:
    *  singleQuotes is honored in all cases (and not guessed).
    *
    */
-  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[] naStrings) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] naStrings) {
 
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )
-      return new ParseSetup(false,0, new String[]{"No data!"},ParserType.AUTO, GUESS_SEP,false,checkHeader,0,null,null,null, null, null, FileVec.DFLT_CHUNK_SIZE);
+      throw new H2OParseSetupException("No data!");
 
     // Guess the separator, columns, & header
-    ArrayList<String> errors = new ArrayList<>();
     String[] labels;
     final String[][] data = new String[lines.length][];
     if( lines.length == 1 ) {       // Ummm??? Only 1 line?
@@ -635,7 +639,7 @@ MAIN_LOOP:
             }
           }
           //FIXME should set warning message and let fall through
-          return new ParseSetup(true, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
         }
       }
       data[0] = determineTokens(lines[0], sep, singleQuotes);
@@ -682,32 +686,19 @@ MAIN_LOOP:
       // See if compatible headers
       if( columnNames != null && labels != null ) {
         if( labels.length != columnNames.length )
-          errors.add("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
+          throw new H2OParseSetupException("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
         else {
           for( int i = 0; i < labels.length; ++i )
             if( !labels[i].equalsIgnoreCase(columnNames[i]) ) {
-              errors.add("Column "+(i+1)+" label '"+labels[i]+"' does not match '"+columnNames[i]+"'");
-              break;
+              throw new H2OParseSetupException("Column "+(i+1)+" label '"+labels[i]+"' does not match '"+columnNames[i]+"'");
             }
           labels = columnNames; // Keep prior case & count in any case
         }
       }
     }
 
-    // Count broken lines; gather error messages
-    int ilines = 0;
-    for( int i = 0; i < data.length; ++i ) {
-      if( data[i].length != ncols ) {
-        errors.add("error at line " + i + " : incompatible line length. Got " + data[i].length + " columns.");
-        ++ilines;
-      }
-    }
-    String[] err = null;
-    if( !errors.isEmpty() )
-      errors.toArray(err = new String[errors.size()]);
-
-    // Assemble the setup understood so far
-    ParseSetup resSetup = new ParseSetup(true, ilines, err, ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
+  // Assemble the setup understood so far
+    ParseSetup resSetup = new ParseSetup(ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
