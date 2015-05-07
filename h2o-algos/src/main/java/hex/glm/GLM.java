@@ -841,7 +841,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           }
           L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iterations);
           assert beta.length == _taskInfo._ginfo._gradient.length;
-          double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
+          final double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
           if(l1pen > 0 || _bc.hasBounds()) {
             // compute gradient at null beta to get estimate for rho
             double [] nullBeta = MemoryManager.malloc8d(_taskInfo._beta.length);
@@ -854,9 +854,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
               rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[i], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[i]);
             ProgressMonitor pm = new ProgressMonitor(){
-              int iter;
               public boolean progress(double [] beta, GradientInfo ginfo){
-                return ++iter < _parms._max_iterations && Job.isRunning(GLM.this._key);
+                // add l1pen
+                double obj = ginfo._objVal;
+                for(int i = 0; i < beta.length-1; ++i)
+                  obj += l1pen*(beta[i] >= 0?beta[i]:-beta[i]);
+                if((++_taskInfo._iter & 7) == 0) {
+                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(obj,4), GLM.this._key);
+                }
+                if(ginfo instanceof GLMGradientInfo) {
+                  GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+                  addScoringHistory(_taskInfo._iter,gginfo._likelihood,obj);
+                }
+                return _taskInfo._iter < _parms._max_iterations && Job.isRunning(GLM.this._key);
               }
             };
             if(_bc != null)
