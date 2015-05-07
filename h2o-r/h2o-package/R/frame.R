@@ -1341,11 +1341,11 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
     } else if( col.type == "enum" ) {
       domains <- col.sum$domain
       domain.cnts <- col.sum$histogram_bins
+      if( length(domain.cnts) < length(domains) ) domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
       missing.count <- 0L
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
-
       # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
-      df.domains <- data.frame(domain=domains,cnts=domain.cnts)
+      df.domains <- data.frame(domain=domains,cnts=domain.cnts, stringsAsFactors=FALSE)
       df.domains <- df.domains[with(df.domains, order(-cnts)),]  # sort in descending order
 
       # TODO: check out that NA is valid domain level in enum column... get missing and NA together here, before subsetting
@@ -1369,7 +1369,6 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
 
       # compute a width for the factor levels and also one for the counts
       width <- c( max(nchar(domains),0L), max(nchar(counts),0L) )
-
       # construct the result
       paste0(domains,sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),":",
                      sapply(counts,  function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }), counts, " ")
@@ -1382,7 +1381,6 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
   })
 
   result <- NULL
-
   if( is.matrix(cols) && ncol(cols) == 1L ) {
     result <- as.table(as.matrix(as.data.frame(cols, stringsAsFactors=FALSE)))
   } else {

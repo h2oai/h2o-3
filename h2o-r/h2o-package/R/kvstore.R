@@ -300,11 +300,12 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' library(h2o)
 #' h <- h2o.init(nthreads=-1)
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, trainin_frame=fr)
+#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
 #'
-#' h2o.downloadPOJO(my_model)  # print the model to screen
-#' # h2o.downloadPOJO(my_model, getwd())  # save to the current working directory, NOT RUN
-h2o.downloadPOJO <- function(model, path="", conn=h2o.getConnection()) {
+#' h2o.download_pojo(my_model)  # print the model to screen
+#' # h2o.download_pojo(my_model, getwd())  # save to the current working directory, NOT RUN
+#' @export
+h2o.download_pojo <- function(model, path="", conn=h2o.getConnection()) {
   model_id <- model@model_id
   java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", model_id, ".java"), raw=TRUE)
   file.path <- paste0(path, "/", model_id, ".java")
