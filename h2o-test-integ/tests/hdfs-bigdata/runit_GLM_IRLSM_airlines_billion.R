@@ -28,7 +28,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it to parse", parse_time[[1]])
+paste("Time it took to parse", parse_time[[1]])
 
 data1.hex <- data.hex
 
@@ -50,7 +50,8 @@ myY = "C19"
 myX = setdiff(names(data.hex), myY)
 ## Build GLM Model and compare AUC with h2o1
 
-glm_irlsm_time <- system.time(data_irlsm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, family = "gaussian", solver = "IRLSM")))
-paste("Time it to build GLM IRLSM ", glm_irlsm_time[[1]])
+glm_irlsm_time <- system.time(data_irlsm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, family = "gaussian", solver = "IRLSM"))
+data_irlsm.glm
+paste("Time it took to build GLM IRLSM ", glm_irlsm_time[[1]])
 
 PASS_BANNER()

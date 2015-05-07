@@ -48,12 +48,9 @@ data.valid <- data.hex[s > 0.8,]
 ## Response = IsDepDelayed
 myY = "C31"
 myX = setdiff(names(data1.hex), myY)
-gbm_10tree_time <- system.time(data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "AUTO"))
-data1.gbm
-paste("Time it took to build GBM ", gbm_10tree_time[[1]])
 
-gbm_50tree_time <- system.time(data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 50, max_depth = 5, distribution = "AUTO"))
-data2.gbm
-paste("Time it took to build GBM ", gbm_50tree_time[[1]])
+dl_time <- system.time(data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5)))
+data1.dl
+paste("Time it took to build DL ", dl_time[[1]])
 
 PASS_BANNER()
