@@ -327,7 +327,7 @@ class Expr(object):
       if h2o is not None:
         h2o.remove(self._data)
     else:
-      s = " (del '" + self._data + "' #0)"
+      s = " (removeframe '" + self._data + "')"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s

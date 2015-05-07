@@ -1128,15 +1128,15 @@ public class GLMTest  extends TestUtil {
       model = job.trainModel().get();
       double [] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
-      assertEquals(model.validation().computeAUC(model,fr), 1, 1e-4);
+      assertEquals(model.validation().computeAUC(), 1, 1e-4);
       GLMValidation val = model.validation();
-      assertEquals(1,val.computeAUC(model, fr),1e-2);
+      assertEquals(1,val.computeAUC(),1e-2);
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
 
       hex.AUC2 adata = mm._auc;
-      assertEquals(val.computeAUC(model, fr), adata._auc, 1e-2);
+      assertEquals(val.computeAUC(), adata._auc, 1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();

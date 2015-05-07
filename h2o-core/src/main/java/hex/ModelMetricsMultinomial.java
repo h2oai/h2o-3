@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -41,7 +42,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
     ds_copy[1+(int)ds[0]] = 0;
     for (int k=1; k<hits.length; ++k) {
-      final int pred_labels = ModelUtils.getPrediction(ds_copy); //use tie-breaking of getPrediction
+      final int pred_labels = GenModel.getPrediction(ds_copy, ds, 0.5 /*ignored*/); //use tie-breaking of getPrediction
       ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
       if (pred_labels==iact) {
         hits[k]++;

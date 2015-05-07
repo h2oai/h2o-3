@@ -22,55 +22,43 @@ import water.fvec.Frame;
  *  will convert the initial center selection Enum to and from a simple integer
  *  value internally.
  */
-public class KMeansGrid extends Grid<KMeansGrid> {
+public class KMeansGrid extends Grid<KMeansModel.KMeansParameters, KMeansGrid> {
 
   public static final String MODEL_NAME = "KMeans";
-  /** @return Model name */
+
   @Override protected String modelName() { return MODEL_NAME; }
 
   private static final String[] HYPER_NAMES    = new String[] {"_k", "_standardize",          "_init",                         "_seed" };
   private static final double[] HYPER_DEFAULTS = new double[] {  0,          1     , KMeans.Initialization.PlusPlus.ordinal(),123456789L};
-  /** @return hyperparameter names corresponding to a Model.Parameter field names */
+
   @Override protected String[] hyperNames() { return HYPER_NAMES; }
-  /** @return hyperparameter defaults, aligned with the field names */
+
   @Override protected double[] hyperDefaults() { return HYPER_DEFAULTS; }
 
-  /** Ask the Grid for a suggested next hyperparameter value, given an existing
-   *  Model as a starting point and the complete set of hyperparameter limits.
-   *  Returning a NaN signals there is no next suggestion, which is reasonable
-   *  if the obvious "next" value does not exist (e.g. exhausted all
-   *  possibilities of an enum).  It is OK if a Model for the suggested value
-   *  already exists; this will be checked before building any model.
-   *  @param h The h-th hyperparameter 
-   *  @param m A model to act as a starting point 
-   *  @param hyperLimits Upper bounds for this search 
-   *  @return Suggested next value for hyperparameter h or NaN if no next value */
   @Override protected double suggestedNextHyperValue( int h, Model m, double[] hyperLimits ) {
     throw H2O.unimpl();
   }
 
-  /** @param hypers A set of hyper parameter values
-   *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
-   *  cheap; used to check hyperparameter sanity or make models */
-  @Override protected KMeans getBuilder( double[] hypers ) {
-    KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-    parms._train = _fr._key;
-    parms._k = (int)hypers[0];
-    parms._standardize = hypers[1]!=0;
-    parms._init = KMeans.Initialization.values()[(int)hypers[2]];
-    parms._seed = (long)hypers[3];
-    return new KMeans(parms);
+  @Override
+  protected ModelBuilder createBuilder(KMeansModel.KMeansParameters params) {
+    return new KMeans(params);
   }
 
-  /** @param parms Model parameters
-   *  @return Gridable parameters pulled out of the parms */
-  @Override public double[] getHypers( Model.Parameters parms ) {
+  @Override protected KMeansModel.KMeansParameters applyHypers(KMeansModel.KMeansParameters params, double[] hypers) {
+    params._train = _fr._key;
+    params._k = (int)hypers[0];
+    params._standardize = hypers[1]!=0;
+    params._init = KMeans.Initialization.values()[(int)hypers[2]];
+    params._seed = (long)hypers[3];
+    return params;
+  }
+
+  @Override public double[] getHypers( KMeansModel.KMeansParameters params ) {
     double[] ds = new double[HYPER_NAMES.length];
-    KMeansModel.KMeansParameters kp = (KMeansModel.KMeansParameters)parms;
-    ds[0] = kp._k;
-    ds[1] = kp._standardize ? 1 : 0;
-    ds[2] = kp._init.ordinal();
-    ds[3] = kp._seed;
+    ds[0] = params._k;
+    ds[1] = params._standardize ? 1 : 0;
+    ds[2] = params._init.ordinal();
+    ds[3] = params._seed;
     return ds;
   }
 
@@ -85,5 +73,6 @@ public class KMeansGrid extends Grid<KMeansGrid> {
     return kmg;
   }
 
-  @Override protected long checksum_impl() { throw H2O.unimpl(); }
+  /** FIXME: Rest API requirement - do not call directly */
+  public KMeansGrid() { super(null, null); }
 }

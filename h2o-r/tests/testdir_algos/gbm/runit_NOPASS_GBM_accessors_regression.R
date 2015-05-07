@@ -12,22 +12,22 @@ test.gbm.regr.accessors <- function(conn) {
   Log.info("MSE...")
   mse.basic <- h2o.mse(cars.gbm)
   print(mse.basic)
-  expect_error(h2o.mse(cars.gbm, valid = TRUE))
+  expect_warning(h2o.mse(cars.gbm, valid = TRUE))
   mse.valid.F <- h2o.mse(cars.gbm.valid)
   mse.valid.T <- h2o.mse(cars.gbm.valid,valid = TRUE)
   print(mse.valid.T)
   expect_equal(mse.basic, mse.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(mse.basic, mse.valid.R))
+  expect_error(expect_equal(mse.basic, mse.valid.T))
 
   Log.info("R^2...")
   r2.basic <- h2o.r2(cars.gbm)
   print(r2.basic)
-  expect_error(h2o.r2(cars.gbm, valid = TRUE))
+  expect_warning(h2o.r2(cars.gbm, valid = TRUE))
   r2.valid.F <- h2o.r2(cars.gbm.valid)
   r2.valid.T <- h2o.r2(cars.gbm.valid,valid = TRUE)
   print(r2.valid.T)
   expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(r2.basic, r2.valid.R))
+  expect_error(expect_equal(r2.basic, r2.valid.T))
 
   Log.info("Variable Importance...")
   print(h2o.varimp(cars.gbm))

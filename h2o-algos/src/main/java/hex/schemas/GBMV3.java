@@ -14,11 +14,10 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
     };
 
     // Input fields
-    @API(help="Learning rate from 0.0 to 1.0")
+    @API(help="Learning rate from 0.0 to 1.0", gridable = true)
     public float learn_rate;
 
-    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian" })
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian" }, gridable = true)
     public GBMParameters.Family distribution;
-
   }
 }
