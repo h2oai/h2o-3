@@ -1,6 +1,5 @@
 package water.rapids;
 
-import water.DKV;
 import water.Futures;
 import water.H2O;
 import water.Key;
@@ -45,7 +44,6 @@ import water.fvec.Vec;
  * This means `nargs` arguments are always parsed.
  */
 public class ASTFunc extends ASTFuncDef {
-  private Env _e;  // a ref to the captures environment
   public ASTFunc() { super(); }
   public ASTFunc(String name, String[] arg_names, Env.SymbolTable table, ASTStatement body) {
     _name = name; _arg_names = arg_names; _table = table; _body = body;
@@ -67,47 +65,32 @@ public class ASTFunc extends ASTFuncDef {
   @Override String opStr() { return _name; }
   @Override ASTOp make() { return this; }
   @Override void apply(Env e) {
-    Frame cleanme;
-    Frame f;
     Env captured = e.capture();
+
+    // for each arg in _args, want to fill in the appropriate value into the captured Env's symbol table
     for (int i = 0; i < _args.length; ++i) {
-      if (_args[i] instanceof ASTId) {
-        ASTId a = (ASTId)_args[i];
-        if (!a.isLookup()) throw new IllegalArgumentException("Function arguments must be lookups.");
-        _args[i] = e.lookup(a);
-      }
-      if (!(_args[i] instanceof ASTNum) && !(_args[i] instanceof ASTString) && !(_args[i] instanceof ASTFrame) && !(_args[i] instanceof ASTNull)) {
+      if( _args[i] instanceof ASTId     ) _args[i] = e.lookup((ASTId)_args[i]);   // may have to do an initial lookup...
+
+      // arg is an AST, must eval it...
+      if( !(_args[i] instanceof ASTNum || _args[i] instanceof ASTString || _args[i] instanceof ASTFrame || _args[i] instanceof ASTNull) ) {
         _args[i].treeWalk(e);
         _args[i] = e.pop2AST();
       }
-      if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
-      else if (_args[i] instanceof ASTString) _table.put(_arg_names[i], Env.STR, _args[i].value());
-      else if (_args[i] instanceof ASTFrame) {
-        // have a frame not in the DKV --> put in the DKV
-        if (((ASTFrame)_args[i])._key == null) {
-          cleanme = ((ASTFrame)_args[i])._fr;
-          f = new Frame(Key.make(_arg_names[i]), cleanme.names(), cleanme.vecs());
-          DKV.put(f._key, f); // block n put the key in the DKV
-          _args[i] = new ASTFrame(f._key.toString());
-          _table._frames.put(_arg_names[i], f);
-        }
-        _table.put(_arg_names[i], Env.LARY, _args[i].value());
-        _table._frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
-      }
-      else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
+
+      if( _args[i] instanceof ASTNum         ) captured.put(_arg_names[i], Env.NUM, _args[i].value()); // put a #
+      else if( _args[i] instanceof ASTString ) captured.put(_arg_names[i], Env.STR, _args[i].value()); // put a string
+      else if( _args[i] instanceof ASTNull   ) captured.put(_arg_names[i], Env.NULL,"()");             // put a null
+      else if( _args[i] instanceof ASTFrame  ) captured.put(_arg_names[i], ((ASTFrame)_args[i])._fr);  // put a frame
       else throw new IllegalArgumentException("Argument of type "+ _args[i].getClass()+" unsupported. Argument must be a String, number, Frame, or null.");
     }
-    captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
-    _body.exec(captured);
-//    captured.popScope();
-    _e = captured;
+    _body.exec(captured);    // execute the fcn body
+    e.push(captured.peek()); // get the result from the captured scope without popping, sticks references into parent scope.
+    captured.popScope();     // pop the captured scope
   }
 
   // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    _args = new AST[args == null ? 1 :1 + args.length];
-    _args[0] = arg1;
-    if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
+  @Override void exec(Env e, AST... args) {
+    _args = args;
     apply(e);
   }
 
@@ -125,10 +108,13 @@ public class ASTFunc extends ASTFuncDef {
     fs.blockForPending();
     Key local_key = Key.make();
     Frame fr = new Frame(local_key, null, vecs);
-    _table._frames.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
-
+    env.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
+    AST[] as = new AST[args==null?1:args.length+1];
+    as[0]=new ASTFrame(fr);
+    if( args!=null )
+      System.arraycopy(args, 0, as, 1, args.length);
     // execute the function on the row
-    exec(env, new ASTFrame(fr), args);
+    exec(env, as);
 
     // cleanup results and return
     if (env.isNum()) {
@@ -158,16 +144,6 @@ public class ASTFunc extends ASTFuncDef {
     _body.toString(sb,d+1).append("\n");
     return indent(sb,d).append("}");
   }
-
-//  void trash() {
-//    if (_e == null) return;
-//    // wipe the _local_frames
-//    Futures fs = new Futures();
-//    for (Vec v: _e._refcnt.keySet()) {
-//      fs = _e._parent.subVec(v, fs);
-//    }
-//    fs.blockForPending();
-//  }
 }
 
 class ASTFuncDef extends ASTOp {

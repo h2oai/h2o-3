@@ -99,7 +99,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     }
 
     // Select class with highest conditional probability
-    preds[0] = GenModel.getPrediction(preds, data);
+    preds[0] = GenModel.getPrediction(preds, data, defaultThreshold());
     return preds;
   }
 }

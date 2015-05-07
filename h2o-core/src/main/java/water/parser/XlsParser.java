@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import water.H2O;
 import water.exceptions.H2OParseException;
+import water.exceptions.H2OParseSetupException;
 import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
@@ -77,16 +78,17 @@ class XlsParser extends Parser {
 
   /** Try to parse the bytes as XLS format  */
   public static ParseSetup guessSetup( byte[] bytes ) {
-    XlsParser p = new XlsParser(new ParseSetup(true, 0, null, ParserType.XLS, ParseSetup.GUESS_SEP, false,
+    XlsParser p = new XlsParser(new ParseSetup(ParserType.XLS, ParseSetup.GUESS_SEP, false,
                                 ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null));
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     PreviewParseWriter dout = new PreviewParseWriter();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
-    return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetup.GUESS_SEP,
-                                 false,dout.colNames()==null?ParseSetup.NO_HEADER:ParseSetup.HAS_HEADER,dout._ncols,
+    if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
+      return new ParseSetup(ParserType.XLS, ParseSetup.GUESS_SEP, false,
+            dout.colNames()==null?ParseSetup.NO_HEADER:ParseSetup.HAS_HEADER,dout._ncols,
                                  dout.colNames(), dout.guessTypes(),null,null,dout._data);
+    else throw new H2OParseSetupException("Could not parse file as an XLS file.");
   }
 
 

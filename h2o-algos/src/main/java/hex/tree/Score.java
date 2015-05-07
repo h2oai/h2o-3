@@ -3,6 +3,7 @@ package hex.tree;
 import hex.Model.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
+import hex.genmodel.GenModel;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -49,7 +50,7 @@ public class Score extends MRTask<Score> {
         _bldr.score2(chks,cdists,row); // Use the training data directly (per-row predictions already made)
       else            // Must score "the hard way"
         _bldr._model.score0(chks,row,tmp,cdists);
-      if( nclass > 1 ) cdists[0] = ModelUtils.getPrediction(cdists); // Fill in prediction
+      if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, tmp, _bldr._model.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists,val, _bldr._model);
     }

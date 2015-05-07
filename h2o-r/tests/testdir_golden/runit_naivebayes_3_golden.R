@@ -17,6 +17,11 @@ test.nbayes.golden <- function(H2Oserver) {
   Log.info("Compare Predictions between Models")
   predR <- predict(fitR, titanicR)
   predH2O <- predict(fitH2O, titanicH2O)
+  label <- ifelse(predH2O[,3] >= 0.5, 1, 0)
+  #print(summary(predH2O))
+  #print(summary(label))
+  predH2O[,1] <- label
+  #print(summary(predH2O))
   checkNaiveBayesPrediction(predH2O, predR, tolerance = 1e-6)
   
   testEnd()

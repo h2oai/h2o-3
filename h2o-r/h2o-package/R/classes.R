@@ -105,7 +105,7 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
 
 .keyFinalizer <- function(envir) {
   if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
-  if( !is.null(envir$id)      ) h2o.rm(envir$id, envir$conn)
+  if( !is.null(envir$id)       ) h2o.rm(envir$id, envir$conn)
   if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id,envir$conn)
   invisible(NULL)
 }
@@ -119,11 +119,8 @@ setMethod("initialize", "H2OObject", function(.Object, ...) {
     finalizers <- c(list(envir), finalizers)
   }
 
-  if( Class == "H2OFrame" || Class == "H2ORawData" ) {
-    new(Class, ..., conn=conn, frame_id=id, finalizers=finalizers)
-  } else {
-    new(Class, ..., conn = conn, model_id = id, finalizers = finalizers)
-  }
+  if( Class == "H2OFrame" || Class == "H2ORawData" ) new(Class, ..., conn=conn, frame_id=id, finalizers=finalizers)  # frame_id
+  else                                               new(Class, ..., conn=conn, model_id=id, finalizers=finalizers)  # model_id
 }
 
 #'

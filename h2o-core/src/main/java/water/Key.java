@@ -289,6 +289,15 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  @return Desired Key */ 
   public static Key make(String s) { return make(decodeKeyName(s));}
   public static Key makeSystem(String s) { return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false);}
+
+  /**
+   * Make a random key, homed to a given node.
+   * @param node a node at which the new key is homed.
+   * @return the new key
+   */
+  public static Key make(H2ONode node) {
+    return make(decodeKeyName(rand()),DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false,node);
+  }
   static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
   /** Factory making a random Key
    *  @return Desired Key */ 

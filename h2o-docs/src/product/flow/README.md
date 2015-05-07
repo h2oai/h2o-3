@@ -481,7 +481,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Keep_cross_validation_splits**: [(DL)](#DL) Check this checkbox to keep the cross-validation frames. This option is not selected by default.
 
-- **Override\_with\_best\_model**: [(DL)](#DL) Check this checkbox to override the final model with the best model found during training. This option is selected by default. 
+- **Overwrite\_with\_best\_model**: [(DL)](#DL) Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
 - **Target\_ratio\_comm\_to\_comp**: [(DL)](#DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). The default value is 0.02. 
 

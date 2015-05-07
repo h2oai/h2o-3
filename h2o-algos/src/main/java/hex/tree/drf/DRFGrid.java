@@ -24,7 +24,7 @@ import water.fvec.Frame;
  *  will convert the initial center selection Enum to and from a simple integer
  *  value internally.
  */
-public class DRFGrid<G extends DRFGrid<G>> extends SharedTreeGrid<G> {
+public class DRFGrid extends SharedTreeGrid<DRFModel.DRFParameters, DRFGrid> {
 
   public static final String MODEL_NAME = "DRF";
   /** @return Model name */
@@ -32,46 +32,34 @@ public class DRFGrid<G extends DRFGrid<G>> extends SharedTreeGrid<G> {
 
   private static final String[] HYPER_NAMES    = ArrayUtils.append(SharedTreeGrid.HYPER_NAMES   ,new String[] { "_mtries", "_sample_rate"});
   private static final double[] HYPER_DEFAULTS = ArrayUtils.append(SharedTreeGrid.HYPER_DEFAULTS,new double[] {    -1    ,     2f/3f     });
-  /** @return hyperparameter names corresponding to a Model.Parameter field names */
+
   @Override protected String[] hyperNames() { return HYPER_NAMES; }
-  /** @return hyperparameter defaults, aligned with the field names */
+
   @Override protected double[] hyperDefaults() { return HYPER_DEFAULTS; }
 
-  /** Ask the Grid for a suggested next hyperparameter value, given an existing
-   *  Model as a starting point and the complete set of hyperparameter limits.
-   *  Returning a NaN signals there is no next suggestion, which is reasonable
-   *  if the obvious "next" value does not exist (e.g. exhausted all
-   *  possibilities of an enum).  It is OK if a Model for the suggested value
-   *  already exists; this will be checked before building any model.
-   *  @param h The h-th hyperparameter 
-   *  @param m A model to act as a starting point 
-   *  @param hyperLimits Upper bounds for this search 
-   *  @return Suggested next value for hyperparameter h or NaN if no next value */
   @Override protected double suggestedNextHyperValue( int h, Model m, double[] hyperLimits ) {
     throw H2O.unimpl();
   }
 
-  /** @param hypers A set of hyper parameter values
-   *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
-   *  cheap; used to check hyperparameter sanity or make models */
-  @Override protected DRF getBuilder( double[] hypers ) {
-    DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-    getBuilder(parms,hypers);
-    int slen = SharedTreeGrid.HYPER_NAMES.length;
-    parms._mtries      = (int)  hypers[slen  ];
-    parms._sample_rate = (float)hypers[slen+1];
-    return new DRF(parms);
+  @Override
+  protected ModelBuilder createBuilder(DRFModel.DRFParameters params) {
+    return new DRF(params);
   }
 
-  /** @param parms Model parameters
-   *  @return Gridable parameters pulled out of the parms */
-  @Override public double[] getHypers( Model.Parameters parms ) {
-    DRFModel.DRFParameters drfp = (DRFModel.DRFParameters)parms;
-    double[] hypers = new double[HYPER_NAMES.length];
-    super.getHypers(drfp,hypers);
+  @Override protected DRFModel.DRFParameters applyHypers(DRFModel.DRFParameters params, double[] hypers) {
+    DRFModel.DRFParameters p = super.applyHypers(params, hypers);
     int slen = SharedTreeGrid.HYPER_NAMES.length;
-    hypers[slen  ] = drfp._mtries;
-    hypers[slen+1] = drfp._sample_rate;
+    p._mtries      = (int)  hypers[slen  ];
+    p._sample_rate = (float)hypers[slen+1];
+    return p;
+  }
+
+  @Override public double[] getHypers(DRFModel.DRFParameters params) {
+    double[] hypers = new double[HYPER_NAMES.length];
+    super.getHypers(params,hypers);
+    int slen = SharedTreeGrid.HYPER_NAMES.length;
+    hypers[slen  ] = params._mtries;
+    hypers[slen+1] = params._sample_rate;
     return hypers;
   }
 
@@ -86,5 +74,6 @@ public class DRFGrid<G extends DRFGrid<G>> extends SharedTreeGrid<G> {
     return kmg;
   }
 
-  @Override protected long checksum_impl() { throw H2O.unimpl(); }
+  /** FIXME: Rest API requirement - do not call directly */
+  public DRFGrid() { super(null, null); }
 }
