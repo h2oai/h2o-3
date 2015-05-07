@@ -42,5 +42,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double mse = _sumsqe / _count;
       return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, sigma));
     }
+
+    public String toString() {return " mse = " + _sumsqe / _count;}
   }
 }
