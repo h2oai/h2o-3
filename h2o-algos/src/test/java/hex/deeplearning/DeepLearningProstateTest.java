@@ -275,39 +275,40 @@ public class DeepLearningProstateTest extends TestUtil {
                                             Assert.assertTrue(model2.testJavaScoring(valid,pred,1e-6));
 
                                             hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model2, valid);
-                                            double error = 0;
+                                            double error;
                                             // binary
                                             if (model2._output.nclasses() == 2) {
                                               assert (resp == 1);
                                               threshold = mm.auc().defaultThreshold();
                                               error = mm.auc().defaultErr();
                                               // check that auc.cm() is the right CM
-                                              Assert.assertEquals(new ConfusionMatrix(mm.auc().defaultCM(), new String[]{"0", "1"}).err(), error, 1e-15);
+                                              Assert.assertEquals(new ConfusionMatrix(mm.auc().defaultCM(), model2._output._domains[resp]).err(), error, 1e-15);
                                               // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                               Assert.assertEquals(mm.cm().err(), error, 1e-15);
-                                            }
 
-                                            // confirm that orig CM was made with threshold 0.5
-                                            // put pred2 into DKV, and allow access
-                                            pred2 = new Frame(Key.make("pred2"), pred.names(), pred.vecs());
-                                            pred2.delete_and_lock(null);
-                                            pred2.unlock(null);
+                                              // check that the labels made with the default threshold are consistent with the CM that's reported by the AUC object
+                                              ConfusionMatrix cm = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum());
+                                              Log.info("CM from pre-made labels:");
+                                              Log.info(cm.toASCII());
+//                                              Assert.assertEquals(cm.err(), error, 1e-4); //FIXME
 
-                                            if (model2._output.nclasses() == 2) {
-//                                              double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
-//                                              Assert.assertEquals(threshErr2, error, 1e-4);
-
-                                              // manually make labels with AUC-given threshold for best F1
+                                              // manually make labels with AUC-given default threshold
                                               String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
+                                              // confirm that orig CM was made with threshold 0.5
+                                              // put pred2 into DKV, and allow access
+                                              pred2 = new Frame(Key.make("pred2"), pred.names(), pred.vecs());
+                                              pred2.delete_and_lock(null);
+                                              pred2.unlock(null);
                                               Env ev = Exec.exec(ast);
                                               try {
                                                 pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                               } finally {
                                                 if (ev != null) ev.remove_and_unlock();
                                               }
-
-                                              double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
-                                              Assert.assertEquals(threshErr2, error, 1e-4); //AUC-given F1-optimal threshold might not reproduce AUC-given CM-error identically, but should match up to 1%
+                                              cm = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum());
+                                              Log.info("CM from self-made labels:");
+                                              Log.info(cm.toASCII());
+                                              Assert.assertEquals(cm.err(), error, 1e-4); //AUC-given F1-optimal threshold might not reproduce AUC-given CM-error identically, but should match up to 1%
                                             }
                                           } finally {
                                             if (pred != null) pred.delete();
