@@ -14,10 +14,10 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
     };
 
     // Input fields
-    @API(help = "Number of columns to randomly select at each level, or -1 for sqrt(#cols)")
+    @API(help = "Number of columns to randomly select at each level, or -1 for sqrt(#cols)", gridable = true)
     public int mtries;
 
-    @API(help = "Sample rate, from 0. to 1.0")
+    @API(help = "Sample rate, from 0. to 1.0", gridable = true)
     public float sample_rate;
 
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.")
