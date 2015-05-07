@@ -36,7 +36,6 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     super.init(expensive);
     if (! _parms._balance_classes)
       hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
-
     if( _parms._max_after_balance_size <= 0.0 )
       error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
@@ -56,6 +55,8 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       _nclass = 1;
       return;
     }
+    else if (expensive && _parms._balance_classes && isClassifier() && (long)(_train.numRows()*_parms._max_after_balance_size) < _train.lastVec().domain().length )
+      error("_max_after_balance_size","Cannot end up with fewer rows than there are response levels. Increase max after balance size.");
 
     if( null == _parms._response_column) {
       error("_response_column", "Response column parameter not set.");
