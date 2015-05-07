@@ -55,7 +55,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       _nclass = 1;
       return;
     }
-    else if (expensive && _parms._balance_classes && (long)(_train.numRows()*_parms._max_after_balance_size) <= _train.lastVec().domain().length )
+    else if (expensive && _parms._balance_classes && isClassifier() && (long)(_train.numRows()*_parms._max_after_balance_size) < _train.lastVec().domain().length )
       error("_max_after_balance_size","Cannot end up with fewer rows than there are response levels. Increase max after balance size.");
 
     if( null == _parms._response_column) {
