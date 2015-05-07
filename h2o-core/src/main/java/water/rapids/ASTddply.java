@@ -139,7 +139,7 @@ public class ASTddply extends ASTOp {
         }
       }
     }.doAll(ncols, layoutVec).outputFrame(names,domains);
-
+    layoutVec.remove();
     env.pushAry(fr2);
 
 //    // Auto-Rebalance afterwards, as ddply's often make few fat chunks
