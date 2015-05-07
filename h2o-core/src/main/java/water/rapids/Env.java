@@ -665,14 +665,13 @@ public class Env extends Iced {
       SymbolAttributes attrs = (SymbolAttributes)get(name);
       attrs.write(value);
     }
-
-    private class SymbolAttributes extends Iced {
-      private int _type;
-      private String _value;
-      SymbolAttributes(int type, String value) { _type = type; _value = value; }
-      public void write(int type)     { this._type  = type; }
-      public void write(String value) { this._value = value;}
-    }
+  }
+  private class SymbolAttributes extends Iced {
+    private int _type;
+    private String _value;
+    SymbolAttributes(int type, String value) { _type = type; _value = value; }
+    public void write(int type)     { this._type  = type; }
+    public void write(String value) { this._value = value;}
   }
   SymbolTable newTable() { return new SymbolTable(); }
 

@@ -3282,7 +3282,7 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public void map(Chunk[] c) {
       ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0;i<c[0]._len;++i)
-        if( _s.add(g.fill(i,c,_cols))) {
+        if( _s.add((ASTddply.Group)g.fill(i,c,_cols))) {
           g = new ASTddply.Group(_cols.length);
         }
     }

@@ -432,12 +432,13 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   public static class G extends Iced {
-    public double _ds[];  // Array is final; contents change with the "fill"
+    public final double _ds[];  // Array is final; contents change with the "fill"
     public int _hash;           // Hash is not final; changes with the "fill"
-    public void fill(int row, Chunk chks[], long cols[]) {
+    public G fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
+      return this;
     }
     private int hash() {
       long h=0;                 // hash is sum of field bits
@@ -513,6 +514,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     G(int len) {_ds=new double[len];}
+    G(){ _ds=null;}
+    G(double[] ds) { _ds=ds; }
 
     private void close() {
       for( int i=0;i<_NAMethod.length;++i ) {
@@ -524,7 +527,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       }
     }
 
-    private static boolean CAS_N (G g, long o, long n          ) { return U.compareAndSwapLong(g,_NOffset,o,n); }
+    protected static boolean CAS_N (G g, long o, long n          ) { return U.compareAndSwapLong(g,_NOffset,o,n); }
     private static boolean CAS_NA(G g, long off, long o, long n) { return U.compareAndSwapLong(g._NA,off,o,n);  }
     private static boolean CAS_f (G g, long off, long o, long n) { return U.compareAndSwapLong(g._f,off,o,n);   }
     private static boolean CAS_l (G g, long off, long o, long n) { return U.compareAndSwapLong(g._l,off,o,n);   }
