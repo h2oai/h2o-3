@@ -198,6 +198,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           map = newMap;
         }
         final int numoff = _dinfo.numStart();
+        String [] valid_col_names = new String[]{"beta_given","beta_start","lower_bounds","upper_bounds","rho"};
+        Arrays.sort(valid_col_names);
+        for(String s:beta_constraints.names())
+          if(Arrays.binarySearch(valid_col_names,s) < 0)
+            error("beta_constraints","Unknown column name '" + s + "'");
         if ((v = beta_constraints.vec("beta_start")) != null) {
           betaStart = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           for (int i = 0; i < (int) v.length(); ++i)
@@ -547,7 +552,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       try{
         _parms.read_unlock_frames(GLM.this);
       } catch(Throwable t) {}
-      DKV.remove(_dinfo._key);
+      if(_dinfo != null)
+        DKV.remove(_dinfo._key);
       if(_rowFilter != null)
         _rowFilter.remove();
       if(_tInfos != null && _tInfos[0] != null) {
@@ -628,8 +634,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           tryComplete();
           return false;
         }
-        doCleanup();
-        new RemoveCall(null, _dest).invokeTask();
+        try {
+          doCleanup();
+          new RemoveCall(null, _dest).invokeTask();
+        } catch(Throwable t) {Log.err(t);}
         failed(ex);
         return true;
       }
@@ -855,16 +863,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[i], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[i]);
             ProgressMonitor pm = new ProgressMonitor(){
               public boolean progress(double [] beta, GradientInfo ginfo){
-                // add l1pen
-                double obj = ginfo._objVal;
-                for(int i = 0; i < beta.length-1; ++i)
-                  obj += l1pen*(beta[i] >= 0?beta[i]:-beta[i]);
                 if((++_taskInfo._iter & 7) == 0) {
-                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(obj,4), GLM.this._key);
-                }
-                if(ginfo instanceof GLMGradientInfo) {
-                  GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-                  addScoringHistory(_taskInfo._iter,gginfo._likelihood,obj);
+                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1), GLM.this._key);
                 }
                 return _taskInfo._iter < _parms._max_iterations && Job.isRunning(GLM.this._key);
               }
