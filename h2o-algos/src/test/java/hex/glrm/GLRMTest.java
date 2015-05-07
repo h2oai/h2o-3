@@ -25,20 +25,32 @@ public class GLRMTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   private static String colFormat(String[] cols, String format) {
+    int[] idx = new int[cols.length];
+    for(int i = 0; i < idx.length; i++) idx[i] = i;
+    return colFormat(cols, format, idx);
+  }
+  private static String colFormat(String[] cols, String format, int[] idx) {
     StringBuilder sb = new StringBuilder();
-    for(int i = 0; i < cols.length; i++) sb.append(String.format(format, cols[i]));
+    for(int i = 0; i < cols.length; i++) sb.append(String.format(format, cols[idx[i]]));
     sb.append("\n");
     return sb.toString();
   }
 
   private static String colExpFormat(String[] cols, String[][] domains, String format) {
+    int[] idx = new int[cols.length];
+    for(int i = 0; i < idx.length; i++) idx[i] = i;
+    return colExpFormat(cols, domains, format, idx);
+  }
+
+  private static String colExpFormat(String[] cols, String[][] domains, String format, int[] idx) {
     StringBuilder sb = new StringBuilder();
     for(int i = 0; i < domains.length; i++) {
-      if(domains[i] == null)
-        sb.append(String.format(format, cols[i]));
+      int c = idx[i];
+      if(domains[c] == null)
+        sb.append(String.format(format, cols[c]));
       else {
-        for(int j = 0; j < domains[i].length; j++)
-          sb.append(String.format(format, domains[i][j]));
+        for(int j = 0; j < domains[c].length; j++)
+          sb.append(String.format(format, domains[c][j]));
       }
     }
     sb.append("\n");
@@ -278,13 +290,13 @@ public class GLRMTest extends TestUtil {
     Log.info(sb.toString());
   }
 
-  @Test @Ignore public void testCategoricalIris() throws InterruptedException, ExecutionException {
+  @Test public void testCategoricalIris() throws InterruptedException, ExecutionException {
     // Initialize using rows 1, 51, 101, and 150 of training frame
     Frame yinit = frame(ard(ard(5.1, 3.5, 1.4, 0.2, 0),
                             ard(7.0, 3.2, 4.7, 1.4, 1),
                             ard(6.3, 3.3, 6.0, 2.5, 2),
                             ard(5.9, 3.0, 5.1, 1.8, 2)));
-    yinit.vec(4).setDomain(new String[] {"Iris-setosa", "Iris-versicolor", "Iris-virginica"});
+    yinit.vec(4).setDomain(new String[]{"Iris-setosa", "Iris-versicolor", "Iris-virginica"});
     GLRM job = null;
     GLRMModel model = null;
     Frame train = null;

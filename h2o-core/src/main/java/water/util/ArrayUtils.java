@@ -239,6 +239,27 @@ public class ArrayUtils {
     return res;
   }
 
+  public static String[] permuteCols(String[] vec, int[] idx) {
+    if(vec == null) return null;
+    assert vec.length == idx.length : "Length of vector must match permutation vector length: Got " + vec.length + " != " + idx.length;
+    String[] res = new String[vec.length];
+
+    for(int i = 0; i < vec.length; i++)
+      res[i] = vec[idx[i]];
+    return res;
+  }
+  public static double[][] permuteCols(double[][] ary, int[] idx) {
+    if(ary == null) return null;
+    assert ary[0].length == idx.length : "Number of columns must match permutation vector length: Got " + ary[0].length + " != " + idx.length;
+    double[][] res = new double[ary.length][ary[0].length];
+
+    for(int j = 0; j < ary[0].length; j++) {
+      for(int i = 0; i < ary.length; i++)
+        res[i][j] = ary[i][idx[j]];
+    }
+    return res;
+  }
+
   public static double [][] generateLineSearchVecs(double [] srcVec, double [] gradient, int n, final double step) {
     double [][] res = new double[n][];
     double x = step;

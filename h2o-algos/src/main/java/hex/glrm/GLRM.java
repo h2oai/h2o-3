@@ -3,6 +3,7 @@ package hex.glrm;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
+
 import hex.DataInfo;
 import hex.FrameTask;
 import hex.Model;
@@ -16,6 +17,7 @@ import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
+
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -127,8 +129,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return frob;
   }
 
-  // Transform each column of a 2-D array
-  public static double[][] transform(double[][] centers, int ncats, double[] normSub, double[] normMul) {
+  public static double[][] transform(double[][] centers, double[] normSub, double[] normMul, int ncats) {
     int K = centers.length;
     int N = centers[0].length;
     double[][] value = new double[K][N];
@@ -136,9 +137,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double[] mults = normMul == null ? MemoryManager.malloc8d(N) : normMul;
 
     for (int clu = 0; clu < K; clu++) {
-      System.arraycopy(centers[clu], 0, value[clu], 0, N);
+      System.arraycopy(centers[clu], 0, value[clu], 0, ncats);
       for (int col = ncats; col < N; col++)
-        value[clu][col] = (value[clu][col] - means[col]) * mults[col];
+        value[clu][col] = (centers[clu][col] - means[col]) * mults[col];
     }
     return value;
   }
@@ -152,7 +153,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // Column count for expanded matrix
     int ncols = 0;
     for(int j = 0; j < domains.length; j++)
-      ncols += domains[j] == null ? 1 : domains[j].length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
+      ncols += domains[j] == null ? 1 : domains[j].length - (useAllFactorLevels ? 0:1) + (missingBucket ? 1:0);
 
     int s = 0;    // Keep track of col index in expanded matrix
     double[][] cexp = new double[centers.length][ncols];
@@ -170,8 +171,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             else cexp[i][s+len-1] = 1;    // Otherwise, missing value turns into extra (last) factor
           } else {
             assert cat >= 0 && cat < domains[j].length : "User-specified categorical level out of bounds from training domain!";
-            if (useAllFactorLevels || cat != domains[j].length-1)    // Don't set col if skipping last factor level
-              cexp[i][s+(int)cat] = 1;
+            int cidx = (int)cat - (useAllFactorLevels ? 0:1);
+            if (cidx >= 0) cexp[i][s+cidx] = 1;   // Don't set col if skipping first factor level
           }
         }
         s += len;
@@ -180,8 +181,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return cexp;
   }
 
-  // More efficient implementation assuming cols reshuffled so categoricals sorted up front
-  public static double[][] expandSortedCats(double[][] sdata, DataInfo dinfo) {
+  // More efficient implementation assuming sdata cols aligned with adaptedFrame
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) {
     if(sdata == null || dinfo._cats == 0) return sdata;
     assert sdata[0].length == dinfo._adaptedFrame.numCols();
 
@@ -197,7 +198,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (dinfo._catMissing[j] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
           else cidx = dinfo._catOffsets[j+1]-1;     // Otherwise, missing value turns into extra (last) factor
         } else
-          cidx = dinfo.getCategoricalId(j, (int)sdata[i][j]);   // TODO: Need to deal with useAllFactorLevels case
+          cidx = dinfo.getCategoricalId(j, (int)sdata[i][j]);
         if(cidx >= 0) cexp[i][cidx] = 1;  // Ignore categorical levels outside domain
       }
     }
@@ -205,7 +206,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // Copy over numeric columns
     for(int j = 0; j < dinfo._nums; j++) {
       for(int i = 0; i < sdata.length; i++)
-        cexp[i][catsexp+j] = sdata[i][j];
+        cexp[i][catsexp+j] = sdata[i][dinfo._cats+j];
     }
     return cexp;
   }
@@ -225,6 +226,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           for (int r = 0; r < _parms._k; r++)
             centers[r][c] = centersVecs[c].at(r);
         }
+        centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
 
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
@@ -235,6 +237,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._seed = _parms._seed;
         parms._only_v = true;
 
+        // TODO: Ensure SVD centers align with dinfo._adaptedFrame and no cols/factors dropped
         SVDModel svd = null;
         SVD job = null;
         try {
@@ -248,7 +251,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
 
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-        parms._train = _parms._train;     // TODO: Better to pass in adapted frame from dinfo
+        parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._drop_na20_cols = _parms._drop_na20_cols;
@@ -269,13 +272,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (km != null) km.remove();
         }
 
-        // K-means automatically destandardizes centers! Need the original standardized version
-        centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
+        // Permute cluster columns to align with dinfo and normalize
+        centers = ArrayUtils.permuteCols(km._output._centers_raw, dinfo.mapNames(km._output._names));
+        centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats);
       }
 
       // Expand out categoricals to indicator columns
-      // TODO: Align centers with the reshuffled training cols
-      double[][] centers_exp = expandSortedCats(centers, dinfo);
+      double[][] centers_exp = expandCats(centers, dinfo);
       _ncolY = centers_exp[0].length;
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
