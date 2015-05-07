@@ -69,4 +69,9 @@ public @interface API {
    * must be mutually exclusive with the weights_column.
    */
   String[] is_mutually_exclusive_with() default {};
+
+  /**
+   * Identify grid-able parameter.
+   */
+  boolean gridable() default false;
 }

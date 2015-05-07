@@ -55,8 +55,6 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       _nclass = 1;
       return;
     }
-    else if (expensive && _parms._balance_classes && isClassifier() && (long)(_train.numRows()*_parms._max_after_balance_size) < _train.lastVec().domain().length )
-      error("_max_after_balance_size","Cannot end up with fewer rows than there are response levels. Increase max after balance size.");
 
     if( null == _parms._response_column) {
       error("_response_column", "Response column parameter not set.");
@@ -89,6 +87,9 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       }
       // #Classes: 1 for regression, domain-length for enum columns
       _nclass = _response.isEnum() ? _response.domain().length : 1;
+
+      if (_parms._balance_classes && isClassifier() && (long)(_train.numRows()*_parms._max_after_balance_size) < _nclass)
+        error("_max_after_balance_size","Cannot end up with fewer rows than there are classes. Increase max_after_balance_size.");
 
       if( !isClassifier() ) {
         hide("_balance_classes", "Balance classes is only applicable to classification problems.");

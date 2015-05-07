@@ -36,8 +36,11 @@ public class KMeansGridTest extends TestUtil {
       // Search over this range of the init enum
       hyperParms.put("_seed",new Long[]{0L,1L,123456789L,987654321L});
 
+      // Create default parameters
+      KMeansModel.KMeansParameters params = new KMeansModel.KMeansParameters();
+      params._train = fr._key;
       // Fire off a grid search
-      Grid.GridSearch gs = kmg.startGridSearch(hyperParms);
+      Grid.GridSearch gs = kmg.startGridSearch(params, hyperParms);
       Grid g2 = (Grid)gs.get();
       assert g2==kmg;
 
