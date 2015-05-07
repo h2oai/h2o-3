@@ -461,7 +461,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list()) {
+.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list(), raw=FALSE) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
@@ -478,11 +478,14 @@ print.H2OTable <- function(x, header=TRUE, ...) {
       .params <- list(...)
     }
   }
-  if( !is.null(timeout) ) {
-    .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout))
-  } else {
-    .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method))
-  }
+
+  rawREST <- ""
+
+  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout)
+  else                    rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
+
+  if( raw ) rawREST
+  else      .h2o.fromJSON(rawREST)
 }
 
 

@@ -6,6 +6,7 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.EnumWrappedVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
 import water.util.IcedInt;
 import water.util.Log;
 
@@ -34,10 +35,9 @@ public class Env extends Iced {
   final static int FUN   =4;
   final static int SPAN  =5;
   final static int SERIES=6;
-  final static int LARY  =7;  // special value for arrays in _local_array
-  final static int AST   =8;  // basically what we're calling RAFT objects...
-  final static int VEC   =9;
-  final static int LIST  =10;
+  final static int VEC   =8;
+  final static int LIST  =9;
+  final static int LARY  =10;
   final static int NULL  =99999;
 
   transient ExecStack _stack;            // The stack
@@ -87,17 +87,18 @@ public class Env extends Iced {
   }
 
   // Capture the current environment & return it (for some closure's future execution).
+  // the only thing captured is the reference counts of live Vecs... everything else is new'd
   Env capture() { return new Env(this); }
   private Env(Env e) {
-    _stack  = e._stack;
-    _refcnt = e._refcnt; // same ref cnter
-    _sb     = null;
-    _locked = new HashSet<>();
-    _global = null;
-    _local  = new SymbolTable();
-    _parent = e;
-    _isGlobal = false;
-    _trash = e._trash;
+    _stack  = new ExecStack();     // nope want a new stack!
+    _refcnt = new HashMap<>();     // new ref counter... however, don't add vecs if they are tracked in some parent scope!
+    _sb     = new StringBuilder(); // just for pretty printing in debug mode
+    _locked = new HashSet<>();     // brand new set of locked things -- must check up the nest for locked things
+    _global = null;                // not a global ST
+    _local  = new SymbolTable();   // new symbol table for me!
+    _parent = e;                   // ok i wanna know who my parent is, yes. parent has all of the goodies like TRUE, FALSE, E, NA, INF, PI, etc...
+    _isGlobal = false;             // am not global, but multiple ways to check this!
+    _trash = new HashSet<>();      // don't want my parent scope's trash!
     _tmpFrames = new HashSet<>();
   }
 
@@ -126,8 +127,6 @@ public class Env extends Iced {
       case FUN: return "FUN";
       case SPAN: return "SPAN";
       case SERIES: return "SERIES";
-      case LARY: return "LARY";
-      case AST: return "AST";
       case VEC: return "VEC";
       case NULL: return "NULL";
       default: return  "No type for number: " + type;
@@ -142,16 +141,18 @@ public class Env extends Iced {
 
   public void push(Val o) {
     if (o instanceof ValFrame) {
-      pushHelper(o, _isGlobal ? _global : _local);
-      addRef(o);
+      ValFrame f = (ValFrame)o;
+      if( !_isGlobal ) {
+        assert f._key==null || DKV.get(f._key)!=null;  // have a local Frame we're pushing -- not in the DKV yet!
+        _local.put(Key.make().toString(), f._fr, false /* any pushed Val _here_ is no longer isFrame */);
+      }
+      addRef(f);
     }
     _stack.push(o);
     clean();
   }
 
   public void pushAry(Frame fr) { push(new ValFrame(fr)); }
-  // helper for push(Val o)
-  public void pushHelper(Val o, SymbolTable t) { t._frames.put(Key.make().toString(), ((ValFrame)o)._fr); }
 
   public boolean isEmpty() { return _stack.isEmpty(); }
   public Val peek() { return _stack.peek(); }
@@ -181,7 +182,12 @@ public class Env extends Iced {
   public void poppush(int n, Val v) { pop(n); push(v);}
   public Frame popAry () { return ((ValFrame)pop())._fr; }
   public double popDbl() { return ((ValNum)pop())._d;    }
-  public String popStr() { return ((ValStr)pop())._s;    }
+  public String popStr() {
+    Val v = pop();
+    if( v instanceof ValStr ) return ((ValStr)v)._s;
+    else if( v instanceof ValFrame ) return ((ValFrame)v)._fr._key.toString();
+    else throw new IllegalASTException("shouldn't be here.");
+  }
   public ValSeries popSeries() {return (ValSeries)pop(); }
   public ValSpan popSpan() { return (ValSpan)pop();      }
   public Frame peekAry() {return ((ValFrame)peek())._fr; }
@@ -196,36 +202,63 @@ public class Env extends Iced {
 
   public void toss(ValFrame f) { _trash.add(f); }
   public void clean() {
-    if (_trash == null) return;
-    for (ValFrame f : _trash)
-      if (!f._g)
-        cleanup(f._fr);
+    if( _trash == null ) return;
+    for( ValFrame f : _trash )
+      if( !f._g ) cleanup(f._fr);
     _trash.clear();
   }
 
   /**
    *  Reference Counting API
-   *
-   *  All of these methods should be private and void.
    */
-  private void addRef(Val o) {
-    assert o instanceof ValFrame;
-    for (Vec v : ((ValFrame) o)._fr.vecs()) addRef(v);
-  }
-
+  public void addRef(ValFrame o) { addRef(o._fr); }
   public void addRef(Frame f) { for (Vec v : f.vecs()) addRef(v); }
-  public void subRef(Frame f) { for (Vec v : f.vecs()) subRef(v); }
-  private void addRef(Vec v) {
-    IcedInt I = _refcnt.get(v);
-    assert I==null || I._val>=0;
-    _refcnt.put(v,new IcedInt(I==null?1:I._val+1));
-    if (v instanceof EnumWrappedVec) {
-      Vec mv = ((EnumWrappedVec) v).masterVec();
-      IcedInt Imv = _refcnt.get(mv);
-      assert Imv==null || Imv._val>=0;
-      _refcnt.put(mv  ,new IcedInt(Imv==null?1:Imv._val+1));
+  public void addRef(Vec v) {
+    if( inScope(v) ) {
+      IcedInt I = _refcnt.get(v);
+      assert I == null || I._val >= 0;
+      _refcnt.put(v, new IcedInt(I == null ? 1 : I._val + 1));
+      if (v instanceof EnumWrappedVec) {
+        Vec mv = ((EnumWrappedVec) v).masterVec();
+        IcedInt Imv = _refcnt.get(mv);
+        assert Imv == null || Imv._val >= 0;
+        _refcnt.put(mv, new IcedInt(Imv == null ? 1 : Imv._val + 1));
+      }
     }
   }
+
+  // Vecs are only tracked in the scope that they are created in.
+  // thou shalt not kill vecs belonging to some parent scope
+  // => don't bother reference counting them here since the counts are always > 0
+  private boolean inScope(Vec v) {
+    // recurse up the parent scopes,
+    // if all null, then return true (means we have a new vec to reference count in THIS scope)
+    // if the vec is in some parent scope, return false -- will not be adding reference counts today!
+    Env e = _parent;
+    boolean in=false; // assume not in parent.
+    while( e!=null ) {
+      in |= e._refcnt.containsKey(v); // _refcnt is always non-null
+      e = e._parent;
+    }
+    return _refcnt.containsKey(v) || !in;
+  }
+
+  // check that this scope and no parent scope has a "lock" on this key.
+  // "locked" means shalt not be DKV removed.
+  public boolean hasLock(Key k) {
+    // recurse up the parent scopes,
+    // return true if any scope has a lock
+    // otherwise return false.
+    boolean locked=_locked!=null&&_locked.contains(k);
+    if( _parent != null ) locked |= _parent.hasLock(k);
+    return locked;
+  }
+
+  public void lock(Key k) { _locked.add(k); }
+  public void lock(Frame fr) { for (Vec v : fr.vecs()) lock(v); lock(fr._key); }
+  public void lock(Vec v) { lock(v._key); }
+  public void lock(String k) { lock(Key.make(k)); }
+  public Key  lock() { Key k=Key.make(); _locked.add(k); return k; }  // return a new key that is locked
 
   private void subRef(Val o) {
     assert o instanceof ValFrame;
@@ -237,7 +270,7 @@ public class Env extends Iced {
 
     // delete a Frame if delete is true
     if( delete )
-      if( f._key != null && !_locked.contains(f._key) )
+      if( f._key != null && !hasLock(f._key) )
         f.delete();
   }
 
@@ -246,11 +279,11 @@ public class Env extends Iced {
   // return false if the vec is not deleted via removeVec
   // return true otherwise
   public boolean subRef(Vec v) {
-    if (v == null) return false;
+    if( v == null ) return false;
     boolean delete;
 
-    if (_refcnt.get(v) == null) return false;
-    if (_locked.contains(v._key)) return false;
+    if( _refcnt.get(v) == null ) return false;
+    if( hasLock(v._key) ) return false;
     int cnt = _refcnt.get(v)._val - 1;
     if( cnt > 0 ) {
       _refcnt.put(v, new IcedInt(cnt));
@@ -263,11 +296,8 @@ public class Env extends Iced {
     if (delete) removeVec(v, null);
     return delete;
   }
+  public void subRef(Frame f) { for (Vec v : f.vecs()) subRef(v); }
 
-  // MUST be called in conjunction w/ push(frame) or addRef
-  void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
-
-  void addVec(Vec v) { /*_locked.add(v._key);*/  addRef(v); }
   static Futures removeVec(Vec v, Futures fs) {
     if (fs == null) {
       fs = new Futures();
@@ -280,15 +310,10 @@ public class Env extends Iced {
     }
   }
 
-  void cleanup(Frame ... frames) { for (Frame f : frames) unload(f,true); }
-
   private void extinguishCounts(Object o) {
-    if (o instanceof Vec) { extinguishCounts((Vec) o); }
-    assert o instanceof Frame;
-    for(Vec v: ((Frame) o).vecs()) extinguishCounts(v);
+    if (o instanceof Vec) { _refcnt.remove(o);}
+    else  for(Vec v: ((Frame) o).vecs()) _refcnt.remove(v);
   }
-
-  private void extinguishCounts(Vec v) { _refcnt.remove(v); }
 
   /*
    * Utility & Cleanup
@@ -339,54 +364,50 @@ public class Env extends Iced {
     if(!popped) pop();
   }
 
-  void unload(Object o, boolean popped) {
-    assert o instanceof ValFrame || o instanceof Frame || o == null;
-    if (o == null) return;
-    if (o instanceof ValFrame) subref_and_unlock(((ValFrame)o)._fr);
-    else subref_and_unlock((Frame)o);
-    if(!popped) pop();
+  void cleanup(Frame f) {
+    if( f == null ) return;
+    if (f._lockers != null && lockerKeysNotNull(f)) f.unlock_all();
+    subRef(new ValFrame(f));
   }
 
-  private void subref_and_unlock(Frame fr) {
-    if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();
-    subRef(new ValFrame(fr));
-  }
-
-  // currently does not rely on reference counting -- does the hard job of scanning environments and checking if any references exist above this scope.
-  // might as well do the hard work, since it will have to be done in an assert anyway
+  // nuking the current scope. Frames in the symbol table get nuked.
+  // reference counter also gets a once-over
+  //
+  // what happens when there's a result being returned to parent scope?
+  // must transfer reference counts for that result back to the parent.
+  // only ever have a SINGLE result on the stack ... multiple results is an error.
   void popScope() {
-    _local.clear();  // clear the symbol table
-    Futures fs = new Futures();
-    // chop the local frames made in the scope
-    for (String k : _local._frames.keySet()) {
-      boolean delete=true;
-      if (isAry()) {
-        if(peekAry()._key != null && peekAry()._key == _local._frames.get(k)._key) continue;
-      }
-      if ( _locked.contains(Key.make(k))) continue;
-      Frame f = _local._frames.get(k);
-      for (Vec v : f.vecs()) delete &= subRef(v);
-      if(delete) f.delete();
-    }
-    _local._frames.clear();
-    // zoop over the _local_locked hashset and hose down the KV store
-    if (!isGlobal()) {
-      for (Key k : _locked) {
-        if (isAry()) {
-          if(peekAry()._key != null && peekAry()._key == k) continue;
-          if(Arrays.asList(peekAry().keys()).contains(k)) continue;
-        }
-        Keyed.remove(k, fs);
+    if( _parent==null ) throw new IllegalArgumentException("Cannot pop the parent scope!");
+
+    Key k = isAry()?peekAry()._key:null;   // shouldn't be null...
+
+    // kill any local frames...
+    Set<String> local = _local._table.keySet();
+    for( String name : local ) {
+      Frame f;
+      if( _local.getType(name)==LARY ) {
+        f=_local.getFrame(name)._fr;
+        if( isAry() && f==peekAry() ) continue;
+        else cleanup(f);
       }
     }
-    fs.blockForPending();
+    _local.clear();
+    for( Key key: _locked ) {
+      if( k!=null && k==key ) continue;
+      if( isAry() && Arrays.asList(peekAry().keys()).contains(key)) continue;
+//      Keyed.remove(key);
+    }
+    _locked.clear();
+    for( Vec v: _refcnt.keySet()) {
+      if( _refcnt.get(v)._val==0 && !hasLock(v._key) ) Keyed.remove(v._key); // no lock and zero counts, nuke it.
+    }
+//    pop(); // could be bad here
   }
 
-  // NOTE: this extinguishCounts is slightly suspicious, but might be OK here... Will matter in UDFs
   private void remove_and_unlock(Frame fr) {
     extinguishCounts(fr);
     if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();
-    if (_locked.contains(fr._key) || any_locked(fr)) return;
+    if( anyLocked(fr) ) return;
     fr.delete();
   }
 
@@ -396,8 +417,10 @@ public class Env extends Iced {
     return true;
   }
 
-  private boolean any_locked(Frame fr) {
-    for (Vec v : fr.vecs()) if (_locked.contains(v._key)) return true;
+  private boolean anyLocked(Frame fr) {
+    if( hasLock(fr._key) ) return true;
+    for (Vec v : fr.vecs())
+      if( hasLock(v._key) ) return true;
     return false;
   }
 
@@ -508,7 +531,7 @@ public class Env extends Iced {
     @Override public int peekTypeAt(int i) { return getType(peekAt(i)); }
 
     private int getType(Val o) {
-      if( o instanceof ValNull   )    return NULL;
+      if( o instanceof ValNull || o==null  )    return NULL;
       if( o instanceof ValId     )    return ID;
       if( o instanceof ValFrame  )    return ARY;
       if( o instanceof ValStr    )    return STR;
@@ -518,7 +541,6 @@ public class Env extends Iced {
       if( o instanceof ValLongList)   return LIST;
       if( o instanceof ValStringList) return LIST;
       if( o instanceof ValDoubleList) return LIST;
-//      if (o instanceof ASTFunc   ) return FUN;
       throw H2O.unimpl("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Frame, String, Double, Fun, Span, or Series");
     }
 
@@ -584,96 +606,72 @@ public class Env extends Iced {
   }
 
   /**
-   *  The Symbol Table Data Structure: A mapping between identifiers and their values.
+   * Map identifiers to types & values.
    *
-   *  The role of the symbol table is to track the various identifiers and their attributes that appear in the nodes of
-   *  the AST passed from R. There are three cases that are of interest:
-   *    1. The identifier is a variable that references some blob of data having a type, value, and scope.
-   *    2. The identifier is part of an assignment and its type is whatever the type is on the right-hand side.
-   *    3. There is no identifier: a non-case, but worth mentioning.
-   *
-   *  As already stated, each identifier has a name, type, value, and scope. The scoping is implied by the Env object,
-   *  so it is not necessary to include this attribute.
-   *
-   *  Valid types:
-   *
-   *    ID    =0;  // For a !ID (will be set into)
-   *    ARY   =1;
-   *    STR   =2;
-   *    NUM   =3;
-   *    FUN   =4;
-   *    SPAN  =5;  // something like 1:10
-   *    SERIES=6;  // something like c(1:10, 90, 230:500) ...
-   *
-   *  Symbol Table Permissions:
-   *  -------------------------
-   *
-   *  Only the top-level Env object may write to the global symbol table.
-   *
-   *  NB: The existence of a non-null symbol table implies that execution is occurring in a non-global scope.
+   * <NAME, <ATTRIBUTES>> is the pair this class works with.
    */
-  class SymbolTable extends Iced {
-
-    HashMap<String, Frame> _frames; // these are not in the DKV!
-    HashMap<String, SymbolAttributes> _table;
-    public SymbolTable() { _table = new HashMap<>(); _frames = new HashMap<>(); }
+  class SymbolTable<T extends Iced> extends Iced<T> {
+    IcedHashMap<String, T> _table;
+    public SymbolTable() { _table = new IcedHashMap<>(); }
     void clear() { _table.clear(); }
-    public void copyOver(SymbolTable s) {
-      _table = s._table;
-      _frames = s._frames;
-    }
-
     public void put(String name, int type, String value) {
       if (_table.containsKey(name)) {
-        writeType(name, type);
-        writeValue(name, value);
+        write(name, type);
+        write(name, value);
+      } else {
+        SymbolAttributes attributes = new SymbolAttributes(type, value);
+        _table.put(name, (T)attributes);
       }
-      SymbolAttributes attributes = new SymbolAttributes(type, value);
-      _table.put(name, attributes);
     }
-
-    public int typeOf(String name) {
+    public void put(String name, Frame localFrame, boolean isFrame) {
+      ASTFrame fr = new ASTFrame(localFrame);
+      fr.isFrame = isFrame;  // was it a Vec or a Frame?
+      _table.put(name, (T)fr);
+    }
+    public T get(String name) {
+      if( !_table.containsKey(name) ) return null;
+      return _table.get(name);
+    }
+    public int getType(String name) {
       if (!_table.containsKey(name)) return NULL;
-      return _table.get(name).typeOf();
+      T V = get(name);
+      if( V instanceof ASTFrame ) return LARY;  // special local array, all others come from the DKV!
+      else return ((SymbolAttributes)V)._type;
+    }
+    public String getValue(String name) {  // caller knows exactly the type.
+      if( !_table.containsKey(name) ) return null;
+      T V = get(name);
+      try {
+        return ((SymbolAttributes) V)._value;
+      } catch( ClassCastException e ) {
+        throw new ClassCastException("API Error in Symbol Attributes. Caller expected SymbolAttributes but got " + V.getClass());
+      }
+    }
+    public ASTFrame getFrame(String name) {
+      if( !_table.containsKey(name) ) return null;
+      T V = get(name);
+      try {
+        return (ASTFrame)V;
+      } catch( ClassCastException e ) {
+        throw new ClassCastException("API Error in Symbol Attributes. Caller expected Frame but got " + V.getClass());
+      }
     }
 
-    public int typeOf2(String name) {
-      if (_frames.containsKey(name)) return LARY;
-      if (_frames.containsKey(getValue(name, false))) return LARY;
-      return NULL;
+    private void write(String name, int type) {
+      SymbolAttributes attrs = (SymbolAttributes)get(name);
+      attrs.write(type);
     }
-
-    public String valueOf(String name) {
-      if (!_table.containsKey(name)) return null;
-      return _table.get(name).valueOf();
+    private void write(String name, String value) {
+      SymbolAttributes attrs = (SymbolAttributes)get(name);
+      attrs.write(value);
     }
-
-    public void writeType(String name, int type) {
-      assert _table.containsKey(name) : "No such identifier in the symbol table: " + name;
-      SymbolAttributes attrs = _table.get(name);
-      attrs.writeType(type);
-      _table.put(name, attrs);
-    }
-
-    public void writeValue(String name, String value) {
-      assert _table.containsKey(name) : "No such identifier in the symbol table: " + name;
-      SymbolAttributes attrs = _table.get(name);
-      attrs.writeValue(value);
-      _table.put(name, attrs);
-    }
-
-    private class SymbolAttributes {
-      private int _type;
-      private String _value;
-
-      SymbolAttributes(int type, String value) { _type = type; _value = value; }
-
-      public int typeOf ()  { return  _type;  }
-      public String valueOf()  { return  _value; }
-
-      public void writeType(int type)      { this._type  = type; }
-      public void writeValue(String value) { this._value = value;}
-    }
+  }
+  private class SymbolAttributes extends Iced {
+    private int _type;
+    private String _value;
+    SymbolAttributes(int type, String value) { _type = type; _value = value; }
+    public void write(int type)     { this._type  = type; }
+    public void write(String value) { this._value = value;}
   }
   SymbolTable newTable() { return new SymbolTable(); }
 
@@ -683,25 +681,29 @@ public class Env extends Iced {
    *  Overwrite existing values in writable tables.
    */
   void put(String name, int type, String value) {
-    if (isGlobal()) _global.put(name, type, value);
-    else _local.put(name, type, value);
+    if( _isGlobal ) _global.put(name,type,value);
+    else            _local.put(name,type,value);
   }
+  void put(String name, Frame f, boolean isFrame) {
+    if( _isGlobal ) _global.put(name,f,isFrame);
+    else            _local.put(name,f,isFrame);
+  }
+  void put(String name, Frame f) { put(name,f,true);}
 
   int getType(String name, boolean search_global) {
-    if (name == null || name.equals(""))
-      throw new IllegalArgumentException("Tried to lookup on a missing name. Are there free floating `%` in your AST?");
+    if (name == null || name.equals("")) throw new IllegalArgumentException("Tried to lookup on a missing name. Are there free floating `%` in your AST?");
     int res = NULL;
 
     // Check the local_frames first
     // then back out and look around symbol table for keys that MUST exist in DKV;
     // frames in _local_frames do NOT exist in DKV.
-    if (_local != null) res = _local.typeOf2(name);
+    if (_local != null) res = _local.getType(name);
 
     // Check the local scope first if not null
-    if (res == NULL && _local != null) res = _local.typeOf(name);
+    if (res == NULL && _local != null) res = _local.getType(name);
 
     // Didn't find it? Try the global scope next, if we haven't already
-    if (res == NULL && search_global && _global != null) res = _global.typeOf(name);
+    if (res == NULL && search_global && _global != null) res = _global.getType(name);
 
     // Still didn't find it? Try the KV store next, if we haven't already
     if (res == NULL && search_global) res = kvLookup(name);
@@ -718,24 +720,47 @@ public class Env extends Iced {
     Value v = DKV.get(Key.make(name));
     if (v == null) return NULL;
     if (v.get() instanceof Frame) return ARY;
-    if (v.get() instanceof Vec) return ARY;
-    return AST;
+    if (v.get() instanceof Vec)   return ARY;
+    else throw new IllegalArgumentException("Unexpected type: " + v.getClass());
   }
 
+  // if calling getValue, then already know that a Frame result isn't at hand!!!
   String getValue(String name, boolean search_global) {
     String res = null;
 
     // Check the local scope first if not null
-    if (_local != null) res = _local.valueOf(name);
+    if (_local != null) res = _local.getValue(name);
 
     // Didn't find it? Try the global scope next, if we haven't already
-    if (res == null && search_global) res = _global.valueOf(name);
+    if (res == null && search_global) res = _global.getValue(name);
 
     // Still didn't find it? Start looking up the parent scopes.
     if (res == null && _parent!=null) res = _parent.getValue(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-//    if (res == null) throw H2O.unimpl("Failed lookup of variable: "+name);
+    return res;
+  }
+
+  ASTFrame getFrame(String name, boolean search_global) {
+    ASTFrame res=null;
+
+    // check local scope first
+    if( _local != null ) res = _local.getFrame(name);
+
+    // if searching global, then look in DKV, _global may have transient Frames sitting inside the table, must check there next if not found here.
+    if( res==null && search_global /* search DKV in this case.*/ ) {
+      Value v = DKV.get(Key.make(name));
+      if( v==null || v.get()==null ) res=null;
+      else                           res=new ASTFrame(name);
+    }
+
+    // no dice in the DKV, try a transient Frame in the global symbol table (only if we're top level...
+    if( res==null && _global!=null ) { res = _global.getFrame(name); }
+
+    // still not found... search up parent scopes
+    if( res==null && _parent!=null ) res = _parent.getFrame(name, false);
+
+    // return null if failed to find and error out further up
     return res;
   }
 
@@ -743,8 +768,8 @@ public class Env extends Iced {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());
-      case LARY:return new ASTFrame(get_local(id.value())); // pull the local frame out
-      case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
+      case LARY:return getFrame(id.value(), false); // pull the local frame out
+      case STR: return id.value().equals("()") ? new ASTNull() : new ASTString('\"', id.value());
       default: throw H2O.unimpl("Could not find appropriate type for identifier "+id);
     }
   }
@@ -752,33 +777,16 @@ public class Env extends Iced {
   boolean tryLookup(water.rapids.ASTId id) {
     try {
       lookup(id);
-      return true;
     } catch(Exception e) {
       return false;
     }
-  }
-
-  static AST staticLookup(water.rapids.ASTId id) {
-    switch(kvLookup(id.value())) {
-      case ARY: return new ASTFrame(id.value());
-      default: return id;
-    }
+    return true;
   }
 
   // Optimistically lookup strings in the K/V.  On hit, return the found Key as a Frame.
-  // On a miss, return the String.
-  static AST staticLookup(water.rapids.ASTString str) {
-    return kvLookup(str.value())==ARY ? new ASTFrame(str.value()) : str;
-  }
-
-  // take the local id, check if it maps to a Frame in _local_frames
-  // if not, check if the value of id maps to is a key in _local_frames
-  Frame get_local(String id) {
-    if (_local._frames.containsKey(id)) return _local._frames.get(id);
-    String value = getValue(id, true);
-    if (_local._frames.containsKey(value)) return _local._frames.get(value);
-    throw new IllegalArgumentException("No Frame Found! Failed to lookup on variable: " + id);
-  }
+  // On a miss, return the String/Id.
+  static AST staticLookup(water.rapids.ASTId id)      { return kvLookup(id.value())==ARY ? new ASTFrame(id.value()) : id; }
+  static AST staticLookup(water.rapids.ASTString str) { return kvLookup(str.value())==ARY ? new ASTFrame(str.value()) : str; }
 }
 
 abstract class Val extends Iced {

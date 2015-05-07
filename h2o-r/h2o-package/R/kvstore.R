@@ -141,9 +141,10 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
 #'
 #' @param data An \linkS4class{H2OFrame} object
 #' @param key The hex key to be associated with the H2O parsed data object
+#' @param deepCopy Should it do a deepCopy of the frame. Default is FALSE.
 #'
 #' @export
-h2o.assign <- function(data, key) {
+h2o.assign <- function(data, key, deepCopy=FALSE) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   t <- !.is.eval(data)
   if( t ) {
@@ -153,9 +154,16 @@ h2o.assign <- function(data, key) {
 
   .key.validate(key)
   if(key == data@frame_id) stop("Destination key must differ from input frame ", data@frame_id)
-  expr <- paste0("(= !", key, " %", data@frame_id, ")")
-  res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
-  .byref.update.frame(res)
+  expr <- NULL
+  if( deepCopy ) {
+    expr <- paste0("(= !", key, " %", data@frame_id, ")")   # this does a deepcopy!!
+    res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
+    .byref.update.frame(res)
+  } else {
+    expr <- paste0("(, (gput '", key, "' %", data@frame_id, ") (removeframe %",data@frame_id,"))")   # removes the original frame!
+    res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
+    .byref.update.frame(res)
+  }
 }
 
 #'
@@ -276,4 +284,32 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
                 allparameters = allparams,
                 model         = model,
                 linkToGC      = linkToGC)
+}
+
+
+#'
+#' Download the Scoring POJO of An H2O Model
+#'
+#' @param model An H2OModel
+#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to console.
+#'             The file name will be a compilable java file name.
+#' @param conn An H2OClient object.
+#' @return If path is "", then pretty print the POJO to the console.
+#'         Otherwise save it to the specified directory.
+#' @examples
+#' library(h2o)
+#' h <- h2o.init(nthreads=-1)
+#' fr <- as.h2o(iris)
+#' my_model <- h2o.gbm(x=1:4, y=5, trainin_frame=fr)
+#'
+#' h2o.downloadPOJO(my_model)  # print the model to screen
+#' # h2o.downloadPOJO(my_model, getwd())  # save to the current working directory, NOT RUN
+h2o.downloadPOJO <- function(model, path="", conn=h2o.getConnection()) {
+  model_id <- model@model_id
+  java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", model_id, ".java"), raw=TRUE)
+  file.path <- paste0(path, "/", model_id, ".java")
+  if( path == "" ) cat(java)
+  else write(java, file=file.path)
+
+  if( path!="") print( paste0("POJO written to: ", file.path) )
 }
