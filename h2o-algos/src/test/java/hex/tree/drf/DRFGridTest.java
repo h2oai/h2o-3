@@ -34,7 +34,10 @@ public class DRFGridTest extends TestUtil {
       hyperParms.put("_mtries",new Integer[]{-1,4,5});
 
       // Fire off a grid search
-      Grid.GridSearch gs = drfg.startGridSearch(hyperParms);
+      DRFModel.DRFParameters params = new DRFModel.DRFParameters();
+      params._train = fr._key;
+      params._response_column = "cylinders";
+      Grid.GridSearch gs = drfg.startGridSearch(params, hyperParms);
       Grid g2 = (Grid)gs.get();
       assert g2==drfg;
 
