@@ -8,7 +8,7 @@
 #' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best model found during traning. Defaults to \code{TRUE}.
+#' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
 #' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
@@ -105,7 +105,7 @@
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
-                             override_with_best_model,
+                             overwrite_with_best_model,
                              n_folds = 0,
                              validation_frame,
                              checkpoint,
@@ -188,8 +188,8 @@ h2o.deeplearning <- function(x, y, training_frame,
   parms$ignored_columns <- colargs$x_ignore
   if(!missing(model_id))
     parms$model_id <- model_id
-  if(!missing(override_with_best_model))
-    parms$override_with_best_model <- override_with_best_model
+  if(!missing(overwrite_with_best_model))
+    parms$overwrite_with_best_model <- overwrite_with_best_model
   if(!missing(n_folds))
     parms$n_folds <- n_folds
   if(!missing(validation_frame))
