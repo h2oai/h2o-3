@@ -531,7 +531,7 @@ public class Env extends Iced {
     @Override public int peekTypeAt(int i) { return getType(peekAt(i)); }
 
     private int getType(Val o) {
-      if( o instanceof ValNull   )    return NULL;
+      if( o instanceof ValNull || o==null  )    return NULL;
       if( o instanceof ValId     )    return ID;
       if( o instanceof ValFrame  )    return ARY;
       if( o instanceof ValStr    )    return STR;

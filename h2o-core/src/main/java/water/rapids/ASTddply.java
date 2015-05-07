@@ -1,11 +1,9 @@
 package water.rapids;
 
-import sun.misc.Unsafe;
 import water.*;
 import water.fvec.*;
-import water.nbhm.UtilUnsafe;
+import water.util.IcedHashMap;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -94,15 +92,20 @@ public class ASTddply extends ASTOp {
     // pass1A, finds the number of groups and the size of each group.
     // as a follow up to pass1A, pass1B fills in an array of longs for each group
     Pass1A p1a = new Pass1A(_cols).doAll(fr);                    // pass 1 over all data
-    H2O.submitTask(new ParallelGroupProcess(p1a._grps)).join();  // parallel pass over all groups to instantiate concurrent array list...
-    new Pass1B(p1a._grps,_cols).doAll(fr);                       // nutha pass over sdata
+    Group[] grps = p1a._grps.keySet().toArray(new Group[p1a._grps.size()]);
+    int ngrps = grps.length;
+    while( grps[ngrps-1] == null ) ngrps--;   // chop out any null groups hanging at the end.
+    Group[] groups = new Group[ngrps];
+    System.arraycopy(grps,0,groups,0,ngrps);
+    grps = groups;
+//    H2O.submitTask(new ParallelGroupProcess(grps)).join();  // parallel pass over all groups to instantiate concurrent array list...
+//    new Pass1B(p1a._grps,_cols).doAll(fr);                       // nutha pass over sdata
 
     // pass2 here does the nominal work of building all of the groups.
     // for lots of tiny groups, this is probably lots of data transfer
     // this chokes the H2O cloud and can even cause it to OOM!
     // this issue is addressed by ASTGroupBy
     Pass2 p2;
-    Group[] grps = p1a._grps._g.toArray(new Group[p1a._grps._g.size()]);
     H2O.submitTask(p2=new Pass2(fr,grps)).join();
 
     // Pass 3: Send Groups 'round the cluster
@@ -113,8 +116,17 @@ public class ASTddply extends ASTOp {
     Vec layoutVec = Vec.makeZero(p3._remoteTasks.length);
     final RemoteRapids[] results = p3._remoteTasks;
 
-    final int ncols = results[0]._result.length;
+    for( int k=0;k<p2._tasks.length;++k ) {
+      for(Key key: p2._tasks[k]._subsetVecKeys) Keyed.remove(key);  // remove all of the subset vecs
+    }
 
+    int nonnull=-1;
+    for(int i=0; i<results.length; ++i) {
+      results[i] = results[i]._result==null?null:results[i];
+      if(results[i]!=null)nonnull=i;
+    }
+    if( nonnull==-1 ) { env.pushAry(new Frame(Vec.makeCon(0, 0))); return; }
+    final int ncols = results[nonnull]._result.length;
     String names[] = new String[ncols];
     String[][] domains = new String[ncols][];
     int i=0;
@@ -132,6 +144,7 @@ public class ASTddply extends ASTOp {
         int start = (int)c[0].start();
         double d;
         for(int i=0;i<c[0]._len;++i) {
+          if( results[i+start]==null ) continue;
           d = results[i+start]._result[nc.length-1];
           if( Double.isNaN(d) ) continue; // skip NA group results
           for(int j=0;j<nc.length;++j)
@@ -141,65 +154,53 @@ public class ASTddply extends ASTOp {
     }.doAll(ncols, layoutVec).outputFrame(names,domains);
     layoutVec.remove();
     env.pushAry(fr2);
-
-//    // Auto-Rebalance afterwards, as ddply's often make few fat chunks
-//    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), res.numRows());
-//    if( res.anyVec().nChunks() < chunks && res.numRows() > 10*chunks ) { // Rebalance
-//      Key newKey = Key.make(".chunks" + chunks);
-//      RebalanceDataSet rb = new RebalanceDataSet(res, newKey, chunks);
-//      H2O.submitTask(rb);
-//      rb.join();
-//      res.delete();
-//      res = DKV.getGet(newKey);
-//    }
-//
-//    // Delete the group row vecs
-//    env.pushAry(res);
   }
 
   // ---
   // Group description: unpacked selected double columns
   public static class Group extends ASTGroupBy.G {
     public Group() { super(); }
-    public Group(int len) { super(len); }
+    public Group(int len) { super(len); a=new IcedHashMap<>(); }
     public Group( double ds[] ) { super(ds); }
 
-    public void add(long l) { a.add(l); }
-    ConcurrentFixedSizeArrayList a;
+    IcedHashMap<Integer,String> a;
   }
 
 
   private static class Pass1A extends MRTask<Pass1A> {
     private final long _gbCols[];
-    ASTGroupBy.IcedNBHS<Group> _grps;
+    IcedHashMap<Group,String> _grps;
     Pass1A(long[] cols) { _gbCols=cols; }
-    @Override public void setupLocal() { _grps = new ASTGroupBy.IcedNBHS<>(); }
+    @Override public void setupLocal() { _grps = new IcedHashMap<>(); }
     @Override public void map(Chunk[] c) {
       Group g = new Group(_gbCols.length);
       Group gOld;
+      int start = (int)c[0].start();
       for(int i=0;i<c[0]._len;++i) {
         g.fill(i,c,_gbCols);
-        if( _grps.add(g) ) {
+        String old_g = _grps.put(g,"");
+        if( old_g==null ) {
           gOld=g;
           g= new Group(_gbCols.length);
         } else {
-          gOld=_grps.get(g);
+          gOld=_grps.getk(g);
           if( gOld==null )
-            while( gOld==null ) gOld=_grps.get(g);
+            while( gOld==null ) gOld=_grps.getk(g);
         }
         long cnt=gOld._N;
         while( !Group.CAS_N(gOld,cnt,cnt+1))
           cnt=gOld._N;
+        gOld.a.put(start+i,"");
       }
     }
     @Override public void reduce(Pass1A t) {
       if( _grps!= t._grps ) {
-        ASTGroupBy.IcedNBHS<Group> l = _grps;
-        ASTGroupBy.IcedNBHS<Group> r = t._grps;
+        IcedHashMap<Group,String> l = _grps;
+        IcedHashMap<Group,String> r = t._grps;
         if( l.size() < r.size() ) { l=r; r=_grps; }
-        for( Group rg: r ) {
-          if( !l.add(rg) ) {  // try to add it to the set on the left.. if left already has it, then combine
-            Group lg = l.get(rg);
+        for( Group rg: r.keySet() ) {
+          if( l.containsKey(rg) ) {  // try to add it to the set on the left.. if left already has it, then combine
+            Group lg = l.getk(rg);
             long L = lg._N;
             while(!Group.CAS_N(lg,L,L+rg._N))
               L = lg._N;
@@ -207,41 +208,6 @@ public class ASTddply extends ASTOp {
         }
         _grps=l;
         t._grps=null;
-      }
-    }
-  }
-
-  private static class ParallelGroupTask extends H2O.H2OCountedCompleter<ParallelGroupTask> {
-    final Group _g;
-    ParallelGroupTask(H2O.H2OCountedCompleter cc, Group g) { super(cc); _g=g; }
-    @Override protected void compute2() {
-      _g.a = new ConcurrentFixedSizeArrayList((int)_g._N);
-      tryComplete();
-    }
-  }
-
-  private static class ParallelGroupProcess extends H2O.H2OCountedCompleter<ParallelGroupProcess> {
-    private final ASTGroupBy.IcedNBHS<Group> _grps;
-    ParallelGroupProcess(ASTGroupBy.IcedNBHS<Group> grps) { _grps=grps; }
-
-    @Override protected void compute2() {
-      for(Group g: _grps)
-        new ParallelGroupTask(this, g).fork();
-    }
-  }
-
-  private static class Pass1B extends MRTask<Pass1B> {
-    final ASTGroupBy.IcedNBHS<Group> _grps;
-    final long[] _cols;
-    Pass1B(ASTGroupBy.IcedNBHS<Group> grps, long[] cols) { _grps=grps; _cols=cols; }
-    @Override public void map(Chunk[] c) {
-      Group g = new Group(_cols.length);
-      Group gg;
-      long start = c[0].start();
-      for(int i=0;i<c[0]._len;++i) {
-        g.fill(i,c,_cols);
-        while( _grps.get(g).a==null ) gg=_grps.get(g);
-        _grps.get(g).add(start+i);
       }
     }
   }
@@ -275,12 +241,18 @@ public class ASTddply extends ASTOp {
     // group frame key
     Key _key;
     H2ONode _n;
+    Key[] _subsetVecKeys;
     Pass2Task(H2O.H2OCountedCompleter cc, int nodeID, Group g, Key frameKey) { super(cc); _nodeID=nodeID; _g=g; _frameKey=frameKey; _n=H2O.CLOUD.members()[_nodeID]; _key=Key.make(_n); }
     @Override protected void compute2() {
       H2ONode n = H2O.CLOUD.members()[_nodeID];
       Futures fs = new Futures();
-      fs.add(RPC.call(n, new BuildGroup(_key,_g.a.safePublish(),_frameKey)));
+      long[] rows = new long[_g.a.size()];
+      int i=0;
+      for(long l: _g.a.keySet() ) rows[i++]=l;
+      BuildGroup b;
+      fs.add(RPC.call(n, b=new BuildGroup(_key,rows,_frameKey)));
       fs.blockForPending();
+      _subsetVecKeys = b._subsetVecKeys;
       tryComplete();
     }
   }
@@ -289,6 +261,7 @@ public class ASTddply extends ASTOp {
     private final Key _frameKey; // the frame key
     private final Key _key;     // this is the Vec key for the rows for the group...
     private final long[] _rows; // these are the rows numbers for the group
+    private Key[] _subsetVecKeys;
     BuildGroup(Key key, long[] rows, Key frameKey) {
       _key=key;
       _rows=rows;
@@ -323,6 +296,7 @@ public class ASTddply extends ASTOp {
       Vec[] data = f.vecs();                          // Full data columns
       Vec[] gvecs = new Vec[data.length];             // the group vecs, all aligned with the rows Vec
       Key[] keys = rows.group().addVecs(data.length); // generate keys from the vector group...
+      _subsetVecKeys = keys;                          // store these for later removal...
 
       // loop over and subset each column, ...one at a time...
       for (int c = 0; c < data.length; c++) {
@@ -397,7 +371,6 @@ public class ASTddply extends ASTOp {
 
     final private byte _priority;
     @Override public byte priority() { return _priority; }
-
     @Override public void compute2() {
       assert _frameKey.home();
       Env e = Env.make(new HashSet<Key>());
@@ -408,50 +381,24 @@ public class ASTddply extends ASTOp {
       if( _funArgs!=null ) System.arraycopy(_funArgs,0,args,1,_funArgs.length);
 
       _FUN.make().exec(e,args);
+      if( !e.isNul() ) {
 
-      // grab up the results
-      Frame fr = null;
-      if( e.isAry() && (fr = e.popAry()).numRows() != 1 )
-        throw new IllegalArgumentException("Result of ddply can only return 1 row but instead returned " + fr.numRows());
-      int ncols = fr == null ? 1 : fr.numCols();
-      _result = new double[_ds.length+ncols]; // fill in the results
-      System.arraycopy(_ds,0,_result,0,_ds.length);
-      int j=_ds.length;
-      for (int i = 0; i < ncols; ++i) {
-        if( e.isStr() )      _result[j++] = e.popStr().equals("TRUE")?1:0;
-        else if( e.isNum() ) _result[j++] = e.popDbl();
-        else if( fr!=null )  _result[j++] = fr.vecs()[i].at(0);
-      }
-      tryComplete();
-    }
-  }
-
-  private static class ConcurrentFixedSizeArrayList extends Iced {
-    public void add( long l ) { _cal.add(l); }
-    public long[] safePublish() { return _cal._l; }
-    public long internal_size() { return _cal._cur; }
-    private volatile CAL _cal; // the underlying concurrent array list
-    ConcurrentFixedSizeArrayList(int sz) { _cal=new CAL(sz); }
-
-    private static class CAL implements Serializable {
-      private static final Unsafe U =  UtilUnsafe.getUnsafe();
-      protected int _cur;  // the current index into the array, updated atomically
-      private long[] _l; // the backing array
-      static private final long _curOffset;
-      static {
-        try {
-          _curOffset = U.objectFieldOffset(CAL.class.getDeclaredField("_cur"));
-        } catch(Exception e) {
-          throw new RuntimeException("Could not set offset with theUnsafe");
+        // grab up the results
+        Frame fr = null;
+        if (e.isAry() && (fr = e.popAry()).numRows() != 1)
+          throw new IllegalArgumentException("Result of ddply can only return 1 row but instead returned " + fr.numRows());
+        int ncols = fr == null ? 1 : fr.numCols();
+        _result = new double[_ds.length + ncols]; // fill in the results
+        System.arraycopy(_ds, 0, _result, 0, _ds.length);
+        int j = _ds.length;
+        for (int i = 0; i < ncols; ++i) {
+          if (e.isStr()) _result[j++] = e.popStr().equals("TRUE") ? 1 : 0;
+          else if (e.isNum()) _result[j++] = e.popDbl();
+          else if (fr != null) _result[j++] = fr.vecs()[i].at(0);
         }
       }
-      CAL(int s) { _cur=0; _l=new long[s]; }
-      private void add( long l ) {
-        int c = _cur;
-        while(!U.compareAndSwapInt(this,_curOffset,c,c+1))
-          c=_cur;
-        _l[c]=l;
-      }
+      groupFrame.delete();
+      tryComplete();
     }
   }
 }
