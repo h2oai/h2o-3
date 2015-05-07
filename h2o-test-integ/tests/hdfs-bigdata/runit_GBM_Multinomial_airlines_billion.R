@@ -44,13 +44,12 @@ s <- h2o.runif(data.hex)    # Useful when number of rows too large for R to hand
 data.train <- data.hex[s <= 0.8,]
 data.valid <- data.hex[s > 0.8,]
 
-## Response = Distance 
+## Chose which col as response
+## Response = IsDepDelayed
+myY = "C31"
+myX = setdiff(names(data1.hex), myY)
+gbm_10tree_time <- system.time(data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "multinomial"))
 
-myY = "C19"
-myX = setdiff(names(data.hex), myY)
-## Build GLM Model and compare AUC with h2o1
-
-glm_irlsm_time <- system.time(data_irlsm.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, family = "gaussian", solver = "IRLSM")))
-paste("Time it to build GLM IRLSM ", glm_irlsm_time[[1]])
+paste("Time it to build GBM ", gbm_10tree_time[[1]])
 
 PASS_BANNER()

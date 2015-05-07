@@ -49,7 +49,7 @@ data.valid <- data.hex[s > 0.8,]
 myY = "C19"
 myX = setdiff(names(data.hex), myY)
 ## Build GLM Model and compare AUC with h2o1
-glm_lbfgs_time <- system.time(h2o.glm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, family = "gaussian", solver = "L_BFGS"))
+glm_lbfgs_time <- system.time(data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, family = "gaussian", solver = "L_BFGS")))
 
 paste("Time it to build GLM LBFGS ", glm_lbfgs_time[[1]])
 
