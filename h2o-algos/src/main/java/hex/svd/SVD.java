@@ -133,15 +133,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
+        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false);
         DKV.put(dinfo._key, dinfo);
 
-        model._output._normSub = dinfo._normSub == null ? new double[_train.numCols()] : Arrays.copyOf(dinfo._normSub, _train.numCols());
+        model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
         if(dinfo._normMul == null) {
-          model._output._normMul = new double[_train.numCols()];
+          model._output._normMul = new double[dinfo._nums];
           Arrays.fill(model._output._normMul, 1.0);
         } else
-          model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
+          model._output._normMul = dinfo._normMul;
 
         // Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set

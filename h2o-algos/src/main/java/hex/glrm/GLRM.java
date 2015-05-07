@@ -113,8 +113,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (!vecs[i].isNumeric()) throw H2O.unimpl();
     } */
 
-    _ncolA = _train.numCols();
     _ncolX = _parms._k;
+    _ncolA = _train.numCols();
   }
 
   // Squared Frobenius norm of a matrix (sum of squared entries)
@@ -129,17 +129,19 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return frob;
   }
 
-  public static double[][] transform(double[][] centers, double[] normSub, double[] normMul, int ncats) {
+  // Transform each column of a 2-D array, assuming categoricals sorted before numeric cols
+  public static double[][] transform(double[][] centers, double[] normSub, double[] normMul, int ncats, int nnums) {
     int K = centers.length;
     int N = centers[0].length;
+    assert ncats + nnums == N;
     double[][] value = new double[K][N];
-    double[] means = normSub == null ? MemoryManager.malloc8d(N) : normSub;
-    double[] mults = normMul == null ? MemoryManager.malloc8d(N) : normMul;
+    double[] means = normSub == null ? MemoryManager.malloc8d(nnums) : normSub;
+    double[] mults = normMul == null ? MemoryManager.malloc8d(nnums) : normMul;
 
     for (int clu = 0; clu < K; clu++) {
       System.arraycopy(centers[clu], 0, value[clu], 0, ncats);
-      for (int col = ncats; col < N; col++)
-        value[clu][col] = (centers[clu][col] - means[col]) * mults[col];
+      for (int col = 0; col < nnums; col++)
+        value[clu][ncats+col] = (centers[clu][ncats+col] - means[col]) * mults[col];
     }
     return value;
   }
@@ -229,15 +231,20 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
 
+        // TODO: Ensure SVD centers align with dinfo._adaptedFrame and no cols/factors dropped
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
+        parms._ignored_columns = _parms._ignored_columns;
+        parms._dropConsCols = _parms._dropConsCols;
+        parms._drop_na20_cols = _parms._drop_na20_cols;
+        parms._score_each_iteration = _parms._score_each_iteration;
+        parms._useAllFactorLevels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
         parms._seed = _parms._seed;
         parms._only_v = true;
 
-        // TODO: Ensure SVD centers align with dinfo._adaptedFrame and no cols/factors dropped
         SVDModel svd = null;
         SVD job = null;
         try {
@@ -274,7 +281,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Permute cluster columns to align with dinfo and normalize
         centers = ArrayUtils.permuteCols(km._output._centers_raw, dinfo.mapNames(km._output._names));
-        centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats);
+        centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats, dinfo._nums);
       }
 
       // Expand out categoricals to indicator columns
@@ -406,12 +413,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(dinfo._key, dinfo);
 
         // Save standardization vectors for use in scoring later
-        model._output._normSub = dinfo._normSub == null ? new double[_ncolA] : Arrays.copyOf(dinfo._normSub, _ncolA);
+        model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
         if(dinfo._normMul == null) {
-          model._output._normMul = new double[_ncolA];
+          model._output._normMul = new double[dinfo._nums];
           Arrays.fill(model._output._normMul, 1.0);
         } else
-          model._output._normMul = Arrays.copyOf(dinfo._normMul, _ncolA);
+          model._output._normMul = dinfo._normMul;
 
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();

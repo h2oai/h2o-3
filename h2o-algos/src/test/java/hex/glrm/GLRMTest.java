@@ -291,12 +291,6 @@ public class GLRMTest extends TestUtil {
   }
 
   @Test public void testCategoricalIris() throws InterruptedException, ExecutionException {
-    // Initialize using rows 1, 51, 101, and 150 of training frame
-    Frame yinit = frame(ard(ard(5.1, 3.5, 1.4, 0.2, 0),
-                            ard(7.0, 3.2, 4.7, 1.4, 1),
-                            ard(6.3, 3.3, 6.0, 2.5, 2),
-                            ard(5.9, 3.0, 5.1, 1.8, 2)));
-    yinit.vec(4).setDomain(new String[]{"Iris-setosa", "Iris-versicolor", "Iris-virginica"});
     GLRM job = null;
     GLRMModel model = null;
     Frame train = null;
@@ -308,9 +302,9 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 0;
       parms._k = 4;
       parms._init = GLRM.Initialization.PlusPlus;
-      // parms._user_points = yinit._key;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_pca = false;
+      parms._max_iterations = 1000;
 
       try {
         job = new GLRM(parms);
@@ -326,12 +320,57 @@ public class GLRMTest extends TestUtil {
       t.printStackTrace();
       throw new RuntimeException(t);
     } finally {
-      yinit.delete();
       if (train != null) train.delete();
       if (model != null) {
         model._parms._loading_key.get().delete();
         model.delete();
       }
+    }
+  }
+
+  @Test public void testCategoricalProstate() throws InterruptedException, ExecutionException {
+    GLRM job = null;
+    GLRMModel model = null;
+    Frame train = null;
+    final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
+
+    try {
+      Scope.enter();
+      train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+      for(int i = 0; i < cats.length; i++)
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+      train.remove("ID").remove();
+      DKV.put(train._key, train);
+
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._gamma_x = parms._gamma_y = 0.1;
+      parms._k = 6;
+      parms._init = GLRM.Initialization.PlusPlus;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._recover_pca = false;
+      parms._max_iterations = 100;
+
+      try {
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (model != null) {
+        model._parms._loading_key.get().delete();
+        model.delete();
+      }
+      Scope.exit();
     }
   }
 

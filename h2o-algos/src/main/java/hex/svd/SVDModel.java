@@ -22,6 +22,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public boolean _keep_u = true;    // Should left singular vectors be saved in memory? (Only applies if _only_v = false)
     public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
+    public boolean _useAllFactorLevels = false;   // Internal use only: when expanding categoricals, should first level be dropped?
   }
 
   public static class SVDOutput extends Model.Output {
