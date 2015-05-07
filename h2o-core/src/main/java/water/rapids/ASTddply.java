@@ -89,8 +89,7 @@ public class ASTddply extends ASTOp {
 
     // End up building a "transient" Frame for each group anyhow.
     // So finding the groups and the size of each group is relatively cheap!
-    // pass1A, finds the number of groups and the size of each group.
-    // as a follow up to pass1A, pass1B fills in an array of longs for each group
+    // pass1A, finds the number of groups and the size of each group, as well as the row numbers for each group (stashed inside of a nbhm instead of newchunks...)
     Pass1A p1a = new Pass1A(_cols).doAll(fr);                    // pass 1 over all data
     Group[] grps = p1a._grps.keySet().toArray(new Group[p1a._grps.size()]);
     int ngrps = grps.length;
@@ -98,8 +97,6 @@ public class ASTddply extends ASTOp {
     Group[] groups = new Group[ngrps];
     System.arraycopy(grps,0,groups,0,ngrps);
     grps = groups;
-//    H2O.submitTask(new ParallelGroupProcess(grps)).join();  // parallel pass over all groups to instantiate concurrent array list...
-//    new Pass1B(p1a._grps,_cols).doAll(fr);                       // nutha pass over sdata
 
     // pass2 here does the nominal work of building all of the groups.
     // for lots of tiny groups, this is probably lots of data transfer
