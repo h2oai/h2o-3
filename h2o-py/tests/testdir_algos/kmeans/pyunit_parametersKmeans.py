@@ -18,10 +18,10 @@ def parametersKmeans(ip,port):
 
     iris_km_again = h2o.kmeans(x=iris[0:4], **param_dict)
 
-    #Log.info("wmse")
-    wmse = iris_km.within_mse().sort()
-    wmse_again = iris_km_again.within_mse().sort()
-    assert wmse == wmse_again, "expected wmse to be equal"
+    #Log.info("wss")
+    wss = iris_km.withinss().sort()
+    wss_again = iris_km_again.withinss().sort()
+    assert wss == wss_again, "expected wss to be equal"
 
     #Log.info("centers")
     centers = iris_km.centers()

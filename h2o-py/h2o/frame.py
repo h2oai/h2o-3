@@ -957,7 +957,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("min", Expr("cbind",Expr(self._vecs)))
+    return Expr("min", Expr("cbind",Expr(self._vecs))).eager()
 
   def max(self):
     """
@@ -965,7 +965,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("max", Expr("cbind",Expr(self._vecs)))
+    return Expr("max", Expr("cbind",Expr(self._vecs))).eager()
 
   def sum(self):
     """
@@ -973,7 +973,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("sum", Expr("cbind",Expr(self._vecs)))
+    return Expr("sum", Expr("cbind",Expr(self._vecs))).eager()
 
   def var(self):
     """
@@ -1192,6 +1192,7 @@ class H2OVec:
 
   def _simple_vec_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self, length=len(self)))
     raise NotImplementedError
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))

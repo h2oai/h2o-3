@@ -45,7 +45,7 @@ public class KMeansGridTest extends TestUtil {
       Model[] ms = gs.models();
       for( Model m : ms ) {
         KMeansModel kmm = (KMeansModel)m;
-        System.out.println(kmm._output._avg_within_ss + " " + Arrays.toString(g2.getHypers(kmm._parms)));
+        System.out.println(kmm._output._tot_withinss + " " + Arrays.toString(g2.getHypers(kmm._parms)));
       }
 
     } finally {

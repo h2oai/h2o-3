@@ -13,8 +13,8 @@ check.verify.parameters.slot <- function(conn) {
     parameters$model_id <- NULL
     iris.km.cpy <- do.call("h2o.kmeans", parameters)
 
-    wmse.org <- sort.int(getWithinMSE(iris.km))
-    wmse.cpy <- sort.int(getWithinMSE(iris.km.cpy))
+    wss.org <- sort.int(getWithinSS(iris.km))
+    wss.cpy <- sort.int(getWithinSS(iris.km.cpy))
 
     Log.info("Verify outputs...")
     Log.info("centers")
@@ -22,10 +22,10 @@ check.verify.parameters.slot <- function(conn) {
     print(getCenters(iris.km.cpy))
     expect_equivalent(getCenters(iris.km), getCenters(iris.km.cpy))
 
-    Log.info("wmse")
-    print(wmse.org)
-    print(wmse.cpy)
-    expect_equal(wmse.org, wmse.cpy)
+    Log.info("Within Cluster SS")
+    print(wss.org)
+    print(wss.cpy)
+    expect_equal(wss.org, wss.cpy)
 
     Log.info("check that we can replace the old model, and the model_id parameter is mapped from Key<Model> to character properly")
 

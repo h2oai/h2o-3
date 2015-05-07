@@ -27,8 +27,8 @@ def impute(ip,port):
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     h2o.impute(prostate, 8, method = "mean")
 
-    #prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    #h2o.impute(prostate, ["VOL"], method = "mean")
+    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
+    h2o.impute(prostate, ["VOL"], method = "mean")
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     h2o.impute(prostate, "VOL", method = "mean")
@@ -42,8 +42,8 @@ def impute(ip,port):
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     h2o.impute(prostate, 8, method = "median")
 
-    #prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    #h2o.impute(prostate, ["VOL"], method = "median")
+    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
+    h2o.impute(prostate, ["VOL"], method = "median")
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     h2o.impute(prostate, "VOL", method = "median")
