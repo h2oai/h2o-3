@@ -93,6 +93,7 @@ h2o.shim <- function(enable = TRUE) {
     {
       # Map required for supported deprecated parameters
       .dl.dep.map <- c("data"         = "training_frame",
+                        "override_with_best_model" = "overwrite_with_best_model",
                         "key"         = "destination_key",
                         "validation"  = "validation_frame")
       # Map for unsupported deprecated parameters

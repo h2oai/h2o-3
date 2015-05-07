@@ -30,13 +30,14 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   /* @IN */ final private int       _ncols;
   /* @IN */ final private int       _nclasses;
   /* @IN */ final private boolean   _classification;
+  /* @IN */ final private double   _threshold;
 
   /* @INOUT */ private final int _ntrees;
   /* @OUT */ private long [/*ntrees*/] _votes; // Number of correct votes per tree (for classification only)
   /* @OUT */ private long [/*ntrees*/] _nrows; // Number of scored row per tree (for classification/regression)
   /* @OUT */ private float[/*ntrees*/] _sse;   // Sum of squared errors per tree (for regression only)
 
-  private TreeMeasuresCollector(CompressedTree[/*N*/][/*nclasses*/] trees, int nclasses, int ncols, float rate, int variable) {
+  private TreeMeasuresCollector(CompressedTree[/*N*/][/*nclasses*/] trees, int nclasses, int ncols, float rate, int variable, double threshold) {
     assert trees.length > 0;
     assert nclasses == trees[0].length;
     _trees = trees; _ncols = ncols;
@@ -44,6 +45,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     _oob = true; _ntrees = trees.length;
     _nclasses = nclasses;
     _classification = (nclasses>1);
+    _threshold = threshold;
   }
 
   public static class ShuffleTask extends MRTask<ShuffleTask> {
@@ -109,7 +111,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
         score0(data, preds, _trees[tidx]);
         // - derive a prediction
         if (_classification) {
-          int pred = getPrediction(preds, data);
+          int pred = getPrediction(preds, data, _threshold);
           int actu = (int) cresp.at8(row);
           // assert preds[pred] > 0 : "There should be a vote for at least one class.";
           // - collect only correct votes
@@ -149,11 +151,11 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     return new TreeVotesCollector(trees, tmodel.nclasses(), ncols, rate, variable).doAll(f).result();
   }*/
 
-  public static TreeVotes collectVotes(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable).doAll(f).resultVotes();
+  public static TreeVotes collectVotes(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold) {
+    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold).doAll(f).resultVotes();
   }
-  public static TreeSSE collectSSE(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable).doAll(f).resultSSE();
+  public static TreeSSE collectSSE(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold) {
+    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold).doAll(f).resultSSE();
   }
 
   private static final class DummyRandom extends Random {

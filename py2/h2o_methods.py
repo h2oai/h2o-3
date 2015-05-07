@@ -300,6 +300,23 @@ def create_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
     verboseprint("create_frame result:", dump_json(result))
     return result
 
+#******************************************************************************************8
+def interaction(self, timeoutSecs=120, noPoll=False, **kwargs):
+    # FIX! have to add legal params
+    params_dict = {
+
+    }
+    check_params_update_kwargs(params_dict, kwargs, 'interaction', print_params=True)
+    firstResult = self.do_json_request('3/Interaction.json', cmd='post', timeout=timeoutSecs, params=params_dict)
+    job_key = firstResult['dest']['name']
+
+    if noPoll:
+        h2o_sandbox.check_sandbox_for_errors()
+        return firstResult
+
+    result = self.poll_job(job_key)
+    verboseprint("interaction result:", dump_json(result))
+    return result
 
 #******************************************************************************************8
 def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
@@ -392,6 +409,7 @@ H2O.get_timeline = get_timeline
 
 H2O.split_frame = split_frame
 H2O.create_frame = create_frame
+H2O.interaction = interaction
 
 H2O.log_view = log_view
 H2O.log_download = log_download
