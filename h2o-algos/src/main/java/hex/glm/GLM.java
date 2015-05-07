@@ -165,9 +165,21 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             dom[i] = v.atStr(vs, i).toString();
             map[i] = i;
           }
+          // check for dups
+          String [] sortedDom = dom.clone();
+          Arrays.sort(sortedDom);
+          for(int i = 1; i < sortedDom.length; ++i)
+            if(sortedDom[i-1].equals(sortedDom[i]))
+              throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + sortedDom[i-1] +"'!");
         } else if (v.isEnum()) {
           dom = v.domain();
           map = FrameUtils.asInts(v);
+          // check for dups
+          int [] sortedMap = MemoryManager.arrayCopyOf(map,map.length);
+          Arrays.sort(sortedMap);
+          for(int i = 1; i < sortedMap.length; ++i)
+            if(sortedMap[i-1] == sortedMap[i])
+              throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + dom[sortedMap[i-1]] +"'!");
         } else
           throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
         // for now only enums allowed here
@@ -181,7 +193,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             Integer I = m.get(dom[map[i]]);
             if (I == null)
               throw new IllegalArgumentException("Unrecognized coefficient name in beta-constraint file, unknown name '" + dom[map[i]] + "'");
-            newMap[i] = I == null ? -1 : I;
+            newMap[i] = I;
           }
           map = newMap;
         }
