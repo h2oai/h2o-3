@@ -345,11 +345,11 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._gamma_x = parms._gamma_y = 0.1;
-      parms._k = 6;
+      parms._k = 8;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_pca = false;
-      parms._max_iterations = 100;
+      parms._max_iterations = 200;
 
       try {
         job = new GLRM(parms);

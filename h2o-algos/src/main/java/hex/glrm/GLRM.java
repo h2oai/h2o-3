@@ -85,7 +85,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
     // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
-    // TODO: Use expanded cols to account for categoricals
     int k_min = (int) Math.min(_train.numCols(), _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
@@ -106,12 +105,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           error("_user_points", "The user-specified points cannot all be zero");
       }
     }
-
-    // Currently, does not work on categorical data
-    /* Vec[] vecs = _train.vecs();
-    for (int i = 0; i < vecs.length; i++) {
-      if (!vecs[i].isNumeric()) throw H2O.unimpl();
-    } */
 
     _ncolX = _parms._k;
     _ncolA = _train.numCols();
