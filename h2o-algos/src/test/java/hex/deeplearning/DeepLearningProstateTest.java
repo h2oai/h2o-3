@@ -294,8 +294,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                             pred2.unlock(null);
 
                                             if (model2._output.nclasses() == 2) {
-                                              double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
-                                              Assert.assertEquals(threshErr2, error, 1e-4);
+//                                              double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
+//                                              Assert.assertEquals(threshErr2, error, 1e-4);
 
                                               // manually make labels with AUC-given threshold for best F1
                                               String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
@@ -306,7 +306,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 if (ev != null) ev.remove_and_unlock();
                                               }
 
-                                              threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
+                                              double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
                                               Assert.assertEquals(threshErr2, error, 1e-4); //AUC-given F1-optimal threshold might not reproduce AUC-given CM-error identically, but should match up to 1%
                                             }
                                           } finally {

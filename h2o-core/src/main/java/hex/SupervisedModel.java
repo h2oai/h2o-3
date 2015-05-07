@@ -123,9 +123,10 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     double[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if( _output.isClassifier() && _output._priorClassDist !=_output._modelClassDist ) {
-      GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
-      //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
+    if( _output.isClassifier()) {
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
+      //assign label at the very end (after potentially correcting probabilities)
       scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
     }
     return scored;
