@@ -48,7 +48,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 //     * Only applicable if training is not cancelled.
 //     */
 //    @API(help = "If enabled, override the final model with the best model found during training", direction=API.Direction.INOUT)
-//    public boolean override_with_best_model = true;
+//    public boolean overwrite_with_best_model = true;
 //
 //    /**
 //     * Unlock expert mode parameters than can affect model building speed,

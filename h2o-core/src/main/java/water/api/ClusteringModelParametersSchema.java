@@ -8,6 +8,6 @@ import hex.ClusteringModel;
 public class ClusteringModelParametersSchema<P extends ClusteringModel.ClusteringParameters, S extends ClusteringModelParametersSchema<P, S>> extends ModelParametersSchema<P, S> {
   static public String[] own_fields = new String[] { "k" };
 
-  @API(help = "Number of clusters", required = true, direction = API.Direction.INOUT)
+  @API(help = "Number of clusters", required = true, direction = API.Direction.INOUT, gridable = true)
   public int k;
 }

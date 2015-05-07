@@ -10,13 +10,13 @@ test.apply <- function(conn) {
              "floor", "cosh", "exp", "log", "round",
              "sqrt", "tan", "scale", "tanh")
 
-  lapply(kalls, function(call) { print(apply(hex, 2, call)); gc(); })
+  lapply(kalls, function(call) { print(apply(hex, 2, call)); })
 
   print(h2o.ls())
   print(hex)
 
   Log.info("Now apply but reverse order of kalls")
-  lapply(rev(kalls), function(call) { print(apply(hex, 2, call)); gc(); })
+  lapply(rev(kalls), function(call) { print(apply(hex, 2, call)); })
 
   print(h2o.ls())
   print(hex)

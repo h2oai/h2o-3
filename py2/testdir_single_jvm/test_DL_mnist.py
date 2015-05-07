@@ -47,7 +47,7 @@ class Basic(unittest.TestCase):
 
             'keep_cross_validation_splits': None, # boolean false
             'checkpoint': None, # Key None
-            'override_with_best_model': None, # boolean true
+            'overwrite_with_best_model': None, # boolean true
             'expert_mode': None, # boolean false
             'autoencoder': None, # boolean false
             'use_all_factor_levels': None, # boolean true

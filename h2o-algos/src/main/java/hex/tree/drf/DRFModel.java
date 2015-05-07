@@ -1,11 +1,10 @@
 package hex.tree.drf;
 
-import static hex.genmodel.GenModel.getPrediction;
+import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
 import water.util.MathUtils;
-import water.util.ModelUtils;
 import water.util.SB;
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
@@ -50,8 +49,9 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     else { // classification
       double sum = MathUtils.sum(preds);
       if (sum>0) MathUtils.div(preds, sum);
-      ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      preds[0] = getPrediction(preds, data);
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     }
     return preds;
   }
@@ -63,8 +63,9 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       body.ip("double sum = 0;").nl();
       body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
       body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
-      body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+      if (_parms._balance_classes)
+        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + " );").nl();
     }
   }
 

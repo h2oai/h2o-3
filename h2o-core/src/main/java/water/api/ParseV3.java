@@ -42,7 +42,7 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
   String[][] domains;
 
   @API(help="NA strings for columns")
-  String[] na_strings;
+  String[][] na_strings;
 
   @API(help="Size of individual parse tasks", direction=API.Direction.INPUT)
   int chunk_size;
@@ -78,7 +78,7 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
   }
 
   // Helper so ParseSetup can link to Parse
-  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames) {
+  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames, String[] columnTypes, String[][] naStrings, int chunkSize) {
     return "Parse?source_keys="+Arrays.toString(srcs)+
       "&destination_key="+hexName+
       "&parse_type="+pType+
@@ -87,6 +87,8 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
       "&check_header="+checkHeader+
       "&single_quotes="+singleQuotes+
       "&column_names="+Arrays.toString(columnNames)+
+      "&column_types="+Arrays.toString(columnTypes)+
+      "&chunk_size="+chunkSize+
       "";
   }
 }

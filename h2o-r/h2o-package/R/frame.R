@@ -1282,6 +1282,7 @@ quantile.H2OFrame <- function(x,
 #'
 #' @name h2o.summary
 #' @param object An \linkS4class{H2OFrame} object.
+#' @param factors The number of factors to return in the summary. Default is the top 6.
 #' @param ... Further arguments passed to or from other methods.
 #' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each
 #' numeric column, and the levels and category counts of the levels in each categorical column.
@@ -1296,63 +1297,109 @@ quantile.H2OFrame <- function(x,
 NULL
 #' @rdname h2o.summary
 #' @export
-setMethod("summary", "H2OFrame", function(object, ...) {
-  digits <- 12L
+setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
+  SIG.DIGITS    <- 12L
+  FORMAT.DIGITS <- 4L
   cnames <- colnames(object)
   missing <- list()
-  cols <- sapply(cnames, function(x) {
-      res <- .h2o.__remoteSend(object@conn, .h2o.__COL_SUMMARY(object@frame_id, x), method = "GET")
-      col <- res$frames[[1]]$columns[[1]]
-      if(is.null(col$domain)) {
-        if(is.null(col$mins) || length(col$mins) == 0) col$mins = NaN
-        if(is.null(col$maxs) || length(col$maxs) == 0) col$maxs = NaN
-        if(is.null(col$mean)) col$mean = NaN
-        if(is.null(col$percentiles))
-          params <- format(rep(signif(as.numeric(col$mean), digits), 6), digits = 4)
-        else
-          params = format(signif(as.numeric(c(min(col$mins), col$percentiles[4], col$percentiles[6], col$mean, col$percentiles[8], max(col$maxs, na.rm = T))), digits), digits = 4)
-        c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
-          paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
-          paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "),
-          if(!is.null(col$missing_count) && col$missing_count > 0) paste0("NA's   :", col$missing_count, "  ") else NA)
-      } else {
-        top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
-        domains <- NULL
-        if( col$sigma == 0 ) {  # constant column, pick the correct domain level
-          if( !is.null(col$domain) ) {  # have domain, col$data is 0-based index into the domain...
-            domains <- col$domain[top.ix+1]
-          } else {
-            domains <- top.ix[1:6]
-          }
-        }
-        counts <- col$histogram_bins[top.ix]
 
-        # TODO: Make sure "NA's" isn't a legal domain level.
-        if(!is.null(col$missing_count) && col$missing_count > 0) {
-          idx <- ifelse(any(is.na(top.ix)), which(is.na(top.ix))[1], 6)
-          domains[idx] <- "NA's"
-          counts[idx] <- col$missing_count
-        }
+  # for each numeric column, collect [min,1Q,median,mean,3Q,max]
+  # for each categorical column, collect the first 6 domains
+  # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
 
-        width <- c(max(nchar(domains),0), max(nchar(counts),0))
-        result <- paste0(domains,
-                        sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),
-                          ":",
-                        sapply(counts, function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }),
-                          counts, " ")
-        if(!is.null(domains)) result[is.na(domains)] <- NA
-        result <- c(result, NA)   # Pad end to accommodate potential additional row of NA counts in numeric cols
-        result
+  cols <- sapply(cnames, function(col) {
+    col.rest <- .h2o.__remoteSend(object@conn, .h2o.__COL_SUMMARY(object@frame_id, col), method = "GET")
+    col.sum <- col.rest$frames[[1]]$columns[[1]]   # this is the tru column summary
+    col.type <- col.sum$type  # enum, string, int, real, time, uuid
+
+    # numeric column: [min,1Q,median,mean,3Q,max]
+    if( col.type %in% c("real", "int") ) {
+      cmin <- cmax <- cmean <- c1Q <- cmedian <- c3Q <- NaN                                              # all 6 values are NaN by default
+      if( !(is.null(col.sum$mins) || length(col.sum$mins) == 0L) ) cmin <- min(col.sum$mins,na.rm=TRUE)  # set the min
+      if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
+      if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
+
+      if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
+        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
+        cmedian <- col.sum$percentiles[6] # p=.5
+        c3Q     <- col.sum$percentiles[8] # p=.75
       }
-    })
 
-  # Filter out rows with nothing in them
-  cidx <- apply(cols, 1, function(x) { any(!is.na(x)) })
-  if(ncol(cols) == 1) { cols <- as.matrix(cols[cidx,]) } else { cols <- cols[cidx,] }
+      missing.count <- NULL
+      if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
 
-  result = as.table(cols)
+      params <- format(signif( as.numeric( c(cmin, c1Q, cmedian, cmean, c3Q, cmax) ), SIG.DIGITS), digits=FORMAT.DIGITS)   # do some formatting for pretty printing
+      result <- c(paste0("Min.   :", params[1L], "  "), paste0("1st Qu.:", params[2L], "  "),
+                  paste0("Median :", params[3L], "  "), paste0("Mean   :", params[4L], "  "),
+                  paste0("3rd Qu.:", params[5L], "  "), paste0("Max.   :", params[6L], "  "))
+
+      # return summary string for this column
+      if( is.null(missing.count) ) result <- result
+      else                         result <- c(result, paste0("NA's   :",missing.count,"  "))
+
+      result
+    } else if( col.type == "enum" ) {
+      domains <- col.sum$domain
+      domain.cnts <- col.sum$histogram_bins
+      if( length(domain.cnts) < length(domains) ) domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
+      missing.count <- 0L
+      if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
+      # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
+      df.domains <- data.frame(domain=domains,cnts=domain.cnts, stringsAsFactors=FALSE)
+      df.domains <- df.domains[with(df.domains, order(-cnts)),]  # sort in descending order
+
+      # TODO: check out that NA is valid domain level in enum column... get missing and NA together here, before subsetting
+      row.idx.NA <- which( df.domains[,1L] == "NA")
+      if( length(row.idx.NA) != 0 ) {
+        missing.count <- missing.count + df.domains[row.idx.NA,2L]  # combine the missing and NAs found here
+        df.domains <- df.domains[-row.idx.NA,]  # remove the NA level
+      }
+
+      factors <- min(factors, nrow(df.domains))
+      df.domains.subset <- df.domains[1L:factors,]      # subset to the top `factors` (default is 6)
+
+      # if there are any missing levels, plonk them down here now after we've subset.
+      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
+
+      # fish out the domains
+      domains <- as.character(df.domains.subset[,1L])
+
+      # fish out the counts
+      counts <- as.character(df.domains.subset[,2L])
+
+      # compute a width for the factor levels and also one for the counts
+      width <- c( max(nchar(domains),0L), max(nchar(counts),0L) )
+      # construct the result
+      paste0(domains,sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),":",
+                     sapply(counts,  function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }), counts, " ")
+
+    } else {
+      # types are time, uuid, string ... ignore for now?
+#      c(paste0(col.type, ": ignored"))
+      NULL
+    }
+  })
+
+  result <- NULL
+  if( is.matrix(cols) && ncol(cols) == 1L ) {
+    result <- as.table(as.matrix(as.data.frame(cols, stringsAsFactors=FALSE)))
+  } else {
+    # need to normalize the result
+    max.len <- max(sapply(cols, function(col) { length(col) }))
+    # here's where normalization is done
+    if( is.matrix(cols) ) {
+      result <- as.table(cols)
+    } else {
+      cols <- data.frame( lapply(cols, function(col) {
+                  if( length(col) < max.len ) c(col, rep("", max.len-length(col)))  # pad out result with "" for the prettiest of pretty printing... my pretty... and your little dog TOO! MUAHAHHAHA
+                  else col                                                          # no padding necessary!
+                }), stringsAsFactors=FALSE)                                         # keep as strings...
+
+      result <- as.table(as.matrix(cols))
+    }
+  }
+  if( is.null(result) ) return(NULL)
   rownames(result) <- rep("", nrow(result))
-  colnames(result) <- cnames
   result
 })
 
@@ -1514,7 +1561,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
   tmpf <- tempfile(fileext = ".csv")
   write.csv(object, file = tmpf, row.names = FALSE, na="NA_h2o")
   h2f <- h2o.uploadFile(conn, tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                        col.names=colnames(object, do.NULL=FALSE, prefix="C"), na.strings=c("NA_h2o"))
+                        col.names=colnames(object, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(object)))
   file.remove(tmpf)
   h2f
 }
