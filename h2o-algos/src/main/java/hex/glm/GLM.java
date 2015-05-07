@@ -198,7 +198,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           map = newMap;
         }
         final int numoff = _dinfo.numStart();
-        String [] valid_col_names = new String[]{"beta_given","beta_start","lower_bounds","upper_bounds","rho"};
+        String [] valid_col_names = new String[]{"names","beta_given","beta_start","lower_bounds","upper_bounds","rho"};
         Arrays.sort(valid_col_names);
         for(String s:beta_constraints.names())
           if(Arrays.binarySearch(valid_col_names,s) < 0)
