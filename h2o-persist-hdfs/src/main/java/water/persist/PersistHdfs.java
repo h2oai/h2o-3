@@ -121,7 +121,7 @@ public final class PersistHdfs extends Persist {
     // new library version.  Might make sense to go to straight to 's3a' which is a replacement
     // for 's3n'.
     //
-
+    long end, start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(v._max);
     Key k = v._key;
     long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
@@ -155,6 +155,9 @@ public final class PersistHdfs extends Persist {
         return null;
       }
     }, true, v._max);
+    end = System.currentTimeMillis();
+    if (end-start > 1000) // Only log read that took over 1 second to complete
+      Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip_ +"-"+(skip_+b.length)+" in HDFS read.");
 
     return b;
   }

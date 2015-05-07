@@ -44,7 +44,7 @@ test.cm.no.valid <- function(conn) {
   multiple_cm <- h2o.confusionMatrix(pros.gbm, thresholds = maxes)
 
   Log.info("Negative testcases...")
-  expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE))
+  expect_warning(h2o.confusionMatrix(pros.gbm, valid = TRUE))
   expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE, newdata = pros.test))
   expect_error(h2o.confusionMatrix(iris.glm, thresholds = 0.5))
   testEnd()
