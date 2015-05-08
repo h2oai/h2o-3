@@ -3,7 +3,7 @@
   "cells": [
     {
       "type": "md",
-      "input": "#H2O - Million Song Benchmark\n\ninspired by https://github.com/szilard/benchm-ml/tree/master/2a-rf-spark and https://databricks.com/blog/2015/01/21/random-forests-and-boosting-in-mllib.html\n\nDatasets available at:\n\n  https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/milsongs/milsongs-cls-train.csv.gz\n\n  https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/milsongs/milsongs-cls-test.csv.gz"
+      "input": "#H2O - Million Song Benchmark\n\ninspired by https://github.com/szilard/benchm-ml/tree/master/2a-rf-spark and https://databricks.com/blog/2015/01/21/random-forests-and-boosting-in-mllib.html\n\nDatasets (origin: https://archive.ics.uci.edu/ml/datasets/YearPredictionMSD) available at:\n\n  https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/milsongs/milsongs-cls-train.csv.gz\n\n  https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/milsongs/milsongs-cls-test.csv.gz"
     },
     {
       "type": "cs",
