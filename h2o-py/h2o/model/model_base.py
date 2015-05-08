@@ -107,6 +107,44 @@ class ModelBase(object):
     # finally return frame
     return H2OFrame(vecs=vecs)
 
+  def weights(self, matrix_id=0):
+    """
+    Return the frame for the respective weight matrix
+    :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
+    :return: an H2OFrame which represents the weight matrix identified by matrix_id
+    """
+    num_weight_matrices = len(self._model_json['output']['weights'])
+    if matrix_id not in range(num_weight_matrices):
+      raise ValueError("Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
+                       "was requested.".format(num_weight_matrices, matrix_id))
+    j = h2o.frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
+    fr = j['frames'][0]
+    rows = fr['rows']
+    vec_ids = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
+    return result
+
+  def biases(self, vector_id=0):
+    """
+    Return the frame for the respective bias vector
+    :param: vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
+    :return: an H2OFrame which represents the bias vector identified by vector_id
+    """
+    num_bias_vectors = len(self._model_json['output']['biases'])
+    if vector_id not in range(num_bias_vectors):
+      raise ValueError("Bias vector does not exist. Model has {0} bias vectors (0-based indexing), but vector {1} "
+                       "was requested.".format(num_bias_vectors, vector_id))
+    j = h2o.frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
+    fr = j['frames'][0]
+    rows = fr['rows']
+    vec_ids = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
+    return result
+
   def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
