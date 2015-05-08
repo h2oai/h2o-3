@@ -213,6 +213,15 @@ class ModelBase(object):
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
+  def varimp(self):
+    """
+    Pretty print the variable importances
+    :return: None
+    """
+    model = self._model_json["output"]
+    if "variable_importances" in model.keys() and model["variable_importances"]:
+      return model["variable_importances"].show()
+
   def residual_deviance(self,train=False,valid=False):
     """
     Retreive the residual deviance if this model has the attribute, or None otherwise.
