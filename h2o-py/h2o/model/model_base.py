@@ -93,7 +93,7 @@ class ModelBase(object):
     # get the deepfeatures of the dataset
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key, deep_features_hidden_layer=layer)
     # retreive the frame data
-    deepfeatures_frame_key = j["predictions_name"]["name"]
+    deepfeatures_frame_key = j["predictions_frame"]["name"]
     df_frame_meta = h2o.frame(deepfeatures_frame_key)["frames"][0]
     # create vecs by extracting vec_ids, col length, and col names
     vec_ids = df_frame_meta["vec_ids"]
