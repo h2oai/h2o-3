@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "md",
+      "input": "#H2O - Million Song Binary Classification Demo\n\n### Dataset (Sample of the million song dataset)\n515k observations, 90 numerical predictors, no missing values, origin: https://archive.ics.uci.edu/ml/datasets/YearPredictionMSD\n\n#### Pre-split data (463k train / 51k test), and binary labels for release year <2004 or >= 2004\n* https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/milsongs/milsongs-cls-train.csv.gz\n* https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/milsongs/milsongs-cls-test.csv.gz\n\n#### Notes\n\n* Higher AUC values can be obtained with parameter tuning (using mostly defaults here)\n* Parsing speed can be increased by unzipping the files outside of H2O\n* To \"fix\" the paths below, please replace `../../` with `https://s3.amazonaws.com/h2o-public-test-data/` or point to your download folder"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../../bigdata/laptop/milsongs/milsongs-cls-train.csv.gz\"]\n  destination_frame: \"milsongs-cls-train.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 91\n  single_quotes: false\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 262144"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../../bigdata/laptop/milsongs/milsongs-cls-test.csv.gz\"]\n  destination_frame: \"milsongs-cls-test.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 91\n  single_quotes: false\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 262144"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-model\",\"training_frame\":\"milsongs-cls-train.hex\",\"validation_frame\":\"milsongs-cls-test.hex\",\"drop_na20_cols\":false,\"score_each_iteration\":false,\"response_column\":\"C1\",\"ntrees\":\"10\",\"max_depth\":20,\"min_rows\":10,\"nbins\":\"50\",\"r2_stopping\":0.999999,\"mtries\":-1,\"sample_rate\":0.6666667,\"build_tree_one_node\":false,\"balance_classes\":false,\"seed\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-model\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-model\",\"training_frame\":\"milsongs-cls-train.hex\",\"validation_frame\":\"milsongs-cls-test.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"link\":\"family_default\",\"use_all_factor_levels\":false,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-model\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-model\",\"training_frame\":\"milsongs-cls-train.hex\",\"validation_frame\":\"milsongs-cls-test.hex\",\"drop_na20_cols\":false,\"score_each_iteration\":false,\"response_column\":\"C1\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"r2_stopping\":0.999999,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"balance_classes\":false,\"seed\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-model\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-model\",\"training_frame\":\"milsongs-cls-train.hex\",\"validation_frame\":\"milsongs-cls-test.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1\",\"activation\":\"Rectifier\",\"hidden\":[200,200],\"epochs\":1,\"variable_importances\":false,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":\"0\",\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":-3588687085955371500,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"ignore_const_cols\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-model\""
+    }
+  ]
+}
