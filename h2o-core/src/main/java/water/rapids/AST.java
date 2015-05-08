@@ -50,7 +50,7 @@ abstract public class AST extends Iced {
       } else if (this instanceof ASTReducerOp) {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
         ((ASTReducerOp) this).apply(e);
-      } else if (this instanceof ASTLs || this instanceof ASTSetTimeZone || this instanceof ASTListTimeZones || this instanceof ASTGetTimeZone) {
+      } else if (this instanceof ASTLs || this instanceof ASTSetTimeZone || this instanceof ASTListTimeZones || this instanceof ASTGetTimeZone || this instanceof ASTStoreSize) {
         ((ASTOp) this).apply(e);
       } else if (this instanceof ASTFunc) {
         ((ASTFunc) this).apply(e);

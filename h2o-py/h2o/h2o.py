@@ -232,8 +232,11 @@ def value_check(h2o_data, local_data, num_elements, col=None):
     assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
 
 def run_test(sys_args, test_to_run):
+  num_keys = store_size()
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
+  if keys_leaked(num_keys):
+    print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
 
 def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
@@ -519,6 +522,22 @@ def locate(path):
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
 
+
+def store_size():
+  """
+  Get the H2O store size (current count of keys).
+  :return: number of keys in H2O cloud
+  """
+  return rapids("(store_size)")["result"]
+
+def keys_leaked(num_keys):
+  """
+  Ask H2O if any keys leaked.
+  @param num_keys: The number of keys that should be there.
+  :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
+  """
+  return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
+
 def as_list(data):
   """
   If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
@@ -621,6 +640,10 @@ class H2ODisplay:
     self.kwargs=kwargs
     self.do_print=True
 
+    # one-shot display... never return an H2ODisplay object (or try not to)
+    # if holding onto a display object, then may have odd printing behavior
+    # the __repr__ and _repr_html_ methods will try to save you from many prints,
+    # but just be WARNED that your mileage may vary!
     if H2ODisplay._in_ipy():
       from IPython.display import display
       display(self)
@@ -659,7 +682,7 @@ class H2ODisplay:
   # some html table builder helper things
   @staticmethod
   def _html_table(rows, header=None):
-    table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scrollability
+    table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
     table_rows=[]
     if header is not None:
       table_rows.append(H2ODisplay._html_row(header))

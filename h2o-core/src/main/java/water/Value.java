@@ -51,7 +51,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Type-id of serialized object; see TypeMap for the list.
   // Might be a primitive array type, or a Iced POJO
   private short _type;
-  int type() { return _type; }
+  public int type() { return _type; }
   /** Class name of the embedded POJO, without needing an actual POJO. */
   public String className() { return TypeMap.className(_type); }
 
