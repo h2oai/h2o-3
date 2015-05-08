@@ -26,6 +26,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Convergence tolerance
   private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of singular value \sigma_i
 
+  // Number of columns in training set (p)
+  private transient int _ncol;
+  private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
+
   @Override public ModelBuilderSchema schema() {
     return new SVDV3();
   }
@@ -54,10 +58,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     if(_train == null) return;
 
-    if(_parms._nv < 1 || _parms._nv > _train.numCols())
-      error("_nv", "Number of right singular values must be between 1 and " + _train.numCols());
+    _ncol = _train.numCols();
+    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
 
-    // PCA does not work on categorical data
+    if(_parms._nv < 1 || _parms._nv > _ncolExp)
+      error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
+
+    // SVD does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isNumeric()) {
@@ -90,7 +97,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         vnew[i] = ArrayUtils.innerProduct(gram[i], v);
       double norm = ArrayUtils.l2norm(vnew);
 
-      double diff;
+      double diff; err = 0;
       for (int i = 0; i < v.length; i++) {
         vnew[i] /= norm;        // Compute singular vector v_i = x_i/||x_i||
         diff = v[i] - vnew[i];  // Save error ||v_i - v_{i-1}||
@@ -149,6 +156,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gram = tsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
         double[] sigma = new double[_parms._nv];
         double[][] rsvec = new double[_parms._nv][gram.length];
+        assert gram.length == _ncolExp;
 
         // 1) Run one iteration of power method
         // 1a) Initialize right singular vector v_1
@@ -179,7 +187,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Compute first singular value \sigma_1
           double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, rsvec[0]);
-          sigma[0] = new CalcSigmaU(_parms, ivv_vk, _train.numCols(), model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
+          sigma[0] = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
         }
 
         // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
@@ -196,7 +204,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           if(!_parms._only_v) {
             double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, rsvec[k]);
             // sigma[k] = new CalcSigma(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
-            sigma[k] = new CalcSigmaUNorm(_parms, ivv_vk, k, sigma[k-1], _train.numCols(), model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
+            sigma[k] = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, sigma[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
@@ -248,8 +256,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         _parms.read_unlock_frames(SVD.this);
       }
 
-      //Job thisJob = DKV.getGet(_key);
-      //System.out.println("------------- JOB status: " + Arrays.toString(Job.jobs()));
+      // Job thisJob = DKV.getGet(_key);
+      // System.out.println("------------- JOB status: " + Arrays.toString(Job.jobs()));
       tryComplete();
     }
 
@@ -264,15 +272,27 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   // Save inner product of each row with vec to col k of chunk array
   // Returns sum over l2 norms of each row with vec
-  private static double l2norm2(Chunk[] cs, double[] vec, int k, int ncols, double[] normSub, double[] normMul) {
+  private static double l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, double[] normSub, double[] normMul) {
     double sumsqr = 0;
+    int ncols = dinfo._adaptedFrame.numCols();
+
+    // Calculate inner product of current row with vec
     for (int row = 0; row < cs[0]._len; row++) {
-      // Calculate inner product of current row with vec
+      // Categorical cols expanded into 0/1 indicator cols
       double sum = 0;
-      for (int j = 0; j < ncols; j++) {
-        double a = cs[j].atd(row);
-        sum += (a - normSub[j]) * normMul[j] * vec[j];
+      for (int j = 0; j < dinfo._cats; j++) {
+        int i = (int)cs[j].atd(row);
+        sum += vec[dinfo._catOffsets[j]+i];
       }
+
+      // Numeric cols normalized before multiplying through
+      int idx = dinfo._cats;
+      for (int j = 0; j < dinfo._nums; j++) {
+        double a = cs[idx].atd(row);
+        sum += (a - normSub[j]) * normMul[j] * vec[idx];
+        idx++;
+      }
+      assert idx == ncols;
       sumsqr += sum * sum;
       chk_u(cs,k,ncols).set(row,sum);   // Update u_k <- A_{k-1}v_k
     }
@@ -288,26 +308,28 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   private static class CalcSigmaU extends MRTask<CalcSigmaU> {
+    DataInfo _dinfo;    // Training data only
     SVDParameters _parms;
-    final int _ncols;
     final double[] _normSub;
     final double[] _normMul;
+    final int _ncols;
     final double[] _svec;   // Input: Right singular vector (v_1)
     double _sval;     // Output: Singular value (\sigma_1)
 
-    CalcSigmaU(SVDParameters parms, double[] svec, int ncols, double[] normSub, double[] normMul) {
-      assert svec.length == ncols;
+    CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
+      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
+      _dinfo = dinfo;
       _parms = parms;
       _svec = svec;
-      _ncols = ncols;
       _normSub = normSub;
       _normMul = normMul;
+      _ncols = _dinfo._adaptedFrame.numCols();
       _sval = 0;
     }
 
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
-      _sval += l2norm2(cs, _svec, 0, _ncols, _normSub, _normMul);   // Update \sigma_1 and u_1 <- Av_1
+      _sval += l2norm2(cs, _svec, 0, _dinfo, _normSub, _normMul);   // Update \sigma_1 and u_1 <- Av_1
     }
 
     @Override protected void postGlobal() {
@@ -316,32 +338,34 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   private static class CalcSigmaUNorm extends MRTask<CalcSigmaUNorm> {
+    DataInfo _dinfo;
     SVDParameters _parms;
     final int _k;             // Input: Index of current singular vector (k)
     final double[] _svec;     // Input: Right singular vector (v_k)
     final double _sval_old;  // Input: Singular value from last iteration (\sigma_{k-1})
-    final int _ncols;
     final double[] _normSub;
     final double[] _normMul;
+    final int _ncols;
 
     double _sval;     // Output: Singular value (\sigma_k)
 
-    CalcSigmaUNorm(SVDParameters parms, double[] svec, int k, double sval_old, int ncols, double[] normSub, double[] normMul) {
-      assert svec.length == ncols;
+    CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
+      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
       assert k >= 1 : "Index of singular vector k must be at least 1";
+      _dinfo = dinfo;
       _parms = parms;
       _k = k;
       _svec = svec;
-      _ncols = ncols;
       _normSub = normSub;
       _normMul = normMul;
+      _ncols = _dinfo._adaptedFrame.numCols();
       _sval_old = sval_old;
       _sval = 0;
     }
 
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
-      _sval += l2norm2(cs, _svec, _k, _ncols, _normSub, _normMul);    // Update \sigma_k and save u_k <- A_{k-1}v_k
+      _sval += l2norm2(cs, _svec, _k, _dinfo, _normSub, _normMul);    // Update \sigma_k and save u_k <- A_{k-1}v_k
       div(chk_u(cs,_k-1,_ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
     }
 
