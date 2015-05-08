@@ -1,8 +1,12 @@
 package hex.optimization;
 
+import hex.optimization.L_BFGS.GradientInfo;
+import water.H2O;
 import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MathUtils;
+import water.util.MathUtils.Norm;
 
 import java.util.Arrays;
 
@@ -16,21 +20,30 @@ public class ADMM {
     public void solve(double [] beta_given, double [] result);
     public boolean hasGradient();
     public double [] gradient(double [] beta);
-    public void setRho(double [] rho);
-    public boolean canSetRho();
     public int iter();
   }
 
   public static class L1Solver {
-    final static double RELTOL = 1e-2;
-    final static double ABSTOL = 1e-4;
+    final double RELTOL;
+    final double ABSTOL;
     double gerr;
     int iter;
     final double _eps;
     final int max_iter;
 
+    MathUtils.Norm _gradientNorm = Norm.L_Infinite;
+
+    public static double DEFAULT_RELTOL = 1e-2;
+    public static double DEFAULT_ABSTOL = 1e-4;
+    public L1Solver setGradientNorm(MathUtils.Norm n) {_gradientNorm = n; return this;}
     public L1Solver(double eps, int max_iter) {
+      this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL);
+    }
+
+    public L1Solver(double eps, int max_iter, double reltol, double abstol) {
       _eps = eps; this.max_iter = max_iter;
+      RELTOL = reltol;
+      ABSTOL = abstol;
     }
 
     public boolean solve(ProximalSolver solver, double[] res, double lambda) {
@@ -50,13 +63,29 @@ public class ADMM {
           if (z[j] == ub[j] && grad[j] < 0)
             grad[j] = z[j] >= 0?-lambda:lambda;
       subgrad(lambda, z, grad);
-      for (int x = 0; x < grad.length - 1; ++x) {
-        double err = grad[x];
-        if(err < 0) err = -err;
-        if(gerr < err) gerr = err;
+      switch(_gradientNorm) {
+        case L_Infinite:
+          gerr = ArrayUtils.linfnorm(grad,false);
+          break;
+        case L2_2:
+          gerr = ArrayUtils.l2norm2(grad, false);
+          System.out.println("gerr = " + gerr + ", eps = " + _eps);
+          break;
+        case L2:
+          gerr = Math.sqrt(ArrayUtils.l2norm2(grad, false));
+          break;
+        case L1:
+          gerr = ArrayUtils.l1norm(grad,false);
+          break;
+        default:
+          throw H2O.unimpl();
       }
       return gerr;
     }
+
+
+
+
 
     public boolean solve(ProximalSolver solver, double[] z, double l1pen, boolean hasIntercept, double[] lb, double[] ub) {
       gerr = Double.POSITIVE_INFINITY;

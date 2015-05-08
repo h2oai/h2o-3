@@ -1,11 +1,10 @@
 package hex.glm;
 
-import hex.AUC2;
 import hex.DataInfo;
 import hex.Model;
-import hex.ModelMetrics.MetricBuilder;
-import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.SupervisedModelBuilder;
+import hex.optimization.ADMM.L1Solver;
+import hex.optimization.L_BFGS;
 import hex.glm.GLMModel.FinalizeAndUnlockTsk;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -19,7 +18,6 @@ import hex.gram.Gram.Cholesky;
 import hex.gram.Gram.NonSPDMatrixException;
 import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
-import hex.optimization.L_BFGS;
 import hex.optimization.L_BFGS.*;
 import hex.schemas.GLMV3;
 import hex.schemas.ModelBuilderSchema;
@@ -32,6 +30,7 @@ import water.H2O.H2OCountedCompleter;
 import water.parser.ValueString;
 import water.util.*;
 import water.util.MRUtils.ParallelTasks;
+import water.util.MathUtils.Norm;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -861,20 +860,41 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             // compute rhos
             for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
               rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[i], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[i]);
-            ProgressMonitor pm = new ProgressMonitor(){
+
+            final double [] objvals = new double[2];
+            objvals[1] = Double.POSITIVE_INFINITY;
+            L_BFGS.ProgressMonitor pm = new L_BFGS.ProgressMonitor(){
               public boolean progress(double [] beta, GradientInfo ginfo){
-                if((++_taskInfo._iter & 7) == 0) {
-                  update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1), GLM.this._key);
+                double obj = ginfo._objVal;
+                double gnorm = -1;
+                if(ginfo instanceof ProximalGradientInfo) {
+                  ProximalGradientInfo g = (ProximalGradientInfo)ginfo;
+                  if(g._origGinfo instanceof GLMGradientInfo) {
+                    GLMGradientInfo gg = (GLMGradientInfo)g._origGinfo;
+                    obj = gg._objVal;
+                    for(int i = 0; i < beta.length; ++i)
+                      obj += l1pen * (beta[i] >= 0?beta[i]:-beta[i]);
+                    // add l1pen
+                    addScoringHistory(_taskInfo._iter, gg._likelihood, obj);
+                    double [] subgrad = ginfo._gradient.clone();
+                    ADMM.subgrad(l1pen,beta,subgrad);
+                    gnorm = ArrayUtils.l2norm2(subgrad,false);
+                  }
                 }
+                if((++_taskInfo._iter & 3) == 0)
+                  update(_taskInfo._workPerIteration*4, "iteration " + _taskInfo._iter+ ", objective = " + MathUtils.roundToNDigits(obj,4) + ", grad_norm = " + MathUtils.roundToNDigits(gnorm,6), GLM.this._key);
                 return _taskInfo._iter < _parms._max_iterations && Job.isRunning(GLM.this._key);
               }
             };
+            double reltol = _parms._higher_accuracy ? L1Solver.DEFAULT_RELTOL:10*L1Solver.DEFAULT_RELTOL;
+            double abstol = _parms._higher_accuracy ? L1Solver.DEFAULT_ABSTOL:100*L1Solver.DEFAULT_ABSTOL;
+            double gradEps = (_parms._higher_accuracy ?1e-9:1e-6)*_dinfo.fullN();
             if(_bc != null)
-              new ADMM.L1Solver(1e-2, 50).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(gradEps, 50, reltol, abstol).setGradientNorm(Norm.L2_2).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(1e-2, 50).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm), _taskInfo._beta, l1pen);
+              new ADMM.L1Solver(gradEps, 50, reltol, abstol).setGradientNorm(Norm.L2_2).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm), _taskInfo._beta, l1pen);
           } else {
-            Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
+            Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new L_BFGS.ProgressMonitor() {
               @Override
               public boolean progress(double[] beta, GradientInfo ginfo) {
                 if(ginfo instanceof GLMGradientInfo) {
@@ -1386,7 +1406,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public double [] rho() { return _rho;}
 
     @Override
-    public void solve(double[] beta_given, double[] result) {
+    public void solve(double [] beta_given, double [] result) {
       if(beta_given != null)
         for(int i = 0; i < _xy.length; ++i)
           result[i] = _xy[i] + _rho[i] * beta_given[i];
@@ -1406,109 +1426,50 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       return grad;
     }
 
-    @Override public void setRho(double [] r){throw new UnsupportedOperationException(); /* could do it but it's (very) expensive, so throw UOE instead */}
-    @Override
-    public boolean canSetRho() { return false; }
-
     @Override
     public int iter() {
       return 0;
     }
   }
-  
-  public static final class LBFGS_ProximalSolver implements ProximalSolver {
-    double [] _beta;
-    final double [] _rho;
-    final GradientSolver _gSolver;
-    double [] _gradient;
-    public int _iter;
-    ProgressMonitor _pm;
-
-    public LBFGS_ProximalSolver(GradientSolver gs, double [] beta, double [] rho, ProgressMonitor pm){
-      _gSolver = gs;
-      _beta = beta;
-      _rho = rho;
-      _pm = pm;
-    }
 
 
-
-    @Override
-    public double[] rho() { return _rho;}
-
-    double [] _beta_given;
-    GradientInfo _ginfo;
-
-    @Override
-    public void solve(double[] beta_given, double[] result) {
-      ProximalGradientSolver s = new ProximalGradientSolver(_gSolver,beta_given,_rho);
-      if(_beta_given == null)
-        _beta_given = MemoryManager.malloc8d(beta_given.length);
-      if(_ginfo != null) { // update the gradient
-        for(int i = 0; i < beta_given.length; ++i) {
-          _ginfo._gradient[i] += _rho[i] * (_beta_given[i] - beta_given[i]);
-          _ginfo._objVal += .5 * _rho[i] *  (((_beta[i] - beta_given[i]) * (_beta[i] - beta_given[i])) -( (_beta[i] - _beta_given[i]) * (_beta[i] - _beta_given[i])));
-          _beta_given[i] = beta_given[i];
-        }
-      } else _ginfo = s.getGradient(_beta);
-//      _ginfo = s.getGradient(_beta);
-      L_BFGS.Result r  = new L_BFGS().solve(s, _beta, _ginfo, _pm);
-      _ginfo = r.ginfo;
-      _beta = r.coefs;
-      _gradient = r.ginfo._gradient;
-      _iter += r.iter;
-      System.arraycopy(_beta,0,result,0,_beta.length);
-    }
-
-    @Override
-    public boolean hasGradient() {
-      return _gradient != null;
-    }
-
-    @Override
-    public double[] gradient(double[] beta) {
-      // return ArrayUtils.mult(_gSolver.getGradient(beta)._gradient, _reg);
-      return _gSolver.getGradient(beta)._gradient;
-    }
-
-    @Override
-    public void setRho(double[] rho) {
-      System.arraycopy(rho,0,_rho,0,_rho.length);
-    }
-
-    @Override
-    public boolean canSetRho() { return true;}
-
-    @Override
-    public int iter() {
-      return _iter;
+  public static class ProximalGradientInfo extends L_BFGS.GradientInfo {
+    final GradientInfo _origGinfo;
+    public ProximalGradientInfo(GradientInfo origGinfo, double objVal, double[] gradient) {
+      super(objVal,gradient);
+      _origGinfo = origGinfo;
     }
   }
 
   /**
    * Simple wrapper around gradient computation, adding proximal penalty
    */
-  public static class ProximalGradientSolver extends GradientSolver {
-    final GradientSolver _solver;
+  public static class ProximalGradientSolver extends L_BFGS.GradientSolver {
+    final L_BFGS.GradientSolver _solver;
     final double [] _betaGiven;
     final double [] _rho;
 
     public ProximalGradientSolver(GradientSolver s, double [] betaGiven, double [] rho) {
+      super();
       _solver = s;
       _betaGiven = betaGiven;
       _rho = rho;
     }
+
     @Override
     public GradientInfo getGradient(double[] beta) {
       GradientInfo gt = _solver.getGradient(beta);
+      double [] grad = gt._gradient.clone();
+      double obj = gt._objVal;
       for (int i = 0; i < gt._gradient.length; ++i) {
         double diff = (beta[i] - _betaGiven[i]);
         double pen = _rho[i] * diff;
-        gt._gradient[i] += pen;
-        gt._objVal += .5*pen*diff;
+        grad[i] += pen;
+        obj += .5*pen*diff;
       }
-      return gt;
+      return new ProximalGradientInfo(gt,obj,grad);
     }
+
     @Override
     public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
       double [] objs = _solver.getObjVals(beta,pk, nSteps, stepDec);
@@ -1534,6 +1495,76 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _likelihood = likelihood;
     }
   }
+  
+  public static final class LBFGS_ProximalSolver implements ProximalSolver {
+    double [] _beta;
+    final double [] _rho;
+    final GradientSolver _gSolver;
+    double [] _gradient;
+    public int _iter;
+    L_BFGS.ProgressMonitor _pm;
+
+    public LBFGS_ProximalSolver(GradientSolver gs, double [] beta, double [] rho, L_BFGS.ProgressMonitor pm){
+      _gSolver = gs;
+      _beta = beta;
+      _rho = rho;
+      _pm = pm;
+    }
+
+
+
+    @Override
+    public double[] rho() { return _rho;}
+
+    double [] _beta_given;
+    GradientInfo _ginfo;
+
+    private GradientInfo _rawGradient;
+
+    @Override
+    public void solve(double[] beta_given, double[] result) {
+      ProximalGradientSolver s = new ProximalGradientSolver(_gSolver,beta_given,_rho);
+      if(_beta_given == null)
+        _beta_given = MemoryManager.malloc8d(beta_given.length);
+      if(_ginfo != null) { // update the gradient
+        for(int i = 0; i < beta_given.length; ++i) {
+          _ginfo._gradient[i] += _rho[i] * (_beta_given[i] - beta_given[i]);
+          _ginfo._objVal += .5 * _rho[i] *  (((_beta[i] - beta_given[i]) * (_beta[i] - beta_given[i])) -( (_beta[i] - _beta_given[i]) * (_beta[i] - _beta_given[i])));
+          _beta_given[i] = beta_given[i];
+        }
+      } else _ginfo = s.getGradient(_beta);
+//      _ginfo = s.getGradient(_beta);
+      L_BFGS.Result r  = new L_BFGS().setGradEps(1e-7).solve(s, _beta, _ginfo, _pm);
+      _ginfo = r.ginfo;
+      if(_ginfo instanceof ProximalGradientInfo)
+        _rawGradient = ((ProximalGradientInfo) _ginfo)._origGinfo;
+      _beta = r.coefs;
+      _gradient = r.ginfo._gradient;
+      _iter += r.iter;
+      System.arraycopy(_beta,0,result,0,_beta.length);
+    }
+
+    @Override
+    public boolean hasGradient() {
+      return _gradient != null;
+    }
+
+    @Override
+    public double[] gradient(double[] beta) {
+      // return ArrayUtils.mult(_gSolver.getGradient(beta)._gradient, _reg);
+      return _gSolver.getGradient(beta)._gradient;
+    }
+
+    public int iter() {
+      return _iter;
+    }
+
+    public GradientInfo rawGradient() {return _rawGradient;}
+
+
+  }
+
+
   /**
    * Gradient and line search computation for L_BFGS and also L_BFGS solver wrapper (for ADMM)
    */
