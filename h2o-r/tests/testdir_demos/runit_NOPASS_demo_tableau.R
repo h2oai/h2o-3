@@ -8,36 +8,25 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.tableau <- function(conn) {
-  Log.info ('Check cluster status')
-  h2o.clusterInfo(conn)
   Log.info ('Importing data into H2O')
-  data.hex <- h2o.importFile(conn, normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
+  data.hex <- h2o.importFile(conn, path = normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   
   Log.info ('Grouping flights by months...')
-  numFlights <- h2o.group_by(data.hex, "Month", nrow("Month"))  #h2o.ddply(data.hex, 'Month', nrow)
-  numFlights.R <- as.data.frame(numFlights)
-
-  Log.info ('Grouping number of cancellations by months...')
-  #fun2 <- function(df) {sum(df[22])}         # must be numeric
-  cancelledFlights <- h2o.group_by(data.hex, "Month", sum("Cancelled") )  # h2o.ddply(data.hex, 'Month', fun2)
-  cancelledFlights.R <- as.data.frame(cancelledFlights)
+  f1 <- h2o.group_by(data.hex, "Month", nrow("Month"), sum("Cancelled"))
+  f1.df <- as.data.frame(f1)
   
   Log.info ('Grouping flights by airport...')
-  originFlights <- h2o.group_by(data.hex, "Origin", nrow("Origin"))    # h2o.ddply(data.hex, 'Origin', nrow)
-  originFlights.R <- as.data.frame(originFlights)
-  
-  Log.info ('Grouping number of cancellations by airport...')
-  origin_cancelled <- h2o.group_by(data.hex, "Origin", sum("Cancelled"))    #h2o.ddply(data.hex, 'Origin', fun2)
-  origin_cancelled.R <- as.data.frame(origin_cancelled)
+  f2 <- h2o.group_by(data.hex, "Origin", nrow("Origin"), sum("Cancelled"))
+  f2.df <- as.data.frame(f2)
   
   .arg2 <- 'Origin,Dest,UniqueCarrier'
   xvars <- unlist( strsplit( .arg2, split = ',' , fixed = TRUE ) )
   data.glm <- h2o.glm(x = xvars , y = 'Cancelled', training_frame = data.hex, family = 'binomial', nfolds = 0, standardize=TRUE)
   
   glmModelTemp <- eval(parse(text = 'data.glm' ))
-  originFactors <- levels(data.hex$Origin)
+  .arg1 <- levels(data.hex$Origin)
+  if(!(length(.arg1) > 0)) stop("Didn't grab all the factor levels in the Origin column.")
   ## Tableau grab coefficients corresponding to predictor variable
-  .arg1 <- originFactors
   tableau_catFormat <- function( modelKey , variableStr, predictorVariable) {
     if( typeof(modelKey) != 'S4') print('Model Key is not in expected format of S4')
     if( is.character(variableStr) != TRUE) print('Input column is not in expected format of string')
@@ -59,7 +48,8 @@ test.tableau <- function(conn) {
     tableau_input}
   
   Log.info ('Finish setting up for Tableau function')
-  sapply(originFactors, function(factor) tableau_catFormat( glmModelTemp, 'Origin' , factor) )
+  coeff <- sapply(originFactors, function(factor) tableau_catFormat( glmModelTemp, 'Origin' , factor) )
+  if(!(length(coeff)>0)) stop("There are no coefficients filter back out!")
   
   testEnd()
 }
