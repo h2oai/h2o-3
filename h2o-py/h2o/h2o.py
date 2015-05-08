@@ -287,14 +287,13 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
-def delete(key):
+def removeFrameShallow(key):
   """
-  Do a shallow DKV remove of the key (does not remove any subparts)
-  :param key: A key to be DKV.removed
+  Do a shallow DKV remove of the frame (does not remove any internal Vecs)
+  :param key: A Frame Key to be removed
   :return: None
   """
-  expr = "(del '"+key+"')"
-  rapids(expr)
+  rapids("(removeframe '"+key+"')")
   return None
 
 def rapids(expr):
