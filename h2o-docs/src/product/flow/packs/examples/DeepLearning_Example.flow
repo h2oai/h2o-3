@@ -39,7 +39,7 @@
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/test.csv.gz\" ]"
+      "input": "setupParse paths: [ \"https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/train.csv.gz\" ]"
     },
     {
       "type": "cs",
