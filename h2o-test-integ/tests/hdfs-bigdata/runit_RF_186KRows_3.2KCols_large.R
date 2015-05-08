@@ -41,7 +41,7 @@ myX = setdiff(names(data.hex), myY)
 
 # Start modeling
 #Random Forest
-rf_time <- system.time(data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5))
+rf_time <- system.time(data1.rf <- h2o.randomForest(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5))
 paste("Time it took to build RF ", rf_time[[1]])
 data1.rf
 

@@ -134,6 +134,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_iterations = -1;
     public int _n_folds;
     boolean _intercept = true;
+    boolean _higher_accuracy;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
