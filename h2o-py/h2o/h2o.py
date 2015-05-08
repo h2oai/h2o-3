@@ -232,8 +232,9 @@ def value_check(h2o_data, local_data, num_elements, col=None):
     assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
 
 def run_test(sys_args, test_to_run):
-  num_keys = store_size()
   ip, port = sys_args[2].split(":")
+  init(ip,port)
+  num_keys = store_size()
   test_to_run(ip, port)
   if keys_leaked(num_keys):
     print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
