@@ -2,8 +2,8 @@
 A two dimensional table having row and column headers.
 """
 
-import tabulate
 import copy
+import h2o
 
 
 class H2OTwoDimTable(object):
@@ -25,14 +25,16 @@ class H2OTwoDimTable(object):
     if header: print self.table_header + ":"
     print
     table = copy.deepcopy(self.cell_values)
-    nr = len(table)
-    if nr > 20:
-      print tabulate.tabulate(table[:5], headers=self.col_header, numalign="left", stralign="left")
-      print "==="
-      print tabulate.tabulate(table[(nr-5):], headers=self.col_header, numalign="left", stralign="left")
-    else:
-      print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")
-      print
+    nr=0
+    if h2o.H2OFrame._is_list_of_lists(table): nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
+    if nr > 20:    # create a truncated view of the table, first/last 5 rows
+      trunc_table =[]
+      trunc_table += [ v for v in table[:5]]
+      trunc_table.append(["---"]*len(table[0]))
+      trunc_table += [v for v in table[(nr-5):]]
+      table = trunc_table
+
+    h2o.H2ODisplay(table, self.col_header, numalign="left", stralign="left")
 
   def __repr__(self):
     self.show()
