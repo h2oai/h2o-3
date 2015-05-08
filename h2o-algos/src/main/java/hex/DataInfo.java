@@ -613,7 +613,7 @@ public class DataInfo extends Keyed {
     double etaOffset = 0;
     if(_normMul != null && _normSub != null && beta != null)
       for(int i = 0; i < _nums; ++i)
-        etaOffset -= beta[i] * _normSub[i] * _normMul[i];
+        etaOffset -= beta[i+numStart()] * _normSub[i] * _normMul[i];
 //    Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;
     for (int i = 0; i < rows.length; ++i) {
 //      assert filterChunk == null || filterChunk.at8(i) == 0 || filterChunk.at8(i) == 1:"unepxected bit value " + filterChunk.at8(i);

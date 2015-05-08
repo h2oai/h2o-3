@@ -93,6 +93,7 @@ h2o.shim <- function(enable = TRUE) {
     {
       # Map required for supported deprecated parameters
       .dl.dep.map <- c("data"         = "training_frame",
+                        "override_with_best_model" = "overwrite_with_best_model",
                         "key"         = "destination_key",
                         "validation"  = "validation_frame")
       # Map for unsupported deprecated parameters
@@ -615,8 +616,7 @@ h2o.shim <- function(enable = TRUE) {
     if(!identical(algo, "kmeans"))
       model$varimp <- model$variable_importances
     if(identical(algo, "kmeans")){
-      model$withinss <- model$within_mse
-      model$tot.withinss <- model$avg_within_ss
+      model$tot.withinss <- model$tot_withinss
       model$iter <- model$iterations
     }
 

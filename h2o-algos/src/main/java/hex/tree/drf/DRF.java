@@ -197,7 +197,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Build trees until we hit the limit
       for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
-          doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          double training_r2 = doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          if( training_r2 >= _parms._r2_stopping )
+            return;             // Stop when approaching round-off error
         }
         // At each iteration build K trees (K = nclass = response column domain size)
 
@@ -282,8 +284,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
             if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
-              if( nid==0 )               // Handle the trivial non-splitting tree
-                new DRFLeafNode(tree,-1,0);
+              if( nid==0 ) {               // Handle the trivial non-splitting tree
+                LeafNode ln = new DRFLeafNode(tree, -1, 0);
+                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _response.mean());
+              }
               continue;
             }
             for( int i=0; i<dn._nids.length; i++ ) {
@@ -306,7 +310,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // ----
       // Move rows into the final leaf rows
       Timer t_4 = new Timer();
-      CollectPreds cp = new CollectPreds(ktrees,leafs).doAll(fr,_parms._build_tree_one_node);
+      CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(fr,_parms._build_tree_one_node);
 
       if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
       else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
@@ -320,10 +324,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     // Collect and write predictions into leafs.
     private class CollectPreds extends MRTask<CollectPreds> {
       /* @IN  */ final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
+      /* @IN */  double _threshold;      // Sum of squares for this tree only
       /* @OUT */ long rightVotes; // number of right votes over OOB rows (performed by this tree) represented by DTree[] _trees
       /* @OUT */ long allRows;    // number of all OOB rows (sampled by this tree)
       /* @OUT */ float sse;      // Sum of squares for this tree only
-      CollectPreds(DTree trees[], int leafs[]) { _trees=trees; }
+      CollectPreds(DTree trees[], int leafs[], double threshold) { _trees=trees; _threshold = threshold; }
       final boolean importance = true;
       @Override public void map( Chunk[] chks ) {
         final Chunk    y       = importance ? chk_resp(chks) : null; // Response
@@ -337,11 +342,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           for( int k=0; k<_nclass; k++ ) {
             final DTree tree = _trees[k];
             if( tree == null ) continue; // Empty class is ignored
-            // If we have all constant responses, then we do not split even the
-            // root and the residuals should be zero.
-            if( tree.root() instanceof LeafNode ) continue;
-            final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
             final Chunk ct   = chk_tree(chks,k); // k-tree working column holding votes for given row
+            final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
             int nid = (int)nids.at8(row);         // Get Node to decide from
             // Update only out-of-bag rows
             // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
@@ -351,15 +353,20 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               nid = ScoreBuildHistogram.oob2Nid(nid);
               if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
                 nid = tree.node(nid).pid();                 // Then take parent's decision
-              DecidedNode dn = tree.decided(nid);           // Must have a decision point
-              if( dn._split.col() == -1 )     // Unable to decide?
-                dn = tree.decided(tree.node(nid).pid());    // Then take parent's decision
-              int leafnid = dn.ns(chks,row); // Decide down to a leafnode
+              int leafnid;
+              if( tree.root() instanceof LeafNode ) {
+                leafnid = 0;
+              } else {
+                DecidedNode dn = tree.decided(nid);           // Must have a decision point
+                if (dn._split.col() == -1)     // Unable to decide?
+                  dn = tree.decided(tree.node(nid).pid());    // Then take parent's decision
+                leafnid = dn.ns(chks, row); // Decide down to a leafnode
+              }
               // Setup Tree(i) - on the fly prediction of i-tree for row-th row
               //   - for classification: cumulative number of votes for this row
               //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
-              double prediction = ((LeafNode)tree.node(leafnid)).pred(); // Prediction for this k-class and this row
-              if (importance) rpred[1+k] = (float) prediction; // for both regression and classification
+              double prediction = ((LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
+              if (importance) rpred[1 + k] = (float) prediction; // for both regression and classification
               ct.set(row, (float) (ct.atd(row) + prediction));
               // For this tree this row is out-of-bag - i.e., a tree voted for this row
               oobt.set(row, _nclass > 1 ? 1 : oobt.atd(row) + 1); // for regression track number of trees, for classification boolean flag is enough
@@ -370,7 +377,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
-                int treePred = getPrediction(rpred, data_row(chks, row, rowdata));
+                int treePred = getPrediction(rpred, data_row(chks, row, rowdata), _threshold);
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression

@@ -170,8 +170,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(57, 170),
-              a(16, 137)),
+            a(a(51, 176),
+              a(13, 140)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -187,7 +187,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(5, 222),
+            a(a(6, 221),
               a(0, 153)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout);
@@ -239,7 +239,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(56, 171),
+            a(a(57, 170),
               a( 8, 145)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Maxout);

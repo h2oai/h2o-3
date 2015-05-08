@@ -1,4 +1,4 @@
-"""
+
 AutoEncoder Models
 """
 
@@ -32,7 +32,7 @@ class H2OAutoEncoderModel(ModelBase):
     rows = anomaly_frame_meta["rows"]
     cols = [col["label"] for col in anomaly_frame_meta["columns"]]
     vecs = H2OVec.new_vecs(zip(cols, vec_keys), rows)
-    # remove test_data
-    h2o.remove(test_data_key)
+    # remove test_data shallow key
+    h2o.delete(test_data_key)
     # return new H2OFrame object
     return H2OFrame(vecs=vecs)

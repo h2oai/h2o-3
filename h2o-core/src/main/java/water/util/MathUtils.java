@@ -183,9 +183,9 @@ public class MathUtils {
   };
 
   public static double roundToNDigits(double d, int n) {
-    double log = Math.log10(d);
+    int log = (int)Math.log10(d);
     int exp = n;
-    if(log >= 0) exp -= (int)log + 1;
+    exp -= log;
     int ival = (int)(Math.round(d * Math.pow(10,exp)));
     return ival/Math.pow(10,exp);
   }

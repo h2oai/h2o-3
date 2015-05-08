@@ -83,8 +83,6 @@ public class ADMM {
       for (i = 0; i < max_iter; ++i) {
         // updated x
         solver.solve(beta_given, x);
-        if(i == 0)
-          System.out.println("initial solve took " + solver.iter() + " iterations");
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
         boolean allzeros = true;
@@ -128,8 +126,8 @@ public class ADMM {
         if (rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
           computeErr(z, solver.gradient(z), l1pen, lb, ub);
-          if (gerr > _eps && (allzeros || Math.abs(oldGerr - gerr) > _eps * 0.5)) {
-            Log.debug("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
+          if (gerr > _eps && (allzeros || i < 5 /* let some warm up before giving up */ || Math.abs(oldGerr - gerr) > _eps * 0.5)) {
+            Log.info("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
             // try gg to improve the solution...
             abstol *= .1;
             if (abstol < 1e-10)
@@ -140,7 +138,7 @@ public class ADMM {
             continue;
           }
           iter = i;
-          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iteartions");
+          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
           return true;
         }
       }
@@ -150,7 +148,7 @@ public class ADMM {
         computeErr(z, solver.gradient(z), l1pen, lb, ub);
         assert Math.abs(best_err - gerr) < 1e-8 : " gerr = " + gerr + ", best_err = " + best_err + " zbest = " + Arrays.toString(zbest) + ", z = " + Arrays.toString(z);
       }
-      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr + ", inner solver took " + solver.iter() + " iteartions");
+      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
       iter = max_iter;
       return false;
     }
@@ -161,29 +159,38 @@ public class ADMM {
      * @param l1pen
      * @return
      */
-    public static double estimateRho(double x, double l1pen){
+    public static double estimateRho(double x, double l1pen, double lb, double ub){
       if(Double.isInfinite(x))return 0; // happens for all zeros
       double rho = 0;
-      if(l1pen == 0 || x == 0) return 0;
-      if (x > 0) {
-        double D = l1pen * (l1pen + 4 * x);
-        if (D >= 0) {
-          D = Math.sqrt(D);
-          double r = (l1pen + D) / (2 * x);
-          if (r > 0) rho = r;
-          else
-            Log.warn("negative rho estimate(1)! r = " + r);
+      if(l1pen != 0 && x != 0) {
+        if (x > 0) {
+          double D = l1pen * (l1pen + 4 * x);
+          if (D >= 0) {
+            D = Math.sqrt(D);
+            double r = (l1pen + D) / (2 * x);
+            if (r > 0) rho = r;
+            else
+              Log.warn("negative rho estimate(1)! r = " + r);
+          }
+        } else if (x < 0) {
+          double D = l1pen * (l1pen - 4 * x);
+          if (D >= 0) {
+            D = Math.sqrt(D);
+            double r = -(l1pen + D) / (2 * x);
+            if (r > 0) rho = r;
+            else Log.warn("negative rho estimate(2)!  r = " + r);
+          }
         }
-      } else if (x < 0) {
-        double D = l1pen * (l1pen - 4 * x);
-        if (D >= 0) {
-          D = Math.sqrt(D);
-          double r = - (l1pen + D) / (2 * x);
-          if (r > 0) rho = r;
-          else Log.warn("negative rho estimate(2)!  r = " + r);
-        }
+        rho *= .25;
       }
-      return .25*rho;
+      // upper nad lower bounds have different rho requirements.
+      if(!Double.isInfinite(ub) || !Double.isInfinite(lb)) {
+        double lx = (x - lb);
+        double ux = (ub - x);
+        double xx = Math.min(lx,ux);
+        rho = Math.max(rho,xx <= .5*x?1:1e-4);
+      }
+      return rho;
     }
   }
 

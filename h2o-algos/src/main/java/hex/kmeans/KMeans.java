@@ -70,6 +70,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     super.init(expensive);
     if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6) error("_max_iterations", " max_iterations must be between 0 and 1e6");
     if( _train == null ) return;
+    if( _parms._init == Initialization.User && _parms._user_points == null )
+      error("_user_points","Must specify initial cluster centers");
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       if( _parms._user_points.get().numCols() != _train.numCols() ) {
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
@@ -130,7 +132,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             // Fill in sample centers into the model
             if (!isRunning()) return null; // Stopped/cancelled
             model._output._centers_raw = destandardize(centers, _isCats, means, mults);
-            model._output._avg_within_ss = sqr._sqr / _train.numRows();
+            model._output._tot_withinss = sqr._sqr / _train.numRows();
 
             model._output._iterations++;     // One iteration done
 
@@ -187,29 +189,27 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
       model._output._centers_raw = destandardize(centers, _isCats, means, mults);
       model._output._size = task._size;
-      model._output._within_mse = task._cSqr;
+      model._output._withinss = task._cSqr;
       double ssq = 0;       // sum squared error
-      for( int i=0; i<_parms._k; i++ ) {
-        ssq += model._output._within_mse[i]; // sum squared error all clusters
-        model._output._within_mse[i] /= task._size[i]; // MSE within-cluster
-      }
-      model._output._avg_within_ss = ssq/_train.numRows(); // MSE total
+      for( int i=0; i<_parms._k; i++ )
+        ssq += model._output._withinss[i]; // sum squared error all clusters
+      model._output._tot_withinss = ssq;
 
       // Sum-of-square distance from grand mean
       if(_parms._k == 1)
-        model._output._avg_ss = model._output._avg_within_ss;
+        model._output._totss = model._output._tot_withinss;
       else {
         // If data already standardized, grand mean is just the origin
         TotSS totss = new TotSS(means,mults, _parms.train().domains()).doAll(vecs);
-        model._output._avg_ss = totss._tss/_train.numRows(); // MSE with respect to grand mean
+        model._output._totss = totss._tss;
       }
-      model._output._avg_between_ss = model._output._avg_ss - model._output._avg_within_ss;  // MSE between-cluster
+      model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
       model._output._iterations++;
 
       // add to scoring history
-      model._output._history_avg_within_ss = ArrayUtils.copyAndFillOf(
-          model._output._history_avg_within_ss,
-          model._output._history_avg_within_ss.length+1, model._output._avg_within_ss);
+      model._output._history_withinss = ArrayUtils.copyAndFillOf(
+          model._output._history_withinss,
+          model._output._history_withinss.length+1, model._output._tot_withinss);
 
       // Two small TwoDimTables - cheap
       model._output._model_summary = createModelSummaryTable(model._output);
@@ -305,11 +305,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           ModelMetricsClustering mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
           assert(Arrays.equals(mm._size, ((ModelMetricsClustering) model._output._training_metrics)._size));
           for (int i=0; i<_parms._k; ++i) {
-            assert(MathUtils.compare(mm._within_mse[i], ((ModelMetricsClustering) model._output._training_metrics)._within_mse[i], 1e-6, 1e-6));
+            assert(MathUtils.compare(mm._withinss[i], ((ModelMetricsClustering) model._output._training_metrics)._withinss[i], 1e-6, 1e-6));
           }
-          assert(MathUtils.compare(mm._avg_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_ss, 1e-6, 1e-6));
-          assert(MathUtils.compare(mm._avg_between_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_between_ss, 1e-6, 1e-6));
-          assert(MathUtils.compare(mm._avg_within_ss, ((ModelMetricsClustering) model._output._training_metrics)._avg_within_ss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._totss, ((ModelMetricsClustering) model._output._training_metrics)._totss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._betweenss, ((ModelMetricsClustering) model._output._training_metrics)._betweenss, 1e-6, 1e-6));
+          assert(MathUtils.compare(mm._tot_withinss, ((ModelMetricsClustering) model._output._training_metrics)._tot_withinss, 1e-6, 1e-6));
         }
         // At the end: validation scoring (no need to gather scoring history)
         if (_valid != null) {
@@ -343,9 +343,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       colHeaders.add("Number of Clusters"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Categorical Columns"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Avg Within Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Avg Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Avg Between Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Within Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Total Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Between Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = 1;
       TwoDimTable table = new TwoDimTable(
@@ -360,9 +360,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       table.set(row, col++, output._centers_raw.length);
       table.set(row, col++, output._categorical_column_count);
       table.set(row, col++, output._iterations);
-      table.set(row, col++, output._avg_within_ss);
-      table.set(row, col++, output._avg_ss);
-      table.set(row, col++, output._avg_between_ss);
+      table.set(row, col++, output._tot_withinss);
+      table.set(row, col++, output._totss);
+      table.set(row, col++, output._betweenss);
       return table;
     }
 
@@ -374,7 +374,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Avg. Change of Std. Centroids"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Avg. Within Sum Of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Within Cluster Sum Of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = output._avg_centroids_chg.length;
       TwoDimTable table = new TwoDimTable(
@@ -394,7 +394,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_start_time, true));
         table.set(row, col++, i);
         table.set(row, col++, output._avg_centroids_chg[i]);
-        table.set(row, col++, output._history_avg_within_ss[i]);
+        table.set(row, col++, output._history_withinss[i]);
         row++;
       }
       return table;
@@ -776,15 +776,15 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   /**
    * This helper creates a ModelMetricsClustering from a trained model
-   * @param model, must contain valid statistics from training, such as _avg_between_ss etc.
+   * @param model, must contain valid statistics from training, such as _betweenss etc.
    */
   private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
     ModelMetricsClustering mm = new ModelMetricsClustering(model, model._parms.train());
     mm._size = model._output._size;
-    mm._within_mse = model._output._within_mse;
-    mm._avg_between_ss = model._output._avg_between_ss;
-    mm._avg_ss = model._output._avg_ss;
-    mm._avg_within_ss = model._output._avg_within_ss;
+    mm._withinss = model._output._withinss;
+    mm._betweenss = model._output._betweenss;
+    mm._totss = model._output._totss;
+    mm._tot_withinss = model._output._tot_withinss;
     model.addMetrics(mm);
     return mm;
   }

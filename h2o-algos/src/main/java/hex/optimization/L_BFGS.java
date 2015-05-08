@@ -253,10 +253,14 @@ public final class L_BFGS extends Iced {
     int iter = 0;
     boolean doLineSearch = true;
     int ls_switch = 0;
-
-    while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
+    final double gEps = Math.min(_gradEps*beta.length,Math.max(MathUtils.l2norm2(ginfo._gradient)*1e-1,1e-15));
+    while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > gEps && iter != _maxIter) {
 //      System.out.println("objVal = " + ginfo._objVal + ", gradNorm = " + MathUtils.l2norm2(ginfo._gradient) + ", doLineSearch = " + doLineSearch);
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
+      if(ArrayUtils.hasNaNsOrInfs(pk)) {
+        Log.warn("LBFGS: Got NaNs in search direction.");
+        break; //
+      }
       double lsVal = Double.POSITIVE_INFINITY;
       if(doLineSearch) {
         LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 24, .5);
@@ -274,8 +278,8 @@ public final class L_BFGS extends Iced {
         } else break; // ls did not make progress => converged
       } else  ArrayUtils.add(beta, pk);
       GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
-      if(doLineSearch)
-        assert Math.abs(lsVal - newGinfo._objVal) < 1e-10:"objvals from line-search and gradient tasks differ, " + lsVal + " != " + newGinfo._objVal;
+      if(doLineSearch && !(Double.isNaN(lsVal) && Double.isNaN(newGinfo._objVal)) && Math.abs(lsVal - newGinfo._objVal) > 1e-10*lsVal)
+        throw new IllegalArgumentException("L-BFGS: Got invalid gradient solver, objective values from line-search and gradient tasks differ, " + lsVal + " != " + newGinfo._objVal);
       if(!doLineSearch) //{
         if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
           if(++ls_switch == 2) {
@@ -292,7 +296,6 @@ public final class L_BFGS extends Iced {
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       ginfo = newGinfo;
     }
-//    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
     return new Result(iter,beta, ginfo);
   }
 

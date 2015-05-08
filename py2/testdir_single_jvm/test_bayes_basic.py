@@ -63,7 +63,7 @@ class Basic(unittest.TestCase):
         for p in parameters:
             bmResult = h2o.n0.build_model(
                 algo='naivebayes',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=train_key,
                 validation_frame=train_key,
                 parameters=p,

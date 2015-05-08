@@ -27,3 +27,6 @@ test {
   exclude '**'
 }
 
+artifacts {
+    toPublish scaladocJar
+}

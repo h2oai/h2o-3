@@ -8,6 +8,7 @@ import math
 import re
 import os
 import sys
+import string
 import time
 import tempfile
 import tabulate
@@ -131,6 +132,7 @@ class H2OConnection(object):
     """
     max_retries = max_retries
     retries = 0
+
     while True:
       retries += 1
       if print_dots:
@@ -427,7 +429,7 @@ class H2OConnection(object):
 
   # Low level request call
   def _attempt_rest(self, url, method, post_body, file_upload_info):
-    headers = {'User-Agent': 'H2O Python client/'+sys.version}
+    headers = {'User-Agent': 'H2O Python client/'+string.replace(sys.version, '\n', '')}
     try:
       if method == "GET":
         return requests.get(url, headers=headers)

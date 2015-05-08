@@ -271,10 +271,10 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
 
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %FALSE %"
-    cbind += " %".join([vec._expr.eager() for vec in self]) + "))"
+    cbind = "(, (gput " + fr + " (cbind %FALSE %"
+    cbind += " %".join([vec._expr.eager() for vec in self]) + ")) (del '"+fr+"'))"
     res = h2o.rapids(cbind)
-    h2o.remove(fr)
+    h2o.delete(fr)
     head_rows = [range(1, nrows + 1, 1)]
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
     head = zip(*head_rows)
@@ -301,10 +301,10 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(= !" + fr + " (cbind %FALSE %"
-      cbind += " %".join([expr.eager() for expr in exprs]) + "))"
+      cbind = "(, (gput " + fr + " (cbind %FALSE %"
+      cbind += " %".join([expr.eager() for expr in exprs]) + ")) (del '"+fr+"'))"
       res = h2o.rapids(cbind)
-      h2o.remove(fr)
+      h2o.delete(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
       tail = zip(*tail_rows)
@@ -374,7 +374,7 @@ class H2OFrame:
 
     chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
 
-    h2o.remove(chunk_summary_tmp_key)
+    h2o.delete(chunk_summary_tmp_key)
 
     print tabulate.tabulate(table, headers)
     print
@@ -595,7 +595,7 @@ class H2OFrame:
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     rapids_call = "(, "  # fold into a single rapids call
-    cbind = "(= !" + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
     rapids_call += cbind
     # h2o.rapids(cbind)
@@ -709,7 +709,7 @@ class H2OFrame:
     expr = "(= !{} (quantile '{}' {} '{}'".format(tmp_key,key,probs,combine_method)
     h2o.rapids(expr)
     # Remove h2o temp frame after groupby
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -718,7 +718,7 @@ class H2OFrame:
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.rapids("(removeframe !{})".format(tmp_key))
+    h2o.delete(tmp_key)
     return H2OFrame(vecs=vecs)
 
   # H2OFrame Mutating cbind
@@ -756,7 +756,7 @@ class H2OFrame:
     expr = "(= !{} (h2o.ddply %{} {} {}))".format(tmp_key,key,rapids_series,fun)
     h2o.rapids(expr) # ddply in h2o
     # Remove h2o temp frame after ddply
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
@@ -765,7 +765,7 @@ class H2OFrame:
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.rapids("(removeframe !{})".format(tmp_key))
+    h2o.delete(tmp_key)
     return H2OFrame(vecs=vecs)
 
   def group_by(self,cols,a):
@@ -805,7 +805,7 @@ class H2OFrame:
     expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
     h2o.rapids(expr)  # group by
     # Remove h2o temp frame after groupby
-    h2o.remove(key)
+    h2o.delete(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]       # Just the first (only) frame
@@ -814,7 +814,7 @@ class H2OFrame:
     cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.rapids("(removeframe !{})".format(tmp_key))
+    h2o.delete(tmp_key)
     return H2OFrame(vecs=vecs)
 
   def impute(self,column,method,combine_method,by,inplace):
@@ -830,6 +830,9 @@ class H2OFrame:
     """
     # sanity check columns, get the column index
     col_id = -1
+
+    if isinstance(column, list): column = column[0]  # only take the first one ever...
+
     if isinstance(column, (unicode,str)):
       col_id = self._find_idx(column)
     elif isinstance(column, int):
@@ -840,25 +843,22 @@ class H2OFrame:
       except:
         raise ValueError("No column found to impute.")
 
-    if col_id < 0 or col_id >= self.ncol():
-      raise ValueError("Column at index: " + str(col_id) + " is out of range of the data.")
-
-    # setup the defaults, "mean" for numeric, "mode" for enum
-    if len(method) > 1:
-      if self[col_id].isfactor():
-        method = "mode"
-      method="mean"
+  # setup the defaults, "mean" for numeric, "mode" for enum
+    if isinstance(method, list) and len(method) > 1:
+      if self[col_id].isfactor(): method="mode"
+      else:                       method="mean"
+    elif isinstance(method, list):method=method[0]
 
     # choose "interpolate" by default for combine_method
-    if len(combine_method) > 1: combine_method = "interpolate"
-    if combine_method == "lo": combine_method = "low"
-    if combine_method == "hi": combine_method = "high"
+    if isinstance(combine_method, list) and len(combine_method) > 1: combine_method="interpolate"
+    if combine_method == "lo":                                       combine_method = "low"
+    if combine_method == "hi":                                       combine_method = "high"
 
     # sanity check method
     if method=="median":
       # no by and median!
       if by is not None:
-        raise ValueError("Unimplemented: No `by` and `median`. Please select a different method.")
+        raise ValueError("Unimplemented: No `by` and `median`. Please select a different method (e.g. `mean`).")
 
     # method cannot be median or mean for factor columns
     if self[col_id].isfactor() and method not in ["ffill", "bfill", "mode"]:
@@ -868,19 +868,13 @@ class H2OFrame:
     # setup the group by columns
     gb_cols = "()"
     if by is not None:
-      if not isinstance(by, list):
-        by = [by]  # just make it into a list...
-      if isinstance(by[0], (unicode,str)):
-        by = [self._find_idx(name) for name in by]
-      elif isinstance(by[0], int):
-        by = by
-      elif isinstance(by[0], H2OVec):
-        by = [[a._name==v._name for a in self].index(True) for v in by]  # nested list comp. WOWZA
-      else:
-        raise ValueError("`by` is not a supported type")
+      if not isinstance(by, list):          by = [by]  # just make it into a list...
+      if isinstance(by[0], (unicode,str)):  by = [self._find_idx(name) for name in by]
+      elif isinstance(by[0], int):          by = by
+      elif isinstance(by[0], H2OVec):       by = [[a._name==v._name for a in self].index(True) for v in by]  # nested list comp. WOWZA
+      else:                                 raise ValueError("`by` is not a supported type")
 
-    if by is not None:
-      gb_cols = "(llist #"+" #".join([str(b) for b in by])+")"
+    if by is not None:                      gb_cols = "(llist #"+" #".join([str(b) for b in by])+")"
 
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
@@ -889,11 +883,12 @@ class H2OFrame:
       # frame, column, method, combine_method, gb_cols, inplace
       expr = "(h2o.impute %{} #{} \"{}\" \"{}\" {} %TRUE".format(key, col_id, method, combine_method, gb_cols)
       h2o.rapids(expr)  # exec the thing
+      h2o.delete(key)  # "soft" delete of the frame key, keeps vecs live
       return self
     else:
       expr = "(= !{} (h2o.impute %{} #{} \"{}\" \"{}\" {} %FALSE))".format(tmp_key,key,col_id,method,combine_method,gb_cols)
       h2o.rapids(expr)  # exec the thing
-      h2o.remove(key)
+      h2o.delete(key)
       # Make backing H2OVecs for the remote h2o vecs
       j = h2o.frame(tmp_key)
       fr = j['frames'][0]       # Just the first (only) frame
@@ -902,7 +897,7 @@ class H2OFrame:
       cols = fr['columns']      # List of columns
       colnames = [col['label'] for col in cols]
       vecs = H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-      if not inplace: h2o.rapids("(removeframe !{})".format(tmp_key))
+      h2o.delete(tmp_key)       # soft delete the new Frame, keep the imputed Vecs alive
       return H2OFrame(vecs=vecs)
 
   def merge(self, other, allLeft=False, allRite=False):
@@ -941,7 +936,7 @@ class H2OFrame:
     cols = fr['columns']    # List of columns
     colnames = [col['label'] for col in cols]
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.rapids("(removeframe !{})".format(tmp_key))
+    h2o.delete(tmp_key)
     return H2OFrame(vecs=vecs)
 
   # generic reducers (min, max, sum, var)
@@ -951,7 +946,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("min", Expr("cbind",Expr(self._vecs)))
+    return Expr("min", Expr("cbind",Expr(self._vecs))).eager()
 
   def max(self):
     """
@@ -959,7 +954,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("max", Expr("cbind",Expr(self._vecs)))
+    return Expr("max", Expr("cbind",Expr(self._vecs))).eager()
 
   def sum(self):
     """
@@ -967,7 +962,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    return Expr("sum", Expr("cbind",Expr(self._vecs)))
+    return Expr("sum", Expr("cbind",Expr(self._vecs))).eager()
 
   def var(self):
     """
@@ -980,7 +975,7 @@ class H2OFrame:
     expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
     h2o.rapids(expr)
     # Remove h2o temp frame after var
-    h2o.remove(key)
+    h2o.delete(key)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
@@ -988,7 +983,7 @@ class H2OFrame:
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.rapids("(removeframe !{})".format(tmp_key))
+    h2o.delete(tmp_key)
     return H2OFrame(vecs=vecs)
 
 class H2OVec:
@@ -1186,6 +1181,7 @@ class H2OVec:
 
   def _simple_vec_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self, length=len(self)))
     raise NotImplementedError
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))

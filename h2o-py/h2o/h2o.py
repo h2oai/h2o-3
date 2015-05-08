@@ -7,6 +7,7 @@ import os
 import os.path
 import re
 import urllib
+import urllib2
 import json
 import random
 import numpy as np
@@ -63,11 +64,9 @@ def parse_setup(raw_frames):
   :return: A ParseSetup "object"
   """
 
-  # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
+  # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
-  if not j['is_valid']:
-    raise ValueError("ParseSetup not Valid", j)
   return j
 
 
@@ -104,7 +103,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [_quoted(name) for name in setup["na_strings"]]
+    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
     p["na_strings"] = None
 
 
@@ -166,6 +165,21 @@ if __name__ == "__main__":
 
 So each test must have an ip and port
 """
+
+
+# HDFS helpers
+def get_h2o_internal_hdfs_name_node():
+  return "172.16.2.176"
+
+def is_running_internal_to_h2o():
+  url = "http://{0}:50070".format(get_h2o_internal_hdfs_name_node())
+  try:
+    urllib2.urlopen(urllib2.Request(url))
+    internal = True
+  except:
+    internal = False
+  return internal
+
 def dim_check(data1, data2):
   """
   Check that the dimensions of the data1 and data2 are the same
@@ -251,10 +265,10 @@ def ipy_lines(block):
 
 def remove(object):
   """
-  Remove object from H2O.
+  Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
 
   :param object: The object pointing to the object to be removed.
-  :return: Void
+  :return: None
   """
   if object is None:
     raise ValueError("remove with no object is not supported, for your protection")
@@ -272,6 +286,16 @@ def remove(object):
   #
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
+
+def delete(key):
+  """
+  Do a shallow DKV remove of the key (does not remove any subparts)
+  :param key: A key to be DKV.removed
+  :return: None
+  """
+  expr = "(del '"+key+"')"
+  rapids(expr)
+  return None
 
 def rapids(expr):
   """
@@ -313,6 +337,23 @@ def frame_summary(key):
   # frames_meta = H2OConnection.get_json("Frames/" + key)
   frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
   return frame_summary
+
+def download_pojo(model,path=""):
+  """
+  Download the POJO for this model to the directory specified by path (no trailing slash!).
+  If path is "", then dump to screen.
+  :param model: Retrieve this model's scoring POJO.
+  :param path:  An absolute path to the directory where POJO should be saved.
+  :return: None
+  """
+  model_id = model._key
+
+  java = H2OConnection.get( "Models/"+model_id+".java" )
+  file_path = path + "/" + model_id + ".java"
+  if path == "": print java.text
+  else:
+    with open(file_path, 'w') as f:
+      f.write(java.text)
 
 # Non-Mutating cbind
 def cbind(left,right):

@@ -63,7 +63,7 @@ class ModelBase(object):
     # create a set of H2OVec objects
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # toast the cbound frame
-    h2o.remove(test_data_key)
+    h2o.delete(test_data_key)
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
 
@@ -101,9 +101,47 @@ class ModelBase(object):
     cols = [col["label"] for col in df_frame_meta["columns"]]
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # remove test data from kv
-    h2o.remove(test_data_key)
+    h2o.delete(test_data_key)
     # finally return frame
     return H2OFrame(vecs=vecs)
+
+  def weights(self, matrix_id=0):
+    """
+    Return the frame for the respective weight matrix
+    :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
+    :return: an H2OFrame which represents the weight matrix identified by matrix_id
+    """
+    num_weight_matrices = len(self._model_json['output']['weights'])
+    if matrix_id not in range(num_weight_matrices):
+      raise ValueError("Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
+                       "was requested.".format(num_weight_matrices, matrix_id))
+    j = h2o.frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
+    fr = j['frames'][0]
+    rows = fr['rows']
+    vec_ids = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
+    return result
+
+  def biases(self, vector_id=0):
+    """
+    Return the frame for the respective bias vector
+    :param: vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
+    :return: an H2OFrame which represents the bias vector identified by vector_id
+    """
+    num_bias_vectors = len(self._model_json['output']['biases'])
+    if vector_id not in range(num_bias_vectors):
+      raise ValueError("Bias vector does not exist. Model has {0} bias vectors (0-based indexing), but vector {1} "
+                       "was requested.".format(num_bias_vectors, vector_id))
+    j = h2o.frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
+    fr = j['frames'][0]
+    rows = fr['rows']
+    vec_ids = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
+    return result
 
   def model_performance(self, test_data=None, train=False, valid=False):
     """
@@ -129,7 +167,7 @@ class ModelBase(object):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
       fr_key = H2OFrame.send_frame(test_data)
       res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
-      h2o.remove(fr_key)
+      h2o.delete(fr_key)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
@@ -258,7 +296,7 @@ class ModelBase(object):
     """
     :return: Return the coefficients for this model.
     """
-    tbl = self._model_json["output"]["coefficients_table"].cell_values
+    tbl = self._model_json["output"]["coefficients_table"]
     if tbl is None: return None
     tbl = tbl.cell_values
     return {a[0]:a[1] for a in tbl}
@@ -355,6 +393,16 @@ class ModelBase(object):
     if tm is None: return None
     tm = tm._metric_json
     return tm.giniCoef()
+
+  def download_pojo(self,path=""):
+    """
+    Download the POJO for this model to the directory specified by path (no trailing slash!).
+    If path is "", then dump to screen.
+    :param model: Retrieve this model's scoring POJO.
+    :param path:  An absolute path to the directory where POJO should be saved.
+    :return: None
+    """
+    h2o.download_pojo(self,path)  # call the "package" function
 
   @staticmethod
   def _get_metrics(o, train, valid):

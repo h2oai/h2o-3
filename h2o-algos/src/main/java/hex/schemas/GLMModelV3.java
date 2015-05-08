@@ -64,9 +64,11 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         String [] names2 = new String[names.length];
         for(int i = 0; i < names2.length-1; ++i)
           names2[i] = names[indices[i]];
-        tdt = new TwoDimTable("Standardized Coefficient Magnitudes","standardized coefficient magnitudes", names2, new String[]{"Coefficients"},new String[]{"double"},new String[]{"%5f"},"names");
-        for(int i = 0; i < sm.beta.length-1; ++i)
+        tdt = new TwoDimTable("Standardized Coefficient Magnitudes","standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"},new String[]{"double","string"},new String[]{"%5f","%s"},"names");
+        for(int i = 0; i < sm.beta.length-1; ++i) {
           tdt.set(i, 0, magnitudes[indices[i]]);
+          tdt.set(i, 1, sm.beta[indices[i]] < 0?"NEG":"POS");
+        }
         standardized_coefficients_magnitude = new TwoDimTableBase();
         standardized_coefficients_magnitude.fillFromImpl(tdt);
       } else {
@@ -75,8 +77,9 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         String [] colFormats = new String[]{"%5f"};
         TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", names, new String[]{"Coefficients"}, colTypes, colFormats, "names");
         tdt.set(0,0,sm.beta[sm.beta.length-1]);
-        for(int i = 0; i < sm.beta.length-1; ++i)
-          tdt.set(i+1,0,sm.beta[i]);
+        for(int i = 0; i < sm.beta.length-1; ++i) {
+          tdt.set(i + 1, 0, sm.beta[i]);
+        }
         coefficients_table.fillFromImpl(tdt);
         magnitudes = sm.beta.clone();
         for(int i = 0; i < magnitudes.length-1; ++i)

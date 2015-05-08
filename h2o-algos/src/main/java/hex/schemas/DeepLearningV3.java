@@ -15,7 +15,7 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
 //        "n_folds",
 //        "keep_cross_validation_splits",
         "checkpoint",
-        "override_with_best_model",
+        "overwrite_with_best_model",
         "use_all_factor_levels",
         "activation",
         "hidden",
@@ -88,7 +88,7 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
      * Only applicable if training is not cancelled.
      */
     @API(help = "If enabled, override the final model with the best model found during training", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean override_with_best_model;
+    public boolean overwrite_with_best_model;
 
     @API(help = "Auto-Encoder", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean autoencoder;

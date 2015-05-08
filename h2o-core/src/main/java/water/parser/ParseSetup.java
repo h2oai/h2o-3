@@ -25,9 +25,6 @@ public final class ParseSetup extends Iced {
   public static final int GUESS_HEADER = 0;
   public static final int HAS_HEADER = 1;
   public static final int GUESS_COL_CNT = -1;
-  boolean _is_valid;          // The initial parse is sane
-  long _invalid_lines;        // Number of broken/invalid lines found
-  String[] _errors;           // Errors in this parse setup
   ParserType _parse_type;     // CSV, XLS, XSLX, SVMLight, Auto, ARFF
   byte _separator;            // Field separator, usually comma ',' or TAB or space ' '
   // Whether or not single-quotes quote a field.  E.g. how do we parse:
@@ -40,21 +37,18 @@ public final class ParseSetup extends Iced {
   String[] _column_names;
   byte[] _column_types;       // Column types
   String[][] _domains;        // Domains for each column (null if numeric)
-  String[] _na_strings;       // Strings for NA in a given column
+  String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
 
   public ParseSetup(ParseSetup ps) {
-    this(ps._is_valid, ps._invalid_lines, ps._errors, ps._parse_type,
+    this(ps._parse_type,
             ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
             ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data, ps._chunk_size);
   }
 
-  public ParseSetup(boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[] naStrings, String[][] data, int chunkSize) {
-    _is_valid = isValid;
-    _invalid_lines = invalidLines;
-    _errors = errors;
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, int chunkSize) {
     _parse_type = t;
     _separator = sep;
     _single_quotes = singleQuotes;
@@ -77,8 +71,8 @@ public final class ParseSetup extends Iced {
    * @param ps Parse setup settings from client
    */
   public ParseSetup(ParseSetupV3 ps) {
-    this(false, 0, null, ps.parse_type, ps.separator, ps.single_quotes,
-            ps.check_header, GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
+    this(ps.parse_type, ps.separator, ps.single_quotes, ps.check_header,
+            GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
             null, ps.na_strings, null, ps.chunk_size);
     if(ps.parse_type == null) _parse_type = ParserType.AUTO;
     if(ps.separator == 0) _separator = GUESS_SEP;
@@ -90,8 +84,11 @@ public final class ParseSetup extends Iced {
    * Typically used by file type parsers for returning final valid results
    * _chunk_size will be set later using results from all files.
    */
-  public ParseSetup(boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[] naStrings, String[][] data) {
-    this(isValid, invalidLines, errors, t, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader,
+                    int ncols, String[] columnNames, byte[] ctypes,
+                    String[][] domains, String[][] naStrings, String[][] data) {
+    this(t, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
+            domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
   }
 
   /**
@@ -99,8 +96,8 @@ public final class ParseSetup extends Iced {
    *
    * Typically used by file type parsers for returning final invalid results
    */
-  public ParseSetup(boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data) {
-    this(isValid, invalidLines, errors, t, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, FileVec.DFLT_CHUNK_SIZE);
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data) {
+    this(t, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, FileVec.DFLT_CHUNK_SIZE);
   }
 
   /**
@@ -158,11 +155,6 @@ public final class ParseSetup extends Iced {
   }
 
   @Override public String toString() {
-    if (_errors != null) {
-      StringBuilder sb = new StringBuilder();
-      for (String e : _errors) sb.append(e).append("\n");
-      return sb.toString();
-    }
     return _parse_type.toString(_number_columns, _separator);
   }
 
@@ -196,7 +188,7 @@ public final class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup(Key[] fkeys, boolean singleQuote, int checkHeader) {
-    return guessSetup(fkeys, new ParseSetup(false, 0, null, ParserType.AUTO, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null));
+    return guessSetup(fkeys, new ParseSetup(ParserType.AUTO, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null));
   }
 
   /**
@@ -323,7 +315,7 @@ public final class ParseSetup extends Iced {
           fv.setChunkSize((Frame) ice, FileVec.DFLT_CHUNK_SIZE);
         } */
         // report if multiple files exist in zip archive
-        if (ZipUtil.getFileCount(bv) > 1) {
+/*        if (ZipUtil.getFileCount(bv) > 1) {
           if (_gblSetup._errors != null)
             _gblSetup._errors = Arrays.copyOf(_gblSetup._errors, _gblSetup._errors.length + 1);
           else
@@ -332,7 +324,7 @@ public final class ParseSetup extends Iced {
           _gblSetup._errors[_gblSetup._errors.length - 1] = "Only single file zip " +
                   "archives are currently supported, only the first file has been parsed.  " +
                   "Remaining files have been ignored.";
-        }
+        }*/
       }
     }
 
@@ -357,7 +349,10 @@ public final class ParseSetup extends Iced {
     @Override public void postGlobal() {
       if (_gblSetup._column_previews != null && _gblSetup._parse_type != ParserType.ARFF) {
         _gblSetup._column_types = _gblSetup._column_previews.guessTypes();
-        _gblSetup._na_strings = _gblSetup._column_previews.guessNAStrings(_gblSetup._column_types);
+        if (_userSetup._na_strings == null)
+          _gblSetup._na_strings = _gblSetup._column_previews.guessNAStrings(_gblSetup._column_types);
+        else
+          _gblSetup._na_strings = _userSetup._na_strings;
       }
     }
 
@@ -365,25 +360,21 @@ public final class ParseSetup extends Iced {
       if (setupA == null) return setupB;
 
       ParseSetup mergedSetup = setupA;
-      if (setupA._is_valid && setupB._is_valid) {
-        mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
-        mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
-        mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
-        mergedSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
-        if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
-          ;// do nothing parse_type and col_types are already set correctly
-        else if (setupA._parse_type == ParserType.CSV && setupB._parse_type == ParserType.ARFF) {
-          mergedSetup._parse_type = ParserType.ARFF;
-          mergedSetup._column_types = setupB._column_types;
-        } else if (setupA._parse_type == setupB._parse_type) {
-          mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
-        } else
-          throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
-                  + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
-      } else {  // one of the setups is invalid, fail
-        // TODO: Point out which file is problem
-        throw new H2OParseSetupException("Cannot determine parse parameters for file.");
-      }
+
+      mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
+      mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
+      mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
+      mergedSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
+      if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
+        ;// do nothing parse_type and col_types are already set correctly
+      else if (setupA._parse_type == ParserType.CSV && setupB._parse_type == ParserType.ARFF) {
+        mergedSetup._parse_type = ParserType.ARFF;
+        mergedSetup._column_types = setupB._column_types;
+      } else if (setupA._parse_type == setupB._parse_type) {
+        mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
+      } else
+        throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
+                + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
 
       if (mergedSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
         int n = mergedSetup._data.length;
@@ -446,11 +437,11 @@ public final class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup( byte[] bits, ParseSetup userSetup ) {
-    return guessSetup(bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, null, userSetup._column_types, null, null);
+    return guessSetup(bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, userSetup._column_names, userSetup._column_types, null, null);
   }
 
   private static final ParserType guessFileTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
-  public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[] naStrings ) {
+  public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
     switch( pType ) {
       case CSV:      return      CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, naStrings);
       case SVMLight: return SVMLightParser.guessSetup(bits);
@@ -460,11 +451,11 @@ public final class ParseSetup extends Iced {
         for( ParserType pTypeGuess : guessFileTypeOrder ) {
           try {
             ParseSetup ps = guessSetup(bits,pTypeGuess,sep,ncols,singleQuotes,checkHeader,columnNames,columnTypes, domains, naStrings);
-            if( ps != null && ps._is_valid) return ps;
+            if( ps != null) return ps;
           } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
         }
     }
-    return new ParseSetup( false, 0, new String[]{"Cannot determine file type"}, pType, sep, singleQuotes, checkHeader, ncols, columnNames, null, domains, naStrings, null, FileVec.DFLT_CHUNK_SIZE);
+    throw new H2OParseSetupException("Cannot determine file type.");
   }
 
   /**

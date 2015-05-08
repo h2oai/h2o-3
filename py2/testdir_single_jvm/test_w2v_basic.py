@@ -211,7 +211,7 @@ class Basic(unittest.TestCase):
                 model_key = 'benign_w2v.hex'
                 bmResult = h2o.n0.build_model(
                     algo='word2vec', 
-                    destination_key=model_key,
+                    model_id=model_key,
                     training_frame=parse_key,
                     parameters=parameters, 
                     timeoutSecs=60) 
