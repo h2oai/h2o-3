@@ -41,7 +41,7 @@ myX = setdiff(names(data.hex), myY)
 
 # Start modeling
 #GBM on original dataset
-gbm_time <- system.time(data1.gbm = h2o.gbm(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5, distribution = "multinomial"))
+gbm_time <- system.time(data1.gbm <-  h2o.gbm(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5, distribution = "multinomial"))
 paste("Time it took to build GBM ", gbm_time[[1]])
 data1.gbm 
 
