@@ -1510,17 +1510,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _rho = rho;
       _pm = pm;
     }
-
-
-
+    
     @Override
     public double[] rho() { return _rho;}
 
     double [] _beta_given;
     GradientInfo _ginfo;
-
-    private GradientInfo _rawGradient;
-
     @Override
     public void solve(double[] beta_given, double[] result) {
       ProximalGradientSolver s = new ProximalGradientSolver(_gSolver,beta_given,_rho);
@@ -1533,35 +1528,24 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _beta_given[i] = beta_given[i];
         }
       } else _ginfo = s.getGradient(_beta);
-//      _ginfo = s.getGradient(_beta);
       L_BFGS.Result r  = new L_BFGS().setGradEps(1e-7).solve(s, _beta, _ginfo, _pm);
       _ginfo = r.ginfo;
-      if(_ginfo instanceof ProximalGradientInfo)
-        _rawGradient = ((ProximalGradientInfo) _ginfo)._origGinfo;
       _beta = r.coefs;
       _gradient = r.ginfo._gradient;
       _iter += r.iter;
       System.arraycopy(_beta,0,result,0,_beta.length);
     }
-
     @Override
     public boolean hasGradient() {
       return _gradient != null;
     }
-
     @Override
     public double[] gradient(double[] beta) {
-      // return ArrayUtils.mult(_gSolver.getGradient(beta)._gradient, _reg);
       return _gSolver.getGradient(beta)._gradient;
     }
-
     public int iter() {
       return _iter;
     }
-
-    public GradientInfo rawGradient() {return _rawGradient;}
-
-
   }
 
 
