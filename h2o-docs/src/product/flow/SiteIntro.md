@@ -146,6 +146,8 @@ Don't worry, R users - we still provide R support in the latest version of H2O, 
 
 API users will be happy to know that the APIs have been more thoroughly documented in the latest release of H2O and additional capabilities (such as exporting weights and biases for Deep Learning models) have been added. 
 
+REST APIs are generated immediately out of the code, allowing users to implement machine learning in many ways. For example, REST APIs could be used to call a model created by sensor data and to set up auto-alerts if the sensor data falls below a specified threshold. 
+
 - <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1188/docs-website/h2o-docs/index.html#route-reference" target="_blank">REST API Reference</a>: This document represents the definitive guide to the H2O REST API. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1188/docs-website/h2o-docs/index.html#schema-reference" target="_blank">REST API Schema Reference</a>: This document represents the definitive guide to the H2O REST API schemas. 
