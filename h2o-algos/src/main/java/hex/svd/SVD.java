@@ -27,7 +27,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of singular value \sigma_i
 
   // Number of columns in training set (p)
-  private transient int _ncol;
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
   @Override public ModelBuilderSchema schema() {
@@ -57,21 +56,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_max_iterations", "max_iterations must be at least 1");
 
     if(_train == null) return;
-
-    _ncol = _train.numCols();
     _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
 
     if(_parms._nv < 1 || _parms._nv > _ncolExp)
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
-
-    // SVD does not work on categorical data
-    Vec[] vecs = _train.vecs();
-    for (int i = 0; i < vecs.length; i++) {
-      if (!vecs[i].isNumeric()) {
-        error("_train", "Training frame must contain all numeric data");
-        break;
-      }
-    }
   }
 
   public double[] powerLoop(double[][] gram) {
@@ -286,13 +274,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       }
 
       // Numeric cols normalized before multiplying through
-      int idx = dinfo._cats;
+      int cidx = dinfo._cats;
+      int vidx = dinfo.numStart();
       for (int j = 0; j < dinfo._nums; j++) {
-        double a = cs[idx].atd(row);
-        sum += (a - normSub[j]) * normMul[j] * vec[idx];
-        idx++;
+        double a = cs[cidx].atd(row);
+        sum += (a - normSub[j]) * normMul[j] * vec[vidx];
+        cidx++; vidx++;
       }
-      assert idx == ncols;
+      assert cidx == ncols && vidx == vec.length;
       sumsqr += sum * sum;
       chk_u(cs,k,ncols).set(row,sum);   // Update u_k <- A_{k-1}v_k
     }
