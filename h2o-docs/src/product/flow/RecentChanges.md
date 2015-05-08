@@ -30,11 +30,15 @@ The following changes are improvements to existing features (which includes chan
 - Disable `_replicate_training_data` for data that's larger than 10GB [(github)](https://github.com/h2oai/h2o-dev/commit/4a1fed5f292826a4bc89eafffc6c04bb7449644c)
 - Added `replicate_training_data` param for DL [(github)](https://github.com/h2oai/h2o-dev/commit/e95e4870869d159f8d468e4193fc7201887f1661)
 - Change a few kmeans output parameters so no longer dividing by `nrows` or `num_clusters` [(github)](https://github.com/h2oai/h2o-dev/commit/9933486a61113af5ef6d3ed329c70eb7fbdc61a8)
+- GLMValidation Updated auc computation [(github)](https://github.com/h2oai/h2o-dev/commit/280e8f8390dfc5b4d6b5a571f06930bab9b5c7e5)
+- Do not delete model metrics at end of GBM/DRF [(github)](https://github.com/h2oai/h2o-dev/commit/d10d4522eae38bfc3bf45208266b8b5e5806d524)
 
 
 #####API 
 
 - Clean REST api for Parse [(PUBDEV-993)](https://0xdata.atlassian.net/browse/PUBDEV-993)
+- Removes `is_valid`, `invalid_lines`, and domains from REST api [(github)](https://github.com/h2oai/h2o-dev/commit/f5997de8f59f2eefd454afeb0e91a6a1d5c6672b)
+- Annotate domains output field as expert level [(github)](https://github.com/h2oai/h2o-dev/commit/523af95008d3fb3b5d2269bb87a1de3235f6f828)
 
 #####Python
 
@@ -60,7 +64,7 @@ The following changes are improvements to existing features (which includes chan
 - Document way of passing S3 credentials for S3N [(PUBDEV-947)](https://0xdata.atlassian.net/browse/PUBDEV-947)
 - Add H2O-dev doc on docs.h2o.ai via a new structure (proposed below) [(PUBDEV-355)](https://0xdata.atlassian.net/browse/PUBDEV-355)
 - Rapids Ref Doc [(PUBDEV-667)](https://0xdata.atlassian.net/browse/PUBDEV-667)
-- Show Timestamp and Duration for all model scoring histories [(PUBDEV-1018)](https://0xdata.atlassian.net/browse/PUBDEV-1018)
+- Show Timestamp and Duration for all model scoring histories [(PUBDEV-1018)](https://0xdata.atlassian.net/browse/PUBDEV-1018) [(github)](https://github.com/h2oai/h2o-dev/commit/c02aa5efaf28ac21915c6fc427fc9b099aabee23)
 - Logs slow reads, mainly meant for noting slow S3 reads [(github)](https://github.com/h2oai/h2o-dev/commit/d3b19e38ab083ea327ecea60a354cc91a22b68a8)
 - Make prediction frame column names non-integer [(github)](https://github.com/h2oai/h2o-dev/commit/7fb855ca5eb546c03d1b7ea84b5b48093958ae9a)
 - Add String[] factor_columns instead of int[] factors [(github)](https://github.com/h2oai/h2o-dev/commit/c381da2ae1a51b268b1f359d0594f3aea5feef04)
@@ -96,6 +100,7 @@ The following changes are to resolve incorrect software behavior:
 - DRF: reporting wrong depth for attached dataset [(PUBDEV-1006)](https://0xdata.atlassian.net/browse/PUBDEV-1006)
 - added missing "names" column name to beta constraints processing [(github)](https://github.com/h2oai/h2o-dev/commit/fedcf159f8e842212812b0636b26ca9aa9ef1097)
 - Fix `balance_classes` probability correction consistency between H2O and POJO [(github)](https://github.com/h2oai/h2o-dev/commit/5201f6da1196434866be6e70da996fb7c5967b7b)
+- Fix in GLM scoring - check actual for NaNs as well [(github)](https://github.com/h2oai/h2o-dev/commit/e45c023a767dc26083f7fb26d9616ee234c03d2e)
 
 #####Python
 
@@ -123,10 +128,11 @@ The following changes are to resolve incorrect software behavior:
 
 - Download logs is returning the same log file bundle for every node [(PUBDEV-1056)](https://0xdata.atlassian.net/browse/PUBDEV-1056)
 - ParseSetup is useless and misleading for SVMLight [(PUBDEV-994)](https://0xdata.atlassian.net/browse/PUBDEV-994)
+- Fixes bug that was short circuiting the setting of column names [(github)](https://github.com/h2oai/h2o-dev/commit/5296456c425d9f9c0a467a2b65d448940f76c6a6)
 
 #####Web UI
 
-- Flow: Predict should not show mse confusion matrix etc [(PUBDEV-987)](https://0xdata.atlassian.net/browse/PUBDEV-987)
+- Flow: Predict should not show mse confusion matrix etc [(PUBDEV-987)](https://0xdata.atlassian.net/browse/PUBDEV-987) [(github)](https://github.com/h2oai/h2o-dev/commit/6bc90e19cfefebd0db3ec4a46d3a157e258ff858)
 - Flow: Raw frames left out after importing files from directory [(PUBDEV-1046)](https://0xdata.atlassian.net/browse/PUBDEV-1046)
 
 ---
