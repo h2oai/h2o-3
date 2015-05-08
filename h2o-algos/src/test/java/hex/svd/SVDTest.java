@@ -199,7 +199,7 @@ public class SVDTest extends TestUtil {
     }
   }
 
-  @Test @Ignore public void testIrisSVD() throws InterruptedException, ExecutionException {
+  @Test public void testIrisSVD() throws InterruptedException, ExecutionException {
     // Expected right singular values and vectors
     double[] d_expected = new double[] {96.2090445, 19.0425654, 7.2250378, 3.1636131, 1.8816739, 1.1451307, 0.5820806};
     double[][] v_expected = ard(ard(-0.03169051, -0.32305860,  0.185100382, -0.12336685, -0.14867156,  0.75932119, -0.496462912),
