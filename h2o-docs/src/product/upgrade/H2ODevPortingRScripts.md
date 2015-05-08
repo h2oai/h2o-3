@@ -8,6 +8,8 @@ Some of the parameters have been renamed for consistency. For each algorithm, a 
 
 For additional assistance within R, enter a question mark before the command (for example, `?h2o.glm`). 
 
+There is also a "shim" available that will review R scripts created with previous versions of H2O, identify deprecated or renamed parameters, and suggest replacements. For more information, refer to the repo [here](https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R). 
+
 ##Changes from H2O to H2O-Dev
 
 ###`h2o.exec`
