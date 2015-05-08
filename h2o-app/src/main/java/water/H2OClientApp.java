@@ -4,6 +4,11 @@ import static water.H2OApp.register;
 
 /**
  * Simple client application wrapper.
+ *
+ *
+ * A way to use:
+ *  1. Start H2O cloud as usual
+ *  2. Start H2OClientApp
  */
 public class H2OClientApp {
   public static void main2( String relpath ) { driver(new String[0],relpath); }
