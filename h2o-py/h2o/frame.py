@@ -433,7 +433,7 @@ class H2OFrame:
     if isinstance(i, tuple) and len(i)==2:
       res = self[i[1]] # Slice by columns eagerly
       # Now slice by rows
-      if isinstance(res,H2OFrame): return [vec[i[0]] for vec in res._vecs]
+      if isinstance(res,H2OFrame): return H2OFrame(vecs=[vec[i[0]] for vec in res._vecs])
       if isinstance(res,H2OVec  ): return  res[i[0]]
       raise NotImplementedError
 
@@ -537,8 +537,10 @@ class H2OFrame:
     self._len_check(data)
     if isinstance(data,  H2OFrame):
       return H2OFrame(vecs=[H2OVec(x._name, Expr(op,  y  , x._len_check( y  ))) for x, y in zip(self._vecs, i._vecs)])
-    if isinstance(data, (H2OVec,int,float,str)):
+    if isinstance(data,  H2OVec):
       return H2OFrame(vecs=[H2OVec(x._name, Expr(op, data, x._len_check(data))) for x    in     self._vecs          ])
+    if isinstance(data, (int,float,str)):
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, Expr(data),x,length=len(x))) for x  in     self._vecs          ])
     raise NotImplementedError
 
   # ops
@@ -1111,11 +1113,11 @@ class H2OVec:
     :param i: An Expr or an H2OVec
     :return: A new Expr object corresponding to the input query
     """
-    if isinstance(i, H2OVec):
-      return self.row_select(i)
-    if isinstance(i, int): # Single row select, makes a scalar
+    if isinstance(i, H2OVec): return self.row_select(i)
+    if isinstance(i, int):  return Expr("[", self, Expr(i), length=1).eager() # Single row select, makes a scalar
+    if isinstance(i, slice):
       e = Expr(i)
-      return Expr("[", self, e, length=len(e)).eager()
+      return H2OVec(self._name,Expr("[", self, e, length=len(e)))
     raise ValueError("Row selection from a Vec is limited to 1 row, or a boolean Vec")
 
   # Boolean column select lookup.  Eager, to compute the result length
