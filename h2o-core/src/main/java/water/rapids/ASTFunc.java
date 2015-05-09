@@ -8,6 +8,8 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
+import java.util.Arrays;
+
 /**
  *  The ASTFunc Object
  *
@@ -63,7 +65,15 @@ public class ASTFunc extends ASTFuncDef {
   }
 
   @Override String opStr() { return _name; }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() {
+    ASTFunc res = (ASTFunc)clone();
+    res._name = _name;
+    res._arg_names = _arg_names==null?null:Arrays.copyOf(_arg_names, _arg_names.length);
+    res._args = _args==null?null:Arrays.copyOf(_args, _args.length);
+    res._body = new ASTStatement();
+    res._body._asts = _body==null?null:Arrays.copyOf(_body._asts, _body._asts.length);
+    return res;
+  }
   @Override void apply(Env e) {
     Env captured = e.capture();
 
