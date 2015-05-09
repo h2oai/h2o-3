@@ -4,7 +4,8 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   isFlipped <- rep(FALSE, ncol(object))
   
   for(j in 1:ncol(object)) {
-    isFlipped[j] <- abs(object[1,j] - expected[1,j]) > tolerance
+    # isFlipped[j] <- abs(object[1,j] - expected[1,j]) > tolerance
+    isFlipped[j] <- abs(object[1,j] - expected[1,j]) > abs(object[1,j] + expected[1,j])
     # if(isFlipped[j])
     #  expect_equal(-object[,j], expected[,j], tolerance = tolerance)
     # else

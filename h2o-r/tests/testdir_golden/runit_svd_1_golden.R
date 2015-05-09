@@ -23,9 +23,10 @@ test.svd.golden <- function(H2Oserver) {
   
   Log.info("Compare left singular vectors (U)")
   uH2O <- h2o.getFrame(fitH2O@model$u_key$name)
+  uH2O.df <- as.data.frame(uH2O)
   Log.info("R Left Singular Vectors:"); print(head(fitR$u))
-  Log.info("H2O Left Singular Vectors:"); print(head(uH2O))
-  isFlipped2 <- checkSignedCols(as.data.frame(uH2O), fitR$u)
+  Log.info("H2O Left Singular Vectors:"); print(head(uH2O.df))
+  isFlipped2 <- checkSignedCols(uH2O.df, fitR$u, tolerance = 1e-5)
   expect_equal(isFlipped1, isFlipped2)
   
   testEnd()
