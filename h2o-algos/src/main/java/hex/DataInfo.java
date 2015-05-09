@@ -66,7 +66,7 @@ public class DataInfo extends Keyed {
   public int _cats;
   public int [] _catOffsets;
   public int [] _catMissing;  // bucket for missing categoricals
-  public int [] _permutation; // permutation matrix mapping train col indices to adaptedFrame
+  public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;
   public double [] _normSub;
   public double [] _normRespMul;

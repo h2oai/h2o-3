@@ -79,7 +79,7 @@ public class PCATest extends TestUtil {
     }
   }
 
-  @Test public void testArrestsScoring() {
+  @Test public void testArrestsScoring() throws InterruptedException, ExecutionException {
     // Results with original training frame
     double[] stddev = new double[] {202.7230564, 27.8322637, 6.5230482, 2.5813652};
     double[][] eigvec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
@@ -105,6 +105,58 @@ public class PCATest extends TestUtil {
 
         score = model.score(train);
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+        TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        if (job != null) job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (scoreR != null) scoreR.delete();
+      if (model != null) {
+        if (model._parms._keep_loading)
+          model._parms._loading_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
+  @Test public void testIrisScoring() throws InterruptedException, ExecutionException {
+    // Results with original training frame
+    double[] stddev = new double[] {7.88175203, 1.56002774, 0.59189816, 0.25917329, 0.15415273, 0.09381276, 0.04768590};
+    double[][] eigvec = ard(ard(-0.03169051, -0.32305860,  0.185100382, -0.12336685, -0.14867156,  0.75932119, -0.496462912),
+                            ard(-0.04289677,  0.04037565, -0.780961964,  0.19727933,  0.07251338, -0.12216945, -0.572298338),
+                            ard(-0.05019689,  0.16836717,  0.551432201, -0.07122329,  0.08454116, -0.48327010, -0.647522462),
+                            ard(-0.74915107, -0.26629420, -0.101102186, -0.48920057,  0.32458460, -0.09176909,  0.067412858),
+                            ard(-0.37877011, -0.50636060,  0.142219195,  0.69081642, -0.26312992, -0.17811871,  0.041411296),
+                            ard(-0.51177078,  0.65945159, -0.005079934,  0.04881900, -0.52128288,  0.17038367,  0.006223427),
+                            ard(-0.16742875,  0.32166036,  0.145893901,  0.47102115,  0.72052968,  0.32523458,  0.020389463));
+
+    PCA job = null;
+    PCAModel model = null;
+    Frame train = null, score = null, scoreR = null;
+    try {
+      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = 7;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._useAllFactorLevels = true;
+
+      try {
+        job = new PCA(parms);
+        model = job.trainModel().get();
+        TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
+        boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
+
+        score = model.score(train);
+        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
         TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
       } catch (Throwable t) {
         t.printStackTrace();

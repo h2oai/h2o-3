@@ -210,7 +210,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Initialize Y matrix
     public double[][] initialY(DataInfo dinfo) {
-      double[][] centers;
+      double[][] centers, centers_exp;
 
       if (null != _parms._user_points) { // User-specified starting points
         Vec[] centersVecs = _parms._user_points.get().vecs();
@@ -221,10 +221,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           for (int r = 0; r < _parms._k; r++)
             centers[r][c] = centersVecs[c].at(r);
         }
-        centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
-      } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
 
-        // TODO: Ensure SVD centers align with dinfo._adaptedFrame and no cols/factors dropped
+        // Permute cluster columns to align with dinfo and expand out categoricals
+        centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
+        centers_exp = expandCats(centers, dinfo);
+
+      } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -247,9 +249,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (job != null) job.remove();
           if (svd != null) svd.remove();
         }
-        centers = ArrayUtils.transpose(svd._output._v);
-      } else {  // Run k-means++ and use resulting cluster centers as initial Y
 
+        // Ensure SVD centers align with adapted training frame cols
+        assert svd._output._permutation.length == dinfo._permutation.length;
+        for(int i = 0; i < dinfo._permutation.length; i++)
+          assert svd._output._permutation[i] == dinfo._permutation[i];
+        centers_exp = ArrayUtils.transpose(svd._output._v);
+
+      } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -272,13 +279,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (km != null) km.remove();
         }
 
-        // Permute cluster columns to align with dinfo and normalize
+        // Permute cluster columns to align with dinfo, normalize nums, and expand out cats to indicator cols
         centers = ArrayUtils.permuteCols(km._output._centers_raw, dinfo.mapNames(km._output._names));
         centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats, dinfo._nums);
+        centers_exp = expandCats(centers, dinfo);
       }
-
-      // Expand out categoricals to indicator columns
-      double[][] centers_exp = expandCats(centers, dinfo);
       _ncolY = centers_exp[0].length;
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix

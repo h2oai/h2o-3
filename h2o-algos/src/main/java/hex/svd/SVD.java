@@ -131,12 +131,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false);
         DKV.put(dinfo._key, dinfo);
 
+        // Save adapted frame info for scoring later
         model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
         if(dinfo._normMul == null) {
           model._output._normMul = new double[dinfo._nums];
           Arrays.fill(model._output._normMul, 1.0);
         } else
           model._output._normMul = dinfo._normMul;
+        model._output._permutation = dinfo._permutation;
+        model._output._nnums = dinfo._nums;
+        model._output._ncats = dinfo._cats;
+        model._output._catOffsets = dinfo._catOffsets;
 
         // Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set

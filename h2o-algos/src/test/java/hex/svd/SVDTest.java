@@ -199,7 +199,7 @@ public class SVDTest extends TestUtil {
     }
   }
 
-  @Test public void testIrisSVD() throws InterruptedException, ExecutionException {
+  @Test public void testIrisSVDScore() throws InterruptedException, ExecutionException {
     // Expected right singular values and vectors
     double[] d_expected = new double[] {96.2090445, 19.0425654, 7.2250378, 3.1636131, 1.8816739, 1.1451307, 0.5820806};
     double[][] v_expected = ard(ard(-0.03169051, -0.32305860,  0.185100382, -0.12336685, -0.14867156,  0.75932119, -0.496462912),
@@ -210,7 +210,7 @@ public class SVDTest extends TestUtil {
                                 ard(-0.51177078,  0.65945159, -0.005079934,  0.04881900, -0.52128288,  0.17038367,  0.006223427),
                                 ard(-0.16742875,  0.32166036,  0.145893901,  0.47102115,  0.72052968,  0.32523458,  0.020389463));
     SVDModel model = null;
-    Frame train = null;
+    Frame train = null, score = null;
     try {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
@@ -224,6 +224,7 @@ public class SVDTest extends TestUtil {
         model = job.trainModel().get();
         TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
         Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+        score = model.score(train);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -235,6 +236,7 @@ public class SVDTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
+      if (score != null) score.delete();
       if (model != null) {
         if (model._parms._keep_u)
           model._parms._u_key.get().delete();

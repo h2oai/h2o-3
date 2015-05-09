@@ -301,9 +301,9 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._gamma_x = parms._gamma_y = 0;
       parms._k = 4;
-      parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._recover_pca = false;
+      parms._recover_pca = true;
       parms._max_iterations = 1000;
 
       try {
