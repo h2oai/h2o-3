@@ -18,13 +18,13 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
     @API(help="Maximum training iterations")
     public int max_iterations;        // Max iterations
 
-    @API(help = "Standardize columns", level = API.Level.secondary)
+    @API(help = "Standardize columns", level = API.Level.secondary, gridable = true)
     public boolean standardize = true;
 
-    @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"k", "max_iterations"} */ )
+    @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"k", "max_iterations"} */, gridable = true)
     public long seed;
 
-    @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }) // TODO: pull out of enum class. . .
+    @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }, gridable = true) // TODO: pull out of enum class. . .
     public KMeans.Initialization init;
   }
 }

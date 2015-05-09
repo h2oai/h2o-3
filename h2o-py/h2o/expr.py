@@ -3,11 +3,9 @@ This module contains code for the lazy expression DAG.
 """
 
 import sys
-from math import sqrt, isnan, floor
+from math import sqrt, isnan
 import h2o
 import frame
-import tabulate
-import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -187,8 +185,7 @@ class Expr(object):
       headers = ["Row ID"]
       for i in range(len(t_data[0])): headers.append('')
       print "Displaying first " + str(len(t_data)) + " row(s)"
-      print tabulate.tabulate(t_data, headers=headers)
-      print
+      h2o.H2ODisplay(t_data,headers)
 
   # def __repr__(self):
   #    self.show()
@@ -236,8 +233,8 @@ class Expr(object):
     raise NotImplementedError
 
   def _simple_expr_bin_op( self, i, op):
-    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_op(self,op)
-    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_op(self,op)
+    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_rop(self,op)
+    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_rop(self,op)
     if isinstance(i, Expr)        :
       e = self.eager()
       return  Expr(op, Expr(e), i) if isinstance(e, (int,float)) else Expr(op, self, i)
@@ -327,7 +324,7 @@ class Expr(object):
       if h2o is not None:
         h2o.remove(self._data)
     else:
-      s = " (del '" + self._data + "' #0)"
+      s = " (removeframe '" + self._data + "')"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s

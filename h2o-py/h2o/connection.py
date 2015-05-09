@@ -8,6 +8,7 @@ import math
 import re
 import os
 import sys
+import string
 import time
 import tempfile
 import tabulate
@@ -15,10 +16,10 @@ import subprocess
 import atexit
 import pkg_resources
 from two_dim_table import H2OTwoDimTable
+import h2o
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
-
 
 class H2OConnection(object):
   """
@@ -79,7 +80,6 @@ class H2OConnection(object):
           print "No jar file found. Could not start local instance."
           raise
     __H2OCONN__._cld = cld
-    self._cluster_info()
 
     ver_h2o = cld['version']
     try:
@@ -94,6 +94,8 @@ class H2OConnection(object):
         raise EnvironmentError, message
       else:
         print "Warning: {0}".format(message)
+
+    H2OConnection._cluster_info()
 
   @staticmethod
   def _cluster_info():
@@ -117,10 +119,8 @@ class H2OConnection(object):
       ["H2O Connection ip: ", ip],
       ["H2O Connection port: ", __H2OCONN__._port],
       ]
-    print
-    print tabulate.tabulate(cluster_info)
-    print
     __H2OCONN__._cld = H2OConnection.get_json(url_suffix="Cloud")   # update the cached version of cld
+    h2o.H2ODisplay(cluster_info)
 
   def _connect(self, size, max_retries=5, print_dots=False):
     """
@@ -131,6 +131,7 @@ class H2OConnection(object):
     """
     max_retries = max_retries
     retries = 0
+
     while True:
       retries += 1
       if print_dots:
@@ -427,7 +428,7 @@ class H2OConnection(object):
 
   # Low level request call
   def _attempt_rest(self, url, method, post_body, file_upload_info):
-    headers = {'User-Agent': 'H2O Python client/'+sys.version}
+    headers = {'User-Agent': 'H2O Python client/'+string.replace(sys.version, '\n', '')}
     try:
       if method == "GET":
         return requests.get(url, headers=headers)
@@ -463,7 +464,6 @@ class H2OConnection(object):
         has_schema_type = has_meta and "schema_type" in x["__meta"]
 
         have_table = has_schema_type and x["__meta"]["schema_type"] == "TwoDimTable"
-        have_tableV1 = have_table and x["__meta"]["schema_name"] == "TwoDimTableV1"
         if have_table:
           col_formats = [c["format"] for c in x["columns"]]
           table_header = x["name"]

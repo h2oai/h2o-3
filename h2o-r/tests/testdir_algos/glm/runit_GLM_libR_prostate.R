@@ -3,10 +3,11 @@ source('../../h2o-runit.R')
 
 Log.info("Loading LiblineaR and ROCR packages\n")
 
-if(!"LiblineaR" %in% rownames(installed.packages())) install.packages("LiblineaR")
-if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
-require(LiblineaR)
-require(ROCR)
+#if(!"LiblineaR" %in% rownames(installed.packages())) install.packages("LiblineaR")
+#if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
+
+library(LiblineaR)
+library(ROCR)
 
 test.LiblineaR <- function(conn) {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {

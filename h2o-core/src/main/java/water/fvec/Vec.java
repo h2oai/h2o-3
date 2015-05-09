@@ -328,7 +328,7 @@ public class Vec extends Keyed<Vec> {
     Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
     int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
     if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
-      Key newKey = Key.make(".makeConRebalance" + chunks);
+      Key newKey = Key.make(Key.rand()+".makeConRebalance" + chunks);
       Frame f = new Frame(v0);
       RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
       H2O.submitTask(rb);
@@ -357,6 +357,22 @@ public class Vec extends Keyed<Vec> {
    * @return a copy of the vector.
    */
   public Vec makeCopy(String[] domain){
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = _type;
+    DKV.put(v._key, v);
+    return v;
+  }
+
+  public Vec makeCopy(String[] domain, byte type) {
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = type;
+    DKV.put(v._key, v);
+    return v;
+  }
+
+  private Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
@@ -368,9 +384,6 @@ public class Vec extends Keyed<Vec> {
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
     return v;
   }
 
@@ -1074,10 +1087,39 @@ public class Vec extends Keyed<Vec> {
     return new StrWrappedVec(group().addVec(),_espc,this._key);
   }
 
-  /** This Vec does not have dependent hidden Vec it uses.
-   *  @see EnumWrappedVec
-   *  @return dependent hidden vector or <code>null</code>  */
-//  public Vec masterVec() { return null; }
+  /** Convert entire Vec to an array of doubles, loading all of the data into a
+   *  single large array.  Naturally this can easily run out of memory and throw
+   *  an OOM; also due to JVM limitations often limited to 800M entries. */
+  public double[] toDoubleArray( ) {
+    if( (int)length() != length() )
+      throw new IllegalArgumentException("Vec length is larger than int");
+    final double[] ds = MemoryManager.malloc8d((int)length());
+    new MRTask() {
+      @Override public void map( Chunk cs ) {
+        for( int i=0; i<cs._len; i++ ) ds[i+(int)cs._start] = cs.atd(i);
+      }
+    }.doAll(this);
+    return ds;
+  }
+
+  /** Convert entire Vec to an array of bytes, loading all of the data into a
+   *  single large array.  Naturally this can easily run out of memory and throw
+   *  an OOM; also due to JVM limitations often limited to 800M entries. */
+  public byte[] toByteArray( ) {
+    if( (int)length() != length() )
+      throw new IllegalArgumentException("Vec length is larger than int");
+    if( min() < Byte.MIN_VALUE || max() > Byte.MAX_VALUE || !isInt() )
+      throw new IllegalArgumentException("Vec elements do not fit in a byte");
+    if( naCnt() > 0 )
+      throw new IllegalArgumentException("Byte array does not support missing values");
+    final byte[] bs = MemoryManager.malloc1((int)length());
+    new MRTask() {
+      @Override public void map( Chunk cs ) {
+        for( int i=0; i<cs._len; i++ ) bs[i+(int)cs._start] = (byte)cs.at8(i);
+      }
+    }.doAll(this);
+    return bs;
+  }
 
   /** Collect numeric domain of given vector
    *  A map-reduce task to collect up the unique values of an integer vector

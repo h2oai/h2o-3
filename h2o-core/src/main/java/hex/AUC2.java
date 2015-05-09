@@ -27,7 +27,7 @@ public class AUC2 extends Iced {
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
   // Default bins, good answers on a highly unbalanced sorted (and reverse
   // sorted) datasets
-  public static final int NBINS = 256;
+  public static final int NBINS = 400;
 
   /** Criteria for 2-class Confusion Matrices
    *
@@ -65,10 +65,10 @@ public class AUC2 extends Iced {
     min_per_class_accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
-    tns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
-    fns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
-    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
-    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
+    tns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
+    fns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
+    fps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
+    tps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
     tnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tn/(fp+tn); } },
     fnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fn/(fn+tp); } },
     fpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fp/(fp+tn); } },
@@ -152,8 +152,7 @@ public class AUC2 extends Iced {
     long tp0 = 0, fp0 = 0;
     double area = 0;
     for( int i=0; i<_nBins; i++ ) {
-      area += tp0*(_fps[i]-fp0); // Trapezoid: Square + 
-      area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0; // Right Triangle
+      area += (_fps[i]-fp0)*(_tps[i]+tp0)/2.0; // Trapezoid
       tp0 = _tps[i];  fp0 = _fps[i];
     }
     // Descale
@@ -195,30 +194,63 @@ public class AUC2 extends Iced {
   public static class AUCBuilder extends Iced {
     final int _nBins;
     int _n;                     // Current number of bins
-    double _ths[];              // Histogram bins, center
-    double _sqe[];              // Histogram bins, squared error
-    long   _tps[];              // Histogram bins, true  positives
-    long   _fps[];              // Histogram bins, false positives
+    final double _ths[];        // Histogram bins, center
+    final double _sqe[];        // Histogram bins, squared error
+    final long   _tps[];        // Histogram bins, true  positives
+    final long   _fps[];        // Histogram bins, false positives
+    // Merging this bin with the next gives the least increase in squared
+    // error, or -1 if not known.  Requires a linear scan to find.
+    int    _ssx;
     public AUCBuilder(int nBins) {
       _nBins = nBins;
       _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
       _sqe = new double[nBins<<1]; // Squared error (variance) in this bin
       _tps = new long  [nBins<<1]; // True  positives
       _fps = new long  [nBins<<1]; // False positives
-    }    
+      _ssx = -1;                   // Unknown best merge bin
+    }
 
     public void perRow(double pred, int act ) {
       // Insert the prediction into the set of histograms in sorted order, as
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);
-      assert act==0 || act==1; // Actual better be 0 or 1
+      assert act==0 || act==1;  // Actual better be 0 or 1
       int idx = Arrays.binarySearch(_ths,0,_n,pred);
-      if( idx >= 0 ) {        // Found already in histogram; merge results
+      if( idx >= 0 ) {          // Found already in histogram; merge results
         if( act==0 ) _fps[idx]++; else _tps[idx]++; // One more count; no change in squared error
+        _ssx = -1;              // Blows the known best merge
         return;
       }
+      idx = -idx-1;             // Get index to insert at
+
+      // If already full bins, try to instantly merge into an existing bin
+      if( _n > _nBins ) {       // Need to merge to shrink things
+        final int ssx = find_smallest();
+        double dssx = compute_delta_error(_ths[ssx+1],k(ssx+1),_ths[ssx],k(ssx));
+
+        // See if this point will fold into either the left or right bin
+        // immediately.  This is the desired fast-path.
+        double d0 = compute_delta_error(pred,1,_ths[idx  ],k(idx  ));
+        double d1 = compute_delta_error(_ths[idx+1],k(idx+1),pred,1);
+        if( d0 < dssx || d1 < dssx ) {
+          if( d1 < d0 ) idx++; else d0 = d1; // Pick correct bin
+          long oldk = k(idx);
+          if( act==0 ) _fps[idx]++;
+          else         _tps[idx]++;
+          _ths[idx] = _ths[idx] + (pred-_ths[idx])/oldk;
+          _sqe[idx] = _sqe[idx] + d0;
+          assert ssx == find_smallest();
+          return;
+        }
+      }
+
+      // Must insert this point as it's own threshold (which is not insertion
+      // point), either because we have too few bins or because we cannot
+      // instantly merge the new point into an existing bin.
+      if( idx == _ssx ) _ssx = -1;  // Smallest error becomes one of the splits
+      else if( idx < _ssx ) _ssx++; // Smallest error will slide right 1
+
       // Slide over to do the insert.  Horrible slowness.
-      idx = -idx-1;           // Get index to insert at
       System.arraycopy(_ths,idx,_ths,idx+1,_n-idx);
       System.arraycopy(_sqe,idx,_sqe,idx+1,_n-idx);
       System.arraycopy(_tps,idx,_tps,idx+1,_n-idx);
@@ -229,8 +261,9 @@ public class AUC2 extends Iced {
       if( act==0 ) { _tps[idx]=0; _fps[idx]=1; }
       else         { _tps[idx]=1; _fps[idx]=0; }
       _n++;
+
       if( _n > _nBins )         // Merge as needed back down to nBins
-        mergeOneBin(true);
+        mergeOneBin();          // Merge best pair of bins
     }
 
     public void reduce( AUCBuilder bldr ) {
@@ -255,72 +288,151 @@ public class AUC2 extends Iced {
       //assert sorted();
 
       // Merge elements with least squared-error increase until we get fewer
-      // than _nBins and no duplicates.
-      while( mergeOneBin(_n > _nBins) ) ;
+      // than _nBins and no duplicates.  May require many merges.
+      while( _n > _nBins || dups() ) 
+        mergeOneBin();
     }
 
-//    private boolean sorted() {
-//      double t = _ths[0];
-//      for( int i=1; i<_n; i++ ) {
-//        if( _ths[i] < t )
-//          return false;
-//        t = _ths[i];
-//      }
-//      return true;
-//    }
-
-    private boolean mergeOneBin( boolean merge ) {
-      // Search for the bins with the smallest increase in error to merge, or
-      // zero delta.  Returns -1 if no dups and not 'merge'.  Never returns -1
-      // if 'merge' is true, always reports valid index to merge at.
+    private void mergeOneBin( ) {
       // Too many bins; must merge bins.  Merge into bins with least total
-      // squared error.  Horrible slowness linear scan.  
-      double minSQE = Double.MAX_VALUE;
-      int minI = -1;
-      for( int i=0; i<_n-1; i++ ) {
-        long k0 = _tps[i  ]+_fps[i  ];
-        long k1 = _tps[i+1]+_fps[i+1];
-        double delta = _ths[i+1]-_ths[i];
-        double sqe0 = _sqe[i]+_sqe[i+1]+delta*delta*k0*k1 / (k0+k1);
-        if( sqe0 < minSQE || delta==0 ) {
-          minI = i;  minSQE = sqe0;
-          if( delta == 0 ) { merge = true; break; } // Must merge dup/equal thresholds, stop searching and do merge
-        }
-      }
-      if( !merge ) return false; // if 'merge' is false, then no merge
-
-      // Here is code for merging bins with keeping the bins balanced in
-      // size, but this leads to bad errors if the probabilities are sorted.
-      // Also tried the original: merge bins with the least distance between
-      // bin centers.  Same problem for sorted data.
-
-      //long minV = Long.MAX_VALUE;
-      //int minI = -1;
-      //for( int i=0; i<_n; i++ ) {
-      //  long sum = _tps[i]+_fps[i]+_tps[i+1]+_fps[i+1];
-      //  if( sum < minV ||
-      //      (sum==minV && _ths[i+1]-_ths[i] < _ths[minI+1]-_ths[minI]) ) {
-      //    minI = i;  minV = sum; 
-      //  }
-      //}
+      // squared error.  Horrible slowness linear arraycopy.
+      int ssx = find_smallest();
 
       // Merge two bins.  Classic bins merging by averaging the histogram
       // centers based on counts.
-      long k0 = _tps[minI  ]+_fps[minI  ];
-      long k1 = _tps[minI+1]+_fps[minI+1];
-      double d = (_ths[minI]*k0+_ths[minI+1]*k1)/(k0+k1);
-      // Setup the new merged bin at index minI
-      _ths[minI] = d;
-      _sqe[minI] = minSQE;
-      _tps[minI] += _tps[minI+1];
-      _fps[minI] += _fps[minI+1];
-      // Slide over to crush the removed bin at index (minI+1)
-      System.arraycopy(_ths,minI+2,_ths,minI+1,_n-minI-2);
-      System.arraycopy(_sqe,minI+2,_sqe,minI+1,_n-minI-2);
-      System.arraycopy(_tps,minI+2,_tps,minI+1,_n-minI-2);
-      System.arraycopy(_fps,minI+2,_fps,minI+1,_n-minI-2);
+      long k0 = k(ssx);
+      long k1 = k(ssx+1);
+      _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
+      _sqe[ssx] = _sqe[ssx]+_sqe[ssx+1]+compute_delta_error(_ths[ssx+1],k1,_ths[ssx],k0);
+      _tps[ssx] += _tps[ssx+1];
+      _fps[ssx] += _fps[ssx+1];
+      // Slide over to crush the removed bin at index (ssx+1)
+      System.arraycopy(_ths,ssx+2,_ths,ssx+1,_n-ssx-2);
+      System.arraycopy(_sqe,ssx+2,_sqe,ssx+1,_n-ssx-2);
+      System.arraycopy(_tps,ssx+2,_tps,ssx+1,_n-ssx-2);
+      System.arraycopy(_fps,ssx+2,_fps,ssx+1,_n-ssx-2);
       _n--;
-      return true;
+      _ssx = -1;
     }
+
+    // Find the pair of bins that when combined give the smallest increase in
+    // squared error.  Dups never increase squared error.
+    //
+    // I tried code for merging bins with keeping the bins balanced in size,
+    // but this leads to bad errors if the probabilities are sorted.  Also
+    // tried the original: merge bins with the least distance between bin
+    // centers.  Same problem for sorted data.
+    private int find_smallest() {
+      if( _ssx == -1 ) return (_ssx = find_smallest_impl());
+      assert _ssx == find_smallest_impl();
+      return _ssx;
+    }
+    private int find_smallest_impl() {
+      double minSQE = Double.MAX_VALUE;
+      int minI = -1;
+      int n = _n;
+      for( int i=0; i<n-1; i++ ) {
+        double derr = compute_delta_error(_ths[i+1],k(i+1),_ths[i],k(i));
+        if( derr == 0 ) return i; // Dup; no increase in SQE so return immediately
+        double sqe = _sqe[i]+_sqe[i+1]+derr;
+        if( sqe < minSQE ) {
+          minI = i;  minSQE = sqe;
+        }
+      }
+      return minI;
+    }
+
+    private boolean dups() {
+      int n = _n;
+      for( int i=0; i<n-1; i++ ) {
+        double derr = compute_delta_error(_ths[i+1],k(i+1),_ths[i],k(i));
+        if( derr == 0 ) { _ssx = i; return true; }
+      }
+      return false;
+    }
+
+
+    private double compute_delta_error( double ths1, long n1, double ths0, long n0 ) {
+      // If thresholds vary by less than a float ULP, treat them as the same.
+      // Some models only output predictions to within float accuracy (so a
+      // variance here is junk), and also it's not statistically sane to have
+      // a model which varies predictions by such a tiny change in thresholds.
+      double delta = (float)ths1-(float)ths0;
+      // Parallel equation drawn from:
+      //  http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
+      return delta*delta*n0*n1 / (n0+n1);
+    }
+
+    private long k( int idx ) { return _tps[idx]+_fps[idx]; }
+
+    //private boolean sorted() {
+    //  double t = _ths[0];
+    //  for( int i=1; i<_n; i++ ) {
+    //    if( _ths[i] < t )
+    //      return false;
+    //    t = _ths[i];
+    //  }
+    //  return true;
+    //}
   }
+
+
+  // ==========
+  // Given the probabilities of a 1, and the actuals (0/1) report the perfect
+  // AUC found by sorting the entire dataset.  Expensive, and only works for
+  // small data (probably caps out at about 10M rows).
+  public static double perfectAUC( Vec vprob, Vec vacts ) {
+    if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
+      throw new IllegalArgumentException("Actuals are either 0 or 1");
+    if( vprob.min() < 0 || vprob.max() > 1 )
+      throw new IllegalArgumentException("Probabilities are between 0 and 1");
+    // Horrible data replication into array of structs, to sort.  
+    Pair[] ps = new Pair[(int)vprob.length()];
+    for( int i=0; i<ps.length; i++ )
+      ps[i] = new Pair(vprob.at(i),(byte)vacts.at8(i));
+    return perfectAUC(ps);
+  }
+  public static double perfectAUC( double ds[], double[] acts ) {
+    Pair[] ps = new Pair[ds.length];
+    for( int i=0; i<ps.length; i++ )
+      ps[i] = new Pair(ds[i],(byte)acts[i]);
+    return perfectAUC(ps);
+  }
+
+  private static double perfectAUC( Pair[] ps ) {
+    // Sort by probs, then actuals - so tied probs have the 0 actuals before
+    // the 1 actuals.  Sort probs from largest to smallest - so both the True
+    // and False Positives are zero to start.
+    Arrays.sort(ps,new java.util.Comparator<Pair>() {
+        @Override public int compare( Pair a, Pair b ) {
+          return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);
+        }
+      });
+
+    // Compute Area Under Curve.  
+    // All math is computed scaled by TP and FP.  We'll descale once at the
+    // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
+    int tp0=0, fp0=0, tp1=0, fp1=0;
+    double prob = 1.0;
+    double area = 0;
+    for( Pair p : ps ) {
+      if( p._prob!=prob ) { // Tied probabilities: build a diagonal line
+        area += (fp1-fp0)*(tp1+tp0)/2.0; // Trapezoid
+        tp0 = tp1; fp0 = fp1;
+        prob = p._prob;
+      }
+      if( p._act==1 ) tp1++; else fp1++;
+    }
+    area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
+    area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
+
+    // Descale
+    return area/tp1/fp1;
+  }
+
+  private static class Pair {
+    final double _prob; final byte _act;
+    Pair( double prob, byte act ) { _prob = prob; _act = act; }
+  }
+
 }

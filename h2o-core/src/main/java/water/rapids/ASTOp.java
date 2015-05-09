@@ -16,11 +16,11 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
-import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.MathUtils;
 
@@ -228,6 +228,9 @@ public abstract class ASTOp extends AST {
     putPrefix(new ROp());
     putPrefix(new O());
     putPrefix(new ASTImpute());
+    putPrefix(new ASTQPFPC());
+    putPrefix(new ASTStoreSize());
+    putPrefix(new ASTKeysLeaked());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -276,7 +279,7 @@ public abstract class ASTOp extends AST {
   double[] map(Env env, double[] in, double[] out, AST[] args) { throw H2O.unimpl(); }
   @Override void exec(Env e) { throw H2O.unimpl(); }
   // special exec for apply calls
-  void exec(Env e, AST arg1, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
+  void exec(Env e, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
   @Override int type() { return -1; }
   @Override String value() { throw H2O.unimpl(); }
 
@@ -321,10 +324,9 @@ abstract class ASTUniOp extends ASTUniOrBinOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
-    arg1.exec(e);
-    if (e.isAry()) e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    args[0].exec(e);
+    if( e.isAry() ) e.put(Key.make().toString(),e.peekAry());
     apply(e);
   }
 
@@ -658,8 +660,6 @@ class ASTLength extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
-//    env.cleanup(fr);
-//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -1577,14 +1577,13 @@ abstract class ASTReducerOp extends ASTOp {
     env.push(new ValNum(sum));
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    if (args == null) {
-      _init = 0;
-      _narm = true;
-      _argcnt = 1;
-    }
-    arg1.exec(e);
-    e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    _argcnt = args.length;
+    // extra args are init and narm
+    _init=0;
+    _narm=true;
+    args[0].exec(e);
+    e.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -1675,7 +1674,7 @@ class ASTImpute extends ASTUniPrefixOp {
   private static enum ImputeMethod { MEAN , MEDIAN, MODE }
   @Override String opStr() { return "h2o.impute"; }
   @Override ASTOp make() { return new ASTImpute(); }
-  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by"}); }
+  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by", "inplace"}); }
   ASTImpute parse_impl(Exec E) {
     AST ary = E.parse();
     _colIdx = (int)E.nextDbl();
@@ -1713,7 +1712,7 @@ class ASTImpute extends ASTUniPrefixOp {
       }
       switch( _method ) {
         case MEAN:   imputeValue = ASTVar.getMean(v,true,""); break;
-        case MEDIAN: imputeValue = ASTMedian.median(v, null); break;
+        case MEDIAN: imputeValue = ASTMedian.median(v, _combine_method); break;
         case MODE:   imputeValue = mode(v); break;
         default:
           throw H2O.unimpl("Unknown type: " + _method);
@@ -1738,9 +1737,12 @@ class ASTImpute extends ASTUniPrefixOp {
     } else {
       if (_method == ImputeMethod.MEDIAN)
         throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
-      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", 0, "rm", "_avg", null, null)};
+      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", _colIdx, "rm", "_avg", null, null)};
       ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
       final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
+      final int nGrps = t._g.size();
+      final ASTGroupBy.G[] grps = t._g.keySet().toArray(new ASTGroupBy.G[nGrps]);
+      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps)).join();
       final long[] cols = _by;
       final int colIdx = _colIdx;
       if( _inplace ) {
@@ -2242,12 +2244,16 @@ class ASTAND extends ASTBinOp {
 
 class ASTRename extends ASTUniPrefixOp {
   String _newname;
+  boolean _deepCopy;
   @Override String opStr() { return "rename"; }
-  ASTRename() { super(new String[] {"", "ary", "new_name"}); }
+  ASTRename() { super(new String[] {"", "ary", "new_name", "deepCopy"}); }
   @Override ASTOp make() { return new ASTRename(); }
   ASTRename parse_impl(Exec E) {
     AST ary = E.parse();
     _newname = ((ASTString)E.parse())._s;
+    AST a = E.parse();
+    if( a instanceof ASTId ) _deepCopy =   ((ASTNum)E._env.lookup( ((ASTId)a) ))._d==1;
+    else throw new IllegalASTException("Expected to get TRUE/FALSE for deepCopy argument");
     E.eatEnd(); // eat the ending ')'
     ASTRename res = (ASTRename) clone();
     res._asts = new AST[]{ary};
@@ -2256,9 +2262,16 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    Frame fr2 = fr.deepCopy(_newname);
-    DKV.put(fr2._key, fr2);
-    e.pushAry(fr2);
+    if( _deepCopy ) {
+      if( fr._key!=null )  // wack the old DKV mapping
+        DKV.remove(fr._key);
+      Frame fr2 = new Frame(Key.make(_newname),fr.names(),fr.vecs());
+      DKV.put(fr2._key, fr2);
+    } else {
+      Frame fr2 = fr.deepCopy(_newname);
+      DKV.put(fr2._key, fr2);
+      e.pushAry(fr2);
+    }
   }
 }
 
@@ -2293,11 +2306,9 @@ class ASTGPut extends ASTUniPrefixOp {
       fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
     } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
     DKV.put(k, fr);
-    e._locked.add(k);
-    e.addKeys(fr);
-    e._global._frames.put(k.toString(), fr);
+    e.lock(fr);
+    e.put(k.toString(), fr);
     e.push(new ValFrame(fr, true /*isGlobalSet*/));
-    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -2320,12 +2331,9 @@ class ASTLPut extends ASTGPut {
       v.setDomain(new String[]{e.popStr()});
       fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
     } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
-    e._locked.add(k);
-    e.addKeys(fr);
-    e._local._frames.put(k.toString(), fr);
-    e._global._frames.put(k.toString(), fr);
+    e.lock(fr);
+    e.put(k.toString(), fr);
     e.push(new ValFrame(fr, false /*isGlobalSet*/));
-    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -2743,9 +2751,13 @@ class ASTRemoveFrame extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env e) {
-    Frame fr = e.popAry();
-    fr.restructure(new String[0],new Vec[0]);
-    fr.remove();
+    Val v = e.pop();
+    Frame fr;
+    if( v instanceof ValFrame ) {
+      fr = ((ValFrame) v)._fr;
+      fr.restructure(new String[0], new Vec[0]);
+      fr.remove();
+    }
   }
 }
 
@@ -2845,8 +2857,14 @@ class ASTVar extends ASTUniPrefixOp {
       env.push(new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();                   // number of rows
-      Frame y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
-      String use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      Frame y;
+      String use;
+      if( env.isEmpty() || env.sp() <= 1 ) { y=fr; use="everything"; }
+      else {
+                            y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
+        if( env.isEmpty() || env.sp() <= 1 ) use = "everything";
+        else                use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      }
 //      String[] rownames = fr.names();  TODO: Propagate rownames?
       String[] colnames = y.names();
 
@@ -2977,12 +2995,13 @@ class ASTMean extends ASTUniPrefixOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    arg1.exec(e);
-    e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    args[0].exec(e);
+    e.put(Key.make().toString(), e.peekAry());
     if (args != null) {
-      if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
-      for (AST a : args) {
+      if (args.length > 3) throw new IllegalArgumentException("Too many arguments passed to `mean`");
+      for(int i=1;i<args.length;++i) {
+        AST a = args[i];
         if (a instanceof ASTId) {
           _narm = ((ASTNum) e.lookup((ASTId) a)).dbl() == 1;
         } else if (a instanceof ASTNum) {
@@ -2995,7 +3014,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (env.isNum()) return;
-    Frame fr = env.popAry(); // get the frame w/o sub-reffing
+      Frame fr = env.popAry(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
@@ -3184,7 +3203,7 @@ class ASTTable extends ASTUniPrefixOp {
       Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
       Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
-      final ASTddply.Group[] pairs = u._s.toArray(new ASTddply.Group[u._s.size()]);
+      final ASTddply.Group[] pairs = u._s._g.toArray(new ASTddply.Group[u._s.size()]);
       dataLayoutVec = Vec.makeCon(0, pairs.length);
 
       s = System.currentTimeMillis();
@@ -3255,36 +3274,21 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
-    NonBlockingHashSet<ASTddply.Group> _s;
+    ASTGroupBy.IcedNBHS<ASTddply.Group> _s;
     private long[] _cols;
     @Override public void setupLocal() {
-      _s = new NonBlockingHashSet<>();
+      _s = new ASTGroupBy.IcedNBHS<>();
       _cols = new long[_fr.numCols()];
       for(int i=0;i<_cols.length;++i) _cols[i]=i;
     }
     @Override public void map(Chunk[] c) {
       ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0;i<c[0]._len;++i)
-        if( _s.add(g.fill(i,c,_cols))) {
+        if( _s.add((ASTddply.Group)g.fill(i,c,_cols))) {
           g = new ASTddply.Group(_cols.length);
         }
     }
-    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
-
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _s == null ) return ab.put4(0);
-      ab.put4(_s.size());
-      for( ASTddply.Group g : _s ) {ab.put(g); }
-      return ab;
-    }
-
-    @Override public Uniq2ColTsk read_impl( AutoBuffer ab ) {
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _s = new NonBlockingHashSet<>();
-      for( int i=0; i<len; i++ ) { _s.add(ab.get(ASTddply.Group.class));}
-      return this;
-    }
+    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s._g); }
   }
 
   /** http://szudzik.com/ElegantPairing.pdf */
@@ -3306,36 +3310,21 @@ class ASTTable extends ASTUniPrefixOp {
 //  }
 
   private static class NewHashMap extends MRTask<NewHashMap> {
-    NonBlockingHashMap<ASTddply.Group, Integer> _s;
+    IcedHashMap<ASTddply.Group, Integer> _s;
     final ASTddply.Group[] _m;
     NewHashMap(ASTddply.Group[] m) { _m = m; }
-    @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
+    @Override public void setupLocal() { _s = new IcedHashMap<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
       for (int i = 0; i < c[0]._len; ++i)
         _s.put(_m[i + start], i+start);
     }
     @Override public void reduce(NewHashMap t) { if (_s != t._s) _s.putAll(t._s); }
-
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _s == null ) return ab.put4(0);
-      ab.put4(_s.size());
-      for( ASTddply.Group l : _s.keySet() ) {ab.put(l); ab.put4(_s.get(l)); }
-      return ab;
-    }
-
-    @Override public NewHashMap read_impl( AutoBuffer ab ) {
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _s = new NonBlockingHashMap<>();
-      for( int i=0;i<len;i++ ) _s.put(ab.get(ASTddply.Group.class), ab.get4());
-      return this;
-    }
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    final NonBlockingHashMap<ASTddply.Group, Integer> _m;
+    final IcedHashMap<ASTddply.Group, Integer> _m;
     private long[] _cols;
     // out
     long[] _cnts;
@@ -3343,7 +3332,7 @@ class ASTTable extends ASTUniPrefixOp {
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
-    CountUniq2ColTsk(NonBlockingHashMap<ASTddply.Group, Integer> s) {_m = s; }
+    CountUniq2ColTsk(IcedHashMap<ASTddply.Group, Integer> s) {_m = s; }
     @Override public void setupLocal() {
       _cnts = MemoryManager.malloc8(_m.size());
       _cols = new long[_fr.numCols()];
@@ -3771,6 +3760,53 @@ class ASTLs extends ASTOp {
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
+  }
+}
+
+class ASTStoreSize extends ASTOp {
+  ASTStoreSize() { super(null); }
+  @Override String opStr() { return "store_size"; }
+  @Override ASTOp make() { return new ASTStoreSize(); }
+  ASTStoreSize parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTStoreSize) clone();
+  }
+  @Override void apply(Env e) { e.push(new ValNum(H2O.store_size())); }
+}
+
+// used for testing... takes in an expected number of keys, and then determines leak
+// pushes TRUE for leak, FALSE for not leak
+class ASTKeysLeaked extends ASTUniPrefixOp {
+  ASTKeysLeaked() { super(new String[]{"numkeys"}); }
+  @Override String opStr() { return "keys_leaked"; }
+  @Override ASTOp make() { return new ASTKeysLeaked(); }
+  ASTKeysLeaked parse_impl(Exec E) {
+    AST a = E.parse();
+    E.eatEnd();
+    ASTKeysLeaked res = (ASTKeysLeaked) clone();
+    res._asts = new AST[]{a};
+    return res;
+  }
+  @Override void apply(Env e) {
+    int numKeys = (int)e.popDbl();
+    int leaked_keys = H2O.store_size() - numKeys;
+    if( leaked_keys > 0 ) {
+      int cnt=0;
+      for( Key k : H2O.localKeySet() ) {
+        Value value = H2O.raw_get(k);
+        // Ok to leak VectorGroups and the Jobs list
+        if( value.isVecGroup() || k == Job.LIST ||
+                // Also leave around all attempted Jobs for the Jobs list
+                (value.isJob() && value.<Job>get().isStopped()) )
+          leaked_keys--;
+        else {
+          if( cnt++ < 10 )
+            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        }
+      }
+      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+    }
+    e.push(new ValStr(leaked_keys <= 0 ? "FALSE" : "TRUE"));
   }
 }
 

@@ -121,14 +121,6 @@ class Basic(unittest.TestCase):
             else:
                 parse_result = a_node.parse(key=kList2, timeoutSecs=timeoutSecs, **kwargs)
 
-            k = parse_result
-            print "parse_result.keys", k.keys()
-
-            k = parse_result['frames'][0]
-            print "frames[0].keys", k.keys()
-                
-            k = parse_result['frames'][0]['frame_id']
-            print "frames[0].frame_id..keys", k.keys()
             k = parse_result['frames'][0]['frame_id']['name']
             # print "parse_result:", dump_json(parse_result)
             frames_result = a_node.frames(key=k, row_count=5)
@@ -137,6 +129,8 @@ class Basic(unittest.TestCase):
             # we doubled the keyList, from what was in tryList
 
             parseKeyIndexedCheck(frames_result, multiplyExpected, expectedColumnNames)
+
+        h2o.nodes[0].log_download()
 
 if __name__ == '__main__':
     h2o.unit_main()

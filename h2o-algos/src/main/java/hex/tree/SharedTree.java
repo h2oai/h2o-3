@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -68,6 +69,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
+    if (_parms._nbins <= 1) error ("_nbins", "_nbins must be > 1.");
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
@@ -180,8 +182,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _parms.read_unlock_frames(SharedTree.this);
         if( _model==null ) Scope.exit();
         else {
-          Key[] mms = _model._output._model_metrics;
-          Scope.exit(_model._key,mms.length==0 ? null : mms[mms.length-1]);
+          Scope.exit(_model._key, ModelMetrics.buildKey(_model,_parms.train()), ModelMetrics.buildKey(_model,_parms.valid()));
         }
       }
       tryComplete();
@@ -333,7 +334,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     double sum = score1(chks, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-      ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
   }
 
@@ -376,7 +378,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       SharedTreeModel.SharedTreeOutput out = _model._output;
       _timeLastScoreStart = now;
       // Score on training data
-      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -389,7 +391,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._MSE; // Store score results in the model output
         out._validation_metrics = mmv;

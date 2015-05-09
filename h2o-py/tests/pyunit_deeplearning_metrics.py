@@ -19,8 +19,10 @@ def deep_learning_metrics_test(ip, port):
   # See that the data is ready
   train.describe()
   train.head()
+  train.tail()
   test.describe()
   test.head()
+  test.tail()
 
   # Run DeepLearning
 

@@ -56,14 +56,14 @@ class MetricsBase(object):
       print "AUC: "                                           + str(self.auc())
       print "Gini: "                                          + str(self.giniCoef())
       ConfusionMatrix(cm=self.confusion_matrices()[0], domains=self._metric_json['domain']).show()
-      print                                                     self._metric_json["max_criteria_and_metric_scores"]
+      self._metric_json["max_criteria_and_metric_scores"].show()
     if metric_type in types_w_mult:
-      print                                                     self._metric_json['cm']['table']
-      print                                                     self._metric_json['hit_ratio_table']
+                                                               self._metric_json['cm']['table'].show()
+                                                               self._metric_json['hit_ratio_table'].show()
     if metric_type in types_w_clustering:
-      print "Average within cluster Mean Square Error: "      + str(self.avg_within_ss())
-      print "Average Mean Square Error to grand mean: "       + str(self.avg_ss())
-      print "Average between cluster Mean Square Error: "     + str(self.avg_between_ss())
+      print "Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss())
+      print "Total Sum of Square Error to Grand Mean: "       + str(self.totss())
+      print "Between Cluster Sum of Square Error: "           + str(self.betweenss())
       self._metric_json['centroid_stats'].show()
 
   def r2(self):
@@ -148,28 +148,28 @@ class H2OClusteringModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
 
-  def avg_within_ss(self):
+  def tot_withinss(self):
     """
-    :return: the Average within cluster Mean Square Error, or None if not present.
+    :return: the Total Within Cluster Sum-of-Square Error, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "avg_within_ss"):
-      return self._metric_json["avg_within_ss"]
+    if ModelBase._has(self._metric_json, "tot_withinss"):
+      return self._metric_json["tot_withinss"]
     return None
 
-  def avg_ss(self):
+  def totss(self):
     """
-    :return: the Average Mean Square Error to grand mean, or None if not present.
+    :return: the Total Sum-of-Square Error to Grand Mean, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "avg_ss"):
-      return self._metric_json["avg_ss"]
+    if ModelBase._has(self._metric_json, "totss"):
+      return self._metric_json["totss"]
     return None
 
-  def avg_between_ss(self):
+  def betweenss(self):
     """
-    :return: the Average between cluster Mean Square Error, or None if not present.
+    :return: the Between Cluster Sum-of-Square Error, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "avg_between_ss"):
-      return self._metric_json["avg_between_ss"]
+    if ModelBase._has(self._metric_json, "betweenss"):
+      return self._metric_json["betweenss"]
     return None
 
 class H2OMultinomialModelMetrics(MetricsBase):

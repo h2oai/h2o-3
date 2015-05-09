@@ -197,7 +197,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Build trees until we hit the limit
       for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
-          doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          double training_r2 = doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          if( training_r2 >= _parms._r2_stopping )
+            return;             // Stop when approaching round-off error
         }
         // At each iteration build K trees (K = nclass = response column domain size)
 
@@ -308,7 +310,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // ----
       // Move rows into the final leaf rows
       Timer t_4 = new Timer();
-      CollectPreds cp = new CollectPreds(ktrees,leafs).doAll(fr,_parms._build_tree_one_node);
+      CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(fr,_parms._build_tree_one_node);
 
       if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
       else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
@@ -322,10 +324,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     // Collect and write predictions into leafs.
     private class CollectPreds extends MRTask<CollectPreds> {
       /* @IN  */ final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
+      /* @IN */  double _threshold;      // Sum of squares for this tree only
       /* @OUT */ long rightVotes; // number of right votes over OOB rows (performed by this tree) represented by DTree[] _trees
       /* @OUT */ long allRows;    // number of all OOB rows (sampled by this tree)
       /* @OUT */ float sse;      // Sum of squares for this tree only
-      CollectPreds(DTree trees[], int leafs[]) { _trees=trees; }
+      CollectPreds(DTree trees[], int leafs[], double threshold) { _trees=trees; _threshold = threshold; }
       final boolean importance = true;
       @Override public void map( Chunk[] chks ) {
         final Chunk    y       = importance ? chk_resp(chks) : null; // Response
@@ -374,7 +377,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
-                int treePred = getPrediction(rpred, data_row(chks, row, rowdata));
+                int treePred = getPrediction(rpred, data_row(chks, row, rowdata), _threshold);
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression

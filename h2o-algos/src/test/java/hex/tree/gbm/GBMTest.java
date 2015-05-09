@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.AUC2;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.*;
@@ -655,37 +656,64 @@ public class GBMTest extends TestUtil {
 
   // Test uses big data and is too slow for a pre-push
   @Test @Ignore public void testCUST_A() {
-    Frame tfr=null;
+    Frame tfr=null, vfr=null;
     GBMModel gbm=null;
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file("./smalldata/ad.csv");
-      int idx = tfr.find("label");
+      tfr = parse_test_file("./bigdata/covktr.csv");
+      vfr = parse_test_file("./bigdata/covkts.csv");
+      int idx = tfr.find("V55");
       Scope.track(tfr.replace(idx, tfr.vecs()[idx].toEnum())._key);
+      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toEnum())._key);
       DKV.put(tfr);
+      DKV.put(vfr);
 
-      // Same parms for all
+      // Build model
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;
-      parms._valid = null;
-      parms._response_column = "label";
-      parms._ntrees = 1;
-      parms._max_depth = 5;
+      parms._valid = vfr._key;
+      parms._response_column = "V55";
+      parms._ntrees = 10;
+      parms._max_depth = 1;
       parms._nbins = 20;
       parms._min_rows = 10;
-      parms._learn_rate = 1f;
-      parms._distribution = Family.AUTO;
+      parms._learn_rate = 0.01f;
+      parms._distribution = Family.multinomial;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
       job.remove();
 
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,tfr);
-      double auc = mm._auc._auc;
-      Assert.assertEquals(1.0,auc,1e-8);
+      // Report AUC from training
+      hex.ModelMetricsBinomial tmm = hex.ModelMetricsBinomial.getFromDKV(gbm,tfr);
+      hex.ModelMetricsBinomial vmm = hex.ModelMetricsBinomial.getFromDKV(gbm,vfr);
+      double t_auc = tmm._auc._auc;
+      double v_auc = vmm._auc._auc;
+      System.out.println("train_AUC= "+t_auc+" , validation_AUC= "+v_auc);
+
+      // Report AUC from scoring
+      Frame t_pred = gbm.score(tfr);
+      Frame v_pred = gbm.score(vfr);
+      hex.ModelMetricsBinomial tmm2 = hex.ModelMetricsBinomial.getFromDKV(gbm,tfr);
+      hex.ModelMetricsBinomial vmm2 = hex.ModelMetricsBinomial.getFromDKV(gbm,vfr);
+      assert tmm != tmm2;
+      assert vmm != vmm2;
+      double t_auc2 = tmm._auc._auc;
+      double v_auc2 = vmm._auc._auc;
+      System.out.println("train_AUC2= "+t_auc2+" , validation_AUC2= "+v_auc2);
+
+      // Compute the perfect AUC
+      double t_auc3 = AUC2.perfectAUC(t_pred.vecs()[2], tfr.vec("V55"));
+      double v_auc3 = AUC2.perfectAUC(v_pred.vecs()[2], vfr.vec("V55"));
+      System.out.println("train_AUC3= "+t_auc3+" , validation_AUC3= "+v_auc3);
+      Assert.assertEquals(t_auc3, t_auc , 1e-6);
+      Assert.assertEquals(t_auc3, t_auc2, 1e-6);
+      Assert.assertEquals(v_auc3, v_auc , 1e-6);
+      Assert.assertEquals(v_auc3, v_auc2, 1e-6);
 
     } finally {
       if (tfr  != null) tfr.remove();
+      if (vfr  != null) vfr.remove();
       if (gbm  != null) gbm.delete();
       Scope.exit();
     }

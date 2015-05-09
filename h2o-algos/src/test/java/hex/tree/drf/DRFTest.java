@@ -264,7 +264,6 @@ public class DRFTest extends TestUtil {
             s("0", "1"));
   }
 
-  @Ignore // PUBDEV-1015
   @Test public void testProstate() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/prostate/prostate.csv.zip", "prostate2.zip.hex",
@@ -283,7 +282,7 @@ public class DRFTest extends TestUtil {
               }
             },
             4, //ntrees
-            1, //bins
+            2, //bins
             1, //min_rows
             1, //max_depth
             null,

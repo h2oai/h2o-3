@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import water.Key;
 import water.fvec.Chunk;
 import water.util.*;
@@ -10,6 +11,20 @@ import water.util.*;
 public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
+
+  /**
+   * Default threshold for assigning class labels to the target class (for binomial models)
+   * @return threshold in 0...1
+   */
+  public final double defaultThreshold() {
+    if (_output.nclasses() != 2 || _output._training_metrics == null)
+      return 0.5;
+    if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultThreshold();
+    if (_output._training_metrics != null && ((ModelMetricsBinomial)_output._training_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
+    return 0.5;
+  }
 
   /** Supervised Model Parameters includes a response column, and whether or
    *  not rebalancing classes is desirable.  Also includes a bunch of cheap
@@ -88,7 +103,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     @Override public boolean isSupervised() { return true; }
 
     /** @return number of classes; illegal to call before setting distribution */
-    public int nclasses() { return _distribution.length; }
+    public int nclasses() { return _distribution == null ? 1 : _distribution.length; }
     public boolean isClassifier() { return nclasses()>1; }
     @Override public ModelCategory getModelCategory() {
       return nclasses()==1 
@@ -108,10 +123,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     double[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if( _output.isClassifier() && _output._priorClassDist !=_output._modelClassDist ) {
-      ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
-      //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
-      scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp);
+    if( _output.isClassifier()) {
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
+      //assign label at the very end (after potentially correcting probabilities)
+      scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
     }
     return scored;
   }

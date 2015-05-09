@@ -30,7 +30,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
     shortenIt = resultExec
     if 'head' in shortenIt:
         shortenIt['head'] = 'chopped out by python exec_expr for print brevity'
-    print "exec:", dump_json(shortenIt)
+    # print "exec:", dump_json(shortenIt)
 
     # when do I get cols?
 

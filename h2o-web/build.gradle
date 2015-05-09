@@ -109,6 +109,14 @@ task copyGenModelJarToWebRoot(type: Copy) {
   rename { filename -> "h2o-genmodel.jar"}
 }
 
+task deleteBowerModules(type: Delete) {
+  delete 'lib'
+}
+
+task deleteNodeModules(type: Delete) {
+  delete 'node_modules'
+}
+
 task deleteFlowFromWebRoot(type: Delete) {
   delete 'src/main/resources/www/flow'
 }
@@ -165,9 +173,9 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 
-compileAndInstallDocFiles.dependsOn installNpmPackages
+compileAndInstallDocFiles.dependsOn copyFlowToWebRoot
 processResources.dependsOn compileAndInstallDocFiles
 
 
 // Hook clean stage
-clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles
+clean.dependsOn deleteFlowFromWebRoot, deleteBowerModules, deleteNodeModules, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles

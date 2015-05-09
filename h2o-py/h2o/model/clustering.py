@@ -21,20 +21,20 @@ class H2OClusteringModel(ModelBase):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     return [ v[2] for v in  tm._metric_json["centroid_stats"].cell_values]
 
-  def avg_between_ss(self, train, valid):
+  def betweenss(self, train, valid):
     """
-    Get the average between cluster sum of squares.
+    Get the between cluster sum of squares.
 
     :param train: If train is True, then return the average between cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the average between cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
     :return: The average between cluster sum of squares for either the training or validation dataset.
     """
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
-    return tm._metric_json["avg_between_ss"]
+    return tm._metric_json["betweenss"]
 
-  def avg_ss(self, train=False, valid=False):
+  def totss(self, train=False, valid=False):
     """
-    Get the average cluster sum of squares.
+    Get the total sum of squares to grand mean.
 
     :param train: If train is True, then return the average cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the average cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
@@ -43,9 +43,9 @@ class H2OClusteringModel(ModelBase):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     return tm._metric_json["avg_ss"]
 
-  def avg_within_ss(self, train=False, valid=False):
+  def tot_withinss(self, train=False, valid=False):
     """
-    Get the average within cluster sum of squares.
+    Get the total within cluster sum of squares.
 
     :param train: If train is True, then return the average within cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
     :param valid: If valid is True, then return the average within cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
@@ -54,7 +54,7 @@ class H2OClusteringModel(ModelBase):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     return tm._metric_json["avg_within_ss"]
 
-  def within_mse(self, train=False, valid=False):
+  def withinss(self, train=False, valid=False):
     """
     Get the within cluster sum of squares for each cluster.
 

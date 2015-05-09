@@ -151,7 +151,7 @@ def metric_json_check(ip, port):
     clus_mod = h2o.kmeans(x=df[0:4], k=3, standardize=False)
     clus_met = clus_mod.model_performance()
     clus_metric_json_keys_have = clus_met._metric_json.keys()
-    clus_metric_json_keys_desired = [u'avg_within_ss',
+    clus_metric_json_keys_desired = [u'tot_withinss',
                                      u'model_category',
                                      u'description',
                                      u'frame',
@@ -159,9 +159,9 @@ def metric_json_check(ip, port):
                                      u'MSE',
                                      u'__meta',
                                      u'scoring_time',
-                                     u'avg_between_ss',
+                                     u'betweenss',
                                      u'predictions',
-                                     u'avg_ss',
+                                     u'totss',
                                      u'model',
                                      u'duration_in_ms',
                                      u'frame_checksum',

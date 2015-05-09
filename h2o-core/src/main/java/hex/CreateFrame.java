@@ -32,7 +32,7 @@ public class CreateFrame extends Job<Frame> {
   public CreateFrame(Key<Frame> dest, String desc) { super(dest, (desc == null ? "CreateFrame" : desc)); }
   public CreateFrame() { super(Key.make(), "CreateFrame"); }
 
-  public void execImpl() {
+  public Job<Frame> execImpl() {
     if (integer_fraction + binary_fraction + categorical_fraction > 1) throw new IllegalArgumentException("Integer, binary and categorical fractions must add up to <= 1.");
     if (Math.abs(missing_fraction) > 1) throw new IllegalArgumentException("Missing fraction must be between 0 and 1.");
     if (Math.abs(integer_fraction) > 1) throw new IllegalArgumentException("Integer fraction must be between 0 and 1.");
@@ -54,5 +54,6 @@ public class CreateFrame extends Job<Frame> {
 
     FrameCreator fc = new FrameCreator(this, this._key);
     start(fc, fc.nChunks()*5);
+    return this;
   }
 }

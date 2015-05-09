@@ -82,12 +82,18 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk))-1];
-    } else { // do not skip any levels
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
-        eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
+    for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) {
+      if(chks[i].isNA(row_in_chunk)) {
+        eta = Double.NaN;
+        break;
+      }
+      long lval = chks[i].at8(row_in_chunk);
+      int ival = (int)lval;
+      if(ival != lval) throw new IllegalArgumentException("categorical value out of range");
+      if(_parms._use_all_factor_levels)
+        eta += b[_dinfo._catOffsets[i] + ival];
+      else if(ival != 0)
+        eta += b[_dinfo._catOffsets[i] + ival - 1];
     }
     final int noff = _dinfo.numStart() - _dinfo._cats ;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
@@ -128,6 +134,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_iterations = -1;
     public int _n_folds;
     boolean _intercept = true;
+    boolean _higher_accuracy;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
@@ -629,26 +636,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           bestVal = _submodels[0].trainVal;
         for (int i = 1; i < _submodels.length; ++i) {
           GLMValidation val = xval ? _submodels[i].xVal : hval ? _submodels[i].holdOutVal : _submodels[i].trainVal;
-          Frame f = hval ? vFrame : tFrame;
           if (val == null || val == bestVal) continue;
-          if ((useAuc && val.computeAUC(m.clone(), f) > bestVal.computeAUC(m, f)) || val.residual_deviance < bestVal.residual_deviance) {
+          if (MathUtils.roundToNDigits(val.residual_deviance,4) < MathUtils.roundToNDigits(bestVal.residual_deviance,4)) {
             bestVal = val;
             bestId = i;
           }
         }
       }
       setSubmodelIdx(_best_lambda_idx = bestId, m, tFrame, vFrame);
-    }
-
-    public ModelMetrics setModelMetrics(ModelMetrics mm) {
-      for (int i = 0; i < _model_metrics.length; ++i) // Dup removal
-        if (_model_metrics[i].equals(mm._key)) {
-          _model_metrics[i] = mm._key;
-          return mm;
-        }
-      _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
-      _model_metrics[_model_metrics.length - 1] = mm._key;
-      return mm;                // Flow coding
     }
 
     public void setSubmodelIdx(int l, GLMModel m, Frame tFrame, Frame vFrame){
@@ -736,7 +731,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         res.set(i, col++, _scoring_iters[i]);
         res.set(i, col++, _likelihoods[i]);
         res.set(i, col++, _objectives[i]);
-        if(_lambda_iters != null && _scoring_iters[i] == _lambda_iters[j]) {
+        if(_lambda_iters != null && j < _lambda_iters.length && _scoring_iters[i] == _lambda_iters[j]) {
           res.set(i, col++, _scoring_lambda[j]);
           res.set(i, col++, _lambda_times[j]);
           res.set(i, col++, _predictors[j]);
@@ -801,7 +796,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       int lambdaSearch = 0;
       if(glmModel._parms._lambda_search) {
         lambdaSearch = 1;
-        glmModel._output._model_summary.set(0,3,"nlambda = " + glmModel._parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(glmModel._lambda_max,4)  + ", best_lambda_id = " + glmModel._output._best_lambda_idx);
+        glmModel._output._model_summary.set(0,3,"nlambda = " + glmModel._parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(glmModel._lambda_max,4)  + ", best_lambda = " + MathUtils.roundToNDigits(glmModel._output.bestSubmodel().lambda_value,4));
       }
       int intercept = glmModel._parms._intercept?1:0;
       glmModel._output._model_summary.set(0,3+lambdaSearch,Integer.toString(glmModel.beta().length - intercept));
