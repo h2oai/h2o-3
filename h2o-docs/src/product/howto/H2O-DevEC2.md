@@ -1,7 +1,8 @@
 #H2O-Dev on EC2
 
 **Note**: If you would like to try out H2O on an EC2 cluster, <a href="http://play.h2o.ai/login" target="_blank">play.h2o.ai</a> is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
-If you would still like to set up your own EC2 cluster, follow the instructions below. 
+
+If you would still like to set up your own EC2 cluster, follow the instructions below. Make sure you have already <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">passed your S3 credentials to H2O</a>.
 
  >Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI
 
