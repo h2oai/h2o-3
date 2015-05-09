@@ -56,10 +56,10 @@ class MetricsBase(object):
       print "AUC: "                                           + str(self.auc())
       print "Gini: "                                          + str(self.giniCoef())
       ConfusionMatrix(cm=self.confusion_matrices()[0], domains=self._metric_json['domain']).show()
-      print                                                     self._metric_json["max_criteria_and_metric_scores"]
+      self._metric_json["max_criteria_and_metric_scores"].show()
     if metric_type in types_w_mult:
-      print                                                     self._metric_json['cm']['table']
-      print                                                     self._metric_json['hit_ratio_table']
+                                                               self._metric_json['cm']['table'].show()
+                                                               self._metric_json['hit_ratio_table'].show()
     if metric_type in types_w_clustering:
       print "Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss())
       print "Total Sum of Square Error to Grand Mean: "       + str(self.totss())

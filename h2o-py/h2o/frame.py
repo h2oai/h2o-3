@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tabulate, tempfile, uuid, copy
+import collections, csv, itertools, os, re, tempfile, uuid, copy
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -237,7 +237,7 @@ class H2OFrame:
     else:
       if len(self) == 1:
         to_show = [[v] for v in self._vecs[0].show(noprint=True)]
-        print tabulate.tabulate(to_show, headers=self.names())
+        h2o.H2ODisplay(to_show,self.names())
       else:
         vecs = [vec.show(noprint=True) for vec in self]
         # vecs = self._vecs
@@ -246,14 +246,12 @@ class H2OFrame:
           vecs.insert(0,1)
           print "Displaying " + str(l) + " row(s):"
           vecs = [[v] for v in vecs]
-          print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
-          print
+          h2o.H2ODisplay(zip(*vecs),["Row ID"]+self.names())
         else:
           l = len(vecs[0])
           vecs.insert(0, range(1, len(vecs[0])+1, 1))
           print "Displaying " + str(l) + " row(s):"
-          print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
-          print
+          h2o.H2ODisplay(zip(*vecs),["Row ID"]+self.names())
 
   def head(self, rows=10, cols=200, **kwargs):
     """
@@ -279,8 +277,8 @@ class H2OFrame:
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
     head = zip(*head_rows)
     print "First", str(nrows), "rows and first", str(ncols), "columns: "
-    print tabulate.tabulate(head, headers=["Row ID"] + colnames)
-    print
+    h2o.H2ODisplay(head,["Row ID"]+self.names())
+
 
   def tail(self, rows=10, cols=200, **kwargs):
     """
@@ -308,10 +306,9 @@ class H2OFrame:
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
       tail = zip(*tail_rows)
-      print tabulate.tabulate(tail, headers=["Row ID"] + colnames)
+      h2o.H2ODisplay(tail,["Row ID"]+self.names())
     else:
-      print tabulate.tabulate([[self.nrow()] + [expr.eager() for expr in exprs]], headers=["Row ID"] + colnames)
-    print
+      h2o.H2ODisplay([[self.nrow()] + [expr.eager() for expr in exprs]], ["Row ID"] + colnames)
 
   def levels(self, col=0):
     """
@@ -369,17 +366,13 @@ class H2OFrame:
       self._row('zero_count', None),
       self._row('missing_count', None)
     ]
-
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
-
     chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
-
+    dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
     h2o.delete(chunk_summary_tmp_key)
-
-    print tabulate.tabulate(table, headers)
-    print
-    print chunk_summary
-    print
+    chunk_summary.show()
+    dist_summary.show()
+    h2o.H2ODisplay(table, [""] + headers)
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
@@ -1103,8 +1096,8 @@ class H2OVec:
       for i in range(1, min(11, len(to_show) + 1), 1):
         to_show[i - 1].insert(0, i)
       header = self._name + " (first " + str(nrows) + " row(s))"
-      print tabulate.tabulate(to_show, headers=["Row ID", header])
-      print
+      header=["Row ID", header]
+      h2o.H2ODisplay(to_show, header)
 
   # def __repr__(self):
   #   self.show()

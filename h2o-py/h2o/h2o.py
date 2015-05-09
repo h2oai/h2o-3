@@ -10,6 +10,7 @@ import urllib
 import urllib2
 import json
 import random
+import tabulate
 import numpy as np
 from connection import H2OConnection
 from job import H2OJob
@@ -232,7 +233,11 @@ def value_check(h2o_data, local_data, num_elements, col=None):
 
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
+  init(ip,port)
+  num_keys = store_size()
   test_to_run(ip, port)
+  if keys_leaked(num_keys):
+    print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
 
 def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
@@ -518,6 +523,22 @@ def locate(path):
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
 
+
+def store_size():
+  """
+  Get the H2O store size (current count of keys).
+  :return: number of keys in H2O cloud
+  """
+  return rapids("(store_size)")["result"]
+
+def keys_leaked(num_keys):
+  """
+  Ask H2O if any keys leaked.
+  @param num_keys: The number of keys that should be there.
+  :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
+  """
+  return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
+
 def as_list(data):
   """
   If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
@@ -607,3 +628,72 @@ def sd(data)    : return data.sd()
 def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
+
+
+class H2ODisplay:
+  """
+  Pretty printing for H2O Objects;
+  Handles both IPython and vanilla console display
+  """
+  def __init__(self,table=None,header=None,**kwargs):
+    self.header=header
+    self.table=table
+    self.kwargs=kwargs
+    self.do_print=True
+
+    # one-shot display... never return an H2ODisplay object (or try not to)
+    # if holding onto a display object, then may have odd printing behavior
+    # the __repr__ and _repr_html_ methods will try to save you from many prints,
+    # but just be WARNED that your mileage may vary!
+    if H2ODisplay._in_ipy():
+      from IPython.display import display
+      display(self)
+      self.do_print=False
+    else:
+      self.pprint()
+      self.do_print=False
+
+  # for Ipython
+  def _repr_html_(self):
+    if self.do_print:
+      return H2ODisplay._html_table(self.table,self.header)
+
+  def pprint(self):
+    r = self.__repr__()
+    print r
+
+  # for python REPL console
+  def __repr__(self):
+    if self.do_print or not H2ODisplay._in_ipy():
+      if self.header is None:  # tabulate is picky; can't handle None for headers...
+        return tabulate.tabulate(self.table,**self.kwargs)
+      else:
+        return tabulate.tabulate(self.table,headers=self.header,**self.kwargs)
+    self.do_print=True
+    return ""
+
+  @staticmethod
+  def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
+    try:
+      __IPYTHON__
+      return True
+    except NameError:
+      return False
+
+  # some html table builder helper things
+  @staticmethod
+  def _html_table(rows, header=None):
+    table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
+    table_rows=[]
+    if header is not None:
+      table_rows.append(H2ODisplay._html_row(header))
+    for row in rows:
+      table_rows.append(H2ODisplay._html_row(row))
+    return table.format("\n".join(table_rows))
+
+  @staticmethod
+  def _html_row(row):
+    res = "<tr>{}</tr>"
+    entry = "<td>{}</td>"
+    entries = "\n".join([entry.format(str(r)) for r in row])
+    return res.format(entries)
