@@ -26,6 +26,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Convergence tolerance
   private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of singular value \sigma_i
 
+  // Maximum number of columns when categoricals expanded
+  private final int MAX_COLS_EXPANDED = 5000;
+
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
@@ -57,6 +60,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     if(_train == null) return;
     _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
+    if (_ncolExp > MAX_COLS_EXPANDED)
+      warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
 
     if(_parms._nv < 1 || _parms._nv > _ncolExp)
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
@@ -208,7 +213,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
 
           model.update(self()); // Update model in K/V store
-          update(1);          // One unit of work
+          update(1);            // One unit of work
         }
 
         // 4) Save solution to model output
@@ -308,7 +313,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final double[] _normMul;
     final int _ncols;
     final double[] _svec;   // Input: Right singular vector (v_1)
-    double _sval;     // Output: Singular value (\sigma_1)
+    double _sval;           // Output: Singular value (\sigma_1)
 
     CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
@@ -336,7 +341,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     SVDParameters _parms;
     final int _k;             // Input: Index of current singular vector (k)
     final double[] _svec;     // Input: Right singular vector (v_k)
-    final double _sval_old;  // Input: Singular value from last iteration (\sigma_{k-1})
+    final double _sval_old;   // Input: Singular value from last iteration (\sigma_{k-1})
     final double[] _normSub;
     final double[] _normMul;
     final int _ncols;

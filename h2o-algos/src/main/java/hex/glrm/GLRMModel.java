@@ -224,7 +224,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
   }
 
-    public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
+  public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
 
   // TODO: What should we do for scoring GLRM?
   @Override protected double[] score0(double[] data, double[] preds) {

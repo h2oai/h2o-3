@@ -21,13 +21,13 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public long _seed = System.nanoTime(); // RNG seed
     public Key<Frame> _loading_key;
     public boolean _keep_loading = true;
-    public boolean _useAllFactorLevels = false;   // When expanding categoricals, should first level be dropped?
+    public boolean _useAllFactorLevels = false;   // When expanding categoricals, should last level be dropped?
   }
 
   public static class PCAOutput extends Model.Output {
     // Principal components (eigenvectors)
+    public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;
-    public double[][] _eigenvectors_raw;
 
     // Standard deviation of each principal component
     public double[] _std_deviation;

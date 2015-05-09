@@ -27,9 +27,6 @@ import java.util.Arrays;
  *
  */
 public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
-  // Convergence tolerance
-  final private double TOLERANCE = 1e-6;
-
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
@@ -79,8 +76,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
-    if (_parms._max_iterations < 1)
-      error("_max_iterations", "max_iterations must be at least 1");
+    if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
+      error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");

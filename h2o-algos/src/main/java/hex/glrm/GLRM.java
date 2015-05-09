@@ -139,43 +139,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return value;
   }
 
-  // Expand categoricals into 0/1 indicator columns for each level
-  public static double[][] expandCats(double[][] centers, String[][] domains) { return expandCats(centers, domains, true, false); }
-  public static double[][] expandCats(double[][] centers, String[][] domains, boolean useAllFactorLevels, boolean missingBucket) {
-    if(centers == null) return null;
-    assert domains != null && centers[0].length == domains.length;
-
-    // Column count for expanded matrix
-    int ncols = 0;
-    for(int j = 0; j < domains.length; j++)
-      ncols += domains[j] == null ? 1 : domains[j].length - (useAllFactorLevels ? 0:1) + (missingBucket ? 1:0);
-
-    int s = 0;    // Keep track of col index in expanded matrix
-    double[][] cexp = new double[centers.length][ncols];
-    for(int j = 0; j < centers[0].length; j++) {
-      if(domains[j] == null) {    // If numeric col, just copy directly
-        for (int i = 0; i < centers.length; i++)
-          cexp[i][s] = centers[i][j];
-        s++;
-      } else {    // If categorical col, set corresponding indicator for level to 1
-        int len = domains[j].length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
-        for (int i = 0; i < centers.length; i++) {
-          double cat = centers[i][j];
-          if(Double.isNaN(cat)) {
-            if (!missingBucket) continue;  // Skip if entry missing and no NA bucket. All indicators will be zero.
-            else cexp[i][s+len-1] = 1;    // Otherwise, missing value turns into extra (last) factor
-          } else {
-            assert cat >= 0 && cat < domains[j].length : "User-specified categorical level out of bounds from training domain!";
-            int cidx = (int)cat - (useAllFactorLevels ? 0:1);
-            if (cidx >= 0) cexp[i][s+cidx] = 1;   // Don't set col if skipping first factor level
-          }
-        }
-        s += len;
-      }
-    }
-    return cexp;
-  }
-
   // More efficient implementation assuming sdata cols aligned with adaptedFrame
   public static double[][] expandCats(double[][] sdata, DataInfo dinfo) {
     if(sdata == null || dinfo._cats == 0) return sdata;
