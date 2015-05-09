@@ -175,7 +175,7 @@ public class ASTddply extends ASTOp {
       int start = (int)c[0].start();
       for(int i=0;i<c[0]._len;++i) {
         g.fill(i,c,_gbCols);
-        String old_g = _grps.putIfAbsent(g,"");
+        String old_g = _grps.putIfAbsent(g, "");
         if( old_g==null ) {
           gOld=g;
           g= new Group(_gbCols.length);
@@ -304,13 +304,13 @@ public class ASTddply extends ASTOp {
       // finally put the constructed group into the DKV
       Frame aa = new Frame(_key, f._names, gvecs);
       DKV.put(_key,aa); // _key is homed to this node!
+      assert _key.home(): "Key should be homed to the node! Somehow remapped during this compute2.";
       assert DKV.getGet(_key) !=null;
       tryComplete();
     }
   }
 
   private static class Pass3 {
-    private final int numNodes=H2O.CLOUD.size();
     private final Key[] _frameKeys;
     private final ASTOp _FUN;
     private final Group[] _grps;
@@ -326,12 +326,9 @@ public class ASTddply extends ASTOp {
     // stupid single threaded pass over all groups...
     private void go() {
       Futures fs = new Futures();
-      H2ONode n;
       for( int i=0;i<_frameKeys.length;++i) {
-        n = H2O.CLOUD._memary[i%numNodes];
         assert DKV.getGet(_frameKeys[i]) !=null : "Frame was NULL: " + _frameKeys[i];
-        RPC rpc = new RPC(n,_remoteTasks[i]=new RemoteRapids(_frameKeys[i], _FUN, _funArgs, _grps[i]._ds));
-        fs.add(rpc.call());
+        fs.add(RPC.call(_frameKeys[i].home_node(), _remoteTasks[i] = new RemoteRapids(_frameKeys[i], _FUN, _funArgs, _grps[i]._ds)));
       }
       fs.blockForPending();
     }
@@ -341,8 +338,8 @@ public class ASTddply extends ASTOp {
     private final Key _frameKey;   // the group to process...
     private final ASTOp _FUN;      // the ast to execute on the group
     private final AST[] _funArgs;  // any additional arguments to the _FUN
-    private final double[] _ds;     // the "group" itself
-    private double[] _result; // result is 1 row per group!
+    private final double[] _ds;    // the "group" itself
+    private double[] _result;      // result is 1 row per group!
 
     RemoteRapids(Key frameKey, ASTOp FUN, AST[] args, double[] ds) {
       _frameKey=frameKey; _FUN=FUN; _funArgs=args; _ds=ds;
@@ -365,7 +362,6 @@ public class ASTddply extends ASTOp {
 
       _FUN.make().exec(e,args);
       if( !e.isNul() ) {
-
         // grab up the results
         Frame fr = null;
         if (e.isAry() && (fr = e.popAry()).numRows() != 1)
