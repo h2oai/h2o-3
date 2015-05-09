@@ -33,7 +33,8 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
             "lambda_min_ratio",
             "use_all_factor_levels",
             "beta_constraints",
-            "max_active_predictors"
+            "max_active_predictors",
+            "higher_accuracy"
     };
 
     // Input fields
@@ -70,6 +71,9 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
 
     @API(help="include constant term in the model", level = Level.expert)
     public boolean intercept;
+
+    @API(help="", level = Level.expert)
+    public boolean higher_accuracy;
 
 //    @API(help = "Tweedie variance power", level = Level.secondary)
 //    public double tweedie_variance_power;

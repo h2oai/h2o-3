@@ -18,7 +18,7 @@ import java.util.Arrays;
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
-  static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }

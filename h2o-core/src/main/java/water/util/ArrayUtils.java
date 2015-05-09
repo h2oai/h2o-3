@@ -64,6 +64,15 @@ public class ArrayUtils {
       sum += x[i] >= 0?x[i]:-x[i];
     return sum;
   }
+  public static double linfnorm(double [] x, boolean skipLast){
+    double res = Double.NEGATIVE_INFINITY;
+    int last = x.length -(skipLast?1:0);
+    for(int i = 0; i < last; ++i) {
+      if(x[i] > res) res = x[i];
+      if(-x[i] > res) res = -x[i];
+    }
+    return res;
+  }
   public static double l2norm(double[] x) { return Math.sqrt(l2norm2(x)); }
   public static double l2norm(double [] x, boolean skipLast){
     return Math.sqrt(l2norm2(x, skipLast));

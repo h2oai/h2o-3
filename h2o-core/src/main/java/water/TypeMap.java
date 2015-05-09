@@ -131,7 +131,7 @@ public class TypeMap {
   }
 
   // Reverse: convert an ID to a className possibly fetching it from leader.
-  static String className(int id) {
+  public static String className(int id) {
     if( id == PRIM_B ) return "[B";
     Icer f = goForGold(id);
     if( f != null ) return f.className();

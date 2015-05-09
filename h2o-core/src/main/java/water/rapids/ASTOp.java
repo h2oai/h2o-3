@@ -229,6 +229,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new O());
     putPrefix(new ASTImpute());
     putPrefix(new ASTQPFPC());
+    putPrefix(new ASTStoreSize());
+    putPrefix(new ASTKeysLeaked());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -3758,6 +3760,53 @@ class ASTLs extends ASTOp {
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
+  }
+}
+
+class ASTStoreSize extends ASTOp {
+  ASTStoreSize() { super(null); }
+  @Override String opStr() { return "store_size"; }
+  @Override ASTOp make() { return new ASTStoreSize(); }
+  ASTStoreSize parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTStoreSize) clone();
+  }
+  @Override void apply(Env e) { e.push(new ValNum(H2O.store_size())); }
+}
+
+// used for testing... takes in an expected number of keys, and then determines leak
+// pushes TRUE for leak, FALSE for not leak
+class ASTKeysLeaked extends ASTUniPrefixOp {
+  ASTKeysLeaked() { super(new String[]{"numkeys"}); }
+  @Override String opStr() { return "keys_leaked"; }
+  @Override ASTOp make() { return new ASTKeysLeaked(); }
+  ASTKeysLeaked parse_impl(Exec E) {
+    AST a = E.parse();
+    E.eatEnd();
+    ASTKeysLeaked res = (ASTKeysLeaked) clone();
+    res._asts = new AST[]{a};
+    return res;
+  }
+  @Override void apply(Env e) {
+    int numKeys = (int)e.popDbl();
+    int leaked_keys = H2O.store_size() - numKeys;
+    if( leaked_keys > 0 ) {
+      int cnt=0;
+      for( Key k : H2O.localKeySet() ) {
+        Value value = H2O.raw_get(k);
+        // Ok to leak VectorGroups and the Jobs list
+        if( value.isVecGroup() || k == Job.LIST ||
+                // Also leave around all attempted Jobs for the Jobs list
+                (value.isJob() && value.<Job>get().isStopped()) )
+          leaked_keys--;
+        else {
+          if( cnt++ < 10 )
+            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        }
+      }
+      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+    }
+    e.push(new ValStr(leaked_keys <= 0 ? "FALSE" : "TRUE"));
   }
 }
 

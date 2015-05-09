@@ -190,6 +190,7 @@ public class MathUtils {
     return ival/Math.pow(10,exp);
   }
 
+  public enum Norm {L1,L2,L2_2,L_Infinite}
   public static double[] min_max_mean_stddev(long[] counts) {
     double min = Float.MAX_VALUE;
     double max = Float.MIN_VALUE;

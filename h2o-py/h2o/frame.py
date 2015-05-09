@@ -368,8 +368,10 @@ class H2OFrame:
     ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
     chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
+    dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
     h2o.delete(chunk_summary_tmp_key)
     chunk_summary.show()
+    dist_summary.show()
     h2o.H2ODisplay(table, [""] + headers)
 
   # def __repr__(self):
