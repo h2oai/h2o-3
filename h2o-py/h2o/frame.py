@@ -430,17 +430,12 @@ class H2OFrame:
       return H2OFrame(vecs=vecs)
 
     # multi-dimensional slicing via 2-tuple
-    if isinstance(i, tuple):
-      veckeys = [str(v._expr._data) for v in self._vecs]
-      left = Expr(veckeys)
-      rite = Expr((i[0], i[1]))
-      res = Expr("[", left, rite, length=2)
-      if not isinstance(i[0], int) or not isinstance(i[1], int): return res # possible big data
-      # small data (single value)
-      res.eager()
-      if res.is_local(): return res._data
-      j = h2o.frame(res._data) # data is remote
-      return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))[0][0]
+    if isinstance(i, tuple) and len(i)==2:
+      res = self[i[1]] # Slice by columns eagerly
+      # Now slice by rows
+      if isinstance(res,H2OFrame): return [vec[i[0]] for vec in res._vecs]
+      if isinstance(res,H2OVec  ): return  res[i[0]]
+      raise NotImplementedError
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
@@ -521,33 +516,30 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     return len(self._vecs)
 
+  def logical_negation(self):  
+    return H2OFrame(vecs=[H2OVec(x._name, Expr("not", x)) for x in self._vecs])
+
   def _simple_frames_bin_op(self, data, op):
-    if self._vecs is None or self._vecs == []:
-      raise ValueError("Frame Removed")
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr("cbind", Expr(data._vecs)))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr("cbind", Expr([data])))
-    elif isinstance(data, Expr)        : return Expr(op, Expr("cbind",Expr(self._vecs)),data)
-    elif isinstance(data, (int, float)): return Expr(op, Expr("cbind",Expr(self._vecs)),Expr(data))
-    elif isinstance(data, str)         : return Expr(op, Expr("cbind",Expr(self._vecs)),Expr(None, data))
-    else: raise NotImplementedError
+    if self._vecs is None or self._vecs == []:  raise ValueError("Frame Removed")
+    self._len_check(data)
+    if isinstance(data,  H2OFrame):
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, x._len_check( y  ),  y  )) for x, y in zip(self._vecs, i._vecs)])
+    if isinstance(data,  H2OVec):
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, x._len_check(data), data)) for x    in     self._vecs          ])
+    if isinstance(data, (int,float,str)):
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, x,            Expr(data))) for x    in     self._vecs          ])
+    raise NotImplementedError
 
   def _simple_frames_bin_rop(self, data, op):
-    if self._vecs is None or self._vecs == []:
-      raise ValueError("Frame Removed")
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr("cbind",Expr(data._vecs)), Expr("cbind",Expr(self._vecs)),
-                                                     length=self.nrow())
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr("cbind",Expr([data])), Expr("cbind",Expr(self._vecs)),
-                                                     length=self.nrow())
-    elif isinstance(data, Expr)        : return Expr(op, data, Expr("cbind",Expr(self._vecs)), length=self.nrow())
-    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr("cbind",Expr(self._vecs)),
-                                                     length=self.nrow())
-    elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr("cbind",Expr(self._vecs)),
-                                                     length=self.nrow())
-    else: raise NotImplementedError
-
-  def logical_negation(self):  return Expr("not", Expr("cbind",Expr(self._vecs)), length=self.nrow())
+    if self._vecs is None or self._vecs == []:  raise ValueError("Frame Removed")
+    self._len_check(data)
+    if isinstance(data,  H2OFrame):
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op,  y  , x._len_check( y  ))) for x, y in zip(self._vecs, i._vecs)])
+    if isinstance(data, (H2OVec,int,float,str)):
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, data, x._len_check(data))) for x    in     self._vecs          ])
+    raise NotImplementedError
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
@@ -944,25 +936,19 @@ class H2OFrame:
     """
     :return: The minimum value of all frame entries
     """
-    if self._vecs is None or self._vecs == []:
-      raise ValueError("Frame Removed")
-    return Expr("min", Expr("cbind",Expr(self._vecs))).eager()
+    return min([vec.min() for vec in self._vecs])
 
   def max(self):
     """
     :return: The maximum value of all frame entries
     """
-    if self._vecs is None or self._vecs == []:
-      raise ValueError("Frame Removed")
-    return Expr("max", Expr("cbind",Expr(self._vecs))).eager()
+    return max([vec.max() for vec in self._vecs])
 
   def sum(self):
     """
     :return: The sum of all frame entries
     """
-    if self._vecs is None or self._vecs == []:
-      raise ValueError("Frame Removed")
-    return Expr("sum", Expr("cbind",Expr(self._vecs))).eager()
+    return sum([vec.sum() for vec in self._vecs])
 
   def var(self):
     """
@@ -1127,8 +1113,10 @@ class H2OVec:
     """
     if isinstance(i, H2OVec):
       return self.row_select(i)
-    e = Expr(i)
-    return Expr("[", self, e, length=len(e))
+    if isinstance(i, int): # Single row select, makes a scalar
+      e = Expr(i)
+      return Expr("[", self, e, length=len(e)).eager()
+    raise ValueError("Row selection from a Vec is limited to 1 row, or a boolean Vec")
 
   # Boolean column select lookup.  Eager, to compute the result length
   def row_select(self, vec):
