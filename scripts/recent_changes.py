@@ -3,7 +3,6 @@
 import sys
 import os
 import requests
-import urllib
 import re
 import dateutil.parser
 
