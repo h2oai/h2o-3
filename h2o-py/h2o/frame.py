@@ -372,7 +372,7 @@ class H2OFrame:
     h2o.delete(chunk_summary_tmp_key)
     chunk_summary.show()
     dist_summary.show()
-    h2o.H2ODisplay(table, [""] + headers)
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Colum Summary")
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
