@@ -635,7 +635,8 @@ class H2ODisplay:
   Pretty printing for H2O Objects;
   Handles both IPython and vanilla console display
   """
-  def __init__(self,table=None,header=None,**kwargs):
+  def __init__(self,table=None,header=None,table_header=None,**kwargs):
+    self.table_header=table_header
     self.header=header
     self.table=table
     self.kwargs=kwargs
@@ -645,6 +646,11 @@ class H2ODisplay:
     # if holding onto a display object, then may have odd printing behavior
     # the __repr__ and _repr_html_ methods will try to save you from many prints,
     # but just be WARNED that your mileage may vary!
+
+    if self.table_header is not None:
+      print
+      print self.table_header + ":"
+      print
     if H2ODisplay._in_ipy():
       from IPython.display import display
       display(self)
