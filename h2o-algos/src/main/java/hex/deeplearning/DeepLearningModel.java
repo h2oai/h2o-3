@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.*;
-import static hex.deeplearning.DeepLearning.makeDataInfo;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
@@ -21,6 +20,7 @@ import java.util.List;
 import java.util.Random;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.deeplearning.DeepLearning.makeDataInfo;
 import static java.lang.Double.isNaN;
 
 /**
@@ -551,7 +551,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
         }
-        if (_replicate_training_data && train().byteSize() > 1e10) {
+        if (_replicate_training_data && null != train() && train().byteSize() > 1e10) {
           dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
         }
       }

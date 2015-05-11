@@ -46,14 +46,18 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   }
 
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
-    super("DeepLearning",parms); init(false);
+    super("DeepLearning", parms); init(false);
   }
 
   public ModelBuilderSchema schema() { return new DeepLearningV3(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
-    return start(new DeepLearningDriver(), (long)(_parms._epochs * _train.numRows()));
+    // We look at _train before init(true) is called, so step around that here:
+    long work = 1;
+    if (null != _train)
+      work = (long)_parms._epochs * _train.numRows();
+    return start(new DeepLearningDriver(), work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -127,11 +131,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         byte[] cs = new AutoBuffer().put(_parms).buf();
 
         Scope.enter();
-        _parms.read_lock_frames(DeepLearning.this);
 
         init(true);
-        if (error_count() > 0)
+        if (error_count() > 0){
+          DeepLearning.this.updateValidationMessages();
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
+        }
+
+        _parms.read_lock_frames(DeepLearning.this);
         buildModel();
 
         //check that _parms isn't changed during DL model training

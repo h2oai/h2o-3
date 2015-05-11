@@ -7,6 +7,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -87,9 +88,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys
-        _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
         init(true);             // Do any expensive tests & conversions now
-        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
+        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
+
+        _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
 
         // New Model?  Or continuing from a checkpoint?
         if( _parms._checkpoint && DKV.get(_parms._model_id) != null ) {

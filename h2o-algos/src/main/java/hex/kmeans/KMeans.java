@@ -9,13 +9,14 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -247,9 +248,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
       KMeansModel model = null;
       try {
-        _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
         init(true);
-        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
+        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
+
+        _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
 
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
