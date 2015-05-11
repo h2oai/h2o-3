@@ -297,12 +297,12 @@ class H2OFrame:
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
 
-    exprs = [self[c][(self.nrow()-nrows):(self.nrow())] for c in range(ncols)]
+    vecs = [self[c][(self.nrow()-nrows):(self.nrow())] for c in range(ncols)]
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
       cbind = "(, (gput " + fr + " (cbind %FALSE %"
-      cbind += " %".join([expr.eager() for expr in exprs]) + ")))"
+      cbind += " %".join([vec._expr.eager() for vec in vecs]) + ")))"
       res = h2o.rapids(cbind)
       h2o.removeFrameShallow(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
@@ -433,7 +433,10 @@ class H2OFrame:
     if isinstance(i, tuple) and len(i)==2:
       res = self[i[1]] # Slice by columns eagerly
       # Now slice by rows
-      if isinstance(res,H2OFrame): return H2OFrame(vecs=[vec[i[0]] for vec in res._vecs])
+      if isinstance(res,H2OFrame):
+        if   isinstance(i[0], slice): return H2OFrame(vecs=[vec[i[0]] for vec in res._vecs])
+        elif isinstance(i[0], int)  : return H2OFrame(python_obj=[vec[i[0]] for vec in res._vecs])
+        else:                         raise NotImplementedError
       if isinstance(res,H2OVec  ): return  res[i[0]]
       raise NotImplementedError
 
@@ -524,7 +527,7 @@ class H2OFrame:
     if self._vecs is None or self._vecs == []:  raise ValueError("Frame Removed")
     self._len_check(data)
     if isinstance(data,  H2OFrame):
-      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, x._len_check( y  ),  y  )) for x, y in zip(self._vecs, i._vecs)])
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op, x._len_check( y  ),  y  )) for x, y in zip(self._vecs, data._vecs)])
     if isinstance(data,  H2OVec):
       return H2OFrame(vecs=[H2OVec(x._name, Expr(op, x._len_check(data), data)) for x    in     self._vecs          ])
     if isinstance(data, (int,float,str)):
@@ -536,7 +539,7 @@ class H2OFrame:
     if self._vecs is None or self._vecs == []:  raise ValueError("Frame Removed")
     self._len_check(data)
     if isinstance(data,  H2OFrame):
-      return H2OFrame(vecs=[H2OVec(x._name, Expr(op,  y  , x._len_check( y  ))) for x, y in zip(self._vecs, i._vecs)])
+      return H2OFrame(vecs=[H2OVec(x._name, Expr(op,  y  , x._len_check( y  ))) for x, y in zip(self._vecs, data._vecs)])
     if isinstance(data,  H2OVec):
       return H2OFrame(vecs=[H2OVec(x._name, Expr(op, data, x._len_check(data))) for x    in     self._vecs          ])
     if isinstance(data, (int,float,str)):
