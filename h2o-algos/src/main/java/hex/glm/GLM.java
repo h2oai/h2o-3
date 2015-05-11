@@ -831,7 +831,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (_activeData._intercept)
               beta[beta.length - 1] = _parms.link(_taskInfo._ymu);
           }
-          L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iterations);
+          double gradEps = (_parms._higher_accuracy?1e-5:1e-3)*(_taskInfo._nullGradNorm);
+          L_BFGS lbfgs = new L_BFGS().setGradEps(gradEps).setMaxIter(_parms._max_iterations);
           assert beta.length == _taskInfo._ginfo._gradient.length;
           final double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
           if(l1pen > 0 || _bc.hasBounds()) {
@@ -871,13 +872,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                 return _taskInfo._iter < _parms._max_iterations && Job.isRunning(GLM.this._key);
               }
             };
-            double reltol = _parms._higher_accuracy ? L1Solver.DEFAULT_RELTOL:10*L1Solver.DEFAULT_RELTOL;
-            double abstol = _parms._higher_accuracy ? L1Solver.DEFAULT_ABSTOL:100*L1Solver.DEFAULT_ABSTOL;
-            double gradEps = (_parms._higher_accuracy ?1e-9:1e-6)*_dinfo.fullN();
+
+            double reltol = _parms._higher_accuracy ? L1Solver.DEFAULT_RELTOL:2.5*L1Solver.DEFAULT_RELTOL;
+            double abstol = _parms._higher_accuracy ? L1Solver.DEFAULT_ABSTOL:5*L1Solver.DEFAULT_ABSTOL;
             if(_bc != null)
-              new ADMM.L1Solver(gradEps, 50, reltol, abstol).setGradientNorm(Norm.L2_2).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(1, 50, reltol, abstol).setGradientNorm(Norm.L2_2).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm).setGradEps(gradEps), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(gradEps, 50, reltol, abstol).setGradientNorm(Norm.L2_2).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm), _taskInfo._beta, l1pen);
+              new ADMM.L1Solver(1, 50, reltol, abstol).setGradientNorm(Norm.L2_2).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm).setGradEps(gradEps), _taskInfo._beta, l1pen);
           } else {
             Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new L_BFGS.ProgressMonitor() {
               @Override
@@ -1055,7 +1056,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           addScoringHistory(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal);
           _taskInfo._beta = fullBeta;
         }
-      }).setValidate(_parms._intercept?_taskInfo._ymu:0.5,true).asyncExec(_dinfo._adaptedFrame);
+      }).setValidate(_parms._intercept?_taskInfo._ymu : 0.5, true).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
     protected void compute2() {
@@ -1486,12 +1487,17 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double [] _gradient;
     public int _iter;
     L_BFGS.ProgressMonitor _pm;
+    double _gradEps = 1e-8;
 
     public LBFGS_ProximalSolver(GradientSolver gs, double [] beta, double [] rho, L_BFGS.ProgressMonitor pm){
       _gSolver = gs;
       _beta = beta;
       _rho = rho;
       _pm = pm;
+    }
+    public LBFGS_ProximalSolver setGradEps(double eps) {
+      _gradEps = eps;
+      return this;
     }
     
     @Override
@@ -1511,7 +1517,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _beta_given[i] = beta_given[i];
         }
       } else _ginfo = s.getGradient(_beta);
-      L_BFGS.Result r  = new L_BFGS().setGradEps(1e-7).solve(s, _beta, _ginfo, _pm);
+      L_BFGS.Result r  = new L_BFGS().setGradEps(_gradEps).solve(s, _beta, _ginfo, _pm);
       _ginfo = r.ginfo;
       _beta = r.coefs;
       _gradient = r.ginfo._gradient;

@@ -31,7 +31,6 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
 //            "tweedie_link_power",
             "prior",
             "lambda_min_ratio",
-            "use_all_factor_levels",
             "beta_constraints",
             "max_active_predictors",
             "higher_accuracy"
@@ -86,9 +85,6 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
 
     @API(help = "min lambda used in lambda search, specified as a ratio of lambda_max", level = Level.expert)
     public double lambda_min_ratio;
-
-    @API(help = "By default, first factor level is skipped from the possible set of predictors. Set this flag if you want use all of the levels. Needs sufficient regularization to solve!", level = Level.secondary)
-    public boolean use_all_factor_levels;
 
     @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 beta_constraints;
