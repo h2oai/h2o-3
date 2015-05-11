@@ -38,7 +38,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     public enum Regularizer {
-      L2, L1,
+      L2, L1
     }
 
     // L(u,a): Loss function
@@ -128,20 +128,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return u*u;
         case L1:
           return Math.abs(u);
-        default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
-      }
-    }
-
-    // \grad r_i(x_i): Gradient of regularization function for single entry x_i
-    public final double gradreg_x(double u) { return gradreg(u, _regularization_x); }
-    public final double gradreg_y(double u) { return gradreg(u, _regularization_y); }
-    public final double gradreg(double u, Regularizer regularization) {
-      switch(regularization) {
-        case L2:
-          return 2*u;
-        case L1:
-          return u == 0 ? 0 : (u > 0 ? 1 : -1);
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
