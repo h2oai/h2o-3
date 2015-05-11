@@ -635,6 +635,7 @@ class H2ODisplay:
   Pretty printing for H2O Objects;
   Handles both IPython and vanilla console display
   """
+  THOUSANDS = "{:,}"
   def __init__(self,table=None,header=None,table_header=None,**kwargs):
     self.table_header=table_header
     self.header=header
