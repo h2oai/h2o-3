@@ -33,6 +33,6 @@ class H2OAutoEncoderModel(ModelBase):
     cols = [col["label"] for col in anomaly_frame_meta["columns"]]
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # remove test_data shallow key
-    h2o.delete(test_data_key)
+    h2o.removeFrameShallow(test_data_key)
     # return new H2OFrame object
     return H2OFrame(vecs=vecs)
