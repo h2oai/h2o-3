@@ -12,7 +12,7 @@ check.merge_no_shared_cols <- function(conn) {
   r.hex <- as.h2o(rite)
 
   Log.info("H2O will only merge if data sets have at least one shared column")
-  expect_error(h2o.merge(l.hex, r.hex, T))
+  expect_error(head(h2o.merge(l.hex, r.hex, T)))
 
   testEnd()
 }

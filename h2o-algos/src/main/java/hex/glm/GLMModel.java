@@ -33,7 +33,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override
   protected boolean toJavaCheckTooBig() {
-    if(beta().length > 10000) {
+    if(beta() != null && beta().length > 10000) {
       Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
       return true;
     }
@@ -134,6 +134,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_iterations = -1;
     public int _n_folds;
     boolean _intercept = true;
+    boolean _higher_accuracy;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)

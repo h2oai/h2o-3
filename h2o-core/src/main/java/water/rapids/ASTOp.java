@@ -20,7 +20,6 @@ import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
-import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.MathUtils;
 
@@ -229,6 +228,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new O());
     putPrefix(new ASTImpute());
     putPrefix(new ASTQPFPC());
+    putPrefix(new ASTStoreSize());
+    putPrefix(new ASTKeysLeaked());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -3289,29 +3290,11 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s._g); }
   }
 
-  /** http://szudzik.com/ElegantPairing.pdf */
-//  private static long mix(long A, long B) {
-//    long a=A,b=B;
-//    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
-//    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
-//    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
-//    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
-//  }
-//
-//  // always returns a long[] of length 2;
-//  // long[0] -> A, long[1] -> B
-//  private static long[] unmix(long z) {
-//    long rflr = (long)Math.floor(Math.sqrt(z));
-//    long rflr2=rflr*rflr;
-//    long z_rflr2 = z-rflr2;
-//    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
-//  }
-
   private static class NewHashMap extends MRTask<NewHashMap> {
-    IcedHashMap<ASTddply.Group, Integer> _s;
-    final ASTddply.Group[] _m;
+    IcedHM<ASTddply.Group, Integer> _s;
+    ASTddply.Group[] _m;
     NewHashMap(ASTddply.Group[] m) { _m = m; }
-    @Override public void setupLocal() { _s = new IcedHashMap<>();}
+    @Override public void setupLocal() { _s = new IcedHM<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
       for (int i = 0; i < c[0]._len; ++i)
@@ -3322,7 +3305,7 @@ class ASTTable extends ASTUniPrefixOp {
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    final IcedHashMap<ASTddply.Group, Integer> _m;
+    IcedHM<ASTddply.Group, Integer> _m;
     private long[] _cols;
     // out
     long[] _cnts;
@@ -3330,7 +3313,7 @@ class ASTTable extends ASTUniPrefixOp {
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
-    CountUniq2ColTsk(IcedHashMap<ASTddply.Group, Integer> s) {_m = s; }
+    CountUniq2ColTsk(IcedHM<ASTddply.Group, Integer> s) {_m = s; }
     @Override public void setupLocal() {
       _cnts = MemoryManager.malloc8(_m.size());
       _cols = new long[_fr.numCols()];
@@ -3339,7 +3322,7 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public void map(Chunk[] cs) {
       ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0; i < cs[0]._len; ++i) {
-        int h = _m.get(g.fill(i,cs,_cols));
+        int h = _m.get((ASTddply.Group)g.fill(i,cs,_cols));
         long offset = ssid(h);
         long c = _cnts[h];
         while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
@@ -3347,6 +3330,32 @@ class ASTTable extends ASTUniPrefixOp {
       }
     }
     @Override public void reduce(CountUniq2ColTsk t) { if (_cnts != t._cnts) ArrayUtils.add(_cnts, t._cnts); }
+  }
+
+  // custom serializer for <Group,Int> pairs
+  private static class IcedHM<Group extends ASTddply.Group,Int extends Integer> extends Iced {
+    private NonBlockingHashMap<Group,Integer> _m; // the nbhm to (de)ser
+    IcedHM() { _m = new NonBlockingHashMap<>(); }
+    void put(Group g, Int i) { _m.put(g,i);}
+    void putAll(IcedHM<Group,Int> m) {_m.putAll(m._m);}
+    int size() { return _m.size(); }
+    int get(Group g) { return _m.get(g); }
+    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+      if( _m==null || _m.size()==0 ) return ab.put4(0);
+        else {
+          ab.put4(_m.size());
+          for(Group g:_m.keySet()) { ab.put(g); ab.put4(_m.get(g)); }
+        }
+      return ab;
+    }
+    @Override public IcedHM read_impl(AutoBuffer ab) {
+      int mLen;
+      if( (mLen=ab.get4())!=0 ) {
+        _m = new NonBlockingHashMap<>();
+        for( int i=0;i<mLen;++i ) _m.put((Group)ab.get(), ab.get4());
+      }
+      return this;
+    }
   }
 }
 
@@ -3758,6 +3767,53 @@ class ASTLs extends ASTOp {
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
+  }
+}
+
+class ASTStoreSize extends ASTOp {
+  ASTStoreSize() { super(null); }
+  @Override String opStr() { return "store_size"; }
+  @Override ASTOp make() { return new ASTStoreSize(); }
+  ASTStoreSize parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTStoreSize) clone();
+  }
+  @Override void apply(Env e) { e.push(new ValNum(H2O.store_size())); }
+}
+
+// used for testing... takes in an expected number of keys, and then determines leak
+// pushes TRUE for leak, FALSE for not leak
+class ASTKeysLeaked extends ASTUniPrefixOp {
+  ASTKeysLeaked() { super(new String[]{"numkeys"}); }
+  @Override String opStr() { return "keys_leaked"; }
+  @Override ASTOp make() { return new ASTKeysLeaked(); }
+  ASTKeysLeaked parse_impl(Exec E) {
+    AST a = E.parse();
+    E.eatEnd();
+    ASTKeysLeaked res = (ASTKeysLeaked) clone();
+    res._asts = new AST[]{a};
+    return res;
+  }
+  @Override void apply(Env e) {
+    int numKeys = (int)e.popDbl();
+    int leaked_keys = H2O.store_size() - numKeys;
+    if( leaked_keys > 0 ) {
+      int cnt=0;
+      for( Key k : H2O.localKeySet() ) {
+        Value value = H2O.raw_get(k);
+        // Ok to leak VectorGroups and the Jobs list
+        if( value.isVecGroup() || k == Job.LIST ||
+                // Also leave around all attempted Jobs for the Jobs list
+                (value.isJob() && value.<Job>get().isStopped()) )
+          leaked_keys--;
+        else {
+          if( cnt++ < 10 )
+            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        }
+      }
+      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+    }
+    e.push(new ValStr(leaked_keys <= 0 ? "FALSE" : "TRUE"));
   }
 }
 

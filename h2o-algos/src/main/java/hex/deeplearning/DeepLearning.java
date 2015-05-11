@@ -371,8 +371,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model.write_lock(self());
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         final DeepLearningModel.DeepLearningParameters mp = model.model_info().get_params();
-        Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
-        Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
+        Frame tra_fr = new Frame(Key.make(mp.train()._key.toString() + ".temporary"), _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(Key.make(mp.valid()._key.toString() + ".temporary"), _valid.names(), _valid.vecs()) : null;
 
         train = tra_fr;
         if (mp._force_load_balance) {
@@ -434,14 +434,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
         //main loop
         do {
-          final String speed = (model.run_time!=0 ? (" at " + model.model_info().get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
+          DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
+          final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
-//          if (!_parms._quiet_mode) Log.info("Training (MapReduce step)...");
-          model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
-                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
-                  new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
+          model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
+                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
+                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
+                  new DeepLearningTask(self(), mi, rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress
         }
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));

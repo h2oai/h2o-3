@@ -2,11 +2,11 @@ package water.rapids;
 
 import water.*;
 import water.fvec.*;
-import water.util.IcedHashMap;
+import water.nbhm.NonBlockingHashMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Set;
 
 
 /** plyr's ddply: GroupBy by any other name.
@@ -109,7 +109,7 @@ public class ASTddply extends ASTOp {
     Key[] groupFrames = p2._keys;
 
     Pass3 p3;
-    H2O.submitTask(p3=new Pass3(groupFrames,ASTOp.get(_fun).make(), grps,_fun_args)).join();
+    (p3 = new Pass3(groupFrames,ASTOp.get(_fun).make(), grps,_fun_args)).go();
     Vec layoutVec = Vec.makeZero(p3._remoteTasks.length);
     final RemoteRapids[] results = p3._remoteTasks;
 
@@ -157,25 +157,25 @@ public class ASTddply extends ASTOp {
   // Group description: unpacked selected double columns
   public static class Group extends ASTGroupBy.G {
     public Group() { super(); }
-    public Group(int len) { super(len); a=new IcedHashMap<>(); }
+    public Group(int len) { super(len); a=new IcedHMIntS<>(); }
     public Group( double ds[] ) { super(ds); }
 
-    IcedHashMap<Integer,String> a;
+    IcedHMIntS<Integer,String> a;
   }
 
 
   private static class Pass1A extends MRTask<Pass1A> {
     private final long _gbCols[];
-    IcedHashMap<Group,String> _grps;
+    IcedHM<Group,String> _grps;
     Pass1A(long[] cols) { _gbCols=cols; }
-    @Override public void setupLocal() { _grps = new IcedHashMap<>(); }
+    @Override public void setupLocal() { _grps = new IcedHM<>(); }
     @Override public void map(Chunk[] c) {
       Group g = new Group(_gbCols.length);
       Group gOld;
       int start = (int)c[0].start();
       for(int i=0;i<c[0]._len;++i) {
         g.fill(i,c,_gbCols);
-        String old_g = _grps.put(g,"");
+        String old_g = _grps.putIfAbsent(g, "");
         if( old_g==null ) {
           gOld=g;
           g= new Group(_gbCols.length);
@@ -192,8 +192,8 @@ public class ASTddply extends ASTOp {
     }
     @Override public void reduce(Pass1A t) {
       if( _grps!= t._grps ) {
-        IcedHashMap<Group,String> l = _grps;
-        IcedHashMap<Group,String> r = t._grps;
+        IcedHM<Group,String> l = _grps;
+        IcedHM<Group,String> r = t._grps;
         if( l.size() < r.size() ) { l=r; r=_grps; }
         for( Group rg: r.keySet() ) {
           if( l.containsKey(rg) ) {  // try to add it to the set on the left.. if left already has it, then combine
@@ -304,16 +304,13 @@ public class ASTddply extends ASTOp {
       // finally put the constructed group into the DKV
       Frame aa = new Frame(_key, f._names, gvecs);
       DKV.put(_key,aa); // _key is homed to this node!
+      assert _key.home(): "Key should be homed to the node! Somehow remapped during this compute2.";
       assert DKV.getGet(_key) !=null;
       tryComplete();
     }
   }
 
-  private static class Pass3 extends H2O.H2OCountedCompleter<Pass3> {
-    private final int numNodes=H2O.CLOUD.size();
-    private final int _maxP=1;//1000*numNodes; // run 1000 per node
-    private final AtomicInteger _ctr;
-
+  private static class Pass3 {
     private final Key[] _frameKeys;
     private final ASTOp _FUN;
     private final Group[] _grps;
@@ -322,32 +319,18 @@ public class ASTddply extends ASTOp {
     RemoteRapids[] _remoteTasks;
 
     Pass3(Key[] frameKeys, ASTOp FUN, Group[] grps, AST[] args) {
-      _frameKeys=frameKeys; _FUN=FUN; _grps=grps; _funArgs=args; _ctr=new AtomicInteger(_maxP-1);
+      _frameKeys=frameKeys; _FUN=FUN; _grps=grps; _funArgs=args;
       _remoteTasks=new RemoteRapids[_frameKeys.length]; // gather up the remote tasks...
     }
 
-    @Override protected void compute2(){
-      addToPendingCount(_frameKeys.length-1);
-      for( int i=0;i<Math.min(_frameKeys.length,_maxP);++i) frkTsk(i);
-    }
-
-    private void frkTsk(final int i) {
+    // stupid single threaded pass over all groups...
+    private void go() {
       Futures fs = new Futures();
-      H2ONode n = H2O.CLOUD._memary[i%numNodes];
-      assert DKV.getGet(_frameKeys[i]) !=null : "Frame was NULL: " + _frameKeys[i];
-      RPC rpc = new RPC(n,_remoteTasks[i]=new RemoteRapids(_frameKeys[i], _FUN, _funArgs, _grps[i]._ds));
-      rpc.addCompleter(new Callback());
-      fs.add(rpc.call());
-      fs.blockForPending();
-    }
-
-    private class Callback extends H2O.H2OCallback {
-      public Callback(){super(Pass3.this);}
-      @Override public void callback(H2O.H2OCountedCompleter cc) {
-        int i = _ctr.incrementAndGet();
-        if( i < _frameKeys.length )
-          frkTsk(i);
+      for( int i=0;i<_frameKeys.length;++i) {
+        assert DKV.getGet(_frameKeys[i]) !=null : "Frame was NULL: " + _frameKeys[i];
+        fs.add(RPC.call(_frameKeys[i].home_node(), _remoteTasks[i] = new RemoteRapids(_frameKeys[i], _FUN, _funArgs, _grps[i]._ds)));
       }
+      fs.blockForPending();
     }
   }
 
@@ -355,8 +338,8 @@ public class ASTddply extends ASTOp {
     private final Key _frameKey;   // the group to process...
     private final ASTOp _FUN;      // the ast to execute on the group
     private final AST[] _funArgs;  // any additional arguments to the _FUN
-    private final double[] _ds;     // the "group" itself
-    private double[] _result; // result is 1 row per group!
+    private final double[] _ds;    // the "group" itself
+    private double[] _result;      // result is 1 row per group!
 
     RemoteRapids(Key frameKey, ASTOp FUN, AST[] args, double[] ds) {
       _frameKey=frameKey; _FUN=FUN; _funArgs=args; _ds=ds;
@@ -379,7 +362,6 @@ public class ASTddply extends ASTOp {
 
       _FUN.make().exec(e,args);
       if( !e.isNul() ) {
-
         // grab up the results
         Frame fr = null;
         if (e.isAry() && (fr = e.popAry()).numRows() != 1)
@@ -396,6 +378,65 @@ public class ASTddply extends ASTOp {
       }
       groupFrame.delete();
       tryComplete();
+    }
+  }
+
+  // custom serializer for <Group,String> pairs
+  private static class IcedHM<G extends Iced,S extends String> extends Iced {
+    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
+    IcedHM() { _m = new NonBlockingHashMap<>(); }
+    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
+    void put(G g, S i) { _m.put(g,i);}
+    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
+    boolean containsKey(G k) { return _m.containsKey(k); }
+    Set<G> keySet() { return _m.keySet(); }
+    int size() { return _m.size(); }
+    String get(G g) { return _m.get(g); }
+    G getk(G g) { return _m.getk(g); }
+    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+      if( _m==null || _m.size()==0 ) return ab.put4(0);
+      else {
+        ab.put4(_m.size());
+        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
+      }
+      return ab;
+    }
+    @Override public IcedHM read_impl(AutoBuffer ab) {
+      int mLen;
+      if( (mLen=ab.get4())!=0 ) {
+        _m = new NonBlockingHashMap<>();
+        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
+      }
+      return this;
+    }
+  }
+
+  // custom serializer for <Integer,String> pairs
+  private static class IcedHMIntS<I extends Integer,S extends String> extends Iced {
+    private NonBlockingHashMap<Integer,String> _m; // the nbhm to (de)ser
+    IcedHMIntS() { _m = new NonBlockingHashMap<>(); }
+    String putIfAbsent(I k, S v) { return _m.putIfAbsent(k,v);}
+    void put(I g, S i) { _m.put(g,i);}
+    void putAll(IcedHMIntS<I,S> m) {_m.putAll(m._m);}
+    Set<Integer> keySet() { return _m.keySet(); }
+    int size() { return _m.size(); }
+    String get(I g) { return _m.get(g); }
+    Integer getk(I g) { return _m.getk(g); }
+    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+      if( _m==null || _m.size()==0 ) return ab.put4(0);
+      else {
+        ab.put4(_m.size());
+        for(Integer g:_m.keySet()) { ab.put4(g); ab.putStr(_m.get(g)); }
+      }
+      return ab;
+    }
+    @Override public IcedHMIntS read_impl(AutoBuffer ab) {
+      int mLen;
+      if( (mLen=ab.get4())!=0 ) {
+        _m = new NonBlockingHashMap<>();
+        for( int i=0;i<mLen;++i ) _m.put(ab.get4(), ab.getStr());
+      }
+      return this;
     }
   }
 }

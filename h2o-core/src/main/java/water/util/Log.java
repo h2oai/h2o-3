@@ -58,7 +58,9 @@ abstract public class Log {
 
   public static void httpd( String msg ) {
     org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
-    String s = "tid(" + Thread.currentThread().getId() + ") " + msg;
+    String s = String.format("  %-10s  %s",
+            "tid(" + Long.toString(Thread.currentThread().getId()) + ")",
+            msg);
     l.info(s);
   }
 

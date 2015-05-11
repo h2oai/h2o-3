@@ -3,11 +3,9 @@ This module contains code for the lazy expression DAG.
 """
 
 import sys
-from math import sqrt, isnan, floor
+from math import sqrt, isnan
 import h2o
 import frame
-import tabulate
-import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -187,8 +185,7 @@ class Expr(object):
       headers = ["Row ID"]
       for i in range(len(t_data[0])): headers.append('')
       print "Displaying first " + str(len(t_data)) + " row(s)"
-      print tabulate.tabulate(t_data, headers=headers)
-      print
+      h2o.H2ODisplay(t_data,headers)
 
   # def __repr__(self):
   #    self.show()
