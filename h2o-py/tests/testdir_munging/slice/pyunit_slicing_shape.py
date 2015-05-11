@@ -26,13 +26,13 @@ def slicing_shape(ip,port):
         assert r == 1, "incorrect number of rows. correct: {0}, computed: {1}".format(1, r)
         assert c == ncols, "incorrect number of cols. correct: {0}, computed: {1}".format(ncols, c)
 
-    # prostate[slice,int] # TODO: there's a bug here: HEXDEV-266
+    # prostate[slice,int]
     for nrows in range(1,10):
        r, c = prostate[0:nrows,random.randint(0,cols-1)].dim()
        assert r == nrows, "incorrect number of rows. correct: {0}, computed: {1}".format(nrows, r)
        assert c == 1, "incorrect number of cols. correct: {0}, computed: {1}".format(1, c)
 
-    # prostate[slice,slice] # TODO: there's a bug here: HEXDEV-266
+    # prostate[slice,slice]
     for nrows in range(1,10):
        for ncols in range(1,cols+1):
            r, c = prostate[0:nrows,0:ncols].dim()
