@@ -98,7 +98,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         v[i] = vnew[i];         // Update v_i for next iteration
       }
       err = Math.sqrt(err);
-      iters++;
+      iters++;    // TODO: Should output vector of final iterations for each k
     }
     return v;
   }
