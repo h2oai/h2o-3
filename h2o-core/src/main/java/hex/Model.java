@@ -527,9 +527,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),computeMetrics).doAll(ncols,adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
-    Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
-    DKV.put(res);
-    return res;
+    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
   }
 
   private class BigScore extends MRTask<BigScore> {

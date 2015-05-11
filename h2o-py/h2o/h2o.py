@@ -205,8 +205,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
   for i in range(num_elements):
     r = random.randint(0,rows-1)
     c = random.randint(0,cols-1)
-    h2o_val = h2o_data[r,c]
-    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
+    h2o_val = h2o_data[r,c] if isinstance(h2o_data,H2OFrame) else h2o_data[r]
     np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
     assert np.absolute(h2o_val - np_val) < 1e-6, \
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
@@ -292,14 +291,13 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
-def delete(key):
+def removeFrameShallow(key):
   """
-  Do a shallow DKV remove of the key (does not remove any subparts)
-  :param key: A key to be DKV.removed
+  Do a shallow DKV remove of the frame (does not remove any internal Vecs)
+  :param key: A Frame Key to be removed
   :return: None
   """
-  expr = "(del '"+key+"')"
-  rapids(expr)
+  rapids("(removeframe '"+key+"')")
   return None
 
 def rapids(expr):
@@ -609,16 +607,15 @@ def trigamma(data): return _simple_un_math_op("trigamma", data)
 
 def _simple_un_math_op(op, data):
   """
-  Element-wise math operations on H2OFrame, H2OVec, and Expr objects.
+  Element-wise math operations on H2OFrame and H2OVec
 
   :param op: the math operation
-  :param data: the H2OFrame, H2OVec, or Expr object to operate on.
-  :return: Expr'd data
+  :param data: the H2OFrame or H2OVec object to operate on.
+  :return: H2OFrame or H2oVec, with lazy operation
   """
-  if   isinstance(data, H2OFrame): return Expr(op, Expr(data.send_frame(), length=data.nrow()))
-  elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
-  elif isinstance(data, Expr)    : return Expr(op, data)
-  else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
+  if isinstance(data, H2OFrame): return H2OFrame(vecs=[_simple_un_math_op(op,vec) for vec in data._vecs])
+  if isinstance(data, H2OVec)  : return H2OVec(data._name, Expr(op, left=data, length=len(data)))
+  raise ValueError, op + " only operates on H2OFrame or H2OVec objects"
 
 # generic reducers: these are eager
 def min(data)   : return data.min()

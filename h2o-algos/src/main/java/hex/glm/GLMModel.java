@@ -33,7 +33,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override
   protected boolean toJavaCheckTooBig() {
-    if(beta().length > 10000) {
+    if(beta() != null && beta().length > 10000) {
       Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
       return true;
     }
@@ -651,13 +651,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       if (_submodels[l].trainVal != null && tFrame != null) {
         _training_metrics = _submodels[l].trainVal.makeModelMetrics(m,tFrame,tFrame.vec(m._output.responseName()).sigma());
         if(_binomial)
-          _threshold =_training_metrics.auc().maxF1();
+          _threshold =_training_metrics.auc().defaultThreshold();
       }
       if(_submodels[l].holdOutVal != null && vFrame != null) {
         _threshold = _submodels[l].trainVal.bestThreshold();
         _validation_metrics = _submodels[l].holdOutVal.makeModelMetrics(m, vFrame, vFrame.vec(m._output.responseName()).sigma());
         if(_binomial)
-          _threshold = _validation_metrics.auc().maxF1();
+          _threshold = _validation_metrics.auc().defaultThreshold();
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
@@ -861,11 +861,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
     body.p(");").nl();
-    body.ip("preds[0] = mu;").nl();
-    if( _parms._family == Family.binomial ) { // threshold for prediction
-      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0);").nl();
+    if( _parms._family == Family.binomial ) {
+      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0); // threshold given by ROC").nl();
       body.ip("preds[1] = 1.0 - mu; // class 0").nl();
       body.ip("preds[2] =       mu; // class 1").nl();
+    } else {
+      body.ip("preds[0] = mu;").nl();
     }
   }
 
