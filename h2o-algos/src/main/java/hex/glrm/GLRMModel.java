@@ -142,7 +142,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double ureg = 0;
       for(int i = 0; i < u.length; i++) {
         for(int j = 0; j < u[0].length; j++)
-          ureg = regularize(u[i][j], regularization);
+          ureg += regularize(u[i][j], regularization);
       }
       return ureg;
     }
