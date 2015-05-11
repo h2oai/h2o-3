@@ -374,7 +374,6 @@ class H2OFrame:
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
     dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
     h2o.removeFrameShallow(chunk_summary_tmp_key)
-    chunk_summary.show()
     dist_summary.show()
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Colum Summary")
 
