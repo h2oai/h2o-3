@@ -415,7 +415,7 @@ h2o.auc <- function(object, valid=FALSE, ...) {
 #'
 #' h2o.r2(m)
 #' @export
-h2o.r2 <- function(object, valid=FALSE ...) {
+h2o.r2 <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$r2 )
   else if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
@@ -530,8 +530,8 @@ h2o.logloss <- function(object, valid=FALSE, ...) {
     model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-      else                          return( model.parts$vm@metrics$logloss) )
-    } else                          return( model.parts$tm@metrics$logloss) )
+      else                          return( model.parts$vm@metrics$logloss )
+    } else                          return( model.parts$tm@metrics$logloss )
   } else  {
     warning(paste("No log loss for",class(object)))
     invisible(NULL)
