@@ -85,8 +85,6 @@ public abstract class GLMTask  {
        _yMax = ymt._yMax;
      }
    }
-   public double ymu(int foldId) {return _ymu;  } // TODO add folds to support cross validation!
-   public long  nobs(int foldId) {return _nobs; } // TODO add folds to support cross validation!
  }
 
   static class GLMLineSearchTask extends MRTask<GLMLineSearchTask> {
@@ -226,7 +224,7 @@ public abstract class GLMTask  {
     protected transient boolean [] _skip;
     boolean _validate;
     double _ymu;
-    GLMValidation _val;
+    double _dev;
     Vec _rowFilter;
     long _nobs;
 
@@ -258,8 +256,7 @@ public abstract class GLMTask  {
         _nobs++;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
-        if(_validate)
-          _val.add(row.response(0), mu);
+        _dev += _params.deviance(row.response(0), mu);
         _likelihood += _params.likelihood(row.response(0), eta, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
@@ -278,9 +275,6 @@ public abstract class GLMTask  {
     }
     @Override
     public void postGlobal(){
-      if(_validate) {
-        _val.computeAIC();
-      }
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
         _gradient[j] += _currentLambda * _beta[j];
@@ -354,8 +348,7 @@ public abstract class GLMTask  {
         double y = responseChunk.atd(r);
         double offset = off;
         double mu = _params.linkInv(eta[r] + offset);
-        if(_validate)
-          _val.add(y, mu);
+        _dev += _params.deviance(y, mu);
         _likelihood += _params.likelihood(y,eta[r],mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
@@ -422,13 +415,6 @@ public abstract class GLMTask  {
       for(int i = 0; i < _beta.length; ++i)
         if(_beta[i] != 0)
           ++rank;
-      if(_validate) {
-        String [] domain = _dinfo._adaptedFrame.lastVec().domain();
-        if(domain == null && _params._family == Family.binomial)
-          domain = new String[]{"0", "1"}; // hard-coded special case for binary cols
-
-        _val = new GLMValidation(domain, _ymu, _params, rank, .5);
-      }
       _gradient = MemoryManager.malloc8d(_beta.length);
 
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
@@ -446,8 +432,7 @@ public abstract class GLMTask  {
     public void reduce(GLMGradientTask grt) {
       _likelihood += grt._likelihood;
       _nobs += grt._nobs;
-      if(_validate)
-        _val.reduce(grt._val);
+      _dev += grt._dev;
       ArrayUtils.add(_gradient, grt._gradient);
     }
   }
@@ -694,11 +679,11 @@ public abstract class GLMTask  {
       // public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
       if(_validate) {
         int rank = 0;
-        if(_beta != null)for(double d:_beta)if(d != 0)++rank;
+        if(_beta != null) for(double d:_beta) if(d != 0)++rank;
         String [] domain = _dinfo._adaptedFrame.lastVec().domain();
         if(domain == null && _glm._family == Family.binomial)
           domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
-        _val = new GLMValidation(domain, _ymu, _glm, rank, .5); // todo pass correct threshold
+        _val = new GLMValidation(domain, _ymu, _glm, rank, .5, true); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){
