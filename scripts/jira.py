@@ -150,7 +150,8 @@ class PeopleManager:
             else:
                 start_date = earliest_resolution_date
             if g_csv:
-                print("key,assignee,story_points,before_total_story_points,resolution_date,resolution_date_days,after_total_story_points,after_total_issues")
+                print("key,assignee,story_points,before_total_story_points,resolution_date,resolution_date_days,"
+                      + "after_total_story_points,after_total_issues")
                 if (start_date < earliest_resolution_date):
                     tmp = start_date
                 else:

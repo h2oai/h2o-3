@@ -50,7 +50,11 @@ class H2OFrame:
       rows = parse['rows']
       cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
-      print "Imported", remote_fname, "into cluster with", rows, "rows and", len(cols), "cols"
+      thousands_sep = h2o.H2ODisplay.THOUSANDS
+      if isinstance(remote_fname, str):
+        print "Imported ", remote_fname, ". Parsed {} rows and {} cols".format(thousands_sep.format(rows), thousands_sep.format(len(cols)))
+      else:
+        h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(remote_fname)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(rows), thousands_sep.format(len(cols))))
 
     # Read data locally into python process
     elif local_fname:
@@ -355,7 +359,8 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    print "Rows:", len(self._vecs[0]), "Cols:", len(self)
+    thousands_sep = h2o.H2ODisplay.THOUSANDS
+    print "Rows:", thousands_sep.format(len(self._vecs[0])), "Cols:", thousands_sep.format(len(self))
     headers = [vec._name for vec in self._vecs]
     table = [
       self._row('type', None),
