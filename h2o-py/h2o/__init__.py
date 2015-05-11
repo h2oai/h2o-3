@@ -16,18 +16,9 @@ any time, and this handle is stashed out of sight in a singleton instance of
 :class:`H2OConnection` (this is the global  :envvar:`__H2OConn__`). In other words,
 this package does not rely on Jython, and there is no direct manipulation of the JVM.
 
-The H2O python module is not intended as a replacement for other popular machine learning
-modules such as scikit-learn, pylearn2, and their ilk. This module is a complementary
-interface to a modeling engine intended to make the transition of models from development
-to production as seamless as possible. Additionally, it is designed to bring H2O to a
-wider audience of data and machine learning devotees who work exclusively with Python
-(rather than R, scala, or Java, which are other popular interfaces that H2O supports),
-and want another tool for building applications or doing data munging in a fast,
-scalable environment without any extra mental anguish about threads and parallelism. There
-are additional functionalities that H2O incorporates that are meant to alleviate the pain of doing 
-some basic feature manipulation (e.g. automatic categorical handling and not having to one-hot
-encode).
+The H2O python module is not intended as a replacement for other popular machine learning frameworks such as scikit-learn, pylearn2, and their ilk, but is intended to bring H2O to a wider audience of data and machine learning devotees who work exclusively with Python.
 
+H2O from Python is a tool for rapidly turning over models, doing data munging, and building applications in a fast, scalable environment without any of the mental anguish about parallelism and distribution of work.
 
 What is H2O?
 ------------

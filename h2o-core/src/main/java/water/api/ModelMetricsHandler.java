@@ -178,8 +178,7 @@ class ModelMetricsHandler extends Handler {
     if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
 
     ModelMetricsList parms = s.createAndFillImpl();
-    Frame fr = parms._model.score(parms._frame, parms._predictions_name); // throw away predictions
-    DKV.remove(fr._key);
+    parms._model.score(parms._frame, parms._predictions_name).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
