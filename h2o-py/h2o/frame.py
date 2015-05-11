@@ -430,10 +430,10 @@ class H2OFrame:
       res = self[i[1]] # Slice by columns eagerly
       # Now slice by rows
       if isinstance(res,H2OFrame):
-        if   isinstance(i[0], slice): return H2OFrame(vecs=[vec[i[0]] for vec in res._vecs])
+        if   isinstance(i[0], slice): return H2OFrame(vecs      =[vec[i[0]] for vec in res._vecs])
         elif isinstance(i[0], int)  : return H2OFrame(python_obj=[vec[i[0]] for vec in res._vecs])
         else:                         raise NotImplementedError
-      if isinstance(res,H2OVec  ): return  res[i[0]]
+      if isinstance(res,H2OVec): return res[i[0]]
       raise NotImplementedError
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))

@@ -4,6 +4,7 @@ import water.DKV;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.ValueString;
 import water.rapids.Env;
 import water.util.Log;
@@ -38,35 +39,39 @@ class RapidsHandler extends Handler {
       if( !env.isEmpty() ) {
         if (env.isAry()) {
           Frame fr = env.popAry();
-          Key[] keys = fr.keys();
-          if (keys != null && keys.length > 0) {
-            rapids.vec_ids = new KeyV3.VecKeyV3[keys.length];
-            for (int i = 0; i < keys.length; i++)
-              rapids.vec_ids[i] = new KeyV3.VecKeyV3(keys[i]);
-          }
+          
+          // Auto-demote Frames-of-1 to a Scalar
           if (fr.numRows() == 1 && fr.numCols() == 1) {
-            rapids.key = new KeyV3.FrameKeyV3(fr._key);
+            Vec vec = fr.anyVec();
             rapids.num_rows = 0;
             rapids.num_cols = 0;
-            if (fr.anyVec().isEnum()) {
-              rapids.string = fr.anyVec().domain()[(int) fr.anyVec().at(0)];
+            if (vec.isEnum()) {
+              rapids.string = vec.domain()[(int) vec.at(0)];
               sb.append(rapids.string);
               rapids.result_type = RapidsV3.ARYSTR;
-            } else if (fr.anyVec().isString()) {
-              rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
+            } else if (vec.isString()) {
+              rapids.string = vec.atStr(new ValueString(), 0).toString();
               sb.append(rapids.string);
               rapids.result_type = RapidsV3.ARYSTR;
-            } else if (fr.anyVec().isUUID()) {
-              rapids.string = PrettyPrint.UUID(fr.anyVec().at16l(0), fr.anyVec().at16h(0));
+            } else if (vec.isUUID()) {
+              rapids.string = PrettyPrint.UUID(vec.at16l(0), vec.at16h(0));
               sb.append(rapids.string);
               rapids.result_type = RapidsV3.ARYSTR;
             } else {
-              rapids.scalar = fr.anyVec().at(0);
+              rapids.scalar = vec.at(0);
               sb.append(Double.toString(rapids.scalar));
               rapids.string = null;
               rapids.result_type = RapidsV3.ARYNUM;
             }
+            fr.delete();        // Auto-demoted to scalar: source frame dies here
+
           } else {
+            Key[] keys = fr.keys();
+            if( keys.length > 0 ) {
+              rapids.vec_ids = new KeyV3.VecKeyV3[keys.length];
+              for (int i = 0; i < keys.length; i++)
+                rapids.vec_ids[i] = new KeyV3.VecKeyV3(keys[i]);
+            }
             rapids.result_type = RapidsV3.ARY;
             rapids.key = new KeyV3.FrameKeyV3(fr._key);
             rapids.num_rows = fr.numRows();
