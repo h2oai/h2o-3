@@ -8,15 +8,15 @@ check.deeplearning_MNIST <- function(conn) {
   TEST <- "bigdata/laptop/mnist/test.csv.gz"
   
   # set to FALSE for stand-alone demo
-  if (TRUE) {
-    train_hex <- h2o.uploadFile(conn, locate(TRAIN), destination_frame = "train")
+  if (T) {
+    train_hex <- h2o.uploadFile(conn, locate(TRAIN))
     test_hex <- h2o.uploadFile(conn, locate(TEST))
   } else {
     library(h2o)
     conn <- h2o.init(nthreads=-1)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
-    train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',', destination_frame = 'train.hex')
-    test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',', destination_frame = 'test.hex')
+    train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',')
+    test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',')
   }
   
   # Turn response into a factor (we want classification)
@@ -32,8 +32,8 @@ check.deeplearning_MNIST <- function(conn) {
                                input_dropout_ratio=0.2,
                                classification_stop=-1,  # Turn off early stopping
                                l1=1e-5,
-                               hidden=c(256,256,512), epochs=1     # For RUnits
-                               #hidden=c(1024,1024,2048), epochs=8000 # For world-record
+                               hidden=c(128,128,256), epochs=10     # For RUnits
+                               #hidden=c(1024,1024,2048), epochs=8000 # For world-record ~0.83% test set error
                               )
   
   # 2) Compute test set error
