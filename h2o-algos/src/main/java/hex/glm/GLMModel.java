@@ -33,7 +33,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override
   protected boolean toJavaCheckTooBig() {
-    if(beta().length > 10000) {
+    if(beta() != null && beta().length > 10000) {
       Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
       return true;
     }
