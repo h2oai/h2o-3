@@ -87,7 +87,7 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    return tm.metric("error", thresholds=thresholds)
+    return 1 - tm.metric("accuracy", thresholds=thresholds)
 
   def precision(self, thresholds=None, train=False, valid=False):
     """
@@ -309,21 +309,7 @@ class H2OBinomialModel(ModelBase):
     print
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    thresh = tm.find_threshold_by_max_metric(metric)
-    thresh2d = tm._metric_json['thresholds_and_metric_scores']
-    tidx = thresh2d.col_header.index('tps')
-    fidx = thresh2d.col_header.index('fps')
-    p = tm._metric_json['max_criteria_and_metric_scores'].cell_values[tidx-1][2]
-    n = tm._metric_json['max_criteria_and_metric_scores'].cell_values[fidx-1][2]
-    idx = tm.find_idx_by_threshold(thresh)
-    row = thresh2d.cell_values[idx]
-    tps = row[tidx]
-    fps = row[fidx]
-    c0  = float("nan") if isinstance(n, str) or isinstance(fps, str) else n - fps
-    c1  = float("nan") if isinstance(p, str) or isinstance(tps, str) else p - tps
-    fps = float("nan") if isinstance(fps,str) else fps
-    tps = float("nan") if isinstance(tps,str) else tps
-    return [[c0,fps],[c1,tps]]
+    return tm.confusion_matrix(metric=metric)
 
   def confusion_matrices(self, thresholds=None, train=False, valid=False):
     """
@@ -338,26 +324,7 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    if not thresholds: thresholds=[tm.find_threshold_by_max_metric("f1")]
-    if not isinstance(thresholds,list):
-      raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
-    thresh2d = tm._metric_json['thresholds_and_metric_scores']
-    tidx = thresh2d.col_header.index('tps')
-    fidx = thresh2d.col_header.index('fps')
-    p = tm._metric_json['max_criteria_and_metric_scores'].cell_values[tidx-1][2]
-    n = tm._metric_json['max_criteria_and_metric_scores'].cell_values[fidx-1][2]
-    cms = []
-    for t in thresholds:
-      idx = tm.find_idx_by_threshold(t)
-      row = thresh2d.cell_values[idx]
-      tps = row[tidx]
-      fps = row[fidx]
-      c0  = float("nan") if isinstance(n,  str) or isinstance(fps, str) else n - fps
-      c1  = float("nan") if isinstance(p,  str) or isinstance(tps, str) else p - tps
-      fps = float("nan") if isinstance(fps,str) else fps
-      tps = float("nan") if isinstance(tps,str) else tps
-      cms.append([[c0,fps],[c1,tps]])
-    return cms
+    return tm.confusion_matrices(thresholds=thresholds)
 
   def find_threshold_by_max_metric(self,metric,train=False,valid=False):
     """

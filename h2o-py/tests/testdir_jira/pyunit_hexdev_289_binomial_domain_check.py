@@ -15,7 +15,7 @@ def domain_check(ip, port):
 
     ### DRF ###
     print
-    print "-------------- GBM:"
+    print "-------------- DRF:"
     print
     rf = h2o.random_forest(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
                                         "fDayOfWeek"]], y=air_train ["IsDepDelayed"].asfactor(), training_frame=air_train)
@@ -31,9 +31,9 @@ def domain_check(ip, port):
                             "The difference is {2}".format(actual_domain, computed_domain, domain_diff)
 
 
-    ### DRF ###
+    ### GBM ###
     print
-    print "-------------- DRF:"
+    print "-------------- GBM:"
     print
     gbm = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth","fDayOfWeek"]],
                   y=air_train["IsDepDelayed"].asfactor(), training_frame=air_train, distribution="bernoulli")
