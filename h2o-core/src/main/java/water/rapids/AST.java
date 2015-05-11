@@ -188,7 +188,6 @@ class ASTFrame extends AST {
   boolean isFrame;
   boolean _g;
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
-  ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
     Key k = Key.make(key);
     Keyed val = DKV.getGet(k);
@@ -1399,11 +1398,11 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    AST ast = _asts[0];
-    String s = ast instanceof ASTFrame
-            ? ((ASTFrame)ast)._key
-            : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
-    DKV.remove(Key.make(s));
+    _asts[0].exec(env);
+    // Hard/deep delete of a Frame
+    if( env.isAry() )  env.popAry().remove();
+    else if( env.isStr() ) Keyed.remove(Key.make(env.popStr()));
+    else throw H2O.unimpl(env.pop().getClass().toString());
   }
 }
 

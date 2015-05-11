@@ -324,7 +324,8 @@ class Expr(object):
       if h2o is not None:
         h2o.remove(self._data)
     else:
-      s = " (removeframe '" + self._data + "')"
+      # Hard/deep remove of a Vec, built into a rapids expression
+      s = " (del '" + self._data + "')"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s

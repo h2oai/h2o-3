@@ -7,9 +7,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
-import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.*;
@@ -85,17 +85,11 @@ import java.util.concurrent.atomic.AtomicInteger;
     long s = System.currentTimeMillis();
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
-    final int nGrps = p1._g.size();
-    final G[] grps = new G[nGrps]; //p1._g.keySet().toArray(new G[nGrps]);
-
-    // FIXME
-    int gnum=0;
-    for( G g:p1._g.keySet() ) {
-      if( g==null ) {
-        Log.info("GROUP IS NULL: #" + gnum);
-      }
-      grps[gnum++]=g;
-    }
+    int nGrps = p1._g.size();
+    G[] tmpGrps = p1._g.keySet().toArray(new G[nGrps]);
+    while( tmpGrps[nGrps-1]==null ) nGrps--;
+    final G[] grps = new G[nGrps];
+    System.arraycopy(tmpGrps,0,grps,0,nGrps);
     H2O.submitTask(new ParallelPostGlobal(grps,nGrps)).join();
 
     // build the output
@@ -212,12 +206,41 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public Iterator<T> iterator() {return _g.iterator(); }
   }
 
+  // custom serializer for <Group,Int> pairs
+  public static class IcedHM<G extends Iced,S extends String> extends Iced {
+    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
+    IcedHM() { _m = new NonBlockingHashMap<>(); }
+    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
+    void put(G g, S i) { _m.put(g,i);}
+    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
+    Set<G> keySet() { return _m.keySet(); }
+    int size() { return _m.size(); }
+    String get(G g) { return _m.get(g); }
+    G getk(G g) { return _m.getk(g); }
+    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+      if( _m==null || _m.size()==0 ) return ab.put4(0);
+      else {
+        ab.put4(_m.size());
+        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
+      }
+      return ab;
+    }
+    @Override public IcedHM read_impl(AutoBuffer ab) {
+      int mLen;
+      if( (mLen=ab.get4())!=0 ) {
+        _m = new NonBlockingHashMap<>();
+        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
+      }
+      return this;
+    }
+  }
+
   public static class GBTask extends MRTask<GBTask> {
-    IcedHashMap<G,String> _g;
+    IcedHM<G,String> _g;  // lol GString
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedHashMap<>(); }
+    @Override public void setupLocal() { _g = new IcedHM<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
@@ -243,8 +266,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        IcedHashMap<G,String> l = _g;
-        IcedHashMap<G,String> r = t._g;
+        IcedHM<G,String> l = _g;
+        IcedHM<G,String> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
         for( G rg:r.keySet() ) {
@@ -377,17 +400,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       for( int i=0;i<Math.min(_g.length,_maxP);++i) frkTsk(i);
     }
 
-    private void frkTsk(final int i) {
-
-      // FIXME
-      if( _g[i]==null ) {
-        Log.info("NULL Group: #" + i);
-        Log.info("Expected number of groups: " + _ngrps);
-        Log.info("Processing number of groups: " + _g.length);
-      }
-
-      new GTask(new Callback(), _g[i]).fork();
-    }
+    private void frkTsk(final int i) { new GTask(new Callback(), _g[i]).fork(); }
 
     private class Callback extends H2O.H2OCallback {
       public Callback(){super(ParallelPostGlobal.this);}

@@ -14,11 +14,11 @@ def vec_show(ip,port):
     ###################################################################
 
     res = 2 - iris
-    res2 = H2OVec(name="C0", expr=res[0])
+    res2 = H2OVec(name="C0", expr=res[0]._expr)
     print "res2:"
     res2.show()
 
-    res3 = H2OVec(name="C1", expr=res[1])
+    res3 = H2OVec(name="C1", expr=res[1]._expr)
     print "res3:"
     res3.show()
 
