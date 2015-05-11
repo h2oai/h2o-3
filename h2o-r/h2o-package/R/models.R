@@ -501,8 +501,8 @@ h2o.mse <- function(object, valid=FALSE, ...) {
     model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-      else                          metrics <- model.parts$vm@metrics$MSE
-    } else                          metrics <- model.parts$tm@metrics$MSE
+      else                          metrics <- model.parts$vm@metrics
+    } else                          metrics <- model.parts$tm@metrics
 
     if( is(object, "H2OClusteringModel") ) return( metrics$centroid_stats$within_cluster_sum_of_squares )
     return( metrics$MSE )
