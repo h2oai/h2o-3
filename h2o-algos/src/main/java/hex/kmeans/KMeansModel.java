@@ -80,4 +80,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
     }
   }
+
+  @Override
+  protected boolean toJavaCheckTooBig() {
+    return false;
+  }
 }
