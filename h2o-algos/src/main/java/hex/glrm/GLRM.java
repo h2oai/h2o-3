@@ -611,7 +611,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Update row x_i of working copy with new values
         for(int k = 0; k < _ncolX; k++) {
           double xold = chk_xold(cs,k,_ncolA).atd(row);   // Old value of x_i
-          grad[k] += _parms._gamma_x * _parms.gradreg_x(xold);  // Add regularization term for x_i
           xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
           chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
           _xreg += _parms.regularize_x(xnew[k]);
@@ -733,7 +732,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // Compute new y_j values using proximal gradient
       for(int j = 0; j < _ytnew.length; j++) {
         for(int k = 0; k < _ytnew[0].length; k++) {
-          _ytnew[j][k] += _parms._gamma_y * _parms.gradreg_y(_ytold[j][k]);   // Add regularization term on y_j
           double u = _ytold[j][k] - _alpha * _ytnew[j][k];
           _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
           _yreg += _parms.regularize_y(_ytnew[j][k]);
