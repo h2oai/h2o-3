@@ -345,8 +345,9 @@ class Expr(object):
     global __CMD__, __TMPS__
     assert not __CMD__ and not __TMPS__
     __CMD__ = ""
-    __TMPS__ = ""  # Begin gathering rapids commands
-    self._do_it()   # Symbolically execute the command
+    __TMPS__ = ""    # Begin gathering rapids commands
+    dummy = self     # Force extra refcnt so we get a top-level assignment in do_it
+    self._do_it()    # Symbolically execute the command
     cmd = __CMD__
     tmps = __TMPS__  # Stop  gathering rapids commands
     __CMD__ = None
@@ -446,11 +447,14 @@ class Expr(object):
     # See if this is not a temp and not a scalar; if so it needs a name
     # Remove one count for the call to getrefcount itself
     cnt = sys.getrefcount(self) - 1
-    # Magical count-of-4 is the depth of 4 interpreter stack
-    py_tmp = cnt != 4 and self._len > 1 and not assign_vec
+
+    # Magical count-of-5:
+    #  1 for _do_it    frame, 1 for _do_it    local dictionary list
+    #  1 for _do_child frame, 1 for _do_child local dictionary list
+    #  1 for each parent.
+    py_tmp = cnt != 5 and self._len > 1 and not assign_vec
 
     global __CMD__
-    skip=False
     if py_tmp:
       self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
       __CMD__ += "(= !" + self._data + " "
@@ -458,11 +462,6 @@ class Expr(object):
       __CMD__ += "(" + self._op + " "
 
     left = self._do_child(self._left)  # down the left
-
-    # gross hack just to get the ")" in the right place after the (!= ... ending ")" strictly enforced by Rapids
-    if py_tmp and self._left._is_key() and self._op==",":
-      skip=True
-      __CMD__ += ")"
 
     rite = self._do_child(self._rite)  # down the right
 
@@ -595,7 +594,7 @@ class Expr(object):
     # End of expression... wrap up parens
     if self._op != ",":
       __CMD__ += ")"
-    if py_tmp and not skip:
+    if py_tmp:
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead
