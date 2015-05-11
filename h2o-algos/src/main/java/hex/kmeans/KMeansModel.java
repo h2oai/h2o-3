@@ -83,6 +83,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   @Override
   protected boolean toJavaCheckTooBig() {
-    return false;
+    return _parms._standardize ?
+            _output._centers_std_raw.length * _output._centers_std_raw[0].length > 1e6 :
+            _output._centers_raw.length * _output._centers_raw[0].length > 1e6;
   }
 }
