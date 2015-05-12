@@ -595,10 +595,10 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
     } else                          return( model.parts$tm@metrics$hit_ratio_table )
 
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
-  } else if( is(o, "data.frame") ) return(o)
+  } else if( is(object, "data.frame") ) return(object)
 
   # warn if we got something unexpected...
-  else warning( paste0("No hit ratio table for ", class(o)) )
+  else warning( paste0("No hit ratio table for ", class(object)) )
   invisible(NULL)
 }
 
