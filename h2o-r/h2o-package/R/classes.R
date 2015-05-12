@@ -598,7 +598,19 @@ setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2ORegressionMetrics", function(object) {
   callNextMethod(object)
-  cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
+  cat("MSE:  ", object@metrics$MSE, "\n", sep="")
+  cat("R2 :  ", object@metrics$R2, "\n", sep="")
+  null_dev <- h2o.null_deviance(object)
+  res_dev  <- h2o.residual_deviance(object)
+  null_dof <- h2o.null_dof(object)
+  res_dof  <- h2o.residual_dof(object)
+  aic      <- h2o.aic(object)
+  if( !is.null(null_dev) ) cat("Null Deviance :", null_dev, "\n", sep="")
+  if( !is.null(null_dof) ) cat("Null D.o.F. :",   null_dof, "\n", sep="")
+  if( !is.null(res_dev ) ) cat("Residual Deviance :", res_dev, "\n", sep="")
+  if( !is.null(res_dof ) ) cat("Residual D.o.F. :",   res_dof, "\n", sep="")
+  if( !is.null(aic     ) ) cat("AIC :", aic, "\n", sep="")
+  cat("\n")
 })
 #' @rdname H2OModelMetrics-class
 #' @export

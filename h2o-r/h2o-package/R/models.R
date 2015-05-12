@@ -397,6 +397,27 @@ h2o.auc <- function(object, valid=FALSE, ...) {
 }
 
 #'
+#' Retrieve the AIC.
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}.
+#' @param valid Retrieve the validation AIC
+#' @param \dots extra arguments to be passed if `object` is of type
+#'              \linkS4class{H2OModel} (e.g. train=TRUE)
+#' @export
+h2o.aic <- function(object, valid=FALSE, ...) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
+  else if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( model.parts$vm@metrics$AIC )
+    } else                          return( model.parts$tm@metrics$AIC )
+  } else {
+    warning(paste0("No AIC for ", class(object)))
+    invisible(NULL)
+  }
+}
+
+#'
 #' Retrieve the R2 value
 #'
 #' Retrieves the R2 value from an H2O model.
@@ -466,6 +487,32 @@ h2o.giniCoef <- function(object, valid=FALSE, ...) {
     warning(paste0("No Gini for ",class(object)))
     invisible(NULL)
   }
+}
+
+#'
+#' Retrieve the model coefficeints
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' @export
+h2o.coef <- function(object) {
+  if( is(object, "H2OModel") ) {
+    coefs <- object@model$coefficients_table
+    if( is.null(coefs) ) stop("Can only extract coefficeints from GLMs")
+    return( coefs$coefficients )
+  } else stop("Can only extract coefficients from GLMs")
+}
+
+#'
+#' Retrieve the normalized coefficients
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' @export
+h2o.coef_norm <- function(object) {
+  if( is(object, "H2OModel") ) {
+    coefs <- object@model$coefficients_table
+    if( is.null(coefs) ) stop("Can only extract coefficeints from GLMs")
+    return( coefs[,3] )  # the normalized coefs are 3rd column, (labels is 1st col)
+  } else stop("Can only extract coefficients from GLMs")
 }
 
 #' Retrieves Mean Squared Error Value
@@ -877,6 +924,77 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
     else                          return( model.parts$vm@metrics$centroid_stats$size )
   } else                          return( model.parts$tm@metrics$centroid_stats$size )
+}
+
+
+#'
+#' Retrieve the null deviance
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.null_deviance <- function(object, valid=FALSE, ...) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
+  else {
+    model.parts <- .model.parts(objects)
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( model.parts$vm@metrics$null_deviance )
+    } else                          return( model.parts$tm@metrics$null_deviance )
+  }
+}
+
+#' Retrieve the residual deviance
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.residual_deviance <- function(object, valid=FALSE, ...) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
+  else {
+    model.parts <- .model.parts(objects)
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( model.parts$vm@metrics$residual_deviance )
+    } else                          return( model.parts$tm@metrics$residual_deviance )
+  }
+}
+
+
+#' Retrieve the residual degrees of freedom
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.residual_dof <- function(object, valid=FALSE, ...) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
+  else {
+    model.parts <- .model.parts(objects)
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( model.parts$vm@metrics$residual_degrees_of_freedom )
+    } else                          return( model.parts$tm@metrics$residual_degrees_of_freedom )
+  }
+}
+
+#' Retrieve the null degrees of freedom
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.null_dof <- function(object, valid=FALSE, ...) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
+  else {
+    model.parts <- .model.parts(objects)
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( model.parts$vm@metrics$null_degrees_of_freedom )
+    } else                          return( model.parts$tm@metrics$null_degrees_of_freedom )
+  }
 }
 
 #' Access H2O Confusion Matrices
