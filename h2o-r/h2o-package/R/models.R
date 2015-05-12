@@ -879,43 +879,6 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
   } else                          return( model.parts$tm@metrics$centroid_stats$size )
 }
 
-#'
-#' Print the Model Summary
-#'
-#' @param object An \linkS4class{H2OModel} object.
-#' @param ... further arguments to be passed on (currently unimplemented)
-#' @export
-setMethod("summary", "H2OModel", function(object, ...) {
-  o <- object
-  model.parts <- .model.parts(o)
-  m <- model.parts$m
-  cat("Model Details:\n")
-  cat("==============\n\n")
-  cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@model_id, "\n")
-
-  # summary
-  print(m$model_summary)
-
-  # metrics
-  cat("\n")
-  if( !is.null(model.parts$tm) ) print(model.parts$tm)
-  cat("\n")
-  if( !is.null(model.parts$vm) ) print(model.parts$vm)
-
-  # History
-  cat("\n")
-  h2o.scoreHistory(o)
-
-  # Varimp
-  cat("\n")
-  if( !is.null( m$variable_importances ) ) {
-    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
-    cat("=================================================\n\n")
-    h2o.varimp(o)
-  }
-})
-
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.

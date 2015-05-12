@@ -334,7 +334,8 @@ setClass("H2OModel",
 #' @export
 setMethod("show", "H2OModel", function(object) {
   o <- object
-  m <- o@model
+  model.parts <- .model.parts(o)
+  m <- model.parts$m
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
@@ -343,11 +344,48 @@ setMethod("show", "H2OModel", function(object) {
   # summary
   print(m$model_summary)
 
+ # metrics
+ cat("\n")
+ if( !is.null(model.parts$tm) ) print(model.parts$tm)
+ cat("\n")
+ if( !is.null(model.parts$vm) ) print(model.parts$vm)
+})
+
+#'
+#' Print the Model Summary
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param ... further arguments to be passed on (currently unimplemented)
+#' @export
+setMethod("summary", "H2OModel", function(object, ...) {
+  o <- object
+  model.parts <- .model.parts(o)
+  m <- model.parts$m
+  cat("Model Details:\n")
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model Key: ", o@model_id, "\n")
+
+  # summary
+  print(m$model_summary)
+
   # metrics
   cat("\n")
-  if( !is.null(m$training_metrics) && !is.null(m$training_metrics@metrics) ) print(m$training_metrics)
+  if( !is.null(model.parts$tm) ) print(model.parts$tm)
   cat("\n")
-  if( !is.null(m$validation_metrics) && !is.null(m$validation_metrics@metrics) ) print(m$validation_metrics)
+  if( !is.null(model.parts$vm) ) print(model.parts$vm)
+
+  # History
+  cat("\n")
+  print(h2o.scoreHistory(o))
+
+  # Varimp
+  cat("\n")
+  if( !is.null( m$variable_importances ) ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    print(h2o.varimp(o))
+  }
 })
 
 .showMultiMetrics <- function(o, which="Training") {
@@ -369,7 +407,7 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(tm$cm)                               )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
   if( !is.null(tm$cm)                               )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
   if( !is.null(tm$hit_ratio_table)                  )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); h2o.hit_ratio_table(tm$hit_ratio_table); }
+  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
   invisible(tm)
 }
