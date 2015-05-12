@@ -822,8 +822,8 @@ h2o.tot_withinss <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$tot_withinss )
-  } else                          return( model.part$tm@metrics$tot_withinss )
+    else                          return( model.parts$vm@metrics$tot_withinss )
+  } else                          return( model.parts$tm@metrics$tot_withinss )
 }
 
 #'
@@ -837,8 +837,8 @@ h2o.betweenss <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$betweenss )
-  } else                          return( model.part$tm@metrics$betweenss )
+    else                          return( model.parts$vm@metrics$betweenss )
+  } else                          return( model.parts$tm@metrics$betweenss )
 }
 
 #'
@@ -852,8 +852,8 @@ h2o.totss <- function(object,valid=FALSE, ...) {
   model.parts <- .model.parts(objects)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$totss )
-  } else                          return( model.part$tm@metrics$totss )
+    else                          return( model.parts$vm@metrics$totss )
+  } else                          return( model.parts$tm@metrics$totss )
 }
 
 #'
@@ -875,8 +875,8 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$centroid_stats$size )
-  } else                          return( model.part$tm@metrics$centroid_stats$size )
+    else                          return( model.parts$vm@metrics$centroid_stats$size )
+  } else                          return( model.parts$tm@metrics$centroid_stats$size )
 }
 
 #'
