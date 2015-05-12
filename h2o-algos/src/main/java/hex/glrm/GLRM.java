@@ -609,12 +609,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // Update row x_i of working copy with new values
+        double[] u = new double[_ncolX];
         for(int k = 0; k < _ncolX; k++) {
           double xold = chk_xold(cs,k,_ncolA).atd(row);   // Old value of x_i
-          xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
-          chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
-          _xreg += _parms.regularize_x(xnew[k]);
+          u[k] = xold - _alpha * grad[k];
+          // xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
+          // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
+          // _xreg += _parms.regularize_x(xnew[k]);
         }
+        xnew = _parms.rproxgrad_x(u, _alpha);
+        _xreg += _parms.regularize_x(xnew);
+        for(int k = 0; k < _ncolX; k++)
+          chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
 
         // Compute loss function using new x_i
         // Categorical columns
@@ -731,11 +737,15 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Compute new y_j values using proximal gradient
       for(int j = 0; j < _ytnew.length; j++) {
+        double[] u = new double[_ytnew[0].length];
         for(int k = 0; k < _ytnew[0].length; k++) {
-          double u = _ytold[j][k] - _alpha * _ytnew[j][k];
-          _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
-          _yreg += _parms.regularize_y(_ytnew[j][k]);
+          // double u = _ytold[j][k] - _alpha * _ytnew[j][k];
+          // _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
+          // _yreg += _parms.regularize_y(_ytnew[j][k]);
+          u[k] = _ytold[j][k] - _alpha * _ytnew[j][k];
         }
+        _ytnew[j] = _parms.rproxgrad_y(u, _alpha);
+        _yreg += _parms.regularize_y(_ytnew[j]);
       }
     }
   }
@@ -808,10 +818,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Calculate regularization term for old X if requested
         if(_regX) {
+          int idx = 0;
+          double[] xrow = new double[_ncolX];
           for(int j = _ncolA; j < _ncolA+_ncolX; j++) {
-            double x = cs[j].atd(row);
-            _xold_reg += _parms.regularize_x(x);
+            // double x = cs[j].atd(row);
+            // _xold_reg += _parms.regularize_x(x);
+            xrow[idx] = cs[j].atd(row);
+            idx++;
           }
+          assert idx == _ncolX;
+          _xold_reg += _parms.regularize_x(xrow);
         }
       }
     }
