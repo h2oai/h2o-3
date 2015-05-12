@@ -33,12 +33,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
 
-    public DeepLearningParameters() {
-      _drop_const_cols = defaultDropConsCols();
-    }
-
     @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
-    @Override protected boolean defaultDropConsCols() { return _ignore_const_cols; }
 
     // public int _n_folds;
     public int getNumFolds() { return 0; }
@@ -362,11 +357,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
      */
     public boolean _fast_mode = true;
-
-    /**
-     * Ignore constant training columns (no information can be gained anyway).
-     */
-    public boolean _ignore_const_cols = true;
 
     /**
      * Increase training speed on small datasets by splitting it into many chunks

@@ -24,7 +24,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] own_fields = new String[] { "model_id", "training_frame", "validation_frame", "ignored_columns", "drop_na20_cols", "score_each_iteration" };
+  static public String[] own_fields = new String[] { "model_id", "training_frame", "validation_frame", "ignored_columns", "drop_na20_cols", "ignore_const_cols", "score_each_iteration" };
 
   /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
   private transient String[] __fields_cache = null;
@@ -72,6 +72,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
   @API(help="Drop columns with more than 20% missing values", direction=API.Direction.INOUT)
   public boolean drop_na20_cols; // Drop columns with more than 20% missing values
+
+  @API(help="Ignore constant columns", direction=API.Direction.INOUT)
+  public boolean ignore_const_cols;
 
   @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT)
   public boolean score_each_iteration;
