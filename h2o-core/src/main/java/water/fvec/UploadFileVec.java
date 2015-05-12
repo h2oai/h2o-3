@@ -103,7 +103,7 @@ public class UploadFileVec extends FileVec {
         stats.total_bytes  = uv.length();
       }
       Log.info("    totalChunks: " + uv.nChunks());
-      Log.info("    totalBytes:  " + uv.length();
+      Log.info("    totalBytes:  " + uv.length());
 
       DKV.put(newVecKey, uv, fs);
       fs.blockForPending();
