@@ -259,7 +259,8 @@ public class TestUtil extends Iced {
     boolean[] flipped = new boolean[ncomp];
 
     for(int j = 0; j < ncomp; j++) {
-      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
+      // flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
+      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > Math.abs(expected[0][j] + actual[0][j]);
       for(int i = 0; i < nfeat; i++) {
         Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }

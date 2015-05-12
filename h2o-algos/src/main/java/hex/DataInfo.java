@@ -65,7 +65,8 @@ public class DataInfo extends Keyed {
   public int _bins;
   public int _cats;
   public int [] _catOffsets;
-  public int [] _catMissing; //bucket for missing categoricals
+  public int [] _catMissing;  // bucket for missing categoricals
+  public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;
   public double [] _normSub;
   public double [] _normRespMul;
@@ -75,8 +76,7 @@ public class DataInfo extends Keyed {
   public boolean _intercept = true;
   public boolean _offset = false;
   public final boolean _skipMissing;
-  final int [][] _catLvls;
-
+  public final int [][] _catLvls;
 
   public double _etaOffset;
   public DataInfo deep_clone() {
@@ -101,6 +101,7 @@ public class DataInfo extends Keyed {
     _adaptedFrame = dinfo._adaptedFrame;
     _catOffsets = dinfo._catOffsets;
     _catMissing = dinfo._catMissing;
+    _permutation = dinfo._permutation;
     _normMul = dinfo._normMul;
     _normSub = dinfo._normSub;
     _normRespMul = dinfo._normRespMul;
@@ -149,6 +150,8 @@ public class DataInfo extends Keyed {
     _adaptedFrame = fr;
     _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
     _catMissing = new int[catLevels.length];
+    _permutation = new int[fr.numCols()];
+    for(int i = 0; i < _permutation.length; i++) _permutation[i] = i;
     int s = 0;
 
     for(int i = 0; i < catLevels.length; ++i){
@@ -273,6 +276,7 @@ public class DataInfo extends Keyed {
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
     _catLvls = null;
+    _permutation = new int[train.numCols()];
     final Vec[] tvecs = train.vecs();
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
@@ -311,6 +315,7 @@ public class DataInfo extends Keyed {
     _catMissing = new int[ncats];
     int len = _catOffsets[0] = 0;
     for(int i = 0; i < ncats; ++i) {
+      _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
       if (valid != null) vvecs2         [i] = vvecs[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
@@ -328,6 +333,7 @@ public class DataInfo extends Keyed {
     default:         throw H2O.unimpl();
     }
     for(int i = 0; i < nnums; ++i){
+      _permutation[ncats+i] = nums[i];
       names[ncats+i]  =   train._names[nums[i]];
       if (valid != null) vvecs2         [ncats+i] = vvecs[nums[i]];
       Vec v = (tvecs2[ncats+i] = tvecs[nums[i]]);
@@ -354,6 +360,7 @@ public class DataInfo extends Keyed {
       default:        throw H2O.unimpl();
       }
       for(int i = 0; i < _responses; ++i){
+        _permutation[ncats+nnums+i] = ncats+nnums+i;
         names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
         if (valid != null) vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
         Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
@@ -447,6 +454,22 @@ public class DataInfo extends Keyed {
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
     return res;
+  }
+
+  // Return permutation matrix mapping input names to adaptedFrame colnames
+  public int[] mapNames(String[] names) {
+    assert names.length == _adaptedFrame._names.length : "Names must be the same length!";
+    int[] idx = new int[names.length];
+    Arrays.fill(idx, -1);
+
+    for(int i = 0; i < _adaptedFrame._names.length; i++) {
+      for(int j = 0; j < names.length; j++) {
+        if( names[j].equals(_adaptedFrame.name(i)) ) {
+          idx[i] = j; break;
+        }
+      }
+    }
+    return idx;
   }
 
   /**

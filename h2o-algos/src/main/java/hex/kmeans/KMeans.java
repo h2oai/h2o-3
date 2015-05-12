@@ -44,7 +44,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   public ModelBuilderSchema schema() { return new KMeansV3(); }
 
-  @Override
   protected void checkMemoryFootPrint() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
     long max_mem = H2O.SELF.get_max_mem();
@@ -56,6 +55,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       cancel(msg);
     }
   }
+
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> trainModel() {
     return start(new KMeansDriver(), _parms._max_iterations);

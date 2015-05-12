@@ -20,8 +20,8 @@ test.glrm.missing <- function(conn) {
     print(summary(arrests.hex))
     
     Log.info(paste("H2O GLRM with ", 100 * f, "% missing entries:\n", sep = ""))
-    arrests.glrm <- h2o.glrm(training_frame = arrests.hex, k = 4, gamma = 0, init = "PlusPlus", 
-                             max_iterations = 2000, min_step_size = 1e-6, seed = seed)
+    arrests.glrm <- h2o.glrm(training_frame = arrests.hex, k = 4, gamma_x = 0, gamma_y = 0, 
+                             init = "PlusPlus", max_iterations = 2000, min_step_size = 1e-6, seed = seed)
     
     obj_val[i] <- arrests.glrm@model$objective
     obj_delta[i] <- arrests.glrm@model$avg_change_obj
