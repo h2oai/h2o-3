@@ -72,7 +72,7 @@ Otherwise, download PuTTY and follow these instructions:
 
 
 
-##Launch H2O-Dev from the Command Line
+##Launch H2O from the Command Line
 
 
 
@@ -138,7 +138,7 @@ allocate more memory to H2O by using `-Xmx4g` instead of the default `-Xmx1g`, w
 
 5. Point your web browser to `http://localhost:54321/` 
 
-The user interface appears in your browser, and now H2O-Dev is ready to go.
+The user interface appears in your browser, and now H2O is ready to go.
 
 **WARNING**: 
   On Windows systems, Internet Explorer is frequently blocked due to
