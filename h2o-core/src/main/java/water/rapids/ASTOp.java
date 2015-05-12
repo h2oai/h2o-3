@@ -230,6 +230,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTQPFPC());
     putPrefix(new ASTStoreSize());
     putPrefix(new ASTKeysLeaked());
+    putPrefix(new ASTAll());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -690,6 +691,47 @@ class ASTAnyFactor extends ASTUniPrefixOp {
   }
 }
 
+class ASTAll extends ASTUniPrefixOp {
+  boolean _narm;
+  ASTAll() { super(VARS1);}
+  @Override String opStr() { return "all"; }
+  @Override ASTOp make() {return new ASTAll();}
+  ASTAll parse_impl(Exec E) {
+    AST arg = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTId ) _narm = ((ASTNum)E._env.lookup((ASTId)a))._d==1; // ignroed for now, always assume narm=F
+    E.eatEnd(); // eat ending ')'
+    ASTAll res = (ASTAll) clone();
+    res._asts = new AST[]{arg};
+    return res;
+  }
+  @Override void apply(Env env) {
+    boolean all;
+    if( env.isNum() ) { all = env.popDbl()!=0; }  // got a number on the stack... if 0 then all is FALSE, otherwise TRUE
+    else {
+      Frame fr = env.popAry();
+      if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
+      Vec v = fr.anyVec();
+      if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
+      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      all = new AllTask().doAll(fr.anyVec()).all;
+    }
+    env.push(new ValStr(all?"TRUE":"FALSE"));
+  }
+
+  private static class AllTask extends MRTask<AllTask> {
+    private boolean all=true;
+    @Override public void map(Chunk c) {
+      for(int i=0;i<c._len;++i) {
+        if( all ) {
+          if( c.isNA(i) ) { all = false; break; }
+          all &= c.atd(i)==1;
+        }
+      }
+    }
+    @Override public void reduce(AllTask t) { all &= t.all; }
+  }
+}
 class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
   ASTCanBeCoercedToLogical() { super(VARS1); }
   @Override String opStr() { return "canBeCoercedToLogical"; }
