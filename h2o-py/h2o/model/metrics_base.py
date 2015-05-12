@@ -58,7 +58,7 @@ class MetricsBase(object):
       ConfusionMatrix(cm=self.confusion_matrices()[0], domains=self._metric_json['domain']).show()
       self._metric_json["max_criteria_and_metric_scores"].show()
     if metric_type in types_w_mult:
-                                                               self._metric_json['cm']['table'].show()
+                                                               self.confusion_matrix().show()
                                                                self._metric_json['hit_ratio_table'].show()
     if metric_type in types_w_clustering:
       print "Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss())
@@ -176,6 +176,12 @@ class H2OMultinomialModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OMultinomialModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
 
+  def confusion_matrix(self):
+    """
+    Returns a confusion matrix based of H2O's default prediction threshold for a dataset
+    """
+    return self._metric_json['cm']['table']
+
 class H2OBinomialModelMetrics(MetricsBase):
   """
   This class is essentially an API for the AUC object.
@@ -228,7 +234,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
     :return: The error for this set of metrics and thresholds.
     """
-    return self.metric("error", thresholds=thresholds)
+    return 1 - self.metric("accuracy", thresholds=thresholds)
 
   def precision(self, thresholds=None):
     """
@@ -331,6 +337,29 @@ class H2OBinomialModelMetrics(MetricsBase):
       row = thresh2d.cell_values[idx]
       metrics.append([t,row[midx]])
     return metrics
+
+  def confusion_matrix(self, metric="f1"):
+    """
+    Get the confusion matrix for the specified metric
+
+    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "error", "accuracy", "f0point5", "f2", "f1"}
+    :return: the confusion matrix for the metric
+    """
+    thresh = self.find_threshold_by_max_metric(metric)
+    thresh2d = self._metric_json['thresholds_and_metric_scores']
+    tidx = thresh2d.col_header.index('tps')
+    fidx = thresh2d.col_header.index('fps')
+    p = self._metric_json['max_criteria_and_metric_scores'].cell_values[tidx-1][2]
+    n = self._metric_json['max_criteria_and_metric_scores'].cell_values[fidx-1][2]
+    idx = self.find_idx_by_threshold(thresh)
+    row = thresh2d.cell_values[idx]
+    tps = row[tidx]
+    fps = row[fidx]
+    c0  = float("nan") if isinstance(n, str) or isinstance(fps, str) else n - fps
+    c1  = float("nan") if isinstance(p, str) or isinstance(tps, str) else p - tps
+    fps = float("nan") if isinstance(fps,str) else fps
+    tps = float("nan") if isinstance(tps,str) else tps
+    return [[c0,fps],[c1,tps]]
 
   def confusion_matrices(self, thresholds=None):
     """
