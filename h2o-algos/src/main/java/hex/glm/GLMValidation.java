@@ -33,8 +33,9 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   MetricBuilder _metricBuilder;
   boolean _intercept = true;
   final boolean _computeMetrics;
-  public GLMValidation(String[] domain, double ymu, GLMParameters glm, int rank, double threshold, boolean computeMetrics){
+  public GLMValidation(String[] domain, boolean intercept, double ymu, GLMParameters glm, int rank, double threshold, boolean computeMetrics){
     super(domain);
+    _intercept = intercept;
     _rank = rank;
     _ymu = new double[]{ymu};
     _glm = glm;

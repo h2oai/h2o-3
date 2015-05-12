@@ -683,7 +683,7 @@ public abstract class GLMTask  {
         String [] domain = _dinfo._adaptedFrame.lastVec().domain();
         if(domain == null && _glm._family == Family.binomial)
           domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
-        _val = new GLMValidation(domain, _ymu, _glm, rank, .5, true); // todo pass correct threshold
+        _val = new GLMValidation(domain, true, _ymu, _glm, rank, .5, true); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_glm._family == Family.binomial && _validate){

@@ -130,7 +130,7 @@ public class DataInfo extends Keyed {
     return res;
   }
 
-  // private constructor called by fileterExpandedColumns
+  // private constructor called by filterExpandedColumns
   private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing){
     super(selfKey);
     _valid = false;
@@ -152,7 +152,7 @@ public class DataInfo extends Keyed {
     _responses = responses;
     _cats = catLevels.length;
     _nums = fr.numCols()-_cats - responses;
-    _useAllFactorLevels = false;
+    _useAllFactorLevels = true;
     setPredictorTransform(predictor_transform);
     setResponseTransform(response_transform);
   }
