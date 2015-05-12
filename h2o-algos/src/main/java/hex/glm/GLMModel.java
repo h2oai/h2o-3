@@ -52,6 +52,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    if(domain == null && _parms._family == Family.binomial)
+      domain = new String[]{"0","1"};
     return new GLMValidation(domain,_parms._intercept,_parms._intercept?_ymu:_parms._family == Family.binomial?.5:0, _parms, rank(beta()), _output._threshold, true);
   }
 
