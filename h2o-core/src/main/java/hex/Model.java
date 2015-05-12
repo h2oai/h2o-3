@@ -60,7 +60,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _drop_na20_cols;    // True if dropping cols > 20% NAs
-    public boolean _dropConsCols;    // True if dropping constant and all NA cols
+    public boolean _drop_const_cols;    // True if dropping constant and all NA cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -71,7 +71,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _drop_na20_cols = defaultDropNA20Cols();
-                          _dropConsCols = defaultDropConsCols(); }
+                          _drop_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
