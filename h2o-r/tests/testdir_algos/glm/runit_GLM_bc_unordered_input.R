@@ -19,7 +19,7 @@ test <- function(conn) {
     indVars <-  as.character(bc[1:nrow(bc), "names"])
     depVars <- "C3"
     totRealProb <- 0.002912744
-    lambda <- 0
+    lambda <- 1e-8
     alpha <- 0
     family_type <- "binomial"
 
@@ -29,8 +29,7 @@ test <- function(conn) {
 
     ## Run GLM
     run_glm <- function(data, beta_constraints){
-      h2o.glm(x = indVars, y = depVars, training_frame = data, family = family_type, prior = totRealProb,
-              use_all_factor_levels = T, lambda = lambda, alpha = alpha, beta_constraints = beta_constraints)
+      h2o.glm(x = indVars, y = depVars, training_frame = data, family = family_type, prior = totRealProb, lambda = lambda, alpha = alpha, beta_constraints = beta_constraints)
     }
 
     Log.info("Run GLM with original data and original constraints.")
