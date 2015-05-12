@@ -17,7 +17,7 @@ def frame_slicing(ip,port):
 
     # H2OFrame[int] (column slice)
     res1 = iris[0]
-    assert abs(res1[8,0] - 4.4) < 1e-10, "incorrect values"
+    assert abs(res1[8] - 4.4) < 1e-10, "incorrect values"
 
     # H2OFrame[int,int]
     res2 = prostate[13, 3]
@@ -30,13 +30,11 @@ def frame_slicing(ip,port):
 
     # H2OFrame[slice, int]
     res4 = iris[5:8, 1]
-    assert abs(res4[0,0] - 3.9) < 1e-10 and abs(res4[1,0] - 3.4) < 1e-10 and abs(res4[2,0] - 3.4) < 1e-10 and \
-           abs(res4[3,0] - 2.9) < 1e-10, "incorrect values"
+    assert abs(res4[0] - 3.9) < 1e-10 and abs(res4[1] - 3.4) < 1e-10 and abs(res4[2] - 3.4) < 1e-10, "incorrect values"
 
     # H2OFrame[slice, slice]
     res5 = prostate[5:8, 0:3]
-    assert abs(res5[0,0] - 6) < 1e-10 and abs(res5[1,1] - 0) < 1e-10 and abs(res5[2,2] - 61) < 1e-10, \
-        "incorrect values"
+    assert abs(res5[0,0] - 6) < 1e-10 and abs(res5[1,1] - 0) < 1e-10 and abs(res5[2,2] - 61) < 1e-10, "incorrect values"
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, frame_slicing)

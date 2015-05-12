@@ -26,7 +26,7 @@ Edit the properties in the core-site.xml file to include your Access Key ID and 
 
 Launch with the configuration file `core-site.xml` by running in the command line:
 
-    `java -jar h2o.jar -hdfs_config core-site.xml`
+    java -jar h2o.jar -hdfs_config core-site.xml
 or 
     `java -cp h2o.jar water.H2OApp -hdfs_config core-site.xml`
 

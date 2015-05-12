@@ -1,12 +1,14 @@
 package hex;
 
-import java.util.HashMap;
+import java.util.Map;
+
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Frame;
 import water.rapids.ASTddply.Group;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
+import water.util.Log;
 import water.util.ReflectionUtils;
 
 /** A Grid of Models
@@ -33,8 +35,12 @@ import water.util.ReflectionUtils;
  *
  *  E.g. KMeansGrid will convert the initial center selection field "_init"
  *  Enum to and from a simple double value internally.
+ *
+ *  @param <MP>  type of model build parameters
+ *  @param <G>  self-type of actual Grid implementation
  */
-public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
+// FIXME should be abstract but REST API layer requires not abstract
+public /*abstract*/ class Grid<MP extends Model.Parameters, G extends Grid<MP, G>> extends Lockable<G> {
   protected final Frame _fr;    // The training frame for this grid of models
   // A cache of double[] hyper-parameters mapping to Models
   final IcedHashMap<Group,Key<Model>> _cache = new IcedHashMap<>();
@@ -42,13 +48,13 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
   protected Grid( Key key, Frame fr ) { super(key); _fr = fr; }
 
   /** @return Model name */
-  protected abstract String modelName();
+  protected /*abstract*/ String modelName() { throw H2O.fail(); }
 
   /** @return hyperparameter names corresponding to a Model.Parameter field names */
-  protected abstract String[] hyperNames();
+  protected /*abstract*/ String[] hyperNames() { throw H2O.fail(); };
 
   /** @return hyperparameter defaults, aligned with the field names */
-  protected abstract double[] hyperDefaults();
+  protected /*abstract*/ double[] hyperDefaults() { throw H2O.fail(); };
 
   /** Ask the Grid for a suggested next hyperparameter value, given an existing
    *  Model as a starting point and the complete set of hyperparameter limits.
@@ -60,7 +66,7 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  @param m A model to act as a starting point 
    *  @param hyperLimits Upper bounds for this search 
    *  @return Suggested next value for hyperparameter h or NaN if no next value */
-  protected abstract double suggestedNextHyperValue( int h, Model m, double[] hyperLimits );
+  protected /*abstract*/ double suggestedNextHyperValue( int h, Model m, double[] hyperLimits ) { throw H2O.fail(); };
 
   /** @return The data frame used to train all these models.  All models are
    *  trained on the same data frame, but might be validated on multiple
@@ -79,20 +85,20 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  the default value.
    *  @param hypers A set of {hyper-parameter field names, search space values}
    *  @return The same set as a double[][]  */
-  private double[][] hyper2doubles( HashMap<String,Object[]> hypers ) {
+  private double[][] hyper2doubles( Map<String,Object[]> hypers ) {
     String[] ss = hyperNames();
     double[] defs = hyperDefaults();
     double[][] dss = new double[ss.length][];
     int cnt=0;                         // Count of found hyper parameters
     for( int i=0; i<ss.length; i++ ) { // For all hyper-names
-      Object[] os = hypers.get(ss[i]); // Get an array-of-something
+      Object[] os = hypers!=null?hypers.get(ss[i]):null; // Get an array-of-something
       if( os == null ) os = new Object[]{defs[i]}; // Missing?  Use default
       else cnt++;                                  // Found a hyper parameter
       double[] ds = dss[i] = new double[os.length];// Array of params for search
       for( int j=0; j<os.length; j++ )
         ds[j] = ReflectionUtils.asDouble(os[j]);
     }
-    if( cnt != hypers.size() )  // Quicky error check for unknow parms
+    if( hypers != null && cnt != hypers.size() )  // Quicky error check for unknow parms
       for( String s : hypers.keySet() )
         if( ArrayUtils.find(ss, s) == -1 )
           throw new IllegalArgumentException("Unkown hyper-parameter "+s);
@@ -104,32 +110,58 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  Error if the value cannot be represented as a double.
    *  @param hypers A set of {hyper-parameter field names, values}
    *  @return The same set as a double[]  */
-  private double[] hyper2double( HashMap<String,Object> hypers ) {
+  private double[] hyper2double( Map<String,Object> hypers ) {
     throw H2O.unimpl();
   }
 
   /** @param hypers A set of hyper parameter values
    *  @return A model run with these parameters, or null if the model does not exist. */
   public Key<Model> model( double[] hypers ) { return _cache.get(new Group(hypers)); }
-  public Key<Model> model( HashMap<String,Object> hypers ) { return model(hyper2double(hypers)); }
+  public Key<Model> model( Map<String,Object> hypers ) { return model(hyper2double(hypers)); }
 
-  /** @param hypers A set of hyper parameter values
+  /**
+   *  Get a new model builder for given default parameters and hyper parameters.
+   *
+   *  @param params  default parameters
+   *  @param hypers  A set of hyper parameter values
    *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
    *  cheap; used to check hyperparameter sanity */
-  protected abstract ModelBuilder getBuilder( double[] hypers );
+  protected final ModelBuilder getBuilder(MP params, double[] hypers ) {
+    MP p = (MP) params.clone();
+    p = applyHypers(p, hypers);
+    ModelBuilder mb = createBuilder(p);
+    return mb;
+  }
+
+  /**
+   * Create a new model builder for given parameters.
+   *
+   * @param params model builder parameters, it is private copy provided for a model builder
+   * @return
+   */
+  protected /*abstract*/ ModelBuilder createBuilder(MP params) { throw H2O.fail(); };
+
+  /**
+   * Apply given hyper parameters on default parameter holder.
+   *
+   * @param params  default parameters
+   * @param hypers  hyper parameters to apply
+   * @return modified params object with configured hyper parameters
+   */
+  protected /*abstract*/ MP applyHypers(MP params, double[] hypers) { return params; }
 
   /** @param parms Model parameters
    *  @return Gridable parameters pulled out of the parms */
-  public abstract double[] getHypers( Model.Parameters parms );
+  public /*abstract*/ double[] getHypers(MP parms) { throw H2O.fail(); };
 
   /** @param hypers A set of hyper parameter values
    *  @return A Future of a model run with these parameters, typically built on
    *  demand and not cached - expected to be an expensive operation.  If the
    *  model in question is "in progress", a 2nd build will NOT be kicked off.
    *  This is a non-blocking call. */
-  private ModelBuilder startBuildModel( double[] hypers ) {
+  private ModelBuilder startBuildModel(MP params, double[] hypers ) {
     if( model(hypers) != null ) return null;
-    ModelBuilder mb = getBuilder(hypers);
+    ModelBuilder mb = getBuilder(params, hypers);
     mb.trainModel();
     return mb;
   }
@@ -138,21 +170,25 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  @return A model run with these parameters, typically built on demand and
    *  cached - expected to be an expensive operation.  If the model in question
    *  is "in progress", a 2nd build will NOT be kicked off.  This is a blocking call. */
-  private Model buildModel( double[] hypers ) {
+  private Model buildModel(MP params, double[] hypers ) {
     Key<Model> key = model(hypers);
     if( key != null ) return key.get();
-    Model m = (Model)(startBuildModel(hypers).get());
+    Model m = (Model)(startBuildModel(params, hypers).get());
     _cache.put(new Group(hypers.clone()), m._key);
     return m;
   }
   
-  /** @param hyperSearch A set of arrays of hyper parameter values, used to
+  /**
+   *  @param params  Default parameters for grid search builder
+   *  @param hyperSearch A set of arrays of hyper parameter values, used to
    *  specify a simple fully-filled-in grid search.
    *  @return GridSearch Job, with models run with these parameters, built as
    *  needed - expected to be an expensive operation.  If the models in
    *  question are "in progress", a 2nd build will NOT be kicked off.  This is
    *  a non-blocking call. */
-  public GridSearch startGridSearch( final HashMap<String,Object[]> hyperSearch ) { return new GridSearch(_key,hyperSearch).start(); }
+  public GridSearch startGridSearch( final MP params, final Map<String,Object[]> hyperSearch ) {
+    return new GridSearch(_key, params, hyperSearch).start();
+  }
 
   // Cleanup models and grid
   @Override protected Futures remove_impl( Futures fs ) {
@@ -163,11 +199,13 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
   }
 
   // A search over a hyperparameter space
-  public class GridSearch extends Job<Grid> {
+  public final class GridSearch extends Job<Grid> {
     double[][] _hyperSearch;
     final int _total_models;
-    GridSearch( Key gkey, HashMap<String,Object[]> hyperSearch ) {
+    final MP   _params;
+    GridSearch( Key gkey, MP params, Map<String,Object[]> hyperSearch ) {
       super(Key.make("GridSearch_" + modelName() + Key.rand()), gkey, modelName() + " Grid Search");
+      _params = params;
       _hyperSearch = hyper2doubles(hyperSearch);
 
       // Count of models in this search
@@ -178,15 +216,17 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
 
       // Check all parameter combos for validity
       double[] hypers = new double[_hyperSearch.length];
+      // FIXME: this expect finite space!
       for( int[] hidx = new int[_hyperSearch.length]; hidx != null; hidx = nextModel(hidx) ) {
-        ModelBuilder mb = getBuilder(hypers(hidx,hypers));
+        ModelBuilder mb = getBuilder(params, hypers(hidx,hypers));
         if( mb.error_count() > 0 ) 
           throw new IllegalArgumentException(mb.validationErrors());
       }
     }
 
     GridSearch start() {
-      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(); tryComplete(); } },_total_models);
+      Log.info("Starting gridsearch: _total_models="+_total_models);
+      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(_params); tryComplete(); } },_total_models);
       return this;
     }
 
@@ -202,11 +242,11 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
     }
 
     // Classic grid search over hyper-parameter space
-    private void gridSearch() {
+    private void gridSearch(MP params) {
       double[] hypers = new double[_hyperSearch.length];
       for( int[] hidx = new int[_hyperSearch.length]; hidx != null; hidx = nextModel(hidx) ) {
         if( !isRunning() ) { cancel(); return; }
-        buildModel(hypers(hidx,hypers));
+        buildModel(params, hypers(hidx,hypers));
       }
       done();
     }
@@ -231,4 +271,6 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
       return hypers;            // Flow coding
     }
   }
+
+  @Override protected long checksum_impl() { throw H2O.unimpl(); }
 }

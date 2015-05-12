@@ -11,6 +11,7 @@ import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 /**
  * Class for GLMValidation.
@@ -112,11 +113,10 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   public final long nullDOF(){return nobs - (_intercept?1:0);}
   public final long resDOF(){return nobs - _rank;}
 
-  protected double computeAUC(GLMModel m, Frame f){
+  protected double computeAUC(){
     if(_glm._family != Family.binomial)
       throw new IllegalArgumentException("AUC only defined for family == 'binomial', got '" + _glm._family + "'");
-    ModelMetricsBinomial metrics = (ModelMetricsBinomial)makeModelMetrics(m.clone(),f,Double.NaN);
-    return metrics.auc()._auc;
+    return ((MetricBuilderBinomial)_metricBuilder).auc();
   }
   public double bestThreshold(){ return _auc2==null ? Double.NaN : _auc2.defaultThreshold();}
 //  public double AIC(){return aic;}
@@ -148,7 +148,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   @Override
   public String toString(){
-    return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + (_metrics != null?", metrics = " + _metrics:"");
+    return _metricBuilder.toString() + ", explained_dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,4);
   }
 
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {

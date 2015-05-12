@@ -107,8 +107,11 @@
   tmp <- NULL
   if (method == "GET") {
     h = basicHeaderGatherer()
-      tmp = tryCatch(getURL(url = url, headerfunction = h$update, useragent=R.version.string, timeout=timeout_secs),
-                           error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp = tryCatch(getURL(url = url,
+                          headerfunction = h$update,
+                          useragent = R.version.string,
+                          timeout = timeout_secs),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -118,8 +121,15 @@
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-      tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs)),
-                         error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp = tryCatch(postForm(uri = url,
+                            .params = list(fileUploadInfo = fileUploadInfo),
+                            .opts=curlOptions(writefunction = t$update,
+                                              headerfunction = h$update,
+                                              useragent = R.version.string,
+                                              httpheader = c('Expect' = ''),
+                                              verbose = FALSE,
+                                              timeout = timeout_secs)),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -128,8 +138,15 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-      tmp = tryCatch(curlPerform(url = url, postfields=postBody, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
-                         error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp = tryCatch(curlPerform(url = url,
+                               postfields = postBody,
+                               writefunction = t$update,
+                               headerfunction = h$update,
+                               useragent = R.version.string,
+                               httpheader = c('Expect' = ''),
+                               verbose = FALSE,
+                               timeout = timeout_secs),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -138,8 +155,14 @@
   } else if (method == "DELETE") {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
-                           error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                verbose = FALSE,
+                                timeout = timeout_secs),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -461,7 +484,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list()) {
+.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list(), raw=FALSE) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
@@ -478,11 +501,14 @@ print.H2OTable <- function(x, header=TRUE, ...) {
       .params <- list(...)
     }
   }
-  if( !is.null(timeout) ) {
-    .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout))
-  } else {
-    .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method))
-  }
+
+  rawREST <- ""
+
+  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout)
+  else                    rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
+
+  if( raw ) rawREST
+  else      .h2o.fromJSON(rawREST)
 }
 
 

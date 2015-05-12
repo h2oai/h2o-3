@@ -207,19 +207,23 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
     return types;
   }
 
-  public String[] guessNAStrings(byte[] types) {
+  public String[][] guessNAStrings(byte[] types) {
     //For now just catch 0's as NA in Enums
-    String[] na_strings = new String[_ncols];
+    String[][] na_strings = new String[_ncols][];
+    boolean empty = true;
     for (int i = 0; i < _ncols; ++i) {
       int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line (based on 4M boundary)
       if (types[i] == Vec.T_ENUM
               && _nzeros[i] > 0
               && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
               && (_domains[i].size() <= 0.95 * _nstrings[i])) { // not all unique strings
-        na_strings[i] = "0";
+        na_strings[i] = new String[1];
+        na_strings[i][0] = "0";
+        empty = false;
       }
     }
-    return na_strings;
+    if (empty) return null;
+    else return na_strings;
   }
 
   public static PreviewParseWriter unifyColumnPreviews(PreviewParseWriter prevA, PreviewParseWriter prevB) {

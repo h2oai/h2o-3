@@ -17,10 +17,13 @@
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.
-#' @param na.strings H2O will interpret these strings as missing.
+#' @param na.strings (Optional) H2O will interpret these strings as missing.
+#' @param blocking (Optional) Tell H2O parse call to block synchronously instead
+#'        of polling.  This can be faster for small datasets but loses the
+#'        progress bar.
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL) {
+                         col.types=NULL, na.strings=NULL, blocking=FALSE) {
   parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings)
 
   parse.params <- list(
@@ -33,9 +36,10 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
             number_columns = parse.params$number_columns,
             column_names = .collapse.char(parse.params$column_names),
             column_types = .collapse.char(parse.params$column_types),
-            na_strings = .collapse.char(parse.params$na_strings),
+            na_strings = .collapse.array(parse.params$na_strings),
             chunk_size = parse.params$chunk_size,
-            delete_on_done = parse.params$delete_on_done
+            delete_on_done = parse.params$delete_on_done,
+            blocking = blocking
             )
 
   linkToGC <- !nzchar(destination_frame)
@@ -71,7 +75,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup.params$source_frames = .collapse.char(data@frame_id)
 
   # set field sep
-  if( nchar(sep) > 0 ) parseSetup.params$separator = sep
+  if( nchar(sep) > 0 ) parseSetup.params$separator <- .asc(sep)
 
   # check the header
   if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
@@ -88,7 +92,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   if( !is.null(col.types) )  parseSetup.params$column_types <- .collapse.char(col.types)
 
   # check the na.strings
-  if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.char(na.strings)
+  if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
 
   # pass through ParseSetup
   parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
@@ -120,6 +124,10 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
+.collapse.array <- function(v) {
+  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char), collapse=','), ']') 
+  else "[]"
+}
 
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), frame_id) {
   .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]$rows
@@ -131,3 +139,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
   .newH2OFrame("H2OFrame", conn=conn, frame_id=destination_frame, mutable=mutable, linkToGC=linkToGC)
 }
+
+
+# ASCII lookup on sep
+.asc <- function(c) strtoi(charToRaw(c),16L)

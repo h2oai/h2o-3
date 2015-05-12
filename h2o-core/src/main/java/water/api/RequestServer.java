@@ -456,7 +456,7 @@ public class RequestServer extends NanoHTTPD {
     return run;
   }
 
-  void alwaysLogRequest(String uri, String method, Properties parms) {
+  public static void alwaysLogRequest(String uri, String method, Properties parms) {
     String log = String.format("%-4s %s", method, uri);
     for( Object arg : parms.keySet() ) {
       String value = parms.getProperty((String) arg);

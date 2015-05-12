@@ -8,6 +8,8 @@ Some of the parameters have been renamed for consistency. For each algorithm, a 
 
 For additional assistance within R, enter a question mark before the command (for example, `?h2o.glm`). 
 
+There is also a "shim" available that will review R scripts created with previous versions of H2O, identify deprecated or renamed parameters, and suggest replacements. For more information, refer to the repo [here](https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R). 
+
 ##Changes from H2O to H2O-Dev
 
 ###`h2o.exec`
@@ -331,6 +333,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `class.sampling.factors` | `class_sampling_factors`
 `nfolds` |  `n_folds`
+`override_with_best_model` | `overwrite_with_best_model`
 
 ###Deprecated DL Parameters
 
@@ -358,7 +361,7 @@ H2O  | H2O-Dev
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `model_id = "",`
-`override_with_best_model,` | `override_with_best_model = true,` 
+`override_with_best_model,` | `overwrite_with_best_model = true,` 
 `classification = TRUE,` | 
 `nfolds = 0,` |  `n_folds = 0`
 `validation,` | `validation_frame,` 

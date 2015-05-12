@@ -44,7 +44,7 @@ test.quantile.golden <- function(conn) {
   expect_equal(quantNA.rand.h2o, quantNA.rand.r)
 
   Log.info("Check interpolation matches R with type=7 (pubdev-671)")
-  getNumbers = function(x)as.numeric(sapply(strsplit(x, split=":"),'[',2))  # even in base R, summary.data.frame returns formatted text
+  getNumbers = function(s)as.numeric(lapply(strsplit(s[,1], ":"), '[', 2))   # even in base R, summary.data.frame returns formatted text
   probs = seq(0,1,by=0.01)
   for (vec in list(
        c(5 , 8 , 9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43, 45, 48, 161)   # unique

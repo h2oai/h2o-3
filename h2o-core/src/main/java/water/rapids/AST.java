@@ -50,7 +50,7 @@ abstract public class AST extends Iced {
       } else if (this instanceof ASTReducerOp) {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
         ((ASTReducerOp) this).apply(e);
-      } else if (this instanceof ASTLs || this instanceof ASTSetTimeZone || this instanceof ASTListTimeZones || this instanceof ASTGetTimeZone) {
+      } else if (this instanceof ASTLs || this instanceof ASTSetTimeZone || this instanceof ASTListTimeZones || this instanceof ASTGetTimeZone || this instanceof ASTStoreSize) {
         ((ASTOp) this).apply(e);
       } else if (this instanceof ASTFunc) {
         ((ASTFunc) this).apply(e);
@@ -188,25 +188,21 @@ class ASTFrame extends AST {
   boolean isFrame;
   boolean _g;
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
-  ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
     Key k = Key.make(key);
     Keyed val = DKV.getGet(k);
     if (val == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
     _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame(Key.make(), null, new Vec[]{(Vec)val});
-    if( !isFrame && _fr._key!=null && DKV.get(_fr._key)==null ) DKV.put(_fr._key,_fr);
+    if( !isFrame && _fr._key!=null && DKV.get(_fr._key)==null ) { DKV.put(_fr._key,_fr); }
     _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
-    if (_key != null) {
-      e._locked.add(Key.make(_key));
-      if (e.isGlobal()) e._global._frames.put(_key, _fr);
-      else e._local._frames.put(_key, _fr);
-    }
+    if (_key != null && DKV.get(_key)!=null ) e.lock(_fr); // add to list of things that cannot be DKV removed.
+    else                                      e.put(_key,_fr,isFrame); // _key not in the DKV, have transient Frame
     if( !isFrame ) e._tmpFrames.add(_fr);
-    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
+    e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
@@ -476,7 +472,7 @@ class ASTStatement extends AST {
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      if( !(_asts[i+1] instanceof ASTDelete) ) env.pop();
+      if( !(_asts[i+1] instanceof ASTDelete || _asts[i+1] instanceof ASTRemoveFrame) ) env.pop();
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
@@ -904,15 +900,18 @@ class ASTAssign extends AST {
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
-        if (id.isGlobalSet()) vecs = f.deepCopy(null).vecs();
+        if( id.isGlobalSet() ) vecs = f.deepCopy(null).vecs(); // for non-blocking put, see ASTGPut
         Frame fr = new Frame(k, f.names(), vecs);
-        if (id.isGlobalSet()) DKV.put(k, fr);
-        e._locked.add(k);
-        e.addKeys(fr);
-        if (!e.isGlobal()) e._local._frames.put(k.toString(), fr);
-        else e._global._frames.put(k.toString(), fr);
+
+        // if global set, then dkv put this frame under the Key k
+        if( id.isGlobalSet() ) {
+          DKV.put(k, fr);
+          e.lock(fr);
+        } else {
+          // not a global set, push into transient set of Frames in the SymbolTable...
+          e.put(k.toString(),fr);
+        }
         e.push(new ValFrame(fr, id.isGlobalSet()));
-        e.put(id._id, Env.ARY, id._id);
       }
 
     // The other three cases of assignment follow
@@ -1066,19 +1065,19 @@ class ASTAssign extends AST {
         for (int i = 0; i < cs.length; i++) {
           int cidx = (int) cs[i];
           Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
-          e.addVec(rv);
+          e.addRef(rv);
           if (cidx == lhs_ary.numCols()) {
             if (!rv.group().equals(lhs_ary.anyVec().group())) {
               e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
-              e.addVec(rv);
+              e.addRef(rv);
             }
             lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
           } else {
             if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
               e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
-              e.addVec(rv);
+              e.addRef(rv);
             }
             lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
           }
@@ -1399,11 +1398,11 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    AST ast = _asts[0];
-    String s = ast instanceof ASTFrame
-            ? ((ASTFrame)ast)._key
-            : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
-    DKV.remove(Key.make(s));
+    _asts[0].exec(env);
+    // Hard/deep delete of a Frame
+    if( env.isAry() )  env.popAry().remove();
+    else if( env.isStr() ) Keyed.remove(Key.make(env.popStr()));
+    else throw H2O.unimpl(env.pop().getClass().toString());
   }
 }
 

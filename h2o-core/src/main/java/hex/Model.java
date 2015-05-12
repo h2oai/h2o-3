@@ -60,7 +60,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _drop_na20_cols;    // True if dropping cols > 20% NAs
-    public boolean _dropConsCols;    // True if dropping constant and all NA cols
+    public boolean _ignore_const_cols;    // True if dropping constant cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -71,7 +71,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _drop_na20_cols = defaultDropNA20Cols();
-                          _dropConsCols = defaultDropConsCols(); }
+                          _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
@@ -512,16 +512,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[] names = new String[ncols];
     String[][] domains = new String[ncols][];
     names[0] = "predict";
-    for(int i = 1; i < names.length; ++i)
-      names[i] = _output.classNames()[i-1];
-    domains[0] = nc==1 || !computeMetrics ? null : adaptFrm.lastVec().domain();
+    for(int i = 1; i < names.length; ++i) {
+      names[i] = _output.classNames()[i - 1];
+      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+      try {
+        Integer.valueOf(names[i]);
+        names[i] = "p" + names[i];
+      } catch (Throwable t) {
+        // do nothing, non-integer names are fine already
+      }
+    }
+    domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),computeMetrics).doAll(ncols,adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
-    Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
-    DKV.put(res);
-    return res;
+    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
   }
 
   private class BigScore extends MRTask<BigScore> {

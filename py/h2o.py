@@ -850,3 +850,25 @@ class H2O(object):
         result = self.__do_json_request('/3/Metadata/schemas/' + schemaname, cmd='get', timeout=timeoutSecs)
 
         return result
+
+    def grid(self, algo, parameters, hyperParameters, timeoutSecs=60, asynchronous=False, **kwargs):
+        assert algo is not None, 'FAIL: "algo" parameter is null'
+        assert parameters is not None, 'FAIL: "parameters" parameter is null'
+
+        gridParams = parameters
+        gridParams['grid_parameters'] = json.dumps(hyperParameters)
+
+        result = self.__do_json_request('/3/Grid/' + algo, cmd='post', postData=gridParams, raiseIfNon200=False)
+
+        if asynchronous:
+            return result
+        elif result['__http_response']['status_code'] != 200:
+            return result
+        else:
+            assert 'job' in result, "FAIL: did not find job key in model build result: " + repr(result)
+            job = result['job']
+            job_key = job['key']['name']
+            H2O.verboseprint("grid search job_key: " + repr(job_key))
+            job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+            return result
+

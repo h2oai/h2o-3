@@ -7,9 +7,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
-import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.*;
@@ -85,9 +85,12 @@ import java.util.concurrent.atomic.AtomicInteger;
     long s = System.currentTimeMillis();
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
-    final int nGrps = p1._g.size();
-    final G[] grps = p1._g.keySet().toArray(new G[nGrps]);
-    H2O.submitTask(new ParallelPostGlobal(grps)).join();
+    int nGrps = p1._g.size();
+    G[] tmpGrps = p1._g.keySet().toArray(new G[nGrps]);
+    while( tmpGrps[nGrps-1]==null ) nGrps--;
+    final G[] grps = new G[nGrps];
+    System.arraycopy(tmpGrps,0,grps,0,nGrps);
+    H2O.submitTask(new ParallelPostGlobal(grps,nGrps)).join();
 
     // build the output
     final int nCols = _gbCols.length+_agg.length;
@@ -203,12 +206,41 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public Iterator<T> iterator() {return _g.iterator(); }
   }
 
+  // custom serializer for <Group,Int> pairs
+  public static class IcedHM<G extends Iced,S extends String> extends Iced {
+    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
+    IcedHM() { _m = new NonBlockingHashMap<>(); }
+    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
+    void put(G g, S i) { _m.put(g,i);}
+    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
+    Set<G> keySet() { return _m.keySet(); }
+    int size() { return _m.size(); }
+    String get(G g) { return _m.get(g); }
+    G getk(G g) { return _m.getk(g); }
+    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+      if( _m==null || _m.size()==0 ) return ab.put4(0);
+      else {
+        ab.put4(_m.size());
+        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
+      }
+      return ab;
+    }
+    @Override public IcedHM read_impl(AutoBuffer ab) {
+      int mLen;
+      if( (mLen=ab.get4())!=0 ) {
+        _m = new NonBlockingHashMap<>();
+        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
+      }
+      return this;
+    }
+  }
+
   public static class GBTask extends MRTask<GBTask> {
-    IcedHashMap<G,String> _g;
+    IcedHM<G,String> _g;  // lol GString
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedHashMap<>(); }
+    @Override public void setupLocal() { _g = new IcedHM<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
@@ -234,8 +266,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        IcedHashMap<G,String> l = _g;
-        IcedHashMap<G,String> r = t._g;
+        IcedHM<G,String> l = _g;
+        IcedHM<G,String> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
         for( G rg:r.keySet() ) {
@@ -355,11 +387,12 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
   }
 
-  private static class ParallelPostGlobal extends H2O.H2OCountedCompleter<ParallelPostGlobal> {
+  public static class ParallelPostGlobal extends H2O.H2OCountedCompleter<ParallelPostGlobal> {
     private final G[] _g;
+    private final int _ngrps;
     private final int _maxP=50*1000; // burn 50K at a time
     private final AtomicInteger _ctr;
-    ParallelPostGlobal(G[] g) { _g=g; _ctr=new AtomicInteger(_maxP-1); }
+    ParallelPostGlobal(G[] g, int ngrps) { _g=g; _ctr=new AtomicInteger(_maxP-1); _ngrps=ngrps; }
 
 
     @Override protected void compute2(){
@@ -412,12 +445,13 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   public static class G extends Iced {
-    public double _ds[];  // Array is final; contents change with the "fill"
+    public final double _ds[];  // Array is final; contents change with the "fill"
     public int _hash;           // Hash is not final; changes with the "fill"
-    public void fill(int row, Chunk chks[], long cols[]) {
+    public G fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
+      return this;
     }
     private int hash() {
       long h=0;                 // hash is sum of field bits
@@ -493,6 +527,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     G(int len) {_ds=new double[len];}
+    G(){ _ds=null;}
+    G(double[] ds) { _ds=ds; }
 
     private void close() {
       for( int i=0;i<_NAMethod.length;++i ) {
@@ -504,7 +540,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       }
     }
 
-    private static boolean CAS_N (G g, long o, long n          ) { return U.compareAndSwapLong(g,_NOffset,o,n); }
+    protected static boolean CAS_N (G g, long o, long n          ) { return U.compareAndSwapLong(g,_NOffset,o,n); }
     private static boolean CAS_NA(G g, long off, long o, long n) { return U.compareAndSwapLong(g._NA,off,o,n);  }
     private static boolean CAS_f (G g, long off, long o, long n) { return U.compareAndSwapLong(g._f,off,o,n);   }
     private static boolean CAS_l (G g, long off, long o, long n) { return U.compareAndSwapLong(g._l,off,o,n);   }
@@ -576,9 +612,9 @@ import java.util.concurrent.atomic.AtomicInteger;
       TM.put("sum",         (byte)9);
       TM.put("ss",          (byte)10);
       // na handling
-      TM.put("ignore"      ,(byte)0);
-      TM.put("rm"          ,(byte)1);
-      TM.put("all"         ,(byte)2);
+      TM.put("all"         ,(byte)0);
+      TM.put("ignore"      ,(byte)1);
+      TM.put("rm"          ,(byte)2);
     }
 
     private final byte _type;

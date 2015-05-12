@@ -835,7 +835,7 @@ public class Frame extends Lockable<Frame> {
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames_vec")));
+      AppendableVec av = new AppendableVec(Vec.newKey());
       int r = 0;
       int c = 0;
       while (r < rows.length) {

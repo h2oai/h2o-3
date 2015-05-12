@@ -7,8 +7,10 @@ import os
 import os.path
 import re
 import urllib
+import urllib2
 import json
 import random
+import tabulate
 import numpy as np
 from connection import H2OConnection
 from job import H2OJob
@@ -63,11 +65,9 @@ def parse_setup(raw_frames):
   :return: A ParseSetup "object"
   """
 
-  # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
+  # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
-  if not j['is_valid']:
-    raise ValueError("ParseSetup not Valid", j)
   return j
 
 
@@ -104,7 +104,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [_quoted(name) for name in setup["na_strings"]]
+    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
     p["na_strings"] = None
 
 
@@ -166,6 +166,21 @@ if __name__ == "__main__":
 
 So each test must have an ip and port
 """
+
+
+# HDFS helpers
+def get_h2o_internal_hdfs_name_node():
+  return "172.16.2.176"
+
+def is_running_internal_to_h2o():
+  url = "http://{0}:50070".format(get_h2o_internal_hdfs_name_node())
+  try:
+    urllib2.urlopen(urllib2.Request(url))
+    internal = True
+  except:
+    internal = False
+  return internal
+
 def dim_check(data1, data2):
   """
   Check that the dimensions of the data1 and data2 are the same
@@ -190,8 +205,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
   for i in range(num_elements):
     r = random.randint(0,rows-1)
     c = random.randint(0,cols-1)
-    h2o_val = h2o_data[r,c]
-    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
+    h2o_val = h2o_data[r,c] if isinstance(h2o_data,H2OFrame) else h2o_data[r]
     np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
     assert np.absolute(h2o_val - np_val) < 1e-6, \
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
@@ -218,7 +232,11 @@ def value_check(h2o_data, local_data, num_elements, col=None):
 
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
+  init(ip,port)
+  num_keys = store_size()
   test_to_run(ip, port)
+  if keys_leaked(num_keys):
+    print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
 
 def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
@@ -273,14 +291,13 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
-def delete(key):
+def removeFrameShallow(key):
   """
-  Do a shallow DKV remove of the key (does not remove any subparts)
-  :param key: A key to be DKV.removed
+  Do a shallow DKV remove of the frame (does not remove any internal Vecs)
+  :param key: A Frame Key to be removed
   :return: None
   """
-  expr = "(del '"+key+"')"
-  rapids(expr)
+  rapids("(removeframe '"+key+"')")
   return None
 
 def rapids(expr):
@@ -323,6 +340,23 @@ def frame_summary(key):
   # frames_meta = H2OConnection.get_json("Frames/" + key)
   frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
   return frame_summary
+
+def download_pojo(model,path=""):
+  """
+  Download the POJO for this model to the directory specified by path (no trailing slash!).
+  If path is "", then dump to screen.
+  :param model: Retrieve this model's scoring POJO.
+  :param path:  An absolute path to the directory where POJO should be saved.
+  :return: None
+  """
+  model_id = model._key
+
+  java = H2OConnection.get( "Models/"+model_id+".java" )
+  file_path = path + "/" + model_id + ".java"
+  if path == "": print java.text
+  else:
+    with open(file_path, 'w') as f:
+      f.write(java.text)
 
 # Non-Mutating cbind
 def cbind(left,right):
@@ -487,6 +521,22 @@ def locate(path):
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
 
+
+def store_size():
+  """
+  Get the H2O store size (current count of keys).
+  :return: number of keys in H2O cloud
+  """
+  return rapids("(store_size)")["result"]
+
+def keys_leaked(num_keys):
+  """
+  Ask H2O if any keys leaked.
+  @param num_keys: The number of keys that should be there.
+  :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
+  """
+  return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
+
 def as_list(data):
   """
   If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
@@ -557,16 +607,15 @@ def trigamma(data): return _simple_un_math_op("trigamma", data)
 
 def _simple_un_math_op(op, data):
   """
-  Element-wise math operations on H2OFrame, H2OVec, and Expr objects.
+  Element-wise math operations on H2OFrame and H2OVec
 
   :param op: the math operation
-  :param data: the H2OFrame, H2OVec, or Expr object to operate on.
-  :return: Expr'd data
+  :param data: the H2OFrame or H2OVec object to operate on.
+  :return: H2OFrame or H2oVec, with lazy operation
   """
-  if   isinstance(data, H2OFrame): return Expr(op, Expr(data.send_frame(), length=data.nrow()))
-  elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
-  elif isinstance(data, Expr)    : return Expr(op, data)
-  else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
+  if isinstance(data, H2OFrame): return H2OFrame(vecs=[_simple_un_math_op(op,vec) for vec in data._vecs])
+  if isinstance(data, H2OVec)  : return H2OVec(data._name, Expr(op, left=data, length=len(data)))
+  raise ValueError, op + " only operates on H2OFrame or H2OVec objects"
 
 # generic reducers: these are eager
 def min(data)   : return data.min()
@@ -576,3 +625,79 @@ def sd(data)    : return data.sd()
 def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
+
+
+class H2ODisplay:
+  """
+  Pretty printing for H2O Objects;
+  Handles both IPython and vanilla console display
+  """
+  THOUSANDS = "{:,}"
+  def __init__(self,table=None,header=None,table_header=None,**kwargs):
+    self.table_header=table_header
+    self.header=header
+    self.table=table
+    self.kwargs=kwargs
+    self.do_print=True
+
+    # one-shot display... never return an H2ODisplay object (or try not to)
+    # if holding onto a display object, then may have odd printing behavior
+    # the __repr__ and _repr_html_ methods will try to save you from many prints,
+    # but just be WARNED that your mileage may vary!
+
+    if self.table_header is not None:
+      print
+      print self.table_header + ":"
+      print
+    if H2ODisplay._in_ipy():
+      from IPython.display import display
+      display(self)
+      self.do_print=False
+    else:
+      self.pprint()
+      self.do_print=False
+
+  # for Ipython
+  def _repr_html_(self):
+    if self.do_print:
+      return H2ODisplay._html_table(self.table,self.header)
+
+  def pprint(self):
+    r = self.__repr__()
+    print r
+
+  # for python REPL console
+  def __repr__(self):
+    if self.do_print or not H2ODisplay._in_ipy():
+      if self.header is None:  # tabulate is picky; can't handle None for headers...
+        return tabulate.tabulate(self.table,**self.kwargs)
+      else:
+        return tabulate.tabulate(self.table,headers=self.header,**self.kwargs)
+    self.do_print=True
+    return ""
+
+  @staticmethod
+  def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
+    try:
+      __IPYTHON__
+      return True
+    except NameError:
+      return False
+
+  # some html table builder helper things
+  @staticmethod
+  def _html_table(rows, header=None):
+    table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
+    table_rows=[]
+    if header is not None:
+      table_rows.append(H2ODisplay._html_row(header))
+    for row in rows:
+      table_rows.append(H2ODisplay._html_row(row))
+    return table.format("\n".join(table_rows))
+
+  @staticmethod
+  def _html_row(row):
+    res = "<tr>{}</tr>"
+    entry = "<td>{}</td>"
+    entries = "\n".join([entry.format(str(r)) for r in row])
+    return res.format(entries)

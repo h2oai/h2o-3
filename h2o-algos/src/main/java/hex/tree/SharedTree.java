@@ -334,7 +334,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     double sum = score1(chks, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-      GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
   }
 

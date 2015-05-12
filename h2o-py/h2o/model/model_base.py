@@ -50,10 +50,14 @@ class ModelBase(object):
     # get the predictions
     # this job call is blocking
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
+    # toast the cbound frame
+    h2o.removeFrameShallow(test_data_key)
     # retrieve the prediction frame
     prediction_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     # get the actual frame meta dta
     pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
+    # toast the prediction frame
+    h2o.removeFrameShallow(prediction_frame_key)
     # collect the vec_ids
     vec_ids = pred_frame_meta["vec_ids"]
     # get the number of rows
@@ -62,8 +66,6 @@ class ModelBase(object):
     cols = [col["label"] for col in pred_frame_meta["columns"]]
     # create a set of H2OVec objects
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
-    # toast the cbound frame
-    h2o.delete(test_data_key)
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
 
@@ -93,7 +95,7 @@ class ModelBase(object):
     # get the deepfeatures of the dataset
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key, deep_features_hidden_layer=layer)
     # retreive the frame data
-    deepfeatures_frame_key = j["predictions_name"]["name"]
+    deepfeatures_frame_key = j["predictions_frame"]["name"]
     df_frame_meta = h2o.frame(deepfeatures_frame_key)["frames"][0]
     # create vecs by extracting vec_ids, col length, and col names
     vec_ids = df_frame_meta["vec_ids"]
@@ -101,9 +103,47 @@ class ModelBase(object):
     cols = [col["label"] for col in df_frame_meta["columns"]]
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # remove test data from kv
-    h2o.delete(test_data_key)
+    h2o.removeFrameShallow(test_data_key)
     # finally return frame
     return H2OFrame(vecs=vecs)
+
+  def weights(self, matrix_id=0):
+    """
+    Return the frame for the respective weight matrix
+    :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
+    :return: an H2OFrame which represents the weight matrix identified by matrix_id
+    """
+    num_weight_matrices = len(self._model_json['output']['weights'])
+    if matrix_id not in range(num_weight_matrices):
+      raise ValueError("Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
+                       "was requested.".format(num_weight_matrices, matrix_id))
+    j = h2o.frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
+    fr = j['frames'][0]
+    rows = fr['rows']
+    vec_ids = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
+    return result
+
+  def biases(self, vector_id=0):
+    """
+    Return the frame for the respective bias vector
+    :param: vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
+    :return: an H2OFrame which represents the bias vector identified by vector_id
+    """
+    num_bias_vectors = len(self._model_json['output']['biases'])
+    if vector_id not in range(num_bias_vectors):
+      raise ValueError("Bias vector does not exist. Model has {0} bias vectors (0-based indexing), but vector {1} "
+                       "was requested.".format(num_bias_vectors, vector_id))
+    j = h2o.frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
+    fr = j['frames'][0]
+    rows = fr['rows']
+    vec_ids = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
+    return result
 
   def model_performance(self, test_data=None, train=False, valid=False):
     """
@@ -129,7 +169,7 @@ class ModelBase(object):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
       fr_key = H2OFrame.send_frame(test_data)
       res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
-      h2o.delete(fr_key)
+      h2o.removeFrameShallow(fr_key)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
@@ -174,6 +214,15 @@ class ModelBase(object):
 
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
+
+  def varimp(self):
+    """
+    Pretty print the variable importances
+    :return: None
+    """
+    model = self._model_json["output"]
+    if "variable_importances" in model.keys() and model["variable_importances"]:
+      return model["variable_importances"].show()
 
   def residual_deviance(self,train=False,valid=False):
     """
@@ -355,6 +404,16 @@ class ModelBase(object):
     if tm is None: return None
     tm = tm._metric_json
     return tm.giniCoef()
+
+  def download_pojo(self,path=""):
+    """
+    Download the POJO for this model to the directory specified by path (no trailing slash!).
+    If path is "", then dump to screen.
+    :param model: Retrieve this model's scoring POJO.
+    :param path:  An absolute path to the directory where POJO should be saved.
+    :return: None
+    """
+    h2o.download_pojo(self,path)  # call the "package" function
 
   @staticmethod
   def _get_metrics(o, train, valid):

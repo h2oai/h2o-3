@@ -178,7 +178,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
-        parms._dropConsCols = _parms._dropConsCols;
+        parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._drop_na20_cols = _parms._drop_na20_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
