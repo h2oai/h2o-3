@@ -110,6 +110,7 @@ public class DataInfo extends Keyed {
     for(int i = 0; i < _nums; ++i){
       names[i+_cats] = train._names[nums[i]];
       tvecs2[i+_cats] = train.vec(nums[i]);
+      _permutation[i+_cats] = nums[i];
     }
     for(int i = names.length-nResponses; i < names.length; ++i) {
       names[i] = train._names[i];
