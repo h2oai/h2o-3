@@ -50,7 +50,6 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",
-        "ignore_const_cols",
         "force_load_balance",
         "variable_importances",
         "replicate_training_data",
@@ -431,12 +430,6 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
      */
     @API(help = "Enable fast mode (minor approximation in back-propagation)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean fast_mode;
-
-    /**
-     * Ignore constant training columns (no information can be gained anyway).
-     */
-    @API(help = "Ignore constant training columns (no information can be gained anyway)", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean ignore_const_cols;
 
     /**
      * Increase training speed on small datasets by splitting it into many chunks

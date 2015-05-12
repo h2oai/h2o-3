@@ -451,8 +451,10 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
-  for (j in seq_along(x))
+  for (j in seq_along(x)) {
+    if( formats[j] == "%d" ) formats[j] <- "%f"
     xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
+  }
 
   # drop empty columns
   nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
