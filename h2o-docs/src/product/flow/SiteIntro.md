@@ -1,4 +1,4 @@
-#Welcome to H2O-Dev
+#Welcome to H2O 3.0
 
 Welcome to the H2O documentation site! We're glad you're interested in learning more about H2O - if you have any questions, please email them to [support@h2o.ai](mailto:support@h2o.ai) or post them on our Google groups website, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. 
 
@@ -162,7 +162,9 @@ REST APIs are generated immediately out of the code, allowing users to implement
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references. 
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/master/build.gradle" target="_blank">Maven install</a>: This page provides information on how to build a version of H2O that generates the correct IDE files. Additionally, there is information on how to 
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/build.gradle" target="_blank">Maven install</a>: This page provides information on how to build a version of H2O that generates the correct IDE files.
+ 
+- <a href="http://apps.h2o.ai" target="_blank">apps.h2o.ai</a>: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights. 
 
 - <a href="https://github.com/h2oai/h2o-droplets" target="_blank">H2O Project Templates</a>: This page provides template info for projects created in Java, Scala, or Sparkling Water. 
 
