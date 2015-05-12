@@ -33,8 +33,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
 
+    public DeepLearningParameters() {
+      _drop_const_cols = defaultDropConsCols();
+    }
+
     @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
-    @Override protected boolean defaultDropConsCols() { return true; /*FIXME: should be _ignore_const_cols; */ }
+    @Override protected boolean defaultDropConsCols() { return _ignore_const_cols; }
 
     // public int _n_folds;
     public int getNumFolds() { return 0; }
