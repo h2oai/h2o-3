@@ -1001,6 +1001,10 @@ class ASTMktime extends ASTUniPrefixOp {
         }
       }
     }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    // Clean up the constants
+    for( int i=0; i<7; i++ )
+      if( fs[i] == null )
+        vecs[i].remove();
     env.poppush(1, new ValFrame(fr2));
   }
 }

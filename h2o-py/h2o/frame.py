@@ -375,7 +375,7 @@ class H2OFrame:
     dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
     h2o.removeFrameShallow(chunk_summary_tmp_key)
     dist_summary.show()
-    h2o.H2ODisplay(table, [""] + headers, "Column-by-Colum Summary")
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
@@ -1325,13 +1325,16 @@ class H2OVec:
     :return: Returns msec since the Epoch.
     """
     # Some error checking on length
-    xlen = 1
+    xlen = -1
+    for x in [msec,second,minute,hour,day,month,year]:
+      if not isinstance(x,int):
+        l2 = len(x)
+        if xlen != l2:
+          if xlen == -1: xlen = l2
+          else:  raise ValueError("length of "+str(xlen)+" not compatible with "+str(l2))
     e = None
     for x in [msec,second,minute,hour,day,month,year]:
-      (l,x) = (1,Expr(x)) if isinstance(x,int) else (len(x),x)
-      if xlen != l:
-        if xlen == 1: xlen = l
-        else:  raise ValueError("length of "+str(x)+" not compatible with "+xlen)
+      x = Expr(x) if isinstance(x,int) else x
       e = Expr(",", x, e)
     e2 = Expr("mktime",e,None,xlen)
     return e2 if xlen==1 else H2OVec("mktime",e2)
