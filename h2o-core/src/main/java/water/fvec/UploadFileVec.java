@@ -47,9 +47,6 @@ public class UploadFileVec extends FileVec {
 
   public static class ReadPutStats {
     public ReadPutStats() {}
-
-    public long total_frames;
-    public long total_vecs;
     public long total_chunks;
     public long total_bytes;
   }
@@ -59,11 +56,10 @@ public class UploadFileVec extends FileVec {
   }
 
   static public Key readPut(Key k, InputStream is, ReadPutStats stats) throws Exception {
-    readPut(k, is, stats, new Futures()).blockForPending();
-    return k;
+    return readPut_impl(k, is, stats);
   }
 
-  static private Futures readPut(Key key, InputStream is, ReadPutStats stats, final Futures fs) throws Exception {
+  static private Key readPut_impl(Key key, InputStream is, ReadPutStats stats) throws Exception {
     Log.info("Reading byte InputStream into Frame:");
     Log.info("    frameKey:    " + key.toString());
     Key newVecKey = Vec.newKey();
@@ -74,6 +70,7 @@ public class UploadFileVec extends FileVec {
       UploadFileVec uv = new UploadFileVec(newVecKey);
       assert uv.writable();
 
+      Futures fs = new Futures();
       byte prev[] = null;
       byte bytebuf[] = new byte[FileVec.DFLT_CHUNK_SIZE];
       int bytesInChunkSoFar = 0;
@@ -101,20 +98,16 @@ public class UploadFileVec extends FileVec {
         uv.close(new C1NChunk(buf2),uv._nchunks-1,fs);
       }
 
-      ReadPutStats stats_internal = (stats != null) ? stats : new ReadPutStats();
-      stats_internal.total_frames = 1;
-      stats_internal.total_vecs = 1;
-      stats_internal.total_chunks = uv.nChunks();
-      stats_internal.total_bytes = uv.length();
-      Log.info("    totalFrames: " + stats_internal.total_frames);
-      Log.info("    totalVecs:   " + stats_internal.total_vecs);
-      Log.info("    totalChunks: " + stats_internal.total_chunks);
-      Log.info("    totalBytes:  " + stats_internal.total_bytes);
+      if( stats != null ) {
+        stats.total_chunks = uv.nChunks();
+        stats.total_bytes  = uv.length();
+      }
+      Log.info("    totalChunks: " + uv.nChunks());
+      Log.info("    totalBytes:  " + uv.length();
 
       DKV.put(newVecKey, uv, fs);
-      String[] sarr = {"bytes"};
-      Vec[] varr = {uv};
-      Frame f = new Frame(key,sarr, varr);
+      fs.blockForPending();
+      Frame f = new Frame(key,new String[]{"bytes"}, new Vec[]{uv});
       f.unlock(null);
 
       Log.info("    Success.");
@@ -128,7 +121,6 @@ public class UploadFileVec extends FileVec {
       Log.err("Frame::readPut cleaned up new frame and vector successfully");
       throw e;
     }
-
-    return fs;
+    return key;
   }
 }
