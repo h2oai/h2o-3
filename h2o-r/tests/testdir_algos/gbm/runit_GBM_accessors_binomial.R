@@ -22,8 +22,8 @@ test.gbm.bin.accessors <- function(conn) {
   mse.valid.F <- h2o.mse(pros.gbm.valid)
   mse.valid.T <- h2o.mse(pros.gbm.valid,valid = TRUE)
   print(mse.valid.T)
-  expect_equal(mse.basic, mse.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(mse.basic, mse.valid.T))
+  print( paste0( "Expect Equal: ", mse.basic, " == ", mse.valid.F) )
+  expect_true(mse.basic== mse.valid.F) # basic should equal valid with valid = FALSE
 
   Log.info("R^2...")
   r2.basic <- h2o.r2(pros.gbm)
@@ -32,8 +32,8 @@ test.gbm.bin.accessors <- function(conn) {
   r2.valid.F <- h2o.r2(pros.gbm.valid)
   r2.valid.T <- h2o.r2(pros.gbm.valid,valid = TRUE)
   print(r2.valid.T)
-  expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(r2.basic, r2.valid.T))
+  print( paste0( "Expect Equal: ", r2.basic, " == ", r2.valid.F) )
+  expect_true(r2.basic==r2.valid.F) # basic should equal valid with valid = FALSE
 
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(pros.gbm)
@@ -42,8 +42,8 @@ test.gbm.bin.accessors <- function(conn) {
   ll.valid.F <- h2o.logloss(pros.gbm.valid)
   ll.valid.T <- h2o.logloss(pros.gbm.valid, valid = TRUE)
   print(ll.valid.T)
+  print( paste0( "Expect Equal: ", ll.basic, " == ", ll.valid.F) )
   expect_equal(ll.basic, ll.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(ll.basic, ll.valid.T))
 
   Log.info("AUC...")
   auc.basic <- h2o.auc(pros.gbm)
@@ -52,8 +52,8 @@ test.gbm.bin.accessors <- function(conn) {
   auc.valid.F <- h2o.auc(pros.gbm.valid)
   auc.valid.T <- h2o.auc(pros.gbm.valid, valid = TRUE)
   print(auc.valid.T)
+  print( paste0( "Expect Equal: ", auc.basic, " == ", auc.valid.F) )
   expect_equal(auc.basic, auc.valid.F) # basic should equal valid with valid = FALSE
-  expect_warning(expect_equal(auc.basic, auc.valid.T))
 
   Log.info("Gini...")
   gini.basic <- h2o.giniCoef(pros.gbm)
@@ -62,8 +62,8 @@ test.gbm.bin.accessors <- function(conn) {
   gini.valid.F <- h2o.giniCoef(pros.gbm.valid)
   gini.valid.T <- h2o.giniCoef(pros.gbm.valid, valid = TRUE)
   print(gini.valid.T)
+  print( paste0( "Expect Equal: ", gini.basic, " == ", gini.valid.F) )
   expect_equal(gini.basic, gini.valid.F) # basic should equal valid with valid = FALSE
-  expect_error(expect_equal(gini.basic, gini.valid.T))
 
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.gbm))

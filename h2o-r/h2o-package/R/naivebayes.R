@@ -12,7 +12,8 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
-#'        column index number starting at 0, and increasing from left to right.
+#'        column index number starting at 0, and increasing from left to right. The response must be a categorical
+#'        variable with at least two levels.
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
@@ -22,7 +23,14 @@
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
 #' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
 #'        FALSE to reduce the runtime of the algorithm.
-#' @return Returns an object of class \linkS4class{H2OModel}.
+#' @details The naive Bayes classifier assumes independence between predictor variables conditional
+#'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
+#'        deviation computed from the training dataset. When building a naive Bayes classifier,
+#'        every row in the training dataset that contains at least one NA will be skipped completely.
+#'        If the test dataset has missing values, then those predictors are omitted in the probability
+#'        calculation during prediction.
+#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels, 
+#'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
 #' \dontrun{
 #'  localH2O <- h2o.init()
