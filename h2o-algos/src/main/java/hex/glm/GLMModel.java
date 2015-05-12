@@ -3,6 +3,7 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.TransformType;
 import hex.glm.GLMModel.GLMParameters.Family;
+import jsr166y.RecursiveAction;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -696,18 +697,31 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     @Override
-    protected void map(GLMModel glmModel) {
-      Frame tFrame = DKV.getGet(_trainFrame);
-      Frame vFrame = (_validFrame != null)?
+    protected void map(final GLMModel glmModel) {
+      final Frame tFrame = DKV.getGet(_trainFrame);
+      final Frame vFrame = (_validFrame != null)?
         DKV.get(_validFrame).<Frame>get():null;
       glmModel._output.pickBestModel();
       // score
-      glmModel.score(tFrame).delete();
-      glmModel._output._training_metrics = ModelMetrics.getFromDKV(glmModel,tFrame);
+      Futures fs = new Futures();
+      fs.add(new RecursiveAction() { // fork off model scoring
+        @Override
+        protected void compute() {
+          glmModel.score(tFrame).delete();
+          glmModel._output._training_metrics = ModelMetrics.getFromDKV(glmModel,tFrame);
+        }
+      }.fork());
       if(vFrame != null) {
-        glmModel.score(vFrame).delete();
-        glmModel._output._validation_metrics = ModelMetrics.getFromDKV(glmModel,vFrame);
+        fs.add(new RecursiveAction() { // fork off model scoring
+          @Override
+          protected void compute() {
+            glmModel.score(vFrame).delete();
+            glmModel._output._validation_metrics = ModelMetrics.getFromDKV(glmModel,vFrame);
+          }
+        }.fork());
       }
+      fs.blockForPending();
+
       String [] names   = new String[]{"Family","Link", "Regularization", "Number of Predictors Total","Number of Active Predictors", "Number of Iterations", "Training Frame"};
       String [] types   = new String[]{"string","string","string","int","int","int","string"};
       String [] formats = new String[]{"%s","%s","%s","%d","%d","%d","%s"};

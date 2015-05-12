@@ -40,6 +40,7 @@ import java.util.Random;
 public final class L_BFGS extends Iced {
   int _maxIter = 500;
   double _gradEps = 1e-8;
+  double _objEps = 1e-4;
   // line search params
   int _historySz = 20;
 
@@ -48,6 +49,7 @@ public final class L_BFGS extends Iced {
   public L_BFGS() {}
   public L_BFGS setMaxIter(int m) {_maxIter = m; return this;}
   public L_BFGS setGradEps(double d) {_gradEps = d; return this;}
+  public L_BFGS setObjEps(double d) {_objEps = d; return this;}
   public L_BFGS setHistorySz(int sz) {_historySz = sz; return this;}
 
 
@@ -138,11 +140,13 @@ public final class L_BFGS extends Iced {
     public final int iter;
     public final double [] coefs;
     public final GradientInfo ginfo;
+    public final boolean converged;
 
-    public Result(int iter, double [] coefs, GradientInfo ginfo){
+    public Result(boolean converged, int iter, double [] coefs, GradientInfo ginfo){
       this.iter = iter;
       this.coefs = coefs;
       this.ginfo = ginfo;
+      this.converged = converged;
     }
 
     public String toString(){
@@ -254,12 +258,11 @@ public final class L_BFGS extends Iced {
     boolean doLineSearch = true;
     int ls_switch = 0;
     double rel_improvement = 1;
-    while(pm.progress(beta, ginfo) && ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > 1e-5 && iter != _maxIter) {
-//      System.out.println("objVal = " + ginfo._objVal + ", gradNorm = " + MathUtils.l2norm2(ginfo._gradient) + ", doLineSearch = " + doLineSearch);
+    boolean converged = false;
+    while(pm.progress(beta, ginfo) && ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps && iter != _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
       if(ArrayUtils.hasNaNsOrInfs(pk)) {
         Log.warn("LBFGS: Got NaNs in search direction.");
-        System.out.println("GOT NaNs!!!");
         break; //
       }
       double lsVal = Double.POSITIVE_INFINITY;
@@ -289,7 +292,7 @@ public final class L_BFGS extends Iced {
             doLineSearch = true;
             ls_switch = 0;
           }
-          if(ginfo._objVal < newGinfo._objVal && (newGinfo._objVal - ginfo._objVal > .001*ginfo._objVal)) {
+          if(ginfo._objVal < newGinfo._objVal && (newGinfo._objVal - ginfo._objVal > _objEps*ginfo._objVal)) {
             doLineSearch = true;
             ArrayUtils.subtract(beta,pk,beta);
             continue;
@@ -300,8 +303,7 @@ public final class L_BFGS extends Iced {
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
     }
-    System.out.println("done after " + iter + "iterations, gnorm = " + ArrayUtils.l2norm2(ginfo._gradient));
-    return new Result(iter,beta, ginfo);
+    return new Result(iter < _maxIter || ArrayUtils.linfnorm(ginfo._gradient,false) < _gradEps || rel_improvement < _objEps,iter,beta, ginfo);
   }
 
   public static double [] startCoefs(int n, long seed){

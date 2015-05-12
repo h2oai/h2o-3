@@ -17,7 +17,7 @@ public class ADMM {
 
   public interface ProximalSolver {
     public double []  rho();
-    public void solve(double [] beta_given, double [] result);
+    public boolean solve(double [] beta_given, double [] result);
     public boolean hasGradient();
     public double [] gradient(double [] beta);
     public int iter();
@@ -110,7 +110,6 @@ public class ADMM {
       double reltol = RELTOL;
       double best_err = Double.POSITIVE_INFINITY;
       for (i = 0; i < max_iter; ++i) {
-        // updated x
         solver.solve(beta_given, x);
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
@@ -159,11 +158,11 @@ public class ADMM {
             Log.info("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
             // try gg to improve the solution...
             abstol *= .1;
-            if (abstol < 1e-10)
-              abstol = 1e-10;
+            if (abstol < 1e-8)
+              abstol = 1e-8;
             reltol *= .1;
-            if (reltol < 1e-10)
-              reltol = 1e-10;
+            if (reltol < 1e-6)
+              reltol = 1e-6;
             continue;
           }
           iter = i;
