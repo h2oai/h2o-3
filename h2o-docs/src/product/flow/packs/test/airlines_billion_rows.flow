@@ -31,7 +31,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-3226f334-a9c8-44e8-b784-d5ace5cc4797\",\"training_frame\":\"airlinesbillion.hex\",\"dropNA20Cols\":false,\"response_column\":\"C31\",\"solver\":\"IRLSM\",\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":-1,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-3226f334-a9c8-44e8-b784-d5ace5cc4797\",\"training_frame\":\"airlinesbillion.hex\",\"dropNA20Cols\":false,\"response_column\":\"C31\",\"solver\":\"IRLSM\",\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":-1,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
     },
     {
       "type": "cs",
