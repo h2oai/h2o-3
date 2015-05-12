@@ -10,7 +10,7 @@ import water.api.ModelParametersSchema;
 public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
 
   public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
-    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization_x",
+    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "multi_loss", "regularization_x",
             "regularization_y", "gamma_x", "gamma_y", "max_iterations", "init_step_size", "min_step_size", "seed",
             "init", "user_points", "recover_pca" };
 
@@ -20,13 +20,16 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     @API(help = "Rank of matrix approximation", required = true)
     public int k;
 
-    @API(help = "Loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
+    @API(help = "Numeric loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
     public GLRMParameters.Loss loss;
 
-    @API(help = "Regularization function for X matrix", values = { "L2", "L1" }) // TODO: pull out of enum class
+    @API(help = "Enum loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of enum class
+    public GLRMParameters.MultiLoss multi_loss;
+
+    @API(help = "Regularization function for X matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_x;
 
-    @API(help = "Regularization function for Y matrix", values = { "L2", "L1" }) // TODO: pull out of enum class
+    @API(help = "Regularization function for Y matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_y;
 
     @API(help = "Regularization weight on X matrix")

@@ -214,7 +214,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public final double[] rproxgrad_x(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x); }
     public final double[] rproxgrad_y(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y); }
     public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization) {
-      if(u == null) return null;
+      if(u == null || alpha == 0 || gamma == 0) return u;
       double[] v = new double[u.length];
       int idx;
 
