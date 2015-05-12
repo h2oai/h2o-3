@@ -39,6 +39,17 @@ class RapidsHandler extends Handler {
       if( !env.isEmpty() ) {
         if (env.isAry()) {
           Frame fr = env.popAry();
+          Key[] keys = fr.keys();
+          if( keys.length > 0 ) {
+            rapids.vec_ids = new KeyV3.VecKeyV3[keys.length];
+            for (int i = 0; i < keys.length; i++)
+              rapids.vec_ids[i] = new KeyV3.VecKeyV3(keys[i]);
+          }
+          rapids.key = new KeyV3.FrameKeyV3(fr._key);
+          rapids.num_rows = fr.numRows();
+          rapids.num_cols = fr.numCols();
+          rapids.col_names = fr.names();
+          rapids.string = null;
           
           // Auto-demote Frames-of-1 to a Scalar
           if (fr.numRows() == 1 && fr.numCols() == 1) {
@@ -63,21 +74,10 @@ class RapidsHandler extends Handler {
               rapids.string = null;
               rapids.result_type = RapidsV3.ARYNUM;
             }
-            fr.delete();        // Auto-demoted to scalar: source frame dies here
+//            fr.delete();        // Auto-demoted to scalar: source frame dies here    .... nope, up to the client to handle lifetimes
 
           } else {
-            Key[] keys = fr.keys();
-            if( keys.length > 0 ) {
-              rapids.vec_ids = new KeyV3.VecKeyV3[keys.length];
-              for (int i = 0; i < keys.length; i++)
-                rapids.vec_ids[i] = new KeyV3.VecKeyV3(keys[i]);
-            }
             rapids.result_type = RapidsV3.ARY;
-            rapids.key = new KeyV3.FrameKeyV3(fr._key);
-            rapids.num_rows = fr.numRows();
-            rapids.num_cols = fr.numCols();
-            rapids.col_names = fr.names();
-            rapids.string = null;
             String[][] head = rapids.head = new String[Math.min(200, fr.numCols())][(int) Math.min(100, fr.numRows())];
             for (int r = 0; r < head[0].length; ++r) {
               for (int c = 0; c < head.length; ++c) {

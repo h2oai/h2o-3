@@ -1,4 +1,4 @@
-#How to Launch H2O-Dev from the Command Line
+#How to Launch H2O from the Command Line
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O-Dev. When you launch from the command line, you can include additional instructions to H2O-Dev, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 
@@ -20,7 +20,7 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 ##H2O Options
 
 - `h` or `-help`: Display this information in the command line output. 
-- `-name <H2O-DevCloudName>`: Assign a name to the H2O instance in the cloud (where `<H2O-DevCloudName>` is the name of the cloud. Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster). 
+- `-name <H2OCloudName>`: Assign a name to the H2O instance in the cloud (where `<H2OCloudName>` is the name of the cloud. Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster). 
 - `-flatfile <FileName>`: Specify a flatfile of IP address for faster cloud formation (where `<FileName>` is the name of the flatfile. 
 - `-ip <IPnodeAddress>`: Specify an IP address other than the default `localhost` for the node to use (where `<IPnodeAddress>` is the IP address). 
 - `-port <#>`: Specify a port number other than the default `54321` for the node to use (where `<#>` is the port number). 
@@ -52,10 +52,10 @@ Wait for the `INFO: Registered: # schemas in: #mS` output before entering the ab
 
 If you are configuring many nodes, it is faster and easier to use the `-flatfile` option, rather than `-ip` and `-port`. 
 
-To configure H2O-Dev on a multi-node cluster:
+To configure H2O on a multi-node cluster:
 
 0. Locate a set of hosts. 
-0. [Download](www.h2o.ai/download) the appropriate version of H2O-Dev for your environment. 
+0. [Download](www.h2o.ai/download) the appropriate version of H2O for your environment. 
 0. Verify that the same h2o.jar file is available on all hosts. 
 0. Create a flatfile (a plain text file with the IP and port numbers of the hosts). Use one entry per line. For example:
    ```
@@ -69,7 +69,7 @@ To configure H2O-Dev on a multi-node cluster:
 
  For example, if you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. 
 
- For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O-Dev works best with symmetric nodes. 
+ For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes. 
 
  Note the optional `-ip` and `-port` options specify the IP address and ports to use. The `-ip` option is especially helpful for hosts with multiple network interfaces. 
 
