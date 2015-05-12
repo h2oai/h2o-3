@@ -69,9 +69,9 @@ If you're considering using H2O in a corporate environment, you'll be happy to k
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS. 
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevEC2.md" target="_blank">H2O-Dev on EC2</a>: This document describes how to launch H2O on an EC2 cluster.
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevEC2.md" target="_blank">H2O on EC2</a>: This document describes how to launch H2O on an EC2 cluster.
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevHadoop.md" target="_blank">Running H2O-Dev on Hadoop</a>: This document describes how to run H2O on Hadoop. 
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevHadoop.md" target="_blank">Running H2O on Hadoop</a>: This document describes how to run H2O on Hadoop. 
 
 
 ---
