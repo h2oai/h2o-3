@@ -961,8 +961,8 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   if( missing(newdata) ) {
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-      else                          return( h2o.confusionMatrix(model.part$vm, ...) )
-    } else                          return( h2o.confusionMatrix(model.part$tm, ...) )
+      else                          return( h2o.confusionMatrix(model.parts$vm, ...) )
+    } else                          return( h2o.confusionMatrix(model.parts$tm, ...) )
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
@@ -979,16 +979,6 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])   # FIXME: don't think model metrics come out of Predictions anymore!!!
   h2o.confusionMatrix(metrics, ...)
 })
-
-# TODO: Need to put this in a better place
-.trainOrValid <- function(l) {
-  if( is.null(l$validation)        ) l$validation <- FALSE
-  if( is.null(l$test)              ) l$test       <- FALSE
-  if( is.null(l$valid)             ) l$valid      <- FALSE
-  if( is.null(l$testing)           ) l$testing    <- FALSE
-  l$valid <- l$valid || l$validation || l$test || l$testing
-  l
-}
 
 #' @rdname h2o.confusionMatrix
 #' @export
