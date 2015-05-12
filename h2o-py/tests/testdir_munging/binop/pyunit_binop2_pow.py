@@ -6,7 +6,6 @@ def binop_pow(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
-
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
     rows, cols = iris.dim()
     iris.show()
@@ -22,63 +21,63 @@ def binop_pow(ip,port):
 
     # LHS: scaler, RHS: H2OVec
     res = 2 ** iris[1]
-    assert abs(sum([res[i,0] for i in range(rows)]) - 659.6639) < 1e-2, "expected same values"
+    assert abs(sum([res[i] for i in range(rows)]) - 659.6639) < 1e-2, "expected same values"
 
-    # LHS: scaler, RHS: Expr
+    # LHS: scaler, RHS: scaler
     res = 2 ** iris[0]
     res2 = 1.1 ** res[21]
-    assert abs(res2.eager() - 26.28056) < 1e-2, "expected same values"
+    assert abs(res2 - 26.28056) < 1e-2, "expected same values"
 
     ###################################################################
 
-    # LHS: Expr, RHS: H2OFrame
+    # LHS: scaler, RHS: H2OFrame
     res = 1.2 ** iris[2]
     res2 = res[33] ** iris
     res2.show()
 
-    # LHS: Expr, RHS: H2OVec
+    # LHS: scaler, RHS: H2OVec
     res = 1.2 ** iris[2]
     res2 = res[34] ** iris[1]
     res2.show()
 
-    # LHS: Expr, RHS: Expr
+    # LHS: scaler, RHS: scaler
     res = 1.1 ** iris[2]
     res2 = res[32] ** res[10]
-    assert abs(res2.eager() - 1.179319) < 1e-5, "expected same values"
+    assert abs(res2 - 1.179319) < 1e-5, "expected same values"
 
-    # LHS: Expr, RHS: scaler
+    # LHS: scaler, RHS: scaler
     res = 2 ** iris[0]
     res2 = res[32] ** 3
-    assert int(res2.eager()) - 49667 == 0, "expected same values"
+    assert int(res2) - 49667 == 0, "expected same values"
 
     ###################################################################
 
     # LHS: H2OVec, RHS: H2OFrame
-    try:
-        res = iris[2] ** iris
-        res.show()
-        assert False, "expected error. objects with different dimensions not supported."
-    except EnvironmentError:
-        pass
+    #try:
+    #    res = iris[2] ** iris
+    #    res.show()
+    #    assert False, "expected error. objects with different dimensions not supported."
+    #except EnvironmentError:
+    #    pass
 
     # LHS: H2OVec, RHS: H2OVec
     res = iris[0] ** iris[1]
-    assert abs(sum([res[i,0] for i in range(rows)]) - 20694.67) < 1e-2, "expected same values"
+    assert abs(sum([res[i] for i in range(rows)]) - 20694.67) < 1e-2, "expected same values"
 
     res = iris[2] ** iris[1]
-    assert abs(sum([res[i,0] for i in range(rows)]) - 1309.794) < 1e-2, "expected same values"
+    assert abs(sum([res[i] for i in range(rows)]) - 1309.794) < 1e-2, "expected same values"
 
     res = iris[0] ** iris[1] * iris[2] ** iris[3]
     assert (int(res.sum()) - 47242.98) < 1e-2, "expected same values"
 
-    # LHS: H2OVec, RHS: Expr
+    # LHS: H2OVec, RHS: scaler
     res = 1.2 ** iris[2]
     res2 = iris[1] ** res[45]
     res2.show()
 
     # LHS: H2OVec, RHS: scaler
     res = iris[0] ** 2
-    assert abs(sum([res[i,0] for i in range(rows)]) - 1800.33) < 1e-2, "expected different column sum"
+    assert abs(sum([res[i] for i in range(rows)]) - 1800.33) < 1e-2, "expected different column sum"
 
     ###################################################################
 
@@ -91,22 +90,22 @@ def binop_pow(ip,port):
     res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
-    try:
-        res = iris ** iris[0:3]
-        res.show()
-        assert False, "expected error. frames are different dimensions."
-    except EnvironmentError:
-        pass
+    #try:
+    #    res = iris ** iris[0:3]
+    #    res.show()
+    #    assert False, "expected error. frames are different dimensions."
+    #except EnvironmentError:
+    #    pass
 
     # LHS: H2OFrame, RHS: H2OVec
-    try:
-        res = iris ** iris[0]
-        res.show()
-        assert False, "expected error. objects of different dimensions not supported."
-    except EnvironmentError:
-        pass
+    #try:
+    #    res = iris ** iris[0]
+    #    res.show()
+    #    assert False, "expected error. objects of different dimensions not supported."
+    #except EnvironmentError:
+    #    pass
 
-    # LHS: H2OFrame, RHS: Expr
+    # LHS: H2OFrame, RHS: scaler
     res = 1.2 ** iris[2]
     res2 = iris ** res[63]
     res2.show()

@@ -11,7 +11,7 @@ def multi_dim_slicing(ip,port):
     # prostate[int,int] case
     # 48,0,68,1,2,1,12.3,16.3,8
     pros = prostate[47:51,7]
-    assert pros[0,0] == 16.3, "Incorrect slicing result"
+    assert pros[0] == 16.3, "Incorrect slicing result"
     pros = prostate[172,8]
     assert pros == 7, "Incorrect slicing result"
 
@@ -24,12 +24,12 @@ def multi_dim_slicing(ip,port):
     # 175,0,71,1,2,1,3.8,19,6
     # 176,0,67,1,3,1,5.7,15.4,6
     pros = prostate[170:176,2]
-    assert pros[0,0] == 74, "Incorrect slicing result"
-    assert pros[1,0] == 71, "Incorrect slicing result"
-    assert pros[2,0] == 60, "Incorrect slicing result"
-    assert pros[3,0] == 62, "Incorrect slicing result"
-    assert pros[4,0] == 71, "Incorrect slicing result"
-    assert pros[5,0] == 67, "Incorrect slicing result"
+    assert pros[0] == 74, "Incorrect slicing result"
+    assert pros[1] == 71, "Incorrect slicing result"
+    assert pros[2] == 60, "Incorrect slicing result"
+    assert pros[3] == 62, "Incorrect slicing result"
+    assert pros[4] == 71, "Incorrect slicing result"
+    assert pros[5] == 67, "Incorrect slicing result"
 
     # # prostate[int,list] case
     # # 353,0,54,1,3,1,21.6,25,7

@@ -1,10 +1,14 @@
-#H2O-Dev on EC2
+#Running H2O on EC2
+
+**Note**: If you would like to try out H2O on an EC2 cluster, <a href="http://play.h2o.ai/login" target="_blank">play.h2o.ai</a> is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
+
+If you would still like to set up your own EC2 cluster, follow the instructions below. Make sure you have already <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">passed your S3 credentials to H2O</a>.
 
  >Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI
 
-##Launch H2O-Dev
+##Launch H2O
 
-+**Note**: Before launching H2O on an EC2 cluster, verify that ports `54321` and `54322` are both accessible by TCP and UDP. 
+**Note**: Before launching H2O on an EC2 cluster, verify that ports `54321` and `54322` are both accessible by TCP and UDP. 
 
 ###Selecting the Operating System and Virtualization Type
 
@@ -58,7 +62,7 @@ Otherwise, download PuTTY and follow these instructions:
 
 0. Download [Java](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
 ) (JDK 1.7 or later) if it is not already available on the instance. 
-0. To download H2O, run the `wget` command with the link to the zip file available on our [website](http://h2o.ai/download/) by copying the link associated with the **Download** button for the selected H2O-Dev build. 
+0. To download H2O, run the `wget` command with the link to the zip file available on our [website](http://h2o.ai/download/) by copying the link associated with the **Download** button for the selected H2O build. 
 	
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/index.html
 		unzip h2o-dev-0.2.1.1.zip
@@ -68,7 +72,7 @@ Otherwise, download PuTTY and follow these instructions:
 
 
 
-##Launch H2O-Dev from the Command Line
+##Launch H2O from the Command Line
 
 
 
@@ -85,7 +89,7 @@ allocate more memory to H2O by using `-Xmx4g` instead of the default `-Xmx1g`, w
 
 ##Step-by-Step Walk-Through
 
-1. Download the .zip file containing the latest release of H2O-Dev from the
+1. Download the .zip file containing the latest release of H2O from the
    [H2O downloads page](http://h2o.ai/download/).
 
 2. From your terminal, change your working directory to the same directory as the location of the .zip file.
@@ -134,7 +138,7 @@ allocate more memory to H2O by using `-Xmx4g` instead of the default `-Xmx1g`, w
 
 5. Point your web browser to `http://localhost:54321/` 
 
-The user interface appears in your browser, and now H2O-Dev is ready to go.
+The user interface appears in your browser, and now H2O is ready to go.
 
 **WARNING**: 
   On Windows systems, Internet Explorer is frequently blocked due to

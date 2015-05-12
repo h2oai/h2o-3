@@ -42,8 +42,8 @@ test <- function(conn) {
     bc2 <- rbind(bc[6:nrow(bc),], bc[1:5,])
     c <- run_glm(data = h2oData, beta_constraints = bc2)
 
-    checkEqualsNumeric(a@model$coefficients_table$coefficients, b@model$coefficients_table$coefficients)
-    checkEqualsNumeric(b@model$coefficients_table$coefficients, c@model$coefficients_table$coefficients)
+    checkEqualsNumeric(h2o.coef(a), h2o.coef(b))
+    checkEqualsNumeric(h2o.coef(b), h2o.coef(c))
     testEnd()
   }
 }

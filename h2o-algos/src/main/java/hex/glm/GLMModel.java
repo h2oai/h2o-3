@@ -34,7 +34,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override
   protected boolean toJavaCheckTooBig() {
-    if(beta().length > 10000) {
+    if(beta() != null && beta().length > 10000) {
       Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
       return true;
     }
@@ -887,11 +887,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
     body.p(");").nl();
-    body.ip("preds[0] = mu;").nl();
-    if( _parms._family == Family.binomial ) { // threshold for prediction
-      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0);").nl();
+    if( _parms._family == Family.binomial ) {
+      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0); // threshold given by ROC").nl();
       body.ip("preds[1] = 1.0 - mu; // class 0").nl();
       body.ip("preds[2] =       mu; // class 1").nl();
+    } else {
+      body.ip("preds[0] = mu;").nl();
     }
   }
 

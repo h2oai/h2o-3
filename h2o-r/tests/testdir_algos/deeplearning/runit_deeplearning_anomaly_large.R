@@ -15,7 +15,7 @@ check.deeplearning_anomaly <- function(conn) {
   } else {
     library(h2o)
     conn <- h2o.init()
-    homedir <- paste0(path.expand("~"),"/h2o/") #modify if needed
+    homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
     train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',', destination_frame = 'train.hex')
     test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',', destination_frame = 'test.hex')
   }
@@ -49,10 +49,9 @@ check.deeplearning_anomaly <- function(conn) {
   }
   
   
-  ## START ANOMALY DETECTION DEMO
+  ## ANOMALY DETECTION DEMO
   
-  # 1) LEARN WHAT'S NORMAL
-  # train unsupervised Deep Learning autoencoder model on train_hex
+  # 1) LEARN WHAT'S NORMAL WITH UNSUPERVISED AUTOENCODER
   ae_model <- h2o.deeplearning(x=predictors,
                                training_frame=train_hex,
                                activation="Tanh",
@@ -61,13 +60,11 @@ check.deeplearning_anomaly <- function(conn) {
                                l1=1e-5,
                                ignore_const_cols=F,
                                epochs=1)
-  
-  
+ 
   # 2) DETECT OUTLIERS
-  # anomaly app computes the per-row reconstruction error for the test data set
+  # h2o.anomaly computes the per-row reconstruction error for the test data set
   # (passing it through the autoencoder model and computing mean square error (MSE) for each row)
-  test_rec_error <- as.data.frame(h2o.anomaly(ae_model, test_hex))
-  
+  test_rec_error <- as.data.frame(h2o.anomaly(ae_model, test_hex)) 
   
   # 3) VISUALIZE OUTLIERS
   # Let's look at the test set points with low/median/high reconstruction errors.

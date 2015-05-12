@@ -359,11 +359,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public boolean _fast_mode = true;
 
     /**
-     * Ignore constant training columns (no information can be gained anyway).
-     */
-    public boolean _ignore_const_cols = true;
-
-    /**
      * Increase training speed on small datasets by splitting it into many chunks
      * to allow utilization of all cores.
      */

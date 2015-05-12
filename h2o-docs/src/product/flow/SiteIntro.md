@@ -1,4 +1,4 @@
-#Welcome to H2O
+#Welcome to H2O-Dev
 
 Welcome to the H2O documentation site! We're glad you're interested in learning more about H2O - if you have any questions, please email them to [support@h2o.ai](mailto:support@h2o.ai) or post them on our Google groups website, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. 
 
@@ -55,6 +55,9 @@ If you've used previous versions of H2O, the following links will help guide you
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/jessica-dev-docs/h2o-docs/src/product/upgrade/H2OvsH2O-Dev.md" target="_blank">H2O vs H2O-dev</a>: This document presents a side-by-side comparison of H2O 3.0 and the previous version of H2O. It compares and contrasts the features, capabilities, and supported algorithms between the versions. If you'd like to learn more about the benefits of upgrading, this is a great source of information. 
 
+
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/images/H2O-Algorithms-Road-Map.pdf" target="_blank">Algorithms Roadmap</a>: This document outlines our currently implemented features and describes which features are planned for future software versions. If you'd like to know what's up next for H2O, this is the place to go. 
+
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. 
 
 ---
@@ -66,9 +69,9 @@ If you're considering using H2O in a corporate environment, you'll be happy to k
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS. 
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevEC2.md" target="_blank">H2O-Dev on EC2</a>: This document describes how to launch H2O on an EC2 cluster.
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevEC2.md" target="_blank">H2O on EC2</a>: This document describes how to launch H2O on an EC2 cluster.
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevHadoop.md" target="_blank">Running H2O-Dev on Hadoop</a>: This document describes how to run H2O on Hadoop. 
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevHadoop.md" target="_blank">Running H2O on Hadoop</a>: This document describes how to run H2O on Hadoop. 
 
 
 ---
@@ -145,6 +148,8 @@ Don't worry, R users - we still provide R support in the latest version of H2O, 
 ##API Users
 
 API users will be happy to know that the APIs have been more thoroughly documented in the latest release of H2O and additional capabilities (such as exporting weights and biases for Deep Learning models) have been added. 
+
+REST APIs are generated immediately out of the code, allowing users to implement machine learning in many ways. For example, REST APIs could be used to call a model created by sensor data and to set up auto-alerts if the sensor data falls below a specified threshold. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1188/docs-website/h2o-docs/index.html#route-reference" target="_blank">REST API Reference</a>: This document represents the definitive guide to the H2O REST API. 
 

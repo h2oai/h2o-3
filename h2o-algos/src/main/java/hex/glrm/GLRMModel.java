@@ -7,7 +7,6 @@ import hex.ModelMetricsUnsupervised;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
-import water.parser.Categorical;
 import water.util.TwoDimTable;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
@@ -16,8 +15,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _k = 1;                            // Rank of resulting XY matrix
     public Loss _loss = Loss.L2;                  // Loss function for numeric cols
     public MultiLoss _multi_loss = MultiLoss.Categorical;  // Loss function for categorical cols
-    public Regularizer _regularization = Regularizer.L2;   // Regularization function
-    public double _gamma = 0;                     // Regularization weight
+    public Regularizer _regularization_x = Regularizer.L2;   // Regularization function for X matrix
+    public Regularizer _regularization_y = Regularizer.L2;   // Regularization function for Y matrix
+    public double _gamma_x = 0;                   // Regularization weight on X matrix
+    public double _gamma_y = 0;                   // Regularization weight on Y matrix
     public int _max_iterations = 1000;            // Max iterations
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
@@ -66,7 +67,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case L2:
           return 2*(u-a);
         case L1:
-          return Math.signum(u-a);
+          return Math.signum(u - a);
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
         case Poisson:
@@ -119,38 +120,44 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // r_i(x_i): Regularization function for single entry x_i
-    public final double regularize(double u) {
-      switch(_regularization) {
+    public final double regularize_x(double u) { return regularize(u, _regularization_x); }
+    public final double regularize_y(double u) { return regularize(u, _regularization_y); }
+    public final double regularize(double u, Regularizer regularization) {
+      switch(regularization) {
         case L2:
           return u*u;
         case L1:
           return Math.abs(u);
         default:
-          throw new RuntimeException("Unknown regularization function " + _regularization);
+          throw new RuntimeException("Unknown regularization function " + regularization);
       }
     }
 
     // \sum_i r_i(x_i): Sum of regularization function for all entries of X
-    public final double regularize(double[][] u) {
+    public final double regularize_x(double[][] u) { return regularize(u, _regularization_x); }
+    public final double regularize_y(double[][] u) { return regularize(u, _regularization_y); }
+    public final double regularize(double[][] u, Regularizer regularization) {
       if(u == null) return 0;
 
       double ureg = 0;
       for(int i = 0; i < u.length; i++) {
         for(int j = 0; j < u[0].length; j++)
-          ureg = regularize(u[i][j]);
+          ureg += regularize(u[i][j], regularization);
       }
       return ureg;
     }
 
     // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at u
-    public final double rproxgrad(double u, double alpha) {
-      switch(_regularization) {
+    public final double rproxgrad_x(double u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x); }
+    public final double rproxgrad_y(double u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y); }
+    public final double rproxgrad(double u, double alpha, double gamma, Regularizer regularization) {
+      switch(regularization) {
         case L2:
-          return u/(1+2*alpha*_gamma);
+          return u/(1+2*alpha*gamma);
         case L1:
-          return Math.max(u-alpha*_gamma,0) + Math.min(u+alpha*_gamma,0);
+          return Math.max(u-alpha*gamma,0) + Math.min(u+alpha*gamma,0);
         default:
-          throw new RuntimeException("Unknown regularization function " + _regularization);
+          throw new RuntimeException("Unknown regularization function " + regularization);
       }
     }
   }
@@ -203,7 +210,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
   }
 
-    public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
+  public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
 
   // TODO: What should we do for scoring GLRM?
   @Override protected double[] score0(double[] data, double[] preds) {

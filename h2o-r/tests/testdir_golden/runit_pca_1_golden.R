@@ -10,8 +10,8 @@ test.pcavanilla.golden <- function(H2Oserver) {
   
   Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
-  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'DEMEAN')
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-6)
+  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'DEMEAN', max_iterations = 2000)
+  checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance
@@ -22,7 +22,7 @@ test.pcavanilla.golden <- function(H2Oserver) {
   expect_equal(dim(pcimpH2O), dim(pcimpR))
   pcimpH2O <- as.matrix(pcimpH2O)
   dimnames(pcimpH2O) <- dimnames(pcimpR)
-  expect_equal(pcimpH2O, pcimpR, tolerance = 1e-4)
+  expect_equal(pcimpH2O, pcimpR, tolerance = 1e-5)
   
   testEnd()
 }

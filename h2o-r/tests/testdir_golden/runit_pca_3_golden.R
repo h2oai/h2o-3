@@ -9,15 +9,16 @@ test.pcascore.golden <- function(H2Oserver) {
   
   Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
-  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'DEMEAN')
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-6)
+  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'DEMEAN', max_iterations = 2000)
+  isFlipped1 <- checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   Log.info("Compare Projections into PC space")
   predR <- predict(fitR, arrestsR)
   predH2O <- predict(fitH2O, arrestsH2O)
   Log.info("R Projection:"); print(head(predR))
   Log.info("H2O Projection:"); print(head(predH2O))
-  checkSignedCols(as.matrix(predH2O), predR, tolerance = 1e-6)
+  isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-4)
+  expect_equal(isFlipped1, isFlipped2)
   
   testEnd()
 }

@@ -199,6 +199,19 @@ public class Frame extends Lockable<Frame> {
   /** Number of columns
    *  @return Number of columns */
   public int  numCols() { return _keys.length; }
+  /** Number of columns with categoricals expanded
+   * @return Number of columns with categoricals expanded into indicator columns */
+  public int numColsExp() { return numColsExp(true, false); }
+  public int numColsExp(boolean useAllFactorLevels, boolean missingBucket) {
+    if(_vecs == null) return 0;
+    int cols = 0;
+    for(int i = 0; i < _vecs.length; i++) {
+      if(_vecs[i].isEnum() && _vecs[i].domain() != null)
+        cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
+      else cols++;
+    }
+    return cols;
+  }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
@@ -847,7 +860,7 @@ public class Frame extends Lockable<Frame> {
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames_vec")));
+      AppendableVec av = new AppendableVec(Vec.newKey());
       int r = 0;
       int c = 0;
       while (r < rows.length) {

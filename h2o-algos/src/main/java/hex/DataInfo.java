@@ -32,7 +32,8 @@ public class DataInfo extends Keyed {
   public int _bins;
   public int _cats;
   public int [] _catOffsets;
-  public int [] _catMissing; //bucket for missing categoricals
+  public int [] _catMissing;  // bucket for missing categoricals
+  public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;
   public double [] _normSub;
   public double [] _normRespMul;
@@ -68,6 +69,7 @@ public class DataInfo extends Keyed {
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
     _catLvls = null;
+    _permutation = new int[train.numCols()];
     final Vec[] tvecs = train.vecs();
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
@@ -99,6 +101,7 @@ public class DataInfo extends Keyed {
     _catMissing = new int[ncats];
     int len = _catOffsets[0] = 0;
     for(int i = 0; i < ncats; ++i) {
+      _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket ? 1 : 0; //needed for test time
@@ -114,9 +117,8 @@ public class DataInfo extends Keyed {
     }
     _adaptedFrame = new Frame(names,tvecs2);
     train.restructure(names,tvecs2);
-    if (valid != null) {
+    if (valid != null)
       valid.restructure(names,valid.vecs(names));
-    }
 //    _adaptedFrame = train;
     setPredictorTransform(predictor_transform);
     if(_responses > 0)
@@ -272,6 +274,22 @@ public class DataInfo extends Keyed {
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
     return res;
+  }
+
+  // Return permutation matrix mapping input names to adaptedFrame colnames
+  public int[] mapNames(String[] names) {
+    assert names.length == _adaptedFrame._names.length : "Names must be the same length!";
+    int[] idx = new int[names.length];
+    Arrays.fill(idx, -1);
+
+    for(int i = 0; i < _adaptedFrame._names.length; i++) {
+      for(int j = 0; j < names.length; j++) {
+        if( names[j].equals(_adaptedFrame.name(i)) ) {
+          idx[i] = j; break;
+        }
+      }
+    }
+    return idx;
   }
 
   /**

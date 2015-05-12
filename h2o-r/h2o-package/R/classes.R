@@ -334,7 +334,8 @@ setClass("H2OModel",
 #' @export
 setMethod("show", "H2OModel", function(object) {
   o <- object
-  m <- o@model
+  model.parts <- .model.parts(o)
+  m <- model.parts$m
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
@@ -343,11 +344,55 @@ setMethod("show", "H2OModel", function(object) {
   # summary
   print(m$model_summary)
 
+  # if glm, print the coefficeints
+  cat("\n")
+  if( !is.null(m$coefficients_table) ) print(m$coefficients_table)
+
   # metrics
   cat("\n")
-  if( !is.null(m$training_metrics) && !is.null(m$training_metrics@metrics) ) print(m$training_metrics)
+  if( !is.null(model.parts$tm) ) print(model.parts$tm)
   cat("\n")
-  if( !is.null(m$validation_metrics) && !is.null(m$validation_metrics@metrics) ) print(m$validation_metrics)
+  if( !is.null(model.parts$vm) ) print(model.parts$vm)
+})
+
+#'
+#' Print the Model Summary
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param ... further arguments to be passed on (currently unimplemented)
+#' @export
+setMethod("summary", "H2OModel", function(object, ...) {
+  o <- object
+  model.parts <- .model.parts(o)
+  m <- model.parts$m
+  cat("Model Details:\n")
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model Key: ", o@model_id, "\n")
+
+  # summary
+  print(m$model_summary)
+
+  # metrics
+  cat("\n")
+  if( !is.null(model.parts$tm) ) print(model.parts$tm)
+  cat("\n")
+  if( !is.null(model.parts$vm) ) print(model.parts$vm)
+
+  # History
+  cat("\n")
+  print(h2o.scoreHistory(o))
+
+  # Varimp
+  cat("\n")
+
+  # VI could be real, true variable importances or GLM coefficients
+  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficients_magnitude)
+  if( haz_varimp ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    print(h2o.varimp(o))
+  }
 })
 
 .showMultiMetrics <- function(o, which="Training") {
@@ -369,7 +414,7 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(tm$cm)                               )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
   if( !is.null(tm$cm)                               )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
   if( !is.null(tm$hit_ratio_table)                  )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); h2o.hit_ratio_table(tm$hit_ratio_table); }
+  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
   invisible(tm)
 }
@@ -560,7 +605,19 @@ setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2ORegressionMetrics", function(object) {
   callNextMethod(object)
-  cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
+  cat("MSE:  ", object@metrics$MSE, "\n", sep="")
+  cat("R2 :  ", h2o.r2(object), "\n", sep="")
+  null_dev <- h2o.null_deviance(object)
+  res_dev  <- h2o.residual_deviance(object)
+  null_dof <- h2o.null_dof(object)
+  res_dof  <- h2o.residual_dof(object)
+  aic      <- h2o.aic(object)
+  if( !is.null(null_dev) ) cat("Null Deviance :", null_dev, "\n", sep="")
+  if( !is.null(null_dof) ) cat("Null D.o.F. :",   null_dof, "\n", sep="")
+  if( !is.null(res_dev ) ) cat("Residual Deviance :", res_dev, "\n", sep="")
+  if( !is.null(res_dof ) ) cat("Residual D.o.F. :",   res_dof, "\n", sep="")
+  if( !is.null(aic     ) ) cat("AIC :", aic, "\n", sep="")
+  cat("\n")
 })
 #' @rdname H2OModelMetrics-class
 #' @export

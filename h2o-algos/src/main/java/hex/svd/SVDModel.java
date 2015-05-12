@@ -22,6 +22,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public boolean _keep_u = true;    // Should left singular vectors be saved in memory? (Only applies if _only_v = false)
     public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
+    public boolean _useAllFactorLevels = true;   // When expanding categoricals, should last level be dropped?
   }
 
   public static class SVDOutput extends Model.Output {
@@ -34,11 +35,21 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // Frame key for left singular vectors (U)
     public Key<Frame> _u_key;
 
+    // Number of categorical and numeric columns
+    public int _ncats;
+    public int _nnums;
+
+    // Categorical offset vector
+    public int[] _catOffsets;
+
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 
     // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
+
+    // Permutation matrix mapping training col indices to adaptedFrame
+    public int[] _permutation;
 
     public SVDOutput(SVD b) { super(b); }
 
@@ -97,12 +108,24 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return f;
   }
 
+  // TODO: Need permutation matrix to index into cols correctly
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    assert data.length == _output._v.length;
+    int numStart = _output._catOffsets[_output._catOffsets.length-1];
+    assert data.length == _output._permutation.length;
+
     for(int i = 0; i < _parms._nv; i++) {
       preds[i] = 0;
-      for (int j = 0; j < data.length; j++)
-        preds[i] += (data[j] - _output._normSub[j]) * _output._normMul[j] * _output._v[j][i];
+      for (int j = 0; j < _output._ncats; j++) {
+        int level = (int)data[_output._permutation[j]];
+        preds[i] += _output._v[_output._catOffsets[j]+level][i];
+      }
+
+      int dcol = _output._ncats;
+      int vcol = numStart;
+      for (int j = 0; j < _output._nnums; j++) {
+        preds[i] += (data[_output._permutation[dcol]] - _output._normSub[j]) * _output._normMul[j] * _output._v[vcol][i];
+        dcol++; vcol++;
+      }
     }
     return preds;
   }

@@ -27,8 +27,8 @@ import java.util.Arrays;
  *
  */
 public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
-  // Convergence tolerance
-  final private double TOLERANCE = 1e-6;
+  // Number of columns in training set (p)
+  private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
   @Override
   public ModelBuilderSchema schema() {
@@ -76,25 +76,17 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
-    if (_parms._max_iterations < 1)
-      error("_max_iterations", "max_iterations must be at least 1");
+    if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
+      error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
+    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
 
-    // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
-    int k_min = (int)Math.min(_train.numCols(), _train.numRows());
+    // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
+    int k_min = (int)Math.min(_ncolExp, _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
 
-    // PCA does not work on categorical data
-    Vec[] vecs = _train.vecs();
-    for (int i = 0; i < vecs.length; i++) {
-      if (!vecs[i].isNumeric()) {
-        // throw H2O.unimpl("PCA currently only works on numeric data");
-        error("_train", "_train must contain only numeric data");
-        break;
-      }
-    }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
@@ -143,7 +135,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 
-    protected void recoverPCA(PCAModel pca, SVDModel svd) {
+    protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {
       // Eigenvectors are just the V matrix
       String[] colTypes = new String[_parms._k];
       String[] colFormats = new String[_parms._k];
@@ -151,6 +143,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
       for (int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i + 1);
+      pca._output._eigenvectors_raw = svd._output._v;
       pca._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
               colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], svd._output._v);
 
@@ -176,6 +169,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._pc_importance = new TwoDimTable("Importance of components", null,
               new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][]{sdev, prop_var, cum_var});
+
+      // Fill PCA model with additional info needed for scoring
+      if(_parms._keep_loading) pca._output._loading_key = svd._output._u_key;
+      pca._output._normSub = svd._output._normSub;
+      pca._output._normMul = svd._output._normMul;
+      pca._output._permutation = svd._output._permutation;
+      pca._output._nnums = svd._output._nnums;
+      pca._output._ncats = svd._output._ncats;
+      pca._output._catOffsets = svd._output._catOffsets;
     }
 
     // Main worker thread
@@ -197,9 +199,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
-        parms._dropConsCols = _parms._dropConsCols;
+        parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._drop_na20_cols = _parms._drop_na20_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
+        parms._useAllFactorLevels = _parms._useAllFactorLevels;
         parms._transform = _parms._transform;
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
@@ -221,10 +224,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
 
         // Recover PCA results from SVD model
-        recoverPCA(model, svd);
-        if(_parms._keep_loading) model._output._loading_key = svd._output._u_key;
-        model._output._normSub = svd._output._normSub;
-        model._output._normMul = svd._output._normMul;
+        computeStatsFillModel(model, svd);
         model.update(_key);
         update(1);
 

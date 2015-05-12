@@ -76,7 +76,10 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    if (_response != null && !_response.isEnum()) error("_response", "Response must be a categorical column");
+    if (_response != null) {
+      if (!_response.isEnum()) error("_response", "Response must be a categorical column");
+      else if (_response.isConst()) error("_response", "Response must have at least two unique categorical levels");
+    }
     if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0");
     if (_parms._min_sdev < 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10");
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");

@@ -50,10 +50,14 @@ class ModelBase(object):
     # get the predictions
     # this job call is blocking
     j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
+    # toast the cbound frame
+    h2o.removeFrameShallow(test_data_key)
     # retrieve the prediction frame
     prediction_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     # get the actual frame meta dta
     pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
+    # toast the prediction frame
+    h2o.removeFrameShallow(prediction_frame_key)
     # collect the vec_ids
     vec_ids = pred_frame_meta["vec_ids"]
     # get the number of rows
@@ -62,23 +66,8 @@ class ModelBase(object):
     cols = [col["label"] for col in pred_frame_meta["columns"]]
     # create a set of H2OVec objects
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
-    # toast the cbound frame
-    h2o.delete(test_data_key)
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
-
-  def confusion_matrix(self, test_data):
-    """
-    Returns a confusion matrix based of H2O's default prediction threshold for a dataset
-    """
-    # cbind the test_data vecs together and produce a temp key
-    test_data_key = H2OFrame.send_frame(test_data)
-    # get the predictions
-    # this job call is blocking
-    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
-    # retrieve the confusion matrix
-    cm = j["model_metrics"][0]["cm"]["table"]
-    return cm
 
   def deepfeatures(self, test_data, layer):
     """
@@ -101,7 +90,7 @@ class ModelBase(object):
     cols = [col["label"] for col in df_frame_meta["columns"]]
     vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
     # remove test data from kv
-    h2o.delete(test_data_key)
+    h2o.removeFrameShallow(test_data_key)
     # finally return frame
     return H2OFrame(vecs=vecs)
 
@@ -167,7 +156,7 @@ class ModelBase(object):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
       fr_key = H2OFrame.send_frame(test_data)
       res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
-      h2o.delete(fr_key)
+      h2o.removeFrameShallow(fr_key)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None

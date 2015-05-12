@@ -10,8 +10,9 @@ import water.api.ModelParametersSchema;
 public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
 
   public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
-    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization", "gamma",
-            "max_iterations", "init_step_size", "min_step_size", "seed", "init", "user_points", "recover_pca" };
+    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization_x",
+            "regularization_y", "gamma_x", "gamma_y", "max_iterations", "init_step_size", "min_step_size", "seed",
+            "init", "user_points", "recover_pca" };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
@@ -22,11 +23,17 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     @API(help = "Loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
     public GLRMParameters.Loss loss;
 
-    @API(help = "Regularization function", values = { "L2", "L1" }) // TODO: pull out of enum class
-    public GLRMParameters.Regularizer regularization;
+    @API(help = "Regularization function for X matrix", values = { "L2", "L1" }) // TODO: pull out of enum class
+    public GLRMParameters.Regularizer regularization_x;
 
-    @API(help = "Regularization weight")
-    public double gamma;
+    @API(help = "Regularization function for Y matrix", values = { "L2", "L1" }) // TODO: pull out of enum class
+    public GLRMParameters.Regularizer regularization_y;
+
+    @API(help = "Regularization weight on X matrix")
+    public double gamma_x;
+
+    @API(help = "Regularization weight on Y matrix")
+    public double gamma_y;
 
     @API(help = "Maximum number of iterations")
     public int max_iterations;

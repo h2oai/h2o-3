@@ -1,6 +1,6 @@
 #Introduction
 
-This guide will walk you through how to use H2O-dev's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
+This guide will walk you through how to use H2O's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
 
 ##About H2O Flow
 
@@ -505,7 +505,7 @@ The available options vary depending on the selected model. If an option is only
 
  **Fast_mode**: [(DL)](#DL) Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default. 
 
-- **Ignore\_const\_cols**: [(DL)](#DL) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Force\_load\_balance**: [(DL)](#DL) Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
@@ -684,6 +684,8 @@ Select the type of plot (point, line, area, or interval) from the drop-down **Ty
 - cardinality
 
 Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
+
+**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
 
 ---
 

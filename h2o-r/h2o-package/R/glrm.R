@@ -22,10 +22,14 @@
 #'        for demeaning and dividing each column by its range (max - min).
 #' @param loss A character string indicating the loss function. Possible values are
 #'        "L2", "L1", "Huber", "Poisson", "Hinge" and "Logistic".
-#' @param regularization A character string indicating the regularization function.
-#'        Possible values are "L2" and "L1".
-#' @param gamma The weight on the regularization terms. For no regularization, set
-#'        this value to zero.
+#' @param regularization_x A character string indicating the regularization function for
+#'        the X matrix. Possible values are "L2" and "L1".
+#' @param regularization_y A character string indicating the regularization function for
+#'        the Y matrix. Possible values are "L2" and "L1".
+#' @param gamma_x The weight on the X matrix regularization term. For no X regularization,
+#'        set this value to zero.
+#' @param gamma_y The weight on the Y matrix regularization term. For no Y regularization,
+#'        set this value to zero.
 #' @param max_iterations The maximum number of iterations to run the optimization loop.
 #'        Each iteration consists of an update of the X matrix, followed by an update
 #'        of the Y matrix.
@@ -48,8 +52,10 @@ h2o.glrm <- function(training_frame, x, k,
                      loading_key,
                      transform = c("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"),
                      loss = c("L2", "L1", "Huber", "Poisson", "Hinge", "Logistic"),
-                     regularization = c("L2", "L1"),
-                     gamma = 0,
+                     regularization_x = c("L2", "L1"),
+                     regularization_y = c("L2", "L1"),
+                     gamma_x = 0,
+                     gamma_y = 0,
                      max_iterations = 1000,
                      init_step_size = 1.0,
                      min_step_size = 0.001,
@@ -89,10 +95,14 @@ h2o.glrm <- function(training_frame, x, k,
     parms$transform <- transform
   if(!missing(loss))
     parms$loss <- loss
-  if(!missing(regularization))
-    parms$regularization <- regularization
-  if(!missing(gamma))
-    parms$gamma <- gamma
+  if(!missing(regularization_x))
+    parms$regularization_x <- regularization_x
+  if(!missing(regularization_y))
+    parms$regularization_y <- regularization_y
+  if(!missing(gamma_x))
+    parms$gamma_x <- gamma_x
+  if(!missing(gamma_y))
+    parms$gamma_y <- gamma_y
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if(!missing(init_step_size))
