@@ -57,46 +57,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public double [] beta() { return _output._global_beta;}
   public String [] names(){ return _output._names;}
 
-  @Override
-  public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
-    double eta = 0.0;
-    final double [] b = beta();
-    for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) {
-      if(chks[i].isNA(row_in_chunk)) {
-        eta = Double.NaN;
-        break;
-      }
-      long lval = chks[i].at8(row_in_chunk);
-      int ival = (int)lval;
-      if(ival != lval) throw new IllegalArgumentException("categorical value out of range");
-      ival += dinfo()._catOffsets[i];
-      if(!_parms._use_all_factor_levels)
-        --ival;
-      // can get values out of bounds for cat levels not seen in training
-      // ignore them (todo: perhaps we should predict NaN instead?)
-      if(ival >= 0 && ival < dinfo()._catOffsets[i+1])
-        eta += b[ival];
-    }
-    final int noff = dinfo().numStart() - dinfo()._cats;
-    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*chks[i].atd(row_in_chunk);
-    eta += b[b.length-1]; // intercept
 
-    double mu = _parms.linkInv(eta);
-    preds[0] = mu;
-    if( _parms._family == Family.binomial ) { // threshold for prediction
-      if(Double.isNaN(mu)){
-        preds[0] = Double.NaN;
-        preds[1] = Double.NaN;
-        preds[2] = Double.NaN;
-      } else {
-        preds[0] = (mu >= _output._threshold ? 1 : 0);
-        preds[1] = 1.0 - mu; // class 0
-        preds[2] =       mu; // class 1
-      }
-    }
-    return preds;
-  }
 
   public static class GLMParameters extends SupervisedModel.SupervisedParameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
@@ -787,18 +748,82 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
   }
 
+  @Override
+  public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+
+    /*
+
+     public final double[] score0( double[] data, double[] preds ) {
+    double eta = 0.0;
+    final double [] b = BETA;
+    for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {
+      int ival = (int)data[i] - 1;
+      if(ival != data[i] - 1) throw new IllegalArgumentException("categorical value out of range");
+      ival += CATOFFS[i];
+      if(ival < CATOFFS[i + 1])
+        eta += b[ival];
+    }
+    for(int i = 3; i < b.length-1-205; ++i)
+      eta += b[205+i]*data[i];
+    eta += b[b.length-1]; // reduce intercept
+    double mu = hex.genmodel.GenModel.GLM_identityInv(eta);
+    preds[0] = mu;
+
+     */
+    double eta = 0.0;
+    final double [] b = beta();
+    int [] catOffs = dinfo()._catOffsets;
+    for(int i = 0; i < catOffs.length-1; ++i) {
+      if(chks[i].isNA(row_in_chunk)) {
+        eta = Double.NaN;
+        break;
+      }
+      long lval = chks[i].at8(row_in_chunk);
+      int ival = (int)lval;
+      if(ival != lval) throw new IllegalArgumentException("categorical value out of range");
+      if(!_parms._use_all_factor_levels)--ival;
+      int from = catOffs[i];
+      int to = catOffs[i+1];
+      // can get values out of bounds for cat levels not seen in training
+      if(ival >= 0 && (ival + from) < catOffs[i+1])
+        eta += b[ival+from];
+    }
+    final int noff = dinfo().numStart() - dinfo()._cats;
+    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
+      eta += b[noff+i]*chks[i].atd(row_in_chunk);
+    eta += b[b.length-1]; // intercept
+
+    double mu = _parms.linkInv(eta);
+    preds[0] = mu;
+    if( _parms._family == Family.binomial ) { // threshold for prediction
+      if(Double.isNaN(mu)){
+        preds[0] = Double.NaN;
+        preds[1] = Double.NaN;
+        preds[2] = Double.NaN;
+      } else {
+        preds[0] = (mu >= _output._threshold ? 1 : 0);
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] =       mu; // class 1
+      }
+    }
+    return preds;
+  }
+
   @Override protected double[] score0(double[] data, double[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
-      for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) if(data[i] != 0)
-        eta += b[dinfo()._catOffsets[i] + (int)(data[i]-1)];
-    } else { // do not good any levels!
-      for(int i = 0; i < dinfo()._catOffsets.length-1; ++i)
-        eta += b[dinfo()._catOffsets[i] + (int)data[i]];
+    for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) {
+      int ival = (int) data[i];
+      if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
+      ival += dinfo()._catOffsets[i];
+      if (!_parms._use_all_factor_levels)
+        --ival;
+      // can get values out of bounds for cat levels not seen in training
+      if (ival >= 0 && ival < dinfo()._catOffsets[i + 1])
+        eta += b[ival];
     }
-    final int noff = dinfo().numStart() - dinfo()._cats;
-    for(int i = dinfo()._cats; i < data.length; ++i)
+    int noff = dinfo().numStart() - dinfo()._cats;
+    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*data[i];
     eta += b[b.length-1]; // reduce intercept
     double mu = _parms.linkInv(eta);
@@ -824,15 +849,24 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     JCodeGen.toStaticVar(classCtx,"CATOFFS",dinfo()._catOffsets,"Categorical Offsets");
     body.ip("double eta = 0.0;").nl();
     body.ip("final double [] b = BETA;").nl();
-    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
-      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0)").nl();
-      body.ip("  eta += b[CATOFFS[i] + (int)(data[i]-1)];").nl();
-    } else { // do not good any levels!
-      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i)").nl();
-      body.ip("  eta += b[CATOFFS[i] + (int)(data[i])];").nl();
+    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
+      body.ip("  int ival = (int)data[i] - 1;").nl();
+      body.ip("  if(ival != data[i] - 1) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+      body.ip("  ival += CATOFFS[i];").nl();
+      body.ip("  if(ival < CATOFFS[i + 1])").nl();
+      body.ip("    eta += b[ival];").nl();
+    } else { // do not skip any levels
+      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) {").nl();
+      body.ip("  int ival = (int)data[i];").nl();
+      body.ip("  if(ival != data[i]) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+      body.ip("  ival += CATOFFS[i];").nl();
+      body.ip("  if(ival < CATOFFS[i + 1])").nl();
+      body.ip("    eta += b[ival];").nl();
     }
+    body.ip("}").nl();
     final int noff = dinfo().numStart() - dinfo()._cats;
-    body.ip("for(int i = ").p(dinfo()._cats).p("; i < data.length; ++i)").nl();
+    body.ip("for(int i = ").p(dinfo()._cats).p("; i < b.length-1-").p(noff).p("; ++i)").nl();
     body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
     body.ip("eta += b[b.length-1]; // reduce intercept").nl();
     body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
