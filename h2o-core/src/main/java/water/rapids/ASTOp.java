@@ -1921,6 +1921,7 @@ class ASTRbind extends ASTUniPrefixOp {
         HashMap<String, Integer> dmap = new HashMap<>(); // probably should allocate something that's big enough (i.e. 2*biggest_domain)
         int c = 0;
         for (int i = 0; i < _vecs.length; ++i) {
+          if( _vecs[i].get_type()==Vec.T_BAD ) continue;
           emaps[i] = new int[_vecs[i].domain().length];
           for (int j = 0; j < emaps[i].length; ++j)
             if (!dmap.containsKey(_vecs[i].domain()[j]))
@@ -2014,8 +2015,8 @@ class ASTRbind extends ASTUniPrefixOp {
 
       // check column types
       for (int c = 0; c < f1.numCols(); ++c) {
-        if (f1.vec(c).get_type() != t.vec(c).get_type())
-          throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
+        if (f1.vec(c).get_type() != t.vec(c).get_type() && (f1.vec(c).get_type()!=Vec.T_BAD && t.vec(c).get_type()!=Vec.T_BAD)) // allow all NA columns
+          throw new IllegalArgumentException("Column type mismatch on column #"+c+"! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
       }
     }
     ParallelRbinds t;
