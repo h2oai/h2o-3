@@ -344,11 +344,15 @@ setMethod("show", "H2OModel", function(object) {
   # summary
   print(m$model_summary)
 
- # metrics
- cat("\n")
- if( !is.null(model.parts$tm) ) print(model.parts$tm)
- cat("\n")
- if( !is.null(model.parts$vm) ) print(model.parts$vm)
+  # if glm, print the coefficeints
+  cat("\n")
+  if( !is.null(m$coefficients_table) ) print(m$coefficients_table)
+
+  # metrics
+  cat("\n")
+  if( !is.null(model.parts$tm) ) print(model.parts$tm)
+  cat("\n")
+  if( !is.null(model.parts$vm) ) print(model.parts$vm)
 })
 
 #'
@@ -381,7 +385,10 @@ setMethod("summary", "H2OModel", function(object, ...) {
 
   # Varimp
   cat("\n")
-  if( !is.null( m$variable_importances ) ) {
+
+  # VI could be real, true variable importances or GLM coefficients
+  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficients_magnitude)
+  if( haz_varimp ) {
     cat("Variable Importances: (Extract with `h2o.varimp`) \n")
     cat("=================================================\n\n")
     print(h2o.varimp(o))
@@ -599,7 +606,7 @@ setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 setMethod("show", "H2ORegressionMetrics", function(object) {
   callNextMethod(object)
   cat("MSE:  ", object@metrics$MSE, "\n", sep="")
-  cat("R2 :  ", object@metrics$R2, "\n", sep="")
+  cat("R2 :  ", h2o.r2(object), "\n", sep="")
   null_dev <- h2o.null_deviance(object)
   res_dev  <- h2o.residual_deviance(object)
   null_dof <- h2o.null_dof(object)
