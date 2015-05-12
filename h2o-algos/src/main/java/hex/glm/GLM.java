@@ -502,13 +502,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     public double gradientCheck(double lambda, double alpha){
       // assuming full-gradient, beta only for active columns
-      double [] beta = expandVec(_beta,_activeCols, _fullN);
+      double [] beta = _beta;
       double [] subgrad = _ginfo._gradient.clone();
       double err = 0;
       ADMM.subgrad(alpha*lambda,beta,subgrad);
       for(double d: subgrad)
         if(err < -d) err = -d; else if(err < d) err = d;
-      Log.info("gerr at lambda = " + lambda + " = " + err);
       return err;
     }
     public void adjustToNewLambda( double currentLambda, double newLambda, double alpha, boolean intercept) {
@@ -650,7 +649,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           // getCompleter().addToPendingCount(1);
           // TODO ...
         }
-        // launch the next lambda
+        // launch next lambda
         if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iterations) {
           if(_parms._n_folds > 1) {
             getCompleter().addToPendingCount(1);
@@ -668,7 +667,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             } while((_tInfos[0].gradientCheck(_parms._lambda[_lambdaId],_parms._alpha[0]) < 1e-5*_tInfos[0]._nullGradNorm) && ++_lambdaId  < (_parms._lambda.length));
             if(_tInfos[0]._stopCnt < 3 && _lambdaId < _parms._lambda.length) {
               getCompleter().addToPendingCount(1);
-              Log.info("GLM next lambdaId = " + _lambdaId);
               assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + (_dinfo._intercept ? 1 : 0);
               new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _tInfos[0]).fork();
             }
@@ -720,8 +718,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     private String LogInfo(String msg) {
-      msg = "GLM[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + _parms._lambda[_lambdaId] + "]: " + msg;
+      msg = "GLM[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + MathUtils.roundToNDigits(_parms._lambda[_lambdaId],4) + "]: " + msg;
       Log.info(msg);
+      return msg;
+    }
+
+    private String LogDebug(String msg) {
+      msg = "GLM[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + _parms._lambda[_lambdaId] + "]: " + msg;
+      Log.debug(msg);
       return msg;
     }
 
@@ -752,10 +756,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if (_parms._alpha[0] == 0 || selected == _dinfo.fullN()) {
         _taskInfo._allIn = true;
         _activeData = _dinfo;
-        LogInfo("strong rule at lambda_value=" + l1 + ", all " + _dinfo.fullN() + " coefficients are active");
+        LogInfo("All " + _dinfo.fullN() + " coefficients are active");
         return null;
       } else {
-        LogInfo("strong rule at lambda_value=" + l1 + ", got " + selected + " active cols out of " + _dinfo.fullN() + " total.");
+        LogInfo(selected + " / " + _dinfo.fullN() + " cols are active");
         return Arrays.copyOf(cols, selected);
       }
     }
@@ -941,12 +945,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           assert gt1._nobs == _taskInfo._nobs;
           double[] subgrad = gt1._gradient.clone();
           ADMM.subgrad(_parms._alpha[0] * _parms._lambda[_lambdaId], fullBeta, subgrad);
-          double err = GLM_GRAD_EPS;
+          double err = 0;
           if (_taskInfo._activeCols != null) {
             for (int c : _taskInfo._activeCols)
               if (subgrad[c] > err) err = subgrad[c];
               else if (subgrad[c] < -err) err = -subgrad[c];
-            LogInfo("solved with gerr = " + err);
             int[] failedCols = new int[64];
             int fcnt = 0;
             for (int i = 0; i < subgrad.length - 1; ++i) {
@@ -1025,7 +1028,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if(!isRunning(_key)) throw new JobCancelledException();
       assert _rowFilter != null;
       _start_time = System.currentTimeMillis();
-      LogInfo("lambda = " + _parms._lambda[_lambdaId] + "\n");
       int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1], _taskInfo._ginfo._gradient);
       _taskInfo._activeCols = activeCols;
       _activeData = _dinfo.filterExpandedColumns(activeCols);
@@ -1066,15 +1068,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if (_countIteration) ++_taskInfo._iter;
         long callbackStart = System.currentTimeMillis();
         double lastObjVal = _taskInfo._objVal;
-        LogInfo("gram computed in " + (callbackStart - _iterationStartTime) + "ms");
         double logl = glmt._likelihood;
-        LogInfo("-log(l) = " + logl + ", obj = " + objVal);
-
         if (_doLinesearch && (glmt.hasNaNsOrInf() || !((lastObjVal - objVal) > -1e-8))) {
           _taskInfo._lineSearch = true;
           // nedded line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
-          LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
+          LogDebug("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
           new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
@@ -1089,18 +1088,17 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]);
         double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
         double defaultRho = _bc._betaLB != null || _bc._betaUB != null ? _taskInfo._lambdaMax * 1e-2 : 0;
+        long tx = System.currentTimeMillis();
         // l1pen or upper/lower bounds require ADMM solver
         if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
           // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
-          long tx = System.currentTimeMillis();
           GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
-          long ty = System.currentTimeMillis();
           new ADMM.L1Solver(1e-4, 1000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
-          LogInfo("ADMM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + (ty - tx) + "ms");
         } else {
           glmt._gram.addDiag(l2pen);
           new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
         }
+        LogInfo("iteration computed in " + (callbackStart - _iterationStartTime) + " + " + (System.currentTimeMillis() - tx) + " ms");
         _taskInfo._worked += _taskInfo._workPerIteration;
         update(_taskInfo._workPerIteration, "lambdaId = " + _lambdaId + ", iteration = " + _taskInfo._iter + ", objective value = " + MathUtils.roundToNDigits(objVal,4));
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
@@ -1119,7 +1117,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           } else { // not done yet, launch next iteration
             if(_taskInfo._lineSearch || _activeData.fullN() > 1000 || _activeData._adaptedFrame.numCols() > 100){
               getCompleter().addToPendingCount(1);
-              LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
+              LogDebug("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
               new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
                 @Override
                 public void callback(GLMLineSearchTask lst) {
@@ -1129,7 +1127,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                     double[] beta = ArrayUtils.wadd(lst._beta.clone(), lst._direction, t);
                     double newObj = objVal(lst._likelihoods[i], beta, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
                     if (_taskInfo._objVal - newObj > 1e-8) {
-                      LogInfo("step = " + t + ",  objval = " + newObj);
+                      LogDebug("step = " + t + ",  objval = " + newObj);
                       if(t == 1) {
                         if(++_taskInfo._lsCnt == 2) { // if we do not need line search in 2 consecutive iterations turn it off
                           _taskInfo._lineSearch = false;
@@ -1146,7 +1144,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                   int nzs = 0;
                   for (int i = 0; i < glmt._beta.length; ++i)
                     if (glmt._beta[i] != 0) ++nzs;
-                  LogInfo("converged (no more progress), got " + nzs + " nzs");
+                  LogInfo("converged (step size too small(2))");
                   _taskInfo._beta = glmt._beta;
                   checkKKTsAndComplete();
                 }
@@ -1185,7 +1183,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           }
         }
         // no line step worked => converge
-        LogInfo("Line search did not find feasible step, converged at objval = " + _taskInfo._objVal);
+        LogInfo("converged (step size too small(1))");
         checkKKTsAndComplete();
       }
     }
