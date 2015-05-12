@@ -7,8 +7,6 @@ test.headers <- function(conn) {
   data      <- data.frame( ID = c(1,2,3,4), Date = c("1984-05-27", "2005-07-07", "1960-01-01", "1970-01-01"))
   data$Date <- as.Date(data$Date)
   diff1     <- (data[4,2] - data[3,2])
-  
-  write.table(x = data, file = "/Users/amy/Desktop/file.csv", row.names = F, col.names = F)
 
   Log.info("Import created date data...")
   data.hex  <- as.h2o(conn, data)
