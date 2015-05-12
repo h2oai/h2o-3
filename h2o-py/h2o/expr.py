@@ -369,6 +369,9 @@ class Expr(object):
       if isinstance(j['string'], (unicode, str)): self._data = str(j['string'])
       else:
         if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
+
+    if j['result_type'] in [3,4]: h2o.remove(j['key'])
+
     return self._data
 
   def _do_child(self, child):
