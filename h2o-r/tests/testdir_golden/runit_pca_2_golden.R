@@ -9,8 +9,8 @@ test.pcastand.golden <- function(H2Oserver) {
   
   Log.info("Compare with PCA when center = TRUE, scale. = TRUE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = TRUE)
-  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'STANDARDIZE')
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-6)
+  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'STANDARDIZE', max_iterations = 2000)
+  checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance
@@ -21,7 +21,7 @@ test.pcastand.golden <- function(H2Oserver) {
   expect_equal(dim(pcimpH2O), dim(pcimpR))
   pcimpH2O <- as.matrix(pcimpH2O)
   dimnames(pcimpH2O) <- dimnames(pcimpR)
-  expect_equal(pcimpH2O, pcimpR, tolerance = 1e-4)
+  expect_equal(pcimpH2O, pcimpR, tolerance = 1e-5)
   
   testEnd()
 }

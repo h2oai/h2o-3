@@ -822,8 +822,8 @@ h2o.tot_withinss <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$tot_withinss )
-  } else                          return( model.part$tm@metrics$tot_withinss )
+    else                          return( model.parts$vm@metrics$tot_withinss )
+  } else                          return( model.parts$tm@metrics$tot_withinss )
 }
 
 #'
@@ -837,8 +837,8 @@ h2o.betweenss <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$betweenss )
-  } else                          return( model.part$tm@metrics$betweenss )
+    else                          return( model.parts$vm@metrics$betweenss )
+  } else                          return( model.parts$tm@metrics$betweenss )
 }
 
 #'
@@ -852,8 +852,8 @@ h2o.totss <- function(object,valid=FALSE, ...) {
   model.parts <- .model.parts(objects)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$totss )
-  } else                          return( model.part$tm@metrics$totss )
+    else                          return( model.parts$vm@metrics$totss )
+  } else                          return( model.parts$tm@metrics$totss )
 }
 
 #'
@@ -875,46 +875,9 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.part$vm@metrics$centroid_stats$size )
-  } else                          return( model.part$tm@metrics$centroid_stats$size )
+    else                          return( model.parts$vm@metrics$centroid_stats$size )
+  } else                          return( model.parts$tm@metrics$centroid_stats$size )
 }
-
-#'
-#' Print the Model Summary
-#'
-#' @param object An \linkS4class{H2OModel} object.
-#' @param ... further arguments to be passed on (currently unimplemented)
-#' @export
-setMethod("summary", "H2OModel", function(object, ...) {
-  o <- object
-  model.parts <- .model.parts(o)
-  m <- model.parts$m
-  cat("Model Details:\n")
-  cat("==============\n\n")
-  cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@model_id, "\n")
-
-  # summary
-  print(m$model_summary)
-
-  # metrics
-  cat("\n")
-  if( !is.null(model.parts$tm) ) print(model.parts$tm)
-  cat("\n")
-  if( !is.null(model.parts$vm) ) print(model.parts$vm)
-
-  # History
-  cat("\n")
-  h2o.scoreHistory(o)
-
-  # Varimp
-  cat("\n")
-  if( !is.null( m$variable_importances ) ) {
-    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
-    cat("=================================================\n\n")
-    h2o.varimp(o)
-  }
-})
 
 #' Access H2O Confusion Matrices
 #'

@@ -200,17 +200,31 @@ public class ArrayUtils {
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
+
   public static double[] multArrVec(double[][] ary, double[] nums) {
     if(ary == null || nums == null) return null;
+    assert ary[0].length == nums.length : "Inner dimensions must match: Got " + ary[0].length + " != " + nums.length;
     double[] res = new double[ary.length];
     for(int i = 0; i < ary.length; i++)
       res[i] = innerProduct(ary[i], nums);
     return res;
   }
 
+  public static double[] multVecArr(double[] nums, double[][] ary) {
+    if(ary == null || nums == null) return null;
+    assert nums.length == ary.length : "Inner dimensions must match: Got " + nums.length + " != " + ary.length;
+    double[] res = new double[ary[0].length];
+    for(int j = 0; j < ary[0].length; j++) {
+      res[j] = 0;
+      for(int i = 0; i < ary.length; i++)
+        res[j] += nums[i] * ary[i][j];
+    }
+    return res;
+  }
+
   public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
     if(ary1 == null || ary2 == null) return null;
-    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + "!=" + ary2.length;   // Inner dimensions must match
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;   // Inner dimensions must match
     double[][] res = new double[ary1.length][ary2[0].length];
 
     for(int i = 0; i < ary1.length; i++) {
@@ -230,6 +244,27 @@ public class ArrayUtils {
     for(int i = 0; i < res.length; i++) {
       for(int j = 0; j < res[0].length; j++)
         res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
+  public static String[] permuteCols(String[] vec, int[] idx) {
+    if(vec == null) return null;
+    assert vec.length == idx.length : "Length of vector must match permutation vector length: Got " + vec.length + " != " + idx.length;
+    String[] res = new String[vec.length];
+
+    for(int i = 0; i < vec.length; i++)
+      res[i] = vec[idx[i]];
+    return res;
+  }
+  public static double[][] permuteCols(double[][] ary, int[] idx) {
+    if(ary == null) return null;
+    assert ary[0].length == idx.length : "Number of columns must match permutation vector length: Got " + ary[0].length + " != " + idx.length;
+    double[][] res = new double[ary.length][ary[0].length];
+
+    for(int j = 0; j < ary[0].length; j++) {
+      for(int i = 0; i < ary.length; i++)
+        res[i][j] = ary[i][idx[j]];
     }
     return res;
   }

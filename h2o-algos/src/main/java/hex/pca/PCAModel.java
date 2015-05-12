@@ -21,10 +21,12 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public long _seed = System.nanoTime(); // RNG seed
     public Key<Frame> _loading_key;
     public boolean _keep_loading = true;
+    public boolean _useAllFactorLevels = false;   // When expanding categoricals, should last level be dropped?
   }
 
   public static class PCAOutput extends Model.Output {
     // Principal components (eigenvectors)
+    public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;
 
     // Standard deviation of each principal component
@@ -34,11 +36,21 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
     public TwoDimTable _pc_importance;
 
+    // Number of categorical and numeric columns
+    public int _ncats;
+    public int _nnums;
+
+    // Categorical offset vector
+    public int[] _catOffsets;
+
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 
     // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
+
+    // Permutation matrix mapping training col indices to adaptedFrame
+    public int[] _permutation;
 
     // Frame key for projection into principal component space
     public Key<Frame> _loading_key;
@@ -92,11 +104,22 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   @Override
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    assert data.length == _output._eigenvectors.getRowDim();
+    int numStart = _output._catOffsets[_output._catOffsets.length-1];
+    assert data.length == _output._nnums + _output._ncats;
+
     for(int i = 0; i < _parms._k; i++) {
       preds[i] = 0;
-      for (int j = 0; j < data.length; j++)
-        preds[i] += (data[j] - _output._normSub[j]) * _output._normMul[j] * (double)_output._eigenvectors.get(j,i);
+      for (int j = 0; j < _output._ncats; j++) {
+        int level = (int)data[_output._permutation[j]];
+        preds[i] += _output._eigenvectors_raw[_output._catOffsets[j]+level][i];
+      }
+
+      int dcol = _output._ncats;
+      int vcol = numStart;
+      for (int j = 0; j < _output._nnums; j++) {
+        preds[i] += (data[_output._permutation[dcol]] - _output._normSub[j]) * _output._normMul[j] * _output._eigenvectors_raw[vcol][i];
+        dcol++; vcol++;
+      }
     }
     return preds;
   }
