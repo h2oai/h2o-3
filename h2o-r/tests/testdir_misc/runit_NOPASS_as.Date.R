@@ -1,0 +1,21 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+test.headers <- function(conn) {
+  
+  Log.info("Create date data")
+  data      <- data.frame( ID = c(1,2,3,4), Date = c("1984-05-27", "2005-07-07", "1960-01-01", "1970-01-01"))
+  data$Date <- as.Date(data$Date)
+  diff1     <- (data[4,2] - data[3,2])
+  
+  write.table(x = data, file = "/Users/amy/Desktop/file.csv", row.names = F, col.names = F)
+
+  Log.info("Import created date data...")
+  data.hex  <- as.h2o(conn, data)
+  diff2     <- as.numeric(as.matrix(data.hex[4,2] - data.hex[3,2])/(1000*60*60*24))
+  checkEqualsNumeric(diff1, diff2)
+
+  testEnd()
+}
+
+doTest("Import a dataset with a header H2OParsedData Object", test.headers)
