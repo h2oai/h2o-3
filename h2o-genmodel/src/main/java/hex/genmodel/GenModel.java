@@ -23,12 +23,46 @@ public abstract class GenModel {
    *  response col enums for SupervisedModels.  */
   public final String _domains[][];
 
+
   public GenModel( String[] names, String domains[][] ) { _names = names; _domains = domains; }
 
   // Base methods are correct for unsupervised models.  All overridden in GenSupervisedModel
-  public boolean isSupervised() { return false; }  // Overridden in GenSupervisedModel
-  public int nfeatures() { return _names.length; } // Overridden in GenSupervisedModel
-  public int nclasses() { return 0; }              // Overridden in GenSupervisedModel
+  public boolean isSupervised() { return false; }  // FIXME: can be derived directly from model type
+  public int nfeatures() { return _names.length - 1; }
+  public int nclasses() { return 0; }
+  public int getNumCols()      { return getNames().length - 1; }
+  public int getResponseIdx () { return getNames().length - 1; }
+  public String getResponseName() { return getNames()[getResponseIdx()]; }
+  public int getNumResponseClasses() { return getNumClasses(getResponseIdx()); }
+  public String[] getNames() { return _names; }
+  public int getColIdx(String name) {
+    String[] names = getNames();
+    for (int i=0; i<names.length; i++) if (names[i].equals(name)) return i;
+    return -1;
+  }
+  public int getNumClasses(int colIdx) {
+    String[] domval = getDomainValues(colIdx);
+    return domval!=null?domval.length:-1;
+  }
+  public String[] getDomainValues(String name) {
+    int colIdx = getColIdx(name);
+    return colIdx != -1 ? getDomainValues(colIdx) : null;
+  }
+  public String[] getDomainValues(int i) {
+    return getDomainValues()[i];
+  }
+  public int mapEnum(int colIdx, String enumValue) {
+    String[] domain = getDomainValues(colIdx);
+    if (domain==null || domain.length==0) return -1;
+    for (int i=0; i<domain.length;i++) if (enumValue.equals(domain[i])) return i;
+    return -1;
+  }
+
+  public String[][] getDomainValues() {
+    return _domains;
+  }
+
+
 
   abstract public ModelCategory getModelCategory();
 
