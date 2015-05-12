@@ -75,7 +75,7 @@
 #' @param variable_importances Compute variable importances for input features (Gedeon method) - can
 #'        be slow for large networks)
 #' @param fast_mode Enable fast mode (minor approximations in back-propagation)
-#' @param ignore_const_cols Igrnore constant training columns (no information can be gained anwyay)
+#' @param ignore_const_cols Ignore constant columns (no information can be gained anwyay)
 #' @param force_load_balance Force extra load balancing to increase training speed for small
 #'        datasets (to keep all cores busy)
 #' @param replicate_training_data Replicate the entire training dataset onto every node for faster
