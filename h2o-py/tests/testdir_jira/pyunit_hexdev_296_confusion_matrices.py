@@ -19,8 +19,8 @@ def confusion_matrices_check(ip, port):
     fps = perf.metric("fps", [perf.find_threshold_by_max_metric("f1")])[0][1]
     fns = perf.metric("fns", [perf.find_threshold_by_max_metric("f1")])[0][1]
 
-    assert tps + tns + fps + fns == 20, "incorrect confusion matrix computation: tps: {0}, fps: {1}, tns: {2}, fns: {3}. " \
-                                    "Should sum to 20."
+    assert tps + tns + fps + fns == 20, "incorrect confusion matrix computation: tps: {0}, fps: {1}, tns: {2}, fns: " \
+                                        "{3}. Should sum to 20.".format(tps, fps, tns, fns)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, confusion_matrices_check)

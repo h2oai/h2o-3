@@ -63,8 +63,18 @@ public abstract class GenModel {
   }
 
 
-
   abstract public ModelCategory getModelCategory();
+
+  public boolean isClassifier() {
+    ModelCategory cat = getModelCategory();
+    return cat == ModelCategory.Binomial || cat == ModelCategory.Multinomial;
+  }
+
+  public int getPredsSize() {
+    return isClassifier() ? 1 + getNumResponseClasses() : 2;
+  }
+
+  public String getHeader() { return null; }
 
   /** Takes a HashMap mapping column names to doubles.
    *  <p>
