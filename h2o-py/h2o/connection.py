@@ -399,8 +399,8 @@ class H2OConnection(object):
       detailed_error_msgs = []
       try:
         result = http_result.json()
-        if 'validation_messages' in result.keys():
-          detailed_error_msgs = '\n'.join([m['message'] for m in result['validation_messages'] if m['message_type'] in \
+        if 'messages' in result.keys():
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in \
                                           ['ERROR']])
         elif 'exception_msg' in result.keys():
           detailed_error_msgs = result['exception_msg']

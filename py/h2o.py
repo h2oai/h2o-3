@@ -688,7 +688,7 @@ class H2O(object):
 
         if asynchronous:
             return result
-        elif 'validation_error_count' in result and result['validation_error_count'] > 0:
+        elif 'error_count' in result and result['error_count'] > 0:
             # parameters validation failure
             return result
         elif result['__http_response']['status_code'] != 200:

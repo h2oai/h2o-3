@@ -100,7 +100,7 @@ def validate_model_builder_result(result, original_params, model_name):
         error = True
         print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
 
-    elif 'validation_error_count' in result and result['validation_error_count'] > 0:
+    elif 'error_count' in result and result['error_count'] > 0:
         # error case
         print 'FAIL: Parameters validation error for model: ', model_name
         error = True
@@ -110,7 +110,7 @@ def validate_model_builder_result(result, original_params, model_name):
         pp.pprint(original_params)
         print 'Returned result: '
         pp.pprint(result)
-        assert result['validation_error_count'] == 0, "FAIL: Non-zero validation_error_count for model: " + model_name
+        assert result['error_count'] == 0, "FAIL: Non-zero error_count for model: " + model_name
 
     assert 'job' in result, "FAIL: Failed to find job key for model: " + model_name + ": " + pp.pprint(result)
     job = result['job']
@@ -122,17 +122,17 @@ def validate_validation_messages(result, expected_error_fields):
     '''
     Check that we got the expected ERROR validation messages for a model build or validation check with bad parameters.
     '''
-    assert 'validation_error_count' in result, "FAIL: Failed to find validation_error_count in bad-parameters model build result."
-    assert 0 < result['validation_error_count'], "FAIL: 0 != validation_error_count in bad-parameters model build validation result."
+    assert 'error_count' in result, "FAIL: Failed to find error_count in bad-parameters model build result."
+    assert 0 < result['error_count'], "FAIL: 0 != error_count in bad-parameters model build validation result."
 
     error_fields = []
-    for validation_message in result['validation_messages']:
+    for validation_message in result['messages']:
         if validation_message['message_type'] == 'ERROR':
             error_fields.append(validation_message['field_name'])
 
     not_found = [item for item in expected_error_fields if item not in error_fields]
     assert len(not_found) == 0, 'FAIL: Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(error_fields)
-    assert len(not_found) == 0, 'FAIL: Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(result['validation_messages'])
+    assert len(not_found) == 0, 'FAIL: Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(result['messages'])
 
 
 def validate_model_exists(model_name, models=None):
@@ -730,14 +730,14 @@ for algo, model_builder in model_builders.iteritems():
         test_parameters.update(algo_additional_default_params[algo])
 
     parameters_validation = a_node.validate_model_parameters(algo=algo, training_frame=None, parameters=test_parameters, timeoutSecs=240) # synchronous
-    assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in good-parameters parameters validation result."
+    assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
     h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
 
     expected_count = 0
-    if expected_count != parameters_validation['validation_error_count']:
+    if expected_count != parameters_validation['error_count']:
         print "validation errors: "
         pp.pprint(parameters_validation)
-    assert expected_count == parameters_validation['validation_error_count'], "FAIL: " + str(expected_count) + " != validation_error_count in good-parameters parameters validation result."
+    assert expected_count == parameters_validation['error_count'], "FAIL: " + str(expected_count) + " != error_count in good-parameters parameters validation result."
 
 
 #######################################
@@ -749,33 +749,33 @@ dl_test_parameters_list = model_builder['parameters']
 dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
 
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
-assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in good-parameters parameters validation result."
+assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-if 0 != parameters_validation['validation_error_count']:
+if 0 != parameters_validation['error_count']:
     print "validation errors: "
     pp.pprint(parameters_validation)
-assert 0 == parameters_validation['validation_error_count'], "FAIL: 0 != validation_error_count in good-parameters parameters validation result."
+assert 0 == parameters_validation['error_count'], "FAIL: 0 != error_count in good-parameters parameters validation result."
 
 # Good parameters (note: testing with null training_frame):
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
-assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in good-parameters parameters validation result."
+assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-if 0 != parameters_validation['validation_error_count']:
+if 0 != parameters_validation['error_count']:
     print "validation errors: "
     pp.pprint(parameters_validation)
-assert 0 == parameters_validation['validation_error_count'], "FAIL: 0 != validation_error_count in good-parameters parameters validation result."
+assert 0 == parameters_validation['error_count'], "FAIL: 0 != error_count in good-parameters parameters validation result."
 
 # Bad parameters (hidden is null):
 # (note: testing with null training_frame)
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
-assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (input_dropout_ratio)."
+assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (input_dropout_ratio)."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 0 != parameters_validation['validation_error_count'], "FAIL: 0 == validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
+assert 0 != parameters_validation['error_count'], "FAIL: 0 == error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
 
 found_expected_error = False
-for validation_message in parameters_validation['validation_messages']:
+for validation_message in parameters_validation['messages']:
     if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
         found_expected_error = True
 assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
@@ -783,9 +783,9 @@ assert found_expected_error, "FAIL: Failed to find error message about input_dro
 # Bad parameters (no response_column):
 dl_test_parameters = {'hidden': "[10, 20, 10]" }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
-assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (response_column)."
+assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (response_column)."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 0 != parameters_validation['validation_error_count'], "FAIL: 0 == validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
+assert 0 != parameters_validation['error_count'], "FAIL: 0 == error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
 
 
 #######################################

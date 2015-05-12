@@ -162,14 +162,14 @@
 
   #---------- Validate parameters ----------#
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
-  if(length(validation$validation_messages) != 0L) {
-    error <- lapply(validation$validation_messages, function(i) {
+  if(length(validation$messages) != 0L) {
+    error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
         paste0(i$message, ".\n")
       else ""
     })
     if(any(nzchar(error))) stop(error)
-    warn <- lapply(validation$validation_messages, function(i) {
+    warn <- lapply(validation$messages, function(i) {
       if( i$message_type == "WARN" )
         paste0(i$message, ".\n")
       else ""

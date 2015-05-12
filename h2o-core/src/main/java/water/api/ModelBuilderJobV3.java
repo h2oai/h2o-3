@@ -15,23 +15,23 @@ public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJob
   public ModelParametersSchema parameters;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase validation_messages[];
+  public ValidationMessageBase messages[];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
-  public int validation_error_count;
+  public int error_count;
 
   @Override
   public ModelBuilderJobV3 fillFromImpl(ModelBuilder builder) {
     super.fillFromImpl((Job)builder);
 
-    this.validation_messages = new ValidationMessageBase[builder._messages.length];
+    this.messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
     for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.validation_messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
     }
     // default fieldname hacks
-    ValidationMessageBase.mapValidationMessageFieldNames(this.validation_messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
-    this.validation_error_count = builder.error_count();
+    ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
+    this.error_count = builder.error_count();
 
     ModelBuilderSchema s = (ModelBuilderSchema)Schema.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);
     parameters = s.parameters;
