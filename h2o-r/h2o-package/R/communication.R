@@ -452,7 +452,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   formats <- attr(x, "formats")
   xx <- x
   for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%f"
+    if( formats[j] == "%d" ) formats[j] <- "%i"
     xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
   }
 

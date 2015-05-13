@@ -2527,6 +2527,67 @@ h2o.hist <- function(x, breaks="Sturges") {
   invisible(histo)
 }
 
+#'
+#' String Split
+#'
+#' @param x The column whose strings must be split.
+#' @param split The pattern to split on.
+#' @export
+h2o.strsplit <- function(x, split) { .h2o.nary_frame_op("strsplit", x, split) }
+
+#'
+#' To Lower
+#'
+#' Mutates the input!
+#'
+#' @param x An H2OFrame object whose strings should be lower'd
+#' @export
+h2o.tolower <- function(x) { .h2o.nary_frame_op("tolower", x) }
+
+#'
+#' To Upper
+#'
+#' Mutates the input!
+#'
+#' @param x An H2OFrame object whose strings should be upper'd
+#' @export
+h2o.toupper <- function(x) { .h2o.nary_frame_op("toupper", x) }
+
+#'
+#' String Substitute
+#'
+#' Mutates the input. Changes the first occurence of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) {
+  .h2o.nary_frame_op("sub", pattern, replacement,x,ignore.case)
+}
+
+#'
+#' String Global Substitute
+#'
+#' Mutates the input. Changes the all occurences of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) {
+  .h2o.nary_frame_op("gsub", pattern, replacement,x,ignore.case)
+}
+
+#'
+#' Trim Space
+#'
+#' @param x The column whose strings should be trimmed.
+#' @export
+h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
+
 #setMethod("findInterval", "H2OFrame", function(x, vec, rightmost.closed = FALSE, all.inside = FALSE) {
 #  if(any(is.na(vec)))
 #    stop("'vec' contains NAs")
