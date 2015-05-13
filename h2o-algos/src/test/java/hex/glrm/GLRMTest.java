@@ -322,7 +322,7 @@ public class GLRMTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        Log.info("Archetypes (Y):\n" + ArrayUtils.pprint(model._output._archetypes));
+        Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -342,7 +342,7 @@ public class GLRMTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        Log.info("Archetypes (Y):\n" + ArrayUtils.pprint(model._output._archetypes));
+        Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -362,7 +362,7 @@ public class GLRMTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        Log.info("Archetypes (Y):\n" + ArrayUtils.pprint(model._output._archetypes));
+        Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

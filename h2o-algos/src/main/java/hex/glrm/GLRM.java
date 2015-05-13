@@ -549,7 +549,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncolX;         // Number of cols in X (k)
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
-    final Random _rand;
 
     // Output
     double _loss;    // Loss evaluated on A - XY using new X (and current Y)
@@ -569,12 +568,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _dinfo = dinfo;
       _normSub = normSub;
       _normMul = normMul;
-      _rand = RandomUtils.getRNG(_parms._seed);
     }
 
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
+      Random rand = RandomUtils.getRNG(_parms._seed + cs[0].start());
       _loss = _xreg = 0;
 
       for(int row = 0; row < cs[0]._len; row++) {
@@ -637,7 +636,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
           // _xreg += _parms.regularize_x(xnew[k]);
         }
-        xnew = _parms.rproxgrad_x(u, _alpha, _rand);
+        xnew = _parms.rproxgrad_x(u, _alpha, rand);
         _xreg += _parms.regularize_x(xnew);
         for(int k = 0; k < _ncolX; k++)
           chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
