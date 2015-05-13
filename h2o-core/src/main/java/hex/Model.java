@@ -484,15 +484,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
 
-    // Remove temp keys.  TODO: Really should use Scope but Scope does not
-    // currently allow nested-key-keepers.
-    Vec[] vecs = adaptFr.vecs();
-    for( int i=0; i<vecs.length; i++ )
-      if( fr.find(vecs[i]) != -1 ) // Exists in the original frame?
-        vecs[i] = null;            // Do not delete it
-    adaptFr.delete();
+    cleanup_adapt( adaptFr, fr );
     return output;
   }
+
+    // Remove temp keys.  TODO: Really should use Scope but Scope does not
+    // currently allow nested-key-keepers.
+  static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
+    Key[] keys = adaptFr.keys();
+    for( int i=0; i<keys.length; i++ )
+      if( fr.find(keys[i]) != -1 ) // Exists in the original frame?
+        keys[i] = null;            // Do not delete it
+    adaptFr.delete();
+  }
+
 
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
@@ -783,11 +788,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return miss==0;
     } finally {
       // Remove temp keys.
-      Vec[] vecs = fr.vecs();
-      for( int i=0; i<vecs.length; i++ )
-        if( data.find(vecs[i]) != -1 ) // Exists in the original frame?
-          vecs[i] = null;              // Do not delete it
-      fr.delete();
+      cleanup_adapt( fr, data );
     }
   }
 }

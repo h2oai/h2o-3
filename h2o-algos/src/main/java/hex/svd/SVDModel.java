@@ -134,12 +134,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     Frame adaptFr = new Frame(fr);
     adaptTestForTrain(adaptFr, true);   // Adapt
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
-
-    Vec[] vecs = adaptFr.vecs();
-    for (int i = 0; i < vecs.length; i++)
-      if (fr.find(vecs[i]) != -1)   // Exists in the original frame?
-        vecs[i] = null;            // Do not delete it
-    adaptFr.delete();
+    cleanup_adapt( adaptFr, fr );
     return output;
   }
 }

@@ -288,6 +288,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   // Special mode doing 1 map per key.  No frame
   public T doAll( Key... keys ) {
+    // Raise the priority, so that if a thread blocks here, we are guaranteed
+    // the task completes (perhaps using a higher-priority thread from the
+    // upper thread pools).  This prevents thread deadlock.
+    _priority = nextThrPriority();
     _keys = keys;
     _nxx = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     setupLocal0();              // Local setup
