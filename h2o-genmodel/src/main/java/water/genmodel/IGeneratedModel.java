@@ -16,10 +16,10 @@ public interface IGeneratedModel {
     public String[] getNames();
 
     /** The name of the response column. */
+    @Deprecated
     public String getResponseName();
 
-    /** Returns an index of the response column. */
-    @Deprecated
+    /** Returns an index of the response column inside getDomains(). */
     public int getResponseIdx();
 
     /** Get number of classes in in given column.
