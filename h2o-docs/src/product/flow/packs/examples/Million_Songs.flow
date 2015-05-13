@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-model\",\"training_frame\":\"milsongs-cls-train.hex\",\"validation_frame\":\"milsongs-cls-test.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"link\":\"family_default\",\"use_all_factor_levels\":false,\"prior\":-1,\"max_active_predictors\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-model\",\"training_frame\":\"milsongs-cls-train.hex\",\"validation_frame\":\"milsongs-cls-test.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"link\":\"family_default\",\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",
