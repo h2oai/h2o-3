@@ -229,31 +229,12 @@ print = (properties, _schemas, _routes) ->
   return
 
 main = (args, properties) ->
-  schemas_json = locate 'src', 'rest-api', 'schemas.json'
-  routes_json = locate 'src', 'rest-api', 'routes.json'
-  if args.host
-    get args.host, '/3/Metadata/schemas', (error, schemasResult) ->
-      if error
-        throw error
-      else
-        write(
-          schemas_json
-          JSON.stringify schemasResult, null, 2
-        )
-        get args.host, '/3/Metadata/endpoints', (error, routesResult) ->
-          if error
-            throw error
-          else
-            write(
-              routes_json
-              JSON.stringify routesResult, null, 2
-            )
-            print properties, schemasResult.schemas, routesResult.routes
+  schemas_json = locate 'schemas.json'
+  routes_json = locate 'routes.json'
+  if (fs.lstatSync schemas_json).isFile() and (fs.lstatSync routes_json).isFile()
+    print properties, (JSON.parse read schemas_json).schemas, (JSON.parse read routes_json).routes
   else
-    if (fs.lstatSync schemas_json).isFile() and (fs.lstatSync routes_json).isFile()
-      print properties, (JSON.parse read schemas_json).schemas, (JSON.parse read routes_json).routes
-    else
-      throw new Error 'Could not locate API JSON documents.'
+    throw new Error 'Could not locate API JSON documents.'
 
 main argv, yaml.safeLoad read locate 'index.yml'
 
