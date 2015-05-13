@@ -162,6 +162,16 @@ REST APIs are generated immediately out of the code, allowing users to implement
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references. 
 
+For IDEA IntelliJ support, run `gradle idea`, then **Import Project** within IDEA and point it to the <a href="https://github.com/0xdata/h2o-dev.git" target="_blank">h2o-dev directory</a>. 
+
+For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters: 
+
+Type: Application
+Main class: H2OApp
+Use class path of module: h2o-app
+
+After starting multiple "worker" node processes in addition to the JUnit test process, they will cloud up and run the multi-node JUnit tests. 
+
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/build.gradle" target="_blank">Maven install</a>: This page provides information on how to build a version of H2O that generates the correct IDE files.
  
 - <a href="http://apps.h2o.ai" target="_blank">apps.h2o.ai</a>: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights. 
