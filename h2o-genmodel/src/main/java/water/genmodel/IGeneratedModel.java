@@ -29,7 +29,8 @@ public interface IGeneratedModel {
 
     /** Return a number of classes in response column.
      *
-     * @return
+     * @return number of response classes
+     * @throws java.lang.UnsupportedOperationException in case that it is call on non-classifier model.
      */
     public int getNumResponseClasses();
 

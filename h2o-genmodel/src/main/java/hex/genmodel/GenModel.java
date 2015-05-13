@@ -40,7 +40,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel {
     throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
   }
   @Override public int getNumResponseClasses() {
-    return nclasses();
+    if (isClassifier())
+      return nclasses();
+    else
+      throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
   }
   @Override public String[] getNames() {
     return _names;
