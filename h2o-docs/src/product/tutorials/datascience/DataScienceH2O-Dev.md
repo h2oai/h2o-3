@@ -38,6 +38,8 @@ K-Means falls in the general category of clustering algorithms.
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
+- **Ignore\_const\_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **K**: Specify the number of clusters. The default is 1. 
@@ -180,6 +182,8 @@ The GLM suite includes:
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
+
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
@@ -375,6 +379,8 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
@@ -483,6 +489,8 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
+
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
@@ -765,6 +773,8 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
@@ -905,6 +915,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
 - **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
+
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: Select the column to use as the independent variable.
 

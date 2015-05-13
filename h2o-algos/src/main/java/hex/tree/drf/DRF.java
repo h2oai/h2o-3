@@ -1,6 +1,7 @@
 package hex.tree.drf;
 
 import hex.Model;
+import hex.ModelCategory;
 import hex.schemas.DRFV3;
 import hex.tree.DHistogram;
 import hex.tree.DTree;
@@ -35,11 +36,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   protected int _mtry;
   protected long _actual_seed;
 
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-      Model.ModelCategory.Regression,
-      Model.ModelCategory.Binomial,
-      Model.ModelCategory.Multinomial,
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+      ModelCategory.Regression,
+      ModelCategory.Binomial,
+      ModelCategory.Multinomial,
     };
   }
 

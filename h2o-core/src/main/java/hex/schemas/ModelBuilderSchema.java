@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import water.AutoBuffer;
 import water.H2O;
 import water.Job;
@@ -33,7 +34,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   public String algo_full_name;
 
   @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
-  public Model.ModelCategory[] can_build;
+  public ModelCategory[] can_build;
 
   @API(help="Should the builder always be visible, be marked as beta, or only visible if the user starts up with the experimental flag?", values = { "Experimental", "Beta", "AlwaysVisible" }, direction = API.Direction.OUTPUT)
   public ModelBuilder.BuilderVisibility visibility;

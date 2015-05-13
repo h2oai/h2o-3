@@ -27,25 +27,26 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
     @Override
     public GLMModelOutputV3 fillFromImpl(GLMModel.GLMOutput impl) {
       super.fillFromImpl(impl);
-      GLMModel.Submodel sm = impl.bestSubmodel();
-      String [] names = sm.idxs == null?impl.coefficientNames().clone():ArrayUtils.select(impl.coefficientNames(), sm.idxs);
+      String [] names = impl.coefficientNames().clone();
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
       coefficients_table = new TwoDimTableBase();
       final double [] magnitudes;
-      if(sm.norm_beta != null){
+      double [] beta = impl.beta();
+      if(impl.isStandardized()){
+        double [] norm_beta = impl.getNormBeta();
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double","double"};
         String [] colFormats = new String[]{"%5f", "%5f"};
         TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", ns, new String[]{"Coefficients", "Standardized Coefficients"}, colTypes, colFormats, "names");
-        tdt.set(0,0,sm.beta[sm.beta.length-1]);
-        tdt.set(0,1,sm.beta[sm.norm_beta.length-1]);
-        for(int i = 0; i < sm.beta.length-1; ++i) {
-          tdt.set(i+1, 0, sm.beta[i]);
-          tdt.set(i+1, 1, sm.norm_beta[i]);
+        tdt.set(0,0,beta[beta.length-1]);
+        tdt.set(0,1,norm_beta[norm_beta.length-1]);
+        for(int i = 0; i < beta.length-1; ++i) {
+          tdt.set(i+1, 0, beta[i]);
+          tdt.set(i+1, 1, norm_beta[i]);
         }
         coefficients_table.fillFromImpl(tdt);
-        magnitudes = sm.norm_beta.clone();
+        magnitudes = norm_beta.clone();
         for(int i = 0; i < magnitudes.length; ++i)
           if(magnitudes[i] < 0) magnitudes[i] *= -1;
 
@@ -65,9 +66,9 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         for(int i = 0; i < names2.length-1; ++i)
           names2[i] = names[indices[i]];
         tdt = new TwoDimTable("Standardized Coefficient Magnitudes","standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"},new String[]{"double","string"},new String[]{"%5f","%s"},"names");
-        for(int i = 0; i < sm.beta.length-1; ++i) {
+        for(int i = 0; i < beta.length-1; ++i) {
           tdt.set(i, 0, magnitudes[indices[i]]);
-          tdt.set(i, 1, sm.beta[indices[i]] < 0?"NEG":"POS");
+          tdt.set(i, 1, beta[indices[i]] < 0?"NEG":"POS");
         }
         standardized_coefficients_magnitude = new TwoDimTableBase();
         standardized_coefficients_magnitude.fillFromImpl(tdt);
@@ -76,12 +77,12 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         String [] colTypes = new String[]{"double"};
         String [] colFormats = new String[]{"%5f"};
         TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", names, new String[]{"Coefficients"}, colTypes, colFormats, "names");
-        tdt.set(0,0,sm.beta[sm.beta.length-1]);
-        for(int i = 0; i < sm.beta.length-1; ++i) {
-          tdt.set(i + 1, 0, sm.beta[i]);
+        tdt.set(0,0,beta[beta.length-1]);
+        for(int i = 0; i < beta.length-1; ++i) {
+          tdt.set(i + 1, 0, beta[i]);
         }
         coefficients_table.fillFromImpl(tdt);
-        magnitudes = sm.beta.clone();
+        magnitudes = beta.clone();
         for(int i = 0; i < magnitudes.length-1; ++i)
           if(magnitudes[i] < 0) magnitudes[i] *= -1;
       }
@@ -94,6 +95,6 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 
   @Override public GLMModel createImpl() {
     GLMModel.GLMParameters parms = parameters.createImpl();
-    return new GLMModel( model_id.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0.0, 0);
+    return new GLMModel( model_id.key(), parms, null, 0.0, 0.0, 0.0, 0);
   }
 }

@@ -1,5 +1,6 @@
 package hex.word2vec;
 
+import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.Key;
 import water.H2O;

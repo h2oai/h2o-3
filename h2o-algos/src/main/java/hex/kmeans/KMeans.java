@@ -1,7 +1,7 @@
 package hex.kmeans;
 
 import hex.ClusteringModelBuilder;
-import hex.Model;
+import hex.ModelCategory;
 import hex.ModelMetricsClustering;
 import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
@@ -25,8 +25,8 @@ import java.util.Random;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{ Model.ModelCategory.Clustering };
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };

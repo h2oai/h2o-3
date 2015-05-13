@@ -2,8 +2,8 @@ package hex.pca;
 
 import hex.DataInfo;
 
-import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.PCAV3;
 
@@ -11,7 +11,6 @@ import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -41,8 +40,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{ModelCategory.Clustering};
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
