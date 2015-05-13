@@ -25,7 +25,9 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
             "nlambdas",
             "standardize",
             "max_iterations",
+            "objective_epsilon",
             "beta_epsilon",
+            "gradient_epsilon",
             "link",
 //            "tweedie_variance_power",
 //            "tweedie_link_power",
@@ -61,8 +63,14 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
     @API(help = "Maximum number of iterations", level = Level.secondary)
     public int max_iterations;
 
-    @API(help = "beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold", level = Level.secondary)
+    @API(help = "converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver ", level = Level.expert)
     public double beta_epsilon;
+    @API(help = "converge if  objective value changes less than this", level = Level.expert)
+    public double objective_epsilon;
+
+    @API(help = "converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver", level = Level.expert)
+    public double gradient_epsilon;
+
 
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link;
