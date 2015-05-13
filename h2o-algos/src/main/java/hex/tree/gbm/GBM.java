@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.Model;
+import hex.ModelCategory;
 import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -18,11 +19,11 @@ import water.util.ArrayUtils;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-      Model.ModelCategory.Regression,
-      Model.ModelCategory.Binomial,
-      Model.ModelCategory.Multinomial,
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+      ModelCategory.Regression,
+      ModelCategory.Binomial,
+      ModelCategory.Multinomial,
     };
   }
 

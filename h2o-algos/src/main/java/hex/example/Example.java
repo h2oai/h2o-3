@@ -1,6 +1,6 @@
 package hex.example;
 
-import hex.Model;
+import hex.ModelCategory;
 import hex.SupervisedModelBuilder;
 import hex.schemas.ExampleV3;
 import hex.schemas.ModelBuilderSchema;
@@ -17,9 +17,9 @@ import java.util.Arrays;
  */
 public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Unknown,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+            ModelCategory.Unknown,
     };
   }
 

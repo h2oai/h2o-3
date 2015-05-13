@@ -107,8 +107,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     public boolean isClassifier() { return nclasses()>1; }
     @Override public ModelCategory getModelCategory() {
       return nclasses()==1 
-        ? Model.ModelCategory.Regression
-        : (nclasses()==2 ? Model.ModelCategory.Binomial : Model.ModelCategory.Multinomial);
+        ? ModelCategory.Regression
+        : (nclasses()==2 ? ModelCategory.Binomial : ModelCategory.Multinomial);
     }
   }
 

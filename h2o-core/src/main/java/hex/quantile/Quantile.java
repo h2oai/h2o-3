@@ -2,6 +2,7 @@ package hex.quantile;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.QuantileV3;
 import water.DKV;
@@ -31,8 +32,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     return (Quantile)start(new QuantileDriver(), train().numCols()*_parms._probs.length);
   }
 
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{Model.ModelCategory.Unknown};
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ModelCategory.Unknown};
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };

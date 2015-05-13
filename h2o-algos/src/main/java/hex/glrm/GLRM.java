@@ -4,10 +4,7 @@ import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
-import hex.DataInfo;
-import hex.FrameTask;
-import hex.Model;
-import hex.ModelBuilder;
+import hex.*;
 import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
@@ -53,8 +50,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return start(new GLRMDriver(), 0);
   }
 
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ModelCategory.Clustering};
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };

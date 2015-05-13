@@ -1,9 +1,6 @@
 package hex.naivebayes;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelMetricsSupervised;
-import hex.SupervisedModelBuilder;
+import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import water.*;
@@ -40,8 +37,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   }
 
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{ Model.ModelCategory.Unknown };
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{ ModelCategory.Unknown };
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };

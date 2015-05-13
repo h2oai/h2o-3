@@ -1,13 +1,12 @@
 package hex.tree;
 
-import hex.Model.ModelCategory;
+import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
 import hex.genmodel.GenModel;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.ModelUtils;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */

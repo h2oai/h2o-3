@@ -3,6 +3,7 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Model;
+import hex.ModelCategory;
 import hex.SupervisedModelBuilder;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
@@ -29,11 +30,11 @@ import static water.util.MRUtils.sampleFrameStratified;
  */
 public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Regression,
-            Model.ModelCategory.Binomial,
-            Model.ModelCategory.Multinomial,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
     };
   }
 

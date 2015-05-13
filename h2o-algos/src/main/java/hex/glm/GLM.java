@@ -1,7 +1,7 @@
 package hex.glm;
 
 import hex.DataInfo;
-import hex.Model;
+import hex.ModelCategory;
 import hex.SupervisedModelBuilder;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;
@@ -46,10 +46,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   static final double LINE_SEARCH_STEP = .5;
   static final int NUM_LINE_SEARCH_STEPS = 16;
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Regression,
-            Model.ModelCategory.Binomial,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
     };
   }
 

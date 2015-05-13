@@ -27,17 +27,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
-  /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
-  public enum ModelCategory {
-    Unknown,
-    Binomial,
-    Multinomial,
-    Regression,
-    Clustering,
-    AutoEncoder,
-    DimReduction
-  }
-
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   /** Model-specific parameter class.  Each model sub-class contains an
