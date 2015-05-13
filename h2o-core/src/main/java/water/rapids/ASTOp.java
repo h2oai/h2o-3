@@ -2850,8 +2850,6 @@ class ASTHist extends ASTUniPrefixOp {
     private static final int _dB = U.arrayBaseOffset(double[].class);
     private static final int _dS = U.arrayIndexScale(double[].class);
     private static long doubleRawIdx(int i) { return _dB + _dS * i; }
-
-
     // out
     private final double[] _breaks;
     private final long[] _counts;
