@@ -21,7 +21,7 @@ def group_by(ip,port):
     for a in h2o_agg_funcs:
        for n in na_handling:
            for c in col_names:
-               print "group by : " + str(a) "; " + str(n) + "; " + str(c)
+               print "group by : " + str(a) + "; " + str(n) + "; " + str(c)
                h2o.group_by(h2o_iris, ["class"], {"foo":[a,c,n]})
 
     # h2o/pandas/numpy comparison test
