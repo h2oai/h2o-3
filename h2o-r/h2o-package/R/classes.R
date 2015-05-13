@@ -662,3 +662,34 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
 setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", model_id="character"))
+
+#'
+#' Describe an H2OFrame object
+#'
+#' @param object An H2OFrame object.
+#' @param \dots Extra args
+#' @export
+str.H2OFrame <- function(object, ...) {
+  if (length(l <- list(...)) && any("give.length" == names(l)))
+    invisible(NextMethod("str", ...))
+  # else invisible(NextMethod("str", give.length = FALSE, ...))
+
+  nc <- ncol(object)
+  nr <- nrow(object)
+  cc <- colnames(object)
+  width <- max(nchar(cc))
+  # header statement
+  cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+  l <- list()
+  for( i in 1:nc ) {
+    cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep="")
+    first.10.rows <- as.data.frame(object[1L:min(10L,nr),i])[,1]
+    if( is.factor(object[,i]) ) {
+      nl <- h2o.nlevels(object[,i])
+      lvls <- h2o.levels(object[,i])[1L:min(nl,10L)]
+      cat("Factor w/ ", nl, " level(s) ", paste(lvls, collapse='","'), " ...: ", sep="")
+      cat(paste(match(first.10.rows, lvls), collapse=" "), " ...\n", sep="")
+    } else
+      cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+  }
+}

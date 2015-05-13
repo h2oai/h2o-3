@@ -231,6 +231,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTStoreSize());
     putPrefix(new ASTKeysLeaked());
     putPrefix(new ASTAll());
+    putPrefix(new ASTNLevels());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -688,6 +689,22 @@ class ASTAnyFactor extends ASTUniPrefixOp {
     for (int i = 0; i < fr.vecs().length; ++i)
       if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
     env.push(new ValStr(res));
+  }
+}
+
+class ASTNLevels extends ASTUniPrefixOp {
+  ASTNLevels() { super(VARS1); }
+  @Override String opStr() { return "nlevels"; }
+  @Override ASTOp make() {return new ASTNLevels();}
+  @Override void apply(Env env) {
+    int nlevels=0;
+    Frame fr = env.popAry();
+    if (fr.numCols() != 1) nlevels=0;
+    else {
+      Vec v = fr.anyVec();
+      nlevels = v.isEnum()?v.domain().length:0;
+    }
+    env.push(new ValNum(nlevels));
   }
 }
 
