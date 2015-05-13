@@ -2776,35 +2776,40 @@ class ASTHist extends ASTUniPrefixOp {
 
 
     HistTask t;
-    if( breaks != null ) t = new HistTask(breaks).doAll(vec);
+    double h;
+    double x1=vec.max();
+    double x0=vec.min();
+    if( breaks != null ) t = new HistTask(breaks,-1,-1/*ignored if _h==-1*/).doAll(vec);
     else if( algo!=null ) {
       switch (algo) {
-        case "sturges": numBreaks = sturges(vec); break;
-        case "rice":    numBreaks = rice(vec);    break;
-        case "sqrt":    numBreaks = sqrt(vec);    break;
-        case "doane":   numBreaks = doane(vec);   break;
-        case "scott":   numBreaks = scott(vec);   break;
-        case "fd":      numBreaks = fd(vec);      break;
-        default:        numBreaks = sturges(vec);  // just do sturges even if junk passed in
+        case "sturges": numBreaks = sturges(vec); h=(x1-x0)/numBreaks; break;
+        case "rice":    numBreaks = rice(vec);    h=(x1-x0)/numBreaks; break;
+        case "sqrt":    numBreaks = sqrt(vec);    h=(x1-x0)/numBreaks; break;
+        case "doane":   numBreaks = doane(vec);   h=(x1-x0)/numBreaks; break;
+        case "scott":   h=scotts_h(vec); numBreaks = scott(vec,h);     break;
+        case "fd":      h=fds_h(vec);    numBreaks = fd(vec,h);        break;
+        default:        numBreaks = sturges(vec); h=(x1-x0)/numBreaks; // just do sturges even if junk passed in
       }
-      t = new HistTask(computeCuts(vec,numBreaks)).doAll(vec);
+      t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
     }
-    else t = new HistTask(computeCuts(vec,numBreaks)).doAll(vec);
+    else {
+      h = (x1-x0)/numBreaks;
+      t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
+    }
     System.out.println();
   }
 
-  private int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
-  private int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
-  private int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
-  private int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
-  private int scott  (Vec v) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
-  private int fd     (Vec v) { return (int)Math.ceil((v.max()-v.min()) / fds_h(v)); }   // Freedman–Diaconis slightly modified to use MAD instead of IQR
-
-  private double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
-  private double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
-  private double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
-  private double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
-  private double third_moment(Vec v) {
+  private static int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
+  private static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
+  private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
+  private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
+  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / fds_h(v)); }   // Freedman–Diaconis slightly modified to use MAD instead of IQR
+  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
+  private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
+  private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
+  private static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
+  private static double third_moment(Vec v) {
     final double mean = ASTVar.getMean(v,true,"");
     ThirdMomTask t = new ThirdMomTask(mean).doAll(v);
     double m2 = t._ss / v.length();
@@ -2842,8 +2847,10 @@ class ASTHist extends ASTUniPrefixOp {
   }
 
   private static class HistTask extends MRTask<HistTask> {
-    final private double[] _min;       // min for each bin, updated atomically
-    final private double[] _max;       // max for each bin, updated atomically
+    final private double _h;      // bin width
+    final private double _x0;     // far left bin edge
+    final private double[] _min;  // min for each bin, updated atomically
+    final private double[] _max;  // max for each bin, updated atomically
     // unsafe crap for mins/maxs of bins
     private static final Unsafe U = UtilUnsafe.getUnsafe();
     // double[] offset and scale
@@ -2855,14 +2862,26 @@ class ASTHist extends ASTUniPrefixOp {
     private final long[] _counts;
     private final double[] _mids;
 
-    HistTask(double[] cuts) { _breaks=cuts; _min=new double[_breaks.length]; _max=new double[_breaks.length]; _counts=new long[_breaks.length]; _mids=new double[_breaks.length]; }
-
+    HistTask(double[] cuts, double h, double x0) {
+      _breaks=cuts;
+      _min=new double[_breaks.length];
+      _max=new double[_breaks.length];
+      _counts=new long[_breaks.length];
+      _mids=new double[_breaks.length];
+      _h=h;
+      _x0=x0;
+    }
     @Override public void map(Chunk c) {
+      // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
       for( int i = 0; i < c._len; ++i ) {
         if( c.isNA(i) ) continue;
         double r = c.atd(i);
-        int x = 0;              // Pick the bin
-        for (; x < _breaks.length; x++) if (r < _breaks[x]) break;
+        int x=0;
+        if( _h==-1 )
+          for(;x<_breaks.length;x++)
+            if( r<_breaks[x] ) break;
+        else
+          x = Math.min( _breaks.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
         _counts[x]++;
         setMinMax(Double.doubleToRawLongBits(r),x);
       }
