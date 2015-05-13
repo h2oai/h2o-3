@@ -82,6 +82,15 @@ If you're considering using H2O in a corporate environment, you'll be happy to k
 
 Users of our Spark-compatible solution, Sparkling Water, should be aware that Sparkling Water is only supported with the latest version of H2O. For more information about Sparkling Water, refer to the following links. 
 
+Sparkling Water is a gradle project with the following submodules: 
+
+- Core: Implementation of H2OContext, H2ORDD, and all technical integration code
+- Examples: Application, demos, examples
+- ML: Implementation of MLLib pipelines for H2O algorithms
+- Assembly: Creates "fatJar" composed of all other modules
+
+The best way to get started is to modify the core module or create a new module, which extends a project. 
+
 ###Getting Started with Sparkling Water
 
 - <a href="http://h2o.ai/download/" target="_blank">Download Sparkling Water</a>
