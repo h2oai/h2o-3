@@ -10,7 +10,7 @@ Depending on your area of interest, select your learning path below:
 
  - [New Users](#New)
  - [Experienced Users](#Exp)
- - [Corporate Users](#Corp)
+ - [Open Source Users](#OS)
  - [Sparkling Water Users](#SW)
  - [Python Users](#Py)
  - [R Users](#R)
@@ -62,10 +62,10 @@ If you've used previous versions of H2O, the following links will help guide you
 
 ---
 
-<a name="Corp"></a>
-##Corporate Users
+<a name="OS"></a>
+##Open Source Users
 
-If you're considering using H2O in a corporate environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
+If you're considering using H2O in a open-source environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS. 
 
@@ -165,6 +165,16 @@ REST APIs are generated immediately out of the code, allowing users to implement
 - <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1188/docs-website/h2o-docs/index.html#schema-reference" target="_blank">REST API Schema Reference</a>: This document represents the definitive guide to the H2O REST API schemas. 
 
 ---
+
+<a name="Java"></a>
+##Java Users
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1203/docs-website/h2o-core/javadoc/index.html" target="_blank">H2O Core Java Developer Documentation</a>
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1203/docs-website/h2o-algos/javadoc/index.html" target="_blank">H2O Algos Java Developer Documentation</a>
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1203/docs-website/h2o-scala/scaladoc/index.html" target="_blank">H2O Scala API Developer Documentation</a>
+
 
 <a name="Dev"></a>
 ##Developers
