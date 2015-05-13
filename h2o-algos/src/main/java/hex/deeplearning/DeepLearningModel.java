@@ -615,7 +615,18 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
 
-  public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
+  // Lower is better
+  public float error() {
+    return (float) (_output.isClassifier() ? cm().err() : mse());
+//    boolean valid = _parms.valid() != null;
+//    if (!_output.isClassifier()) {
+//      return (float)(valid ? _output._validation_metrics._MSE : _output._training_metrics._MSE);
+//    } else if (_output.nclasses() == 2){
+//      return -(float)(valid ? ((ModelMetricsBinomial)_output._validation_metrics)._auc._auc : ((ModelMetricsBinomial)_output._training_metrics)._auc._auc);
+//    } else {
+//      return -(float)(valid ? ((ModelMetricsMultinomial)_output._validation_metrics)._logloss : ((ModelMetricsMultinomial)_output._training_metrics)._logloss);
+//    }
+  }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
@@ -1502,7 +1513,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo._key,dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
-    actual_best_model_key = Key.makeUserHidden(Key.make());
+    actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms.getNumFolds() != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
       errors = new DeepLearningScoring[1];
