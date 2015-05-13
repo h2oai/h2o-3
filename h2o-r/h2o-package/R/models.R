@@ -618,8 +618,7 @@ h2o.scoreHistory <- function(object, ...) {
   if( is(o, "H2OModel") ) {
     sh <- o@model$scoring_history
     if( is.null(sh) ) return(NULL)
-    print( sh )
-    invisible( sh )
+    sh
   } else {
     warning( paste0("No score history for ", class(o)) )
     return(NULL)
