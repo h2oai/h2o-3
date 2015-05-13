@@ -6,6 +6,7 @@ import org.junit.*;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
@@ -265,7 +266,7 @@ public class KMeansTest extends TestUtil {
   }
 
   // Negative test - expect to throw IllegalArgumentException
-  @Test (expected = IllegalArgumentException.class) public void testTooManyK() {
+  @Test (expected = H2OModelBuilderIllegalArgumentException.class) public void testTooManyK() {
     Frame fr = frame(ard(d(1,0),d(0,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     Frame fr2=null;
     KMeansModel kmm = null;
