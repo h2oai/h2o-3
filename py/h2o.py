@@ -338,6 +338,7 @@ class H2O(object):
         # response['headers'] = r.headers
         response['url'] = r.url
         response['status_code'] = r.status_code
+        response['text'] = r.text
         rjson['__http_response'] = response
 
         return rjson
