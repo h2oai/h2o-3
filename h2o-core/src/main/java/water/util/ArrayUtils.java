@@ -340,6 +340,21 @@ public class ArrayUtils {
     return result;
   }
 
+  public static int maxIndex(double[] from, Random rand) {
+    assert rand != null;
+    int result = 0;
+    int maxCount = 0; // count of maximal element for a 1 item reservoir sample
+    for( int i = 1; i < from.length; ++i ) {
+      if( from[i] > from[result] ) {
+        result = i;
+        maxCount = 1;
+      } else if( from[i] == from[result] ) {
+        if( rand.nextInt(++maxCount) == 0 ) result = i;
+      }
+    }
+    return result;
+  }
+
   public static int maxIndex(int[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)

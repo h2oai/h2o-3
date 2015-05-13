@@ -25,9 +25,11 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.RandomUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Generalized Low Rank Models
@@ -381,6 +383,22 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         } else
           model._output._normMul = dinfo._normMul;
 
+        // TODO: Get rid of this once testing against R is finished
+        final double[] normSub = model._output._normSub;
+        final double[] normMul = model._output._normMul;
+        final int ncats = dinfo._cats;
+        new MRTask() {
+          @Override public void map(Chunk cs[]) {
+            for(int row = 0; row < cs[0]._len; row++) {
+              for(int col = 0; col < _ncolX; col++) {
+                double x = (cs[ncats+col].atd(row) - normSub[col]) * normMul[col];
+                chk_xold(cs,col,_ncolA).set(row,x);
+                chk_xnew(cs,col,_ncolA,_ncolX).set(row,x);
+              }
+            }
+          }
+        }.doAll(dinfo._adaptedFrame);
+
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
@@ -531,6 +549,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncolX;         // Number of cols in X (k)
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final Random _rand;
 
     // Output
     double _loss;    // Loss evaluated on A - XY using new X (and current Y)
@@ -550,6 +569,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _dinfo = dinfo;
       _normSub = normSub;
       _normMul = normMul;
+      _rand = RandomUtils.getRNG(_parms._seed);
     }
 
     @Override public void map(Chunk[] cs) {
@@ -617,7 +637,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
           // _xreg += _parms.regularize_x(xnew[k]);
         }
-        xnew = _parms.rproxgrad_x(u, _alpha);
+        xnew = _parms.rproxgrad_x(u, _alpha, _rand);
         _xreg += _parms.regularize_x(xnew);
         for(int k = 0; k < _ncolX; k++)
           chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
@@ -734,6 +754,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override protected void postGlobal() {
       assert _ytnew.length == _ytold.length && _ytnew[0].length == _ytold[0].length;
+      Random rand = RandomUtils.getRNG(_parms._seed);
 
       // Compute new y_j values using proximal gradient
       for(int j = 0; j < _ytnew.length; j++) {
@@ -744,7 +765,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // _yreg += _parms.regularize_y(_ytnew[j][k]);
           u[k] = _ytold[j][k] - _alpha * _ytnew[j][k];
         }
-        _ytnew[j] = _parms.rproxgrad_y(u, _alpha);
+        _ytnew[j] = _parms.rproxgrad_y(u, _alpha, rand);
         _yreg += _parms.regularize_y(_ytnew[j]);
       }
     }

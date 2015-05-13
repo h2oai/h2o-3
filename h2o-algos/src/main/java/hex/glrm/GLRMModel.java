@@ -8,7 +8,10 @@ import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.RandomUtils;
 import water.util.TwoDimTable;
+
+import java.util.Random;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
@@ -211,9 +214,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     } */
 
     // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u
-    public final double[] rproxgrad_x(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x); }
-    public final double[] rproxgrad_y(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y); }
-    public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization) {
+    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, rand); }
+    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, rand); }
+    // public final double[] rproxgrad_x(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, RandomUtils.getRNG(_seed)); }
+    // public final double[] rproxgrad_y(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, RandomUtils.getRNG(_seed)); }
+    public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
       if(u == null || alpha == 0 || gamma == 0) return u;
       double[] v = new double[u.length];
       int idx;
@@ -232,11 +237,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             v[i] = Math.max(u[i],0);
           return v;
         case OneSparse:
-          idx = ArrayUtils.maxIndex(u);
+          idx = ArrayUtils.maxIndex(u, rand);
           v[idx] = u[idx] > 0 ? u[idx] : 1e-6;
           return v;
         case UnitOneSparse:
-          idx = ArrayUtils.maxIndex(u);
+          idx = ArrayUtils.maxIndex(u, rand);
           v[idx] = 1;
           return v;
         default:
