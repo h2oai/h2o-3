@@ -196,13 +196,15 @@ print = (properties, _schemas, _routes) ->
     ul toc
     h2 'API Reference'
     ul [
-      li link 'REST API Endpoints', '#route-reference'
-      li link 'REST API Schemas', '#schema-reference'
-      li link 'R API',         "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-r/h2o_package.pdf"
-      li link 'Python API',    "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-py/docs/index.html"
-      li link 'Core Javadoc',  "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-core/javadoc/index.html"
-      li link 'Algos Javadoc', "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-algos/javadoc/index.html"
+      li link 'REST API Endpoints',  '#route-reference'
+      li link 'REST API Schemas',    '#schema-reference'
+      li link 'R API',               "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-r/h2o_package.pdf"
+      li link 'Python API',          "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-py/docs/index.html"
+      li link 'h2o-core Javadoc',    "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-core/javadoc/index.html"
+      li link 'h2o-algos Javadoc',   "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-algos/javadoc/index.html"
+      li link 'h2o-scala Scaladoc',  "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-scala/scaladoc/index.html"
       li link 'Sparkling Water API', 'https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md'
+      li link 'Build page',          "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/index.html"
     ]
   ].join EOL
 
