@@ -192,6 +192,18 @@ class ASTTrim extends ASTUniPrefixOp {
     env.pushAry(fr);
   }
 }
+//
+//class ASTPaste extends ASTUniPrefixOp {
+//  ASTPaste() { super(); }
+//  @Override String opStr() { return "paste"; }
+//  @Override ASTOp make() { return new ASTPaste(); }
+//  ASTPaste parse_impl(Exec E) {
+//
+//  }
+//  @Override void apply(Env env) {
+//    Frame fr = env.popAry();
+//  }
+//}
 
 //class ASTSample extends ASTOp {
 //  ASTSample() { super(new String[]{"sample", "ary", "nobs", "seed"},
