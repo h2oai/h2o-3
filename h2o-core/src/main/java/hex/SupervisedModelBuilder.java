@@ -87,6 +87,10 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       }
       // #Classes: 1 for regression, domain-length for enum columns
       _nclass = _response.isEnum() ? _response.domain().length : 1;
+      if (_nclass > 1000)
+        warn("_response", "Response has " + _nclass + " levels, which can lead to slow and large models.");
+      if (_nclass > 10000)
+        error("_response", "Response has " + _nclass + " > 10,000 levels, which is not currently enabled.");
 
       if (_parms._balance_classes && isClassifier() && (long)(_train.numRows()*_parms._max_after_balance_size) < _nclass)
         error("_max_after_balance_size","Cannot end up with fewer rows than there are classes. Increase max_after_balance_size.");
