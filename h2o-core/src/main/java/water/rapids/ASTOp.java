@@ -233,6 +233,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTAll());
     putPrefix(new ASTNLevels());
     putPrefix(new ASTLevels());
+    putPrefix(new ASTHist());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -409,7 +410,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
             n.addNum( c.isNA(r) ? 1 : 0);
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
     env.pushAry(fr2);
   }
 }
@@ -1746,7 +1747,7 @@ abstract class ASTReducerOp extends ASTOp {
         if (Double.isNaN(sum)) break;
       }
     }
-    @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
+    @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d, s._d); }
   }
 }
 
@@ -2302,7 +2303,7 @@ class ASTMad extends ASTReducerOp {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll(1, f).outputFrame(null,null,null);
+    }.doAll(1, f).outputFrame();
     double mad = ASTMedian.median(abs_dev,cm);
     return constant*mad;
   }
@@ -2786,9 +2787,9 @@ class ASTHist extends ASTUniPrefixOp {
         case "rice":    numBreaks = rice(vec);    h=(x1-x0)/numBreaks; break;
         case "sqrt":    numBreaks = sqrt(vec);    h=(x1-x0)/numBreaks; break;
         case "doane":   numBreaks = doane(vec);   h=(x1-x0)/numBreaks; break;
-        case "scott":   h=scotts_h(vec); numBreaks = scott(vec,h);     break;
-        case "fd":      h=fds_h(vec);    numBreaks = fd(vec,h);        break;
-        default:        numBreaks = sturges(vec); h=(x1-x0)/numBreaks; // just do sturges even if junk passed in
+        case "scott":   h=scotts_h(vec); numBreaks = scott(vec,h);     break;  // special bin width computation
+        case "fd":      h=fds_h(vec);    numBreaks = fd(vec, h);        break;  // special bin width computation
+        default:        numBreaks = sturges(vec); h=(x1-x0)/numBreaks;         // just do sturges even if junk passed in
       }
       t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
     }
@@ -2796,7 +2797,28 @@ class ASTHist extends ASTUniPrefixOp {
       h = (x1-x0)/numBreaks;
       t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
     }
-    System.out.println();
+    // wanna make a new frame here [breaks,counts,mids]
+    final double[] brks=t._breaks;
+    final long  [] cnts=t._counts;
+    final double[] mids=t._mids;
+    Vec layoutVec = Vec.makeZero(brks.length);
+    fr2 = new MRTask() {
+      @Override public void map(Chunk[] c, NewChunk[] nc) {
+        int start = (int)c[0].start();
+        for(int i=0;i<c[0]._len;++i) {
+          nc[0].addNum(brks[i+start]);
+          if(i==0) {
+            nc[1].addNA();
+            nc[2].addNA();
+          } else {
+            nc[1].addNum(cnts[(i-1)+start]);
+            nc[2].addNum(mids[(i-1)+start]);
+          }
+        }
+      }
+    }.doAll(3, layoutVec).outputFrame(null, new String[]{"breaks", "counts", "mids"},null);
+    layoutVec.remove();
+    e.pushAry(fr2);
   }
 
   private static int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
@@ -2804,7 +2826,7 @@ class ASTHist extends ASTUniPrefixOp {
   private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
   private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
   private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
-  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / fds_h(v)); }   // Freedman–Diaconis slightly modified to use MAD instead of IQR
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman–Diaconis slightly modified to use MAD instead of IQR
   private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
   private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
   private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
@@ -2857,31 +2879,34 @@ class ASTHist extends ASTUniPrefixOp {
     private static final int _dB = U.arrayBaseOffset(double[].class);
     private static final int _dS = U.arrayIndexScale(double[].class);
     private static long doubleRawIdx(int i) { return _dB + _dS * i; }
+
     // out
     private final double[] _breaks;
-    private final long[] _counts;
+    private final long  [] _counts;
     private final double[] _mids;
 
     HistTask(double[] cuts, double h, double x0) {
       _breaks=cuts;
-      _min=new double[_breaks.length];
-      _max=new double[_breaks.length];
-      _counts=new long[_breaks.length];
-      _mids=new double[_breaks.length];
+      _min=new double[_breaks.length-1];
+      _max=new double[_breaks.length-1];
+      _counts=new long[_breaks.length-1];
+      _mids=new double[_breaks.length-1];
       _h=h;
       _x0=x0;
     }
     @Override public void map(Chunk c) {
       // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
+      int x;
+      int xx=1;
       for( int i = 0; i < c._len; ++i ) {
         if( c.isNA(i) ) continue;
         double r = c.atd(i);
-        int x=0;
-        if( _h==-1 )
-          for(;x<_breaks.length;x++)
-            if( r<_breaks[x] ) break;
-        else
-          x = Math.min( _breaks.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
+        if( _h==-1 ) {
+          for(; xx < _counts.length; xx++)
+            if( r <= _breaks[xx] ) break;
+          x=xx-1;
+        } else
+          x = Math.min( _counts.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
         _counts[x]++;
         setMinMax(Double.doubleToRawLongBits(r),x);
       }

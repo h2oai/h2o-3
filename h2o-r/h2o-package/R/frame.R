@@ -2490,6 +2490,43 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
     .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
+#'
+#' Compute A Histgram
+#'
+#' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
+#' in computing bin width.
+#'
+#' @param x A single numeric column from an H2OFrame.
+#' @param breaks Can be one of the following:
+#'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
+#'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
+#'               A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+#' @export
+h2o.hist <- function(x, breaks="Sturges") {
+  if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
+  mktmp <- !.is.eval(x)
+  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@frame_id)
+
+  if( is.character(breaks) ) {
+    if( breaks=="Sturges" ) breaks <- "sturges"
+    if( breaks=="Rice"    ) breaks <- "rice"
+    if( breaks=="Doane"   ) breaks <- "doane"
+    if( breaks=="FD"      ) breaks <- "fd"
+    if( breaks=="Scott"   ) breaks <- "scott"
+  }
+  h <- as.data.frame(.h2o.nary_frame_op("hist", x, breaks))
+  counts <- na.omit(h[,2])
+  mids <- na.omit(h[,3])
+  histo <- list()
+  histo$breaks <- h$breaks
+  histo$counts <- counts
+  histo$mids   <- mids
+  histo$xname  <- deparse(substitute(x))
+  oldClass(histo) <- "histogram"
+  plot(histo)
+  invisible(histo)
+}
+
 #setMethod("findInterval", "H2OFrame", function(x, vec, rightmost.closed = FALSE, all.inside = FALSE) {
 #  if(any(is.na(vec)))
 #    stop("'vec' contains NAs")
