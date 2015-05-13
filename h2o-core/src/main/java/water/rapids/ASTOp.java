@@ -232,6 +232,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTKeysLeaked());
     putPrefix(new ASTAll());
     putPrefix(new ASTNLevels());
+    putPrefix(new ASTLevels());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -672,9 +673,23 @@ class ASTIsFactor extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     String res = "FALSE";
-    if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
-    if (fr.anyVec().isEnum()) res = "TRUE";
-    env.push(new ValStr(res));
+    if (fr.numCols() == 1) {
+      if (fr.anyVec().isEnum()) res = "TRUE";
+      env.push(new ValStr(res));
+    } else {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?1:0);
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      vec.setDomain(new String[]{"FALSE", "TRUE"});
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
+    }
   }
 }
 
@@ -697,14 +712,60 @@ class ASTNLevels extends ASTUniPrefixOp {
   @Override String opStr() { return "nlevels"; }
   @Override ASTOp make() {return new ASTNLevels();}
   @Override void apply(Env env) {
-    int nlevels=0;
+    int nlevels;
     Frame fr = env.popAry();
-    if (fr.numCols() != 1) nlevels=0;
-    else {
+    if (fr.numCols() != 1) {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?fr.vec(i).domain().length:0);
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
+    } else {
       Vec v = fr.anyVec();
       nlevels = v.isEnum()?v.domain().length:0;
+      env.push(new ValNum(nlevels));
     }
-    env.push(new ValNum(nlevels));
+  }
+}
+
+class ASTLevels extends ASTUniPrefixOp {
+  ASTLevels() { super(VARS1); }
+  @Override String opStr() { return "levels"; }
+  @Override ASTOp make() { return new ASTLevels(); }
+  @Override void apply(Env e) {
+    Frame f = e.popAry();
+    Futures fs = new Futures();
+    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());
+    Vec[] vecs = new Vec[keys.length];
+
+    // compute the longest vec... that's the one with the most domain levels
+    int max=0;
+    for(int i=0;i<f.numCols();++i )
+      if( f.vec(i).isEnum() )
+        if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
+
+    for( int i=0;i<f.numCols();++i ) {
+      AppendableVec v = new AppendableVec(keys[i]);
+      NewChunk nc = new NewChunk(v,0);
+      String[] dom = f.vec(i).domain();
+      int numToPad = dom==null?max:max-dom.length;
+      if( dom != null )
+        for(int j=0;j<dom.length;++j) nc.addNum(j);
+      for(int j=0;j<numToPad;++j)     nc.addNA();
+      nc.close(0,fs);
+      vecs[i] = v.close(fs);
+      vecs[i].setDomain(dom);
+    }
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(), null, vecs);
+    DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+    e.pushAry(fr2);
   }
 }
 
@@ -2677,6 +2738,38 @@ class ASTRepLen extends ASTUniPrefixOp {
       } else throw new IllegalArgumentException("Unkown input. Type: "+env.peekType() + " Stack: " + env.toString());
     }
   }
+}
+
+class ASTHist extends ASTUniPrefixOp {
+  @Override String opStr() { return "hist"; }
+  public ASTHist() { super(new String[]{"hist", "x", "breaks"}); }
+  @Override ASTHist make() { return new ASTHist(); }
+  ASTHist parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST breaks = E.parse();
+    ASTHist res = (ASTHist)clone();
+    res._asts = new AST[]{ary,breaks};
+    return res;
+  }
+  @Override void apply(Env e) {
+    // stack is [ ..., ary, breaks]
+    // handle the breaks
+    Val v = e.pop(); // must be a dlist, string, number
+    String algo=null;
+    int numBreaks=-1;
+    double[] breaks=null;
+    if( v instanceof ValStr )        algo      = ((ValStr)v)._s;
+    if( v instanceof ValDoubleList ) breaks    = ((ValDoubleList)v)._d;
+    if( v instanceof ValNum )        numBreaks = (int)((ValNum)v)._d;
+    else throw new IllegalArgumentException("breaks must be a string, a list of doubles, or a number. Got: " + v.getClass());
+
+    Frame f = e.popAry();
+    if( f.numCols() != 1) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+    Vec vec = f.anyVec();
+    if( !vec.isNumeric() )throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+  }
+
+
 }
 
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.

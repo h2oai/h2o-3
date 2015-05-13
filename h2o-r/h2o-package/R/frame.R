@@ -1117,7 +1117,7 @@ NULL
 #' @export
 h2o.levels <- function(x, i) {
   if( missing(i) ) {
-    if( ncol(x) > 1 ) stop("cannot retrieve levels for multiple columns")
+    if( ncol(x) > 1 ) return( .h2o.nary_frame_op("levels", x) )
     i <- 1
   } else if( is.character(i) ) i <- match(i, colnames(x))
   if( is.na(i) ) stop("no such column found")
@@ -1223,7 +1223,8 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
 #' @return Returns logical value.
 #' @export
 setMethod("is.factor", "H2OFrame", function(x) {
-  .h2o.unary_scalar_op("is.factor", x)
+  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.factor", x)
+  else             .h2o.unary_frame_op("is.factor", x )
 })
 
 #'
@@ -1683,7 +1684,9 @@ setMethod("as.environment", "H2OFrame", function(x) {
 #'
 #' @param object An H2OFrame object.
 #' @export
-h2o.nlevels <- function(object) { .h2o.nary_scalar_op("nlevels", object) }
+h2o.nlevels <- function(object) {
+  .h2o.nary_frame_op("nlevels", object)
+}
 
 #' Convert H2O Data to Factors
 #'
@@ -1721,12 +1724,6 @@ setMethod("as.character", "H2OFrame", function(x)
 #' @export
 setMethod("as.numeric", "H2OFrame", function(x)
   .h2o.unary_frame_op("as.numeric", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
-
-
-#as.numeric.H2OParsedData <- function(x, ...) {
-#  if(class(x) != "H2OParsedData") stop("x must be of class H2OParsedData")
-#  .h2o.__unop2("as.numeric", x)
-#}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
