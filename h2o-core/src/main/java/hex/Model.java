@@ -642,12 +642,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("import hex.genmodel.GenModel;").nl();
     sb.nl();
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
+    sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
     toJavaInit(sb, fileContext).nl();
     toJavaNAMES(sb);
     toJavaNCLASSES(sb);
     toJavaDOMAINS(sb, fileContext);
     toJavaPROB(sb);
     toJavaSuper(modelName, sb); //
+    sb.p("  public String getUUID() { return Long.toString("+checksum()+"L); }").nl();
     toJavaPredict(sb, fileContext);
     sb.p("}").nl().di(1);
     sb.p(fileContext).nl(); // Append file
