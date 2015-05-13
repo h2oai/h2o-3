@@ -249,10 +249,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       KMeansModel model = null;
       try {
         init(true);
-        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
-
+        // Do lock even before checking the errors, since this block is finalized by unlock
+        // (not the best solution, but the code is more readable)
         _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
-
+        // Something goes wrong
+        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_key);

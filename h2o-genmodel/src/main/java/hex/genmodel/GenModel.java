@@ -34,10 +34,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel {
     return nfeatures();
   }
   @Override public int getResponseIdx() {
-    throw new UnsupportedOperationException("This method is not supported!");
+    return _domains.length - 1;
   }
   @Override public String getResponseName() {
-    return getNames()[getResponseIdx()];
+    throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
   }
   @Override public int getNumResponseClasses() {
     return nclasses();
