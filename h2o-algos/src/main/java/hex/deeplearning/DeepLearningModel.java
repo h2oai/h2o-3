@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.*;
-import static hex.deeplearning.DeepLearning.makeDataInfo;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
@@ -21,6 +20,7 @@ import java.util.List;
 import java.util.Random;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.deeplearning.DeepLearning.makeDataInfo;
 import static java.lang.Double.isNaN;
 
 /**
@@ -551,7 +551,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
         }
-        if (_replicate_training_data && train().byteSize() > 1e10) {
+        if (_replicate_training_data && null != train() && train().byteSize() > 1e10) {
           dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
         }
       }
@@ -1982,12 +1982,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Frame adaptFr = new Frame(fr);
       adaptTestForTrain(adaptFr, true);   // Adapt
       Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
-
-      Vec[] vecs = adaptFr.vecs();
-      for (int i = 0; i < vecs.length; i++)
-        if (fr.find(vecs[i]) != -1) // Exists in the original frame?
-          vecs[i] = null;            // Do not delete it
-      adaptFr.delete();
+      cleanup_adapt( adaptFr, fr );
       return output;
     }
   }
@@ -2168,7 +2163,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
-    sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
 
     if (model_info().data_info()._nums > 0) {
       JCodeGen.toStaticVar(sb, "NUMS", new double[model_info().data_info()._nums], "Workspace for storing numerical input variables.");

@@ -8,6 +8,7 @@ import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.Log;
@@ -76,6 +77,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // - so your CM sucks for a long time.
     double mean = 0;
     if (expensive) {
+      if (error_count() > 0) {
+        GBM.this.updateValidationMessages();
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
+      }
+
       mean = _response.mean();
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);

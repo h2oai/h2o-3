@@ -1096,6 +1096,7 @@ final public class H2O {
   public static Value get( Key key ) { return STORE.get(key); }
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   public static Value raw_get(Key key) { return STORE.get(key); }
+  public static void raw_remove(Key key) { STORE.remove(key); }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }

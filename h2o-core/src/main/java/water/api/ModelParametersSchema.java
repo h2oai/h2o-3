@@ -1,14 +1,10 @@
 package water.api;
 
 import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelBuilder.ValidationMessage;
-import hex.ModelBuilder.ValidationMessage.MessageType;
 import water.*;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -114,33 +110,6 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
     return impl;
   }
-
-  public static class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S extends ValidationMessageBase<I, S>> extends Schema<I, S> {
-    @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)", direction=API.Direction.OUTPUT)
-    public String message_type;
-
-    @API(help="Field to which the message applies", direction=API.Direction.OUTPUT)
-    public String field_name;
-
-    @API(help="Message text", direction=API.Direction.OUTPUT)
-    public String message;
-
-    public I createImpl() { return (I) new ModelBuilder.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };
-
-    // Version&Schema-specific filling from the implementation object
-    public S fillFromImpl(ValidationMessage vm) {
-      PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
-      if (this.field_name != null) {
-        if (this.field_name.startsWith("_"))
-          this.field_name = this.field_name.substring(1);
-        else
-          Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
-      }
-      return (S)this;
-    }
-  }
-
-  public static final class ValidationMessageV2 extends ValidationMessageBase<ModelBuilder.ValidationMessage, ValidationMessageV2> {  }
 
   private static void compute_transitive_closure_of_is_mutually_exclusive(ModelParameterSchemaV3[] metadata) {
     // Form the transitive closure of the is_mutually_exclusive field lists by visiting

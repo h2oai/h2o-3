@@ -56,7 +56,7 @@ import java.util.concurrent.Future;
  *  <p>Example manipulating some individual elements:<pre>
  *    double r1 = vec.at(0x123456789L);  // Access element 0x1234567889 as a double
  *    double r2 = vec.at(-1);            // Throws AIOOBE
- *    long   r3 = vec.at8_abs(1);            // Element #1, as a long
+ *    long   r3 = vec.at8_abs(1);        // Element #1, as a long
  *    vec.set(2,r1+r3);                  // Set element #2, as a double
  *  </pre>
  *
@@ -954,9 +954,24 @@ public class Vec extends Keyed<Vec> {
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
-    for( int i=0; i<nChunks(); i++ )
-      DKV.remove(chunkKey(i),fs);
-    DKV.remove(rollupStatsKey(),fs);
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    final int ncs = nChunks();
+    new MRTask() {
+      @Override public void setupLocal() { bulk_remove(_key,ncs,_fs); }
+    }.doAllNodes();
+    return fs;
+ }
+  // Bulk remove: removes LOCAL keys only, without regard to total visibility.
+  // Must be run in parallel on all nodes to preserve semantics, completely
+  // removing the Vec without any JMM communication.
+  static Futures bulk_remove( Key vkey, int ncs, Futures fs ) {
+    for( int i=0; i<ncs; i++ ) {
+      Key kc = chunkKey(vkey,i);
+      H2O.raw_remove(kc);
+    }
+    Key kr = chunkKey(vkey,-2);
+    H2O.raw_remove(kr);
+    H2O.raw_remove(vkey);
     return fs;
   }
 

@@ -4,6 +4,7 @@ import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -184,9 +185,9 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       DataInfo dinfo = null;
 
       try {
-        _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
         init(true);
-        if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+        if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
+        _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
         dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
 
         // The model to be built

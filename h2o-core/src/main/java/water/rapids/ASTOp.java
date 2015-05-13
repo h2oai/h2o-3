@@ -232,6 +232,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTKeysLeaked());
     putPrefix(new ASTAll());
     putPrefix(new ASTNLevels());
+    putPrefix(new ASTLevels());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -672,9 +673,23 @@ class ASTIsFactor extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     String res = "FALSE";
-    if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
-    if (fr.anyVec().isEnum()) res = "TRUE";
-    env.push(new ValStr(res));
+    if (fr.numCols() == 1) {
+      if (fr.anyVec().isEnum()) res = "TRUE";
+      env.push(new ValStr(res));
+    } else {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?1:0);
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      vec.setDomain(new String[]{"FALSE", "TRUE"});
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
+    }
   }
 }
 
@@ -697,14 +712,60 @@ class ASTNLevels extends ASTUniPrefixOp {
   @Override String opStr() { return "nlevels"; }
   @Override ASTOp make() {return new ASTNLevels();}
   @Override void apply(Env env) {
-    int nlevels=0;
+    int nlevels;
     Frame fr = env.popAry();
-    if (fr.numCols() != 1) nlevels=0;
-    else {
+    if (fr.numCols() != 1) {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?fr.vec(i).domain().length:0);
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
+    } else {
       Vec v = fr.anyVec();
       nlevels = v.isEnum()?v.domain().length:0;
+      env.push(new ValNum(nlevels));
     }
-    env.push(new ValNum(nlevels));
+  }
+}
+
+class ASTLevels extends ASTUniPrefixOp {
+  ASTLevels() { super(VARS1); }
+  @Override String opStr() { return "levels"; }
+  @Override ASTOp make() { return new ASTLevels(); }
+  @Override void apply(Env e) {
+    Frame f = e.popAry();
+    Futures fs = new Futures();
+    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());
+    Vec[] vecs = new Vec[keys.length];
+
+    // compute the longest vec... that's the one with the most domain levels
+    int max=0;
+    for(int i=0;i<f.numCols();++i )
+      if( f.vec(i).isEnum() )
+        if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
+
+    for( int i=0;i<f.numCols();++i ) {
+      AppendableVec v = new AppendableVec(keys[i]);
+      NewChunk nc = new NewChunk(v,0);
+      String[] dom = f.vec(i).domain();
+      int numToPad = dom==null?max:max-dom.length;
+      if( dom != null )
+        for(int j=0;j<dom.length;++j) nc.addNum(j);
+      for(int j=0;j<numToPad;++j)     nc.addNA();
+      nc.close(0,fs);
+      vecs[i] = v.close(fs);
+      vecs[i].setDomain(dom);
+    }
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(), null, vecs);
+    DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+    e.pushAry(fr2);
   }
 }
 
@@ -2231,15 +2292,19 @@ class ASTMad extends ASTReducerOp {
   }
   @Override void apply(Env e) {
     Frame f = e.popAry();
-    final double median = ASTMedian.median(f,_combine_method);
+    e.push(new ValNum(mad(f,_combine_method,_const)));
+  }
+
+  static double mad(Frame f, QuantileModel.CombineMethod cm, double constant) {
+    final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
     }.doAll(1, f).outputFrame(null,null,null);
-    double mad = ASTMedian.median(abs_dev,_combine_method);
-    e.push(new ValNum(_const*mad));
+    double mad = ASTMedian.median(abs_dev,cm);
+    return constant*mad;
   }
 }
 
@@ -2675,6 +2740,154 @@ class ASTRepLen extends ASTUniPrefixOp {
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(env.popDbl(), len)});
         env.pushAry(fr);
       } else throw new IllegalArgumentException("Unkown input. Type: "+env.peekType() + " Stack: " + env.toString());
+    }
+  }
+}
+
+class ASTHist extends ASTUniPrefixOp {
+  @Override String opStr() { return "hist"; }
+  public ASTHist() { super(new String[]{"hist", "x", "breaks"}); }
+  @Override ASTHist make() { return new ASTHist(); }
+  ASTHist parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST breaks = E.parse();
+    ASTHist res = (ASTHist)clone();
+    res._asts = new AST[]{ary,breaks};
+    return res;
+  }
+  @Override void apply(Env e) {
+    // stack is [ ..., ary, breaks]
+    // handle the breaks
+    Frame fr2;
+    Val v = e.pop(); // must be a dlist, string, number
+    String algo=null;
+    int numBreaks=-1;
+    double[] breaks=null;
+
+    if( v instanceof ValStr )             algo      = ((ValStr)v)._s.toLowerCase();
+    else if( v instanceof ValDoubleList ) breaks    = ((ValDoubleList)v)._d;
+    else if( v instanceof ValNum )        numBreaks = (int)((ValNum)v)._d;
+    else throw new IllegalArgumentException("breaks must be a string, a list of doubles, or a number. Got: " + v.getClass());
+
+    Frame f = e.popAry();
+    if( f.numCols() != 1) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+    Vec vec = f.anyVec();
+    if( !vec.isNumeric() )throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+
+
+    HistTask t;
+    if( breaks != null ) t = new HistTask(breaks).doAll(vec);
+    else if( algo!=null ) {
+      switch (algo) {
+        case "sturges": numBreaks = sturges(vec); break;
+        case "rice":    numBreaks = rice(vec);    break;
+        case "sqrt":    numBreaks = sqrt(vec);    break;
+        case "doane":   numBreaks = doane(vec);   break;
+        case "scott":   numBreaks = scott(vec);   break;
+        case "fd":      numBreaks = fd(vec);      break;
+        default:        numBreaks = sturges(vec);  // just do sturges even if junk passed in
+      }
+      t = new HistTask(computeCuts(vec,numBreaks)).doAll(vec);
+    }
+    else t = new HistTask(computeCuts(vec,numBreaks)).doAll(vec);
+    System.out.println();
+  }
+
+  private int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
+  private int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
+  private int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
+  private int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
+  private int scott  (Vec v) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
+  private int fd     (Vec v) { return (int)Math.ceil((v.max()-v.min()) / fds_h(v)); }   // Freedman–Diaconis slightly modified to use MAD instead of IQR
+
+  private double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
+  private double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
+  private double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
+  private double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
+  private double third_moment(Vec v) {
+    final double mean = ASTVar.getMean(v,true,"");
+    ThirdMomTask t = new ThirdMomTask(mean).doAll(v);
+    double m2 = t._ss / v.length();
+    double m3 = t._sc / v.length();
+    return m3 / Math.pow(m2, 1.5);
+  }
+
+  private static class ThirdMomTask extends MRTask<ThirdMomTask> {
+    double _ss;
+    double _sc;
+    final double _mean;
+    ThirdMomTask(double mean) { _mean=mean; }
+    @Override public void setupLocal() { _ss=0;_sc=0; }
+    @Override public void map(Chunk c) {
+      for( int i=0;i<c._len;++i ) {
+        if( !c.isNA(i) ) {
+          double d = c.atd(i) - _mean;
+          double d2 = d*d;
+          _ss+= d2;
+          _sc+= d2*d;
+        }
+      }
+    }
+    @Override public void reduce(ThirdMomTask t) { _ss+=t._ss; _sc+=t._sc; }
+  }
+
+  private double[] computeCuts(Vec v, int numBreaks) {
+    if( numBreaks <= 0 ) throw new IllegalArgumentException("breaks must be a positive number");
+    // just make numBreaks cuts equidistant from each other spanning range of [v.min, v.max]
+    double min;
+    double w = ( v.max() - (min=v.min()) ) / numBreaks;
+    double[] res= new double[numBreaks];
+    for( int i=0;i<numBreaks;++i ) res[i] = min + w * (i+1);
+    return res;
+  }
+
+  private static class HistTask extends MRTask<HistTask> {
+    final private double[] _min;       // min for each bin, updated atomically
+    final private double[] _max;       // max for each bin, updated atomically
+    // unsafe crap for mins/maxs of bins
+    private static final Unsafe U = UtilUnsafe.getUnsafe();
+    // double[] offset and scale
+    private static final int _dB = U.arrayBaseOffset(double[].class);
+    private static final int _dS = U.arrayIndexScale(double[].class);
+    private static long doubleRawIdx(int i) { return _dB + _dS * i; }
+    // out
+    private final double[] _breaks;
+    private final long[] _counts;
+    private final double[] _mids;
+
+    HistTask(double[] cuts) { _breaks=cuts; _min=new double[_breaks.length]; _max=new double[_breaks.length]; _counts=new long[_breaks.length]; _mids=new double[_breaks.length]; }
+
+    @Override public void map(Chunk c) {
+      for( int i = 0; i < c._len; ++i ) {
+        if( c.isNA(i) ) continue;
+        double r = c.atd(i);
+        int x = 0;              // Pick the bin
+        for (; x < _breaks.length; x++) if (r < _breaks[x]) break;
+        _counts[x]++;
+        setMinMax(Double.doubleToRawLongBits(r),x);
+      }
+    }
+    @Override public void reduce(HistTask t) {
+      ArrayUtils.add(_counts,t._counts);
+      for(int i=0;i<_mids.length;++i) {
+        _min[i] = t._min[i] < _min[i] ? t._min[i] : _min[i];
+        _max[i] = t._max[i] > _max[i] ? t._max[i] : _max[i];
+      }
+    }
+    @Override public void postGlobal() { for(int i=0;i<_mids.length;++i) _mids[i] = 0.5*(_max[i] + _min[i]); }
+
+    private void setMinMax(long v, int x) {
+      double o = _min[x];
+      double vv = Double.longBitsToDouble(v);
+      while( vv < o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
+        o = _min[x];
+      setMax(v,x);
+    }
+    private void setMax(long v, int x) {
+      double o = _max[x];
+      double vv = Double.longBitsToDouble(v);
+      while( vv > o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
+        o = _max[x];
     }
   }
 }

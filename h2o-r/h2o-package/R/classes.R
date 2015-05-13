@@ -667,29 +667,36 @@ setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="charact
 #' Describe an H2OFrame object
 #'
 #' @param object An H2OFrame object.
+#' @param cols Logical indicating whether or not to do the str for all columns.
 #' @param \dots Extra args
 #' @export
-str.H2OFrame <- function(object, ...) {
+str.H2OFrame <- function(object, cols=FALSE, ...) {
   if (length(l <- list(...)) && any("give.length" == names(l)))
     invisible(NextMethod("str", ...))
-  # else invisible(NextMethod("str", give.length = FALSE, ...))
+  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
 
-  nc <- ncol(object)
-  nr <- nrow(object)
-  cc <- colnames(object)
-  width <- max(nchar(cc))
-  # header statement
-  cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-  l <- list()
-  for( i in 1:nc ) {
-    cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep="")
-    first.10.rows <- as.data.frame(object[1L:min(10L,nr),i])[,1]
-    if( is.factor(object[,i]) ) {
-      nl <- h2o.nlevels(object[,i])
-      lvls <- h2o.levels(object[,i])[1L:min(nl,10L)]
-      cat("Factor w/ ", nl, " level(s) ", paste(lvls, collapse='","'), " ...: ", sep="")
-      cat(paste(match(first.10.rows, lvls), collapse=" "), " ...\n", sep="")
-    } else
-      cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+  if( cols ) {
+    nc <- ncol(object)
+    nr <- nrow(object)
+    cc <- colnames(object)
+    width <- max(nchar(cc))
+    df <- as.data.frame(object[1L:10L,])
+    isfactor <- as.data.frame(is.factor(object))[,1]
+    num.levels <- as.data.frame(h2o.nlevels(object))[,1]
+    lvls <- as.data.frame(h2o.levels(object))
+    # header statement
+    cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+    l <- list()
+    for( i in 1:nc ) {
+      cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep="")
+      first.10.rows <- df[,i]
+      if( isfactor[i] ) {
+        nl <- num.levels[i]
+        lvls.print <- lvls[1L:min(nl,2L),i]
+        cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
+        cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
+      } else
+        cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+    }
   }
 }

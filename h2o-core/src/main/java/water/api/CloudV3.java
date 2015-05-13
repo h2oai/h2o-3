@@ -70,11 +70,11 @@ public class CloudV3 extends Schema<Iced, CloudV3> {
   public boolean locked;
 
   @API(help="nodes", direction=API.Direction.OUTPUT)
-  public NodeV1[] nodes;
+  public NodeV3[] nodes;
 
   // Output fields one-per-JVM
-  public static class NodeV1 extends Schema<Iced, NodeV1> {
-    public NodeV1() {}
+  public static class NodeV3 extends Schema<Iced, NodeV3> {
+    public NodeV3() {}
 
     @API(help="IP", direction=API.Direction.OUTPUT)
     public String h2o;
@@ -151,7 +151,7 @@ public class CloudV3 extends Schema<Iced, CloudV3> {
     @API(help="PID", direction=API.Direction.OUTPUT)
     public String pid;
 
-    NodeV1( H2ONode h2o, boolean skip_ticks ) {
+    NodeV3(H2ONode h2o, boolean skip_ticks) {
       HeartBeat hb = h2o._heartbeat;
 
       // Basic system health
@@ -260,7 +260,7 @@ public class CloudV3 extends Schema<Iced, CloudV3> {
     int cores=0;
     float gflops_tot=0f;
     float mem_bw_tot=0f;
-    for( NodeV1 n : nodes ) {
+    for( NodeV3 n : nodes ) {
       max_ping = Math.max(max_ping,(now-n.last_ping));
       load       += n.sys_load;         // Sys health
       data_tot   += n.total_value_size; // Data
@@ -294,7 +294,7 @@ public class CloudV3 extends Schema<Iced, CloudV3> {
               );
 
     // All Node lines
-    for( NodeV1 n : nodes )
+    for( NodeV3 n : nodes )
       formatRow(ab, n.healthy?"":"class=\"error\"",
                 n.h2o.toString(), now-n.last_ping, n.sys_load,
                 n.total_value_size, n.mem_value_size,n.num_keys,
