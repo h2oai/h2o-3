@@ -43,6 +43,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private byte _priority;
   @Override public byte priority() { return _priority; }
 
+  public Frame outputFrame() { return outputFrame(null,null,null); }
   public Frame outputFrame(String [] names, String [][] domains){ return outputFrame(null,names,domains); }
   public Frame outputFrame(Key key, String [] names, String [][] domains){
     Futures fs = new Futures();
