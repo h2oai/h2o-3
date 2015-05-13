@@ -1,17 +1,12 @@
 package hex.svd;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.*;
 import water.DKV;
-import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.TwoDimTable;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
@@ -53,7 +48,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
     public SVDOutput(SVD b) { super(b); }
 
-    @Override public ModelCategory getModelCategory() { return Model.ModelCategory.DimReduction; }
+    @Override public ModelCategory getModelCategory() { return ModelCategory.DimReduction; }
   }
 
   public SVDModel(Key selfKey, SVDParameters parms, SVDOutput output) { super(selfKey,parms,output); }

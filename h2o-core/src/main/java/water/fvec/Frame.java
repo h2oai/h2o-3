@@ -72,7 +72,9 @@ public class Frame extends Lockable<Frame> {
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   /** Creates an empty frame with given key. */
-  public Frame( Key key ) { this(key,null,new Vec[0]); }
+  public Frame( Key key ) {
+    this(key,null,new Vec[0]);
+  }
 
   /**
    * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
@@ -269,6 +271,14 @@ public class Frame extends Lockable<Frame> {
       res[i] = all[idxs[i]];
     return res;
   }
+
+  public Vec[] vecs(String[] names) {
+    Vec [] res = new Vec[names.length];
+    for(int i = 0; i < names.length; ++i)
+      res[i] = vec(names[i]);
+    return res;
+  }
+
   // Compute vectors for caching
   private Vec[] vecs_impl() {
     // Load all Vec headers; load them all in parallel by starting prefetches
@@ -339,6 +349,8 @@ public class Frame extends Lockable<Frame> {
       res[i] = find(names[i]);
     return res;
   }
+
+
 
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {

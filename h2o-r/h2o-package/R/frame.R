@@ -1116,6 +1116,11 @@ NULL
 
 #' @export
 h2o.levels <- function(x, i) {
+  if( missing(i) ) {
+    if( ncol(x) > 1 ) return( .h2o.nary_frame_op("levels", x) )
+    i <- 1
+  } else if( is.character(i) ) i <- match(i, colnames(x))
+  if( is.na(i) ) stop("no such column found")
   col_idx <- i
   if (col_idx <= 0) col_idx <- 1
   if (col_idx >= ncol(x)) col_idx <- ncol(x)
@@ -1218,7 +1223,8 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
 #' @return Returns logical value.
 #' @export
 setMethod("is.factor", "H2OFrame", function(x) {
-  .h2o.unary_scalar_op("is.factor", x)
+  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.factor", x)
+  else             .h2o.unary_frame_op("is.factor", x )
 })
 
 #'
@@ -1671,6 +1677,17 @@ setMethod("as.environment", "H2OFrame", function(x) {
   env
 })
 
+#'
+#' Return the number of levels in the column.
+#'
+#' If a frame or non-categorical column is passed, returns 0.
+#'
+#' @param object An H2OFrame object.
+#' @export
+h2o.nlevels <- function(object) {
+  .h2o.nary_frame_op("nlevels", object)
+}
+
 #' Convert H2O Data to Factors
 #'
 #' Convert a column into a factor column.
@@ -1707,12 +1724,6 @@ setMethod("as.character", "H2OFrame", function(x)
 #' @export
 setMethod("as.numeric", "H2OFrame", function(x)
   .h2o.unary_frame_op("as.numeric", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
-
-
-#as.numeric.H2OParsedData <- function(x, ...) {
-#  if(class(x) != "H2OParsedData") stop("x must be of class H2OParsedData")
-#  .h2o.__unop2("as.numeric", x)
-#}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
@@ -2479,38 +2490,6 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
     .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
-#str.H2OFrame <- function(object, ...) {
-#  if (length(l <- list(...)) && any("give.length" == names(l)))
-#    invisible(NextMethod("str", ...))
-#  else invisible(NextMethod("str", give.length = FALSE, ...))
-#
-#  if(ncol(object) > .MAX_INSPECT_COL_VIEW)
-#    warning(object@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#  res <- .h2o.__remoteSend(object@conn, .h2o.__PAGE_INSPECT, frame_id=object@frame_id, max_column_display=.Machine$integer.max)
-#  cat("\nH2O dataset '", object@frame_id, "':\t", res$num_rows, " obs. of  ", (p <- res$num_cols),
-#      " variable", if(p != 1) "s", if(p > 0) ":", "\n", sep = "")
-#
-#  cc <- unlist(lapply(res$cols, function(y) y$name))
-#  width <- max(nchar(cc))
-#  rows <- res$rows[1:min(res$num_rows, 10)]    # TODO: Might need to check rows > 0
-#
-#  if(class(object) == "H2OFrame")
-#    res2 <- .h2o.__remoteSend(object@conn, .h2o.__HACK_LEVELS, key=object@frame_id, max_column_display=.Machine$integer.max)
-#  else
-#    res2 <- .h2o.__remoteSend(object@conn, .h2o.__HACK_LEVELS2, source=object@frame_id, max_ncols=.Machine$integer.max)
-#  for(i in 1:p) {
-#    cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep = "")
-#    rhead <- sapply(rows, function(x) { x[i+1] })
-#    if(is.null(res2$levels[[i]]))
-#      cat("num  ", paste(rhead, collapse = " "), if(res$num_rows > 10) " ...", "\n", sep = "")
-#    else {
-#      rlevels <- res2$levels[[i]]
-#      cat("Factor w/ ", (count <- length(rlevels)), " level", if(count != 1) "s", ' "', paste(rlevels[1:min(count, 2)], collapse = '","'), '"', if(count > 2) ",..", ": ", sep = "")
-#      cat(paste(match(rhead, rlevels), collapse = " "), if(res$num_rows > 10) " ...", "\n", sep = "")
-#    }
-#  }
-#}
-#
 #setMethod("findInterval", "H2OFrame", function(x, vec, rightmost.closed = FALSE, all.inside = FALSE) {
 #  if(any(is.na(vec)))
 #    stop("'vec' contains NAs")

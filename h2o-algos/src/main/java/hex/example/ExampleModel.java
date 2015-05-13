@@ -1,6 +1,6 @@
 package hex.example;
 
-import hex.Model;
+import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.SupervisedModel;
 import water.H2O;
@@ -17,7 +17,7 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
     public int _iterations;
     public double[] _maxs;
     public ExampleOutput( Example b ) { super(b); }
-    @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
+    @Override public ModelCategory getModelCategory() { return ModelCategory.Unknown; }
   }
 
   ExampleModel( Key selfKey, ExampleParameters parms, ExampleOutput output) { super(selfKey,parms,output); }

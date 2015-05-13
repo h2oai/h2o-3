@@ -104,7 +104,6 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_search = FALSE,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
-                    use_all_factor_levels = FALSE,
                     nfolds,
                     beta_constraints = NULL,
                     ...
@@ -165,8 +164,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
     parms$nlambdas <- nlambdas
   if(!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
-  if(!missing(use_all_factor_levels))
-    parms$use_all_factor_levels <- use_all_factor_levels
+
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
@@ -227,7 +225,6 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_search = FALSE,
                     nlambdas = -1,
                     lambda_min_ratio = 1.0,
-                    use_all_factor_levels = FALSE,
                     nfolds = 0,
                     beta_constraints = NULL,
                     ...
@@ -285,8 +282,6 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
       parms$nlambdas <- nlambdas
     if(!missing(lambda_min_ratio))
       parms$lambda_min_ratio <- lambda_min_ratio
-    if(!missing(use_all_factor_levels))
-      parms$use_all_factor_levels <- use_all_factor_levels
     if(!missing(nfolds))
       parms$nfolds <- nfolds
 

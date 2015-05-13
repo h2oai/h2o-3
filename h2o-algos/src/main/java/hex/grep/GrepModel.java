@@ -1,6 +1,7 @@
 package hex.grep;
 
 import hex.Model;
+import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.H2O;
 import water.Key;
@@ -16,7 +17,7 @@ public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepMode
     public String[] _matches;
     public long[] _offsets;
     public GrepOutput( Grep b ) { super(b); }
-    @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
+    @Override public ModelCategory getModelCategory() { return ModelCategory.Unknown; }
   }
 
   GrepModel( Key selfKey, GrepParameters parms, GrepOutput output) { super(selfKey,parms,output); }

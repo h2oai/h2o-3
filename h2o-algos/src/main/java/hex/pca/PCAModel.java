@@ -1,9 +1,6 @@
 package hex.pca;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsPCA;
+import hex.*;
 import water.DKV;
 import water.Key;
 import water.MRTask;

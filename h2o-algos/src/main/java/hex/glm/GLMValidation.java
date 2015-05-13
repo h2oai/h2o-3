@@ -32,16 +32,22 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   AUC2 _auc2;
   MetricBuilder _metricBuilder;
   boolean _intercept = true;
-  public GLMValidation(String[] domain, double ymu, GLMParameters glm, int rank, double threshold){
+  final boolean _computeMetrics;
+  public GLMValidation(String[] domain, boolean intercept, double ymu, GLMParameters glm, int rank, double threshold, boolean computeMetrics){
     super(domain);
+    _intercept = intercept;
     _rank = rank;
     _ymu = new double[]{ymu};
     _glm = glm;
     _threshold = threshold;
-    _metricBuilder = _glm._family == Family.binomial
-      ?new MetricBuilderBinomial(domain)
-      :new MetricBuilderRegression();
+    _computeMetrics = computeMetrics;
+    if(_computeMetrics)
+      _metricBuilder = _glm._family == Family.binomial
+        ?new MetricBuilderBinomial(domain)
+        :new MetricBuilderRegression();
   }
+
+
 
   public double explainedDev(){
     return 1.0 - residualDeviance()/nullDeviance();
@@ -85,7 +91,8 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     } else {
       _ds[0] = ymodel;
     }
-    _metricBuilder.perRow(_ds, _yact, null);
+    if(_computeMetrics)
+      _metricBuilder.perRow(_ds, _yact, null);
     add2(yreal, ymodel);
   }
   private void add2(double yreal, double ymodel) {
@@ -102,7 +109,8 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
 
   public void reduce(GLMValidation v){
-    _metricBuilder.reduce(v._metricBuilder);
+    if(_computeMetrics)
+      _metricBuilder.reduce(v._metricBuilder);
     residual_deviance  += v.residual_deviance;
     null_deviance += v.null_deviance;
     nobs += v.nobs;
@@ -148,7 +156,9 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   @Override
   public String toString(){
-    return _metricBuilder.toString() + ", explained_dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,4);
+    if(_metricBuilder != null)
+      return _metricBuilder.toString() + ", explained_dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
+    else return "explained dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
   }
 
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {

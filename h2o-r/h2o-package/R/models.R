@@ -828,7 +828,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
     # couldn't find any threshold within 1e-8 of the requested value, warn and return closest threshold
     row_num <- which.min(abs(tmp$threshold - threshold))
     closest_threshold <- tmp$threshold[row_num]
-    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Rerun `h2o.performance` with your desired threshold explicitly set.") )
+    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Run `h2o.predict` and apply your desired threshold on a probability column.") )
     return( tmp[row_num,] )
   }
   else if( nrow(res) > 1L ) res <- res[1L,]

@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import hex.ModelCategory;
 import water.Weaver;
 import water.util.IcedHashMap;
 import water.util.Log;
@@ -21,7 +22,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public String[][] domains;
 
   @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
-  public Model.ModelCategory model_category;
+  public ModelCategory model_category;
 
   @API(help="Model summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
   TwoDimTableBase model_summary;

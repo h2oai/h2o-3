@@ -165,7 +165,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** List containing the categories of models that this builder can
    *  build.  Each ModelBuilder must have one of these. */
-  abstract public Model.ModelCategory[] can_build();
+  abstract public ModelCategory[] can_build();
 
   /**
    * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)

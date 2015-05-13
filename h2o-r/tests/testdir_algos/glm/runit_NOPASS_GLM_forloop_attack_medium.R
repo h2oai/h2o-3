@@ -77,8 +77,8 @@ randomParams <- function(family, train, test, x, y) {
       # If enum column => create Colname.Class
       if (is.factor(train[,n])) {
         # use_all_factor_levels == T => all factors acceptable
-        if(!is.null(parms$use_all_factor_levels) && parms$use_all_factor_levels)
-          enums <- paste(names(train)[n],h2o.levels(train, n), sep = ".")
+#        if(!is.null(parms$use_all_factor_levels) && parms$use_all_factor_levels)
+#          enums <- paste(names(train)[n],h2o.levels(train, n), sep = ".")
         # use_all_factor_levels == F => first factor dropped
         else
           enums <- paste(names(train)[n],h2o.levels(train, n), sep = ".")[-1]

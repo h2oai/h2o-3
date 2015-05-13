@@ -18,13 +18,13 @@ test <- function(conn) {
     ## Set Parameters
     indVars <-  as.character(bc[1:nrow(bc), "names"])
     depVars <- "C3"
-    lambda <- 0
+    lambda <- 1e-8
     alpha <- 0
     family_type <- "binomial"
 
     ## Function to run GLM with specific beta_constraints
     run_glm <- function(bc) {
-      h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type, use_all_factor_levels = T,
+      h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type,
               lambda = lambda, alpha = alpha, beta_constraints = bc)
     }
 
