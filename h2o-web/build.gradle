@@ -183,9 +183,9 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 
-compileAndInstallDocFiles.dependsOn copyFlowToWebRoot
-processResources.dependsOn compileAndInstallDocFiles
-
+compileAndInstallDocFiles.dependsOn installNpmPackages
+compileAndInstallDocFiles.dependsOn ":h2o-docs:build"
+build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
 clean.dependsOn deleteFlowFromWebRoot, deleteBowerModules, deleteNodeModules, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles
