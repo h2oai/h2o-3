@@ -70,7 +70,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public Solver _solver = Solver.IRLSM;
     public final double _tweedie_variance_power;
     public final double _tweedie_link_power;
-    public double [] _alpha = new double[]{.5};
+    public double [] _alpha = null;
     public double [] _lambda = null;
     public double _prior = -1;
     public boolean _lambda_search = false;

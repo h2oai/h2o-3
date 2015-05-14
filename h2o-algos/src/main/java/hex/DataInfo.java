@@ -126,8 +126,8 @@ public class DataInfo extends Keyed {
       setResponseTransform(response_transform);
   }
 
-  public DataInfo trainDinfo(Frame valid) {
-    DataInfo res = new DataInfo(Key.make(),valid,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false);
+  public DataInfo validDinfo(Frame valid) {
+    DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
