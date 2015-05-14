@@ -2919,7 +2919,7 @@ class ASTHist extends ASTUniPrefixOp {
       }
     }
     @Override public void reduce(HistTask t) {
-      ArrayUtils.add(_counts,t._counts);
+      if(_counts!=t._counts) ArrayUtils.add(_counts,t._counts);
       for(int i=0;i<_mids.length;++i) {
         _min[i] = t._min[i] < _min[i] ? t._min[i] : _min[i];
         _max[i] = t._max[i] > _max[i] ? t._max[i] : _max[i];
