@@ -63,9 +63,6 @@ randomParams <- function(family, train, test, x, y) {
   set_lambda_search <-          function() sample(bools,1)
   set_nlambdas <-               function() sample(2:10,1)
   set_lambda_min_ratio <-       function() {}
-  set_use_all_factor_levels <-  function() {if (parms$standardize)
-      sample(bools,1)
-    else FALSE}
   set_nfolds <-                 function() {}
   set_beta_constraints <-       function() {
     if (identical(parms$solver, "L_BFGS"))  # TODO: HACK to skip beta-constraints+LBFGS bug
@@ -76,10 +73,10 @@ randomParams <- function(family, train, test, x, y) {
     for (n in parms$x) {
       # If enum column => create Colname.Class
       if (is.factor(train[,n])) {
-        # use_all_factor_levels == T => all factors acceptable
-#        if(!is.null(parms$use_all_factor_levels) && parms$use_all_factor_levels)
-#          enums <- paste(names(train)[n],h2o.levels(train, n), sep = ".")
-        # use_all_factor_levels == F => first factor dropped
+        # (standardize == T) => (use_all_factor_levels == T) => all factors acceptable
+        if(!is.null(parms$standardize) && parms$standardize)
+          enums <- paste(names(train)[n],h2o.levels(train, n), sep = ".")
+        # (standardize == )F => (use_all_factor_levels == F) => first factor dropped
         else
           enums <- paste(names(train)[n],h2o.levels(train, n), sep = ".")[-1]
         name <- c(name, enums)

@@ -18,7 +18,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public String _description;
   final Key _modelKey;
   final Key _frameKey;
-  final Model.ModelCategory _model_category;
+  final ModelCategory _model_category;
   final long _model_checksum;
   final long _frame_checksum;
   transient Model _model;

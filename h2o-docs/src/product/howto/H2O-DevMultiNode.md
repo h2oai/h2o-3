@@ -1,4 +1,4 @@
-#Running H2O on a Multi-Node Cluster
+#Running on a Multi-Node Cluster
 
 Running H2O on a multi-node cluster allows you to use more memory for large-scale tasks (for example, creating models from huge datasets) than would be possible on a single node. 
 

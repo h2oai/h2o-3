@@ -15,16 +15,20 @@ def group_by(ip,port):
     na_handling = ["ignore","rm","all"]
     col_names = h2o_iris.col_names()[0:4]
 
+    print "Running smoke test"
+
     # smoke test
     for a in h2o_agg_funcs:
        for n in na_handling:
            for c in col_names:
+               print "group by : " + str(a) + "; " + str(n) + "; " + str(c)
                h2o.group_by(h2o_iris, ["class"], {"foo":[a,c,n]})
 
     # h2o/pandas/numpy comparison test
     h2o_np_agg_dict = {"min":np.min, "max":np.max, "mean":np.mean, "sum":np.sum}
     for k in h2o_np_agg_dict.keys():
         for c in col_names:
+            print "group by comparison: " + str(k) + "; " + str(c)
             h2o_res = h2o.group_by(h2o_iris, ["class"], {"foo":[k,c,"all"]})
             pd_res = pd_iris.groupby("class")[c].aggregate(h2o_np_agg_dict[k])
             for i in range(3):

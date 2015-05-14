@@ -1,7 +1,7 @@
 package hex.glm;
 
 import hex.DataInfo;
-import hex.Model;
+import hex.ModelCategory;
 import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
@@ -42,10 +42,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   static final double LINE_SEARCH_STEP = .5;
   static final int NUM_LINE_SEARCH_STEPS = 16;
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Regression,
-            Model.ModelCategory.Binomial,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
     };
   }
 
@@ -158,7 +158,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
+
     if (expensive) {
+      // bail early if we have basic errors like a missing training frame
+      if (error_count() > 0) return;
       if(_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0)
         _parms._use_all_factor_levels= true;
       if(_parms._max_active_predictors == -1)
@@ -590,10 +593,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 
     private void doCleanup(){
-      try{
+      try {
         _parms.read_unlock_frames(GLM.this);
-      } catch(Throwable t) {}
-      if(_dinfo != null)
+      }
+      catch (Throwable t) {
+        // nada
+      }
+      if (null != _dinfo)
         DKV.remove(_dinfo._key);
       if(_validDinfo != null)
         DKV.remove(_validDinfo._key);
@@ -640,10 +646,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     protected void compute2() {
       init(true);
-      if (error_count() > 0)
-        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
-      _parms.read_lock_frames(GLM.this);
       // GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
+      if (error_count() > 0) {
+        GLM.this.updateValidationMessages();
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+      }
+      _parms.read_lock_frames(GLM.this);
       if(_parms._n_folds != 0)
         throw H2O.unimpl();
       //todo: fill in initialization for n-folds

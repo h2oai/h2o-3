@@ -3,6 +3,7 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Model;
+import hex.ModelCategory;
 import hex.SupervisedModelBuilder;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
@@ -29,11 +30,11 @@ import static water.util.MRUtils.sampleFrameStratified;
  */
 public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Regression,
-            Model.ModelCategory.Binomial,
-            Model.ModelCategory.Multinomial,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
     };
   }
 
@@ -45,14 +46,18 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   }
 
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
-    super("DeepLearning",parms); init(false);
+    super("DeepLearning", parms); init(false);
   }
 
   public ModelBuilderSchema schema() { return new DeepLearningV3(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
-    return start(new DeepLearningDriver(), (long)(_parms._epochs * _train.numRows()));
+    // We look at _train before init(true) is called, so step around that here:
+    long work = 1;
+    if (null != _train)
+      work = (long)_parms._epochs * _train.numRows();
+    return start(new DeepLearningDriver(), work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -126,11 +131,17 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         byte[] cs = new AutoBuffer().put(_parms).buf();
 
         Scope.enter();
-        _parms.read_lock_frames(DeepLearning.this);
-
+        // Init parameters
         init(true);
-        if (error_count() > 0)
+        // Read lock input
+        _parms.read_lock_frames(DeepLearning.this);
+        // Something goes wrong
+        if (error_count() > 0){
+          DeepLearning.this.updateValidationMessages();
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
+        }
+
+
         buildModel();
 
         //check that _parms isn't changed during DL model training

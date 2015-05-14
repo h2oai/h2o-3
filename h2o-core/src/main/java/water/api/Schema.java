@@ -581,8 +581,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
     // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
     // where the frame name is also specified.
-    if ( FrameV3.ColSpecifierV2.class.isAssignableFrom(fclz)) {
-        return new FrameV3.ColSpecifierV2(s);
+    if ( FrameV3.ColSpecifierV3.class.isAssignableFrom(fclz)) {
+        return new FrameV3.ColSpecifierV3(s);
     }
 
     if( ModelSchema.class.isAssignableFrom(fclz) )

@@ -162,14 +162,14 @@
 
   #---------- Validate parameters ----------#
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
-  if(length(validation$validation_messages) != 0L) {
-    error <- lapply(validation$validation_messages, function(i) {
+  if(length(validation$messages) != 0L) {
+    error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
         paste0(i$message, ".\n")
       else ""
     })
     if(any(nzchar(error))) stop(error)
-    warn <- lapply(validation$validation_messages, function(i) {
+    warn <- lapply(validation$messages, function(i) {
       if( i$message_type == "WARN" )
         paste0(i$message, ".\n")
       else ""
@@ -333,6 +333,9 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
   }
   else if( !missingData ) {
+    mktmp <- !.is.eval(data)
+    if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
+
     parms <- list()
     parms[["model"]] <- model@model_id
     parms[["frame"]] <- data.frame_id
@@ -618,8 +621,7 @@ h2o.scoreHistory <- function(object, ...) {
   if( is(o, "H2OModel") ) {
     sh <- o@model$scoring_history
     if( is.null(sh) ) return(NULL)
-    print( sh )
-    invisible( sh )
+    sh
   } else {
     warning( paste0("No score history for ", class(o)) )
     return(NULL)
@@ -828,7 +830,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
     # couldn't find any threshold within 1e-8 of the requested value, warn and return closest threshold
     row_num <- which.min(abs(tmp$threshold - threshold))
     closest_threshold <- tmp$threshold[row_num]
-    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Rerun `h2o.performance` with your desired threshold explicitly set.") )
+    warning( paste0("Could not find exact threshold: ", threshold, " for this set of metrics; using closest threshold found: ", closest_threshold, ". Run `h2o.predict` and apply your desired threshold on a probability column.") )
     return( tmp[row_num,] )
   }
   else if( nrow(res) > 1L ) res <- res[1L,]

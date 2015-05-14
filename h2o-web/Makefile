@@ -31,8 +31,5 @@ coverage:
 doc:
 	$B/coffee help.coffee
 
-refresh:
-	$B/coffee help.coffee --host=localhost:54321
-
 .PHONY: default watch clean unit-test test-raw test coverage launch 
 

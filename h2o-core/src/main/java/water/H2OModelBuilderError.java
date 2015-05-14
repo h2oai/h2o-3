@@ -15,13 +15,13 @@ public class H2OModelBuilderError extends H2OError {
   // in the H2OModelBuilderError JSON exactly the same way as in the ModelBuilderSchema.
 
   public Model.Parameters _parameters;
-  public ModelBuilder.ValidationMessage[] _validation_messages;
-  public int _validation_error_count;
+  public ModelBuilder.ValidationMessage[] _messages;
+  public int _error_count;
 
   public H2OModelBuilderError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap.IcedHashMapStringObject values, H2OModelBuilderIllegalArgumentException e) {
     super(timestamp, error_url, msg, dev_msg, http_status, values, e);
     this._parameters = (Model.Parameters) values.get("parameters");
-    this._validation_messages = (ModelBuilder.ValidationMessage[]) values.get("validation_messages");
-    this._validation_error_count = (int) values.get("validation_error_count");
+    this._messages = (ModelBuilder.ValidationMessage[]) values.get("messages");
+    this._error_count = (int) values.get("error_count");
   }
 }

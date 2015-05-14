@@ -1,4 +1,4 @@
-#How to Pass S3 Credentials to H2O
+#Passing S3 Credentials 
 
 To make use of Amazon Web Services (AWS) storage solution S3 you will need to pass your S3 access credentials to H2O. This will allow you to access your data on S3 when importing data frames with path prefixes `s3n://...`.
 

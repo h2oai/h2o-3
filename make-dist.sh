@@ -106,7 +106,6 @@ mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 mkdir target/docs-website/h2o-scala
-cp -rp build/docs/REST target/docs-website
 cp -rp h2o-docs/web/* target/docs-website/h2o-docs
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core

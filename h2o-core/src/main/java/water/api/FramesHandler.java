@@ -14,6 +14,41 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 
+/*
+ * FramesHandler deals with all REST API endpoints that start with /Frames.
+ * <p>
+ * GET /3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)
+ * <p> export(): Export a Frame to the given path with optional overwrite.
+ * <p>
+ * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary
+ * <p> columnSummary(): Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.
+ * <p>
+ * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain
+ * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an Enum.
+ * <p>
+ * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)
+ * <p> column(): Return the specified column from a Frame.
+ * <p>
+ * TODO: deleteme?
+ * GET /3/Frames/(?<frameid>.*)/columns
+ * <p> columns(): Return all the columns from a Frame.
+ * <p>
+ * GET /3/Frames/(?<frameid>.*)/summary
+ * <p> summary(): Return a Frame, including the histograms, after forcing computation of rollups.
+ * <p>
+ * GET /3/Frames/(?<frameid>.*)
+ * <p> fetch(): Return the specified Frame.
+ * <p>
+ * GET /3/Frames
+ * <p> list(): Return all Frames in the H2O distributed K/V store.
+ * <p>
+ * DELETE /3/Frames/(?<frameid>.*)
+ * <p> delete(): Delete the specified Frame from the H2O distributed K/V store.
+ * <p>
+ * DELETE /3/Frames
+ * <p> deleteAll(): Delete all Frames from the H2O distributed K/V store.
+ * <p>
+ */
 class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
 
   /** Class which contains the internal representation of the frames list and params. */
@@ -80,24 +115,22 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
   }
 
-  /** Return all the frames. */
+  /**
+   * Return all the frames. The Frames list will be instances of FrameSynopsisV3,
+   * which only contains a few fields, for performance reasons.
+   * @see FrameSynopsisV3
+   */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 list(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
     f.frames = Frames.fetchAll();
 
-    s.fillFromImpl(f);
-
-    // Summary data is big, and not always there: null it out here.  You have to call columnSummary
-    // to force computation of the summary data.
-    for (FrameV3 a_frame: s.frames) {
-      a_frame.clearBinsField();
-    }
+    s.fillFromImplWithSynopsis(f);
 
     return s;
   }
 
-  /** NOTE: We really want to return a different schema here! */
+  // TODO: in /4 return a schema with just a list of column names.
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columns(int version, FramesV3 s) {
     // TODO: return *only* the columns. . .  This may be a different schema.
@@ -128,6 +161,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return (Frame)ice;
   }
 
+  // TODO: return VecV4
   /** Return a single column from the frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
@@ -142,10 +176,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     Frame new_frame = new Frame(names, vecs);
     s.frames = new FrameV3[1];
     s.frames[0] = new FrameV3().fillFromImpl(new_frame);
-    s.frames[0].clearBinsField();
+    ((FrameV3)s.frames[0]).clearBinsField();
     return s;
   }
 
+  // TODO: return VecDomainV4
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnDomain(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key());
@@ -157,6 +192,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return s;
   }
 
+  // TODO: return VecSummaryV4
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
@@ -180,15 +216,16 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return null; // doc(this, version, docs, "docs/columnSummary.md");
   }
 
+  // TODO: return everything but the second level of rollups (histograms); currently mins and maxes are missing
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {
-    FramesV3 frames = doFetch(version, s, FrameV3.ColV2.NO_SUMMARY);
+    FramesV3 frames = doFetch(version, s, FrameV3.ColV3.NO_SUMMARY);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameV3 a_frame: frames.frames) {
-      a_frame.clearBinsField();
+    for (FrameBase a_frame: frames.frames) {
+      ((FrameV3)a_frame).clearBinsField();
     }
 
     return frames;
@@ -200,15 +237,15 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
     s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, force_summary);  // TODO: Refactor with FrameBase
-    
+
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
       s.compatible_models = new ModelSchema[compatible.length];
-      s.frames[0].compatible_models = new String[compatible.length];
+      ((FrameV3)s.frames[0]).compatible_models = new String[compatible.length];
       int i = 0;
       for (Model m : compatible) {
         s.compatible_models[i] = (ModelSchema)Schema.schema(version, m).fillFromImpl(m);
-        s.frames[0].compatible_models[i] = m._key.toString();
+        ((FrameV3)s.frames[0]).compatible_models[i] = m._key.toString();
         i++;
       }
     }
@@ -247,6 +284,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  // TODO: return list of FrameSummaryV3 that has histograms et al.
   public FramesV3 summary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
 
@@ -257,7 +295,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       }
     }
 
-    return doFetch(version, s, FrameV3.ColV2.FORCE_SUMMARY);
+    return doFetch(version, s, FrameV3.ColV3.FORCE_SUMMARY);
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */

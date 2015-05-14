@@ -1,12 +1,14 @@
 package hex.tree.gbm;
 
 import hex.Model;
+import hex.ModelCategory;
 import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.Log;
@@ -18,11 +20,11 @@ import water.util.ArrayUtils;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-      Model.ModelCategory.Regression,
-      Model.ModelCategory.Binomial,
-      Model.ModelCategory.Multinomial,
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+      ModelCategory.Regression,
+      ModelCategory.Binomial,
+      ModelCategory.Multinomial,
     };
   }
 
@@ -75,6 +77,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // - so your CM sucks for a long time.
     double mean = 0;
     if (expensive) {
+      if (error_count() > 0) {
+        GBM.this.updateValidationMessages();
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
+      }
+
       mean = _response.mean();
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);

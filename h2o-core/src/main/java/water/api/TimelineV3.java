@@ -21,9 +21,9 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
   private String self;
 
   @API(help="recorded timeline events", direction=API.Direction.OUTPUT)
-  public EventV2 [] events;
+  public EventV3[] events;
 
-  public static class EventV2<I, S extends EventV2<I, S>> extends Schema<Iced, S> {
+  public static class EventV3<I, S extends EventV3<I, S>> extends Schema<Iced, S> {
     @API(help="Time when the event was recorded. Format is hh:mm:ss:ms")
     private final String date;
 
@@ -35,8 +35,8 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
     private final EventType type;
 
     @SuppressWarnings("unused")
-    public EventV2() { date = null; nanos = -1; type = EventType.unknown; }
-    private EventV2(EventType type, long millis, long nanos){
+    public EventV3() { date = null; nanos = -1; type = EventType.unknown; }
+    private EventV3(EventType type, long millis, long nanos){
       this.type = type;
       this.date = new SimpleDateFormat("HH:mm:ss:SSS").format(new Date(millis));
       this.nanos = nanos;
@@ -48,7 +48,7 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
     public    String bytes() { throw H2O.unimpl(); };
   } // Event
 
-  private static class HeartBeatEvent extends EventV2<Iced, HeartBeatEvent> {
+  private static class HeartBeatEvent extends EventV3<Iced, HeartBeatEvent> {
     @API(help = "number of sent heartbeats")
     final int sends;
 
@@ -69,7 +69,7 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
     @Override public    String toString() { return "HeartBeat(" + sends + " sends, " + recvs + " receives)"; }
   } // HeartBeatEvent
 
-  public static class NetworkEvent extends EventV2<Iced, NetworkEvent> {
+  public static class NetworkEvent extends EventV3<Iced, NetworkEvent> {
     @API(help="Boolean flag distinguishing between sends (true) and receives(false)")
     public final boolean is_send;
     @API(help="network protocol (UDP/TCP)")
@@ -102,7 +102,7 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
     }
   } // NetworkEvent
 
-  private static class IOEvent extends EventV2<Iced, IOEvent> {
+  private static class IOEvent extends EventV3<Iced, IOEvent> {
     @API(help="flavor of the recorded io (ice/hdfs/...)")
     private final String io_flavor;
     @API(help="node where this io event happened")
@@ -125,7 +125,7 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
   } // IOEvent
 
   @Override public TimelineV3 fillFromImpl(Timeline timeline) {
-    ArrayList<EventV2> outputEvents = new ArrayList<>();
+    ArrayList<EventV3> outputEvents = new ArrayList<>();
     ArrayList<TimelineSnapshot.Event> heartbeats = new ArrayList();
     H2O cloud = TimeLine.getCLOUD();
 
@@ -179,7 +179,7 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
         }
       }
     } // if timeline.snapshot
-    events = outputEvents.toArray(new EventV2[null == outputEvents ? 0 : outputEvents.size()]);
+    events = outputEvents.toArray(new EventV3[null == outputEvents ? 0 : outputEvents.size()]);
     return this;
   }
 
@@ -187,7 +187,7 @@ public class TimelineV3 extends Schema<Timeline,TimelineV3> {
     ab.title("Timeline");
     ab.bodyHead();
     ab.arrayHead(new String []{"hh:mm:ss:ms","nanosec","who","I/O Kind","event","bytes"});
-    for(EventV2 e:events)
+    for(EventV3 e:events)
       ab.arrayRow(new String[]{e.date,""+e.nanos,e.who(),e.ioType(),e.event(),e.bytes()});
     ab.arrayTail();
     ab.bodyTail();

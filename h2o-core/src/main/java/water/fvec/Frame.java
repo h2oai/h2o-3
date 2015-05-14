@@ -331,6 +331,15 @@ public class Frame extends Lockable<Frame> {
     return -1;
   }
 
+  /**   Finds the matching column index, or -1 if missing
+   *  @return the matching column index, or -1 if missing */
+  public int find( Key key ) {
+    for( int i=0; i<_keys.length; i++ )
+      if( key.equals(_keys[i]) )
+        return i;
+    return -1;
+  }
+
   /** Bulk {@link #find(String)} api
    *  @return An array of column indices matching the {@code names} array */
   public int[] find(String[] names) {
@@ -552,15 +561,24 @@ public class Frame extends Lockable<Frame> {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override public Futures remove_impl(Futures fs) {
-    for( Vec v : vecs() ) if( v != null ) v.remove(fs);
+    final Key[] keys = _keys;
+    if( keys.length==0 ) return fs;
+    final int ncs = anyVec().nChunks();
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    new MRTask() {
+      @Override public void setupLocal() {
+        for( Key k : keys ) if( k != null ) Vec.bulk_remove(k,ncs,_fs);
+      }
+    }.doAllNodes();
+
     return fs;
   }
 
   /** Replace one column with another. Caller must perform global update (DKV.put) on
-   * this updated frame.
+   *  this updated frame.
    *  @return The old column, for flow-coding */
   public Vec replace(int col, Vec nv) {
     Vec rv = vecs()[col];

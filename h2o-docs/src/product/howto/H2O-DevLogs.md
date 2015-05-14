@@ -1,4 +1,4 @@
-#Downloading and Sending Logs
+#Downloading Logs
 
 
 ##Accessing Logs

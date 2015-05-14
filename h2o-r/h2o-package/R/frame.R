@@ -1116,6 +1116,11 @@ NULL
 
 #' @export
 h2o.levels <- function(x, i) {
+  if( missing(i) ) {
+    if( ncol(x) > 1 ) return( .h2o.nary_frame_op("levels", x) )
+    i <- 1
+  } else if( is.character(i) ) i <- match(i, colnames(x))
+  if( is.na(i) ) stop("no such column found")
   col_idx <- i
   if (col_idx <= 0) col_idx <- 1
   if (col_idx >= ncol(x)) col_idx <- ncol(x)
@@ -1218,7 +1223,8 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
 #' @return Returns logical value.
 #' @export
 setMethod("is.factor", "H2OFrame", function(x) {
-  .h2o.unary_scalar_op("is.factor", x)
+  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.factor", x)
+  else             .h2o.unary_frame_op("is.factor", x )
 })
 
 #'
@@ -1671,6 +1677,17 @@ setMethod("as.environment", "H2OFrame", function(x) {
   env
 })
 
+#'
+#' Return the number of levels in the column.
+#'
+#' If a frame or non-categorical column is passed, returns 0.
+#'
+#' @param object An H2OFrame object.
+#' @export
+h2o.nlevels <- function(object) {
+  .h2o.nary_frame_op("nlevels", object)
+}
+
 #' Convert H2O Data to Factors
 #'
 #' Convert a column into a factor column.
@@ -1707,12 +1724,6 @@ setMethod("as.character", "H2OFrame", function(x)
 #' @export
 setMethod("as.numeric", "H2OFrame", function(x)
   .h2o.unary_frame_op("as.numeric", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
-
-
-#as.numeric.H2OParsedData <- function(x, ...) {
-#  if(class(x) != "H2OParsedData") stop("x must be of class H2OParsedData")
-#  .h2o.__unop2("as.numeric", x)
-#}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
@@ -2479,38 +2490,104 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
     .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
-#str.H2OFrame <- function(object, ...) {
-#  if (length(l <- list(...)) && any("give.length" == names(l)))
-#    invisible(NextMethod("str", ...))
-#  else invisible(NextMethod("str", give.length = FALSE, ...))
-#
-#  if(ncol(object) > .MAX_INSPECT_COL_VIEW)
-#    warning(object@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#  res <- .h2o.__remoteSend(object@conn, .h2o.__PAGE_INSPECT, frame_id=object@frame_id, max_column_display=.Machine$integer.max)
-#  cat("\nH2O dataset '", object@frame_id, "':\t", res$num_rows, " obs. of  ", (p <- res$num_cols),
-#      " variable", if(p != 1) "s", if(p > 0) ":", "\n", sep = "")
-#
-#  cc <- unlist(lapply(res$cols, function(y) y$name))
-#  width <- max(nchar(cc))
-#  rows <- res$rows[1:min(res$num_rows, 10)]    # TODO: Might need to check rows > 0
-#
-#  if(class(object) == "H2OFrame")
-#    res2 <- .h2o.__remoteSend(object@conn, .h2o.__HACK_LEVELS, key=object@frame_id, max_column_display=.Machine$integer.max)
-#  else
-#    res2 <- .h2o.__remoteSend(object@conn, .h2o.__HACK_LEVELS2, source=object@frame_id, max_ncols=.Machine$integer.max)
-#  for(i in 1:p) {
-#    cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep = "")
-#    rhead <- sapply(rows, function(x) { x[i+1] })
-#    if(is.null(res2$levels[[i]]))
-#      cat("num  ", paste(rhead, collapse = " "), if(res$num_rows > 10) " ...", "\n", sep = "")
-#    else {
-#      rlevels <- res2$levels[[i]]
-#      cat("Factor w/ ", (count <- length(rlevels)), " level", if(count != 1) "s", ' "', paste(rlevels[1:min(count, 2)], collapse = '","'), '"', if(count > 2) ",..", ": ", sep = "")
-#      cat(paste(match(rhead, rlevels), collapse = " "), if(res$num_rows > 10) " ...", "\n", sep = "")
-#    }
-#  }
-#}
-#
+#'
+#' Compute A Histgram
+#'
+#' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
+#' in computing bin width.
+#'
+#' @param x A single numeric column from an H2OFrame.
+#' @param breaks Can be one of the following:
+#'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
+#'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
+#'               A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+#' @export
+h2o.hist <- function(x, breaks="Sturges") {
+  if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
+  mktmp <- !.is.eval(x)
+  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@frame_id)
+
+  if( is.character(breaks) ) {
+    if( breaks=="Sturges" ) breaks <- "sturges"
+    if( breaks=="Rice"    ) breaks <- "rice"
+    if( breaks=="Doane"   ) breaks <- "doane"
+    if( breaks=="FD"      ) breaks <- "fd"
+    if( breaks=="Scott"   ) breaks <- "scott"
+  }
+  h <- as.data.frame(.h2o.nary_frame_op("hist", x, breaks))
+  counts <- na.omit(h[,2])
+  mids <- na.omit(h[,3])
+  histo <- list()
+  histo$breaks <- h$breaks
+  histo$counts <- counts
+  histo$mids   <- mids
+  histo$xname  <- deparse(substitute(x))
+  oldClass(histo) <- "histogram"
+  plot(histo)
+  invisible(histo)
+}
+
+#'
+#' String Split
+#'
+#' @param x The column whose strings must be split.
+#' @param split The pattern to split on.
+#' @export
+h2o.strsplit <- function(x, split) { .h2o.nary_frame_op("strsplit", x, split) }
+
+#'
+#' To Lower
+#'
+#' Mutates the input!
+#'
+#' @param x An H2OFrame object whose strings should be lower'd
+#' @export
+h2o.tolower <- function(x) { .h2o.nary_frame_op("tolower", x) }
+
+#'
+#' To Upper
+#'
+#' Mutates the input!
+#'
+#' @param x An H2OFrame object whose strings should be upper'd
+#' @export
+h2o.toupper <- function(x) { .h2o.nary_frame_op("toupper", x) }
+
+#'
+#' String Substitute
+#'
+#' Mutates the input. Changes the first occurence of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) {
+  .h2o.nary_frame_op("sub", pattern, replacement,x,ignore.case)
+}
+
+#'
+#' String Global Substitute
+#'
+#' Mutates the input. Changes the all occurences of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) {
+  .h2o.nary_frame_op("gsub", pattern, replacement,x,ignore.case)
+}
+
+#'
+#' Trim Space
+#'
+#' @param x The column whose strings should be trimmed.
+#' @export
+h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
+
 #setMethod("findInterval", "H2OFrame", function(x, vec, rightmost.closed = FALSE, all.inside = FALSE) {
 #  if(any(is.na(vec)))
 #    stop("'vec' contains NAs")
