@@ -127,10 +127,27 @@ public class DataInfo extends Keyed {
   }
 
   public DataInfo trainDinfo(Frame valid) {
-    DataInfo res = (DataInfo)clone();
+    DataInfo res = new DataInfo(Key.make(),valid,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
+  }
+
+  public double[] denormalizeBeta(double [] beta) {
+    assert beta.length == fullN()+1;
+    beta = MemoryManager.arrayCopyOf(beta,beta.length);
+    if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
+      double norm = 0.0;        // Reverse any normalization on the intercept
+      // denormalize only the numeric coefs (categoricals are not normalized)
+      final int numoff = numStart();
+      for (int i = numoff; i < beta.length - 1; i++) {
+        double b = beta[i] * _normMul[i - numoff];
+        norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
+        beta[i] = b;
+      }
+      beta[beta.length-1] -= norm;
+    }
+    return beta;
   }
 
   // private constructor called by filterExpandedColumns

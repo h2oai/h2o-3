@@ -39,6 +39,7 @@ import java.util.Random;
 */
 public final class L_BFGS extends Iced {
   int _maxIter = 500;
+  int _minIter = 0;
   double _gradEps = 1e-8;
   double _objEps = 1e-4;
   // line search params
@@ -48,6 +49,7 @@ public final class L_BFGS extends Iced {
 
   public L_BFGS() {}
   public L_BFGS setMaxIter(int m) {_maxIter = m; return this;}
+  public L_BFGS setMinIter(int m) {_minIter = m; return this;}
   public L_BFGS setGradEps(double d) {_gradEps = d; return this;}
   public L_BFGS setObjEps(double d) {_objEps = d; return this;}
   public L_BFGS setHistorySz(int sz) {_historySz = sz; return this;}
@@ -259,7 +261,7 @@ public final class L_BFGS extends Iced {
     int ls_switch = 0;
     double rel_improvement = 1;
     boolean converged = false;
-    while(pm.progress(beta, ginfo) && ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps && iter != _maxIter) {
+    while(pm.progress(beta, ginfo) &&  (iter < _minIter || ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps) && iter != _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
       if(ArrayUtils.hasNaNsOrInfs(pk)) {
         Log.warn("LBFGS: Got NaNs in search direction.");
