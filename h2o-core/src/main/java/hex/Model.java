@@ -507,7 +507,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
     String[] names = new String[ncols];
     String[][] domains = new String[ncols][];
-    names[0] = "predict_"+_output.responseName();
+    names[0] = "predict";
     for(int i = 1; i < names.length; ++i) {
       names[i] = _output.classNames()[i - 1];
       // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
