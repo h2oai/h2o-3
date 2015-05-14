@@ -28,10 +28,10 @@ print(paste("depth", depth))
 nodesize <- sample(5, 1)
 print(paste("nodesize", nodesize))
 
-train <- locate("smalldata/chess/chess_2x2x1000/R/train.csv")
+train <- locate("smalldata/chess/chess_2x2x1000/train.csv")
 print(paste("train", train))
 
-test <- locate("smalldata/chess/chess_2x2x1000/R/test.csv")
+test <- locate("smalldata/chess/chess_2x2x1000/test.csv")
 print(paste("test", test))
 
 x = c("x", "y")
