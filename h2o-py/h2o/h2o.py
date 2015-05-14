@@ -142,6 +142,41 @@ def _quoted(key):
   key = key if is_quoted  else "\"" + key + "\""
   return key
 
+
+def split_frame(data, ratios=[0.75], destination_frames=None):
+  """
+  Split a frame into distinct subsets of size determined by the given ratios.
+  The number of subsets is always 1 more than the number of ratios given.
+  :param data: The dataset to split.
+  :param ratios: The fraction of rows for each split.
+  :param destination_frames: names of the split frames
+  :return: a list of frames
+  """
+  fr = data.send_frame()
+  if destination_frames is None: destination_frames=""
+  j = H2OConnection.post_json("SplitFrame", dataset=fr, ratios=ratios, destination_frames=destination_frames) #, "Split Frame").poll()
+  splits = []
+  for i in j["destination_frames"]:
+    splits += [get_frame(i["name"])]
+    removeFrameShallow(i["name"])
+  removeFrameShallow(fr)
+  return splits
+
+
+def get_frame(frame_id):
+  if frame_id is None:
+    raise ValueError("frame_id must not be None")
+  res = H2OConnection.get_json("Frames/"+frame_id)
+  res = res["frames"][0]
+  colnames = [v["label"] for v in res["columns"]]
+  veckeys  = res["vec_ids"]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
+  return H2OFrame(vecs=vecs)
+
+# res <- .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
+# cnames <- unlist(lapply(res$columns, function(c) c$label))
+# .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames, linkToGC = linkToGC)
+
 """
 Here are some testing utilities for running the pyunit tests in conjunction with run.py.
 
