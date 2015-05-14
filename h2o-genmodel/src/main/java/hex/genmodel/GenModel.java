@@ -34,6 +34,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel {
     return nfeatures();
   }
   @Override public int getResponseIdx() {
+    if (!isSupervised())
+      throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
     return _domains.length - 1;
   }
   @Override public String getResponseName() {
