@@ -199,7 +199,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
-        parms._drop_na20_cols = _parms._drop_na20_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._useAllFactorLevels = _parms._useAllFactorLevels;
         parms._transform = _parms._transform;

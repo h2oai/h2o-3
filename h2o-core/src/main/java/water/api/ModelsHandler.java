@@ -87,7 +87,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   public ModelsV3 list(int version, ModelsV3 s) {
     Models m = s.createAndFillImpl();
     m.models = Models.fetchAll();
-    return (ModelsV3) s.fillFromImpl(m);
+    return (ModelsV3) s.fillFromImplWithSynopsis(m);
   }
 
   // TODO: almost identical to ModelsHandler; refactor
@@ -133,11 +133,11 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
       m.find_compatible_frames = true;
       Frame[] compatible = Models.findCompatibleFrames(model, Frames.fetchAll(), m.fetchFrameCols());
       s.compatible_frames = new FrameV3[compatible.length]; // TODO: FrameBase
-      s.models[0].compatible_frames = new String[compatible.length];
+      ((ModelSchema)s.models[0]).compatible_frames = new String[compatible.length];
       int i = 0;
       for (Frame f : compatible) {
         s.compatible_frames[i] = new FrameV3(f).fillFromImpl(f); // TODO: FrameBase
-        s.models[0].compatible_frames[i] = f._key.toString();
+        ((ModelSchema)s.models[0]).compatible_frames[i] = f._key.toString();
         i++;
       }
     }

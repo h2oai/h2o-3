@@ -80,9 +80,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
-          p._drop_na20_cols = false; //otherwise we might not have any columns left to train
           p._epochs = 3;
-//          p._quiet_mode = true;
           p._model_id = Key.make();
           p._reproducible = true;
           p._seed = seed;

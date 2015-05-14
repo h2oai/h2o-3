@@ -30,6 +30,5 @@ public class FrameSynopsisV3 extends FrameBase<Iced, FrameSynopsisV3> {
     columns = vecs.length;
     byte_size = fr.byteSize();
     is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
-    this.checksum = fr.checksum();
   }
 }
