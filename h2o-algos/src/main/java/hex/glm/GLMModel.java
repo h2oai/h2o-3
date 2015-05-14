@@ -75,12 +75,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _prior = -1;
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
+    public boolean _exactLambdas = false;
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
-    public double _beta_epsilon = 1e-4;
     public int _max_iterations = -1;
     public int _n_folds;
     boolean _intercept = true;
+    public double _beta_epsilon = 1e-4;
+    public double _objective_epsilon = 1e-5;
+    public double _gradient_epsilon = 1e-4;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
@@ -89,8 +92,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public void validate(GLM glm) {
       if(_n_folds < 0) glm.error("n_folds","must be >= 0");
       if(_n_folds == 1)_n_folds = 0; // 0 or 1 means no n_folds
-      if(_lambda_search && _nlambdas == -1)
-        _nlambdas = 100;
+      if(_lambda_search)
+        if(_nlambdas == -1)
+          _nlambdas = 100;
+        else
+          _exactLambdas = false;
       if(_beta_constraints != null) {
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
@@ -132,8 +138,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
               throw new IllegalArgumentException("Incompatible link function for selected family. Only identity, log and inverse links are allowed for family=gaussian.");
             break;
           case binomial:
-            if (_link != Link.logit && _link != Link.log)
-              throw new IllegalArgumentException("Incompatible link function for selected family. Only logit and log links are allowed for family=binomial. Got " + _link);
+            if (_link != Link.logit) // fixme: R also allows log, but it's not clear when can be applied and what should we do in case the predictions are outside of 0/1.
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only logit is allowed for family=binomial. Got " + _link);
             break;
           case poisson:
             if (_link != Link.log && _link != Link.identity)
@@ -391,93 +397,45 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
 
   public static class Submodel extends Iced {
-    final double lambda_value;
-    final int        iteration;
-    final long       run_time;
+    public final double lambda_value;
+    public final int    iteration;
+    public final double devianceTrain;
+    public final double devianceTest;
+    public final int    [] idxs;
+    public final double [] beta;
 
-    double devianceTrain = Double.NaN;
-    double devianceTest = Double.NaN;
-    final int rank;
-    public final int [] idxs;
-    final boolean sparseCoef;
-    public double []  beta;
+    public int rank(){
+      return idxs != null?idxs.length+1:beta.length;
+    }
 
-    public Submodel(double lambda , double [] beta, long run_time, int iteration, boolean sparseCoef){
+    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
       this.lambda_value = lambda;
-      this.run_time = run_time;
       this.iteration = iteration;
+      this.devianceTrain = devTrain;
+      this.devianceTest = devTest;
       int r = 0;
       if(beta != null){
         // grab the indeces of non-zero coefficients
         for(double d:beta)if(d != 0)++r;
-        idxs = MemoryManager.malloc4(sparseCoef?r:beta.length);
+        idxs = MemoryManager.malloc4(r);
         int j = 0;
         for(int i = 0; i < beta.length; ++i)
-          if(!sparseCoef || beta[i] != 0)idxs[j++] = i;
+          if(beta[i] != 0)idxs[j++] = i;
         j = 0;
         this.beta = MemoryManager.malloc8d(idxs.length);
         for(int i:idxs)
           this.beta[j++] = beta[i];
-      } else idxs = null;
-      rank = r;
-      this.sparseCoef = sparseCoef;
-    }
-  }
-  public static void setSubmodel(H2O.H2OCountedCompleter cmp, Key modelKey, final double lambda, double[] beta, final int iteration, long runtime, boolean sparseCoef, double explainedDevTrain, double explainedDevHoldout){
-    final Submodel sm = new Submodel(lambda, beta, runtime, iteration,sparseCoef);
-    sm.devianceTrain = explainedDevTrain;
-    sm.devianceTest = explainedDevHoldout;
-    if(cmp != null)
-      cmp.addToPendingCount(1);
-    Future f = new TAtomic<GLMModel>(cmp){
-      @Override
-      public GLMModel atomic(GLMModel old) {
-        if(old == null)
-          return old; // job could've been cancelled!
-        if(old._output._submodels == null){
-          old._output = (GLMOutput)old._output.clone();
-          old._output._submodels = new Submodel[]{sm};
-        } else {
-          int id = old._output.submodelIdForLambda(lambda);
-          if (id < 0) {
-            id = -id - 1;
-            Submodel [] sms = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
-            for (int i = sms.length-1; i > id; --i)
-              sms[i] = sms[i - 1];
-            sms[id] = sm;
-            old._output = (GLMOutput)old._output.clone();
-            old._output._submodels = sms;
-          } else {
-            if (old._output._submodels[id].iteration <= sm.iteration)
-              old._output._submodels[id] = sm;
-          }
-        }
-//        can not call pickBestSubmodel now, pickBestSubmodel will call makeModelMEtrics which in turns calls Frame.checksum
-//        which will request RollupStats and taht will hit assertion error since we are in TAtomic and would thus be blocking on task with the same prioriry
-//        should be ok to pickBestModel only at the very end, may need to revisit if showing incremental results...
-//        old._output.pickBestModel(false, old, tFrame, vFrame);
-        old._run_time = Math.max(old._run_time,sm.run_time);
-        return old;
+      } else {
+        this.beta = null;
+        idxs = null;
       }
-    }.fork(modelKey);
-    if(cmp == null && f != null) try {
-      f.get();
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
     }
   }
 
-  public int rank(double lambda){return -1;}
-  
   public final double _lambda_max;
   public final double _ymu;
   public final double _ySigma;
   public final long   _nobs;
-
-  long   _run_time;
-
 
   public static class GLMOutput extends SupervisedModel.SupervisedOutput {
     Submodel[] _submodels;
@@ -489,10 +447,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double[] _global_beta;
     public boolean _binomial;
 
-
-    public int rank() {
-      return _submodels[_best_lambda_idx].rank;
-    }
+    public int rank() { return _submodels[_best_lambda_idx].rank();}
 
     public boolean isStandardized() {
       return _dinfo._predictor_transform == TransformType.STANDARDIZE;
@@ -502,15 +457,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       return _coefficient_names;
     }
 
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, double[] coefficients, float threshold, boolean binomial) {
+    public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       _dinfo = dinfo;
       _names = column_names;
       _domains = domains;
-      _global_beta = coefficients;
       _coefficient_names = coefficient_names;
-      _submodels = new Submodel[]{new Submodel(-1, coefficients, -1, -1, false)};
-      _threshold = threshold;
       _binomial = binomial;
+      if(_binomial && domains[domains.length-1] != null) {
+        assert domains.length == 2;
+        binomialClassNames = domains[domains.length - 1];
+      }
     }
 
     public GLMOutput() { }
@@ -538,49 +494,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       return _binomial ? binomialClassNames : null;
     }
 
-
-
-    public int submodelIdForLambda(double lambda) {
-      if (lambda >= _submodels[0].lambda_value) return 0;
-      int i = _submodels.length - 1;
-      for (; i >= 0; --i)
-        // first condition to cover lambda == 0 case (0/0 is Inf in java!)
-        if (lambda == _submodels[i].lambda_value || Math.abs(_submodels[i].lambda_value - lambda) / lambda < 1e-5)
-          return i;
-        else if (_submodels[i].lambda_value > lambda)
-          return -i - 2;
-      return -1;
-    }
-
-    public Submodel submodelForLambda(double lambda) {
-      return _submodels[submodelIdForLambda(lambda)];
-    }
-
-    public int rank(double lambda) {
-      Submodel sm = submodelForLambda(lambda);
-      if (sm == null) return 0;
-      return submodelForLambda(lambda).rank;
-    }
-
     public void pickBestModel() {
       int i = _submodels.length - 1;
       while(i > 0 && _submodels[i-1].devianceTest <= _submodels[i].devianceTest)--i;
       setSubmodelIdx(_best_lambda_idx = i);
     }
-    public void denormalizeBeta(double [] beta) {
-      assert beta.length == _dinfo.fullN()+1;
-      if (_dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE) {
-        double norm = 0.0;        // Reverse any normalization on the intercept
-        // denormalize only the numeric coefs (categoricals are not normalized)
-        final int numoff = _dinfo.numStart();
-        for (int i = numoff; i < beta.length - 1; i++) {
-          double b = beta[i] * _dinfo._normMul[i - numoff];
-          norm += b * _dinfo._normSub[i - numoff]; // Also accumulate the intercept adjustment
-          beta[i] = b;
-        }
-        beta[_global_beta.length - 1] -= norm;
-      }
-    }
+
     public double[] getNormBeta() {
       double [] res = MemoryManager.malloc8d(_dinfo.fullN()+1);
       getBeta(_best_lambda_idx,res);
@@ -597,170 +516,82 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
       getBeta(l,_global_beta);
-      denormalizeBeta(_global_beta);
+      _global_beta = _dinfo.denormalizeBeta(_global_beta);
     }
     public double [] beta() { return _global_beta;}
     public Submodel bestSubmodel(){ return _submodels[_best_lambda_idx];}
   }
 
-  public static void setXvalidation(H2OCountedCompleter cmp, Key modelKey, final double lambda, final GLMValidation val){
-    throw H2O.unimpl();
-//    // expected cmp has already set correct pending count
-//    new TAtomic<GLMModel>(cmp){
-//      @Override
-//      public GLMModel atomic(GLMModel old) {
-//        if(old == null)return old; // job could've been cancelled
-//        old._output._submodels = old._output._submodels.clone();
-//        int id = old._output.submodelIdForLambda(lambda);
-//        old._output._submodels[id] = (Submodel)old._output._submodels[id].clone();
-//        old._output._submodels[id].xVal = val;
-//        old._output.pickBestModel(false);
-//
-//        return old;
-//      }
-//    }.fork(modelKey);
-  }
   /**
    * get beta coefficients in a map indexed by name
    * @return the estimated coefficients
    */
   public HashMap<String,Double> coefficients(){
-    HashMap<String, Double> res = new HashMap<String, Double>();
+    HashMap<String, Double> res = new HashMap<>();
     final double [] b = beta();
     if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficient_names[i],b[i]);
     return res;
   }
 
-  public static class ScoringHistory  extends Iced {
-    long [] _scoring_times;
-    int  [] _per_iteration_times;
-    double [] _likelihoods;
-    double [] _objectives;
-    int [] _scoring_iters;
-    int[] _scoring_lambda;
-    int[] _lambda_times;
-    int [] _lambda_iters;
-    int [] _predictors;
-    double [] _explained_dev_train;
-    double [] _explained_dev_val;
 
-    public TwoDimTable to2dTable() {
-      String [] cnames = new String[]{"timestamp", "duration","iteration", "log_likelihood", "objective"};
-      String [] ctypes = new String[]{"string","string","int", "double", "double"};
-      String []cformats = new String[]{"%s","%s","%d", "%.5f", "%.5f"};
-      if(_lambda_times != null) { // lambda search info
-        cnames =   ArrayUtils.append(cnames, new String  [] {"lambdaId","time per lambda","Number of Predictors","Explained Deviance (train)", "Explained Deviance (test)"});
-        ctypes =   ArrayUtils.append(ctypes,  new String [] {"int"                ,"int", "int",                       "double",          "double"});
-        cformats = ArrayUtils.append(cformats, new String[] {"%d",            "%d",  "%d",                        "%.3f",            "%.3f"});
-      }
-      TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoring_iters.length], cnames , ctypes, cformats , "");
-      int j = 0;
-      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-
-      for (int i = 0; i < _scoring_iters.length; ++i) {
-        int col = 0;
-        res.set(i, col++, fmt.print(_scoring_times[i]));
-        res.set(i, col++, PrettyPrint.msecs(_scoring_times[i] - _scoring_times[0], true));
-        res.set(i, col++, _scoring_iters[i]);
-        res.set(i, col++, _likelihoods[i]);
-        res.set(i, col++, _objectives[i]);
-        if(_lambda_iters != null && j < _lambda_iters.length && _scoring_iters[i] == _lambda_iters[j]) {
-          res.set(i, col++, _scoring_lambda[j]);
-          res.set(i, col++, _lambda_times[j]);
-          res.set(i, col++, _predictors[j]);
-          res.set(i, col++, _explained_dev_train[j]);
-          if(_explained_dev_val != null && j < _explained_dev_val.length)
-            res.set(i, col++, _explained_dev_val[j]);
-          j++;
-        }
-      }
-      return res;
+  public synchronized void setSubmodel(Submodel sm) {
+    int i = 0;
+    if(_output._submodels == null) {
+      _output._submodels = new Submodel[]{sm};
+      return;
     }
+    for(; i < _output._submodels.length; ++i)
+      if(_output._submodels[i].lambda_value <= sm.lambda_value)
+        break;
+    if(i == _output._submodels.length) {
+      _output._submodels = Arrays.copyOf(_output._submodels,_output._submodels.length+1);
+      _output._submodels[_output._submodels.length-1] = sm;
+    } else if(_output._submodels[i].lambda_value > sm.lambda_value) {
+      _output._submodels = Arrays.copyOf(_output._submodels, _output._submodels.length + 1);
+      for (int j = _output._submodels.length - 1; j > i; --j)
+        _output._submodels[j] = _output._submodels[j - 1];
+      _output._submodels[i] = sm;
+    } else  _output._submodels[i] = sm;
   }
 
-  static class FinalizeAndUnlockTsk extends DKeyTask<FinalizeAndUnlockTsk,GLMModel> {
-    final Key _jobKey;
-    final Key _validFrame;
-    final Key _trainFrame;
-
-    ScoringHistory _scoring_history;
-    final int _iter;
-    final boolean _unlock;
-
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key trainFrame, Key validFrame, int iter, ScoringHistory scoring_history, boolean unlock){
-      super(cmp, modelKey);
-      _jobKey = jobKey;
-      _validFrame = validFrame;
-      _trainFrame = trainFrame;
-      _scoring_history = scoring_history;
-      _iter = iter;
-      _unlock = unlock;
+  // TODO: Shouldn't this be in schema? have it here for now to be consistent with others...
+  /**
+   * Re-do the TwoDim table generation with updated model.
+   */
+  public TwoDimTable generateSummary(Key train, int iter){
+    String[] names = new String[]{"Family", "Link", "Regularization", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+    String[] types = new String[]{"string", "string", "string", "int", "int", "int", "string"};
+    String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d", "%d", "%s"};
+    if (_parms._lambda_search) {
+      names = new String[]{"Family", "Link", "Regularization", "Lambda Search", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+      types = new String[]{"string", "string", "string", "string", "int", "int", "int", "string"};
+      formats = new String[]{"%s", "%s", "%s", "%s", "%d", "%d", "%d", "%s"};
     }
-
-    @Override
-    protected void map(final GLMModel glmModel) {
-      final Frame tFrame = DKV.getGet(_trainFrame);
-      final Frame vFrame = (_validFrame != null)?
-        DKV.get(_validFrame).<Frame>get():null;
-      glmModel._output.pickBestModel();
-      // score
-      Futures fs = new Futures();
-      fs.add(new RecursiveAction() { // fork off model scoring
-        @Override
-        protected void compute() {
-          glmModel.score(tFrame).delete();
-          glmModel._output._training_metrics = ModelMetrics.getFromDKV(glmModel,tFrame);
-        }
-      }.fork());
-      if(vFrame != null) {
-        fs.add(new RecursiveAction() { // fork off model scoring
-          @Override
-          protected void compute() {
-            glmModel.score(vFrame).delete();
-            glmModel._output._validation_metrics = ModelMetrics.getFromDKV(glmModel,vFrame);
-          }
-        }.fork());
-      }
-      fs.blockForPending();
-
-      String [] names   = new String[]{"Family","Link", "Regularization", "Number of Predictors Total","Number of Active Predictors", "Number of Iterations", "Training Frame"};
-      String [] types   = new String[]{"string","string","string","int","int","int","string"};
-      String [] formats = new String[]{"%s","%s","%s","%d","%d","%d","%s"};
-      if(glmModel._parms._lambda_search) {
-        names = new String[]{"Family", "Link", "Regularization", "Lambda Search", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
-        types   = new String[]{"string","string","string","string","int","int","int","string"};
-        formats = new String[]{"%s","%s","%s","%s","%d","%d","%d","%s"};
-      }
-      glmModel._output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, names , types , formats,"");
-      glmModel._output._model_summary.set(0,0,glmModel._parms._family.toString());
-      glmModel._output._model_summary.set(0,1,glmModel._parms._link.toString());
-      String regularization = "None";
-      if(glmModel._parms._lambda != null && !(glmModel._parms._lambda.length == 1 &&  glmModel._parms._lambda[0] == 0)) { // have regularization
-        if(glmModel._parms._alpha[0] == 0)
-          regularization = "Ridge ( lambda = ";
-        else if(glmModel._parms._alpha[0] == 1)
-          regularization = "Lasso (lambda = ";
-        else
-          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(glmModel._parms._alpha[0],4)  +", lambda = ";
-        regularization = regularization + MathUtils.roundToNDigits(glmModel._parms._lambda[glmModel._output._best_lambda_idx],4) + " )";
-      }
-      glmModel._output._model_summary.set(0,2,regularization);
-      int lambdaSearch = 0;
-      if(glmModel._parms._lambda_search) {
-        lambdaSearch = 1;
-        glmModel._output._model_summary.set(0,3,"nlambda = " + glmModel._parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(glmModel._lambda_max,4)  + ", best_lambda = " + MathUtils.roundToNDigits(glmModel._output.bestSubmodel().lambda_value,4));
-      }
-      int intercept = glmModel._parms._intercept?1:0;
-      glmModel._output._model_summary.set(0,3+lambdaSearch,Integer.toString(glmModel.beta().length - intercept));
-      glmModel._output._model_summary.set(0,4+lambdaSearch,Integer.toString(glmModel._output.rank() - intercept));
-      glmModel._output._model_summary.set(0,5+lambdaSearch,Integer.valueOf(_iter));
-      glmModel._output._model_summary.set(0,6+lambdaSearch,_trainFrame.toString());
-      if(_scoring_history != null)
-        glmModel._output._scoring_history = _scoring_history.to2dTable();
-      glmModel.update(_jobKey);
-      if(_unlock)
-        glmModel.unlock(_jobKey);
+    _output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, names, types, formats, "");
+    _output._model_summary.set(0, 0, _parms._family.toString());
+    _output._model_summary.set(0, 1, _parms._link.toString());
+    String regularization = "None";
+    if (_parms._lambda != null && !(_parms._lambda.length == 1 && _parms._lambda[0] == 0)) { // have regularization
+      if (_parms._alpha[0] == 0)
+        regularization = "Ridge ( lambda = ";
+      else if (_parms._alpha[0] == 1)
+        regularization = "Lasso (lambda = ";
+      else
+        regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[0], 4) + ", lambda = ";
+      regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._best_lambda_idx], 4) + " )";
     }
+    _output._model_summary.set(0, 2, regularization);
+    int lambdaSearch = 0;
+    if (_parms._lambda_search) {
+      lambdaSearch = 1;
+      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", best_lambda = " + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4));
+    }
+    int intercept = _parms._intercept ? 1 : 0;
+    _output._model_summary.set(0, 3 + lambdaSearch, Integer.toString(beta().length - intercept));
+    _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
+    _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
+    _output._model_summary.set(0, 6 + lambdaSearch, train.toString());
+    return _output._model_summary;
   }
 
   @Override
