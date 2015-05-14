@@ -2886,6 +2886,10 @@ class ASTHist extends ASTUniPrefixOp {
     private static final int _dB = U.arrayBaseOffset(double[].class);
     private static final int _dS = U.arrayIndexScale(double[].class);
     private static long doubleRawIdx(int i) { return _dB + _dS * i; }
+    // long[] offset and scale
+    private static final int _8B = U.arrayBaseOffset(long[].class);
+    private static final int _8S = U.arrayIndexScale(long[].class);
+    private static long longRawIdx(int i)   { return _8B + _8S * i; }
 
     // out
     private final double[] _breaks;
@@ -2914,7 +2918,7 @@ class ASTHist extends ASTUniPrefixOp {
           x=xx-1;
         } else
           x = Math.min( _counts.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
-        _counts[x]++;
+        bumpCount(x);
         setMinMax(Double.doubleToRawLongBits(r),x);
       }
     }
@@ -2927,6 +2931,11 @@ class ASTHist extends ASTUniPrefixOp {
     }
     @Override public void postGlobal() { for(int i=0;i<_mids.length;++i) _mids[i] = 0.5*(_max[i] + _min[i]); }
 
+    private void bumpCount(int x) {
+      long o = _counts[x];
+      while(!U.compareAndSwapLong(o,longRawIdx(x),o,o+1))
+        o=_counts[x];
+    }
     private void setMinMax(long v, int x) {
       double o = _min[x];
       double vv = Double.longBitsToDouble(v);
