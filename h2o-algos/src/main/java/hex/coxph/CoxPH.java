@@ -1,13 +1,9 @@
 package hex.coxph;
 
 import Jama.Matrix;
-import hex.DataInfo;
+import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
-import hex.FrameTask;
-import hex.Model;
-import hex.SupervisedModelBuilder;
-// import hex.schemas.CoxPHV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -22,9 +18,9 @@ import java.util.Arrays;
  */
 public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[] {
-      Model.ModelCategory.Unknown,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[] {
+      ModelCategory.Unknown,
     };
   }
 

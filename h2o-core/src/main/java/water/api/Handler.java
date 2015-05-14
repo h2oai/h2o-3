@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-// TODO: remove type parameters!!!
 public class Handler extends H2OCountedCompleter {
   protected Handler( ) { super(); }
   protected Handler( Handler completer ) { super(completer); }

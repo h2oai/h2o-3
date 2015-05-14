@@ -1,19 +1,13 @@
 package hex.genmodel;
 
+import water.genmodel.IGeneratedModel;
+import hex.ModelCategory;
+
 import java.util.Arrays;
 import java.util.Map;
 
 /** This is a helper class to support Java generated models. */
-public abstract class GenModel {
-  public static enum ModelCategory {
-    Unknown,
-    Binomial,
-    Multinomial,
-    Regression,
-    Clustering,
-    AutoEncoder,
-    DimReduction
-  }
+public abstract class GenModel implements IGenModel, IGeneratedModel {
 
   /** Column names; last is response for supervised models */
   public final String[] _names; 
@@ -23,14 +17,75 @@ public abstract class GenModel {
    *  response col enums for SupervisedModels.  */
   public final String _domains[][];
 
+
   public GenModel( String[] names, String domains[][] ) { _names = names; _domains = domains; }
 
-  // Base methods are correct for unsupervised models.  All overridden in GenSupervisedModel
-  public boolean isSupervised() { return false; }  // Overridden in GenSupervisedModel
-  public int nfeatures() { return _names.length; } // Overridden in GenSupervisedModel
-  public int nclasses() { return 0; }              // Overridden in GenSupervisedModel
+  @Override public boolean isSupervised() {
+    // FIXME: can be derived directly from model category?
+    return false;
+  }
+  @Override public int nfeatures() {
+    return _names.length;
+  }
+  @Override public int nclasses() {
+    return 0;
+  }
+  @Override public int getNumCols() {
+    return nfeatures();
+  }
+  @Override public int getResponseIdx() {
+    return _domains.length - 1;
+  }
+  @Override public String getResponseName() {
+    throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
+  }
+  @Override public int getNumResponseClasses() {
+    if (isClassifier())
+      return nclasses();
+    else
+      throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
+  }
+  @Override public String[] getNames() {
+    return _names;
+  }
+  @Override public int getColIdx(String name) {
+    String[] names = getNames();
+    for (int i=0; i<names.length; i++) if (names[i].equals(name)) return i;
+    return -1;
+  }
+  @Override public int getNumClasses(int colIdx) {
+    String[] domval = getDomainValues(colIdx);
+    return domval!=null?domval.length:-1;
+  }
+  @Override public String[] getDomainValues(String name) {
+    int colIdx = getColIdx(name);
+    return colIdx != -1 ? getDomainValues(colIdx) : null;
+  }
+  @Override public String[] getDomainValues(int i) {
+    return getDomainValues()[i];
+  }
+  @Override public int mapEnum(int colIdx, String enumValue) {
+    String[] domain = getDomainValues(colIdx);
+    if (domain==null || domain.length==0) return -1;
+    for (int i=0; i<domain.length;i++) if (enumValue.equals(domain[i])) return i;
+    return -1;
+  }
+  @Override
+  public String[][] getDomainValues() {
+    return _domains;
+  }
 
-  abstract public ModelCategory getModelCategory();
+  @Override public boolean isClassifier() {
+    ModelCategory cat = getModelCategory();
+    return cat == ModelCategory.Binomial || cat == ModelCategory.Multinomial;
+  }
+
+  @Override public int getPredsSize() {
+    return isClassifier() ? 1 + getNumResponseClasses() : 2;
+  }
+
+  /** ??? */
+  public String getHeader() { return null; }
 
   /** Takes a HashMap mapping column names to doubles.
    *  <p>
@@ -47,7 +102,16 @@ public abstract class GenModel {
     return data;
   }
 
-  
+  @Override
+  public float[] predict(double[] data, float[] preds) {
+    return predict(data, preds, 0);
+  }
+
+  @Override
+  public float[] predict(double[] data, float[] preds, int maxIters) {
+    throw new UnsupportedOperationException("Unsupported operation - uses score0 method!");
+  }
+
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  This call

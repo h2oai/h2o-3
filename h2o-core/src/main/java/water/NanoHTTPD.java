@@ -254,7 +254,7 @@ public class NanoHTTPD
       new NanoHTTPD( new ServerSocket(port), wwwroot );
     } catch( IOException ioe ) {
       Log.err("Couldn't start server:\n", ioe );
-      H2O.exit( -1 );
+      H2O.shutdown( -1 );
     }
 
     myOut.println( "Now serving files in port " + port + " from \"" + wwwroot + "\"" );
@@ -268,6 +268,8 @@ public class NanoHTTPD
    * and returns the response.
    */
   private class HTTPSession implements Runnable {
+    private final long startMillis = System.currentTimeMillis();
+
     public HTTPSession( Socket s ) {
       mySocket = s;
       Thread t = new Thread( this, "NanoHTTPD Session" );
@@ -280,7 +282,6 @@ public class NanoHTTPD
     static final int MAX_HEADER_BUFFER_SIZE = 1 << 16; // 64k
     public void run() {
       try (Socket mySocket=this.mySocket ) { // Try-with-resources; auto-close on exit
-        long startMillis = System.currentTimeMillis();
         InputStream is = new BufferedInputStream(mySocket.getInputStream());
         is.mark(MAX_HEADER_BUFFER_SIZE);
 
@@ -377,6 +378,7 @@ public class NanoHTTPD
             String boundary = st.nextToken();
             String paddedMethod = String.format("%-6s", method);
             Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + "(special case)" + ", parms: " + parms);
+            RequestServer.alwaysLogRequest(uri, "POST", parms);
             boolean handled = fileUpload(boundary, is, parms, uri);
             if (handled) {
               return;
@@ -437,7 +439,7 @@ public class NanoHTTPD
         if ( r == null )
           sendError( HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: Serve() returned a null response." );
         else
-          sendResponse( startMillis, r.status, r.mimeType, r.header, r.data );
+          sendResponse( r.status, r.mimeType, r.header, r.data );
 
         in.close();
         is.close();
@@ -724,23 +726,24 @@ public class NanoHTTPD
      */
     private void sendError( String status, String msg ) throws InterruptedException
     {
-      String s = "         HTTP_status: " + status;
-      Log.httpd(s);
-      sendResponse( status, MIME_PLAINTEXT, null, new ByteArrayInputStream( msg.getBytes()));
-      throw new InterruptedException();
-    }
-
-    private void sendResponse( long startMillis, String status, String mime, Properties header, InputStream data ) {
       long deltaMillis = System.currentTimeMillis() - startMillis;
       String s = "         HTTP_status: " + status + ", millis: " + deltaMillis;
       Log.httpd(s);
-      sendResponse(status, mime, header, data);
+      sendResponse2(status, MIME_PLAINTEXT, null, new ByteArrayInputStream( msg.getBytes()));
+      throw new InterruptedException();
+    }
+
+    private void sendResponse( String status, String mime, Properties header, InputStream data ) {
+      long deltaMillis = System.currentTimeMillis() - startMillis;
+      String s = "         HTTP_status: " + status + ", millis: " + deltaMillis;
+      Log.httpd(s);
+      sendResponse2(status, mime, header, data);
     }
 
     /**
      * Sends given response to the socket.
      */
-    private void sendResponse( String status, String mime, Properties header, InputStream data )
+    private void sendResponse2(String status, String mime, Properties header, InputStream data )
     {
       try
       {
@@ -801,7 +804,7 @@ public class NanoHTTPD
       }
 
       if (H2O.getShutdownRequested()) {
-        H2O.shutdown();
+        H2O.shutdown(0);
       }
     }
 

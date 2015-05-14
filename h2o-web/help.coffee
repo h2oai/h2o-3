@@ -194,10 +194,17 @@ print = (properties, _schemas, _routes) ->
   sidebar = [
     h2 'Contents'
     ul toc
-    h2 'Reference'
+    h2 'API Reference'
     ul [
-      li link 'REST API Reference', '#route-reference'
-      li link 'REST API Schema Reference', '#schema-reference'
+      li link 'REST API Endpoints',  '#route-reference'
+      li link 'REST API Schemas',    '#schema-reference'
+      li link 'R API',               "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-r/h2o_package.pdf"
+      li link 'Python API',          "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-py/docs/index.html"
+      li link 'h2o-core Javadoc',    "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-core/javadoc/index.html"
+      li link 'h2o-algos Javadoc',   "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-algos/javadoc/index.html"
+      li link 'h2o-scala Scaladoc',  "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-scala/scaladoc/index.html"
+      li link 'Sparkling Water API', 'https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md'
+      li link 'Build page',          "http://h2o-release.s3.amazonaws.com/h2o-dev/#{argv.branch_name}/#{argv.build_number}/index.html"
     ]
   ].join EOL
 
@@ -222,31 +229,12 @@ print = (properties, _schemas, _routes) ->
   return
 
 main = (args, properties) ->
-  schemas_json = locate 'src', 'rest-api', 'schemas.json'
-  routes_json = locate 'src', 'rest-api', 'routes.json'
-  if args.host
-    get args.host, '/3/Metadata/schemas', (error, schemasResult) ->
-      if error
-        throw error
-      else
-        write(
-          schemas_json
-          JSON.stringify schemasResult, null, 2
-        )
-        get args.host, '/3/Metadata/endpoints', (error, routesResult) ->
-          if error
-            throw error
-          else
-            write(
-              routes_json
-              JSON.stringify routesResult, null, 2
-            )
-            print properties, schemasResult.schemas, routesResult.routes
+  schemas_json = locate 'schemas.json'
+  routes_json = locate 'routes.json'
+  if (fs.lstatSync schemas_json).isFile() and (fs.lstatSync routes_json).isFile()
+    print properties, (JSON.parse read schemas_json).schemas, (JSON.parse read routes_json).routes
   else
-    if (fs.lstatSync schemas_json).isFile() and (fs.lstatSync routes_json).isFile()
-      print properties, (JSON.parse read schemas_json).schemas, (JSON.parse read routes_json).routes
-    else
-      throw new Error 'Could not locate API JSON documents.'
+    throw new Error 'Could not locate API JSON documents.'
 
 main argv, yaml.safeLoad read locate 'index.yml'
 

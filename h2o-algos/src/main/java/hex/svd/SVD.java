@@ -1,8 +1,8 @@
 package hex.svd;
 
 import hex.DataInfo;
-import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV3;
@@ -40,8 +40,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return start(new SVDDriver(), 0);
   }
 
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{ Model.ModelCategory.DimReduction };
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ ModelCategory.DimReduction };
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
@@ -98,7 +98,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         v[i] = vnew[i];         // Update v_i for next iteration
       }
       err = Math.sqrt(err);
-      iters++;
+      iters++;    // TODO: Should output vector of final iterations for each k
     }
     return v;
   }

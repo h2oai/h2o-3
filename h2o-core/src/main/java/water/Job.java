@@ -236,7 +236,7 @@ public class Job<T extends Keyed> extends Keyed {
         return old;
       }
       // Run the onCancelled code synchronously, right now
-      @Override void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
+      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
     // Also immediately update immediately a possibly cached local POJO (might
     // be shared with the DKV cached job, might not).

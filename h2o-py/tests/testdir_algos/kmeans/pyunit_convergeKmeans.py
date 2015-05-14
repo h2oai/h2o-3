@@ -24,14 +24,13 @@ def convergeKmeans(ip,port):
   except EnvironmentError:
     assert True
 
-  centers_key = start.eager()
+  centers_key = start.send_frame()
   for i in range(miters):
     rep_fit = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=centers_key, max_iterations=1)
-    centers = h2o.H2OFrame(rep_fit.centers())
-    centers_key = centers.send_frame()
+    centers_key = h2o.H2OFrame(rep_fit.centers()).send_frame()
 
   # Log.info(paste("Run k-means with max_iter=miters"))
-  all_fit = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=start.eager(), max_iterations=miters)
+  all_fit = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=start.send_frame(), max_iterations=miters)
   assert rep_fit.centers() == all_fit.centers(), "expected the centers to be the same"
 
   # Log.info("Check cluster centers have converged")

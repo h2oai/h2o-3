@@ -1,7 +1,7 @@
 package hex.kmeans;
 
 import hex.ClusteringModelBuilder;
-import hex.Model;
+import hex.ModelCategory;
 import hex.ModelMetricsClustering;
 import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
@@ -9,13 +9,14 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -25,8 +26,8 @@ import java.util.Random;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{ Model.ModelCategory.Clustering };
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
@@ -247,10 +248,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
       KMeansModel model = null;
       try {
-        _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
         init(true);
-        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
-
+        // Do lock even before checking the errors, since this block is finalized by unlock
+        // (not the best solution, but the code is more readable)
+        _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
+        // Something goes wrong
+        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_key);

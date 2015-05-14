@@ -268,7 +268,7 @@ class RollupStats extends Iced {
   }
 
   static RollupStats get(Vec vec, boolean computeHisto) {
-    assert DKV.get(vec._key)!= null : "Rollups not possible, because Vec was deleted: "+vec._key;
+    if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
 
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = DKV.getGet(rskey);

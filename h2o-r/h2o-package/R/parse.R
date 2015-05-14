@@ -17,10 +17,13 @@
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.
-#' @param na.strings H2O will interpret these strings as missing.
+#' @param na.strings (Optional) H2O will interpret these strings as missing.
+#' @param blocking (Optional) Tell H2O parse call to block synchronously instead
+#'        of polling.  This can be faster for small datasets but loses the
+#'        progress bar.
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL) {
+                         col.types=NULL, na.strings=NULL, blocking=FALSE) {
   parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings)
 
   parse.params <- list(
@@ -35,7 +38,8 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
             column_types = .collapse.char(parse.params$column_types),
             na_strings = .collapse.array(parse.params$na_strings),
             chunk_size = parse.params$chunk_size,
-            delete_on_done = parse.params$delete_on_done
+            delete_on_done = parse.params$delete_on_done,
+            blocking = blocking
             )
 
   linkToGC <- !nzchar(destination_frame)

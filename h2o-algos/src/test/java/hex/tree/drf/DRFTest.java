@@ -4,6 +4,7 @@ package hex.tree.drf;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
@@ -128,7 +129,7 @@ public class DRFTest extends TestUtil {
               null,
               null);
       Assert.fail();
-    } catch( IllegalArgumentException iae ) {
+    } catch( H2OModelBuilderIllegalArgumentException iae ) {
     /*pass*/
     }
   }

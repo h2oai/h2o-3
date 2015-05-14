@@ -17,7 +17,7 @@ public class ADMM {
 
   public interface ProximalSolver {
     public double []  rho();
-    public void solve(double [] beta_given, double [] result);
+    public boolean solve(double [] beta_given, double [] result);
     public boolean hasGradient();
     public double [] gradient(double [] beta);
     public int iter();
@@ -69,7 +69,6 @@ public class ADMM {
           break;
         case L2_2:
           gerr = ArrayUtils.l2norm2(grad, false);
-          System.out.println("gerr = " + gerr + ", eps = " + _eps);
           break;
         case L2:
           gerr = Math.sqrt(ArrayUtils.l2norm2(grad, false));
@@ -110,7 +109,6 @@ public class ADMM {
       double reltol = RELTOL;
       double best_err = Double.POSITIVE_INFINITY;
       for (i = 0; i < max_iter; ++i) {
-        // updated x
         solver.solve(beta_given, x);
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
@@ -135,7 +133,7 @@ public class ADMM {
           z[j] = zj;
           allzeros &= zj == 0;
         }
-        if (hasIntercept) { // TODO update unorm and so on
+        if (hasIntercept) {
           int idx = x.length - 1;
           double icpt = x[idx];
           if (lb != null && icpt < lb[idx])
@@ -155,19 +153,15 @@ public class ADMM {
         if (rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
           computeErr(z, solver.gradient(z), l1pen, lb, ub);
-          if (gerr > _eps && (allzeros || i < 5 /* let some warm up before giving up */ || Math.abs(oldGerr - gerr) > _eps * 0.5)) {
-            Log.info("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
-            // try gg to improve the solution...
+          if (gerr > _eps && abstol > 1e-10 && reltol > 1e-8){// && (allzeros || i < 5 /* let some warm up before giving up */ /*|| Math.abs(oldGerr - gerr) > _eps * 0.1*/)) {
+            Log.debug("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
             abstol *= .1;
-            if (abstol < 1e-10)
-              abstol = 1e-10;
             reltol *= .1;
-            if (reltol < 1e-10)
-              reltol = 1e-10;
             continue;
           }
+          if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
           iter = i;
-          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
+          Log.debug("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
           return true;
         }
       }
@@ -177,7 +171,8 @@ public class ADMM {
         computeErr(z, solver.gradient(z), l1pen, lb, ub);
         assert Math.abs(best_err - gerr) < 1e-8 : " gerr = " + gerr + ", best_err = " + best_err + " zbest = " + Arrays.toString(zbest) + ", z = " + Arrays.toString(z);
       }
-      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
+      Log.warn("ADMM solver reached maximum number of iterations (" + max_iter + ")");
+      if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
       iter = max_iter;
       return false;
     }

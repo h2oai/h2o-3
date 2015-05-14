@@ -40,7 +40,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   public double[] default_percentiles;
 
   @API(help="Columns", direction=API.Direction.OUTPUT)
-  public ColV2[] columns;
+  public ColV3[] columns;
 
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
@@ -54,9 +54,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase distribution_summary;
 
-  public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
-    public ColSpecifierV2() { }
-    public ColSpecifierV2(String column_name) {
+  public static class ColSpecifierV3 extends Schema<VecSpecifier, ColSpecifierV3> {
+    public ColSpecifierV3() { }
+    public ColSpecifierV3(String column_name) {
       this.column_name = column_name;
     }
 
@@ -67,12 +67,12 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     public String[] is_member_of_frames;
   }
 
-  public static class ColV2 extends Schema<Vec, ColV2> {
+  public static class ColV3 extends Schema<Vec, ColV3> {
 
     static final boolean FORCE_SUMMARY = true;
     static final boolean NO_SUMMARY = false;
 
-    public ColV2() {}
+    public ColV3() {}
 
     @API(help="label", direction=API.Direction.OUTPUT)
     public String label;
@@ -130,11 +130,11 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
 
     transient Vec _vec;
 
-    ColV2(String name, Vec vec, long off, int len) {
+    ColV3(String name, Vec vec, long off, int len) {
       this(name, vec, off, len, NO_SUMMARY);
     }
 
-    ColV2(String name, Vec vec, long off, int len, boolean force_summary) {
+    ColV3(String name, Vec vec, long off, int len, boolean force_summary) {
       label=name;
 
       if (force_summary) {
@@ -208,7 +208,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     rows = fr.numRows();
     row_count = (int)Math.min(len2,rows);
     byte_size = fr.byteSize();
-    columns = new ColV2[fr.numCols()];
+    columns = new ColV3[fr.numCols()];
     Key[] keys = fr.keys();
     if(keys != null && keys.length > 0) {
       vec_ids = new VecKeyV3[keys.length];
@@ -217,7 +217,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     }
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
-      columns[i] = new ColV2(fr._names[i],vecs[i], row_offset, row_count);
+      columns[i] = new ColV3(fr._names[i],vecs[i], row_offset, row_count);
     is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
@@ -232,7 +232,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   // Custom adapters go here
 
   @Override public FrameV3 fillFromImpl(Frame f) {
-    return fillFromImpl(f, 1, (int)f.numRows(), ColV2.NO_SUMMARY);
+    return fillFromImpl(f, 1, (int)f.numRows(), ColV3.NO_SUMMARY);
   }
 
   // Version&Schema-specific filling from the impl
@@ -248,7 +248,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     rows = _fr.numRows();
     row_count = (int)Math.min(len2,rows);
     byte_size = _fr.byteSize();
-    columns = new ColV2[_fr.numCols()];
+    columns = new ColV3[_fr.numCols()];
     Key[] keys = _fr.keys();
     if(keys != null && keys.length > 0) {
       vec_ids = new VecKeyV3[keys.length];
@@ -258,7 +258,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ ) {
       try {
-        columns[i] = new ColV2(_fr._names[i], vecs[i], row_offset, row_count, force_summary);
+        columns[i] = new ColV3(_fr._names[i], vecs[i], row_offset, row_count, force_summary);
       }
       catch (Exception e) {
         Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + _fr._names[i], e);
@@ -274,7 +274,7 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
 
 
   public void clearBinsField() {
-    for (ColV2 col: columns)
+    for (ColV3 col: columns)
       col.clearBinsField();
   }
 
@@ -292,30 +292,30 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
 
     // Rollup data
     final long nrows = _fr.numRows();
-    formatRow(ab,"","type" ,new ColOp() { String op(ColV2 c) { return c.type; } } );
-    formatRow(ab,"","min"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mins[0]); } } );
-    formatRow(ab,"","max"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.maxs[0]); } } );
-    formatRow(ab,"","mean" ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mean   ); } } );
-    formatRow(ab,"","sigma",new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.sigma  ); } } );
+    formatRow(ab,"","type" ,new ColOp() { String op(ColV3 c) { return c.type; } } );
+    formatRow(ab,"","min"  ,new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mins[0]); } } );
+    formatRow(ab,"","max"  ,new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.maxs[0]); } } );
+    formatRow(ab,"","mean" ,new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mean   ); } } );
+    formatRow(ab,"","sigma",new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.sigma  ); } } );
 
     // Optional rows: missing elements, zeros, positive & negative infinities, levels
-    for( ColV2 c : columns ) if( c.missing_count > 0 )
-        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(ColV2 c) { return c.missing_count == 0 ?"":Long.toString(c.missing_count);}}); break; }
-    for( ColV2 c : columns ) if( c.zero_count > 0 )
-        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(ColV2 c) { return c.zero_count == 0 ?"":Long.toString(c.zero_count);}}); break; }
-    for( ColV2 c : columns ) if( c.positive_infinity_count > 0 )
-        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(ColV2 c) { return c.positive_infinity_count == 0 ?"":Long.toString(c.positive_infinity_count);}}); break; }
-    for( ColV2 c : columns ) if( c.negative_infinity_count > 0 )
-        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(ColV2 c) { return c.negative_infinity_count == 0 ?"":Long.toString(c.negative_infinity_count);}}); break; }
-    for( ColV2 c : columns ) if( c.domain!=null)
-        { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(ColV2 c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
+    for( ColV3 c : columns ) if( c.missing_count > 0 )
+        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(ColV3 c) { return c.missing_count == 0 ?"":Long.toString(c.missing_count);}}); break; }
+    for( ColV3 c : columns ) if( c.zero_count > 0 )
+        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(ColV3 c) { return c.zero_count == 0 ?"":Long.toString(c.zero_count);}}); break; }
+    for( ColV3 c : columns ) if( c.positive_infinity_count > 0 )
+        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(ColV3 c) { return c.positive_infinity_count == 0 ?"":Long.toString(c.positive_infinity_count);}}); break; }
+    for( ColV3 c : columns ) if( c.negative_infinity_count > 0 )
+        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(ColV3 c) { return c.negative_infinity_count == 0 ?"":Long.toString(c.negative_infinity_count);}}); break; }
+    for( ColV3 c : columns ) if( c.domain!=null)
+        { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(ColV3 c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
 
     // Frame data
     final int len = columns.length > 0 ? columns[0].data.length : 0;
     for( int i=0; i<len; i++ ) {
       final int row = i;
       formatRow(ab,"",Long.toString(row_offset +row+1),new ColOp() {
-          String op(ColV2 c) {
+          String op(ColV3 c) {
             return formatCell(c.data==null?0:c.data[row],c.string_data ==null?null:c.string_data[row],c,0); }
         } );
     }
@@ -324,19 +324,19 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     return ab.bodyTail();
   }
 
-  private abstract static class ColOp { abstract String op(ColV2 v); }
-  private String rollUpStr(ColV2 c, double d) {
+  private abstract static class ColOp { abstract String op(ColV3 v); }
+  private String rollUpStr(ColV3 c, double d) {
     return formatCell(c.domain!=null || "uuid".equals(c.type) || "string".equals(c.type) ? Double.NaN : d,null,c,4);
   }
 
   private void formatRow( HTML ab, String color, String msg, ColOp vop ) {
     ab.p("<tr").p(color).p(">");
     ab.cell(msg);
-    for( ColV2 c : columns )  ab.cell(vop.op(c));
+    for( ColV3 c : columns )  ab.cell(vop.op(c));
     ab.p("</tr>");
   }
 
-  private String formatCell( double d, String str, ColV2 c, int precision ) {
+  private String formatCell( double d, String str, ColV3 c, int precision ) {
     if( Double.isNaN(d) ) return "-";
     if( c.domain!=null ) return c.domain[(int)d];
     if( "uuid".equals(c.type) || "string".equals(c.type)) {

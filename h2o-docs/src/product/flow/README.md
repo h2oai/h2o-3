@@ -1,10 +1,6 @@
-#Introduction
+#Flow Web UI
 
-This guide will walk you through how to use H2O-dev's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
-
-##About H2O Flow
-
-H2O Flow is an open-source user interface for H2O. It is a web-based interactive computational environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
+H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
 
 With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment. 
 
@@ -14,10 +10,15 @@ H2O Flow sends commands to H2O as a sequence of executable cells. The cells can 
 
 While H2O Flow supports REST API, R scripts, and Coffeescript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
 
+##Introduction
+
+This guide will walk you through how to use H2O's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
+
+
 ---
 
 <a name="GetHelp"></a> 
-# Getting Help 
+## Getting Help 
 ---
 
 First, let's go over the basics. Type `h` to view a list of helpful shortcuts. 
@@ -53,12 +54,12 @@ Before getting started with H2O Flow, make sure you understand the different cel
 ---
 
 <a name="Cell"></a>
-# Understanding Cell Modes
+## Understanding Cell Modes
 
 There are two modes for cells: edit and command. 
 
 
-##Using Edit Mode
+###Using Edit Mode
 In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
 
@@ -94,7 +95,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
  
  ![Cell executing](images/Flow_cellmode_runningflag.png)
 
-##Changing Cell Formats
+###Changing Cell Formats
 
 To change the cell's format (for example, from code to Markdown), make sure you are in not in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
 
@@ -110,7 +111,7 @@ Heading 4     | `4`
 Heading 5     | `5`
 Heading 6     | `6` 
 
-##Running Flows
+###Running Flows
 When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
 
   ![Flow Progress Bar](images/Flow_progressbar.png)
@@ -122,7 +123,7 @@ When the flow is complete, a message displays in the upper right.
   ![Flow - Did Not Complete](images/Flow_run_fail.png) 
 
 
-##Using Keyboard Shortcuts
+###Using Keyboard Shortcuts
 
 Here are some important keyboard shortcuts to remember: 
 
@@ -139,7 +140,7 @@ The following commands must be entered in [command mode](#CmdMode).
 You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar. 
 
 
-##Using Flow Buttons
+###Using Flow Buttons
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
 
  ![Flow buttons](images/Flow_buttons.png)
@@ -173,6 +174,8 @@ There are multiple ways to import data in H2O flow:
 - In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
+
+**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. 
 
  ![Import Files](images/Flow_import.png)
 
@@ -251,11 +254,11 @@ Since we've submitted a couple of jobs (data import & parse) to H2O now, let's t
 --- 
  
 <a name="ViewJobs"></a>
-# Viewing Jobs
+## Viewing Jobs
 
 Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference.
 
-## Viewing All Jobs
+### Viewing All Jobs
 
 To view all jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
 
@@ -272,7 +275,7 @@ The following information displays:
 
 To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button. 
 
-## Viewing Specific Jobs
+### Viewing Specific Jobs
 
 To view a specific job, click the link in the "Destination" column. 
 
@@ -505,7 +508,7 @@ The available options vary depending on the selected model. If an option is only
 
  **Fast_mode**: [(DL)](#DL) Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default. 
 
-- **Ignore\_const\_cols**: [(DL)](#DL) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Force\_load\_balance**: [(DL)](#DL) Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
@@ -596,7 +599,7 @@ You can also view predictions by clicking the drop-down **Score** menu and selec
 ---
 
 <a name="ViewFrame"></a>
-# Viewing Frames
+## Viewing Frames
 
 To view a specific frame, click the "Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
 
@@ -642,7 +645,7 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 
 ---
 
-## Splitting Frames
+### Splitting Frames
 
 In H2O Flow, you can split datasets within Flow for use in training and testing. 
 
@@ -659,13 +662,13 @@ In H2O Flow, you can split datasets within Flow for use in training and testing.
 0. Click the **Create** button.  
 
 ---
-##Creating Frames
+### Creating Frames
 
 To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
 ---
 
-## Plotting Frames
+### Plotting Frames
 
 To create a plot from a frame, click the **Inspect** button, then click the **Plot** button. 
 
@@ -684,6 +687,8 @@ Select the type of plot (point, line, area, or interval) from the drop-down **Ty
 - cardinality
 
 Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
+
+**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
 
 ---
 

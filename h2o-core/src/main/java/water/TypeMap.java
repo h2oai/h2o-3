@@ -33,7 +33,7 @@ public class TypeMap {
 
     // Status pages looked at without locking the cloud
     CloudV3.class.getName(),
-    CloudV3.NodeV1.class.getName(),
+    CloudV3.NodeV3.class.getName(),
     water.H2OError.class.getName(),
     H2OErrorV3.class.getName(),
     water.util.IcedHashMap.class.getName(),

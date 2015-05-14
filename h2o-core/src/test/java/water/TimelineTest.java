@@ -67,7 +67,7 @@ public class TimelineTest extends TestUtil{
     TimelineHandler handler = new TimelineHandler();
     TimelineV3 t = handler.fetch(2, new TimelineV3());
     Set<String> msgs = new HashSet<>();
-    for( TimelineV3.EventV2 e : t.events) {
+    for( TimelineV3.EventV3 e : t.events) {
       if(e.bytes().contains("TestTask") && e instanceof TimelineV3.NetworkEvent) {
         TimelineV3.NetworkEvent ne = (TimelineV3.NetworkEvent)e;
         msgs.add((ne.is_send ?"SEND":"RECV")  + " " + ne.from + " -> " + ne.to);

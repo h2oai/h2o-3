@@ -107,8 +107,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     public boolean isClassifier() { return nclasses()>1; }
     @Override public ModelCategory getModelCategory() {
       return nclasses()==1 
-        ? Model.ModelCategory.Regression
-        : (nclasses()==2 ? Model.ModelCategory.Binomial : Model.ModelCategory.Multinomial);
+        ? ModelCategory.Regression
+        : (nclasses()==2 ? ModelCategory.Binomial : ModelCategory.Multinomial);
     }
   }
 
@@ -117,7 +117,6 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=_output._names.length; // Last chunk is for the response
     for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     double[] scored = score0(tmp,preds);

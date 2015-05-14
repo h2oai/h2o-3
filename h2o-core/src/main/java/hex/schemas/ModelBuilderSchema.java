@@ -2,17 +2,16 @@ package hex.schemas;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import water.AutoBuffer;
 import water.H2O;
 import water.Job;
 import water.Key;
 import water.api.*;
-import water.api.ModelParametersSchema.ValidationMessageBase;
+import water.api.ValidationMessageBase;
 import water.util.*;
 
 import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
@@ -33,7 +32,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   public String algo_full_name;
 
   @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
-  public Model.ModelCategory[] can_build;
+  public ModelCategory[] can_build;
 
   @API(help="Should the builder always be visible, be marked as beta, or only visible if the user starts up with the experimental flag?", values = { "Experimental", "Beta", "AlwaysVisible" }, direction = API.Direction.OUTPUT)
   public ModelBuilder.BuilderVisibility visibility;
@@ -42,13 +41,13 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   public JobV3 job;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase validation_messages[];
+  public ValidationMessageBase messages[];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
-  public int validation_error_count;
+  public int error_count;
 
   @API(help="HTTP status to return for this build.", json = false)
-  public int __http_status; // The handler sets this to 400 if we're building and validation_error_count > 0, else 200.
+  public int __http_status; // The handler sets this to 400 if we're building and error_count > 0, else 200.
 
   public ModelBuilderSchema() {
     this.parameters = createParametersSchema();
@@ -130,47 +129,18 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
     job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
-    this.validation_messages = new ValidationMessageBase[builder._messages.length];
+    this.messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
     for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.validation_messages[i++] = new ModelParametersSchema.ValidationMessageV2().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
     }
     // default fieldname hacks
-    mapValidationMessageFieldNames(new String[] {"train", "valid"}, new String[] {"training_frame", "validation_frame"});
-    this.validation_error_count = builder.error_count();
+    ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
+    this.error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
     // parameters.destination_key = new KeyV1.ModelKeyV1(builder._dest);
     return (S)this;
-  }
-
-  /**
-   * Map impl field names in the validation messages to schema field names,
-   * called <i>after</i> behavior of stripping leading _ characters.
-   */
-  protected void mapValidationMessageFieldNames(String[] from, String[] to) {
-    if (null == from && null == to)
-      return;
-    if (null == from || null == to)
-      throw new IllegalArgumentException("Bad parameter name translation arrays; one is null and the other isn't.");
-    Map<String, String> translations = new HashMap();
-    for (int i = 0; i < from.length; i++) {
-      translations.put(from[i], to[i]);
-    }
-
-    for( ValidationMessageBase vm : this.validation_messages) {
-      if (null == vm) {
-        Log.err("Null ValidationMessageBase for ModelBuilderSchema: " + this);
-        continue;
-      }
-
-      if (null == vm.field_name) {
-        Log.err("Null field_name: " + vm);
-        continue;
-      }
-      if (translations.containsKey(vm.field_name))
-        vm.field_name = translations.get(vm.field_name);
-    }
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
@@ -194,9 +164,9 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     ab.put1(',');
     ab.putJSONEnum("visibility", visibility);
     ab.put1(',');
-    ab.putJSONA("validation_messages", validation_messages);
+    ab.putJSONA("messages", messages);
     ab.put1(',');
-    ab.putJSON4("validation_error_count", validation_error_count);
+    ab.putJSON4("error_count", error_count);
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array

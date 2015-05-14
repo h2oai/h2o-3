@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -165,7 +166,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** List containing the categories of models that this builder can
    *  build.  Each ModelBuilder must have one of these. */
-  abstract public Model.ModelCategory[] can_build();
+  abstract public ModelCategory[] can_build();
 
   /**
    * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
@@ -210,6 +211,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  NOTE: The front end initially calls this through the parameters validation
    *  endpoint with no training_frame, so each subclass's {@code init()} method
    *  has to work correctly with the training_frame missing.
+   *<p>
+   *  @see #updateValidationMessages()
    */
   public void init(boolean expensive) {
     // Log parameters
@@ -237,7 +240,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Drop all-constant and all-bad columns.
-    if( _parms._dropConsCols )
+    if( _parms._ignore_const_cols)
       new FilterCols() { 
         @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
@@ -278,6 +281,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
   }
+
+  /**
+   * init(expensive) is called inside a DTask, not from the http request thread.  If we add validation messages to the
+   * ModelBuilder (aka the Job) we want to update it in the DKV so the client can see them when polling and later on
+   * after the job completes.
+   * <p>
+   * NOTE: this should only be called when no other threads are updating the job, for example from init() or after the
+   * DTask is stopped and is getting cleaned up.
+   * @see #init(boolean)
+   */
+  public void updateValidationMessages() {
+    // Atomically update the validation messages in the Job in the DKV.
+
+    // In some cases we haven't stored to the DKV yet:
+    new TAtomic<Job>() {
+      @Override public Job atomic(Job old) {
+        if( old == null ) throw new H2OKeyNotFoundArgumentException(old._key);
+
+        ModelBuilder builder = (ModelBuilder)old;
+        builder._messages = ModelBuilder.this._messages;
+        return builder;
+      }
+      // Run the onCancelled code synchronously, right now
+      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
+    }.invoke(_key);
+    }
 
   abstract class FilterCols {
     abstract protected boolean filter(Vec v);

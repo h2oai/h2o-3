@@ -23,5 +23,5 @@ public abstract class TAtomic<T extends Freezable> extends Atomic<TAtomic<T>> {
   }
   @Override protected void onSuccess( Value old ) { onSuccess(old==null?null:(T)old.getFreezable()); }
   // Upcast the old value to T
-  void onSuccess( T old ) { }
+  public void onSuccess( T old ) { }
 }

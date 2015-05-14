@@ -1,7 +1,7 @@
 package hex.grep;
 
-import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.schemas.GrepV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -30,8 +30,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     return (Grep)start(new GrepDriver(), _parms.train().numRows());
   }
 
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{Model.ModelCategory.Unknown};
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ModelCategory.Unknown};
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };

@@ -4,10 +4,7 @@ import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
-import hex.DataInfo;
-import hex.FrameTask;
-import hex.Model;
-import hex.ModelBuilder;
+import hex.*;
 import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
@@ -55,8 +52,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return start(new GLRMDriver(), 0);
   }
 
-  @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
+  @Override public ModelCategory[] can_build() {
+    return new ModelCategory[]{ModelCategory.Clustering};
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
@@ -195,7 +192,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
-        parms._dropConsCols = _parms._dropConsCols;
+        parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._drop_na20_cols = _parms._drop_na20_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._useAllFactorLevels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
@@ -225,7 +222,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
-        parms._dropConsCols = _parms._dropConsCols;
+        parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._drop_na20_cols = _parms._drop_na20_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;

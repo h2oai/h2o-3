@@ -1,5 +1,7 @@
 package hex.api;
 
+import hex.DataInfo;
+import hex.DataInfo.TransformType;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.schemas.GLMModelV3;
@@ -27,7 +29,10 @@ public class MakeGLMModelHandler extends Handler {
     double [] beta = model.beta().clone();
     for(int i = 0; i < beta.length; ++i)
       beta[i] = coefs.get(names[i]);
-    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,new GLMOutput(model._output._names,model._output._domains, names, beta,.5f,model._output._binomial), model.dinfo(), Double.NaN, Double.NaN, Double.NaN, -1);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, Double.NaN, Double.NaN, Double.NaN, -1);
+    DataInfo dinfo = model.dinfo();
+    dinfo.setPredictorTransform(TransformType.NONE);
+    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, names, beta, .5f, model._output._binomial);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);

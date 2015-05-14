@@ -1,4 +1,4 @@
-#Running H2O-Dev on Hadoop
+#Running on Hadoop
 
 Currently supported versions: 
 - CDH 5.2
@@ -43,7 +43,7 @@ Tutorial
 The following tutorial will walk the user through the download or build of H2O and the parameters involved in launching H2O from the command line.
 
 
-0. Download the latest H2O-dev release for your version of Hadoop:
+0. Download the latest H2O release for your version of Hadoop:
 
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-cdh5.2.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-cdh5.3.zip
@@ -53,7 +53,6 @@ The following tutorial will walk the user through the download or build of H2O a
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-mapr4.0.1.zip
 		
 	**Note**: Enter only one of the above commands.
-
 
 0. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 

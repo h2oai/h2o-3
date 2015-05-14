@@ -456,7 +456,7 @@ public class RequestServer extends NanoHTTPD {
     return run;
   }
 
-  void alwaysLogRequest(String uri, String method, Properties parms) {
+  public static void alwaysLogRequest(String uri, String method, Properties parms) {
     String log = String.format("%-4s %s", method, uri);
     for( Object arg : parms.keySet() ) {
       String value = parms.getProperty((String) arg);
@@ -620,11 +620,9 @@ public class RequestServer extends NanoHTTPD {
       Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      Log.fatal(wrap(new H2OErrorV3().fillFromImpl(error), type));
-      System.exit(-1);
-
+      H2O.fail(wrap(new H2OErrorV3().fillFromImpl(error), type).toString());
       // unreachable, but the compiler doesn't know it:
-      return wrap(new H2OErrorV3().fillFromImpl(error), type);
+      return null;
     }
     catch (H2OModelBuilderIllegalArgumentException e) {
       H2OModelBuilderError error = e.toH2OError(uri);

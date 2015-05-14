@@ -29,9 +29,9 @@ class CloudHandler extends Handler {
     cloud.bad_nodes = 0;
     cloud.cloud_healthy = true;
     if (null != members) {
-      cloud.nodes = new CloudV3.NodeV1[members.length];
+      cloud.nodes = new CloudV3.NodeV3[members.length];
       for (int i = 0; i < members.length; i++) {
-        cloud.nodes[i] = new CloudV3.NodeV1(members[i], cloud.skip_ticks);
+        cloud.nodes[i] = new CloudV3.NodeV3(members[i], cloud.skip_ticks);
         if (! cloud.nodes[i].healthy) {
           cloud.cloud_healthy = false;
           cloud.bad_nodes++;

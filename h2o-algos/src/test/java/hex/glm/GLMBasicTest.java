@@ -53,16 +53,15 @@ public class GLMBasicTest extends TestUtil {
       job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
       model = job.trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
-      System.out.println("coefs = " + coefs.toString());
-      System.out.println("val   = " + model.validation());
+
       for(int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
-      GLMValidation val = model.validation();
-      assertEquals(526.8, val.nullDeviance(),1e-1);
-      assertEquals(378.3, val.residualDeviance(),1e-1);
-      assertEquals(380,val.nullDOF());
-      assertEquals(371,val.resDOF());
-      assertEquals(396.3, val.aic,1e-1);
+
+      assertEquals(526.8, GLMTest.nullDeviance(model),1e-1);
+      assertEquals(378.3, GLMTest.residualDeviance(model),1e-1);
+      assertEquals(380,GLMTest.nullDOF(model),0);
+      assertEquals(371,GLMTest.resDOF(model),0);
+      assertEquals(396.3, GLMTest.aic(model),1e-1);
       model.delete();
       // test scoring
       score = model.score(_prostate);

@@ -1,9 +1,6 @@
 package hex.glrm;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.*;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
