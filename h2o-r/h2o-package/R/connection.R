@@ -408,7 +408,6 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", "H2O_started_from_R")
-  args <- c(args, "-ip", "127.0.0.1")
   args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
