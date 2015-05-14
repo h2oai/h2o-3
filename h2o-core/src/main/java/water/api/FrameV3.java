@@ -10,13 +10,14 @@ import water.parser.ValueString;
 import water.util.*;
 import water.util.DocGen.HTML;
 
-// TODO: need a base (versionless) class!
-public class FrameV3 extends Schema<Frame, FrameV3> {
+/**
+ * All the details on a Frame.  Note that inside ColV3 there are fields which won't be
+ * populated if we don't compute rollups, e.g. via
+ * the REST API endpoint /Frames/<frameid>/columns/<colname>/summary.
+ */
+public class FrameV3 extends FrameBase<Frame, FrameV3> {
 
   // Input fields
-  @API(help="Key to inspect",required=true)
-  public FrameKeyV3 frame_id;
-
   @API(help="Row offset to display",direction=API.Direction.INPUT)
   public long row_offset;
 
@@ -24,22 +25,13 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   public int row_count;
 
   // Output fields
-  @API(help="checksum", direction=API.Direction.OUTPUT)
-  public long checksum;
-
-  @API(help="Number of rows", direction=API.Direction.OUTPUT)
+  @API(help="Number of rows in the Frame", direction=API.Direction.OUTPUT)
   public long rows;
-
-  @API(help="Total data size in bytes", direction=API.Direction.OUTPUT)
-  public long byte_size;
-
-  @API(help="Raw unparsed text", direction=API.Direction.OUTPUT)
-  public boolean is_text;
 
   @API(help="Default percentiles, from 0 to 1", direction=API.Direction.OUTPUT)
   public double[] default_percentiles;
 
-  @API(help="Columns", direction=API.Direction.OUTPUT)
+  @API(help="Columns in the Frame", direction=API.Direction.OUTPUT)
   public ColV3[] columns;
 
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
@@ -185,9 +177,6 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
       this.histogram_bins = null;
     }
   }
-
-  // Constructor for when called from the Inspect handler instead of RequestServer
-  transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
 
   public FrameV3() { super(); }
 
