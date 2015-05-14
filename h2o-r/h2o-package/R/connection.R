@@ -128,6 +128,9 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
         print(rv$curlError)
         print(rv$httpStatusCode)
         print(rv$curlErrorMessage)
+
+        #try a hail mary curl
+        print(system("curl 'http://localhost:54321"))
         stop("H2O failed to start, stopping execution.")
       }
     } else
