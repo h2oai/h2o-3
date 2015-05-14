@@ -10,11 +10,12 @@ Depending on your area of interest, select your learning path below:
 
  - [New Users](#New)
  - [Experienced Users](#Exp)
- - [Corporate Users](#Corp)
+ - [Open Source Users](#OS)
  - [Sparkling Water Users](#SW)
  - [Python Users](#Py)
  - [R Users](#R)
  - [API Users](#API)
+ - [Java Users](#Java)
  - [Developers](#Dev)
 
 ---
@@ -40,7 +41,7 @@ If you're just getting started with H2O, here are some links to help you learn m
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md" target="_blank">Launch from the command line</a>: This document describes some of the additional options that you can configure when launching H2O (for example, to specify a different directory for saved Flow data, allocate more memory, or use a flatfile for quick configuration of a cluster.
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md" target="_blank">Data Science</a>: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type. 
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md" target="_blank">Algorithms</a>: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type. 
 
 ---
 
@@ -53,7 +54,7 @@ If you've used previous versions of H2O, the following links will help guide you
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/RecentChanges.md" target="_blank">Recent Changes</a>: This document describes the most recent changes in the latest build of H2O. It lists new features, enhancements (including changed parameter default values), and bug fixes for each release, organized by sub-categories such as Python, R, and Web UI. 
 
-- <a href="https://github.com/h2oai/h2o-dev/blob/jessica-dev-docs/h2o-docs/src/product/upgrade/H2OvsH2O-Dev.md" target="_blank">H2O vs H2O-dev</a>: This document presents a side-by-side comparison of H2O 3.0 and the previous version of H2O. It compares and contrasts the features, capabilities, and supported algorithms between the versions. If you'd like to learn more about the benefits of upgrading, this is a great source of information. 
+- <a href="https://github.com/h2oai/h2o-dev/blob/jessica-dev-docs/h2o-docs/src/product/upgrade/H2OvsH2O-Dev.md" target="_blank">H2O Classic vs H2O 3.0</a>: This document presents a side-by-side comparison of H2O 3.0 and the previous version of H2O. It compares and contrasts the features, capabilities, and supported algorithms between the versions. If you'd like to learn more about the benefits of upgrading, this is a great source of information. 
 
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/images/H2O-Algorithms-Road-Map.pdf" target="_blank">Algorithms Roadmap</a>: This document outlines our currently implemented features and describes which features are planned for future software versions. If you'd like to know what's up next for H2O, this is the place to go. 
@@ -62,10 +63,10 @@ If you've used previous versions of H2O, the following links will help guide you
 
 ---
 
-<a name="Corp"></a>
-##Corporate Users
+<a name="OS"></a>
+##Open Source Users
 
-If you're considering using H2O in a corporate environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
+If you're considering using H2O in a open-source environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS. 
 
@@ -166,6 +167,17 @@ REST APIs are generated immediately out of the code, allowing users to implement
 
 ---
 
+<a name="Java"></a>
+##Java Users
+
+For Java developers, the following resources will help you create your own custom app that uses H2O. 
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1203/docs-website/h2o-core/javadoc/index.html" target="_blank">H2O Core Java Developer Documentation</a>: The definitive Java API guide for the core components of H2O. 
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1203/docs-website/h2o-algos/javadoc/index.html" target="_blank">H2O Algos Java Developer Documentation</a>: The definitive Java API guide for the algorithms used by H2O. 
+
+
+
 <a name="Dev"></a>
 ##Developers
 
@@ -186,6 +198,8 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="http://apps.h2o.ai" target="_blank">apps.h2o.ai</a>: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights. 
 
 - <a href="https://github.com/h2oai/h2o-droplets" target="_blank">H2O Project Templates</a>: This page provides template info for projects created in Java, Scala, or Sparkling Water. 
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o-dev/master/1203/docs-website/h2o-scala/scaladoc/index.html" target="_blank">H2O Scala API Developer Documentation</a>: The definitive Scala API guide for H2O. 
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. 
 

@@ -234,6 +234,13 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTNLevels());
     putPrefix(new ASTLevels());
     putPrefix(new ASTHist());
+    // string mungers
+    putPrefix(new ASTGSub());
+    putPrefix(new ASTStrSplit());
+    putPrefix(new ASTStrSub());
+    putPrefix(new ASTToLower());
+    putPrefix(new ASTToUpper());
+    putPrefix(new ASTTrim());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());

@@ -39,7 +39,11 @@ def get_issue_component_name(issue):
 
 def usage():
     print("")
-    print("usage:  " + g_script_name + " --user username --pass password --sprint sprintname")
+    print("usage:  " + g_script_name + " --user username --pass password --startdate startdate")
+    print("")
+    print("e.g.")
+    print("")
+    print("./" + g_script_name + " --startdate 2015-01-30")
     print("")
     sys.exit(1)
 

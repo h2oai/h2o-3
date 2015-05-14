@@ -70,8 +70,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
-      train().read_lock(job._key);
-      if( _valid != null && !_train.equals(_valid) )
+      Frame tr = train();
+      if (tr != null)
+        tr.read_lock(job._key);
+      if (_valid != null && !_train.equals(_valid))
         valid().read_lock(job._key);
     }
 
@@ -473,7 +475,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
 
-    cleanup_adapt( adaptFr, fr );
+    cleanup_adapt(adaptFr, fr);
     return output;
   }
 
@@ -779,7 +781,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return miss==0;
     } finally {
       // Remove temp keys.
-      cleanup_adapt( fr, data );
+      cleanup_adapt(fr, data);
     }
   }
 }

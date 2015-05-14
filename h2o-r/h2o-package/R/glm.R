@@ -37,8 +37,6 @@
 #' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
-#' @param use_all_factor_levels A logical value indicating whether dummy variables should be used for all factor levels of the categorical predictors.
-#'                              When \code{TRUE}, results in an over parameterized models.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
@@ -66,14 +64,12 @@
 #' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prostatePath, destination_frame = "prostate.hex")
 #' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
-#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE,
-#'         use_all_factor_levels = FALSE)
+#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #'
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
 #' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
-#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE,
-#'         use_all_factor_levels = FALSE)
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
 #' \dontrun{
 #'  # GLM variable importance
@@ -86,7 +82,7 @@
 #'  myX = 1:20
 #'  myY="y"
 #'  my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
-#'                  use_all_factor_levels=TRUE, lambda_search=TRUE)
+#'                  lambda_search=TRUE)
 #' }
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, validation_frame,

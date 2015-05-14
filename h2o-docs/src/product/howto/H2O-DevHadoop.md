@@ -1,4 +1,4 @@
-#Running H2O on Hadoop
+#Running on Hadoop
 
 Currently supported versions: 
 - CDH 5.2

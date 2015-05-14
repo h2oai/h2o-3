@@ -24,6 +24,8 @@ This package allows the user to run basic H2O commands using R commands. In orde
 H2O supports a number of standard statistical models, such as GLM, K-means, and Random Forest classification. For example, to run GLM, call \code{\link{h2o.glm}} with the H2O parsed data and parameters (response variable, error distribution, etc...) as arguments. (The operation will be done on the server associated with the data object where H2O is running, not within the R environment).
 
 Note that no actual data is stored in the R workspace; and no actual work is carried out by R. R only saves the named objects, which uniquely identify the data set, model, etc on the server. When the user makes a request, R queries the server via the REST API, which returns a JSON file with the relevant information that R then displays in the console.
+
+If you are using an older version of H2O, use the following porting guide to update your scripts: \href{https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md}{Porting Scripts}
 }
 \author{
 Anqi Fu, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
