@@ -359,13 +359,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _parms._lambda[0] = _tInfos[0]._lambdaMax;
           for (int i = 1; i < _parms._lambda.length; ++i)
             _parms._lambda[i] = _parms._lambda[i - 1] * d;
+          _lambdaId = 1; // don't bother with lmax model (which we know already)
         } else
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
       _model = new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       String [] warns = _model.adaptTestForTrain(_valid, true);
       for(String s:warns) warn("validation_frame",s);
-      final Submodel nullSm = new Submodel(_parms._lambda[_lambdaId], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
+      final Submodel nullSm = new Submodel(_parms._lambda[0], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
       _model.setSubmodel(nullSm);
       _model._output._training_metrics = itsk._gtNull._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
       if(_valid != null)
