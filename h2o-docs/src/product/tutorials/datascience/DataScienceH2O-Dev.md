@@ -1,4 +1,4 @@
-#Data Science in H2O-Dev
+#Algorithms
 
 - [K-Means](#Kmeans)
 - [GLM](#GLM)
