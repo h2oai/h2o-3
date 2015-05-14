@@ -4,7 +4,7 @@ This guide will walk you through how to use H2O's web UI, H2O Flow. To view a de
 
 ##About H2O Flow
 
-H2O Flow is an open-source user interface for H2O. It is a web-based interactive computational environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
+H2O Flow is an open-source user interface for H2O. It is a web-based interactive computativiewonal environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
 
 With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment. 
 
@@ -548,7 +548,7 @@ The available options vary depending on the selected model. If an option is only
 ---
 
 <a name="ViewModel"></a>
-### Viewing Models
+## Viewing Models
 
 Click the **Assist Me!** button, then click the **getModels** link, or enter `getModels` in the cell in CS mode and press **Ctrl+Enter**. A list of available models displays. 
 
