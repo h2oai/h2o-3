@@ -525,7 +525,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
-  rv = .h2o.doRawGET(conn = conn, urlSuffix = "")
+  rv <- .h2o.doRawGET(conn = conn, urlSuffix = "")
 
   !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
 }

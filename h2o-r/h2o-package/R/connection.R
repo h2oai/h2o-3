@@ -115,6 +115,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 
       count <- 0L
       while(!h2o.clusterIsUp(conn = tmpConn) && (count < 60L)) {
+        cat(".")
         Sys.sleep(1L)
         count <- count + 1L
       }
