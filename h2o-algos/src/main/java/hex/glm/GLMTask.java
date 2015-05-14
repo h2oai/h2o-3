@@ -416,7 +416,10 @@ public abstract class GLMTask  {
         if(_beta[i] != 0)
           ++rank;
       _gradient = MemoryManager.malloc8d(_beta.length);
-      _val = new GLMValidation(null,_params._intercept,_ymu,_params,rank,0,_validate);
+      String [] domain = _dinfo._adaptedFrame.lastVec().domain();
+      if(domain == null && _params._family == Family.binomial)
+        domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
+      _val = new GLMValidation(domain,_params._intercept,_ymu,_params,rank,0,_validate);
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       if(_rowFilter != null) {
         Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
