@@ -69,7 +69,7 @@
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
 #' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
-#'         nfolds = 0, alpha = 0.1, lambda_search = FALS)
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
 #' \dontrun{
 #'  # GLM variable importance
