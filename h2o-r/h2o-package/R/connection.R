@@ -405,9 +405,12 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is.null(max_memory)) mem_args <- c(mem_args, paste0("-Xmx", max_memory))
 
   args <- mem_args
+  ltrs <- paste0(sample(letters[3:5]), collapse="")
+  nums <- paste0(sample(0:9)[3:5],     collapse="")
+  name <- paste0("H2O_started_from_R_", Sys.info()["user"],"_",ltrs,nums)
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
-  args <- c(args, "-name", paste0("H2O_started_from_R_", Sys.info()["user"],"_",sample(letters[3:5]), sample(0:9)[3:5]))
+  args <- c(args, "-name", name)
   args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
