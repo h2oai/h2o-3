@@ -365,9 +365,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _model = new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       String [] warns = _model.adaptTestForTrain(_valid, true);
       for(String s:warns) warn("validation_frame",s);
-      final Submodel nullSm = (_parms._lambda_search)
-        ? new Submodel(lmax,itsk._gtNull._beta,0, itsk._gtNull._val.residualDeviance(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN)
-        : new Submodel(_parms._lambda[_lambdaId], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
+      final Submodel nullSm = new Submodel(_parms._lambda[_lambdaId], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
       _model.setSubmodel(nullSm);
       _model._output._training_metrics = itsk._gtNull._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
       if(_valid != null)
