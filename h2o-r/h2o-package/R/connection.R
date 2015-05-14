@@ -109,9 +109,9 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
         warnNthreads <- TRUE
         nthreads <- 2
       }
-
+      stdout <- .h2o.getTmpFile("stdout")
       .h2o.startJar(nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size, beta = beta,
-                    assertion = assertion, forceDL = forceDL, license = license, ice_root = ice_root)
+                    assertion = assertion, forceDL = forceDL, license = license, ice_root = ice_root, stdout=stdout)
 
       count <- 0L
       while(!h2o.clusterIsUp(conn = tmpConn) && (count < 60L)) {
@@ -120,8 +120,10 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
         count <- count + 1L
       }
 
-      if (!h2o.clusterIsUp(conn = tmpConn))
+      if (!h2o.clusterIsUp(conn = tmpConn)) {
+        cat(paste(readLines(stdout), collapse="\n"), "\n")
         stop("H2O failed to start, stopping execution.")
+      }
     } else
       stop("Can only start H2O launcher if IP address is localhost.")
   }
@@ -344,7 +346,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   }
 }
 
-.h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, beta = FALSE, assertion = TRUE, forceDL = FALSE, license = NULL, ice_root) {
+.h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, beta = FALSE, assertion = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
   command <- .h2o.checkJava()
 
   if (! is.null(license)) {
@@ -358,7 +360,6 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   }
 
   # Note: Logging to stdout and stderr in Windows only works for R version 3.0.2 or later!
-  stdout <- .h2o.getTmpFile("stdout")
   stderr <- .h2o.getTmpFile("stderr")
   write(Sys.getpid(), .h2o.getTmpFile("pid"), append = FALSE)   # Write PID to file to track if R started H2O
 
