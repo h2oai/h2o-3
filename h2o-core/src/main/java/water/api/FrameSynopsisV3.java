@@ -12,6 +12,8 @@ import water.fvec.Vec;
  */
 public class FrameSynopsisV3 extends FrameBase<Iced, FrameSynopsisV3> {
 
+  public FrameSynopsisV3() {}
+
   // Output fields
   @API(help="Number of rows in the Frame", direction=API.Direction.OUTPUT)
   public long rows;
