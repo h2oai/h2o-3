@@ -416,7 +416,7 @@ public abstract class GLMTask  {
         if(_beta[i] != 0)
           ++rank;
       _gradient = MemoryManager.malloc8d(_beta.length);
-      _val = new GLMValidation(null,true,_ymu,_params,rank,0,_validate);
+      _val = new GLMValidation(null,_params._intercept,_ymu,_params,rank,0,_validate);
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       if(_rowFilter != null) {
         Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
