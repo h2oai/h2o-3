@@ -121,7 +121,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   // Generic filling from the impl
   @Override public S fillFromImpl(B builder) {
-    builder.init(false); // check params
+    // DO NOT, because it can already be running: builder.init(false); // check params
 
     this.algo = builder.getAlgo();
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
