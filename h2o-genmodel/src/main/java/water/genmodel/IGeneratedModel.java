@@ -37,6 +37,9 @@ public interface IGeneratedModel {
     /** @return true if this model represents a classifier, else it is used for regression. */
     public boolean isClassifier();
 
+    /** @return true if this model represents an AutoEncoder. */
+    public boolean isAutoEncoder();
+
     /** Predict the given row and return prediction.
      *
      * @param data row holding the data. Ordering should follow ordering of columns returned by getNames()

@@ -216,6 +216,7 @@ print = (properties, _schemas, _routes) ->
 
   template = read locate 'template', 'index.html'
   html = template
+    .replace 'v0.0.0', argv.project_version or ''
     .replace '{{toc}}', sidebar
     .replace '{{content}}', body
 

@@ -1,4 +1,4 @@
-#How to Launch H2O from the Command Line
+#Launching from the Command Line
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O-Dev. When you launch from the command line, you can include additional instructions to H2O-Dev, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 
