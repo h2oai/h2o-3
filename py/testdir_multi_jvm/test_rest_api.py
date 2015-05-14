@@ -135,17 +135,15 @@ def validate_validation_messages(result, expected_error_fields):
     assert len(not_found) == 0, 'FAIL: Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(result['messages'])
 
 
-def validate_model_exists(model_name, models=None):
+def validate_model_exists(model_name):
     '''
     Validate that a given model key is found in the models list.
     '''
-    if models is None:
-        result = a_node.models()
-        models = result['models']
+    models = a_node.models()['models']
 
     models_dict = list_to_dict(models, 'model_id/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
-    return models_dict[model_name]
+    return a_node.models(key=model_name)['models'][0]
 
 
 def validate_frame_exists(frame_name, frames=None):
@@ -346,7 +344,7 @@ class ModelSpec(dict):
         result = a_node.build_model(algo=self['algo'], model_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
 
-        model = validate_model_exists(self['dest_key'], a_node.models()['models'])
+        model = validate_model_exists(self['dest_key'])
         validate_actual_parameters(self['params'], model['parameters'], self['frame_key'], None)
 
         # TODO: refactor into helper

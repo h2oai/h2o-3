@@ -245,11 +245,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
 
-    // Drop cols with >20% NAs
+    /*
+    We now do this only through Rapids.  There should be an easy way to do it through the Java API for Sparkling Water users.
     if( _parms._drop_na20_cols )
-      new FilterCols() { 
+      new FilterCols() {
         @Override protected boolean filter(Vec v) { return ((float)v.naCnt() / v.length()) > 0.2; }
       }.doIt(_train,"Dropping columns with too many missing values: ",expensive);
+    */
 
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove

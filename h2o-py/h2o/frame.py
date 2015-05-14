@@ -372,8 +372,11 @@ class H2OFrame:
       self._row('missing_count', None)
     ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
-    dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
+    chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
+    dist_summary = chunk_dist_sum["distribution_summary"]
+    chunk_summary = chunk_dist_sum["chunk_summary"]
     h2o.removeFrameShallow(chunk_summary_tmp_key)
+    chunk_summary.show()
     dist_summary.show()
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
