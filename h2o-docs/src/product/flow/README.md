@@ -155,7 +155,7 @@ Now that you are familiar with the cell modes, let's import some data.
 ---
 
 <a name="ImportData"></a>
-# Importing Data
+# ...Importing Data
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
@@ -205,7 +205,7 @@ Ok, now that your data is available in H2O Flow, let's move on to the next step:
 ---
 
 <a name="ParseData"></a>
-# Parsing Data
+##Parsing Data
 
 After you have imported your data, parse the data.
 
@@ -297,7 +297,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 ---
 
 <a name="BuildModel"></a>
-# Building Models
+# ...Building Models
 
 To build a model: 
 
@@ -576,7 +576,7 @@ To learn how to make predictions, continue to the next section.
 ---
 
 <a name="Predict"></a>
-# Making Predictions
+# ...Making Predictions
 
 After creating your model, click the key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
@@ -692,9 +692,22 @@ Select one of the above options from the drop-down **Color** menu to display the
 
 ---
 
+<a name="Flows"></a>
+
+# ...Using Flows
+
+You can use and modify flows in a variety of ways:
+
+- Clips allow you to save single cells 
+- Outlines display summaries of your workflow
+- Flows can be saved, duplicated, loaded, or downloaded
+
+---
+
+
 <a name="Clips"></a>
 
-# Using Clips
+## Using Clips
 
 Clips enable you to save cells containing your workflow for later reuse. To save a cell as a clip, click the paperclip icon to the right of the cell (highlighted in the red box in the following screenshot). 
  ![Paperclip icon](images/Flow_clips_paperclip.png)
@@ -714,7 +727,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 ---
 
 <a name="Outline"></a>
-# Viewing Outlines
+## Viewing Outlines
 
 The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
 
@@ -726,7 +739,7 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 ---
 
 <a name="SaveFlow"></a>
-# Saving Flows
+## Saving Flows
 
 You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
@@ -741,7 +754,7 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
 
  ![Flows](images/Flow_flows.png)
 
-## Finding Saved Flows on your Disk
+### Finding Saved Flows on your Disk
  
 By default, flows are saved to the `h2oflows` directory underneath your home directory.  The directory where flows are saved is printed to stdout:
  
@@ -757,7 +770,7 @@ To specify a different location for saved flows, use the command-line argument `
 
 where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified location.  If the directory does not exist, it will be created the first time you save a flow.
 
-## Saving Flows on a Hadoop cluster
+### Saving Flows on a Hadoop cluster
 
 **Note**: If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
 
@@ -765,18 +778,18 @@ where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified locatio
 
 The location specified in `flow_dir` may be either an hdfs or regular filesystem directory.  If the directory does not exist, it will be created the first time you save a flow.
 
-## Duplicating Flows
+### Duplicating Flows
 
 To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
 
-## Downloading Flows
+### Downloading Flows
 
-After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename> .flow`, where `<filename>` is the name specified when the flow was saved. 
+After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
 
 **Caution**: You must have an active internet connection to export flows. 
 
-## Loading Flows
+### Loading Flows
 
 To load a saved flow, click the **Flows** tab in the sidebar at the right. In the pop-up confirmation window that appears, select **Load Notebook**, or click **Cancel** to return to the current flow. 
 
@@ -795,7 +808,7 @@ To load an exported flow, click the **Flow** menu and select **Open...**. In the
 ---
 
 <a name="Troubleshooting"></a>
-# Troubleshooting 
+# ...Troubleshooting 
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 

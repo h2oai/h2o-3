@@ -52,11 +52,11 @@ public class GLMTest  extends TestUtil {
       // params._response = 1;
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
+//      params._standardize= false;
       job = new GLM(modelKey,"glm test simple gaussian",params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
       HashMap<String, Double> coefs = model.coefficients();
-      System.out.println("coefs = " + coefs);
       assertEquals(0.0,coefs.get("Intercept"),1e-4);
       assertEquals(0.1, coefs.get("x"), 1e-4);
 

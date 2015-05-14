@@ -10,6 +10,7 @@ yaml = require 'js-yaml'
 _ = require 'lodash'
 
 EOL = "\n"
+mustache = /\{\{\s*(.+?)\s*\}\}/g
 words = (str) -> str.split /\s+/g
 trimArray = (lines) -> lines.join(EOL).trim().split(EOL)
 locate = (names...) -> path.join.apply null, [ __dirname, '../h2o-docs' ].concat names
@@ -214,11 +215,21 @@ print = (properties, _schemas, _routes) ->
     printSchemas schemas
   ].join EOL
 
+  body = body.replace mustache, (match, key) ->
+    if value = argv[key]
+      value
+    else
+      ''
+
   template = read locate 'template', 'index.html'
-  html = template
-    .replace 'v0.0.0', argv.project_version or ''
-    .replace '{{toc}}', sidebar
-    .replace '{{content}}', body
+  html = template.replace mustache, (match, key) ->
+    switch key
+      when 'version'
+        argv.project_version or ''
+      when 'toc'
+        sidebar
+      when 'content'
+        body
 
   write (locate 'web', 'index.html'), html
   cpn (locate 'template', 'javascripts', 'scale.fix.js'), (locate 'web', 'javascripts', 'scale.fix.js')

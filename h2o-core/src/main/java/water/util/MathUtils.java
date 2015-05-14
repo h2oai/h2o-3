@@ -183,6 +183,7 @@ public class MathUtils {
   };
 
   public static double roundToNDigits(double d, int n) {
+    if(d == 0)return d;
     int log = (int)Math.log10(d);
     int exp = n;
     exp -= log;
