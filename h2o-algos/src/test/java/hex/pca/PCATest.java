@@ -106,6 +106,9 @@ public class PCATest extends TestUtil {
         score = model.score(train);
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
         TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+
+        // Build a POJO, validate same results
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -158,6 +161,9 @@ public class PCATest extends TestUtil {
         score = model.score(train);
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
         TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+
+        // Build a POJO, validate same results
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
