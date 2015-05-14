@@ -1,4 +1,4 @@
-#Running on Hadoop
+# ...On Hadoop
 
 Currently supported versions: 
 - CDH 5.2
@@ -91,9 +91,8 @@ review the output from your command after the nodes has clouded up and formed a 
 Hadoop Launch Parameters
 ------------------------
 
-- `-libjars <.../h2o.jar>`: Add external jar files; must end with `h2o.jar`. 
 - `-h | -help`: Display help 
-- `-job name <JobName>`: Specify a job name; the default is `H2O_nnnnn` (where n is chosen randomly)
+- `-jobname <JobName>`: Specify a job name for the Jobtracker to use; the default is `H2O_nnnnn` (where n is chosen randomly)
 - `-driverif <IP address of mapper -> driver callback interface>`: Specify the IP address for callback messages from the mapper to the driver. 
 - `-driverport <port of mapper -> callback interface>`: Specify the port number for callback messages from the mapper to the driver. 
 - `-network <IPv4Network1>[,<IPv4Network2>]`: Specify the IPv4 network(s) to bind to the H2O nodes; multiple networks can be specified to force H2O to use the specified host in the Hadoop cluster. `10.1.2.0/24` allows 256 possibilities.   

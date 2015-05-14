@@ -1,22 +1,13 @@
 #Welcome to H2O 3.0
 
-Welcome to the H2O documentation site! We're glad you're interested in learning more about H2O - if you have any questions, please email them to [support@h2o.ai](mailto:support@h2o.ai) or post them on our Google groups website, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. 
+Welcome to the H2O documentation site! Depending on your area of interest, select your learning path from the links above. 
+
+We're glad you're interested in learning more about H2O - if you have any questions, please email them to [support@h2o.ai](mailto:support@h2o.ai) or post them on our Google groups website, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. 
+
 
 **Note**: To join our Google group on <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>, you need a Google account (such as Gmail or Google+). On the <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a> page, click the **Join group** button, then click the **New Topic** button to post a new message. 
 
 We welcome your feedback! Please let us know if you have any questions or comments about this site by emailing us at <a href="mailto:support@h2o.ai?subject=Website Feedback">support@h2o.ai</a>. 
-
-Depending on your area of interest, select your learning path below:
-
- - [New Users](#New)
- - [Experienced Users](#Exp)
- - [Open Source Users](#OS)
- - [Sparkling Water Users](#SW)
- - [Python Users](#Py)
- - [R Users](#R)
- - [API Users](#API)
- - [Java Users](#Java)
- - [Developers](#Dev)
 
 ---
 
@@ -204,3 +195,19 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. 
 
 ---
+#Downloading H2O
+
+To download H2O, go to our [downloads page](www.h2o.ai/download). Select a build type (bleeding edge or latest alpha), then select an install method (download and run, R, Python, Hadoop, or Maven) by clicking the tabs at the top of the page. Follow the instructions in the tab to install H2O. 
+
+
+# Starting H2O ...
+
+There are a variety of ways to start H2O, depending on which client you would like to use. 
+
+
+# ... From R
+
+# ... From Python
+
+# ... On Spark
+

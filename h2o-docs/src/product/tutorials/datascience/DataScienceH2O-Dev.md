@@ -1,13 +1,6 @@
 #Algorithms
 
-- [K-Means](#Kmeans)
-- [GLM](#GLM)
-- [DRF](#DRF)
-- [NaiveBayes](#NB)
-- [PCA](#PCA)
-- [GBM](#GBM)
-- [Deep Learning](#DL)
-
+This document describes how to define the models, interpret the model, the algorithm itself, and an FAQ. 
 
 ##Commonalities 
 
