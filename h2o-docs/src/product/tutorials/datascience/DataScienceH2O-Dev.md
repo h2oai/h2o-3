@@ -99,51 +99,51 @@ The output is a matrix of the cluster assignments and the coordinates of the clu
 
 ###K-Means Algorithm
 
-The number of clusters $$K$$ is user-defined and is determined a priori. 
+The number of clusters \(K\) is user-defined and is determined a priori. 
 
-1. Choose $$K$$ initial cluster centers $$m_{k}$$ according to one of
+1. Choose \(K\) initial cluster centers \(m_{k}\) according to one of
    the following:
 
-    - **Randomization**: Choose $$K$$ clusters from the set of $$N$$ observations at random so that each observation has an equal chance of being chosen.
+    - **Randomization**: Choose \(K\) clusters from the set of \(N\) observations at random so that each observation has an equal chance of being chosen.
 
     - **Plus Plus**  
 
-      a. Choose one center $$m_{1}$$ at random. 
+      a. Choose one center \(m_{1}\) at random. 
 
-      2.  Calculate the difference between $$m_{1}$$ and each of the remaining $$N-1$$ observations $$x_{i}$$. 
-  $$d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2$$
+      2.  Calculate the difference between \(m_{1}\) and each of the remaining \(N-1\) observations \(x_{i}\). 
+  \(d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2\)
 
-      3. Let $$P(i)$$ be the probability of choosing $$x_{i}$$ as $$m_{2}$$. Weight $$P(i)$$ by $$d(x_{i}, m_{1})$$ so that those $$x_{i}$$ furthest from $$m_{2}$$ have  a higher probability of being selected than those $$x_{i}$$ close to $$m_{1}$$.
+      3. Let \(P(i)\) be the probability of choosing \(x_{i}\) as \(m_{2}\). Weight \(P(i)\) by \(d(x_{i}, m_{1})\) so that those \(x_{i}\) furthest from \(m_{2}\) have  a higher probability of being selected than those \(x_{i}\) close to \(m_{1}\).
 
-      4. Choose the next center $$m_{2}$$ by drawing at random according to the weighted probability distribution. 
+      4. Choose the next center \(m_{2}\) by drawing at random according to the weighted probability distribution. 
 
-      5.  Repeat until $$K$$ centers have been chosen.
+      5.  Repeat until \(K\) centers have been chosen.
 
    - **Furthest**
 
-       a. Choose one center $$m_{1}$$ at random. 
+       a. Choose one center \(m_{1}\) at random. 
 
-       2. Calculate the difference between $$m_{1}$$ and each of the remaining $$N-1$$ observations $$x_{i}$$. 
-       $$d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2$$
+       2. Calculate the difference between \(m_{1}\) and each of the remaining \(N-1\) observations \(x_{i}\). 
+       \(d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2\)
 
-       3. Choose $$m_{2}$$ to be the $$x_{i}$$ that maximizes $$d(x_{i}, m_{1})$$.
+       3. Choose \(m_{2}\) to be the \(x_{i}\) that maximizes \(d(x_{i}, m_{1})\).
 
-       4. Repeat until $$K$$ centers have been chosen. 
+       4. Repeat until \(K\) centers have been chosen. 
 
-2. Once $$K$$ initial centers have been chosen calculate the difference between each observation $$x_{i}$$ and each of the centers $$m_{1},...,m_{K}$$, where difference is the squared Euclidean distance taken over $$p$$ parameters.  
+2. Once \(K\) initial centers have been chosen calculate the difference between each observation \(x_{i}\) and each of the centers \(m_{1},...,m_{K}\), where difference is the squared Euclidean distance taken over \(p\) parameters.  
   
-   $$d(x_{i}, m_{k})=$$
-   $$\sum_{j=1}^{p}(x_{ij}-m_{k})^2=$$
- $$\lVert(x_{i}-m_{k})\rVert^2$$
+   \(d(x_{i}, m_{k})=\)
+   \(\sum_{j=1}^{p}(x_{ij}-m_{k})^2=\)
+ \(\lVert(x_{i}-m_{k})\rVert^2\)
 
 
-3. Assign $$x_{i}$$ to the cluster $$k$$ defined by $$m_{k}$$ that minimizes $$d(x_{i}, m_{k})$$
+3. Assign \(x_{i}\) to the cluster \(k\) defined by \(m_{k}\) that minimizes \(d(x_{i}, m_{k})\)
 
-4. When all observations $$x_{i}$$ are assigned to a cluster calculate the mean of the points in the cluster. 
+4. When all observations \(x_{i}\) are assigned to a cluster calculate the mean of the points in the cluster. 
 
-	$$\bar{x}(k)=\lbrace\bar{x_{i1}},…\bar{x_{ip}}\rbrace$$
+	\(\bar{x}(k)=\lbrace\bar{x_{i1}},…\bar{x_{ip}}\rbrace\)
 
-5. Set the $$\bar{x}(k)$$ as the new cluster centers $$m_{k}$$. Repeat steps 2 through 5 until the specified number of max iterations is reached or cluster assignments of the $$x_{i}$$ are stable.
+5. Set the \(\bar{x}(k)\) as the new cluster centers \(m_{k}\). Repeat steps 2 through 5 until the specified number of max iterations is reached or cluster assignments of the \(x_{i}\) are stable.
 
 
 
@@ -267,52 +267,52 @@ By default, the following output displays:
 
 Following the definitive text by P. McCullagh and J.A. Nelder (1989) on the generalization of linear models to non-linear distributions of the response variable Y, H2O fits GLM models based on the maximum likelihood estimation via iteratively reweighed least squares. 
 
-Let $$y_{1},…,y_{n}$$ be n observations of the independent, random response variable $$Y_{i}$$.
+Let \(y_{1},…,y_{n}\) be n observations of the independent, random response variable \(Y_{i}\).
 
 Assume that the observations are distributed according to a function from the exponential family and have a probability density function of the form:
 
-$$f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)]$$
-where $$\theta$$ and $$\phi$$ are location and scale parameters,
-and $$\: a_{i}(\phi), \:b_{i}(\theta_{i}),\: c_{i}(y_{i}; \phi)$$ are known functions.
+\(f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)]\)
+where \(\theta\) and \(\phi\) are location and scale parameters,
+and \(\: a_{i}(\phi), \:b_{i}(\theta_{i}),\: c_{i}(y_{i}; \phi)\) are known functions.
 
-$$a_{i}$$ is of the form $$\:a_{i}=\frac{\phi}{p_{i}}; p_{i}$$ is a known prior weight.
+\(a_{i}\) is of the form \(\:a_{i}=\frac{\phi}{p_{i}}; p_{i}\) is a known prior weight.
 
-When $$Y$$ has a pdf from the exponential family: 
+When \(Y\) has a pdf from the exponential family: 
 
-$$E(Y_{i})=\mu_{i}=b^{\prime}$$
-$$var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)$$
+\(E(Y_{i})=\mu_{i}=b^{\prime}\)
+\(var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)\)
 
-Let $$g(\mu_{i})=\eta_{i}$$ be a monotonic, differentiable transformation of the expected value of $$y_{i}$$. The function $$\eta_{i}$$ is the link function and follows a linear model.
+Let \(g(\mu_{i})=\eta_{i}\) be a monotonic, differentiable transformation of the expected value of \(y_{i}\). The function \(\eta_{i}\) is the link function and follows a linear model.
 
-$$g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta$$
+\(g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta\)
 
 When inverted: 
-$$\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)$$
+\(\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)\)
 
 **Maximum Likelihood Estimation**
 
-For an initial rough estimate of the parameters $$\hat{\beta}$$, use the estimate to generate fitted values: 
-$$\mu_{i}=g^{-1}(\hat{\eta_{i}})$$
+For an initial rough estimate of the parameters \(\hat{\beta}\), use the estimate to generate fitted values: 
+\(\mu_{i}=g^{-1}(\hat{\eta_{i}})\)
 
-Let $$z$$ be a working dependent variable such that 
-$$z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}$$,
+Let \(z\) be a working dependent variable such that 
+\(z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}\),
 
-where $$\frac{d\eta_{i}}{d\mu_{i}}$$ is the derivative of the link function evaluated at the trial estimate. 
+where \(\frac{d\eta_{i}}{d\mu_{i}}\) is the derivative of the link function evaluated at the trial estimate. 
 
 Calculate the iterative weights:
-$$w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}$$
+\(w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}\)
 
-Where $$b^{\prime\prime}$$ is the second derivative of $$b(\theta_{i})$$ evaluated at the trial estimate. 
+Where \(b^{\prime\prime}\) is the second derivative of \(b(\theta_{i})\) evaluated at the trial estimate. 
 
 
-Assume $$a_{i}(\phi)$$ is of the form $$\frac{\phi}{p_{i}}$$. The weight $$w_{i}$$ is inversely proportional to the variance of the working dependent variable $$z_{i}$$ for current parameter estimates and proportionality factor $$\phi$$.
+Assume \(a_{i}(\phi)\) is of the form \(\frac{\phi}{p_{i}}\). The weight \(w_{i}\) is inversely proportional to the variance of the working dependent variable \(z_{i}\) for current parameter estimates and proportionality factor \(\phi\).
 
-Regress $$z_{i}$$ on the predictors $$x_{i}$$ using the weights $$w_{i}$$ to obtain new estimates of $$\beta$$. 
-$$\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}$$ 
+Regress \(z_{i}\) on the predictors \(x_{i}\) using the weights \(w_{i}\) to obtain new estimates of \(\beta\). 
+\(\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}\) 
 
-Where $$\mathbf{X}$$ is the model matrix, $$\mathbf{W}$$ is a diagonal matrix of $$w_{i}$$, and $$\mathbf{z}$$ is a vector of the working response variable $$z_{i}$$.
+Where \(\mathbf{X}\) is the model matrix, \(\mathbf{W}\) is a diagonal matrix of \(w_{i}\), and \(\mathbf{z}\) is a vector of the working response variable \(z_{i}\).
 
-This process is repeated until the estimates $$\hat{\beta}$$ change by less than the specified amount. 
+This process is repeated until the estimates \(\hat{\beta}\) change by less than the specified amount. 
 
 **Cost of computation**
 
@@ -322,7 +322,7 @@ H2O can process large data sets because it relies on parallel processes. Large d
 In GLM, data are split by rows but not by columns, because the predicted Y values depend on information in each of the predictor variable vectors. If O is a complexity function, N is the number of observations (or rows), and P is the number of predictors (or columns) then 
 
 
-   &nbsp;&nbsp;&nbsp;&nbsp;$$Runtime\propto p^3+\frac{(N*p^2)}{CPUs}$$
+   &nbsp;&nbsp;&nbsp;&nbsp;\(Runtime\propto p^3+\frac{(N*p^2)}{CPUs}\)
 
 Distribution reduces the time it takes an algorithm to process because it decreases N.
  
@@ -331,7 +331,7 @@ Relative to P, the larger that (N/CPUs) becomes, the more trivial p becomes to t
 
 
 
-   &nbsp;&nbsp;&nbsp;&nbsp;$$Complexity = O(p^3 + N*p^2)$$ 
+   &nbsp;&nbsp;&nbsp;&nbsp;\(Complexity = O(p^3 + N*p^2)\) 
 
 
 
@@ -577,37 +577,37 @@ The algorithm is presented for the simplified binomial case without loss of gene
 
 Under the Naive Bayes assumption of independence, given a training set
 for a set of discrete valued features X 
-$${(X^{(i)},\ y^{(i)};\ i=1,...m)}$$
+\({(X^{(i)},\ y^{(i)};\ i=1,...m)}\)
 
 The joint likelihood of the data can be expressed as: 
 
-$$\mathcal{L} \: (\phi(y),\: \phi_{i|y=1},\:\phi_{i|y=0})=\Pi_{i=1}^{m} p(X^{(i)},\: y^{(i)})$$
+\(\mathcal{L} \: (\phi(y),\: \phi_{i|y=1},\:\phi_{i|y=0})=\Pi_{i=1}^{m} p(X^{(i)},\: y^{(i)})\)
 
 The model can be parameterized by:
 
-$$\phi_{i|y=0}=\ p(x_{i}=1|\ y=0);\: \phi_{i|y=1}=\ p(x_{i}=1|y=1);\: \phi(y)$$
+\(\phi_{i|y=0}=\ p(x_{i}=1|\ y=0);\: \phi_{i|y=1}=\ p(x_{i}=1|y=1);\: \phi(y)\)
 
-Where $$\phi_{i|y=0}=\ p(x_{i}=1|\ y=0)$$ can be thought of as the fraction of the observed instances where feature $$x_{i}$$ is observed, and the outcome is $$y=0, \phi_{i|y=1}=p(x_{i}=1|\ y=1)$$ is the fraction of the observed instances where feature $$x_{i}$$ is observed, and the outcome is $$y=1$$, and so on.
+Where \(\phi_{i|y=0}=\ p(x_{i}=1|\ y=0)\) can be thought of as the fraction of the observed instances where feature \(x_{i}\) is observed, and the outcome is \(y=0, \phi_{i|y=1}=p(x_{i}=1|\ y=1)\) is the fraction of the observed instances where feature \(x_{i}\) is observed, and the outcome is \(y=1\), and so on.
 
 The objective of the algorithm is to maximize with respect to
-$$\phi_{i|y=0}, \ \phi_{i|y=1},\ and \ \phi(y)$$
+\(\phi_{i|y=0}, \ \phi_{i|y=1},\ and \ \phi(y)\)
 
 Where the maximum likelihood estimates are: 
 
-$$\phi_{j|y=1}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1)}{\Sigma_{i=1}^{m}(y^{(i)}=1}$$
+\(\phi_{j|y=1}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1)}{\Sigma_{i=1}^{m}(y^{(i)}=1}\)
 
-$$\phi_{j|y=0}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0)}{\Sigma_{i=1}^{m}(y^{(i)}=0}$$
+\(\phi_{j|y=0}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0)}{\Sigma_{i=1}^{m}(y^{(i)}=0}\)
 
-$$\phi(y)= \frac{(y^{i} = 1)}{m}$$
+\(\phi(y)= \frac{(y^{i} = 1)}{m}\)
 
 
-Once all parameters $$\phi_{j|y}$$ are fitted, the model can be used to predict new examples with features $$X_{(i^*)}$$. 
+Once all parameters \(\phi_{j|y}\) are fitted, the model can be used to predict new examples with features \(X_{(i^*)}\). 
 
 This is carried out by calculating: 
 
-$$p(y=1|x)=\frac{\Pi p(x_i|y=1) p(y=1)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}$$
+\(p(y=1|x)=\frac{\Pi p(x_i|y=1) p(y=1)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}\)
 
-$$p(y=0|x)=\frac{\Pi p(x_i|y=0) p(y=0)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}$$
+\(p(y=0|x)=\frac{\Pi p(x_i|y=0) p(y=0)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}\)
 
 and predicting the class with the highest probability. 
 
@@ -617,9 +617,9 @@ It is possible that prediction sets contain features not originally seen in the 
 Laplace smoothing allows a model to predict on out of training data features by adjusting the maximum likelihood estimates to be: 
 
 
-$$\phi_{j|y=1}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=1 \: + \: 2}$$
+\(\phi_{j|y=1}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=1 \: + \: 2}\)
 
-$$\phi_{j|y=0}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=0 \: + \: 2}$$
+\(\phi_{j|y=0}= \frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=0 \: + \: 2}\)
 
 Note that in the general case where y takes on k values, there are k+1 modified parameter estimates, and they are added in when the denominator is k (rather than two, as shown in the two-level classifier shown here.)
 
@@ -708,7 +708,7 @@ The output for PCA includes the following:
 
 ###PCA Algorithm
 
-Let $$X$$ be an $$M\times N$$ matrix where
+Let \(X\) be an \(M\times N\) matrix where
  
 - Each row corresponds to the set of all measurements on a particular 
    attribute, and 
@@ -716,34 +716,34 @@ Let $$X$$ be an $$M\times N$$ matrix where
 - Each column corresponds to a set of measurements from a given
    observation or trial
 
-The covariance matrix $$C_{x}$$ is
+The covariance matrix \(C_{x}\) is
 
-$$C_{x}=\frac{1}{n}XX^{T}$$
+\(C_{x}=\frac{1}{n}XX^{T}\)
 
-where $$n$$ is the number of observations. 
+where \(n\) is the number of observations. 
 
-$$C_{x}$$ is a square, symmetric $$m\times m$$ matrix, the diagonal entries of which are the variances of attributes, and the off-diagonal entries are covariances between attributes. 
+\(C_{x}\) is a square, symmetric \(m\times m\) matrix, the diagonal entries of which are the variances of attributes, and the off-diagonal entries are covariances between attributes. 
 
 The objective of PCA is to maximize variance while minimizing covariance. 
 
-To accomplish this, for a new matrix $$C_{y}$$ with off diagonal entries of 0, and each successive dimension of Y ranked according to variance, PCA finds an orthonormal matrix $$P$$ such that $$Y=PX$$ constrained by the requirement that $$C_{y}=\frac{1}{n}YY^{T}$$ be a diagonal matrix. 
+To accomplish this, for a new matrix \(C_{y}\) with off diagonal entries of 0, and each successive dimension of Y ranked according to variance, PCA finds an orthonormal matrix \(P\) such that \(Y=PX\) constrained by the requirement that \(C_{y}=\frac{1}{n}YY^{T}\) be a diagonal matrix. 
 
-The rows of $$P$$ are the principal components of X.
+The rows of \(P\) are the principal components of X.
 
-$$C_{y}=\frac{1}{n}YY^{T}$$
-$$=\frac{1}{n}(PX)(PX)^{T}$$
-$$C_{y}=PC_{x}P^{T}.$$
+\(C_{y}=\frac{1}{n}YY^{T}\)
+\(=\frac{1}{n}(PX)(PX)^{T}\)
+\(C_{y}=PC_{x}P^{T}.\)
 
-Because any symmetric matrix is diagonalized by an orthogonal matrix of its eigenvectors, solve matrix $$P$$ to be a matrix where each row is an eigenvector of 
-$$\frac{1}{n}XX^{T}=C_{x}$$
+Because any symmetric matrix is diagonalized by an orthogonal matrix of its eigenvectors, solve matrix \(P\) to be a matrix where each row is an eigenvector of 
+\(\frac{1}{n}XX^{T}=C_{x}\)
 
-Then the principal components of $$X$$ are the eigenvectors of $$C_{x}$$, and the $$i^{th}$$ diagonal value of $$C_{y}$$ is the variance of $$X$$ along $$p_{i}$$. 
+Then the principal components of \(X\) are the eigenvectors of \(C_{x}\), and the \(i^{th}\) diagonal value of \(C_{y}\) is the variance of \(X\) along \(p_{i}\). 
 
-Eigenvectors of $$C_{x}$$ are found by first finding the eigenvalues $$\lambda$$ of $$C_{x}$$.
+Eigenvectors of \(C_{x}\) are found by first finding the eigenvalues \(\lambda\) of \(C_{x}\).
 
-For each eigenvalue $$\lambda$$ $$(C-{x}-\lambda I)x =0$$ where $$x$$ is the eigenvector associated with $$\lambda$$. 
+For each eigenvalue \(\lambda\) \((C-{x}-\lambda I)x =0\) where \(x\) is the eigenvector associated with \(\lambda\). 
 
-Solve for $$x$$ by Gaussian elimination. 
+Solve for \(x\) by Gaussian elimination. 
 
 
 
@@ -851,20 +851,20 @@ The output for GBM includes the following:
 H2O's Gradient Boosting Algorithms follow the algorithm specified by Hastie et al (2001):
 
 
-Initialize $$f_{k0} = 0,\: k=1,2,…,K$$
+Initialize \(f_{k0} = 0,\: k=1,2,…,K\)
 
-For $$m=1$$ to $$M:$$
+For \(m=1\) to \(M:\)
   
-   &nbsp;&nbsp;(a) Set $$p_{k}(x)=\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}},\:k=1,2,…,K$$
+   &nbsp;&nbsp;(a) Set \(p_{k}(x)=\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}},\:k=1,2,…,K\)
 
-   &nbsp;&nbsp;(b) For $$k=1$$ to $$K$$:
+   &nbsp;&nbsp;(b) For \(k=1\) to \(K\):
 
-   &nbsp;&nbsp;&nbsp;&nbsp;i. Compute $$r_{ikm}=y_{ik}-p_{k}(x_{i}),\:i=1,2,…,N.$$
-	&nbsp;&nbsp;&nbsp;&nbsp;ii. Fit a regression tree to the targets $$r_{ikm},\:i=1,2,…,N$$, giving terminal regions $$R_{jim},\:j=1,2,…,J_{m}.$$
-   $$iii. Compute$$ $$\gamma_{jkm}=\frac{K-1}{K}\:\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})},\:j=1,2,…,J_{m}.$$
-	$$\:iv.\:Update\:f_{km}(x)=f_{k,m-1}(x)+\sum_{j=1}^{J_{m}}\gamma_{jkm}I(x\in\:R_{jkm}).$$	      
+   &nbsp;&nbsp;&nbsp;&nbsp;i. Compute \(r_{ikm}=y_{ik}-p_{k}(x_{i}),\:i=1,2,…,N.\)
+	&nbsp;&nbsp;&nbsp;&nbsp;ii. Fit a regression tree to the targets \(r_{ikm},\:i=1,2,…,N\), giving terminal regions \(R_{jim},\:j=1,2,…,J_{m}.\)
+   \(iii. Compute\) \(\gamma_{jkm}=\frac{K-1}{K}\:\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})},\:j=1,2,…,J_{m}.\)
+	\(\:iv.\:Update\:f_{km}(x)=f_{k,m-1}(x)+\sum_{j=1}^{J_{m}}\gamma_{jkm}I(x\in\:R_{jkm}).\)	      
 
-Output $$\:\hat{f_{k}}(x)=f_{kM}(x),\:k=1,2,…,K.$$ 
+Output \(\:\hat{f_{k}}(x)=f_{kM}(x),\:k=1,2,…,K.\) 
 
 
 ###References
