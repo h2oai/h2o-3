@@ -109,6 +109,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
         if( is(children[[1]], "ASTNode") ) return(children)
       }
       op <- new("ASTApply", op="llist")
+      if( is(children[[1]], "ASTNode") ) { return(new("ASTNode", root=op, children=children)) }
       if( !(substr(children[[1]],1,1) == "#") ) { op <- new("ASTApply", op="slist") }
       return(new("ASTNode", root=op, children=children))
 
