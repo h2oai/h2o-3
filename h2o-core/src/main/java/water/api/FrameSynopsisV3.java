@@ -21,7 +21,6 @@ public class FrameSynopsisV3 extends FrameBase<Iced, FrameSynopsisV3> {
   @API(help="Number of columns in the Frame", direction=API.Direction.OUTPUT)
   public long columns;
 
-  /** TODO: refactor together with fillFromImpl(). */
   FrameSynopsisV3(Frame fr) {
     Vec[] vecs = fr.vecs();
 
