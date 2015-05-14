@@ -231,6 +231,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  for any length.
    */
   public final void asyncExec( int outputs, Frame fr, boolean run_local){
+    _topGlobal = true;
     // Use first readable vector to gate home/not-home
     if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
     _fr = fr;                   // Record vectors to work on
@@ -264,6 +265,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     catch( RuntimeException re ) { setException(re);  }
     DException.DistributedException de = getDException();
     if( de != null ) throw new RuntimeException(de);
+    assert _topGlobal:"lost top global flag";
     return self();
   }
 
@@ -293,6 +295,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // the task completes (perhaps using a higher-priority thread from the
     // upper thread pools).  This prevents thread deadlock.
     _priority = nextThrPriority();
+    _topGlobal = true;
     _keys = keys;
     _nxx = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     setupLocal0();              // Local setup
@@ -495,11 +498,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       copyOver(_res);           // So copy into self
     }
     closeLocal();          // User's node-local cleanup
-    if( nlo==0 && nhi == H2O.CLOUD.size() ) {
+    if( _topGlobal ) {
       if (_fr != null)      // Do any post-writing work (zap rollup fields, etc)
         _fr.postWrite(_fs).blockForPending();
       postGlobal();             // User's continuation work
-
     }
 
   }
@@ -559,9 +561,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return super.onExceptionalCompletion(ex, caller);
   }
 
+  transient boolean _topGlobal = false;
   // Make copy, setting final-field completer and clearing out a bunch of fields 
   private T copyAndInit() { 
     T x = clone();
+    x._topGlobal = false;
     x.setCompleter(this); // Set completer, what used to be a final field
     x._topLocal = false;  // Not a top job
     x._nleft = x._nrite = null;
