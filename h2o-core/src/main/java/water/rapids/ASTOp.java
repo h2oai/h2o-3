@@ -2833,7 +2833,7 @@ class ASTHist extends ASTUniPrefixOp {
   private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
   private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
   private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
-  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman–Diaconis slightly modified to use MAD instead of IQR
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
   private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
   private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
   private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
