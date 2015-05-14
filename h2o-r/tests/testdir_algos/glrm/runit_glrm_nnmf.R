@@ -10,8 +10,8 @@ test.glrm.nnmf <- function(conn) {
   train.h2o <- as.h2o(conn, train)
   
   Log.info("Run GLRM with non-negative regularization")
-  noise <- 0.1*matrix(runif(k*n,-1,1), nrow = k, ncol = n)
-  initY <- Y + noise
+  # initY <- Y + 0.1*matrix(runif(k*n,-1,1), nrow = k, ncol = n)
+  initY <- matrix(runif(k*n), nrow = k, ncol = n)
   fitH2O <- h2o.glrm(train.h2o, init = initY, loss = "L2", regularization_x = "NonNegative", regularization_y = "NonNegative", gamma_x = 1, gamma_y = 1)
   Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))
   fitY <- t(fitH2O@model$archetypes)
