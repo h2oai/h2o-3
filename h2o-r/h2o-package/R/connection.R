@@ -124,7 +124,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
         cat(paste(readLines(stdout), collapse="\n"), "\n")
         print(tmpConn@ip)
         print(tmpConn@port)
-        rv <- .h2o.doRawGET(tmpConn = conn, urlSuffix = "")
+        rv <- .h2o.doRawGET(conn = tmpConn, urlSuffix = "")
         print(rv$curlError)
         print(rv$httpStatusCode)
         stop("H2O failed to start, stopping execution.")
