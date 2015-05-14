@@ -110,6 +110,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       preds[i] = 0;
       for (int j = 0; j < _output._ncats; j++) {
         int level = (int)data[_output._permutation[j]];
+        // int clen = _output._catOffsets[j+1]-_output._catOffsets[j];
+        // assert level >= 0 && level < clen : "Categorical level x = " + level + " must be in 0 <= x < " + clen;
+        if (level > _output._catOffsets[j+1]-_output._catOffsets[j]-1) continue;  // Skip categorical level in test set but not in train
         preds[i] += _output._eigenvectors_raw[_output._catOffsets[j]+level][i];
       }
 
@@ -158,6 +161,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Categorical columns
     bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
     bodySb.i(2).p("int c = (int) data[PERMUTE[j]];").nl();
+    bodySb.i(2).p("if(c > CATOFFS[j+1]-CATOFFS[j]-1) continue;").nl();
     bodySb.i(2).p("preds[i] += EIGVECS[CATOFFS[j]+c][i];").nl();
     bodySb.i(1).p("}").nl();
 
