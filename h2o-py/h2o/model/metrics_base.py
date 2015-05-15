@@ -55,7 +55,7 @@ class MetricsBase(object):
     if metric_type in types_w_bin:
       print "AUC: "                                           + str(self.auc())
       print "Gini: "                                          + str(self.giniCoef())
-      ConfusionMatrix(cm=self.confusion_matrices()[0], domains=self._metric_json['domain']).show()
+      self.confusion_matrix().show()
       self._metric_json["max_criteria_and_metric_scores"].show()
     if metric_type in types_w_mult:
                                                                self.confusion_matrix().show()
@@ -338,46 +338,48 @@ class H2OBinomialModelMetrics(MetricsBase):
       metrics.append([t,row[midx]])
     return metrics
 
-  def confusion_matrix(self, metric="f1"):
+  def confusion_matrix(self, metrics=None, thresholds=None):
     """
     Get the confusion matrix for the specified metric
 
-    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "error", "accuracy", "f0point5", "f2", "f1"}
-    :return: the confusion matrix for the metric
+    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
+    :param thresholds: A value (or list of values) between 0 and 1
+    :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix (if there is only one)
     """
-    thresh = self.find_threshold_by_max_metric(metric)
-    thresh2d = self._metric_json['thresholds_and_metric_scores']
-    tidx = thresh2d.col_header.index('tps')
-    fidx = thresh2d.col_header.index('fps')
-    p = self._metric_json['max_criteria_and_metric_scores'].cell_values[tidx-1][2]
-    n = self._metric_json['max_criteria_and_metric_scores'].cell_values[fidx-1][2]
-    idx = self.find_idx_by_threshold(thresh)
-    row = thresh2d.cell_values[idx]
-    tps = row[tidx]
-    fps = row[fidx]
-    c0  = float("nan") if isinstance(n, str) or isinstance(fps, str) else n - fps
-    c1  = float("nan") if isinstance(p, str) or isinstance(tps, str) else p - tps
-    fps = float("nan") if isinstance(fps,str) else fps
-    tps = float("nan") if isinstance(tps,str) else tps
-    return [[c0,fps],[c1,tps]]
+    # make lists out of metrics and thresholds arguments
+    if metrics is None and thresholds is None: metrics = ["f1"]
 
-  def confusion_matrices(self, thresholds=None):
-    """
-    Each threshold defines a confusion matrix. For each threshold in the thresholds list, return a 2x2 list.
+    if isinstance(metrics, list): metrics_list = metrics
+    elif metrics is None: metrics_list = []
+    else: metrics_list = [metrics]
 
-    :param thresholds: A list of thresholds.
-    :return: A list of 2x2-lists: [, ..., [ [tns,fps], [fns,tps] ], ..., ]
-    """
-    if not thresholds: thresholds=[self.find_threshold_by_max_metric("f1")]
-    if not isinstance(thresholds,list):
-      raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
+    if isinstance(thresholds, list): thresholds_list = thresholds
+    elif thresholds is None: thresholds_list = []
+    else: thresholds_list = [thresholds]
+
+    # error check the metrics_list and thresholds_list
+    if not all(isinstance(t, (int, float, long)) for t in thresholds_list) or \
+            not all(t >= 0 or t <= 1 for t in thresholds_list):
+      raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
+
+    if not all(m in ["min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr",
+                                      "precision", "accuracy", "f0point5", "f2", "f1"] for m in metrics_list):
+      raise ValueError("The only allowable metrics are min_per_class_accuracy, absolute_MCC, tnr, fnr, fpr, tpr, "
+                       "precision, accuracy, f0point5, f2, f1")
+
+    # make one big list that combines the thresholds and metric-thresholds
+    metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
+    for mt in metrics_thresholds:
+      thresholds_list.append(mt)
+
     thresh2d = self._metric_json['thresholds_and_metric_scores']
+    actual_thresholds = [float(e[0]) for i,e in enumerate(thresh2d.cell_values)]
     tidx = thresh2d.col_header.index('tps')
     fidx = thresh2d.col_header.index('fps')
     p = self._metric_json['max_criteria_and_metric_scores'].cell_values[tidx-1][2]
     n = self._metric_json['max_criteria_and_metric_scores'].cell_values[fidx-1][2]
     cms = []
-    for t in thresholds:
+    for t in thresholds_list:
       idx = self.find_idx_by_threshold(t)
       row = thresh2d.cell_values[idx]
       tps = row[tidx]
@@ -386,12 +388,19 @@ class H2OBinomialModelMetrics(MetricsBase):
       c1  = float("nan") if isinstance(p, str) or isinstance(tps, str) else p - tps
       fps = float("nan") if isinstance(fps,str) else fps
       tps = float("nan") if isinstance(tps,str) else tps
-      cms.append([[c0,fps],[c1,tps]])
-    return cms
+      if t in metrics_thresholds:
+        m = metrics_list[metrics_thresholds.index(t)]
+        table_header = "Confusion Matrix (Act/Pred) for max " + m + " @ threshold = " + str(actual_thresholds[idx])
+      else: table_header = "Confusion Matrix (Act/Pred) @ threshold = " + str(actual_thresholds[idx])
+      cms.append(ConfusionMatrix(cm=[[c0,fps],[c1,tps]], domains=self._metric_json['domain'],
+                                 table_header=table_header))
+
+    if len(cms) == 1: return cms[0]
+    else: return cms
 
   def find_threshold_by_max_metric(self,metric):
     """
-    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "error", "accuracy", "f0point5", "f2", "f1"}
+    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
     :return: the threshold at which the given metric is maximum.
     """
     crit2d = self._metric_json['max_criteria_and_metric_scores']
@@ -414,7 +423,15 @@ class H2OBinomialModelMetrics(MetricsBase):
       t = float(e[0])
       if abs(t-threshold) < 0.00000001 * max(t,threshold):
         return i
-    raise ValueError("No threshold "+str(threshold))
+    if threshold >= 0 and threshold <= 1:
+      thresholds = [float(e[0]) for i,e in enumerate(thresh2d.cell_values)]
+      threshold_diffs = [abs(t - threshold) for t in thresholds]
+      closest_idx = threshold_diffs.index(min(threshold_diffs))
+      closest_threshold = thresholds[closest_idx]
+      print "Could not find exact threshold {0}; using closest threshold found {1}." \
+      .format(threshold, closest_threshold)
+      return closest_idx
+    raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
