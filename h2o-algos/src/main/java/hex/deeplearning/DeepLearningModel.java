@@ -1503,6 +1503,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
+  /**
+   * Regular constructor (from scratch)
+   * @param destKey
+   * @param parms
+   * @param output
+   * @param train
+   * @param valid
+   */
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
     super(destKey, parms, output);
     boolean classification = train.lastVec().isEnum();
