@@ -40,13 +40,13 @@ public class Env extends Iced {
   final static int LARY  =10;
   final static int NULL  =99999;
 
-  transient ExecStack _stack;            // The stack
-  transient HashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
-  transient final public StringBuilder _sb;    // Holder for print results
-  transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
-  transient final SymbolTable  _global;
-  transient final SymbolTable  _local;
-  transient final Env _parent;
+  transient ExecStack _stack;                // The stack
+  transient HashMap<Vec,IcedInt> _refcnt;    // Ref Counts for each vector
+  transient final public StringBuilder _sb;  // Holder for print results
+  transient final HashSet<Key> _locked;      // Vec keys, these shalt not be DKV.removed.
+  final SymbolTable  _global;
+  SymbolTable  _local;
+  final Env _parent;
   final private boolean _isGlobal;
 
   transient HashSet<ValFrame> _trash;
