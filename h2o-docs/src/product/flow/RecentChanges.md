@@ -1,13 +1,116 @@
 #Recent Changes   
 
-##H2O-Dev
+##H2O 3.0
 
+###Shannon (0.3.#.#) - 5/15/15
+
+####New Features 
+The following features have been added since the last release: 
+
+##### ModelMetrics
+
+- [PUBDEV-411](https://0xdata.atlassian.net/browse/PUBDEV-411): ModelMetrics by model category
+
+##### WebUI
+
+- [PUBDEV-942](https://0xdata.atlassian.net/browse/PUBDEV-942): ModelMetrics by model category - Autoencoder
+
+####Enhancements
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+- [github](https://github.com/h2oai/h2o-dev/commit/6bdd386d4f1d6bde8d045691c8f250266f3142fc): GLM update: skip lambda max during lambda search
+- [github](https://github.com/h2oai/h2o-dev/commit/e73b1e8316a100f60061ceb44eab4ff3c18f0452): removed higher accuracy option
+- [github](https://github.com/h2oai/h2o-dev/commit/dd11a6fc8e279a8ecd65d412251a43421d2d32fb): Rename constant col parameter
+- [github](https://github.com/h2oai/h2o-dev/commit/fa215e4247b8ed48e250d24914d65f46c0ecf5ad): GLM update: added stopping criteria to lbfgs, tweaked some internal constants in ADMM
+- [github](https://github.com/h2oai/h2o-dev/commit/31bd600396195c250c9f1f1b8c67c86d41763cda): Add support for `ignore_const_col` in DL 
+
+
+######Python
+
+- [PUBDEV-852](https://0xdata.atlassian.net/browse/PUBDEV-852): Binomial: show per-metric-optimal CM and per-threshold CM in Python
+- [github](https://github.com/h2oai/h2o-dev/commit/353d5438fc09fd5581c6b07f567f596e062fab08): add filterNACols to python 
+- [github](https://github.com/h2oai/h2o-dev/commit/5a1971bb62805f1d862dca347e681e87b33a11da): h2o.delete replaced with h2o.removeFrameShallow
+- [github](https://github.com/h2oai/h2o-dev/commit/98c8130036404735d42e2e8280a50626227a4f13): Add distribution summary to Python
+
+
+#####R
+
+- [github](https://github.com/h2oai/h2o-dev/commit/6e3d7938436bdf427e780269605896eb778aa74d): add filterNACols to R
+- [github](https://github.com/h2oai/h2o-dev/commit/6b6c49605c6e673d4280542b719589589679d20e): explicitly set cols=TRUE for R style str on frames
+- [github](https://github.com/h2oai/h2o-dev/commit/e342409fa536b6163873fda63118d9164ced46d3): enable faster str, bulk nlevels, bulk levels, bulk is.factor
+- [github](https://github.com/h2oai/h2o-dev/commit/3d6e616fad8d1889670d2e270622425ab750961b): Add optional blocking parameter to h2o.uploadFile
+
+##### System
+
+- [PUBDEV-672](https://0xdata.atlassian.net/browse/PUBDEV-672) HTML version of the REST API docs should be available on the website
+- [PUBDEV-827](https://0xdata.atlassian.net/browse/PUBDEV-827): class GenModel duplicates part of code of Model
+
+#####Web UI
+
+- [HEXDEV-181](https://0xdata.atlassian.net/browse/HEXDEV-181) Flow: Handle deep features prediction input and output
+- [github](https://github.com/h2oai/h2o-dev/commit/7639e27): removed `use_all_factor_levels` from glm flows
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+#####Algorithms
+
+- [HEXDEV-302](https://0xdata.atlassian.net/browse/HEXDEV-302): AIOOBE during Prediction with DL [github](https://github.com/h2oai/h2o-dev/commit/e19d952b6b3cc787b542ba49e72868a2d8ab10de)
+- [github](https://github.com/h2oai/h2o-dev/commit/b1df59e7d2396836ce3574acda0c69f7a49f9d54): glm fix: don't force in null model for lambda search with user given list of lambdas
+- [github](https://github.com/h2oai/h2o-dev/commit/51608cbb392e28c018a56f74c670d5ab88d99947): Fix domain in glm scoring output for binomial
+- [github](https://github.com/h2oai/h2o-dev/commit/5796b1f2ded1f984df0737f750e3e6d65e69cbd7): GLM Fix - fix degrees of freedom when running without intercept (+/-1)
+- [github](https://github.com/h2oai/h2o-dev/commit/f8ee8a5f64266cf5803af80dadb48495c6b02e7b): GLM fix: make valid data info be clone of train data info (needs exactly the same categorical offsets, ignore unseen levels)
+- [github](https://github.com/h2oai/h2o-dev/commit/a8659171c3d6a69a1723322beefcff52345ad512): Fix glm scoring, fill in default domain {0,1} for binary columns when scoring
+
+#####R
+
+- [PUBDEV-1116](https://0xdata.atlassian.net/browse/PUBDEV-1116): R: Parse that works from flow doesn't work from R using as.h2o
+- [PUBDEV-798](https://0xdata.atlassian.net/browse/PUBDEV-798): R: String Munging Functions Missing
+- [PUBDEV-584](https://0xdata.atlassian.net/browse/PUBDEV-584): R: hist() doesn't currently work for H2O objects
+- [PUBDEV-820](https://0xdata.atlassian.net/browse/PUBDEV-820): H2oR: model objects should return the CM when run classification like h2o1 
+- [PUBDEV-1113](https://0xdata.atlassian.net/browse/PUBDEV-1113): Remove Keys : Parse => Remove => doesn't complete
+- [PUBDEV-1102](https://0xdata.atlassian.net/browse/PUBDEV-1102): R: h2o.rbind fails to join two dataset together 
+- [PUBDEV-899](https://0xdata.atlassian.net/browse/PUBDEV-899): R: all doesn't work
+- [PUBDEV-555](https://0xdata.atlassian.net/browse/PUBDEV-555): H2O-R: str does not work
+- [PUBDEV-1110](https://0xdata.atlassian.net/browse/PUBDEV-1110): H2OR: while printing a gbm model object, get invalid format '%d'; use format %f, %e, %g or %a for numeric objects 
+- [PUBDEV-903](https://0xdata.atlassian.net/browse/PUBDEV-903): R: Errors from some rapids calls seem to fail to return an error
+- [HEXDEV-311](https://0xdata.atlassian.net/browse/HEXDEV-311): Performance bug from R with Expect: 100-continue
+- [PUBDEV-1030](https://0xdata.atlassian.net/browse/PUBDEV-1030): h2o.performance: ignores the user specified threshold 
+- [PUBDEV-1071](https://0xdata.atlassian.net/browse/PUBDEV-1071): R: regression models don't show in print statement r2 but it exists in the model object
+- [PUBDEV-1072](https://0xdata.atlassian.net/browse/PUBDEV-1072): R: missing accessors for glm specific fields
+- [PUBDEV-1032](https://0xdata.atlassian.net/browse/PUBDEV-1032): After running some R and  py demos when invoke a build model from flow get- rollup stats problem vec deleted error 
+- [PUBDEV-1069](https://0xdata.atlassian.net/browse/PUBDEV-1069): R: missing implementation for h2o.r2
+- [PUBDEV-1064](https://0xdata.atlassian.net/browse/PUBDEV-1064): Passing sep="," to h2o.importFile() fails with '400 Bad Request'
+- [PUBDEV-1092](https://0xdata.atlassian.net/browse/PUBDEV-1092): Get NPE while predicting 
+
+
+#####System
+
+- [PUBDEV-1091](https://0xdata.atlassian.net/browse/PUBDEV-1091): S3 gzip parse failure
+- [PUBDEV-1081](https://0xdata.atlassian.net/browse/PUBDEV-1081): Probably want to cleanly disable multicast (not retry) and print suggestion message, if multicast not supported on picked multicast network interface
+- [PUBDEV-1112](https://0xdata.atlassian.net/browse/PUBDEV-1112): User has no way to specify whether to drop constant columns
+- [PUBDEV-1109](https://0xdata.atlassian.net/browse/PUBDEV-1109): Change all extdata imports to uploadFile
+- [PUBDEV-1104](https://0xdata.atlassian.net/browse/PUBDEV-1104): .gz file parse exception from local filesystem
+
+
+##### Web UI
+
+- [PUBDEV-1134](https://0xdata.atlassian.net/browse/PUBDEV-1134): getPredictions in Flow returns error
+- [PUBDEV-1020](https://0xdata.atlassian.net/browse/PUBDEV-1020): Flow : Drop NA Cols enable => Should automatically populate the ignored columns 
+- [PUBDEV-1041](https://0xdata.atlassian.net/browse/PUBDEV-1041): Flow GLM: formatting needed for the model parameter listing in the model object [github](https://github.com/h2oai/h2o-dev/commit/70babd4b275807913d21b77bd377e321636edee7)
+- [PUBDEV-1108](https://0xdata.atlassian.net/browse/PUBDEV-1108): Flow: When predict on data with no response get :Error processing POST /3/Predictions/models/gbm-a179db76-ba96-420f-a643-0e166aea3af3/frames/subset_1  'undefined' is not an object (evaluating 'prediction.model')
+
+---
+
+##H2O-Dev
 
 ###Shackleford (0.2.3.6) - 5/8/15
 
 
 ####New Features 
-The following features have been added since the last release: 
 
 #####Python
 
@@ -18,7 +121,6 @@ The following features have been added since the last release:
 - Publish h2o-scala and h2o-app latest version to maven central [(PUBDEV-443)](https://0xdata.atlassian.net/browse/PUBDEV-443)
 
 ####Enhancements
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -79,7 +181,6 @@ The following changes are improvements to existing features (which includes chan
 
 ####Bug Fixes
 
-The following changes are to resolve incorrect software behavior: 
 
 #####Algorithms
 

@@ -335,6 +335,16 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
 }
 
+#'
+#' Filter NA Coluns
+#'
+#' @param data A dataset to filter on.
+#' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
+#' @export
+h2o.filterNACols <- function(data, frac=0.2) {
+  (as.data.frame(.h2o.nary_frame_op("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
+}
+
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
 #  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
 #    warning(data@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")

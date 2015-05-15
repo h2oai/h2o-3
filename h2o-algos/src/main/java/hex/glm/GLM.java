@@ -61,7 +61,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
                 + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
-                + ") - try reducing the number of columns and/or the number of categorical factors.";
+                + ") - try reducing the number of columns and/or the number of categorical factors (or switch to the L-BFGS solver).";
         error("_train", msg);
         cancel(msg);
       }
