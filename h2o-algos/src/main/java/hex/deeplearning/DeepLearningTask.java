@@ -84,7 +84,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       DKV.put(_sharedmodel.myModelInfoKey(H2O.SELF), _mymodel);
 //      Log.info("Getting my local model ready for reduction.");
 //      assert(_output == null);
-      _sharedmodel = _mymodel.deep_clone(); //no longer need _sharedmodel for training, use it send back
+      _sharedmodel = _mymodel.deep_clone(); //no longer need _sharedmodel for training, use it to send back
     } else {
       _sharedmodel = _mymodel;
     }
@@ -92,6 +92,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
 
+  // average the per-node models (that are now stored in _sharedmodel after postLocal)
   @Override public void reduce(DeepLearningTask other){
     if (_sharedmodel != null && other._sharedmodel != null && other._sharedmodel.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
             && other._sharedmodel != _sharedmodel) //other NNTask worked on a different model_info

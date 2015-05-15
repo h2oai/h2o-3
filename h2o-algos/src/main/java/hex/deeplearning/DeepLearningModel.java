@@ -887,7 +887,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // This describes the model, together with the parameters
   // This will be shared: one per node
   public static class DeepLearningModelInfo extends Iced {
-    public Key myModelInfoKey(H2ONode node) { return Key.make(get_params()._destination_key + ".node." + node._key); }
+    public Key myModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); }
     public TwoDimTable summaryTable;
     private DataInfo data_info;
     public DataInfo data_info() { return data_info; }
