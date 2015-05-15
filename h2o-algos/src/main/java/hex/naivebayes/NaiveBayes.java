@@ -146,13 +146,13 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         Arrays.fill(colTypes, "double");
         Arrays.fill(colFormats, "%5f");
         model._output._pcond[col] = new TwoDimTable(_train.name(col), null, rowNames, colNames, colTypes, colFormats,
-                "Y / " + _train.name(col), new String[rowNames.length][], pcond[col]);
+                "Y_by_" + _train.name(col), new String[rowNames.length][], pcond[col]);
       }
 
       for(int col = 0; col < dinfo._nums; col++) {
         int cidx = dinfo._cats + col;
         model._output._pcond[cidx] = new TwoDimTable(_train.name(cidx), null, rowNames, new String[] {"Mean", "Std_Dev"},
-                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "Y / " + _train.name(cidx),
+                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "Y_by_" + _train.name(cidx),
                 new String[rowNames.length][], pcond[cidx]);
       }
 
@@ -161,7 +161,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       String[] colFormats = new String[_response.cardinality()];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-      model._output._apriori = new TwoDimTable("Y", null, new String[1], _response.domain(), colTypes, colFormats, "",
+      model._output._apriori = new TwoDimTable("A Priori Response Probabilities", null, new String[1], _response.domain(), colTypes, colFormats, "",
               new String[1][], new double[][] {apriori});
 
       model._output._model_summary = createModelSummaryTable(model._output);
