@@ -353,8 +353,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
-
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
@@ -427,7 +425,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model (e.g., by a grid search).
 
-- **Use\_all\_factor\_levels**: ([GLM](#GLM), [DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
+- **Use\_all\_factor\_levels**: ([DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
 - **Train\_samples\_per\_iteration**: [(DL)](#DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2. The default is -2. 
 

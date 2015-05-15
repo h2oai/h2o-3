@@ -29,8 +29,6 @@ K-Means falls in the general category of clustering algorithms.
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
-
 - **Ignore\_const\_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
@@ -173,8 +171,6 @@ The GLM suite includes:
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
-
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -370,8 +366,6 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
-
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
@@ -480,8 +474,6 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
-
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -651,8 +643,6 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
-
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Transform**: Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
@@ -763,8 +753,6 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
-
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -906,8 +894,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
-
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to omit columns that have at least 20% missing values.
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
