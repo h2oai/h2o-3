@@ -118,7 +118,10 @@ public class ASTFunc extends ASTFuncDef {
     fs.blockForPending();
     Key local_key = Key.make();
     Frame fr = new Frame(local_key, null, vecs);
-    env.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
+//    if( !env.isGlobal() ) {
+//      if( env._local==null ) env._local = env.newTable();
+//    }
+//    env.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
     AST[] as = new AST[args==null?1:args.length+1];
     as[0]=new ASTFrame(fr);
     if( args!=null )

@@ -81,7 +81,7 @@ public class ASTApply extends ASTOp {
       double[] rowin = new double[fr.vecs().length];
       for (int c = 0; c < rowin.length; c++) rowin[c] = fr.vecs()[c].at(0);
       final int outlen = FUN.map(env,rowin,null, _fun_args).length;
-      final Env env0 = env;
+      final Env env0 = env.capture();
       MRTask mrt = new MRTask() {
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
           double rowin [] = new double[cs.length];
