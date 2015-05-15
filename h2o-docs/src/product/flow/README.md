@@ -353,8 +353,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
-
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
