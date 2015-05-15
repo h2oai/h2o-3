@@ -79,13 +79,13 @@ public class EnumWrappedVec extends WrappedVec {
     // to[] mapping has the set of unique numbers, we need to map from those
     // numbers to the index to the numbers.
     if( from==null ) {
+      setDomain(to);
+      if( fromIsBad ) { _map = new int[0]; return; }
       int min = Integer.valueOf(to[0]);
       int max = Integer.valueOf(to[to.length-1]);
       Vec mvec = masterVec();
       if( !(mvec.isInt() && mvec.min() >= min && mvec.max() <= max) )
         throw new NumberFormatException(); // Unable to figure out a valid mapping
-      setDomain(to);
-      if( fromIsBad ) { _map = new int[0]; return; }
 
       // FIXME this is a bit of a hack to allow adapTo calls to play nice with negative ints in the domain...
       if( Integer.valueOf(to[0]) < 0 ) {
