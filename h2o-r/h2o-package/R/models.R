@@ -1015,6 +1015,9 @@ h2o.null_dof <- function(object, valid=FALSE, ...) {
 #' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
 #'        \linkS4class{H2OBinomialMetrics} objects.
+#' @param metrics (Optional) A metric or a list of valid metrics ("min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1").
+#'        This value is only used in the case of
+#'        \linkS4class{H2OBinomialMetrics} objects.
 #' @param valid Retreive the validation metric.
 #' @param ... Extra arguments for extracting train or valid confusion matrices.
 #' @return Calling this function on \linkS4class{H2OModel} objects returns a
@@ -1066,7 +1069,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
 
 #' @rdname h2o.confusionMatrix
 #' @export
-setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds) {
+setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=NULL, metrics=NULL) {
   if( !is(object, "H2OBinomialMetrics") ) {
     if( is(object, "H2OMultinomialMetrics") )
       return(object@metrics$cm$table)
@@ -1074,16 +1077,35 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
     return(NULL)
   }
   # H2OBinomial case
-  if( missing(thresholds) ) {
-    thresholds <- list(h2o.find_threshold_by_max_metric(object,"f1"))
-    def <- TRUE
-  } else def <- FALSE
+  if( is.null(metrics) && is.null(thresholds) ) {
+    metrics = c("f1")
+  }
+  if( is(metrics, "list") ) metrics_list = metrics
+  else {
+    if( is.null(metrics) ) metrics_list = list()
+    else metrics_list = list(metrics)
+  }
+  if( is(thresholds, "list") ) thresholds_list = thresholds
+    else {
+      if( is.null(thresholds) ) thresholds_list = list()
+      else thresholds_list = list(thresholds)
+  }
+
+  # error check the metrics_list and thresholds_list
+  if( !all(sapply(thresholds_list, f <- function(x) is.numeric(x) && x >= 0 && x <= 1)) )
+    stop("All thresholds must be numbers between 0 and 1 (inclusive).")
+  allowable_metrics <- c("min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr","precision", "accuracy", "f0point5", "f2", "f1")
+  if( !all(sapply(metrics_list, f <- function(x) x %in% allowable_metrics)) )
+      stop(paste("The only allowable metrics are ", paste(allowable_metrics, collapse=', ')))
+
+  # make one big list that combines the thresholds and metric-thresholds
+  metrics_thresholds = lapply(metrics_list, f <- function(x) h2o.find_threshold_by_max_metric(object, x))
+  thresholds_list <- append(thresholds_list, metrics_thresholds)
+
   thresh2d <- object@metrics$thresholds_and_metric_scores
-  max_metrics <- object@metrics$max_criteria_and_metric_scores
+  actual_thresholds <- thresh2d$threshold
   d <- object@metrics$domain
-  p <- max_metrics[match("tps",max_metrics$Metric),3]
-  n <- max_metrics[match("fps",max_metrics$Metric),3]
-  m <- lapply(thresholds,function(t) {
+  m <- lapply(thresholds_list,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
     if( is.null(row) ) NULL
     else {
@@ -1099,10 +1121,12 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
       colnames(tbl) <- cnames
       rownames(tbl) <- rnames
       header <-  "Confusion Matrix"
-      if(def)
-        header <- paste(header, "for max F1 @ threshold =", t)
-      else
+      if(t %in% metrics_thresholds) {
+        m <- metrics_list[which(t == metrics_thresholds)]
+        header <- paste(header, "for max", m, "@ threshold =", t)
+      } else {
         header <- paste(header, "@ threshold =", row$threshold)
+      }
       attr(tbl, "header") <- header
       attr(tbl, "formats") <- fmts
       oldClass(tbl) <- c("H2OTable", "data.frame")
