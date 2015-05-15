@@ -52,3 +52,11 @@ docs/docs/_sources/other.txt
 docs/docs/h2o.h2o.html
 docs/docs/other.html
 
+# stuff created by sphinx-build (python docs)
+docs/docs/_static
+docs/docs/_sources/
+docs/docs/searchindex.js
+docs/docs/search*
+docs/docs/py-modindex.html
+docs/docs/*html
+docs/docs/*js

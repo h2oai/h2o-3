@@ -5,7 +5,7 @@
 library(h2o)
 localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
-iris.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "iris_wheader.csv", package="h2o"), key = "iris.hex")
+iris.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "iris_wheader.csv", package="h2o"), destination_frame = "iris.hex")
 summary(iris.hex)
 iris.rf = h2o.randomForest(y = 5, x = c(1,2,3,4), training_frame = iris.hex, ntrees = 50, max_depth = 100)
 print(iris.rf)

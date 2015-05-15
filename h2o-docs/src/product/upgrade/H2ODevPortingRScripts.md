@@ -1,17 +1,19 @@
-#Porting R Scripts from H2O to H2O-Dev
+#Porting R Scripts
 
-This document outlines how to port R scripts written in H2O for compatibility with the new H2O-Dev API. When upgrading from H2O to H2O-Dev, most functions are the same. However, there are some differences that will need to be resolved when porting any scripts that were originally created using H2O to H2O-Dev. 
+This document outlines how to port R scripts written in previous versions of H2O (Nunes 2.8.6.2 or prior, also known as "H2O Classic") for compatibility with the new H2O 3.0 API. When upgrading from H2O to H2O 3.0, most functions are the same. However, there are some differences that will need to be resolved when porting any scripts that were originally created using H2O to H2O 3.0. 
 
-The original R script for H2O is listed first, followed by the updated script for H2O-Dev. 
+The original R script for H2O is listed first, followed by the updated script for H2O 3.0. 
 
 Some of the parameters have been renamed for consistency. For each algorithm, a table that describes the differences is provided. 
 
 For additional assistance within R, enter a question mark before the command (for example, `?h2o.glm`). 
 
-##Changes from H2O to H2O-Dev
+There is also a "shim" available that will review R scripts created with previous versions of H2O, identify deprecated or renamed parameters, and suggest replacements. For more information, refer to the repo [here](https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R). 
+
+##Changes from H2O 2.8 to H2O 3.0
 
 ###`h2o.exec`
-The `h2o.exec` command is no longer supported. Any workflows using `h2o.exec` must be revised to remove this command.  If the H2O-Dev workflow contains any parameters or commands from H2O, errors will result and the workflow will fail. 
+The `h2o.exec` command is no longer supported. Any workflows using `h2o.exec` must be revised to remove this command.  If the H2O 3.0 workflow contains any parameters or commands from H2O Classic, errors will result and the workflow will fail. 
 
 The purpose of `h2o.exec` was to wrap expressions so that they could be evaluated in a single `\Exec2` call. For example, 
  `h2o.exec(fr[,1] + 2/fr[,3])`
@@ -19,7 +21,7 @@ The purpose of `h2o.exec` was to wrap expressions so that they could be evaluate
  `fr[,1] + 2/fr[,3]`
 produced the same results in H2O. However, the first example makes a single REST call and uses a single temp object, while the second makes several REST calls and uses several temp objects. 
 
-Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typical R expression. 
+Due to the improved architecture in H2O 3.0, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typical R expression. 
 
 Currently, the only known exception is when `factor` is used in conjunction with `h2o.exec`. For example, `h2o.exec(fr$myIntCol <- factor(fr$myIntCol))` would become `fr$myIntCol <- as.factor(fr$myIntCol)`
 
@@ -44,6 +46,11 @@ The `xval` slot has been removed, as `nfolds` is not currently supported.
 
 The `validation` slot has been merged with the `model` slot. 
 
+###Principal Components Regression (PCR)
+
+Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
+
+
 **Table of Contents**
 
 - [GBM](#GBM)
@@ -52,25 +59,21 @@ The `validation` slot has been merged with the `model` slot.
 - [Deep Learning](#DL)
 - [Distributed Random Forest](#DRF)
 
-###Principal Components Regression (PCR)
-
-Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
 
 
 <a name="GBM"></a>
 ##GBM
 
-N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 ###Renamed GBM Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
-`distribution` | `loss`
+`key` | `model_id`
 `n.trees` | `ntrees`
 `interaction.depth` | `max_depth`
 `n.minobsinnode` | `min_rows`
@@ -79,7 +82,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `balance.classes` | `balance_classes`
 `max.after.balance.size` | `max_after_balance_size`
-`class.sampling.factors` | `class_sampling_factors`
+
 
 ###Deprecated GBM Parameters
 
@@ -88,7 +91,7 @@ The following parameters have been removed:
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
-- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O-Dev. 
+- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O 3.0. 
 
 ###New GBM Parameters
 
@@ -99,14 +102,14 @@ The following parameters have been added:
 
 ###GBM Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic  | H2O 3.0 
 ------------- | -------------
 `h2o.gbm <- function(` | `h2o.gbm <- function(` 
 `x,` |`x,`
 `y,` |`y,` 
 `data,` | `training_frame,`
-`key = "",` | `destination_key,` 
-`distribution = 'multinomial',` | `loss = c("bernoulli", "multinomial", "gaussian"),` 
+`key = "",` | `model_id,` 
+`distribution = 'multinomial',` | `distribution = c("bernoulli", "multinomial", "gaussian"),` 
 `n.trees = 10,` | `ntrees = 50`
 `interaction.depth = 5,` | `max_depth = 5,` 
 `n.minobsinnode = 10,` | `min_rows = 10,` 
@@ -127,9 +130,9 @@ H2O  | H2O-Dev
 
 ###Output
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
@@ -158,16 +161,16 @@ H2O  | H2O-Dev  | Model Type
 <a name="GLM"></a>
 ##GLM
 
- N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+ N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 ###Renamed GLM Parameters
 
 The following parameters have been renamed, but retain the same functions:
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `nlambda` | `nlambdas`
 `lambda.min.ratio` | `lambda_min_ratio`
  `iter.max` | `max_iterations`
@@ -186,41 +189,37 @@ The following parameters have been removed:
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
  - `offset`: Specify a column as an offset. (may be re-added)
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. (may be re-added)
- - `n_folds`: Number of folds for cross-validation (will be re-added)
 
 ###New GLM Parameters
  
  The following parameters have been added: 
  
- - `class_sampling_factors`: Specify an array containing real numbers to define how much each class should be over- or under-sampled.
  - `validation_frame`: Specify the validation dataset. 
- - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
- - `solver`: Select ADMM or LBFGS. 
+ - `solver`: Select IRLSM or LBFGS. 
 
 ###GLM Algorithm Comparison
 
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0 
 ------------- | -------------
 `h2o.glm <- function(` | `h2o.startGLMJob <- function(`
 `x,` | `x,`
 `y,` | `y,` 
 `data,` |`training_frame,` 
-`key = "",` | `destination_key,` 
+`key = "",` | `model_id,` 
  &nbsp; | `validation_frame`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
 `return_all_lambda = FALSE,` | 
-&nbsp; | `class_sampling_factors,`
 `intercept = TRUE,` | 
-&nbsp; | `max_after_balance_size = 5,`
 `non_negative = FALSE,` | 
-&nbsp; | `solver = c("ADMM", "L_BFGS"),`
+&nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
-`family,` | `family = c("gaussian", "binomial", "poisson", "gamma"),` 
-`link,` | `link = c("family_default", "identity", "logit", "log", "inverse"),`
-`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  
+`family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
+`link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
+`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  `tweedie_variance_power = NaN,`
+&nbsp; | `tweedie_link_power = NaN,`
 `alpha = 0.5,` | `alpha = 0.5,` 
 `prior = NULL` | `prior = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
@@ -228,7 +227,7 @@ H2O  | H2O-Dev
 `nlambda = -1,` | `nlambdas = -1,` 
 `lambda.min.ratio = -1,` | `lambda_min_ratio = 1.0,` 
 `use_all_factor_levels = FALSE` | `use_all_factor_levels = FALSE,` 
-`nfolds = 0,` |  
+`nfolds = 0,` |  `nfolds = 0,`
 `beta_constraints = NULL,` | `beta_constraint = NULL)` 
 `higher_accuracy = FALSE,` |  
 `variable_importances = FALSE,` | 
@@ -240,9 +239,9 @@ H2O  | H2O-Dev
 ###Output
 
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | -------------
 `@model$params` | `@allparameters` | `all`
 `@model$coefficients` | `@model$coefficients` | `all`
@@ -269,22 +268,16 @@ H2O  | H2O-Dev  | Model Type
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `centers` | `k`
 `cols` | `x`
 `iter.max` | `max_iterations`
 `normalize` | `standardize`
 
-**Note** In H2O, the `normalize` parameter was disabled by default.The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
-
-###Deprecated K-Means Parameters
-
-The following parameters have been removed: 
-
-- `dropNACols`:   Drop columns with more than 20% missing values. (may be re-added)
+**Note** In H2O, the `normalize` parameter was disabled by default. The `standardize` parameter is enabled by default in H2O 3.0 to provide more accurate results for datasets containing columns with large values. 
 
 ###New K-Means Parameters
 
@@ -295,30 +288,28 @@ The following parameters have been added:
 
 ###K-Means Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0
 ------------- | -------------
 `h2o.kmeans <- function(` | `h2o.kmeans <- function(`
 `data,` | `training_frame,` 
 `cols = '',` | `x,`
 `centers,` | `k,`
-`key = "",` | `destination_key,`
+`key = "",` | `model_id,`
 `iter.max = 10,` | `max_iterations = 1000,`
 `normalize = FALSE,`  | `standardize = TRUE,`
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
 `seed = 0,` | `seed)`
-`dropNACols = FALSE)` |
 
 ###Output
 
 
-The following table provides the component name in H2O and the corresponding component name in H2O-Dev (if supported).
+The following table provides the component name in H2O and the corresponding component name in H2O 3.0 (if supported).
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0
 ------------- | -------------
 `@model$params` | `@allparameters`
 `@model$centers` | `@model$centers`
-`@model$withinss` | `@model$within_mse`
-`@model$tot.withinss` | `@model$avg_within_ss`
+`@model$tot.withinss` | `@model$tot_withinss`
 `@model$size` | `@model$size`
 `@model$iter` | `@model$iterations`
 &nbsp; | `@model$_scoring_history`
@@ -329,7 +320,7 @@ H2O  | H2O-Dev
 <a name="DL"></a>
 ##Deep Learning
 
-N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 **Note**: If the results in the confusion matrix are incorrect, verify that `score_training_samples` is equal to 0. By default, only the first 10,000 rows are included. 
 
@@ -337,13 +328,14 @@ N-fold cross-validation and grid search will be supported in a future version of
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `validation` | `validation_frame`
 `class.sampling.factors` | `class_sampling_factors`
-
+`nfolds` |  `n_folds`
+`override_with_best_model` | `overwrite_with_best_model`
 
 ###Deprecated DL Parameters
 
@@ -351,7 +343,6 @@ The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
-- `n_folds`:Number of folds for cross-validation (will be re-added).
 
 ###New DL Parameters
 
@@ -366,80 +357,78 @@ The following options for the `loss` parameter have been added:
 
 ###DL Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic  | H2O 3.0 
 ------------- | -------------
 `h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
 `y,` | `y,`
 `data,` | `training_frame,` 
-`key = "",` | `destination_key = "",`
-`override_with_best_model,` | `_override_with_best_model = true,` 
+`key = "",` | `model_id = "",`
+`override_with_best_model,` | `overwrite_with_best_model = true,` 
 `classification = TRUE,` | 
-`nfolds = 0,` |  
+`nfolds = 0,` |  `n_folds = 0`
 `validation,` | `validation_frame,` 
 `holdout_fraction = 0,` |  
-`checkpoint = " "` | `_checkpoint,` 
-`autoencoder,` | `_autoencoder = false,` 
-`use_all_factor_levels,` | `_use_all_factor_levels = true`
+`checkpoint = " "` | `checkpoint,` 
+`autoencoder,` | `autoencoder = false,` 
+`use_all_factor_levels,` | `use_all_factor_levels = true`
 `activation,` | `_activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),`
-`hidden,` | `_hidden= c(200, 200),`
-`epochs,` | `_epochs = 10.0,`
-`train_samples_per_iteration,` |`_train_samples_per_iteration = -2,`
-&nbsp; | `_target_ratio_comm_to_comp = 0.02,`
+`hidden,` | `hidden= c(200, 200),`
+`epochs,` | `epochs = 10.0,`
+`train_samples_per_iteration,` |`train_samples_per_iteration = -2,`
 `seed,` | `_seed,` 
-`adaptive_rate,` | `_adaptive_rate = true,` 
-`rho,` | `_rho = 0.99,` 
-`epsilon,` | `_epsilon = 1e-8,` 
-`rate,` | `_rate = .005,` 
-`rate_annealing,` | `_rate_annealing = 1e-6,` 
-`rate_decay,` | `_rate_decay = 1.0,` 
-`momentum_start,` | `_momentum_start = 0,`
-`momentum_ramp,` | `_momentum_ramp = 1e6,`
-`momentum_stable,` | `_momentum_stable = 0,` 
-`nesterov_accelerated_gradient,` | `_nesterov_accelerated_gradient = true,`
-`input_dropout_ratio,` | `_input_dropout_ratio = 0.0,` 
-`hidden_dropout_ratios,` | `_hidden_dropout_ratios,` 
-`l1,` | `_l1 = 0.0,` 
-`l2,` | `_l2 = 0.0,` 
-`max_w2,` | `_max_w2 = Inf,`
-`initial_weight_distribution,` | `_initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
-`initial_weight_scale,` | `_initial_weight_scale = 1.0,`
-`loss,` | `_loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
-`score_interval,` | `_score_interval = 5,` 
-`score_training_samples,` | `_score_training_samples = 10000l,` 
-`score_validation_samples,` | `_score_validation_samples = 0l,`
-`score_duty_cycle,` | `_score_duty_cycle = 0.1,` 
-`classification_stop,` | `_classification_stop = 0`
-`regression_stop,` | `_regression_stop = 1e-6,`
-`quiet_mode,` | `_quiet_mode = false,`
-`max_confusion_matrix_size,` | &nbsp;
-`max_hit_ratio_k,` | `_max_hit_ratio_k,`
-`balance_classes,` | `_balance_classes = false,`
-`class_sampling_factors,` | `_class_sampling_factors,`
-`max_after_balance_size,` | &nbsp; 
-`score_validation_sampling,` | `_score_validation_sampling,`
-`diagnostics,` | `_diagnostics = true,` 
-`variable_importances,` | `_variable_importances = false,`
-`fast_mode,` | `_fast_mode = true,` 
-`ignore_const_cols,` | `_ignore_const_cols = true,`
-`force_load_balance,` | `_force_load_balance = true,`
-`replicate_training_data,` | `_replicate_training_data = true,`
-`single_node_mode,` | `_single_node_mode = false,` 
-`shuffle_training_data,` | `_shuffle_training_data = false,`
- &nbsp; | `_missing_values_handling = MissingValuesHandling.MeanImputation`
-`sparse,` | `_sparse = false,` 
-`col_major,` | `_col_major = false,`
-`max_categorical_features,` | `_max_categorical_features = Integer.MAX_VALUE,`
-`reproducible)` | `_reproducible = false,` 
-`average_activation` | `_average_activation = 0,`
- &nbsp; | `_sparsity_beta = 0`
- &nbsp; | `_export_weights_and_biases = false)`
+`adaptive_rate,` | `adaptive_rate = true,` 
+`rho,` | `rho = 0.99,` 
+`epsilon,` | `epsilon = 1e-8,` 
+`rate,` | `rate = .005,` 
+`rate_annealing,` | `rate_annealing = 1e-6,` 
+`rate_decay,` | `rate_decay = 1.0,` 
+`momentum_start,` | `momentum_start = 0,`
+`momentum_ramp,` | `momentum_ramp = 1e6,`
+`momentum_stable,` | `momentum_stable = 0,` 
+`nesterov_accelerated_gradient,` | `nesterov_accelerated_gradient = true,`
+`input_dropout_ratio,` | `input_dropout_ratio = 0.0,` 
+`hidden_dropout_ratios,` | `hidden_dropout_ratios,` 
+`l1,` | `l1 = 0.0,` 
+`l2,` | `l2 = 0.0,` 
+`max_w2,` | `max_w2 = Inf,`
+`initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
+`initial_weight_scale,` | `initial_weight_scale = 1.0,`
+`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
+`score_interval,` | `score_interval = 5,` 
+`score_training_samples,` | `score_training_samples = 10000l,` 
+`score_validation_samples,` | `score_validation_samples = 0l,`
+`score_duty_cycle,` | `score_duty_cycle = 0.1,` 
+`classification_stop,` | `classification_stop = 0`
+`regression_stop,` | `regression_stop = 1e-6,`
+`quiet_mode,` | `quiet_mode = false,`
+`max_confusion_matrix_size,` | `max_confusion_matrix_size,`
+`max_hit_ratio_k,` | `max_hit_ratio_k,`
+`balance_classes,` | `balance_classes = false,`
+`class_sampling_factors,` | `class_sampling_factors,`
+`max_after_balance_size,` | `max_after_balance_size,` 
+`score_validation_sampling,` | `score_validation_sampling,`
+`diagnostics,` | `diagnostics = true,` 
+`variable_importances,` | `variable_importances = false,`
+`fast_mode,` | `fast_mode = true,` 
+`ignore_const_cols,` | `ignore_const_cols = true,`
+`force_load_balance,` | `force_load_balance = true,`
+`replicate_training_data,` | `replicate_training_data = true,`
+`single_node_mode,` | `single_node_mode = false,` 
+`shuffle_training_data,` | `shuffle_training_data = false,`
+`sparse,` | `sparse = false,` 
+`col_major,` | `col_major = false,`
+`max_categorical_features,` | `max_categorical_features = Integer.MAX_VALUE,`
+`reproducible)` | `reproducible=FALSE,` 
+`average_activation` | `average_activation = 0,`
+ &nbsp; | `sparsity_beta = 0`
+ &nbsp; | `export_weights_and_biases=FALSE)`
 
 ###Output
 
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | ------------- 
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
@@ -458,21 +447,21 @@ H2O  | H2O-Dev  | Model Type
 <a name="DRF"></a>
 ##Distributed Random Forest
 
-###Changes to DRF in H2O-Dev
+###Changes to DRF in H2O 3.0 
 
-Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O. In H2O, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRT (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
-In H2O-Dev, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
+Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O Classic. In H2O Classic, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRT (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
+In H2O 3.0, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
 
-**Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O-Dev is similar to DRF functionality in H2O. 
+**Note**: H2O 3.0 only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O 3.0 is similar to DRF functionality in H2O. 
 
 ###Renamed DRF Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
-`key` | `destination_key`
+`key` | `model_id`
 `validation` | `validation_frame`
 `sample.rate` | `sample_rate`
 `ntree` | `ntrees` 
@@ -504,13 +493,13 @@ The following parameter has been added:
 
 ###DRF Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0
 ------------- | -------------
 `h2o.randomForest <- function(x,` | `h2o.randomForest <- function(`
 `x,` | `x,` 
 `y,` | `y,` 
 `data,` | `training_frame,` 
-`key="",` | `destination_key,` 
+`key="",` | `model_id,` 
 `validation,` | `validation_frame,` 
 `mtries = -1,` | `mtries = -1,` 
 `sample.rate=2/3,` | `sample_rate = 0.6666667,` 
@@ -521,14 +510,14 @@ H2O  | H2O-Dev
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
-`seed = -1,` | `_seed)` 
+`seed = -1,` | `seed` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size` 
-`class.sampling.factors = NULL,` | `class_sampling_factors` 
+`max.after.balance.size = 5,` | `max_after_balance_size)` 
+`class.sampling.factors = NULL,` | &nbsp; 
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 
@@ -539,9 +528,9 @@ H2O  | H2O-Dev
 ###Output
 
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`

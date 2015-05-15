@@ -1,7 +1,7 @@
 package water.api;
 
 import hex.SupervisedModel;
-import water.api.FrameV3.ColSpecifierV2;
+import water.api.FrameV3.ColSpecifierV3;
 
 /**
  * An instance of a SupervisedModelParameters schema contains the common SupervisedModel build parameters (e.g., response_column).
@@ -14,7 +14,7 @@ public class SupervisedModelParametersSchema<P extends SupervisedModel.Supervise
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
   // column names are related to training_frame.
   @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-  public ColSpecifierV2 response_column;
+  public ColSpecifierV3 response_column;
 
   /*Imbalanced Classes*/
   /**

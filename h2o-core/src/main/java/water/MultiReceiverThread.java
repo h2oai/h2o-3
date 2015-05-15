@@ -53,8 +53,15 @@ class MultiReceiverThread extends Thread {
         // More common-case setup of a MultiCast socket
         if( sock == null ) {
           sock = new MulticastSocket(H2O.CLOUD_MULTICAST_PORT);
-          if( H2O.CLOUD_MULTICAST_IF != null )
-            sock.setNetworkInterface(H2O.CLOUD_MULTICAST_IF);
+          if( H2O.CLOUD_MULTICAST_IF != null ) {
+            try { 
+              sock.setNetworkInterface(H2O.CLOUD_MULTICAST_IF);
+            } catch( SocketException e ) {
+              Log.err("Exception calling setNetworkInterface, Multicast Interface, Group, Port - "+
+                      H2O.CLOUD_MULTICAST_IF+" "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
+              throw e;
+            }
+          }
           sock.joinGroup(group);
         }
 
@@ -63,10 +70,14 @@ class MultiReceiverThread extends Thread {
         DatagramPacket pack = new DatagramPacket(buf,buf.length);
         sock.receive(pack);
         UDPReceiverThread.basic_packet_handling(new AutoBuffer(pack));
-
+      } catch( SocketException e ) {
+        // This rethrow will not be caught and thus kills the multi-cast thread.
+        Log.err("Turning off multicast, which will disable further cloud building");
+        throw new RuntimeException(e);
       } catch( Exception e ) {
+        Log.err("Exception on Multicast Interface, Group, Port - "+
+          H2O.CLOUD_MULTICAST_IF+" "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
         // On any error from anybody, close all sockets & re-open
-        Log.err("Multicast "+H2O.CLOUD_MULTICAST_GROUP+":"+H2O.CLOUD_MULTICAST_PORT, e);
         saw_error = true;
         errsock  = sock ;  sock  = null; // Signal error recovery on the next loop
         errgroup = group;  group = null;

@@ -1,13 +1,9 @@
 package hex.coxph;
 
 import Jama.Matrix;
-import hex.DataInfo;
+import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
-import hex.FrameTask;
-import hex.Model;
-import hex.SupervisedModelBuilder;
-// import hex.schemas.CoxPHV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -22,11 +18,13 @@ import java.util.Arrays;
  */
 public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[] {
-      Model.ModelCategory.Unknown,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[] {
+      ModelCategory.Unknown,
     };
   }
+
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
 
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(false); }
 
@@ -432,7 +430,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
 
         int nResponses = 1;
         boolean useAllFactorLevels = false;
-        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true);
+        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false);
         initStats(model, dinfo);
 
         final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;

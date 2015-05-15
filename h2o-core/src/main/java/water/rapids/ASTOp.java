@@ -7,6 +7,7 @@ import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -15,7 +16,6 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
-import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
@@ -198,6 +198,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
     putPrefix(new ASTSetColNames());
+    putPrefix(new ASTRemoveFrame());
 
     // Date
     putPrefix(new ASTasDate());
@@ -218,10 +219,28 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSecond());
     putPrefix(new ASTMillis());
     putPrefix(new ASTMktime());
+    putPrefix(new ASTListTimeZones());
+    putPrefix(new ASTGetTimeZone());
     putPrefix(new ASTFoldCombine());
+    putPrefix(new ASTSetTimeZone());
     putPrefix(new COp());
     putPrefix(new ROp());
     putPrefix(new O());
+    putPrefix(new ASTImpute());
+    putPrefix(new ASTQPFPC());
+    putPrefix(new ASTStoreSize());
+    putPrefix(new ASTKeysLeaked());
+    putPrefix(new ASTAll());
+    putPrefix(new ASTNLevels());
+    putPrefix(new ASTLevels());
+    putPrefix(new ASTHist());
+    // string mungers
+    putPrefix(new ASTGSub());
+    putPrefix(new ASTStrSplit());
+    putPrefix(new ASTStrSub());
+    putPrefix(new ASTToLower());
+    putPrefix(new ASTToUpper());
+    putPrefix(new ASTTrim());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -270,7 +289,7 @@ public abstract class ASTOp extends AST {
   double[] map(Env env, double[] in, double[] out, AST[] args) { throw H2O.unimpl(); }
   @Override void exec(Env e) { throw H2O.unimpl(); }
   // special exec for apply calls
-  void exec(Env e, AST arg1, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
+  void exec(Env e, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
   @Override int type() { return -1; }
   @Override String value() { throw H2O.unimpl(); }
 
@@ -315,10 +334,9 @@ abstract class ASTUniOp extends ASTUniOrBinOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
-    arg1.exec(e);
-    if (e.isAry()) e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    args[0].exec(e);
+    if( e.isAry() ) e.put(Key.make().toString(),e.peekAry());
     apply(e);
   }
 
@@ -399,7 +417,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
             n.addNum( c.isNA(r) ? 1 : 0);
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
     env.pushAry(fr2);
   }
 }
@@ -652,8 +670,6 @@ class ASTLength extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
-//    env.cleanup(fr);
-//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -665,9 +681,23 @@ class ASTIsFactor extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     String res = "FALSE";
-    if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
-    if (fr.anyVec().isEnum()) res = "TRUE";
-    env.push(new ValStr(res));
+    if (fr.numCols() == 1) {
+      if (fr.anyVec().isEnum()) res = "TRUE";
+      env.push(new ValStr(res));
+    } else {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?1:0);
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      vec.setDomain(new String[]{"FALSE", "TRUE"});
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
+    }
   }
 }
 
@@ -685,6 +715,109 @@ class ASTAnyFactor extends ASTUniPrefixOp {
   }
 }
 
+class ASTNLevels extends ASTUniPrefixOp {
+  ASTNLevels() { super(VARS1); }
+  @Override String opStr() { return "nlevels"; }
+  @Override ASTOp make() {return new ASTNLevels();}
+  @Override void apply(Env env) {
+    int nlevels;
+    Frame fr = env.popAry();
+    if (fr.numCols() != 1) {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?fr.vec(i).domain().length:0);
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
+    } else {
+      Vec v = fr.anyVec();
+      nlevels = v.isEnum()?v.domain().length:0;
+      env.push(new ValNum(nlevels));
+    }
+  }
+}
+
+class ASTLevels extends ASTUniPrefixOp {
+  ASTLevels() { super(VARS1); }
+  @Override String opStr() { return "levels"; }
+  @Override ASTOp make() { return new ASTLevels(); }
+  @Override void apply(Env e) {
+    Frame f = e.popAry();
+    Futures fs = new Futures();
+    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());
+    Vec[] vecs = new Vec[keys.length];
+
+    // compute the longest vec... that's the one with the most domain levels
+    int max=0;
+    for(int i=0;i<f.numCols();++i )
+      if( f.vec(i).isEnum() )
+        if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
+
+    for( int i=0;i<f.numCols();++i ) {
+      AppendableVec v = new AppendableVec(keys[i]);
+      NewChunk nc = new NewChunk(v,0);
+      String[] dom = f.vec(i).domain();
+      int numToPad = dom==null?max:max-dom.length;
+      if( dom != null )
+        for(int j=0;j<dom.length;++j) nc.addNum(j);
+      for(int j=0;j<numToPad;++j)     nc.addNA();
+      nc.close(0,fs);
+      vecs[i] = v.close(fs);
+      vecs[i].setDomain(dom);
+    }
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(), null, vecs);
+    DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+    e.pushAry(fr2);
+  }
+}
+
+class ASTAll extends ASTUniPrefixOp {
+  boolean _narm;
+  ASTAll() { super(VARS1);}
+  @Override String opStr() { return "all"; }
+  @Override ASTOp make() {return new ASTAll();}
+  ASTAll parse_impl(Exec E) {
+    AST arg = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTId ) _narm = ((ASTNum)E._env.lookup((ASTId)a))._d==1; // ignroed for now, always assume narm=F
+    E.eatEnd(); // eat ending ')'
+    ASTAll res = (ASTAll) clone();
+    res._asts = new AST[]{arg};
+    return res;
+  }
+  @Override void apply(Env env) {
+    boolean all;
+    if( env.isNum() ) { all = env.popDbl()!=0; }  // got a number on the stack... if 0 then all is FALSE, otherwise TRUE
+    else {
+      Frame fr = env.popAry();
+      if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
+      Vec v = fr.anyVec();
+      if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
+      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      all = new AllTask().doAll(fr.anyVec()).all;
+    }
+    env.push(new ValStr(all?"TRUE":"FALSE"));
+  }
+
+  private static class AllTask extends MRTask<AllTask> {
+    private boolean all=true;
+    @Override public void map(Chunk c) {
+      for(int i=0;i<c._len;++i) {
+        if( all ) {
+          if( c.isNA(i) ) { all = false; break; }
+          all &= c.atd(i)==1;
+        }
+      }
+    }
+    @Override public void reduce(AllTask t) { all &= t.all; }
+  }
+}
 class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
   ASTCanBeCoercedToLogical() { super(VARS1); }
   @Override String opStr() { return "canBeCoercedToLogical"; }
@@ -996,6 +1129,10 @@ class ASTMktime extends ASTUniPrefixOp {
         }
       }
     }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    // Clean up the constants
+    for( int i=0; i<7; i++ )
+      if( fs[i] == null )
+        vecs[i].remove();
     env.poppush(1, new ValFrame(fr2));
   }
 }
@@ -1571,14 +1708,13 @@ abstract class ASTReducerOp extends ASTOp {
     env.push(new ValNum(sum));
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    if (args == null) {
-      _init = 0;
-      _narm = true;
-      _argcnt = 1;
-    }
-    arg1.exec(e);
-    e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    _argcnt = args.length;
+    // extra args are init and narm
+    _init=0;
+    _narm=true;
+    args[0].exec(e);
+    e.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -1618,7 +1754,7 @@ abstract class ASTReducerOp extends ASTOp {
         if (Double.isNaN(sum)) break;
       }
     }
-    @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
+    @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d, s._d); }
   }
 }
 
@@ -1662,18 +1798,31 @@ class ASTSum extends ASTReducerOp {
 class ASTImpute extends ASTUniPrefixOp {
   ImputeMethod _method;
   long[] _by;
+  int _colIdx;
+  boolean _inplace;
+  int _maxGap;
   QuantileModel.CombineMethod _combine_method;  // for quantile only
   private static enum ImputeMethod { MEAN , MEDIAN, MODE }
   @Override String opStr() { return "h2o.impute"; }
   @Override ASTOp make() { return new ASTImpute(); }
-  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by"}); }
+  public ASTImpute() { super(new String[]{"vec", "method", "combine_method", "by", "inplace"}); }
   ASTImpute parse_impl(Exec E) {
     AST ary = E.parse();
-    _method = ImputeMethod.valueOf(E.nextStr());
+    _colIdx = (int)E.nextDbl();
+    _method = ImputeMethod.valueOf(E.nextStr().toUpperCase());
     _combine_method = QuantileModel.CombineMethod.valueOf(E.nextStr().toUpperCase());
 
     AST a = E.parse();
-    _by = a instanceof ASTLongList ? ((ASTLongList)a)._l : null;
+    if( a instanceof ASTLongList ) _by = ((ASTLongList)a)._l;
+    else if( a instanceof ASTNum ) _by = new long[]{(long)((ASTNum)a)._d};
+    else _by=null;
+
+
+    // should be TRUE or FALSE next, for the inplace arg
+    a = E.parse();
+    if( a instanceof ASTId ) _inplace = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+//    _maxGap = (int)E.nextDbl(); // TODO
+    E.eatEnd();
     ASTImpute res = (ASTImpute) clone();
     res._asts = new AST[]{ary};
     res._by = _by;    // just in case
@@ -1682,60 +1831,93 @@ class ASTImpute extends ASTUniPrefixOp {
   }
   @Override public void apply(Env e) {
     Frame f = e.popAry();
-    if( f.numCols() != 1 ) throw new IllegalArgumentException("Can only impute a single column at a time.");
-    Vec v = f.anyVec();
+    Vec v = f.vecs()[_colIdx];
     Frame f2;
     final double imputeValue;
 
     // vanilla impute. no group by
     if( _by == null ) {
-      if( !v.isNumeric() ) {
+      if( !v.isNumeric() && _method!=ImputeMethod.MODE ) {
         Log.info("Can only impute non-numeric columns with the mode.");
         _method = ImputeMethod.MODE;
       }
       switch( _method ) {
         case MEAN:   imputeValue = ASTVar.getMean(v,true,""); break;
-        case MEDIAN: imputeValue = ASTMedian.median(f, null); break;
-        case MODE:   imputeValue = mode(f); break;
+        case MEDIAN: imputeValue = ASTMedian.median(v, _combine_method); break;
+        case MODE:   imputeValue = mode(v); break;
         default:
-          throw new IllegalArgumentException("Unknown type: " + _method);
+          throw H2O.unimpl("Unknown type: " + _method);
       }
-      // create a new vec by imputing the old.
-      f2 = new MRTask() {
-        @Override public void map(Chunk c, NewChunk n) {
-          for(int i=0;i<c._len;++i)
-            n.addNum( c.isNA(i) ? imputeValue : c.atd(i) );
-        }
-      }.doAll(1,f).outputFrame(null,f.names(),f.domains());
-    } else {
-      if(  _method==ImputeMethod.MEDIAN ) throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
-      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean",0,"rm","_avg",null,null) };
-      ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
-      final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s = t._g;
-      final long[] cols = _by;
-      f2 = new MRTask() {
-        transient NonBlockingHashSet<ASTGroupBy.G> _s;
-        @Override public void setupLocal() { _s = s._g; }
-        @Override public void map(Chunk[] c, NewChunk n) {
-          ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
-          double impute_value;
-          for( int i=0;i<c[0]._len;++i ) {
-            g.fill(i,c,cols);
-            impute_value = _s.get(g)._avs[0]; //currently only have the mean
-            n.addNum( c[0].isNA(i) ? impute_value : c[0].atd(i) );
+      if( _inplace ) {
+        new MRTask() {
+          @Override public void map(Chunk c) {
+            for(int i=0;i<c._len;++i)
+              if( c.isNA(i) ) c.set(i, imputeValue);
           }
-        }
-      }.doAll(1,f).outputFrame(null,f.names(),f.domains());
+        }.doAll(v);
+        f2=f;
+      } else {
+        // create a new vec by imputing the old.
+        f2 = new MRTask() {
+          @Override public void map(Chunk c, NewChunk n) {
+            for (int i = 0; i < c._len; ++i)
+              n.addNum(c.isNA(i) ? imputeValue : c.atd(i));
+          }
+        }.doAll(1, v).outputFrame(null, new String[]{f.names()[_colIdx]}, new String[][]{f.domains()[_colIdx]});
+      }
+    } else {
+      if (_method == ImputeMethod.MEDIAN)
+        throw H2O.unimpl("Currently cannot impute with the median over groups. Try mean.");
+      ASTGroupBy.AGG[] agg = new ASTGroupBy.AGG[]{new ASTGroupBy.AGG("mean", _colIdx, "rm", "_avg", null, null)};
+      ASTGroupBy.GBTask t = new ASTGroupBy.GBTask(_by, agg).doAll(f);
+      final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
+      final int nGrps = t._g.size();
+      final ASTGroupBy.G[] grps = t._g.keySet().toArray(new ASTGroupBy.G[nGrps]);
+      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps)).join();
+      final long[] cols = _by;
+      final int colIdx = _colIdx;
+      if( _inplace ) {
+        new MRTask() {
+          transient ASTGroupBy.IcedNBHS<ASTGroupBy.G> _s;
+          @Override public void setupLocal() { _s = s; }
+          @Override public void map(Chunk[] c) {
+            ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
+            double impute_value;
+            Chunk ch = c[colIdx];
+            for (int i = 0; i < c[0]._len; ++i) {
+              g.fill(i, c, cols);
+              impute_value = _s.get(g)._avs[0]; //currently only have the mean
+              if( ch.isNA(i) ) ch.set(i,impute_value);
+            }
+          }
+        }.doAll(f);
+        f2 = f;
+      } else {
+        f2 = new MRTask() {
+          transient ASTGroupBy.IcedNBHS<ASTGroupBy.G> _s;
+          @Override public void setupLocal() { _s = s; }
+          @Override public void map(Chunk[] c, NewChunk n) {
+            ASTGroupBy.G g = new ASTGroupBy.G(cols.length);
+            double impute_value;
+            Chunk ch = c[colIdx];
+            for (int i = 0; i < c[0]._len; ++i) {
+              g.fill(i, c, cols);
+              impute_value = _s.get(g)._avs[0]; //currently only have the mean
+              n.addNum(ch.isNA(i) ? impute_value : ch.atd(i));
+            }
+          }
+        }.doAll(1, f).outputFrame(null, new String[]{f.names()[_colIdx]}, new String[][]{f.domains()[_colIdx]});
+      }
     }
     e.push(new ValFrame(f2));
   }
 
-  private double mode(Frame f) { return (new ModeTask((int)f.anyVec().max())).doAll(f)._max; }
+  private double mode(Vec v) { return (new ModeTask((int)v.max())).doAll(v)._max; }
   private static class ModeTask extends MRTask<ModeTask> {
     // compute the mode of an enum column as fast as possible
     int _m;   // max of the column... only for setting the size of _cnts
-    int _max; // updated atomically
-    long[] _cnts; // keep an array of counts, updated atomically
+    long _max; // updated atomically
+    long[] _cnts; // keep an array of counts, updated atomically , long for compareAndSwapLong
     static private final long _maxOffset;
     private static final Unsafe U = UtilUnsafe.getUnsafe();
     private static final int _b = U.arrayBaseOffset(long[].class);
@@ -1756,18 +1938,24 @@ class ASTImpute extends ASTUniPrefixOp {
     }
     @Override public void map(Chunk c) {
       for( int i=0;i<c._len;++i ) {
-        int h = (int)c.at8(i);
-        long offset = ssid(h);
-        long cnt = _cnts[h];
-        while( !U.compareAndSwapLong(_cnts,offset,cnt,cnt+1))
-          cnt=_cnts[h];
-        int max=(int)cnt;
-        int omax = _max;
-        while( max > omax && !U.compareAndSwapInt(this,_maxOffset,omax,max))
-          omax=_max;
+        if( !c.isNA(i) ) {
+          int h = (int) c.at8(i);
+          long offset = ssid(h);
+          long cnt = _cnts[h];
+          while (!U.compareAndSwapLong(_cnts, offset, cnt, cnt + 1))
+            cnt = _cnts[h];
+        }
       }
     }
-    @Override public void postGlobal() { _cnts=null; }
+    @Override public void postGlobal() {
+      int maxIdx=0;
+      assert _cnts!=null;
+      for(int i=0; i<_cnts.length;++i) {  // FIXME: possibly horrible to do single threaded hunt... use FJ task to find indx with max.
+        if( _cnts[i] > _max ) { _max=_cnts[i]; maxIdx=i; }
+      }
+//      _cnts=null;
+      _max=maxIdx;
+    }
   }
 }
 
@@ -1861,6 +2049,7 @@ class ASTRbind extends ASTUniPrefixOp {
         HashMap<String, Integer> dmap = new HashMap<>(); // probably should allocate something that's big enough (i.e. 2*biggest_domain)
         int c = 0;
         for (int i = 0; i < _vecs.length; ++i) {
+          if( _vecs[i].get_type()==Vec.T_BAD ) continue;
           emaps[i] = new int[_vecs[i].domain().length];
           for (int j = 0; j < emaps[i].length; ++j)
             if (!dmap.containsKey(_vecs[i].domain()[j]))
@@ -1954,8 +2143,8 @@ class ASTRbind extends ASTUniPrefixOp {
 
       // check column types
       for (int c = 0; c < f1.numCols(); ++c) {
-        if (f1.vec(c).get_type() != t.vec(c).get_type())
-          throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
+        if (f1.vec(c).get_type() != t.vec(c).get_type() && (f1.vec(c).get_type()!=Vec.T_BAD && t.vec(c).get_type()!=Vec.T_BAD)) // allow all NA columns
+          throw new IllegalArgumentException("Column type mismatch on column #"+c+"! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
       }
     }
     ParallelRbinds t;
@@ -1966,12 +2155,16 @@ class ASTRbind extends ASTUniPrefixOp {
 
 class ASTCbind extends ASTUniPrefixOp {
   int argcnt;
+  boolean _deepCopy;
   @Override String opStr() { return "cbind"; }
-  public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
+  public ASTCbind() { super(new String[]{"cbind","ary", "deepCopy", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
     AST a;
+    a = E.parse();
+    if( a instanceof ASTId ) _deepCopy = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+    else throw new IllegalArgumentException("First argument of cbind must be TRUE or FALSE for the deepCopy flag.");
     while( !E.isEnd() ) {
       a = E.parse();
       if( a instanceof ASTId ) {
@@ -2002,13 +2195,12 @@ class ASTCbind extends ASTUniPrefixOp {
     Frame fr = new Frame(new String[0],new Vec[0]);
     for(int i = 0; i < argcnt; i++) {
       Frame f = env.peekAryAt(i-argcnt+1);  // Reverse order off stack
-      Frame ff = f.deepSlice(null,null);  // deep copy the frame, R semantics...
+      Frame ff = _deepCopy ? f.deepCopy(null) : f; // deep copy the frame, R semantics...
       Frame new_frame = fr.makeCompatible(ff);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame);
     }
     env.pop(argcnt);
-
     env.pushAry(fr);
   }
 }
@@ -2041,7 +2233,10 @@ class ASTMedian extends ASTReducerOp {
   @Override double op(double d0, double d1) { throw H2O.unimpl(); }
   @Override void apply(Env env) {
     Frame fr = env.popAry();
+    Key tk=null;
+    if( fr._key == null ) { DKV.put(tk=Key.make(), fr=new Frame(tk, fr.names(),fr.vecs())); }
     double median = median(fr, QuantileModel.CombineMethod.INTERPOLATE); // does linear interpolation for even sample sizes by default
+    if( tk!=null ) { DKV.remove(tk); }
     env.push(new ValNum(median));
   }
 
@@ -2056,6 +2251,13 @@ class ASTMedian extends ASTReducerOp {
     double median = q._output._quantiles[0][0];
     q.delete();
     return median;
+  }
+  static double median(Vec v, QuantileModel.CombineMethod combine_method) {
+    Frame f = new Frame(Key.make(), null, new Vec[]{v});
+    DKV.put(f);
+    double res=median(f,combine_method);
+    DKV.remove(f._key);
+    return res;
   }
 }
 
@@ -2098,15 +2300,19 @@ class ASTMad extends ASTReducerOp {
   }
   @Override void apply(Env e) {
     Frame f = e.popAry();
-    final double median = ASTMedian.median(f,_combine_method);
+    e.push(new ValNum(mad(f,_combine_method,_const)));
+  }
+
+  static double mad(Frame f, QuantileModel.CombineMethod cm, double constant) {
+    final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll(1, f).outputFrame(null,null,null);
-    double mad = ASTMedian.median(abs_dev,_combine_method);
-    e.push(new ValNum(_const*mad));
+    }.doAll(1, f).outputFrame();
+    double mad = ASTMedian.median(abs_dev,cm);
+    return constant*mad;
   }
 }
 
@@ -2174,12 +2380,16 @@ class ASTAND extends ASTBinOp {
 
 class ASTRename extends ASTUniPrefixOp {
   String _newname;
+  boolean _deepCopy;
   @Override String opStr() { return "rename"; }
-  ASTRename() { super(new String[] {"", "ary", "new_name"}); }
+  ASTRename() { super(new String[] {"", "ary", "new_name", "deepCopy"}); }
   @Override ASTOp make() { return new ASTRename(); }
   ASTRename parse_impl(Exec E) {
     AST ary = E.parse();
     _newname = ((ASTString)E.parse())._s;
+    AST a = E.parse();
+    if( a instanceof ASTId ) _deepCopy =   ((ASTNum)E._env.lookup( ((ASTId)a) ))._d==1;
+    else throw new IllegalASTException("Expected to get TRUE/FALSE for deepCopy argument");
     E.eatEnd(); // eat the ending ')'
     ASTRename res = (ASTRename) clone();
     res._asts = new AST[]{ary};
@@ -2188,9 +2398,16 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    Frame fr2 = fr.deepCopy(_newname);
-    DKV.put(fr2._key, fr2);
-    e.pushAry(fr2);
+    if( _deepCopy ) {
+      if( fr._key!=null )  // wack the old DKV mapping
+        DKV.remove(fr._key);
+      Frame fr2 = new Frame(Key.make(_newname),fr.names(),fr.vecs());
+      DKV.put(fr2._key, fr2);
+    } else {
+      Frame fr2 = fr.deepCopy(_newname);
+      DKV.put(fr2._key, fr2);
+      e.pushAry(fr2);
+    }
   }
 }
 
@@ -2225,11 +2442,9 @@ class ASTGPut extends ASTUniPrefixOp {
       fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
     } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
     DKV.put(k, fr);
-    e._locked.add(k);
-    e.addKeys(fr);
-    e._global._frames.put(k.toString(), fr);
+    e.lock(fr);
+    e.put(k.toString(), fr);
     e.push(new ValFrame(fr, true /*isGlobalSet*/));
-    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -2252,12 +2467,9 @@ class ASTLPut extends ASTGPut {
       v.setDomain(new String[]{e.popStr()});
       fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
     } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
-    e._locked.add(k);
-    e.addKeys(fr);
-    e._local._frames.put(k.toString(), fr);
-    e._global._frames.put(k.toString(), fr);
+    e.lock(fr);
+    e.put(k.toString(), fr);
     e.push(new ValFrame(fr, false /*isGlobalSet*/));
-    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
@@ -2393,7 +2605,7 @@ class ASTSeqLen extends ASTUniPrefixOp {
     int len = (int) Math.ceil(_length);
     if (len <= 0)
       throw new IllegalArgumentException("Error in seq_len(" +len+"): argument must be coercible to positive integer");
-    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len)});
+    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len,true)});
     env.pushAry(fr);
   }
 }
@@ -2540,6 +2752,206 @@ class ASTRepLen extends ASTUniPrefixOp {
   }
 }
 
+class ASTHist extends ASTUniPrefixOp {
+  @Override String opStr() { return "hist"; }
+  public ASTHist() { super(new String[]{"hist", "x", "breaks"}); }
+  @Override ASTHist make() { return new ASTHist(); }
+  ASTHist parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST breaks = E.parse();
+    ASTHist res = (ASTHist)clone();
+    res._asts = new AST[]{ary,breaks};
+    return res;
+  }
+  @Override void apply(Env e) {
+    // stack is [ ..., ary, breaks]
+    // handle the breaks
+    Frame fr2;
+    Val v = e.pop(); // must be a dlist, string, number
+    String algo=null;
+    int numBreaks=-1;
+    double[] breaks=null;
+
+    if( v instanceof ValStr )             algo      = ((ValStr)v)._s.toLowerCase();
+    else if( v instanceof ValDoubleList ) breaks    = ((ValDoubleList)v)._d;
+    else if( v instanceof ValNum )        numBreaks = (int)((ValNum)v)._d;
+    else throw new IllegalArgumentException("breaks must be a string, a list of doubles, or a number. Got: " + v.getClass());
+
+    Frame f = e.popAry();
+    if( f.numCols() != 1) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+    Vec vec = f.anyVec();
+    if( !vec.isNumeric() )throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+
+
+    HistTask t;
+    double h;
+    double x1=vec.max();
+    double x0=vec.min();
+    if( breaks != null ) t = new HistTask(breaks,-1,-1/*ignored if _h==-1*/).doAll(vec);
+    else if( algo!=null ) {
+      switch (algo) {
+        case "sturges": numBreaks = sturges(vec); h=(x1-x0)/numBreaks; break;
+        case "rice":    numBreaks = rice(vec);    h=(x1-x0)/numBreaks; break;
+        case "sqrt":    numBreaks = sqrt(vec);    h=(x1-x0)/numBreaks; break;
+        case "doane":   numBreaks = doane(vec);   h=(x1-x0)/numBreaks; break;
+        case "scott":   h=scotts_h(vec); numBreaks = scott(vec,h);     break;  // special bin width computation
+        case "fd":      h=fds_h(vec);    numBreaks = fd(vec, h);        break;  // special bin width computation
+        default:        numBreaks = sturges(vec); h=(x1-x0)/numBreaks;         // just do sturges even if junk passed in
+      }
+      t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
+    }
+    else {
+      h = (x1-x0)/numBreaks;
+      t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
+    }
+    // wanna make a new frame here [breaks,counts,mids]
+    final double[] brks=t._breaks;
+    final long  [] cnts=t._counts;
+    final double[] mids=t._mids;
+    Vec layoutVec = Vec.makeZero(brks.length);
+    fr2 = new MRTask() {
+      @Override public void map(Chunk[] c, NewChunk[] nc) {
+        int start = (int)c[0].start();
+        for(int i=0;i<c[0]._len;++i) {
+          nc[0].addNum(brks[i+start]);
+          if(i==0) {
+            nc[1].addNA();
+            nc[2].addNA();
+          } else {
+            nc[1].addNum(cnts[(i-1)+start]);
+            nc[2].addNum(mids[(i-1)+start]);
+          }
+        }
+      }
+    }.doAll(3, layoutVec).outputFrame(null, new String[]{"breaks", "counts", "mids"},null);
+    layoutVec.remove();
+    e.pushAry(fr2);
+  }
+
+  private static int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
+  private static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
+  private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
+  private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
+  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
+  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
+  private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
+  private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
+  private static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
+  private static double third_moment(Vec v) {
+    final double mean = ASTVar.getMean(v,true,"");
+    ThirdMomTask t = new ThirdMomTask(mean).doAll(v);
+    double m2 = t._ss / v.length();
+    double m3 = t._sc / v.length();
+    return m3 / Math.pow(m2, 1.5);
+  }
+
+  private static class ThirdMomTask extends MRTask<ThirdMomTask> {
+    double _ss;
+    double _sc;
+    final double _mean;
+    ThirdMomTask(double mean) { _mean=mean; }
+    @Override public void setupLocal() { _ss=0;_sc=0; }
+    @Override public void map(Chunk c) {
+      for( int i=0;i<c._len;++i ) {
+        if( !c.isNA(i) ) {
+          double d = c.atd(i) - _mean;
+          double d2 = d*d;
+          _ss+= d2;
+          _sc+= d2*d;
+        }
+      }
+    }
+    @Override public void reduce(ThirdMomTask t) { _ss+=t._ss; _sc+=t._sc; }
+  }
+
+  private double[] computeCuts(Vec v, int numBreaks) {
+    if( numBreaks <= 0 ) throw new IllegalArgumentException("breaks must be a positive number");
+    // just make numBreaks cuts equidistant from each other spanning range of [v.min, v.max]
+    double min;
+    double w = ( v.max() - (min=v.min()) ) / numBreaks;
+    double[] res= new double[numBreaks];
+    for( int i=0;i<numBreaks;++i ) res[i] = min + w * (i+1);
+    return res;
+  }
+
+  private static class HistTask extends MRTask<HistTask> {
+    final private double _h;      // bin width
+    final private double _x0;     // far left bin edge
+    final private double[] _min;  // min for each bin, updated atomically
+    final private double[] _max;  // max for each bin, updated atomically
+    // unsafe crap for mins/maxs of bins
+    private static final Unsafe U = UtilUnsafe.getUnsafe();
+    // double[] offset and scale
+    private static final int _dB = U.arrayBaseOffset(double[].class);
+    private static final int _dS = U.arrayIndexScale(double[].class);
+    private static long doubleRawIdx(int i) { return _dB + _dS * i; }
+    // long[] offset and scale
+    private static final int _8B = U.arrayBaseOffset(long[].class);
+    private static final int _8S = U.arrayIndexScale(long[].class);
+    private static long longRawIdx(int i)   { return _8B + _8S * i; }
+
+    // out
+    private final double[] _breaks;
+    private final long  [] _counts;
+    private final double[] _mids;
+
+    HistTask(double[] cuts, double h, double x0) {
+      _breaks=cuts;
+      _min=new double[_breaks.length-1];
+      _max=new double[_breaks.length-1];
+      _counts=new long[_breaks.length-1];
+      _mids=new double[_breaks.length-1];
+      _h=h;
+      _x0=x0;
+    }
+    @Override public void map(Chunk c) {
+      // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
+      int x;
+      int xx=1;
+      for( int i = 0; i < c._len; ++i ) {
+        if( c.isNA(i) ) continue;
+        double r = c.atd(i);
+        if( _h==-1 ) {
+          for(; xx < _counts.length; xx++)
+            if( r <= _breaks[xx] ) break;
+          x=xx-1;
+        } else
+          x = Math.min( _counts.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
+        bumpCount(x);
+        setMinMax(Double.doubleToRawLongBits(r),x);
+      }
+    }
+    @Override public void reduce(HistTask t) {
+      if(_counts!=t._counts) ArrayUtils.add(_counts,t._counts);
+      for(int i=0;i<_mids.length;++i) {
+        _min[i] = t._min[i] < _min[i] ? t._min[i] : _min[i];
+        _max[i] = t._max[i] > _max[i] ? t._max[i] : _max[i];
+      }
+    }
+    @Override public void postGlobal() { for(int i=0;i<_mids.length;++i) _mids[i] = 0.5*(_max[i] + _min[i]); }
+
+    private void bumpCount(int x) {
+      long o = _counts[x];
+      while(!U.compareAndSwapLong(o,longRawIdx(x),o,o+1))
+        o=_counts[x];
+    }
+    private void setMinMax(long v, int x) {
+      double o = _min[x];
+      double vv = Double.longBitsToDouble(v);
+      while( vv < o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
+        o = _min[x];
+      setMax(v,x);
+    }
+    private void setMax(long v, int x) {
+      double o = _max[x];
+      double vv = Double.longBitsToDouble(v);
+      while( vv > o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
+        o = _max[x];
+    }
+  }
+}
+
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
   double[] _probs = null;  // if probs is null, pop the _probs frame etc.
@@ -2641,15 +3053,47 @@ class ASTSetColNames extends ASTUniPrefixOp {
     E.eatEnd(); // eat the ending ')'
     ASTSetColNames res = (ASTSetColNames)clone();
     res._asts = new AST[]{ary};
+    res._idxs = _idxs; res._names = _names;
     return res;
   }
 
   @Override void apply(Env env) {
-    Frame f = env.popAry();
-    for (int i=0; i < _names.length; ++i)
-      f._names[(int)_idxs[i]] = _names[i];
-    if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
-    env.pushAry(f);
+    try {
+      Frame f = env.popAry();
+      for (int i = 0; i < _names.length; ++i)
+        f._names[(int) _idxs[i]] = _names[i];
+      if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
+      env.pushAry(f);
+    } catch (ArrayIndexOutOfBoundsException e) {
+      Log.info("AIOOBE!!! _idxs.length="+_idxs.length+ "; _names.length="+_names.length);
+      throw e; //rethrow
+    }
+  }
+}
+
+// Remove a frame key and NOT the internal Vecs.
+// Used by Python which tracks Vecs independently from Frames
+class ASTRemoveFrame extends ASTUniPrefixOp {
+  String _newname;
+  @Override String opStr() { return "removeframe"; }
+  ASTRemoveFrame() { super(new String[] {"", "ary"}); }
+  @Override ASTOp make() { return new ASTRemoveFrame(); }
+  ASTRemoveFrame parse_impl(Exec E) {
+    AST ary = E.parse();
+    E.eatEnd(); // eat the ending ')'
+    ASTRemoveFrame res = (ASTRemoveFrame) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env e) {
+    Val v = e.pop();
+    Frame fr;
+    if( v instanceof ValFrame ) {
+      fr = ((ValFrame) v)._fr;
+      fr.restructure(new String[0], new Vec[0]);
+      fr.remove();
+    }
   }
 }
 
@@ -2749,8 +3193,14 @@ class ASTVar extends ASTUniPrefixOp {
       env.push(new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();                   // number of rows
-      Frame y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
-      String use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      Frame y;
+      String use;
+      if( env.isEmpty() || env.sp() <= 1 ) { y=fr; use="everything"; }
+      else {
+                            y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
+        if( env.isEmpty() || env.sp() <= 1 ) use = "everything";
+        else                use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      }
 //      String[] rownames = fr.names();  TODO: Propagate rownames?
       String[] colnames = y.names();
 
@@ -2881,12 +3331,13 @@ class ASTMean extends ASTUniPrefixOp {
     return res;
   }
 
-  @Override void exec(Env e, AST arg1, AST[] args) {
-    arg1.exec(e);
-    e._global._frames.put(Key.make().toString(), e.peekAry());
+  @Override void exec(Env e, AST[] args) {
+    args[0].exec(e);
+    e.put(Key.make().toString(), e.peekAry());
     if (args != null) {
-      if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
-      for (AST a : args) {
+      if (args.length > 3) throw new IllegalArgumentException("Too many arguments passed to `mean`");
+      for(int i=1;i<args.length;++i) {
+        AST a = args[i];
         if (a instanceof ASTId) {
           _narm = ((ASTNum) e.lookup((ASTId) a)).dbl() == 1;
         } else if (a instanceof ASTNum) {
@@ -2899,7 +3350,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (env.isNum()) return;
-    Frame fr = env.popAry(); // get the frame w/o sub-reffing
+      Frame fr = env.popAry(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
@@ -3088,7 +3539,7 @@ class ASTTable extends ASTUniPrefixOp {
       Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
       Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
-      final ASTddply.Group[] pairs = u._s.toArray(new ASTddply.Group[u._s.size()]);
+      final ASTddply.Group[] pairs = u._s._g.toArray(new ASTddply.Group[u._s.size()]);
       dataLayoutVec = Vec.makeCon(0, pairs.length);
 
       s = System.currentTimeMillis();
@@ -3159,87 +3610,39 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
-    NonBlockingHashSet<ASTddply.Group> _s;
+    ASTGroupBy.IcedNBHS<ASTddply.Group> _s;
     private long[] _cols;
     @Override public void setupLocal() {
-      _s = new NonBlockingHashSet<>();
+      _s = new ASTGroupBy.IcedNBHS<>();
       _cols = new long[_fr.numCols()];
       for(int i=0;i<_cols.length;++i) _cols[i]=i;
     }
     @Override public void map(Chunk[] c) {
       ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0;i<c[0]._len;++i)
-        if( _s.add(g.fill(i,c,_cols))) {
+        if( _s.add((ASTddply.Group)g.fill(i,c,_cols))) {
           g = new ASTddply.Group(_cols.length);
         }
     }
-    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
-
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _s == null ) return ab.put4(0);
-      ab.put4(_s.size());
-      for( ASTddply.Group g : _s ) {ab.put(g); }
-      return ab;
-    }
-
-    @Override public Uniq2ColTsk read_impl( AutoBuffer ab ) {
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _s = new NonBlockingHashSet<>();
-      for( int i=0; i<len; i++ ) { _s.add(ab.get(ASTddply.Group.class));}
-      return this;
-    }
+    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s._g); }
   }
 
-  /** http://szudzik.com/ElegantPairing.pdf */
-//  private static long mix(long A, long B) {
-//    long a=A,b=B;
-//    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
-//    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
-//    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
-//    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
-//  }
-//
-//  // always returns a long[] of length 2;
-//  // long[0] -> A, long[1] -> B
-//  private static long[] unmix(long z) {
-//    long rflr = (long)Math.floor(Math.sqrt(z));
-//    long rflr2=rflr*rflr;
-//    long z_rflr2 = z-rflr2;
-//    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
-//  }
-
   private static class NewHashMap extends MRTask<NewHashMap> {
-    NonBlockingHashMap<ASTddply.Group, Integer> _s;
-    final ASTddply.Group[] _m;
+    IcedHM<ASTddply.Group, Integer> _s;
+    ASTddply.Group[] _m;
     NewHashMap(ASTddply.Group[] m) { _m = m; }
-    @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
+    @Override public void setupLocal() { _s = new IcedHM<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
       for (int i = 0; i < c[0]._len; ++i)
         _s.put(_m[i + start], i+start);
     }
     @Override public void reduce(NewHashMap t) { if (_s != t._s) _s.putAll(t._s); }
-
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _s == null ) return ab.put4(0);
-      ab.put4(_s.size());
-      for( ASTddply.Group l : _s.keySet() ) {ab.put(l); ab.put4(_s.get(l)); }
-      return ab;
-    }
-
-    @Override public NewHashMap read_impl( AutoBuffer ab ) {
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _s = new NonBlockingHashMap<>();
-      for( int i=0;i<len;i++ ) _s.put(ab.get(ASTddply.Group.class), ab.get4());
-      return this;
-    }
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    final NonBlockingHashMap<ASTddply.Group, Integer> _m;
+    IcedHM<ASTddply.Group, Integer> _m;
     private long[] _cols;
     // out
     long[] _cnts;
@@ -3247,7 +3650,7 @@ class ASTTable extends ASTUniPrefixOp {
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
-    CountUniq2ColTsk(NonBlockingHashMap<ASTddply.Group, Integer> s) {_m = s; }
+    CountUniq2ColTsk(IcedHM<ASTddply.Group, Integer> s) {_m = s; }
     @Override public void setupLocal() {
       _cnts = MemoryManager.malloc8(_m.size());
       _cols = new long[_fr.numCols()];
@@ -3256,7 +3659,7 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public void map(Chunk[] cs) {
       ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0; i < cs[0]._len; ++i) {
-        int h = _m.get(g.fill(i,cs,_cols));
+        int h = _m.get((ASTddply.Group)g.fill(i,cs,_cols));
         long offset = ssid(h);
         long c = _cnts[h];
         while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
@@ -3264,6 +3667,32 @@ class ASTTable extends ASTUniPrefixOp {
       }
     }
     @Override public void reduce(CountUniq2ColTsk t) { if (_cnts != t._cnts) ArrayUtils.add(_cnts, t._cnts); }
+  }
+
+  // custom serializer for <Group,Int> pairs
+  private static class IcedHM<Group extends ASTddply.Group,Int extends Integer> extends Iced {
+    private NonBlockingHashMap<Group,Integer> _m; // the nbhm to (de)ser
+    IcedHM() { _m = new NonBlockingHashMap<>(); }
+    void put(Group g, Int i) { _m.put(g,i);}
+    void putAll(IcedHM<Group,Int> m) {_m.putAll(m._m);}
+    int size() { return _m.size(); }
+    int get(Group g) { return _m.get(g); }
+    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+      if( _m==null || _m.size()==0 ) return ab.put4(0);
+        else {
+          ab.put4(_m.size());
+          for(Group g:_m.keySet()) { ab.put(g); ab.put4(_m.get(g)); }
+        }
+      return ab;
+    }
+    @Override public IcedHM read_impl(AutoBuffer ab) {
+      int mLen;
+      if( (mLen=ab.get4())!=0 ) {
+        _m = new NonBlockingHashMap<>();
+        for( int i=0;i<mLen;++i ) _m.put((Group)ab.get(), ab.get4());
+      }
+      return this;
+    }
   }
 }
 
@@ -3675,6 +4104,117 @@ class ASTLs extends ASTOp {
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
+  }
+}
+
+class ASTStoreSize extends ASTOp {
+  ASTStoreSize() { super(null); }
+  @Override String opStr() { return "store_size"; }
+  @Override ASTOp make() { return new ASTStoreSize(); }
+  ASTStoreSize parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTStoreSize) clone();
+  }
+  @Override void apply(Env e) { e.push(new ValNum(H2O.store_size())); }
+}
+
+// used for testing... takes in an expected number of keys, and then determines leak
+// pushes TRUE for leak, FALSE for not leak
+class ASTKeysLeaked extends ASTUniPrefixOp {
+  ASTKeysLeaked() { super(new String[]{"numkeys"}); }
+  @Override String opStr() { return "keys_leaked"; }
+  @Override ASTOp make() { return new ASTKeysLeaked(); }
+  ASTKeysLeaked parse_impl(Exec E) {
+    AST a = E.parse();
+    E.eatEnd();
+    ASTKeysLeaked res = (ASTKeysLeaked) clone();
+    res._asts = new AST[]{a};
+    return res;
+  }
+  @Override void apply(Env e) {
+    int numKeys = (int)e.popDbl();
+    int leaked_keys = H2O.store_size() - numKeys;
+    if( leaked_keys > 0 ) {
+      int cnt=0;
+      for( Key k : H2O.localKeySet() ) {
+        Value value = H2O.raw_get(k);
+        // Ok to leak VectorGroups and the Jobs list
+        if( value.isVecGroup() || k == Job.LIST ||
+                // Also leave around all attempted Jobs for the Jobs list
+                (value.isJob() && value.<Job>get().isStopped()) )
+          leaked_keys--;
+        else {
+          if( cnt++ < 10 )
+            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        }
+      }
+      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+    }
+    e.push(new ValStr(leaked_keys <= 0 ? "FALSE" : "TRUE"));
+  }
+}
+
+class ASTGetTimeZone extends ASTOp {
+  ASTGetTimeZone() { super(null); }
+  @Override String opStr() { return "getTimeZone"; }
+  @Override ASTOp make() { return new ASTGetTimeZone(); }
+  ASTGetTimeZone parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTGetTimeZone) clone();
+  }
+  @Override void apply(Env env) {
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk tz = new NewChunk(av,0);
+    String domain[] = new String[]{ParseTime.getTimezone().toString()};
+    tz.addEnum(0);
+    tz.close(fs);
+    Vec v = av.close(fs);
+    v.setDomain(domain);
+    env.pushAry(new Frame(null, new String[]{"TimeZone"}, new Vec[]{v}));
+  }
+}
+
+class ASTListTimeZones extends ASTOp {
+  ASTListTimeZones() { super(null); }
+  @Override String opStr() { return "listTimeZones"; }
+  @Override ASTOp make() { return new ASTListTimeZones(); }
+  ASTListTimeZones parse_impl(Exec E) {
+    E.eatEnd();
+    return (ASTListTimeZones) clone();
+  }
+  @Override void apply(Env e) {
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk tz = new NewChunk(av,0);
+    String[] domain = ParseTime.listTimezones().split("\n");
+    for(int i=0;i<domain.length;++i)
+      tz.addEnum(i);
+    tz.close(fs);
+    Vec v = av.close(fs);
+    v.setDomain(domain);
+    e.pushAry(new Frame(null, new String[]{"ListTimeZones"}, new Vec[]{v}));
+  }
+}
+
+class ASTSetTimeZone extends ASTOp {
+  String _tz;
+  ASTSetTimeZone() { super(new String[]{"tz"}); }
+  @Override String opStr() { return "setTimeZone"; }
+  @Override ASTOp make() { return new ASTSetTimeZone(); }
+  ASTSetTimeZone parse_impl(Exec E) {
+    _tz = E.nextStr();
+    E.eatEnd();
+    return (ASTSetTimeZone)clone();
+  }
+  @Override void apply(Env e) {
+    Set<String> idSet = DateTimeZone.getAvailableIDs();
+    if(!idSet.contains(_tz))
+      throw new IllegalArgumentException("Unacceptable timezone name given.  For a list of acceptable names, use listTimezone().");
+    new MRTask() {
+      @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
+    }.doAllNodes();
+    e.pushAry(null);
   }
 }
 

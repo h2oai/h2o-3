@@ -44,20 +44,6 @@ public abstract class FileVec extends ByteVec {
 
     //Now reset the chunk size on each node
     Futures fs = new Futures();
-    if (! (this instanceof UploadFileVec)) {
-      // Clear cached chunks
-      // Peeking into a file before the chunkSize has been set
-      // will load chunks of the file in DFLT_CHUNK_SIZE amounts.
-      // If this side-effect is not reversed when _chunkSize differs
-      // from the default value, parsing will either double read
-      // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
-      // (_chunkSize > DFLT_CHUNK_SIZE). This reverses this side-effect.
-      //
-      // Don't do this for UploadFileVec, because that will whack the data!
-      Keyed.remove(_key, fs);
-      fs.blockForPending();
-    }
-
     DKV.put(_key, this, fs);
     // also update Frame to invalidate local caches
     if (fr != null ) {

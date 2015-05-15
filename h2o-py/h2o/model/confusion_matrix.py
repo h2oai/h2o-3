@@ -12,6 +12,7 @@ class ConfusionMatrix(object):
     if not cm: raise ValueError("Missing data, `cm_raw` is None")
     if not isinstance(cm, list):  raise ValueError("`cm` is not a list. Got: " + type(cm))
 
+    if len(cm)==2: cm=zip(*cm)  # transpose if 2x2
     nclass = len(cm)
     class_errs = [0] * nclass
     class_sums = [0] * nclass
@@ -23,34 +24,36 @@ class ConfusionMatrix(object):
       class_sums[i] = sum([v[i] for v in cm])  # row sums
       class_err_strings[i] = \
           " (" + str(class_errs[i]) + "/" + str(class_sums[i]) + ")"
-      class_err = float("nan") if class_sums[i] == 0 else round(float(class_errs[i]) / float(class_sums[i]), self.ROUND)
-      class_err_strings[i] = str(class_err) + class_err_strings[i]
-
+      class_errs[i] = float("nan") if class_sums[i] == 0 else round(float(class_errs[i]) / float(class_sums[i]), self.ROUND)
       # and the cell_values are
-      cell_values[i] = [v[i] for v in cm] + [class_err_strings[i]]
+      cell_values[i] = [v[i] for v in cm] + [str(class_errs[i])] + [class_err_strings[i]]
 
     # tally up the totals
     class_errs += [sum(class_errs)]
     totals += [sum(class_sums)]
     class_err_strings += [" (" + str(class_errs[-1]) + "/" + str(totals[-1]) + ")"]
 
-    class_err = float("nan") if totals[-1] == 0 else round(float(class_errs[-1]) / float(totals[-1]), self.ROUND)
-    class_err_strings[-1] = str(class_err) + class_err_strings[-1]
+    class_errs[i] = float("nan") if totals[-1] == 0 else round(float(class_errs[-1]) / float(totals[-1]), self.ROUND)
+    class_err_strings[-1] = class_err_strings[-1]
 
     # do the last row of cell_values ... the "totals" row
-    cell_values[-1] = totals[0:-1] + [class_err_strings[-1]]
+    cell_values[-1] = totals[0:-1] + [str(class_errs[-1])] + [class_err_strings[-1]]
 
     table_header = "Confusion Matrix (Act/Pred)"
-
-    if domains:
-        row_header = domains
-        col_header = domains
+    col_header = [""]  # no column label for the "rows" column
+    if domains is not None:
+        import copy
+        row_header = copy.deepcopy(domains)
+        col_header += copy.deepcopy(domains)
     else:
         row_header = [str(i) for i in range(nclass)]
-        col_header = [str(i) for i in range(nclass)]
+        col_header += [str(i) for i in range(nclass)]
 
-    row_header += ["Totals"]
-    col_header += ["Error"]
+    row_header += ["Total"]
+    col_header += ["Error", "Rate"]
+
+    for i in range(len(row_header)):
+      cell_values[i].insert(0, row_header[i])
 
     self.table = H2OTwoDimTable(row_header, col_header, None, table_header, None, None, cell_values)
 

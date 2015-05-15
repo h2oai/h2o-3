@@ -1,7 +1,7 @@
 # Function call for R sided cross validation of h2o objects
 h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
                                 key = "",
-                                override_with_best_model,
+                                overwrite_with_best_model,
                                 checkpoint,
                                 autoencoder = FALSE,
                                 use_all_factor_levels = TRUE,

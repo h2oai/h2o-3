@@ -29,7 +29,7 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
 
     // copy warnings and infos; errors will cause an H2OModelBuilderIllegalArgumentException to be thrown above,
     // resulting in an H2OErrorVx to be returned.
-    PojoUtils.copyProperties(builderSchema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "validation_error_count", "validation_messages" });
+    PojoUtils.copyProperties(builderSchema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
     builderSchema.setHttpStatus(HttpResponseStatus.OK.getCode());
     return builderSchema;
   }

@@ -1,8 +1,8 @@
 """
-Clustering Models should be comparable.
+Clustering Models
 """
 
-from model_base import ModelBase
+from metrics_base import *
 
 
 class H2OClusteringModel(ModelBase):
@@ -10,27 +10,76 @@ class H2OClusteringModel(ModelBase):
   def __init__(self, dest_key, model_json):
     super(H2OClusteringModel, self).__init__(dest_key, model_json,H2OClusteringModelMetrics)
 
-  def size(self):
-    tm = H2OClusteringModel._get_metrics(self)
-    return [ v[2] for v in  tm["centroid_stats"].cell_values]
+  def size(self, train=False, valid=False):
+    """
+    Get the sizes of each cluster.
 
-  def avg_between_ss(self):
-    tm = H2OClusteringModel._get_metrics(self)
-    return tm["avg_between_ss"]
+    :param train: If train is True, then return the sizes of clusters based on the training data. If both train and valid are False, then train=True is assumed.
+    :param valid: If valid is True, then return the sizes of clusters based on the validation data. If both train and valid are True, then validation data is returned.
+    :return: the sizes of clusters for either the training or validation dataset.
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    return [ v[2] for v in  tm._metric_json["centroid_stats"].cell_values]
 
-  def avg_ss(self):
-    tm = H2OClusteringModel._get_metrics(self)
-    return tm["avg_ss"]
+  def betweenss(self, train, valid):
+    """
+    Get the between cluster sum of squares.
 
-  def avg_within_ss(self):
-    tm = H2OClusteringModel._get_metrics(self)
-    return tm["avg_within_ss"]
+    :param train: If train is True, then return the average between cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
+    :param valid: If valid is True, then return the average between cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
+    :return: The average between cluster sum of squares for either the training or validation dataset.
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    return tm._metric_json["betweenss"]
 
-  def within_mse(self):
-    tm = H2OClusteringModel._get_metrics(self)
-    return [ v[-1] for v in  tm["centroid_stats"].cell_values]
+  def totss(self, train=False, valid=False):
+    """
+    Get the total sum of squares to grand mean.
+
+    :param train: If train is True, then return the average cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
+    :param valid: If valid is True, then return the average cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
+    :return: The average cluster sum of squares for either the training or validation dataset.
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    return tm._metric_json["avg_ss"]
+
+  def tot_withinss(self, train=False, valid=False):
+    """
+    Get the total within cluster sum of squares.
+
+    :param train: If train is True, then return the average within cluster sum of squares of clusters based on the training data. If both train and valid are False, then train=True is assumed.
+    :param valid: If valid is True, then return the average within cluster sum of squares of clusters based on the validation data. If both train and valid are True, then validation data is returned.
+    :return: The average within cluster sum of squares for either the training or validation dataset.
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    return tm._metric_json["avg_within_ss"]
+
+  def withinss(self, train=False, valid=False):
+    """
+    Get the within cluster sum of squares for each cluster.
+
+    :param train: If train is True, then return the within cluster sum of squares for each cluster based on the training data. If both train and valid are False, then train=True is assumed.
+    :param valid: If valid is True, then return the within cluster sum of squares for each cluster based on the validation data. If both train and valid are True, then validation data is returned.
+    :return: The within cluster sum of squares for each cluster on either the training or validation dataset.
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    return [ v[-1] for v in  tm._metric_json["centroid_stats"].cell_values]
+
+  def centroid_stats(self,train=False,valid=False):
+    """
+    Get the centroid statistics for each cluster.
+
+    :param train: If train is True, then return the centroid statistics based on the training data. If both train and valid are False, then train=True is assumed.
+    :param valid: If valid is True, then return the centroid statistics based on the validation data. If both train and valid are True, then validation data is returned.
+    :return: The centroid statistics on either the training or validation dataset.
+    """
+    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
+    return tm._metric_json["centroid_stats"]
 
   def centers(self):
+    """
+    :return: the centers for the kmeans model.
+    """
     o = self._model_json["output"]
     cvals = o["centers"].cell_values
     centers = []
@@ -39,24 +88,12 @@ class H2OClusteringModel(ModelBase):
     return centers
 
   def centers_std(self):
+    """
+    :return: the standardized centers for the kmeans model.
+    """
     o = self._model_json["output"]
     cvals = o["centers_std"].cell_values
     centers_std = []
     for cidx, cval in enumerate(cvals):
       centers_std.append(list(cvals[cidx])[1:])
     return centers_std
-
-  def centroid_stats(self):
-    tm = H2OClusteringModel._get_metrics(self)
-    return tm["centroid_stats"]
-
-  # TODO: move this out to ModelBase
-  @staticmethod
-  def _get_metrics(o):
-    return o._model_json["output"]["training_metrics"]
-
-class H2OClusteringModelMetrics(object):
-  def __init__(self, metric_json):
-    self._metric_json = metric_json
-
-

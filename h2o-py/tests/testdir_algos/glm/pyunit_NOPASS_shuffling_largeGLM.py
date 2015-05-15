@@ -12,24 +12,29 @@ def shuffling_large(ip,port):
 
 
     print("Create model on original Arcene dataset.")
-    h2o_model = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5], use_all_factor_levels=True)
+    h2o_model = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5],
+                        use_all_factor_levels=True)
 
     print("Create second model on original Arcene dataset.")
-    h2o_model_2 = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5], use_all_factor_levels=True)
+    h2o_model_2 = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5],
+                          use_all_factor_levels=True)
 
     print("Create model on shuffled Arcene dataset.")
-    h2o_model_s = h2o.glm(x=train_data_shuffled[0:1000], y=train_data_shuffled[1000], family="binomial", lambda_search=True, alpha=[0.5], use_all_factor_levels=True)
+    h2o_model_s = h2o.glm(x=train_data_shuffled[0:1000], y=train_data_shuffled[1000], family="binomial",
+                          lambda_search=True, alpha=[0.5], use_all_factor_levels=True)
 
     print("Assert that number of predictors remaining and their respective coefficients are equal.")
 
-    for x, y in zip(h2o_model._model_json['output']['coefficients_table'].cell_values,h2o_model_2._model_json['output']['coefficients_table'].cell_values):
+    for x, y in zip(h2o_model._model_json['output']['coefficients_table'].cell_values,h2o_model_2.
+            _model_json['output']['coefficients_table'].cell_values):
         assert (type(x[1]) == type(y[1])) and (type(x[2]) == type(y[2])), "coefficients should be the same type"
         if isinstance(x[1],float):
             assert abs(x[1] - y[1]) < 5e-10, "coefficients should be equal"
         if isinstance(x[2],float):
             assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
 
-    for x, y in zip(h2o_model._model_json['output']['coefficients_table'].cell_values,h2o_model_s._model_json['output']['coefficients_table'].cell_values):
+    for x, y in zip(h2o_model._model_json['output']['coefficients_table'].cell_values,h2o_model_s.
+            _model_json['output']['coefficients_table'].cell_values):
         assert (type(x[1]) == type(y[1])) and (type(x[2]) == type(y[2])), "coefficients should be the same type"
         if isinstance(x[1],float):
             assert abs(x[1] - y[1]) < 5e-10, "coefficients should be equal"

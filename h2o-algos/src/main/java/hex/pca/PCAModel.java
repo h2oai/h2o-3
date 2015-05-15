@@ -1,9 +1,6 @@
 package hex.pca;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.*;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -15,32 +12,17 @@ import water.util.TwoDimTable;
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
   public static class PCAParameters extends Model.Parameters {
+    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public int _k = 1;                // Number of principal components
-    public double _gamma = 0;         // Regularization
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
-    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
-    public PCA.Initialization _init = PCA.Initialization.PlusPlus;
-    public Key<Frame> _user_points;
     public Key<Frame> _loading_key;
-    boolean _keep_loading = false;
+    public boolean _keep_loading = true;
+    public boolean _useAllFactorLevels = false;   // When expanding categoricals, should last level be dropped?
   }
 
   public static class PCAOutput extends Model.Output {
-    // Iterations executed
-    public int _iterations;
-
-    // Average change in objective function this iteration
-    public double _avg_change_obj;
-
-    // Final loading matrix (X)
-    // public Frame _loadings;
-
-    // Mapping from training data to lower dimensional k-space (Y)
-    public double[][] _archetypes;
-
-    // PCA output on XY
-    // Principal components (eigenvectors) from SVD of XY
+    // Principal components (eigenvectors)
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;
 
@@ -51,11 +33,24 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
     public TwoDimTable _pc_importance;
 
+    // Number of categorical and numeric columns
+    public int _ncats;
+    public int _nnums;
+
+    // Categorical offset vector
+    public int[] _catOffsets;
+
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 
     // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
+
+    // Permutation matrix mapping training col indices to adaptedFrame
+    public int[] _permutation;
+
+    // Frame key for projection into principal component space
+    public Key<Frame> _loading_key;
 
     public PCAOutput(PCA b) { super(b); }
 
@@ -74,27 +69,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsPCA.PCAModelMetrics(_parms._k);
-  }
-
-  public static class ModelMetricsPCA extends ModelMetricsUnsupervised {
-    public ModelMetricsPCA(Model model, Frame frame) {
-      super(model, frame, Double.NaN);
-    }
-
-    // PCA currently does not have any model metrics to compute during scoring
-    public static class PCAModelMetrics extends MetricBuilderUnsupervised {
-      public PCAModelMetrics(int dims) {
-        _work = new double[dims];
-      }
-
-      @Override
-      public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
-
-      @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
-        return m._output.addModelMetrics(new ModelMetricsPCA(m, f));
-      }
-    }
   }
 
   @Override
@@ -127,11 +101,22 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   @Override
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    assert data.length == _output._eigenvectors.getRowDim();
+    int numStart = _output._catOffsets[_output._catOffsets.length-1];
+    assert data.length == _output._nnums + _output._ncats;
+
     for(int i = 0; i < _parms._k; i++) {
       preds[i] = 0;
-      for (int j = 0; j < data.length; j++)
-        preds[i] += (data[j] - _output._normSub[j]) * _output._normMul[j] * (double)_output._eigenvectors.get(j,i);
+      for (int j = 0; j < _output._ncats; j++) {
+        int level = (int)data[_output._permutation[j]];
+        preds[i] += _output._eigenvectors_raw[_output._catOffsets[j]+level][i];
+      }
+
+      int dcol = _output._ncats;
+      int vcol = numStart;
+      for (int j = 0; j < _output._nnums; j++) {
+        preds[i] += (data[_output._permutation[dcol]] - _output._normSub[j]) * _output._normMul[j] * _output._eigenvectors_raw[vcol][i];
+        dcol++; vcol++;
+      }
     }
     return preds;
   }
@@ -141,12 +126,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     Frame adaptFr = new Frame(fr);
     adaptTestForTrain(adaptFr, true);   // Adapt
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
-
-    Vec[] vecs = adaptFr.vecs();
-    for (int i = 0; i < vecs.length; i++)
-      if (fr.find(vecs[i]) != -1) // Exists in the original frame?
-        vecs[i] = null;            // Do not delete it
-    adaptFr.delete();
+    cleanup_adapt( adaptFr, fr );
     return output;
   }
 }

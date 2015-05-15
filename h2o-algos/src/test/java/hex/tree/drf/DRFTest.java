@@ -4,6 +4,7 @@ package hex.tree.drf;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
@@ -33,6 +34,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            20,
             a(a(25, 0, 0),
               a(0, 17, 1),
               a(2, 1, 15)),
@@ -51,6 +55,9 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
+            20,
+            1,
+            20,
             a(a(41, 0, 0),
               a(1, 39, 2),
               a(1, 3, 41)),
@@ -69,6 +76,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            20,
             a(a(0, 0, 0, 0, 0),
               a(3,64, 0, 2, 0),
               a(0, 1, 0, 0, 0),
@@ -88,6 +98,9 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
+            20,
+            1,
+            20,
             a(a(3,   0, 0,  0,  0),
               a(2, 177, 1,  4,  0),
               a(0,   1, 1,  0,  0),
@@ -110,10 +123,13 @@ public class DRFTest extends TestUtil {
                 }
               },
               1,
+              20,
+              1,
+              20,
               null,
               null);
       Assert.fail();
-    } catch( IllegalArgumentException iae ) {
+    } catch( H2OModelBuilderIllegalArgumentException iae ) {
     /*pass*/
     }
   }
@@ -123,6 +139,9 @@ public class DRFTest extends TestUtil {
             "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
             new PrepData() { @Override int prep(Frame fr) { return fr.find("DateofBirth"); } },
             1,
+            20,
+            1,
+            20,
             a(a(6, 0),
               a(9, 1)),
             s("0", "1"));
@@ -140,6 +159,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            20,
             a(a(46294, 202),
               a( 3187, 107)),
             s("0", "1"));
@@ -157,6 +179,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            20,
             a(a(0, 81),
               a(0, 53)),
             s("0", "1"));
@@ -174,6 +199,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            10,
             84.83960821204235
     );
 
@@ -190,6 +218,9 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
+            20,
+            1,
+            10,
             62.34506879389341
     );
 
@@ -206,10 +237,59 @@ public class DRFTest extends TestUtil {
               }
             },
             50,
+            20,
+            1,
+            10,
             48.16452593965962
     );
 
   }
+  @Test public void testCzechboard() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                Vec resp = fr.remove("C2");
+                fr.add("C2", resp.toEnum());
+                resp.remove();
+                return fr.find("C3");
+              }
+            },
+            50,
+            20,
+            1,
+            20,
+            a(a(0, 45000),
+              a(0, 45000)),
+            s("0", "1"));
+  }
+
+  @Test public void testProstate() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/prostate/prostate.csv.zip", "prostate2.zip.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                String[] names = fr.names().clone();
+                Vec[] en = fr.remove(new int[]{1,4,5,8});
+                fr.add(names[1], en[0].toEnum()); //CAPSULE
+                fr.add(names[4], en[1].toEnum()); //DPROS
+                fr.add(names[5], en[2].toEnum()); //DCAPS
+                fr.add(names[8], en[3].toEnum()); //GLEASON
+                for (Vec v : en) v.remove();
+                fr.remove(0).remove(); //drop ID
+                return 4; //CAPSULE
+              }
+            },
+            4, //ntrees
+            2, //bins
+            1, //min_rows
+            1, //max_depth
+            null,
+            s("0", "1"));
+  }
+
   @Test public void testAlphabet() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
@@ -220,6 +300,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            20,
             a(a(664, 0),
               a(0, 702)),
             s("0", "1"));
@@ -234,6 +317,9 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
+            20,
+            1,
+            10,
             0.0);
   }
 
@@ -256,7 +342,7 @@ public class DRFTest extends TestUtil {
               }
             },
             7,
-            a(a(7958, 11707), //1-node
+            20, 1, 20, a(a(7958, 11707), //1-node
               a(2709, 19024)),
 //          a(a(7841, 11822), //5-node
 //            a(2666, 19053)),
@@ -285,10 +371,14 @@ public class DRFTest extends TestUtil {
     return ret;
   }
 
-  public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, long[][] expCM, String[] expRespDom) throws Throwable { basicDRF(fnametrain, hexnametrain, null, prep, ntree, expCM, expRespDom, -1, 10/*max_depth*/, 20/*nbins*/, true); }
-  public void basicDRFTestOOBE_Regression(String fnametrain, String hexnametrain, PrepData prep, int ntree, double expMSE) throws Throwable { basicDRF(fnametrain, hexnametrain, null, prep, ntree, null, null, expMSE, 10/*max_depth*/, 20/*nbins*/, false); }
+  public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, long[][] expCM, String[] expRespDom) throws Throwable {
+    basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, true, min_rows, expCM, -1, expRespDom);
+  }
+  public void basicDRFTestOOBE_Regression(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double expMSE) throws Throwable {
+    basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, false, min_rows, null, expMSE, null);
+  }
 
-  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, long[][] expCM, String[] expRespDom, double expMSE, int max_depth, int nbins, boolean classification) throws Throwable {
+  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, long[][] expCM, double expMSE, String[] expRespDom) throws Throwable {
     Scope.enter();
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     Frame frTest = null, pred = null;
@@ -305,12 +395,12 @@ public class DRFTest extends TestUtil {
       drf._response_column = ((Frame)DKV.getGet(drf._train)).lastVecName();
       drf._ntrees = ntree;
       drf._max_depth = max_depth;
-      drf._min_rows = 1; // = nodesize
+      drf._min_rows = min_rows;
       drf._nbins = nbins;
       drf._mtries = -1;
       drf._sample_rate = 0.66667f;   // Simulated sampling with replacement
       drf._seed = (1L<<32)|2;
-      drf._destination_key = Key.make("DRF_model_4_" + hexnametrain);
+      drf._model_id = Key.make("DRF_model_4_" + hexnametrain);
 
       // Invoke DRF and block till the end
       DRF job = null;
@@ -338,7 +428,7 @@ public class DRFTest extends TestUtil {
       test = parse_test_file(fnametrain);
       res = model.score(test);
 
-      if (classification) {
+      if (classification && expCM != null) {
         Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
                 Arrays.deepEquals(mm.cm()._cm, expCM));
 
@@ -346,7 +436,7 @@ public class DRFTest extends TestUtil {
         Assert.assertArrayEquals("CM domain differs!", expRespDom, cmDom);
         Log.info("\nOOB Training CM:\n" + mm.cm().toASCII());
         Log.info("\nTraining CM:\n" + hex.ModelMetrics.getFromDKV(model, test).cm().toASCII());
-      } else {
+      } else if (!classification) {
         Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
         Log.info("\nOOB Training MSE: " + mm.mse());
         Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());

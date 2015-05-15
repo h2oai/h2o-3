@@ -11,12 +11,12 @@ def user(ip, port):
     a.head()
 
     print a[0].name()  # Column header
-    a[0][2].show()  # column 0, row 2 value
-    a["sepal_len"][2].show()  # Column 0, row 2 value
+    print a[0][2]  # column 0, row 2 value
+    print a["sepal_len"][2]  # Column 0, row 2 value
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()
-    a["sepal_len"].mean().show()
+    print a["sepal_len"].mean()
 
     print
     print "Rows 50 through 77 in the `sepal_len` column"
@@ -29,7 +29,7 @@ def user(ip, port):
 
     a.show()
 
-    colmeans = [v.mean().eager() for v in a]
+    colmeans = [v.mean() for v in a]
 
     print "The column means: "
     print colmeans
@@ -52,24 +52,22 @@ def user(ip, port):
     c = None
     # Internal "Expr(c=a+b)" not dead!
 
-    # column addition can be a big data operation, so the result should be an Expr.
-    # TODO: create custom 'mean' function to operate on Expr objects.
-    # print 1 + (a[0] + b[1]).mean()
+    print 1 + (a[0] + b[1]).mean()
 
-    #import collections
+    import collections
 
-    #c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
-    #c.show()
+    c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
+    c.show()
 
-    #c.describe()
-    #c.head()
+    c.describe()
+    c.head()
 
-    #c[0].show()
-    #c[0][1].show()
-    #c[0][0:2].show()
+    c[0].show()
+    print c[0][1]
+    c[0][0:2].show()
 
-    #sliced = a[0][0:51]
-    #sliced.show()
+    sliced = a[0][0:51]
+    sliced.show()
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, user)

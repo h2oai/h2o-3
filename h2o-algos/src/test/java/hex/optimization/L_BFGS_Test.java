@@ -47,20 +47,19 @@ public class L_BFGS_Test  extends TestUtil {
       }
 
       @Override
-      public double[] getObjVals(double[] beta, double[] pk) {
-        double [] res = new double[128];
+      public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
+        double [] res = new double[nSteps];
         double step = 1;
         for(int i = 0; i < res.length; ++i) {
           double x = beta[0] + pk[0]*step;
           double y = beta[1] + pk[1]*step;
           double xx = x * x;
           res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
-          step *= _stepDec;
+          step *= stepDec;
         }
         return res;
       }
     };
-    int fails = 0;
     L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
     L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
     assertTrue("LBFGS failed to solve Rosenbrock function optimization",r.ginfo._objVal <  1e-4);
@@ -78,14 +77,20 @@ public class L_BFGS_Test  extends TestUtil {
       source.add("CAPSULE", source.remove("CAPSULE"));
       source.remove("ID").remove();
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
-      dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true);
+      dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false);
       DKV.put(dinfo._key,dinfo);
       GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.vec("CAPSULE").mean(), source.numRows());
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.vec("CAPSULE").mean());
-      L_BFGS.Result r = lbfgs.solve(solver, beta);
+      L_BFGS.Result r = lbfgs.solve(solver, beta, solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
+        int _i = 0;
+        public boolean progress(double [] beta, GradientInfo ginfo){
+          System.out.println(++_i +":" + ginfo._objVal + ", " + ArrayUtils.l2norm2(ginfo._gradient,false));
+          return true;
+        }
+      });
       assertEquals(378.34, 2 * r.ginfo._objVal * source.numRows(), 1e-1);
     } finally {
       if(dinfo != null)
@@ -108,17 +113,38 @@ public class L_BFGS_Test  extends TestUtil {
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
       GLMParameters glmp = new GLMParameters(Family.gaussian);
       glmp._lambda = new double[]{1e-5};
-      dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true);
+      glmp._alpha = new double[]{0};
+      dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false);
       DKV.put(dinfo._key,dinfo);
       GradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
       L_BFGS lbfgs = new L_BFGS().setMaxIter(20);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.lastVec().mean());
-      L_BFGS.Result r1 = lbfgs.solve(solver, beta.clone());
-      lbfgs.setMaxIter(1000);
-      L_BFGS.Result r2 = lbfgs.solve(solver, r1.coefs, r1.ginfo, new L_BFGS.ProgressMonitor());
-      lbfgs = new L_BFGS();
-      L_BFGS.Result r3 = lbfgs.solve(solver, beta.clone());
+      L_BFGS.Result r1 = lbfgs.solve(solver, beta.clone(), solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
+        int _i = 0;
+        public boolean progress(double [] beta, GradientInfo ginfo){
+          System.out.println(++_i +":" + ginfo._objVal);
+          return true;
+        }
+      });
+      lbfgs.setMaxIter(50);
+      final int iter = r1.iter;
+      L_BFGS.Result r2 = lbfgs.solve(solver, r1.coefs, r1.ginfo, new L_BFGS.ProgressMonitor(){
+        int _i = 0;
+        public boolean progress(double [] beta, GradientInfo ginfo){
+          System.out.println(iter + " + " + ++_i +":" + ginfo._objVal);
+          return true;
+        }
+      });
+      System.out.println();
+      lbfgs = new L_BFGS().setMaxIter(100);
+      L_BFGS.Result r3 = lbfgs.solve(solver, beta.clone(), solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
+        int _i = 0;
+        public boolean progress(double [] beta, GradientInfo ginfo){
+          System.out.println(++_i +":" + ginfo._objVal + ", " + ArrayUtils.l2norm2(ginfo._gradient,false));
+          return true;
+        }
+      });
       assertEquals(r1.iter,20);
 //      assertEquals (r1.iter + r2.iter,r3.iter); // should be equal? got mismatch by 2
       assertEquals(r2.ginfo._objVal,r3.ginfo._objVal,1e-8);

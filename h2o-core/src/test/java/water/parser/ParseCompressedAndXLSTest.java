@@ -52,11 +52,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       NFSFileVec nfs = NFSFileVec.make(f);
       byte[] ctypes = new byte[12];
       for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
-      ParseSetup setup = new ParseSetup(true, // is valid
-                0,    // invalidLines
-              // headerlines
-                null, // errors
-                ParserType.XLS,
+      ParseSetup setup = new ParseSetup(ParserType.XLS,
                 (byte) 52, // sep; ascii '4'
                 true,     // singleQuotes
                 ParseSetup.NO_HEADER, // check header

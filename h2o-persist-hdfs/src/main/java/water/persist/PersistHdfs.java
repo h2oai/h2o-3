@@ -121,7 +121,7 @@ public final class PersistHdfs extends Persist {
     // new library version.  Might make sense to go to straight to 's3a' which is a replacement
     // for 's3n'.
     //
-
+    long end, start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(v._max);
     Key k = v._key;
     long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
@@ -155,6 +155,9 @@ public final class PersistHdfs extends Persist {
         return null;
       }
     }, true, v._max);
+    end = System.currentTimeMillis();
+    if (end-start > 1000) // Only log read that took over 1 second to complete
+      Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip_ +"-"+(skip_+b.length)+" in HDFS read.");
 
     return b;
   }
@@ -279,7 +282,7 @@ public final class PersistHdfs extends Persist {
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
-    assert "hdfs".equals(uri.getScheme()) || "s3n".equals(uri.getScheme()) : "Expected hdfs or s3n scheme, but uri is " + uri;
+    assert "hdfs".equals(uri.getScheme()) || "s3".equals(uri.getScheme()) || "s3n".equals(uri.getScheme()) : "Expected hdfs, s3 or s3n scheme, but uri is " + uri;
 
     FileSystem fs = FileSystem.get(uri, PersistHdfs.CONF);
     FileStatus[] fstatus = fs.listStatus(new Path(uri));
@@ -288,16 +291,31 @@ public final class PersistHdfs extends Persist {
     return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
   }
 
-  private static final Pattern S3N_BARE_BUCKET = Pattern.compile("s3n://[^/]*");
+  // Is there a bucket name without a trailing "/" ?
+  private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
+    String s2 = s.toLowerCase();
+    Matcher m = Pattern.compile("s3n://[^/]*").matcher(s2);
+    return m.matches();
+  }
+  // We don't handle HDFS style S3 storage, just native storage.  But all users
+  // don't know about HDFS style S3 so treat S3 as a request for a native file
+  private static final String convertS3toS3N(String s) {
+    if (Pattern.compile("^s3://.*").matcher(s).matches())
+      return s.replaceFirst("^s3://", "s3n://");
+    else return s;
+  }
 
   @Override
   public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
     // Get HDFS configuration
     Configuration conf = PersistHdfs.CONF;
-    // Handle S3N bare buckets - s3n://bucketname should be always suffixed by '/'
-    // since underlying Jets3n will throw NPE, i.e. right filter name should be
-    // s3n://bucketname/
-    if (S3N_BARE_BUCKET.matcher(filter).matches()) {
+
+    // Hack around s3://
+    filter = convertS3toS3N(filter);
+
+    // Handle S3N bare buckets - s3n://bucketname should be suffixed by '/'
+    // or underlying Jets3n will throw NPE. filter name should be s3n://bucketname/
+    if (isBareS3NBucketWithoutTrailingSlash(filter)) {
       filter += "/";
     }
     // Output matches
@@ -330,17 +348,11 @@ public final class PersistHdfs extends Persist {
     return array;
   }
 
-  private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
-    String s2 = s.toLowerCase();
-    Pattern p = Pattern.compile("s3n://[^/]*");
-    Matcher m = p.matcher(s2);
-    boolean b = m.matches();
-    return b;
-  }
-
   @Override
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    // Fix for S3N kind of URL
+    path = convertS3toS3N(path);
+
+    // Fix for S3 kind of URL
     if (isBareS3NBucketWithoutTrailingSlash(path)) {
       path += "/";
     }

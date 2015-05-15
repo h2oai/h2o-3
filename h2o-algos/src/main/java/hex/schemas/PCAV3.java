@@ -10,7 +10,7 @@ import water.api.ModelParametersSchema;
 public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
 
   public static final class PCAParametersV3 extends ModelParametersSchema<PCAParameters, PCAParametersV3> {
-    static public String[] own_fields = new String[] { "transform", "k", "gamma", "max_iterations", "seed", "init", "user_points" };
+    static public String[] own_fields = new String[] { "transform", "k", "max_iterations", "seed", "loading_key" };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
@@ -18,20 +18,11 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
     @API(help = "Rank of matrix approximation", required = true)
     public int k;
 
-    @API(help = "Regularization weight")
-    public double gamma;
-
     @API(help = "Maximum training iterations")
     public int max_iterations;
 
-    @API(help = "RNG seed for k-means++ initialization")
+    @API(help = "RNG seed for initialization")
     public long seed;
-
-    @API(help = "Initialization mode", values = { "PlusPlus", "User" }) // TODO: pull out of enum class
-    public PCA.Initialization init;
-
-    @API(help = "User-specified initial Y", required = false)
-    public KeyV3.FrameKeyV3 user_points;
 
     @API(help = "Frame key to save resulting X")
     public KeyV3.FrameKeyV3 loading_key;

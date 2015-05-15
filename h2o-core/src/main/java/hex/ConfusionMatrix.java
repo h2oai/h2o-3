@@ -240,7 +240,7 @@ public class ConfusionMatrix extends Iced {
     String[] colType = new String[colHeader.length];
     String[] colFormat = new String[colHeader.length];
     for (int i=0; i<colFormat.length-1; ++i) {
-      colType[i]   = "integer";
+      colType[i]   = "int";
       colFormat[i] = "%d";
     }
     colType[colFormat.length-2]   = "double";
@@ -269,7 +269,7 @@ public class ConfusionMatrix extends Iced {
     // set format width
     colFormat[colFormat.length-1] = "= %" + width + "s";
 
-    TwoDimTable table = new TwoDimTable("Confusion Matrix", null, rowHeader, colHeader, colType, colFormat, "Act/Pred");
+    TwoDimTable table = new TwoDimTable("Confusion Matrix", "vertical: actual; across: predicted", rowHeader, colHeader, colType, colFormat, null);
 
     // Main CM Body
     for (int a = 0; a < _cm.length; a++) {

@@ -3,11 +3,9 @@ This module contains code for the lazy expression DAG.
 """
 
 import sys
-from math import sqrt, isnan, floor
+from math import sqrt, isnan
 import h2o
 import frame
-import tabulate
-import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -122,6 +120,7 @@ class Expr(object):
   def __len__(self):
     """
     The length of this H2OVec/H2OFrame (generally without triggering eager evaluation)
+
     :return: The number of columns/rows of the H2OFrame/H2OVec.
     """
     return self._len
@@ -129,13 +128,16 @@ class Expr(object):
   def dim(self):
     """
     Eagerly evaluate the Expr. If it's an H2OFrame, return the number of rows and columns.
+
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
     self.eager()
-    if isinstance(self._data, unicode):
+    if self.is_remote(): # potentially big data
       frame = h2o.frame(self._data)
       return [frame['frames'][0]['rows'], len(frame['frames'][0]['columns'])]
-    raise ValueError("data must be a (unicode) key")
+    elif self.is_local(): # small data
+      return [1,1] if not hasattr(self._data, '__len__') else [1,len(self._data)]
+    raise ValueError("data must be local or remote")
 
   def debug(self):
     """
@@ -150,14 +152,22 @@ class Expr(object):
   def show(self, noprint=False):
     """
     Evaluate and print.
-    :return:
+
+    :return: None
     """
     self.eager()
     if noprint:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = j['frames'][0]['columns'][0]['data'][0:10]
-        return data
+        data = [c['data'] if c['type']!="string" else c["string_data"] for c in j['frames'][0]['columns'][:]]
+        domains  = [c['domain'] for c in j['frames'][0]['columns']]
+        for i in range(len(data)):
+          if domains[i] is not None:
+            for j in range(len(data[i])):
+              if data[i][j] == "NaN": continue
+              data[i][j] = domains[i][int(data[i][j])]
+        data = map(list, zip(*data))
+        return data[0:min(10,len(data))]
       return self._data
     else:
       if isinstance(self._data, unicode):
@@ -170,16 +180,16 @@ class Expr(object):
       else:
         data = [self._data]
       t_data = map(list, zip(*data))
+      t_data = t_data[0:min(10,len(t_data))]
       for didx,d in enumerate(t_data): t_data[didx].insert(0,didx)
       headers = ["Row ID"]
       for i in range(len(t_data[0])): headers.append('')
       print "Displaying first " + str(len(t_data)) + " row(s)"
-      print tabulate.tabulate(t_data, headers=headers)
-      print
+      h2o.H2ODisplay(t_data,headers)
 
-#  def __repr__(self):
-#    self.show()
-#    return ""
+  # def __repr__(self):
+  #    self.show()
+  #    return ""
 
   # Compute summary data
   def summary(self):
@@ -215,13 +225,16 @@ class Expr(object):
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     elif self.is_remote() or self.is_pending():
       if    isinstance(i, int)  : return Expr("[", self, Expr(("()", i)))  # column slicing
-      elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
+      elif  isinstance(i, tuple): # row, column slicing
+        res = Expr("[", self, Expr((i[0], i[1])))
+        if isinstance(i[0],int) and isinstance(i[1],int): return res.eager() # small data
+        return res # potentially big data
       else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
 
   def _simple_expr_bin_op( self, i, op):
-    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_op(self,op)
-    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_op(self,op)
+    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_rop(self,op)
+    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_rop(self,op)
     if isinstance(i, Expr)        :
       e = self.eager()
       return  Expr(op, Expr(e), i) if isinstance(e, (int,float)) else Expr(op, self, i)
@@ -232,6 +245,8 @@ class Expr(object):
   def _simple_expr_bin_rop(self, i, op):
     if isinstance(i, (int, float)):  return Expr(op, Expr(i), self)
     raise NotImplementedError
+
+  def logical_negation(self):  return Expr("not", self)
 
   def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
@@ -262,19 +277,19 @@ class Expr(object):
     """
     :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("min", self)
+    return Expr("min", self).eager()
 
   def max(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("max", self)
+    return Expr("max", self).eager()
 
   def sum(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("sum", self)
+    return Expr("sum", self).eager()
 
   def sd(self):
     """
@@ -292,13 +307,13 @@ class Expr(object):
     """
     :return: A lazy Expr representing the mean of this H2OVec.
     """
-    return Expr("mean", self)
+    return Expr("mean", self).eager()
 
   def median(self):
     """
     :return: A lazy Expr representing the median of this H2OVec.
     """
-    return Expr("median", self)
+    return Expr("median", self).eager()
 
   def __del__(self):
     # Dead pending op or local data; nothing to delete
@@ -306,9 +321,11 @@ class Expr(object):
     assert self.is_remote(), "Data wasn't remote. Hrm..."
     global __CMD__
     if __CMD__ is None:
-      h2o.remove(self._data)
+      if h2o is not None:
+        h2o.remove(self._data)
     else:
-      s = " (del '" + self._data + "' #0)"
+      # Hard/deep remove of a Vec, built into a rapids expression
+      s = " (del '" + self._data + "')"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s
@@ -320,6 +337,7 @@ class Expr(object):
     This forces a top-level execution, as needed, and produces a top-level result
     locally. Frames are returned and truncated to the standard preview response
     provided by rapids - 100 rows X 200 cols.
+
     :return: A key pointing to the big data object
     """
     if self.is_computed(): return self._data
@@ -327,8 +345,9 @@ class Expr(object):
     global __CMD__, __TMPS__
     assert not __CMD__ and not __TMPS__
     __CMD__ = ""
-    __TMPS__ = ""  # Begin gathering rapids commands
-    self._do_it()   # Symbolically execute the command
+    __TMPS__ = ""    # Begin gathering rapids commands
+    dummy = self     # Force extra refcnt so we get a top-level assignment in do_it
+    self._do_it()    # Symbolically execute the command
     cmd = __CMD__
     tmps = __TMPS__  # Stop  gathering rapids commands
     __CMD__ = None
@@ -339,15 +358,22 @@ class Expr(object):
     if tmps:
       cmd = "(, " + cmd + tmps + ")"
     j = h2o.rapids(cmd)
-    if isinstance(self._data, unicode):
+    if j['result_type'] == 0:
       pass  # Big Data Key is the result
     # Small data result pulled locally
     elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
-    else:
-      self._data = j['scalar']
+    elif j['result_type'] in [1,2,3,4]:
+      if isinstance(j['string'], (unicode, str)): self._data = str(j['string'])
+      else:
+        if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
+
+    if j['result_type'] in [3,4]:
+      for key in j['vec_ids']:
+        h2o.remove(key['name'])
+
     return self._data
 
   def _do_child(self, child):
@@ -381,12 +407,12 @@ class Expr(object):
       if isinstance(c, int): return "'" + self._left._data[c] + "'"
       if isinstance(c, slice):
         cols = self._left._data[c]
-        cmd = "(cbind"
+        cmd = "(cbind %FALSE"
         for col in cols: cmd += " '" + str(col) + "'"
         cmd += ")"
         return cmd
       if c == "()":
-        cmd = "(cbind"
+        cmd = "(cbind %FALSE"
         for col in self._left._data: cmd += " '" + str(col) + "'"
         cmd += ")"
         return cmd
@@ -400,7 +426,7 @@ class Expr(object):
     raise NotImplementedError
 
   def multi_dim_slice_cols_cmd(self, child):
-    if   isinstance(self._left._data, list): return '()'
+    if   isinstance(self._left._data, list): return '\"null\"' # TODO: there might be a bug here: replace null with ()
     elif isinstance(self._left._data,unicode):
       c = child._data[1]
       if isinstance(c, int): return "#" + str(c)
@@ -412,6 +438,7 @@ class Expr(object):
     """
     External API for eager; called by all top-level demanders (e.g. print)
     This may trigger (recursive) big-data evaluation.
+
     :return: None
     """
     if self.is_computed(): return
@@ -425,11 +452,14 @@ class Expr(object):
     # See if this is not a temp and not a scalar; if so it needs a name
     # Remove one count for the call to getrefcount itself
     cnt = sys.getrefcount(self) - 1
-    # Magical count-of-4 is the depth of 4 interpreter stack
-    py_tmp = cnt != 4 and self._len > 1 and not assign_vec
+
+    # Magical count-of-5:
+    #  1 for _do_it    frame, 1 for _do_it    local dictionary list
+    #  1 for _do_child frame, 1 for _do_child local dictionary list
+    #  1 for each parent.
+    py_tmp = cnt != 5 and self._len > 1 and not assign_vec
 
     global __CMD__
-    skip=False
     if py_tmp:
       self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
       __CMD__ += "(= !" + self._data + " "
@@ -437,11 +467,6 @@ class Expr(object):
       __CMD__ += "(" + self._op + " "
 
     left = self._do_child(self._left)  # down the left
-
-    # gross hack just to get the ")" in the right place after the (!= ... ending ")" strictly enforced by Rapids
-    if py_tmp and self._left._is_key() and self._op==",":
-      skip=True
-      __CMD__ += ")"
 
     rite = self._do_child(self._rite)  # down the right
 
@@ -492,6 +517,10 @@ class Expr(object):
       if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
       else:                 pass
 
+    elif self._op == "not":
+      if left.is_local():   self._data = [not x for x in left._data]
+      else:                 pass
+
     elif self._op == "sign":
       if left.is_local():   self._data = [cmp(x,0) for x in left._data]
       else:                 pass
@@ -523,6 +552,12 @@ class Expr(object):
     elif self._op in ["min", "max", "sum", "median"]:
       if left.is_local():   raise NotImplementedError
       else:                 __CMD__ += "%FALSE"
+
+    elif self._op == "cbind":
+      if left.is_local():
+        __CMD__ += " %FALSE "
+        for v in left._data: __CMD__ += "'" + str(v._expr._data) + "'"
+      else:                 pass
 
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
@@ -564,7 +599,7 @@ class Expr(object):
     # End of expression... wrap up parens
     if self._op != ",":
       __CMD__ += ")"
-    if py_tmp and not skip:
+    if py_tmp:
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead

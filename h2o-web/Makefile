@@ -28,5 +28,8 @@ coverage:
 	@mkdir -p $O/coverage
 	$B/gulp build-test-script && $B/istanbul cover --dir $O/coverage -x "**/lib/**" $O/js/steam-tests.js && $B/istanbul report --dir $O/coverage cobertura
 
+doc:
+	$B/coffee help.coffee
+
 .PHONY: default watch clean unit-test test-raw test coverage launch 
 

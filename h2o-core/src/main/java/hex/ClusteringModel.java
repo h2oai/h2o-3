@@ -44,8 +44,4 @@ public abstract class ClusteringModel<M extends ClusteringModel<M,P,O>, P extend
     @Override public ModelCategory getModelCategory() { return ModelCategory.Clustering; }
   }
 
-  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
-    sb.nl().ip("public ModelCategory getModelCategory() { return ModelCategory.Clustering; }\n");
-    return sb;
-  }
 }

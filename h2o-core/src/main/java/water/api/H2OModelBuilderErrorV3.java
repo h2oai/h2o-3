@@ -12,14 +12,15 @@ import water.H2OModelBuilderError;
  * places.  This is intentional, so that a client can handle it like any other H2OErrorV1
  * by just rendering the values map, or like ModelBuilderSchema by looking at those fields
  * directly.
+ * @see ModelBuilderJobV3
  */
 public class H2OModelBuilderErrorV3 extends H2OErrorV3<H2OModelBuilderError, H2OModelBuilderErrorV3> implements SpecifiesHttpResponseCode {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
   public ModelParametersSchema parameters;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ModelParametersSchema.ValidationMessageV2 validation_messages[];
+  public ValidationMessageV3 messages[];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
-  public int validation_error_count;
+  public int error_count;
 }

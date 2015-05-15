@@ -34,7 +34,6 @@ check.deeplearning_autoencoder <- function(conn) {
 
      # train autoencoder on train_unsupervised
      ae_model <- h2o.deeplearning(x=predictors,
-                                  y=42, #ignored (pick any non-constant predictor)
                                   training_frame=train_unsupervised,
                                   activation="Tanh",
                                   autoencoder=T,
@@ -61,7 +60,7 @@ check.deeplearning_autoencoder <- function(conn) {
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     expect_equal(cm$error[11], 0.1057, tolerance = 0.001) #10% test set error
+     expect_equal(cm$Error[11], 0.1057, tolerance = 0.001) #10% test set error
 
      testEnd()
 }

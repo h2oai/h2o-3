@@ -5,9 +5,9 @@ import hex.quantile.QuantileModel;
 import water.api.API;
 import water.api.ModelParametersSchema;
 
-public class QuantileV3 extends ModelBuilderSchema<Quantile,QuantileV3,QuantileV3.QuantileParametersV2> {
+public class QuantileV3 extends ModelBuilderSchema<Quantile,QuantileV3,QuantileV3.QuantileParametersV3> {
 
-  public static final class QuantileParametersV2 extends ModelParametersSchema<QuantileModel.QuantileParameters, QuantileParametersV2> {
+  public static final class QuantileParametersV3 extends ModelParametersSchema<QuantileModel.QuantileParameters, QuantileParametersV3> {
     static public String[] own_fields = new String[] {"probs", "combine_method"};
 
     // Input fields

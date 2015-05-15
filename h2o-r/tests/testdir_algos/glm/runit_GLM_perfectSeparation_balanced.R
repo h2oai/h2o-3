@@ -13,10 +13,10 @@ source('../../h2o-runit.R')
 test <- function(conn) {
 
     print("Read in synthetic balanced dataset")
-        data.b.hex <- h2o.uploadFile(conn, locate("smalldata/synthetic_perfect_separation/balanced.csv"), key="data.b.hex")
+        data.b.hex <- h2o.uploadFile(conn, locate("smalldata/synthetic_perfect_separation/balanced.csv"), destination_frame="data.b.hex")
 
     print("Fit model on dataset.")
-        model.balanced <- h2o.glm(x=c("x1", "x2"), y="y", data.b.hex, family="binomial", lambda_search=TRUE, use_all_factor_levels=TRUE, alpha=0.5, nfolds=0, lambda=0)
+        model.balanced <- h2o.glm(x=c("x1", "x2"), y="y", data.b.hex, family="binomial", lambda_search=TRUE, alpha=0, nfolds=0, lambda=1e-8)
 
     print("Extract models' coefficients and assert reasonable values (ie. no greater than 50)")
     print("Balanced dataset")

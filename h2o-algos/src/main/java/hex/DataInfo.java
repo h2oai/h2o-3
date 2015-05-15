@@ -10,52 +10,19 @@ import java.util.Arrays;
 
 /**
 * Created by tomasnykodym on 1/29/15.
+ *
+ * Provides higher level interface for accessing data row-wise.
+ *
+ * Performs on the fly auto-expansion of categorical variables (to 1 hot encoding) and standardization ( or normalize/demean/descale/none) of predictors and response.
+ * Supports sparse data, sparse columns can be transformed to sparse rows on the fly with some (significant) memory overhead,
+ * as the data of the whole chunk(s) will be copied.
+ *
 */
 public class DataInfo extends Keyed {
   public int [] _activeCols;
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
-  boolean _weightsVec;
-  // vecs are arranged so that there is predictors | response | filter | offset | weights,
 
-//  public DataInfo setFilter(Vec v) {
-//    if(_filterVec) {
-//      int id = _adaptedFrame.numCols() - 1 - (_weightsVec?1:0);
-//      _adaptedFrame.replace(id,v);
-//    } else {
-//      String name = "_filter_vec";
-//      while (_adaptedFrame.vec(name) != null) name = "_" + name;
-//      _adaptedFrame.add(name, v);
-//      _filterVec = true;
-//    }
-//    return this;
-//  }
-
-  public Vec weightsVec(){
-    return _weightsVec?_adaptedFrame.vec(_adaptedFrame.numCols()-1):null;
-  }
-//  public Vec filterVec(){
-//    return _filterVec?_adaptedFrame.vec(filterVecId()):null;
-//  }
-//  public int filterVecId(){
-//    return _filterVec?_adaptedFrame.numCols()- 1 - (_weightsVec?1:0):-1;
-//  }
-//
-  public DataInfo setWeights(Vec v) {
-    if(_weightsVec) {
-      int id = _adaptedFrame.numCols() - 1;
-      _adaptedFrame.replace(id,v);
-    } else {
-      String name = "_weights_vec";
-      while (_adaptedFrame.vec(name) != null) name = "_" + name;
-      _adaptedFrame.add(name, v);
-      _weightsVec = true;
-    }
-    return this;
-  }
-
-
-  @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
   public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE }
   public TransformType _predictor_transform;
@@ -65,20 +32,22 @@ public class DataInfo extends Keyed {
   public int _bins;
   public int _cats;
   public int [] _catOffsets;
-  public int [] _catMissing;
+  public int [] _catMissing;  // bucket for missing categoricals
+  public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;
   public double [] _normSub;
   public double [] _normRespMul;
   public double [] _normRespSub;
-  public int _foldId;
-  public int _nfolds;
   public boolean _intercept = true;
   public boolean _offset = false;
-  final boolean _skipMissing;
+  public final boolean _skipMissing;
+  public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
   final int [][] _catLvls;
 
+  @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
-  public double _etaOffset;
+  private DataInfo() {super(null);_catLvls = null; _skipMissing = true; _valid = false;}
+
   public DataInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
     this.write(ab);
@@ -86,188 +55,21 @@ public class DataInfo extends Keyed {
     return (DataInfo)new DataInfo().read(ab);
   }
 
-  private DataInfo() {super(null);_catLvls = null; _skipMissing = true;}
-
-  private DataInfo(Key selfKey, DataInfo dinfo, int foldId, int nfolds){
-    super(selfKey);
-    assert dinfo._catLvls == null:"Should not be called with filtered levels (assuming the selected levels may change with fold id) ";
-    assert dinfo._predictor_transform != null;
-    assert dinfo. _response_transform != null;
-    _predictor_transform = dinfo._predictor_transform;
-    _response_transform = dinfo._response_transform;
-    _responses = dinfo._responses;
-    _nums = dinfo._nums;
-    _cats = dinfo._cats;
-    _adaptedFrame = dinfo._adaptedFrame;
-    _catOffsets = dinfo._catOffsets;
-    _catMissing = dinfo._catMissing;
-    _normMul = dinfo._normMul;
-    _normSub = dinfo._normSub;
-    _normRespMul = dinfo._normRespMul;
-    _normRespSub = dinfo._normRespSub;
-    _foldId = foldId;
-    _nfolds = nfolds;
-    _useAllFactorLevels = dinfo._useAllFactorLevels;
-    _catLvls = null;
-    _skipMissing = dinfo._skipMissing;
-    if(_normMul != null)
-      for(int i = 0; i < _normMul.length; ++i)
-        _etaOffset -= _normSub[i] * _normMul[i];
-  }
-
-
-//  public DataInfo(Key selfKey, Frame train, Frame valid, int hasResponses, boolean useAllFactorLvls, double[] normSub, double[] normMul, TransformType predictor_transform, double[] normRespSub, double[] normRespMul){
-//    this(selfKey, train, valid, hasResponses,useAllFactorLvls,
-//      normMul != null && normSub != null ? predictor_transform : TransformType.NONE, //just allocate, doesn't matter whether standardize or normalize is used (will be overwritten below)
-//      normRespMul != null && normRespSub != null ? TransformType.STANDARDIZE : TransformType.NONE);
-//    assert predictor_transform != null;
-//    assert (normSub == null) == (normMul == null);
-//    assert (normRespSub == null) == (normRespMul == null);
-//    if(normSub != null) {
-//      System.arraycopy(normSub, 0, _normSub, 0, normSub.length);
-//      System.arraycopy(normMul, 0, _normMul, 0, normMul.length);
-//    }
-//    if(normRespSub != null) {
-//      System.arraycopy(normRespSub, 0, _normRespSub, 0, normRespSub.length);
-//      System.arraycopy(normRespMul, 0, _normRespMul, 0, normRespMul.length);
-//    }
-//  }
-//
-//
-//  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
-//    this(selfKey, train, valid, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
-//  }
-
-  //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
-  public DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, int foldId, int nfolds){
-    super(selfKey);
-    assert predictor_transform != null;
-    assert  response_transform != null;
-    _predictor_transform = predictor_transform;
-    _response_transform  =  response_transform;
-    _skipMissing = skipMissing;
-    _adaptedFrame = fr;
-    _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
-    _catMissing = new int[catLevels.length];
-    int s = 0;
-
-    for(int i = 0; i < catLevels.length; ++i){
-      _catOffsets[i] = s;
-      s += catLevels[i].length;
-    }
-    _catLvls = catLevels;
-    _catOffsets[_catOffsets.length-1] = s;
-    _responses = responses;
-    _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - responses;
-    if( _nums > 0 ) {
-      switch(_predictor_transform) {
-      case STANDARDIZE:
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = MemoryManager.malloc8d(_nums);
-        for (int i = 0; i < _nums; ++i) {
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          _normSub[i] = v.mean();
-        }
-        break;
-      case NORMALIZE:
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = MemoryManager.malloc8d(_nums);
-        for (int i = 0; i < _nums; ++i) {
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          _normSub[i] = v.mean();
-        }
-        break;
-      case DEMEAN:
-        _normMul = null;
-        _normSub = MemoryManager.malloc8d(_nums);
-        for (int i = 0; i < _nums; ++i) {
-          Vec v = fr.vec(catLevels.length+i);
-          _normSub[i] = v.mean();
-        }
-        break;
-      case DESCALE:
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = null;
-        for (int i = 0; i < _nums; ++i) {
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-        }
-        break;
-      case NONE:
-        _normMul = null;
-        _normSub = null;
-        break;
-      default:
-        throw H2O.unimpl();
-      }
-    }
-    if(responses > 0){
-      switch(_response_transform) {
-        case STANDARDIZE:
-          _normRespMul = MemoryManager.malloc8d(responses);
-          _normRespSub = MemoryManager.malloc8d(responses);
-          for (int i = 0; i < responses; ++i) {
-            Vec v = fr.vec(fr.numCols()-responses+i);
-            _normRespMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-            _normRespSub[i] = v.mean();
-          }
-          break;
-        case NORMALIZE:
-          _normRespMul = MemoryManager.malloc8d(responses);
-          _normRespSub = MemoryManager.malloc8d(responses);
-          for (int i = 0; i < responses; ++i) {
-            Vec v = fr.vec(fr.numCols()-responses+i);
-            _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-            _normRespSub[i] = v.mean();
-          }
-          break;
-        case DEMEAN:
-          _normRespMul = null;
-          _normRespSub = MemoryManager.malloc8d(responses);
-          for (int i = 0; i < responses; ++i) {
-            Vec v = fr.vec(fr.numCols()-responses+i);
-            _normRespSub[i] = v.mean();
-          }
-          break;
-        case DESCALE:
-          _normRespSub = null;
-          _normRespMul = MemoryManager.malloc8d(responses);
-          for (int i = 0; i < responses; ++i) {
-            Vec v = fr.vec(fr.numCols()-responses+i);
-            _normRespMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          }
-          break;
-        case NONE:
-          _normRespMul = null;
-          _normRespSub = null;
-          break;
-        default:
-          throw H2O.unimpl();
-      }
-    }
-    _useAllFactorLevels = false;
-    _adaptedFrame.reloadVecs();
-    _nfolds = nfolds;
-    _foldId = foldId;
-  }
-
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing) {
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket) {
     super(selfKey);
+    _valid = false;
     assert predictor_transform != null;
     assert  response_transform != null;
     _skipMissing = skipMissing;
-    _nfolds = _foldId = 0;
     _predictor_transform = predictor_transform;
     _response_transform = response_transform;
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
     _catLvls = null;
+    _permutation = new int[train.numCols()];
     final Vec[] tvecs = train.vecs();
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
@@ -278,15 +80,10 @@ public class DataInfo extends Keyed {
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
     for(int i = 0; i < n; ++i)
-      if (tvecs[i].isEnum() && (tvecs[i].domain() != null)) {
+      if (tvecs[i].isEnum())
         cats[ncats++] = i;
-      }
-      else {
-        if (tvecs[i].isEnum()) {
-          Log.debug("In DataInfo:  Confused isEnum column number " + i);
-        }
+      else
         nums[nnums++] = i;
-      }
     _nums = nnums;
     _cats = ncats;
     // sort the cats in the decreasing order according to their size
@@ -297,78 +94,89 @@ public class DataInfo extends Keyed {
           cats[i] = cats[j];
           cats[j] = x;
         }
-
     String[] names = new String[train.numCols()];
     Vec[] tvecs2 = new Vec[train.numCols()];
-    Vec[] vvecs2 = (valid == null) ? null : new Vec[train.numCols()];
     // Compute the cardinality of each cat
     _catOffsets = MemoryManager.malloc4(ncats+1);
     _catMissing = new int[ncats];
     int len = _catOffsets[0] = 0;
     for(int i = 0; i < ncats; ++i) {
+      _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
-      if (valid != null) vvecs2         [i] = vvecs[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
-      _catMissing[i] = v.naCnt() > 0 ? 1 : 0; //needed for test time
-      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (v.naCnt()>0?1:0)); //missing values turn into a new factor level
+      _catMissing[i] = missingBucket ? 1 : 0; //needed for test time
+      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket ? 1 : 0)); //missing values turn into a new factor level
     }
-
-    // Compute the mean/sigma for each predictor
-    switch(predictor_transform) {
-    case STANDARDIZE:
-    case NORMALIZE:  _normSub = MemoryManager.malloc8d(nnums);  _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);  break;
-    case DEMEAN:     _normSub = MemoryManager.malloc8d(nnums);  _normMul = null;                                                     break;
-    case DESCALE:    _normSub = null;                           _normMul = MemoryManager.malloc8d(nnums);                            break;
-    case NONE:       _normSub = null;                           _normMul = null;                                                     break;
-    default:         throw H2O.unimpl();
+    for(int i = 0; i < _nums; ++i){
+      names[i+_cats] = train._names[nums[i]];
+      tvecs2[i+_cats] = train.vec(nums[i]);
+      _permutation[i+_cats] = nums[i];
     }
-    for(int i = 0; i < nnums; ++i){
-      names[ncats+i]  =   train._names[nums[i]];
-      if (valid != null) vvecs2         [ncats+i] = vvecs[nums[i]];
-      Vec v = (tvecs2[ncats+i] = tvecs[nums[i]]);
-      double vs = (v.sigma()      ) == 0 ? 1.0 : 1.0/(v.sigma()      );
-      double vm = (v.max()-v.min()) == 0 ? 1.0 : 1.0/(v.max()-v.min());
-      switch(predictor_transform){
-      case STANDARDIZE:  _normSub[i] = v.mean();  _normMul[i] = vs;  break;
-      case NORMALIZE:    _normSub[i] = v.mean();  _normMul[i] = vm;  break;
-      case DEMEAN:       _normSub[i] = v.mean();                     break;
-      case DESCALE:                               _normMul[i] = vs;  break;
-      case NONE:                                                     break;
-      default:           throw H2O.unimpl();
-      }
+    for(int i = names.length-nResponses; i < names.length; ++i) {
+      names[i] = train._names[i];
+      tvecs2[i] = train.vec(i);
     }
-
-    // Compute the mean/sigma for each response
-    if (_responses > 0) {
-      switch(response_transform){
-      case STANDARDIZE:
-      case NORMALIZE: _normRespSub = MemoryManager.malloc8d(_responses);  _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);  break;
-      case DEMEAN:    _normRespSub = MemoryManager.malloc8d(_responses);  _normRespMul = null;                                                              break;
-      case DESCALE:   _normRespSub = null;                                _normRespMul = MemoryManager.malloc8d(_responses);                                break;
-      case NONE:      _normRespSub = null;                                _normRespMul = null;                                                              break;
-      default:        throw H2O.unimpl();
-      }
-      for(int i = 0; i < _responses; ++i){
-        names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
-        if (valid != null) vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
-        Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
-        double vs = (v.sigma()      ) == 0 ? 1.0 : 1.0/(v.sigma()      );
-        double vm = (v.max()-v.min()) == 0 ? 1.0 : 1.0/(v.max()-v.min());
-        switch( response_transform ) {
-        case STANDARDIZE:  _normRespSub[i] = v.mean();  _normRespMul[i] = vs;  break;
-        case NORMALIZE:    _normRespSub[i] = v.mean();  _normRespMul[i] = vm;  break;
-        case DEMEAN:       _normRespSub[i] = v.mean();                         break;
-        case DESCALE:                                   _normRespMul[i] = vs;  break;
-        case NONE:                                                             break;
-        default:           throw H2O.unimpl();
-        }
-      }
-    }
-
+    _adaptedFrame = new Frame(names,tvecs2);
     train.restructure(names,tvecs2);
-    if (valid != null) valid.restructure(names,vvecs2);
-    _adaptedFrame = train;
+    if (valid != null)
+      valid.restructure(names,valid.vecs(names));
+//    _adaptedFrame = train;
+    setPredictorTransform(predictor_transform);
+    if(_responses > 0)
+      setResponseTransform(response_transform);
   }
+
+  public DataInfo validDinfo(Frame valid) {
+    DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false);
+    res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
+    res._valid = true;
+    return res;
+  }
+
+  public double[] denormalizeBeta(double [] beta) {
+    assert beta.length == fullN()+1;
+    beta = MemoryManager.arrayCopyOf(beta,beta.length);
+    if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
+      double norm = 0.0;        // Reverse any normalization on the intercept
+      // denormalize only the numeric coefs (categoricals are not normalized)
+      final int numoff = numStart();
+      for (int i = numoff; i < beta.length - 1; i++) {
+        double b = beta[i] * _normMul[i - numoff];
+        norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
+        beta[i] = b;
+      }
+      beta[beta.length-1] -= norm;
+    }
+    return beta;
+  }
+
+  // private constructor called by filterExpandedColumns
+  private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing){
+    super(selfKey);
+    _valid = false;
+    assert predictor_transform != null;
+    assert  response_transform != null;
+    _predictor_transform = predictor_transform;
+    _response_transform  =  response_transform;
+    _skipMissing = skipMissing;
+    _adaptedFrame = fr;
+    _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
+    _catMissing = new int[catLevels.length];
+    int s = 0;
+    for(int i = 0; i < catLevels.length; ++i){
+      _catOffsets[i] = s;
+      s += catLevels[i].length;
+    }
+    _catLvls = catLevels;
+    _catOffsets[_catOffsets.length-1] = s;
+    _responses = responses;
+    _cats = catLevels.length;
+    _nums = fr.numCols()-_cats - responses;
+    _useAllFactorLevels = true;
+    setPredictorTransform(predictor_transform);
+    setResponseTransform(response_transform);
+  }
+
 
   public DataInfo filterExpandedColumns(int [] cols){
     assert _predictor_transform != null;
@@ -412,16 +220,61 @@ public class DataInfo extends Keyed {
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
     assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
-    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _foldId, _nfolds);
+    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing);
     // do not put activeData into K/V - active data is recreated on each node based on active columns
     dinfo._activeCols = cols;
     return dinfo;
   }
-  public String toString(){
-    return "";
+
+  private void setTransform(TransformType t, double [] normMul, double [] normSub, int vecStart, int n) {
+    for (int i = 0; i < n; ++i) {
+      Vec v = _adaptedFrame.vec(vecStart + i);
+      switch (t) {
+        case STANDARDIZE:
+          normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+          normSub[i] = v.mean();
+          break;
+        case NORMALIZE:
+          normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+          normSub[i] = v.mean();
+          break;
+        case DEMEAN:
+          normMul[i] = 1;
+          normSub[i] = v.mean();
+          break;
+        case DESCALE:
+          normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+          normSub[i] = 0;
+          break;
+        default:
+          throw H2O.unimpl();
+      }
+      assert !Double.isNaN(normMul[i]);
+      assert !Double.isNaN(normSub[i]);
+    }
   }
-  public DataInfo getFold(int foldId, int nfolds){
-    return new DataInfo(Key.make(),this, foldId, nfolds);
+  public void setPredictorTransform(TransformType t){
+    _predictor_transform = t;
+    if(t == TransformType.NONE) {
+      _normMul = null;
+      _normSub = null;
+    } else {
+      _normMul = MemoryManager.malloc8d(_nums);
+      _normSub = MemoryManager.malloc8d(_nums);
+      setTransform(t,_normMul,_normSub,_cats,_nums);
+    }
+  }
+
+  public void setResponseTransform(TransformType t){
+    _response_transform = t;
+    if(t == TransformType.NONE) {
+      _normRespMul = null;
+      _normRespSub = null;
+    } else {
+      _normRespMul = MemoryManager.malloc8d(_responses);
+      _normRespSub = MemoryManager.malloc8d(_responses);
+      setTransform(t,_normRespMul,_normRespSub,_adaptedFrame.numCols()-_responses,_responses);
+    }
   }
   public final int fullN(){return _nums + _catOffsets[_cats];}
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
@@ -434,11 +287,27 @@ public class DataInfo extends Keyed {
     for(int i = 0; i < _cats; ++i) {
       for (int j = _useAllFactorLevels ? 0 : 1; j < vecs[i].domain().length; ++j)
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
-      if (vecs[i].naCnt() > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if (_catMissing[i] > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
     return res;
+  }
+
+  // Return permutation matrix mapping input names to adaptedFrame colnames
+  public int[] mapNames(String[] names) {
+    assert names.length == _adaptedFrame._names.length : "Names must be the same length!";
+    int[] idx = new int[names.length];
+    Arrays.fill(idx, -1);
+
+    for(int i = 0; i < _adaptedFrame._names.length; i++) {
+      for(int j = 0; j < names.length; j++) {
+        if( names[j].equals(_adaptedFrame.name(i)) ) {
+          idx[i] = j; break;
+        }
+      }
+    }
+    return idx;
   }
 
   /**
@@ -460,7 +329,7 @@ public class DataInfo extends Keyed {
     public double [] response;
     public int    [] numIds;
     public int    [] binIds;
-    public int       rid;
+    public long      rid;
     public int       nBins;
     public int       nNums;
     public final double etaOffset;
@@ -515,21 +384,27 @@ public class DataInfo extends Keyed {
     }
 
     public String toString() {
-      return Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
+      return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
   }
-
 
   public final int getCategoricalId(int cid, int val) {
     final int c;
     if (_catLvls != null)  // some levels are ignored?
       c = Arrays.binarySearch(_catLvls[cid], val);
     else c = val - (_useAllFactorLevels?0:1);
-    return c >= 0?(c + _catOffsets[cid]):-1;
+    if( c < 0) return -1;
+    int v = c + _catOffsets[cid];
+    if(v >= _catOffsets[cid+1]) { // previously unseen level
+      assert _valid:"categorical value out of bounds, got " + v + ", next cat starts at " + _catOffsets[cid+1];
+      return -2;
+    }
+    return v;
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
+    row.rid = rid + chunks[0].start();
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
@@ -550,7 +425,7 @@ public class DataInfo extends Keyed {
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
       double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
-      if (_normMul != null)
+      if (_normMul != null && _normSub != null)
         d = (d - _normSub[i]) * _normMul[i];
       row.numVals[i] = d;
     }
@@ -575,28 +450,20 @@ public class DataInfo extends Keyed {
    * @return
    */
   public final Row[]  extractSparseRows(Chunk [] chunks, double [] beta) {
-    if(!_skipMissing) // treat as categorical?
-      throw H2O.unimpl();
+    if(!_skipMissing)  throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
     double etaOffset = 0;
-    if(_normMul != null && beta != null)
+    if(_normMul != null && _normSub != null && beta != null)
       for(int i = 0; i < _nums; ++i)
-        etaOffset -= beta[i] * _normSub[i] * _normMul[i];
-//    Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;
+        etaOffset -= beta[i+numStart()] * _normSub[i] * _normMul[i];
     for (int i = 0; i < rows.length; ++i) {
-//      assert filterChunk == null || filterChunk.at8(i) == 0 || filterChunk.at8(i) == 1:"unepxected bit value " + filterChunk.at8(i);
-//      if(filterChunk == null || filterChunk.at8(i) == 0) {
         rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
-        rows[i].rid = i;
-//      }
-
+        rows[i].rid = chunks[0].start() + i;
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-//        if(filterChunk != null && filterChunk.at8(i) == 1)
-//          continue;
         if (chunks[i].isNA(r)) {
           if (_skipMissing) {
             row.bad = true;
@@ -615,8 +482,6 @@ public class DataInfo extends Keyed {
     for (int cid = 0; cid < _bins; ++cid) {
       Chunk c = chunks[cid + _cats];
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-//        if(filterChunk != null && filterChunk.at8(r) == 0)
-//          continue;
         if(!c.isSparse() && c.atd(r) == 0)continue;
         Row row = rows[r];
         if (c.isNA(r))
@@ -630,8 +495,6 @@ public class DataInfo extends Keyed {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-//        if(filterChunk != null && filterChunk.at8(r) == 0)
-//          continue;
         if(!c.isSparse() && c.atd(r) == 0)continue;
         assert r > oldRow;
         oldRow = r;
@@ -644,18 +507,12 @@ public class DataInfo extends Keyed {
         row.addNum(cid + numStart + _bins, d);
       }
     }
-    double rsum = 0;
-    int nobs = 0;
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
       Chunk rChunk = chunks[chunks.length-i];
       for (int r = 0; r < chunks[0]._len; ++r) {
-//        if(filterChunk != null && filterChunk.at8(r) == 0)
-//          continue;
-        nobs++;
         Row row = rows[r];
         double d = rChunk.atd(r);
-        rsum += d;
         row.response[row.response.length - i] = rChunk.atd(r);
         if (_normRespMul != null) {
           assert false;

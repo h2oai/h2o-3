@@ -4,7 +4,6 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 /**
@@ -50,45 +49,71 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
   @Override public TwoDimTableBase fillFromImpl(TwoDimTable t) {
     name = t.getTableHeader();
     description = t.getTableDescription();
-    final int cols = t.getColDim()+1;
     final int rows = t.getRowDim();
     rowcount = rows;
-    columns = new ColumnSpecsBase[cols];
-    columns[0] = new ColumnSpecsBase();
-    columns[0].name = pythonify(t.getColHeaderForRowHeaders());
-    columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
-    columns[0].format = "%s";
-    columns[0].description = t.getColHeaderForRowHeaders();
-    for (int c=1; c<cols; ++c) {
-      columns[c] = new ColumnSpecsBase();
-      columns[c].name = pythonify(t.getColHeaders()[c - 1]);
-      columns[c].type = t.getColTypes()[c-1];
-      columns[c].format = t.getColFormats()[c-1];
-      columns[c].description = t.getColHeaders()[c-1];
+    boolean have_row_header_cols = t.getColHeaderForRowHeaders() != null;
+    for (int r=0; r<rows; ++r) {
+      if (!have_row_header_cols) break;
+      have_row_header_cols &= t.getRowHeaders()[r] != null;
     }
-    data = new IcedWrapper[cols][rows];
-    data[0] = new IcedWrapper[t.getRowDim()];
-    for (int r=0; r<t.getRowDim(); ++r) {
-      data[0][r] = new IcedWrapper(t.getRowHeaders()[r]);
-    }
-    IcedWrapper[][]cellValues = t.getCellValues();
-    for (int c=1; c<cols; ++c) {
-      data[c] = new IcedWrapper[rows];
-      for (int r=0; r<rows; ++r) {
-        data[c][r] = cellValues[r][c-1];
+    if (have_row_header_cols) {
+      final int cols = t.getColDim()+1;
+      columns = new ColumnSpecsBase[cols];
+      columns[0] = new ColumnSpecsBase();
+      columns[0].name = pythonify(t.getColHeaderForRowHeaders());
+      columns[0].type = "string";
+      columns[0].format = "%s";
+      columns[0].description = t.getColHeaderForRowHeaders();
+      for (int c = 1; c < cols; ++c) {
+        columns[c] = new ColumnSpecsBase();
+        columns[c].name = pythonify(t.getColHeaders()[c - 1]);
+        columns[c].type = t.getColTypes()[c - 1];
+        columns[c].format = t.getColFormats()[c - 1];
+        columns[c].description = t.getColHeaders()[c - 1];
+      }
+      data = new IcedWrapper[cols][rows];
+      data[0] = new IcedWrapper[t.getRowDim()];
+      for (int r = 0; r < t.getRowDim(); ++r) {
+        data[0][r] = new IcedWrapper(t.getRowHeaders()[r]);
+      }
+      IcedWrapper[][] cellValues = t.getCellValues();
+      for (int c = 1; c < cols; ++c) {
+        data[c] = new IcedWrapper[rows];
+        for (int r = 0; r < rows; ++r) {
+          data[c][r] = cellValues[r][c - 1];
+        }
+      }
+    } else {
+      final int cols = t.getColDim();
+      columns = new ColumnSpecsBase[cols];
+      for (int c = 0; c < cols; ++c) {
+        columns[c] = new ColumnSpecsBase();
+        columns[c].name = pythonify(t.getColHeaders()[c]);
+        columns[c].type = t.getColTypes()[c];
+        columns[c].format = t.getColFormats()[c];
+        columns[c].description = t.getColHeaders()[c];
+      }
+      data = new IcedWrapper[cols][rows];
+      IcedWrapper[][] cellValues = t.getCellValues();
+      for (int c = 0; c < cols; ++c) {
+        data[c] = new IcedWrapper[rows];
+        for (int r = 0; r < rows; ++r) {
+          data[c][r] = cellValues[r][c];
+        }
       }
     }
     return this;
   }
 
   /**
-   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_mse"
-   * @param name
+   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_MSE"
+   * @param n
    * @return
    */
-  private String pythonify(String name) {
+  private String pythonify(String n) {
+    if (n == null || name.toLowerCase().contains("confusion")) return n;
     StringBuilder sb = new StringBuilder();
-    String [] modified = name.split("[\\s_]+");
+    String [] modified = n.split("[\\s_]+");
     for (int i=0; i<modified.length; ++i) {
       if (i!=0) sb.append("_");
       String s = modified[i];
@@ -150,7 +175,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
           else if (columns[c].format == "float") {
             dblCellValues[r][c] = (Float)data[c][r].get();
           }
-          else if (columns[c].format == "integer") {
+          else if (columns[c].format == "int") {
             dblCellValues[r][c] = (Integer)data[c][r].get();
           }
           else if (columns[c].format == "long") {

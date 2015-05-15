@@ -12,8 +12,8 @@ import java.util.Arrays;
 public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
 
   // Input fields
-  @API(help="Source keys", required=true, direction=API.Direction.INOUT)
-  public FrameKeyV3[] source_keys;
+  @API(help="Source frames", required=true, direction=API.Direction.INOUT)
+  public FrameKeyV3[] source_frames;
 
   @API(help="Parser type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"}, direction=API.Direction.INOUT)
   public ParserType parse_type = ParserType.AUTO;
@@ -34,26 +34,17 @@ public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
   public String[] column_types = null;
 
   @API(help="NA strings for columns", direction=API.Direction.INOUT)
-  public String[] na_strings;
+  public String[][] na_strings;
 
   // Output fields
   @API(help="Suggested name", direction=API.Direction.OUTPUT)
-  public String destination_key;
-
-  @API(help="The initial parse is sane", direction=API.Direction.OUTPUT)
-  boolean is_valid;
-
-  @API(help="Number of broken/invalid lines found", direction=API.Direction.OUTPUT)
-  long invalid_lines;
+  public String destination_frame;
 
   @API(help="Number of header lines found", direction=API.Direction.OUTPUT)
   long header_lines;
 
   @API(help="Number of columns", direction=API.Direction.OUTPUT)
   public int number_columns = ParseSetup.GUESS_COL_CNT;
-
-  @API(help="Domains for categorical columns", direction=API.Direction.OUTPUT)
-  public String[][] domains = null;
 
   @API(help="Sample data", direction=API.Direction.OUTPUT)
   public String[][] data;
@@ -70,25 +61,28 @@ public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ParseSetup");
-    if (null != source_keys && source_keys.length > 0) {
-      Key[] srcs_key = new Key[source_keys.length];
-      for (int i = 0; i < source_keys.length; i++)
-        srcs_key[i] = source_keys[i].key();
-      ab.href("Parse", source_keys[0].toString(), ParseV3.link(srcs_key, destination_key, parse_type, separator, number_columns, check_header, single_quotes, column_names));
+    if (null != source_frames && source_frames.length > 0) {
+      Key[] srcs_key = new Key[source_frames.length];
+      for (int i = 0; i < source_frames.length; i++)
+        srcs_key[i] = source_frames[i].key();
+      ab.href("Parse", source_frames[0].toString(), ParseV3.link(srcs_key, destination_frame, parse_type, separator, number_columns, check_header, single_quotes, column_names, column_types, na_strings, chunk_size));
     } else {
-      Key[] srcs_key = new Key[source_keys.length];
-      for (int i = 0; i < source_keys.length; i++)
-        srcs_key[i] = source_keys[i].key();
-      ab.href("Parse", "unknown", ParseV3.link(srcs_key, destination_key, parse_type, separator, number_columns, check_header, single_quotes, column_names));
+      Key[] srcs_key = new Key[source_frames.length];
+      for (int i = 0; i < source_frames.length; i++)
+        srcs_key[i] = source_frames[i].key();
+      ab.href("Parse", "unknown", ParseV3.link(srcs_key, destination_frame, parse_type, separator, number_columns, check_header, single_quotes, column_names, column_types, na_strings, chunk_size));
     }
-    ab.putA( "source_keys", source_keys);
-    ab.putStr( "destination_key", destination_key);
-    ab.putEnum("parse_type",parse_type);
-    ab.put1("separator",separator);
+    ab.putA( "source_frames", source_frames);
+    ab.putStr("destination_frame", destination_frame);
+    ab.putEnum("parse_type", parse_type);
+    ab.put1("separator", separator);
     ab.put4("number_columns",number_columns);
     ab.putZ("single_quotes",single_quotes);
     ab.putAStr("column_names",column_names);
+    ab.putAStr("column_types",column_types);
+    ab.putAAStr("na_strings",na_strings);
     ab.putAAStr("data",data);
+    ab.put4("chunk_size", chunk_size);
     return ab;
   }
 }

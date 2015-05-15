@@ -7,6 +7,7 @@ import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Key;
 import water.util.Log;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -18,6 +19,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _mymodel; }
 
   transient Neurons[] _neurons;
+  transient Random _dropout_rng;
 
   int _chunk_node_count = 1;
   boolean consensusADMM = true;
@@ -54,6 +56,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   // and link them to shared weights
   @Override protected void chunkInit(){
     _neurons = makeNeuronsForTraining(_mymodel);
+    _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
   }
 
   @Override public final void processRow(long seed, DataInfo.Row r){
@@ -61,7 +64,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     if (model_info().get_params()._reproducible) {
       seed += model_info().get_processed_global(); //avoid periodicity
     } else {
-      seed = new Random().nextLong();
+      seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
     step(seed, _neurons, _mymodel, _sharedmodel, _training, r.response);

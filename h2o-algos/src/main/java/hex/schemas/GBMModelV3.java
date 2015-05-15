@@ -5,11 +5,11 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
 public class GBMModelV3 extends SharedTreeModelV3<GBMModel,
-                                                  GBMModelV3,
-                                                  GBMModel.GBMParameters,
-                                                  GBMV3.GBMParametersV3,
-                                                  GBMModel.GBMOutput,
-                                                  GBMModelV3.GBMModelOutputV3> {
+        GBMModelV3,
+        GBMModel.GBMParameters,
+        GBMV3.GBMParametersV3,
+        GBMModel.GBMOutput,
+        GBMModelV3.GBMModelOutputV3> {
 
   public static final class GBMModelOutputV3 extends SharedTreeModelV3.SharedTreeModelOutputV3<GBMModel.GBMOutput, GBMModelOutputV3> {}
 
@@ -23,6 +23,6 @@ public class GBMModelV3 extends SharedTreeModelV3<GBMModel,
   @Override public GBMModel createImpl() {
     GBMV3.GBMParametersV3 p = this.parameters;
     GBMModel.GBMParameters parms = p.createImpl();
-    return new GBMModel( key.key(), parms, new GBMModel.GBMOutput(null, Double.NaN, Double.NaN) );
+    return new GBMModel( model_id.key(), parms, new GBMModel.GBMOutput(null, Double.NaN, Double.NaN) );
   }
 }

@@ -1,10 +1,8 @@
-#'
-#' Data Export
-#'
-#' Export data to local disk or HDFS.
-#' Save models to local disk or HDFS.
-#' @name Export intro
-NULL
+#`
+#` Data Export
+#`
+#` Export data to local disk or HDFS.
+#` Save models to local disk or HDFS.
 
 #' Export an H2O Data Frame to a File
 #'
@@ -27,9 +25,10 @@ NULL
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #'
-#' h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
-#' h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
-#' h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
+#' # These aren't real paths
+#' # h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
+#' # h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
+#' # h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE) {
@@ -81,7 +80,7 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@key)
+  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@frame_id)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -105,7 +104,7 @@ h2o.downloadCSV <- function(data, filename) {
 #'
 #' Save an H2O Model Object to Disk
 #'
-#' Save an \linkS4class{H2OModel} to disk.
+#' Save an \linkS4class{H2OModel} to disk. Currnetly not implemented.
 #'
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
@@ -118,13 +117,15 @@ h2o.downloadCSV <- function(data, filename) {
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
-#'   "0xdata/h2o/master/smalldata/logreg/prostate.csv", sep = "/"), key = "prostate.hex")
-#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
-#' h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE, force = TRUE)
+#' # library(h2o)
+#' # localH2O <- h2o.init()
+#' # prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
+#' #   "0xdata/h2o/master/smalldata/logreg/prostate.csv", sep = "/"),
+#' #   destination_frame = "prostate.hex")
+#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training+frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE,
+#' # force = TRUE)
 #' }
 #' @export
 h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
@@ -137,7 +138,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   if(!is.character(name) || length(name) != 1L || is.na(name))
     stop("`name` must be a character string")
   else if(!nzchar(name))
-    name <- object@key
+    name <- object@model_id
 
   if(!is.character(filename) || length(filename) != 1L || is.na(filename))
     stop("`filename` must be a character string")
@@ -152,7 +153,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
     path <- file.path(dir, name)
 
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
+  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
 
 # path
 }

@@ -10,12 +10,12 @@ source('../h2o-runit.R')
 test <- function(conn) {
 
     print("Reading in original prostate data.")
-        prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), key="prostate.hex", header=TRUE)
+        prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.hex", header=TRUE)
     
     print("Reading in synthetic columns.")
-        BIN <- h2o.importFile(conn, locate("smalldata/prostate/prostate.bin.csv.zip"), key="BIN", header=FALSE)
-        FLOAT <- h2o.importFile(conn, locate("smalldata/prostate/prostate.float.csv.zip"), key="FLOAT", header=FALSE)
-        INT <- h2o.importFile(conn, locate("smalldata/prostate/prostate.int.csv.zip"), key="INT", header=FALSE)
+        BIN <- h2o.importFile(conn, locate("smalldata/prostate/prostate.bin.csv.zip"), destination_frame="BIN", header=FALSE)
+        FLOAT <- h2o.importFile(conn, locate("smalldata/prostate/prostate.float.csv.zip"), destination_frame="FLOAT", header=FALSE)
+        INT <- h2o.importFile(conn, locate("smalldata/prostate/prostate.int.csv.zip"), destination_frame="INT", header=FALSE)
         colnames(BIN) <- "BIN"
         colnames(FLOAT) <- "FLOAT"
         colnames(INT) <- "INT"
@@ -32,25 +32,25 @@ test <- function(conn) {
         # Test that run time is within reasonable timeframe (ie. 30 seconds)
         # GLM aborted if exceeds time frame and test fails
         startTime <- proc.time()
-        prostate.def.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        prostate.def.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
         stopifnot(elapsedTime < 60)
         
         startTime <- proc.time()
-        prostate.bin.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","BIN"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        prostate.bin.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","BIN"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
         stopifnot(elapsedTime < 60)
         
         startTime <- proc.time()
-        prostate.float.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","FLOAT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        prostate.float.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","FLOAT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
         stopifnot(elapsedTime < 60)
         
         startTime <- proc.time()
-        prostate.int.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","INT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        prostate.int.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","INT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
         stopifnot(elapsedTime < 60)

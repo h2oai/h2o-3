@@ -56,7 +56,7 @@ import java.util.concurrent.Future;
  *  <p>Example manipulating some individual elements:<pre>
  *    double r1 = vec.at(0x123456789L);  // Access element 0x1234567889 as a double
  *    double r2 = vec.at(-1);            // Throws AIOOBE
- *    long   r3 = vec.at8_abs(1);            // Element #1, as a long
+ *    long   r3 = vec.at8_abs(1);        // Element #1, as a long
  *    vec.set(2,r1+r3);                  // Set element #2, as a double
  *  </pre>
  *
@@ -285,27 +285,59 @@ public class Vec extends Keyed<Vec> {
   }
   
   // ======= Create zero/constant Vecs ======
-
+  /** Make a new zero-filled vec **/
+  public static Vec makeZero( long len, boolean redistribute ) {
+    return makeCon(0L,len,redistribute);
+  }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
   public static Vec makeZero( long len ) { return makeCon(0L,len); }
 
+  /** Make a new constant vector with the given row count, and redistribute the data
+   * evenly around the cluster.
+   * @param x The value with which to fill the Vec.
+   * @param len Number of rows.
+   * @return New cosntant vector with the given len.
+   */
+  public static Vec makeCon(double x, long len) {
+    return makeCon(x,len,true);
+  }
+
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len) {
+  public static Vec makeCon(double x, long len, boolean redistribute) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x, len, log_rows_per_chunk);
+    return makeCon(x,len,log_rows_per_chunk,redistribute);
+  }
+
+  /** Make a new constant vector with the given row count, and redistribute the data evenly
+   *  around the cluster.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+    return makeCon(x,len,log_rows_per_chunk,true);
   }
 
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
     int nchunks = (int)Math.max(1,len >> log_rows_per_chunk);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
       espc[i] = ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    return makeCon(x,VectorGroup.VG_LEN1,espc);
+    Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
+    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
+    if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
+      Key newKey = Key.make(Key.rand()+".makeConRebalance" + chunks);
+      Frame f = new Frame(v0);
+      RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
+      H2O.submitTask(rb);
+      rb.join();
+      Keyed.remove(v0._key);
+      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(null); // this is gross.
+      Keyed.remove(newKey);
+    }
+    return v0;
   }
 
   /** Make a new vector with the same size and data layout as the current one,
@@ -325,6 +357,22 @@ public class Vec extends Keyed<Vec> {
    * @return a copy of the vector.
    */
   public Vec makeCopy(String[] domain){
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = _type;
+    DKV.put(v._key, v);
+    return v;
+  }
+
+  public Vec makeCopy(String[] domain, byte type) {
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = type;
+    DKV.put(v._key, v);
+    return v;
+  }
+
+  private Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
@@ -336,9 +384,6 @@ public class Vec extends Keyed<Vec> {
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
     return v;
   }
 
@@ -370,6 +415,19 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
+  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
+    long [] espc = new long[2];
+    espc[1] = vals.length;
+    Vec v = new Vec(vecKey,espc, domain);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(double d:vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key,v,fs);
+    fs.blockForPending();
+    return v;
+  }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.
@@ -392,7 +450,6 @@ public class Vec extends Keyed<Vec> {
     DKV.put(v0._key,v0);        // Header last
     return v0;
   }
-
 
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
   public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
@@ -437,14 +494,14 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
-  public static Vec makeSeq( long len) {
+  public static Vec makeSeq( long len, boolean redistribute) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
             c.set(r, r + 1 + c._start);
       }
-    }.doAll(makeZero(len))._fr.vecs()[0];
+    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -897,9 +954,24 @@ public class Vec extends Keyed<Vec> {
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
-    for( int i=0; i<nChunks(); i++ )
-      DKV.remove(chunkKey(i),fs);
-    DKV.remove(rollupStatsKey(),fs);
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    final int ncs = nChunks();
+    new MRTask() {
+      @Override public void setupLocal() { bulk_remove(_key,ncs,_fs); }
+    }.doAllNodes();
+    return fs;
+ }
+  // Bulk remove: removes LOCAL keys only, without regard to total visibility.
+  // Must be run in parallel on all nodes to preserve semantics, completely
+  // removing the Vec without any JMM communication.
+  static Futures bulk_remove( Key vkey, int ncs, Futures fs ) {
+    for( int i=0; i<ncs; i++ ) {
+      Key kc = chunkKey(vkey,i);
+      H2O.raw_remove(kc);
+    }
+    Key kr = chunkKey(vkey,-2);
+    H2O.raw_remove(kr);
+    H2O.raw_remove(vkey);
     return fs;
   }
 
@@ -1030,10 +1102,39 @@ public class Vec extends Keyed<Vec> {
     return new StrWrappedVec(group().addVec(),_espc,this._key);
   }
 
-  /** This Vec does not have dependent hidden Vec it uses.
-   *  @see EnumWrappedVec
-   *  @return dependent hidden vector or <code>null</code>  */
-//  public Vec masterVec() { return null; }
+  /** Convert entire Vec to an array of doubles, loading all of the data into a
+   *  single large array.  Naturally this can easily run out of memory and throw
+   *  an OOM; also due to JVM limitations often limited to 800M entries. */
+  public double[] toDoubleArray( ) {
+    if( (int)length() != length() )
+      throw new IllegalArgumentException("Vec length is larger than int");
+    final double[] ds = MemoryManager.malloc8d((int)length());
+    new MRTask() {
+      @Override public void map( Chunk cs ) {
+        for( int i=0; i<cs._len; i++ ) ds[i+(int)cs._start] = cs.atd(i);
+      }
+    }.doAll(this);
+    return ds;
+  }
+
+  /** Convert entire Vec to an array of bytes, loading all of the data into a
+   *  single large array.  Naturally this can easily run out of memory and throw
+   *  an OOM; also due to JVM limitations often limited to 800M entries. */
+  public byte[] toByteArray( ) {
+    if( (int)length() != length() )
+      throw new IllegalArgumentException("Vec length is larger than int");
+    if( min() < Byte.MIN_VALUE || max() > Byte.MAX_VALUE || !isInt() )
+      throw new IllegalArgumentException("Vec elements do not fit in a byte");
+    if( naCnt() > 0 )
+      throw new IllegalArgumentException("Byte array does not support missing values");
+    final byte[] bs = MemoryManager.malloc1((int)length());
+    new MRTask() {
+      @Override public void map( Chunk cs ) {
+        for( int i=0; i<cs._len; i++ ) bs[i+(int)cs._start] = (byte)cs.at8(i);
+      }
+    }.doAll(this);
+    return bs;
+  }
 
   /** Collect numeric domain of given vector
    *  A map-reduce task to collect up the unique values of an integer vector

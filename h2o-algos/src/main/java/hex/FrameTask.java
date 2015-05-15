@@ -132,8 +132,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       for(int rr = start; rr < end; ++rr){
         final int r = shuf_map != null ? (int)shuf_map[rr-start] : rr;
         final long lr = r + chunks[0].start();
-        if ((_dinfo._nfolds > 0 && (lr % _dinfo._nfolds) == _dinfo._foldId)
-          || (skip_rng != null && skip_rng.nextFloat() > fraction))continue;
+        if (skip_rng != null && skip_rng.nextFloat() > fraction)continue;
         ++num_processed_rows; //count rows with missing values even if they are skipped
         if(!_dinfo.extractDenseRow(chunks, r, row).bad) {
           long seed = offset + rrr * (end - start) + r;

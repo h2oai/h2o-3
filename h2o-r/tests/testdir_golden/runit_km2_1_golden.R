@@ -6,13 +6,13 @@ test.kmvanilla.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing ozone.csv data...") 
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/ozone.csv"), key = "ozoneH2O")
+  ozoneH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/ozone.csv"), destination_frame = "ozoneH2O")
   startIdx <- sort(sample(1:nrow(ozoneR), 3))
   
   Log.info("Initial cluster centers:"); print(ozoneR[startIdx,])
   fitR <- kmeans(ozoneR, centers = ozoneR[startIdx,], iter.max = 1000, algorithm = "Lloyd")
   fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], standardize = FALSE)
-  checkKMeansModel(fitH2O, fitR, nrow(ozoneH2O), tol = 0.01)
+  checkKMeansModel(fitH2O, fitR, tol = 0.01)
   
   Log.info("Compare Predicted Classes between R and H2O\n")
   classR <- fitted(fitR, method = "classes")

@@ -11,11 +11,11 @@ import java.util.Arrays;
 
 public class ParseV3 extends Schema<Iced, ParseV3> {
   // Input fields
-  @API(help="Final hex key name",required=true)
-  FrameKeyV3 destination_key;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
+  @API(help="Final frame name",required=true)
+  FrameKeyV3 destination_frame;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
 
-  @API(help="Source keys",required=true)
-  FrameKeyV3[] source_keys;
+  @API(help="Source frames",required=true)
+  FrameKeyV3[] source_frames;
 
   @API(help="Parser type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   ParserType parse_type;
@@ -42,7 +42,7 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
   String[][] domains;
 
   @API(help="NA strings for columns")
-  String[] na_strings;
+  String[][] na_strings;
 
   @API(help="Size of individual parse tasks", direction=API.Direction.INPUT)
   int chunk_size;
@@ -65,8 +65,8 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
   long rows;
 
   // Only not-null if blocking==true and removeFrame=true
-  @API(help="Vec keys", direction=API.Direction.OUTPUT)
-  VecKeyV3[] vec_keys;
+  @API(help="Vec IDs", direction=API.Direction.OUTPUT)
+  VecKeyV3[] vec_ids;
 
 
   //==========================
@@ -78,7 +78,7 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
   }
 
   // Helper so ParseSetup can link to Parse
-  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames) {
+  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames, String[] columnTypes, String[][] naStrings, int chunkSize) {
     return "Parse?source_keys="+Arrays.toString(srcs)+
       "&destination_key="+hexName+
       "&parse_type="+pType+
@@ -87,6 +87,8 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
       "&check_header="+checkHeader+
       "&single_quotes="+singleQuotes+
       "&column_names="+Arrays.toString(columnNames)+
+      "&column_types="+Arrays.toString(columnTypes)+
+      "&chunk_size="+chunkSize+
       "";
   }
 }

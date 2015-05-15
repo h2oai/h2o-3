@@ -434,6 +434,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
             for (int i = 0; i < from.length; i++)
               copy[i] = from[i];
             f.set(this, copy);
+          } else if (parse_result.getClass().getComponentType() == Float.class && f.getType().getComponentType() == float.class) {
+            Float[] from = (Float[])parse_result;
+            float[] copy = new float[from.length];
+            for (int i = 0; i < from.length; i++)
+              copy[i] = from[i];
+            f.set(this, copy);
           } else {
             throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
           }
@@ -503,6 +509,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         a = (E[]) Array.newInstance(Integer.class, splits.length);
       } else if (afclz == double.class) {
         a = (E[]) Array.newInstance(Double.class, splits.length);
+      } else if (afclz == float.class) {
+        a = (E[]) Array.newInstance(Float.class, splits.length);
       } else {
         // Fails with primitive classes; need the wrapper class.  Thanks, Java.
         a = (E[]) Array.newInstance(afclz, splits.length);
@@ -573,8 +581,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
     // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
     // where the frame name is also specified.
-    if ( FrameV3.ColSpecifierV2.class.isAssignableFrom(fclz)) {
-        return new FrameV3.ColSpecifierV2(s);
+    if ( FrameV3.ColSpecifierV3.class.isAssignableFrom(fclz)) {
+        return new FrameV3.ColSpecifierV3(s);
     }
 
     if( ModelSchema.class.isAssignableFrom(fclz) )
@@ -653,8 +661,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       for (Class<? extends Schema> clz : clzs) {
         Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
         for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
-//         if (!Modifier.isAbstract(schema_class.getModifiers()))
-          Schema.register(schema_class);
+          if (!Modifier.isAbstract(schema_class.getModifiers()))
+            Schema.register(schema_class);
       }
     }
 

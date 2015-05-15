@@ -1,36 +1,98 @@
 package hex.genmodel;
 
+import water.genmodel.IGeneratedModel;
+import hex.ModelCategory;
+
 import java.util.Arrays;
 import java.util.Map;
 
 /** This is a helper class to support Java generated models. */
-public abstract class GenModel {
-  public static enum ModelCategory {
-    Unknown,
-    Binomial,
-    Multinomial,
-    Regression,
-    Clustering,
-    AutoEncoder,
-    DimReduction
-  }
+public abstract class GenModel implements IGenModel, IGeneratedModel {
 
   /** Column names; last is response for supervised models */
-  public final String[] _names; 
+  public final String[] _names;
 
   /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
    *  Columns match the post-init cleanup columns.  The last column holds the
    *  response col enums for SupervisedModels.  */
   public final String _domains[][];
 
+
   public GenModel( String[] names, String domains[][] ) { _names = names; _domains = domains; }
 
-  // Base methods are correct for unsupervised models.  All overridden in GenSupervisedModel
-  public boolean isSupervised() { return false; }  // Overridden in GenSupervisedModel
-  public int nfeatures() { return _names.length; } // Overridden in GenSupervisedModel
-  public int nclasses() { return 0; }              // Overridden in GenSupervisedModel
+  @Override public boolean isSupervised() {
+    // FIXME: can be derived directly from model category?
+    return false;
+  }
+  @Override public int nfeatures() {
+    return _names.length;
+  }
+  @Override public int nclasses() {
+    return 0;
+  }
+  @Override public int getNumCols() {
+    return nfeatures();
+  }
+  @Override public int getResponseIdx() {
+    if (!isSupervised())
+      throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
+    return _domains.length - 1;
+  }
+  @Override public String getResponseName() {
+    throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
+  }
+  @Override public int getNumResponseClasses() {
+    if (isClassifier())
+      return nclasses();
+    else
+      throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
+  }
+  @Override public String[] getNames() {
+    return _names;
+  }
+  @Override public int getColIdx(String name) {
+    String[] names = getNames();
+    for (int i=0; i<names.length; i++) if (names[i].equals(name)) return i;
+    return -1;
+  }
+  @Override public int getNumClasses(int colIdx) {
+    String[] domval = getDomainValues(colIdx);
+    return domval!=null?domval.length:-1;
+  }
+  @Override public String[] getDomainValues(String name) {
+    int colIdx = getColIdx(name);
+    return colIdx != -1 ? getDomainValues(colIdx) : null;
+  }
+  @Override public String[] getDomainValues(int i) {
+    return getDomainValues()[i];
+  }
+  @Override public int mapEnum(int colIdx, String enumValue) {
+    String[] domain = getDomainValues(colIdx);
+    if (domain==null || domain.length==0) return -1;
+    for (int i=0; i<domain.length;i++) if (enumValue.equals(domain[i])) return i;
+    return -1;
+  }
+  @Override
+  public String[][] getDomainValues() {
+    return _domains;
+  }
 
-  abstract public ModelCategory getModelCategory();
+  @Override public boolean isClassifier() {
+    ModelCategory cat = getModelCategory();
+    return cat == ModelCategory.Binomial || cat == ModelCategory.Multinomial;
+  }
+
+  @Override public boolean isAutoEncoder() {
+    ModelCategory cat = getModelCategory();
+    return cat == ModelCategory.AutoEncoder;
+  }
+
+  @Override public int getPredsSize() {
+    return isClassifier() ? 1 + getNumResponseClasses() : 2;
+  }
+
+  /** ??? */
+  public String getHeader() { return null; }
 
   /** Takes a HashMap mapping column names to doubles.
    *  <p>
@@ -47,7 +109,16 @@ public abstract class GenModel {
     return data;
   }
 
-  
+  @Override
+  public float[] predict(double[] data, float[] preds) {
+    return predict(data, preds, 0);
+  }
+
+  @Override
+  public float[] predict(double[] data, float[] preds, int maxIters) {
+    throw new UnsupportedOperationException("Unsupported operation - uses score0 method!");
+  }
+
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  This call
@@ -74,14 +145,41 @@ public abstract class GenModel {
     return score0(map(row,new double[nfeatures()]),new double[nclasses()+1]);
   }
 
+  /**
+   * Correct a given list of class probabilities produced as a prediction by a model back to prior class distribution
+   *
+   * <p>The implementation is based on Eq. (27) in  <a href="http://gking.harvard.edu/files/0s.pdf">the paper</a>.
+   *
+   * @param scored list of class probabilities beginning at index 1
+   * @param priorClassDist original class distribution
+   * @param modelClassDist class distribution used for model building (e.g., data was oversampled)
+   * @return corrected list of probabilities
+   */
+  public static double[] correctProbabilities(double[] scored, double[] priorClassDist, double[] modelClassDist) {
+    double probsum=0;
+    for( int c=1; c<scored.length; c++ ) {
+      final double original_fraction = priorClassDist[c-1];
+      final double oversampled_fraction = modelClassDist[c-1];
+      assert(!Double.isNaN(scored[c]));
+      if (original_fraction != 0 && oversampled_fraction != 0) scored[c] *= original_fraction / oversampled_fraction;
+      probsum += scored[c];
+    }
+    if (probsum>0) for (int i=1;i<scored.length;++i) scored[i] /= probsum;
+    return scored;
+  }
+
   /** Utility function to get a best prediction from an array of class
    *  prediction distribution.  It returns index of max value if predicted
    *  values are unique.  In the case of tie, the implementation solve it in
    *  pseudo-random way.
    *  @param preds an array of prediction distribution.  Length of arrays is equal to a number of classes+1.
-   *  @return the best prediction (index of class, zero-based)
+   *  @param threshold threshold for binary classifier
+   * @return the best prediction (index of class, zero-based)
    */
-  public static int getPrediction( double[] preds, double data[] ) {
+  public static int getPrediction(double[] preds, double data[], double threshold) {
+    if (preds.length == 3) {
+      return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
+    }
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {
       if( preds[best] < preds[c] ) {
@@ -233,10 +331,9 @@ public abstract class GenModel {
   }
 
   // Build a class distribution from a log scale; find the top prediction
-  public static void GBM_rescale(double[] data, double[] preds) { 
+  public static void GBM_rescale(double[] preds) {
     double sum = log_rescale(preds);
     for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
-    preds[0] = getPrediction(preds, data); 
   }
 
   // --------------------------------------------------------------------------

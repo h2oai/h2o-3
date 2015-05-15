@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import hex.ModelCategory;
 import water.Weaver;
 import water.util.IcedHashMap;
 import water.util.Log;
@@ -17,22 +18,22 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Column names.", direction=API.Direction.OUTPUT)
   public String[] names;
 
-  @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT)
+  @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public String[][] domains;
 
   @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
-  public Model.ModelCategory model_category;
+  public ModelCategory model_category;
 
-  @API(help="Model summary")
+  @API(help="Model summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
   TwoDimTableBase model_summary;
 
-  @API(help="Scoring history", direction=API.Direction.OUTPUT)
+  @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   TwoDimTableBase scoring_history;
 
-  @API(help="Training data model metrics", direction=API.Direction.OUTPUT)
+  @API(help="Training data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   ModelMetricsBase training_metrics;
 
-  @API(help="Validation data model metrics", direction=API.Direction.OUTPUT)
+  @API(help="Validation data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   ModelMetricsBase validation_metrics;
 
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)

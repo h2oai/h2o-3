@@ -15,7 +15,7 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
 //        "n_folds",
 //        "keep_cross_validation_splits",
         "checkpoint",
-        "override_with_best_model",
+        "overwrite_with_best_model",
         "use_all_factor_levels",
         "activation",
         "hidden",
@@ -50,7 +50,6 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",
-        "ignore_const_cols",
         "force_load_balance",
         "variable_importances",
         "replicate_training_data",
@@ -88,7 +87,7 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
      * Only applicable if training is not cancelled.
      */
     @API(help = "If enabled, override the final model with the best model found during training", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean override_with_best_model;
+    public boolean overwrite_with_best_model;
 
     @API(help = "Auto-Encoder", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean autoencoder;
@@ -431,12 +430,6 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
      */
     @API(help = "Enable fast mode (minor approximation in back-propagation)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean fast_mode;
-
-    /**
-     * Ignore constant training columns (no information can be gained anyway).
-     */
-    @API(help = "Ignore constant training columns (no information can be gained anyway)", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean ignore_const_cols;
 
     /**
      * Increase training speed on small datasets by splitting it into many chunks

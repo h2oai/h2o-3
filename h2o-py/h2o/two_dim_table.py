@@ -2,8 +2,8 @@
 A two dimensional table having row and column headers.
 """
 
-import tabulate
 import copy
+import h2o
 
 
 class H2OTwoDimTable(object):
@@ -25,8 +25,16 @@ class H2OTwoDimTable(object):
     if header: print self.table_header + ":"
     print
     table = copy.deepcopy(self.cell_values)
-    print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")
-    print
+    nr=0
+    if h2o.H2OFrame._is_list_of_lists(table): nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
+    if nr > 20:    # create a truncated view of the table, first/last 5 rows
+      trunc_table =[]
+      trunc_table += [ v for v in table[:5]]
+      trunc_table.append(["---"]*len(table[0]))
+      trunc_table += [v for v in table[(nr-5):]]
+      table = trunc_table
+
+    h2o.H2ODisplay(table, self.col_header, numalign="left", stralign="left")
 
   def __repr__(self):
     self.show()
@@ -40,10 +48,10 @@ class H2OTwoDimTable(object):
     for col_index, column in enumerate(values):
       for row_index, row_value in enumerate(column):
         if types[col_index] == 'integer':
-          values[col_index][row_index]  = "" if not row_value else int(float(row_value))
+          values[col_index][row_index]  = "" if row_value is None else int(float(row_value))
 
         elif types[col_index] in ['double', 'float', 'long']:
-          values[col_index][row_index]  = "" if not row_value else float(row_value)
+          values[col_index][row_index]  = "" if row_value is None else float(row_value)
 
         else:  # string?
           continue

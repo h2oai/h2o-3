@@ -18,13 +18,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public String _description;
   final Key _modelKey;
   final Key _frameKey;
-  final Model.ModelCategory _model_category;
+  final ModelCategory _model_category;
   final long _model_checksum;
   final long _frame_checksum;
   transient Model _model;
   transient Frame _frame;
   public final long _scoring_time;
-  public long _duration_in_ms;
+//  public long _duration_in_ms;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
@@ -116,8 +116,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
-  private static Key<ModelMetrics> buildKey(Model model, Frame frame) {
-    return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
+  public static Key<ModelMetrics> buildKey(Model model, Frame frame) {
+    return frame==null ? null : buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
   public boolean isForModel(Model m) { return _model_checksum == m.checksum(); }

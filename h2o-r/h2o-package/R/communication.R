@@ -107,8 +107,11 @@
   tmp <- NULL
   if (method == "GET") {
     h = basicHeaderGatherer()
-      tmp = tryCatch(getURL(url = url, headerfunction = h$update, useragent=R.version.string, timeout=timeout_secs),
-                           error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp = tryCatch(getURL(url = url,
+                          headerfunction = h$update,
+                          useragent = R.version.string,
+                          timeout = timeout_secs),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -118,8 +121,15 @@
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-      tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs)),
-                         error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp = tryCatch(postForm(uri = url,
+                            .params = list(fileUploadInfo = fileUploadInfo),
+                            .opts=curlOptions(writefunction = t$update,
+                                              headerfunction = h$update,
+                                              useragent = R.version.string,
+                                              httpheader = c('Expect' = ''),
+                                              verbose = FALSE,
+                                              timeout = timeout_secs)),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -128,8 +138,15 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-      tmp = tryCatch(curlPerform(url = url, postfields=postBody, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
-                         error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp = tryCatch(curlPerform(url = url,
+                               postfields = postBody,
+                               writefunction = t$update,
+                               headerfunction = h$update,
+                               useragent = R.version.string,
+                               httpheader = c('Expect' = ''),
+                               verbose = FALSE,
+                               timeout = timeout_secs),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -138,8 +155,14 @@
   } else if (method == "DELETE") {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
-                           error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                verbose = FALSE,
+                                timeout = timeout_secs),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -365,27 +388,31 @@
           tbl <- t(x$data)
         else
           tbl <- do.call(cbind, lapply(x$data, sapply, function(cell) if (is.null(cell)) "" else cell))
-
         cnms <- sapply(x$columns, `[[`, "name")
         fmts <- sapply(x$columns, `[[`, "format")
-        if (nzchar(cnms[1L]))
+        if( x$name=="Confusion Matrix" ) {
           colnames(tbl) <- make.unique(cnms)
-        else {
-          x$columns <- x$columns[-1L]
-          rnms <- tbl[, 1L, drop = TRUE]
-          cnms <- cnms[-1L]
-          fmts <- fmts[-1L]
-          tbl <- tbl[, -1L, drop = FALSE]
-          if (length(rnms) > 0 && all(nzchar(rnms)))
-            dimnames(tbl) <- list(make.unique(rnms), make.unique(cnms))
-          else
+          rownames(tbl) <- make.unique(c(cnms[1:(length(cnms)-2)], "Totals"))
+        } else {
+          if (nzchar(cnms[1L]))
             colnames(tbl) <- make.unique(cnms)
+          else {
+            x$columns <- x$columns[-1L]
+            rnms <- tbl[, 1L, drop = TRUE]
+            cnms <- cnms[-1L]
+            fmts <- fmts[-1L]
+            tbl <- tbl[, -1L, drop = FALSE]
+            if (length(rnms) > 0 && all(nzchar(rnms)))
+              dimnames(tbl) <- list(make.unique(rnms), make.unique(cnms))
+            else
+              colnames(tbl) <- make.unique(cnms)
+          }
         }
         tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
 
         for (j in seq_along(tbl)) {
           switch(x$columns[[j]]$type,
-                 integer = {
+                 int = {
                    tbl[[j]] <- as.integer(tbl[[j]])
                  },
                  long   =,
@@ -396,7 +423,8 @@
                  string = {},
                  {})
         }
-        attr(tbl, "header")  <- x$name
+        if( x$name == "Confusion Matrix") attr(tbl, "header") <- paste0(x$name, " - (", x$description, ")")
+        else                              attr(tbl, "header")  <- x$name
         attr(tbl, "formats") <- fmts
         oldClass(tbl) <- c("H2OTable", "data.frame")
         x <- tbl
@@ -412,15 +440,21 @@
 
 #' Print method for H2OTable objects
 #'
+#' This will print a truncated view of the table if there are more than 20 rows.
+#'
 #' @param x An H2OTable object
+#' @param header A logical value dictating whether or not the table name should be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
-print.H2OTable <- function(x, ...) {
+#' @export
+print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
-  for (j in seq_along(x))
+  for (j in seq_along(x)) {
+    if( formats[j] == "%d" ) formats[j] <- "%i"
     xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
+  }
 
   # drop empty columns
   nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
@@ -431,10 +465,18 @@ print.H2OTable <- function(x, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  if (!is.null(attr(x, "header")))
+  if( header && !is.null(attr(x, "header")) )
     cat(attr(x, "header"), ":\n", sep = "")
-  print(xx, ...)
 
+  # pretty print the frame if it is large (e.g. > 20 rows)
+  nr <- nrow(xx)
+  if( nr > 20L ) {
+    print(xx[1L:5L,],...)
+    cat("\n---\n")
+    print(xx[(nr-5L):nr,],...)
+  } else {
+    print(xx, ...)
+  }
   # return original object
   invisible(x)
 }
@@ -444,7 +486,7 @@ print.H2OTable <- function(x, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list()) {
+.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list(), raw=FALSE) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
@@ -461,11 +503,14 @@ print.H2OTable <- function(x, ...) {
       .params <- list(...)
     }
   }
-  if( !is.null(timeout) ) {
-    .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout))
-  } else {
-    .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method))
-  }
+
+  rawREST <- ""
+
+  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout)
+  else                    rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
+
+  if( raw ) rawREST
+  else      .h2o.fromJSON(rawREST)
 }
 
 
@@ -480,7 +525,7 @@ print.H2OTable <- function(x, ...) {
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
-  rv = .h2o.doRawGET(conn = conn, urlSuffix = "")
+  rv <- .h2o.doRawGET(conn = conn, urlSuffix = "")
 
   !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
 }

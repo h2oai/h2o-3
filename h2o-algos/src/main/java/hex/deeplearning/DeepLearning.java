@@ -3,8 +3,8 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Model;
+import hex.ModelCategory;
 import hex.SupervisedModelBuilder;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -30,13 +30,15 @@ import static water.util.MRUtils.sampleFrameStratified;
  */
 public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
   @Override
-  public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Regression,
-            Model.ModelCategory.Binomial,
-            Model.ModelCategory.Multinomial,
+  public ModelCategory[] can_build() {
+    return new ModelCategory[]{
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
     };
   }
+
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   @Override
   public boolean isSupervised() {
@@ -44,14 +46,18 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   }
 
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
-    super("DeepLearning",parms); init(false);
+    super("DeepLearning", parms); init(false);
   }
 
   public ModelBuilderSchema schema() { return new DeepLearningV3(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
-    return start(new DeepLearningDriver(), (long)(_parms._epochs * _train.numRows()));
+    // We look at _train before init(true) is called, so step around that here:
+    long work = 1;
+    if (null != _train)
+      work = (long)_parms._epochs * _train.numRows();
+    return start(new DeepLearningDriver(), work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -64,17 +70,84 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
   @Override public void init(boolean expensive) {
     super.init(expensive);
     _parms.validate(this, expensive);
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
+  }
+
+  /**
+   * Helper to create the DataInfo object from training/validation frames and the DL parameters
+   * @param train Training frame
+   * @param valid Validation frame
+   * @param parms Model parameters
+   * @return
+   */
+  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningModel.DeepLearningParameters parms) {
+    return new DataInfo(
+            Key.make(), //dest key
+            train,
+            valid,
+            parms._autoencoder ? 0 : 1, //nResponses
+            parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
+            parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
+            true); //always add a bucket for missing values
+  }
+
+  @Override
+  protected void checkMemoryFootPrint() {
+    if (_parms._checkpoint != null) return;
+    long p = _train.degreesOfFreedom() - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
+    String[][] dom = _train.domains();
+    // hack: add the factor levels for the NAs
+    for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
+      if (dom[i] != null) {
+        p++;
+      }
+    }
+//    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
+    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
+    // weights
+    long model_size = p * _parms._hidden[0];
+    int layer=1;
+    for (; layer < _parms._hidden.length; ++layer)
+      model_size += _parms._hidden[layer-1] * _parms._hidden[layer];
+    model_size += _parms._hidden[layer-1] * output;
+
+    // biases
+    for (layer=0; layer < _parms._hidden.length; ++layer)
+      model_size += _parms._hidden[layer];
+    model_size += output;
+
+    if (model_size > 1e8) {
+      String msg = "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers (or reduce the number of categorical factors).";
+      error("_hidden", msg);
+      cancel(msg);
+    }
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
+        byte[] cs = new AutoBuffer().put(_parms).buf();
+
         Scope.enter();
-        _parms.read_lock_frames(DeepLearning.this);
+        // Init parameters
         init(true);
-        if (error_count() > 0)
+        // Read lock input
+        _parms.read_lock_frames(DeepLearning.this);
+        // Something goes wrong
+        if (error_count() > 0){
+          DeepLearning.this.updateValidationMessages();
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
+        }
+
+
         buildModel();
+
+        //check that _parms isn't changed during DL model training
+        byte[] cs2 = new AutoBuffer().put(_parms).buf();
+        assert(Arrays.equals(cs, cs2));
+
         done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
@@ -96,13 +169,13 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
     // the following parameters can be modified when restarting from a checkpoint
     transient final String [] cp_modifiable = new String[] {
-            "_expert_mode",
             "_seed",
             "_epochs",
             "_score_interval",
             "_train_samples_per_iteration",
             "_target_ratio_comm_to_comp",
             "_score_duty_cycle",
+            "_score_training_samples",
             "_classification_stop",
             "_regression_stop",
             "_quiet_mode",
@@ -114,12 +187,41 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             "_replicate_training_data",
             "_shuffle_training_data",
             "_single_node_mode",
-            "_sparse",
-            "_col_major",
+            "_fast_mode",
             // Allow modification of the regularization parameters after a checkpoint restart
             "_l1",
             "_l2",
             "_max_w2",
+            "_input_dropout_ratio",
+            "_hidden_dropout_ratios",
+            "_loss",
+            "_overwrite_with_best_model",
+            "_missing_values_handling",
+            "_reproducible",
+            "_export_weights_and_biases"
+    };
+    // the following parameters must not be modified when restarting from a checkpoint
+    transient final String [] cp_not_modifiable = new String[] {
+            "_drop_na20_cols",
+            "_response_column",
+            "_activation",
+//            "_hidden", //this must be checked via Arrays.equals(a,b), not via String.equals()
+//            "_ignored_columns", //this must be checked via Arrays.equals(a,b), not via String.equals()
+            "_use_all_factor_levels",
+            "_adaptive_rate",
+            "_autoencoder",
+            "_rho",
+            "_epsilon",
+            "_sparse",
+            "_sparsity_beta",
+            "_col_major",
+            "_rate",
+            "_momentum_start",
+            "_momentum_ramp",
+            "_momentum_stable",
+            "_nesterov_accelerated_gradient",
+            "_ignore_const_cols",
+            "_max_categorical_features"
     };
 
     /**
@@ -136,48 +238,82 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
+
+        if( isClassifier() != previous._output.isClassifier() )
+          throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
+        if( isSupervised() != previous._output.isSupervised() )
+          throw new IllegalArgumentException("Model type must be the same as for the checkpointed model.");
+
+        // check the user-given arguments for consistency
+        DeepLearningModel.DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
+        DeepLearningModel.DeepLearningParameters newP = _parms; //user-given parameters for restart
+
         new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
-        if (_parms.getNumFolds() != 0)
+        if (newP.getNumFolds() != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
-        _parms._autoencoder = previous.model_info().get_params()._autoencoder;
-        if (!_parms._autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
-          throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
-        }
-        if (ArrayUtils.difference(_parms._ignored_columns, previous.model_info().get_params()._ignored_columns).length != 0
-                || ArrayUtils.difference(previous.model_info().get_params()._ignored_columns, _parms._ignored_columns).length != 0) {
-          _parms._ignored_columns = previous.model_info().get_params()._ignored_columns;
-          Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
-        }
         if ((_parms._valid == null) != (previous._parms._valid == null)
                 || (_parms._valid != null  && !_parms._valid.equals(previous._parms._valid))) {
-          throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
+          throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
         }
-        if( isClassifier() != previous._output.isClassifier() )
-          Log.warn("Automatically switching to " + (isClassifier() ? "regression" : "classification") + " (same as the checkpointed model).");
-        _parms._epochs += previous.epoch_counter; //add new epochs to existing model
-        Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+        if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
+          throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+        }
+        if (!Arrays.equals(newP._hidden, oldP._hidden)) {
+          throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
+        }
+        if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
+          throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+        }
+
+        //compare the user-given parameters before and after and check that they are not changed
+        for (Field fBefore : oldP.getClass().getDeclaredFields()) {
+          if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
+            for (Field fAfter : newP.getClass().getDeclaredFields()) {
+              if (fBefore.equals(fAfter)) {
+                try {
+                  if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
+                    if (fBefore.get(oldP) == null && fAfter.get(newP) == null) continue; //if both parameters are null, we don't need to do anything
+                    throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
+                  }
+                } catch (IllegalAccessException e) {
+                  e.printStackTrace();
+                }
+              }
+            }
+          }
+        }
 
         try {
-          final DataInfo dinfo = new DataInfo(Key.make(), _train, _valid,
-                                              _parms._autoencoder ? 0 : 1, 
-                                              _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-                                              _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip);
+          final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo._key,dinfo);
-          cp = new DeepLearningModel(dest(), previous, false, dinfo);
+          cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(self());
-          final DeepLearningModel.DeepLearningParameters A = cp.model_info().get_params();
-          Object B = _parms;
-          for (Field fA : A.getClass().getDeclaredFields()) {
-            if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
-//              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
-              for (Field fB : B.getClass().getDeclaredFields()) {
-                if (fA.equals(fB)) {
+
+          // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
+          final DeepLearningModel.DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          assert(actualNewP != previous.model_info().get_params());
+          assert(actualNewP != newP);
+          assert(actualNewP != oldP);
+
+          if (!Arrays.equals(cp._output._names, previous._output._names)) {
+            throw new IllegalArgumentException("Predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns.");
+          }
+          if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
+            throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
+          }
+          if (dinfo.fullN() != previous.model_info().data_info().fullN()) {
+            throw new IllegalArgumentException("Total number of predictors is different than for the checkpointed model.");
+          }
+
+          for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
+            if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
+              for (Field fAfter : newP.getClass().getDeclaredFields()) {
+                if (fBefore.equals(fAfter)) {
                   try {
-                    if (fB.get(B) == null || fA.get(A) == null || !fA.get(A).toString().equals(fB.get(B).toString())) { // if either of the two parameters is null, skip the toString()
-                      if (fA.get(A) == null && fB.get(B) == null) continue; //if both parameters are null, we don't need to do anything
-                      Log.info("Applying user-requested modification of '" + fA.getName() + "': " + fA.get(A) + " -> " + fB.get(B));
-                      fA.set(A, fB.get(B));
+                    if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
+                      if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null) continue; //if both parameters are null, we don't need to do anything
+                      Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
+                      fBefore.set(actualNewP, fAfter.get(newP));
                     }
                   } catch (IllegalAccessException e) {
                     e.printStackTrace();
@@ -186,11 +322,17 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
               }
             }
           }
-          if (A.getNumFolds() != 0) {
-            Log.warn("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
+          // update parameters in place to set defaults etc.
+          DeepLearningModel.modifyParms(actualNewP, actualNewP, isClassifier());
+
+          actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
+          Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+
+          if (actualNewP.getNumFolds() != 0) {
+            Log.info("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
 
             H2O.unimpl("writing to n_folds field needs to be uncommented");
-            // A._n_folds = 0;
+            // actualNewP._n_folds = 0;
           }
           cp.update(self());
         } finally {
@@ -235,14 +377,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           model = DKV.get(dest()).get();
         }
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
-        new ProgressUpdate("Setting up training data...").fork(_progressKey);
-        model.write_lock(self());
-        final DeepLearningModel.DeepLearningParameters mp = model._parms;
-        Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
-        Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
-
         final long model_size = model.model_info().size();
-        if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
+        Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
+        model.write_lock(self());
+        new ProgressUpdate("Setting up training data...").fork(_progressKey);
+        final DeepLearningModel.DeepLearningParameters mp = model.model_info().get_params();
+        Frame tra_fr = new Frame(Key.make(mp.train()._key.toString() + ".temporary"), _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(Key.make(mp.valid()._key.toString() + ".temporary"), _valid.names(), _valid.vecs()) : null;
+
         train = tra_fr;
         if (mp._force_load_balance) {
           new ProgressUpdate("Load balancing training data...").fork(_progressKey);
@@ -287,7 +429,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model.actual_train_samples_per_iteration = computeTrainSamplesPerIteration(mp, train.numRows(), model);
         // Determine whether shuffling is enforced
         if(mp._replicate_training_data && (model.actual_train_samples_per_iteration == train.numRows()*(mp._single_node_mode ?1:H2O.CLOUD.size())) && !mp._shuffle_training_data && H2O.CLOUD.size() > 1 && !mp._reproducible) {
-          Log.warn("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
+          Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
 
@@ -303,20 +445,20 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
         //main loop
         do {
-          final String speed = (model.run_time!=0 ? (" at " + model.model_info().get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
+          DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
+          final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
-//          if (!_parms._quiet_mode) Log.info("Training (MapReduce step)...");
-          model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
-                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
-                  new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
+          model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
+                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
+                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
+                  new DeepLearningTask(self(), mi, rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress
         }
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
 
         // replace the model with the best model so far (if it's better)
-        if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
+        if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             Log.info("Setting the model to be the best model so far (based on scoring history).");

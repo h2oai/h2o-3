@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -117,7 +118,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    this((parms==null || parms._destination_key== null) ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key, desc,parms);
+    this((parms == null || parms._model_id == null) ? Key.make(desc + "Model_" + Key.rand()) : parms._model_id, desc, parms);
   }
 
   /** Default constructor, given all arguments */
@@ -130,8 +131,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public static ModelBuilder createModelBuilder(String algo) {
     ModelBuilder modelBuilder;
 
+    Class<? extends ModelBuilder> clz = null;
     try {
-      Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
+      clz = ModelBuilder.getModelBuilder(algo);
+    }
+    catch (Exception ignore) {}
+
+    if (clz == null) {
+      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
+    }
+
+    try {
       if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
         throw H2O.fail("Class is not parameterized as expected: " + clz);
       }
@@ -156,13 +166,36 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** List containing the categories of models that this builder can
    *  build.  Each ModelBuilder must have one of these. */
-  abstract public Model.ModelCategory[] can_build();
+  abstract public ModelCategory[] can_build();
+
+  /**
+   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
+   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
+   * at startup).
+   */
+  public enum BuilderVisibility {
+    Experimental,
+    Beta,
+    Stable
+  }
+
+  /**
+   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
+   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
+   * at startup).
+   */
+  abstract public BuilderVisibility builderVisibility();
 
   /** Clear whatever was done by init() so it can be run again. */
   public void clearInitState() {
     clearValidationErrors();
 
   }
+
+  /**
+   * Override this method to call error() if the model is expected to not fit in memory, and say why
+   */
+  protected void checkMemoryFootPrint() {}
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -178,6 +211,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  NOTE: The front end initially calls this through the parameters validation
    *  endpoint with no training_frame, so each subclass's {@code init()} method
    *  has to work correctly with the training_frame missing.
+   *<p>
+   *  @see #updateValidationMessages()
    */
   public void init(boolean expensive) {
     // Log parameters
@@ -205,16 +240,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Drop all-constant and all-bad columns.
-    if( _parms._dropConsCols )
+    if( _parms._ignore_const_cols)
       new FilterCols() { 
         @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
 
-    // Drop cols with >20% NAs
-    if( _parms._dropNA20Cols )
-      new FilterCols() { 
+    /*
+    We now do this only through Rapids.  There should be an easy way to do it through the Java API for Sparkling Water users.
+    if( _parms._drop_na20_cols )
+      new FilterCols() {
         @Override protected boolean filter(Vec v) { return ((float)v.naCnt() / v.length()) > 0.2; }
       }.doIt(_train,"Dropping columns with too many missing values: ",expensive);
+    */
 
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
@@ -234,7 +271,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (va != null)
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
+      String[] msgs = Model.adaptTestForTrain(_train._names,null,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
       if( expensive ) {
         for( String s : msgs ) {
           Log.info(s);
@@ -246,6 +283,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
   }
+
+  /**
+   * init(expensive) is called inside a DTask, not from the http request thread.  If we add validation messages to the
+   * ModelBuilder (aka the Job) we want to update it in the DKV so the client can see them when polling and later on
+   * after the job completes.
+   * <p>
+   * NOTE: this should only be called when no other threads are updating the job, for example from init() or after the
+   * DTask is stopped and is getting cleaned up.
+   * @see #init(boolean)
+   */
+  public void updateValidationMessages() {
+    // Atomically update the validation messages in the Job in the DKV.
+
+    // In some cases we haven't stored to the DKV yet:
+    new TAtomic<Job>() {
+      @Override public Job atomic(Job old) {
+        if( old == null ) throw new H2OKeyNotFoundArgumentException(old._key);
+
+        ModelBuilder builder = (ModelBuilder)old;
+        builder._messages = ModelBuilder.this._messages;
+        return builder;
+      }
+      // Run the onCancelled code synchronously, right now
+      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
+    }.invoke(_key);
+    }
 
   abstract class FilterCols {
     abstract protected boolean filter(Vec v);

@@ -2,22 +2,23 @@ apply plugin: 'release'
 apply plugin: 'nexus-workflow'
 
 release {
-  tagPrefix = "RELEASE"
+  tagPrefix = "release"
   // Safe point - do releases only from release branch - can be deleted in future
-  //requireBranch = "release"
+  //requireBranch = "testing"
 }
 
 // Helper task uploading all artifacts
-task uploadAll
-uploadAll.dependsOn {
-  subprojects.uploadArchives
+task publishAll
+publishAll.dependsOn {
+    def onlyPublishTasks = subprojects.collectNested { p -> p.tasks.matching {t -> t.name == "publish"} }
+    onlyPublishTasks
 }
 
 // Helper task uploading and releasing all staged artifacts 
 task stageAll
-stageAll.dependsOn uploadAll, nexusStagingRelease
-nexusStagingRelease.mustRunAfter uploadAll
+stageAll.dependsOn publishAll, nexusStagingRelease
+nexusStagingRelease.mustRunAfter publishAll
 
 
-// Upload artifacts after release
+// Create release as final step
 createReleaseTag.dependsOn stageAll

@@ -1,17 +1,18 @@
 package hex.tree;
 
-import hex.Model.ModelCategory;
+import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
+import hex.genmodel.GenModel;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.ModelUtils;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
 public class Score extends MRTask<Score> {
   final SharedTree _bldr;
+  final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
   final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
   ModelMetrics.MetricBuilder _mb;
@@ -20,7 +21,7 @@ public class Score extends MRTask<Score> {
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean oob, ModelCategory mcat) { _bldr = bldr; _oob = oob; _mcat = mcat; }
+  public Score(SharedTree bldr, boolean is_train, boolean oob, ModelCategory mcat) { _bldr = bldr; _is_train = is_train; _oob = oob; _mcat = mcat; }
   
   @Override public void map( Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
@@ -36,7 +37,7 @@ public class Score extends MRTask<Score> {
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
-    final double[] tmp = _bldr._parms._valid!=null ? new double[_bldr._ncols] : null;
+    final double[] tmp = _is_train ? null : new double[_bldr._ncols];
 
     // Score all Rows
     float [] val= new float[1];
@@ -44,11 +45,11 @@ public class Score extends MRTask<Score> {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore out-of-bag rows
       if( _oob && chks[oobColIdx].at8(row)==0 ) continue;
-      if( _bldr._parms._valid!=null )   // Must score "the hard way"
-        _bldr._model.score0(chks,row,tmp,cdists);
-      else                      // Passed in the model-specific columns
+      if( _is_train ) // Passed in the model-specific columns
         _bldr.score2(chks,cdists,row); // Use the training data directly (per-row predictions already made)
-      if( nclass > 1 ) cdists[0] = ModelUtils.getPrediction(cdists); // Fill in prediction
+      else            // Must score "the hard way"
+        _bldr._model.score0(chks,row,tmp,cdists);
+      if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, tmp, _bldr._model.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists,val, _bldr._model);
     }

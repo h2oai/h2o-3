@@ -23,7 +23,7 @@ def prostate(ip,port):
 
   sm_glm = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Binomial()).fit()
 
-  assert abs(sm_glm.null_deviance - h2o_glm._model_json['output']['null_deviance']) < 1e-5, "Expected null deviances to be the same"
+  assert abs(sm_glm.null_deviance - h2o_glm._model_json['output']['training_metrics']['null_deviance']) < 1e-5, "Expected null deviances to be the same"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, prostate)

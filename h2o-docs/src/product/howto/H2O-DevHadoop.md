@@ -1,4 +1,12 @@
-#Running H2O-Dev on Hadoop
+# ...On Hadoop
+
+Currently supported versions: 
+- CDH 5.2
+- CDH 5.3
+- HDP 2.1
+- HDP 2.2
+- MapR 3.1.1
+- MapR 4.0.1
 
 **Important Points to Remember**: 
 
@@ -35,7 +43,7 @@ Tutorial
 The following tutorial will walk the user through the download or build of H2O and the parameters involved in launching H2O from the command line.
 
 
-0. Download the latest H2O-dev release for your version of Hadoop:
+0. Download the latest H2O release for your version of Hadoop:
 
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-cdh5.2.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-cdh5.3.zip
@@ -45,7 +53,6 @@ The following tutorial will walk the user through the download or build of H2O a
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-mapr4.0.1.zip
 		
 	**Note**: Enter only one of the above commands.
-
 
 0. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
@@ -84,9 +91,8 @@ review the output from your command after the nodes has clouded up and formed a 
 Hadoop Launch Parameters
 ------------------------
 
-- `-libjars <.../h2o.jar>`: Add external jar files; must end with `h2o.jar`. 
 - `-h | -help`: Display help 
-- `-job name <JobName>`: Specify a job name; the default is `H2O_nnnnn` (where n is chosen randomly)
+- `-jobname <JobName>`: Specify a job name for the Jobtracker to use; the default is `H2O_nnnnn` (where n is chosen randomly)
 - `-driverif <IP address of mapper -> driver callback interface>`: Specify the IP address for callback messages from the mapper to the driver. 
 - `-driverport <port of mapper -> callback interface>`: Specify the port number for callback messages from the mapper to the driver. 
 - `-network <IPv4Network1>[,<IPv4Network2>]`: Specify the IPv4 network(s) to bind to the H2O nodes; multiple networks can be specified to force H2O to use the specified host in the Hadoop cluster. `10.1.2.0/24` allows 256 possibilities.   

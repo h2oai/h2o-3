@@ -1,9 +1,9 @@
 package hex.tree.gbm;
 
+import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
-import water.util.ModelUtils;
 import water.util.SB;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
@@ -40,25 +40,27 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
     if( _parms._distribution == GBMParameters.Family.bernoulli ) {
-      double fx = preds[1] + _output._initF;
+      double fx = preds[1] + _output._init_f;
       preds[2] = 1.0/(1.0+Math.exp(-fx));
       preds[1] = 1.0-preds[2];
-      ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
       return preds;
     }
     if( _output.nclasses()==1 ) {
       // Prediction starts from the mean response, and adds predicted residuals
-      preds[0] += _output._initF;
+      preds[0] += _output._init_f;
       return preds;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-      preds[1] += _output._initF;
+      preds[1] += _output._init_f;
       preds[2] = - preds[1];
     }
-    hex.genmodel.GenModel.GBM_rescale(data, preds);
-    ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-    preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
+    hex.genmodel.GenModel.GBM_rescale(preds);
+    if (_parms._balance_classes)
+      GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+    preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     return preds;
   }
 
@@ -66,25 +68,27 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
     if( _parms._distribution == GBMParameters.Family.bernoulli ) {
-      body.ip("double fx = preds[1] + ").p(_output._initF).p(";").nl();
+      body.ip("double fx = preds[1] + ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
-      body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+      if (_parms._balance_classes)
+        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + ");").nl();
       return;
     }
     if( _output.nclasses() == 1 ) { // Regression
       // Prediction starts from the mean response, and adds predicted residuals
-      body.ip("preds[0] += ").p(_output._initF).p(";");
+      body.ip("preds[0] += ").p(_output._init_f).p(";");
       return;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-      body.ip("preds[1] += ").p(_output._initF).p(";").nl();
+      body.ip("preds[1] += ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = - preds[1];").nl();
     }
-    body.ip("hex.genmodel.GenModel.GBM_rescale(data,preds);").nl();
-    body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+    body.ip("hex.genmodel.GenModel.GBM_rescale(preds);").nl();
+    if (_parms._balance_classes)
+      body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + ");").nl();
   }
 
   @Override protected boolean binomialOpt() { return true; }

@@ -1,14 +1,10 @@
 package water.api;
 
 import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelBuilder.ValidationMessage;
-import hex.ModelBuilder.ValidationMessage.MessageType;
 import water.*;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -24,7 +20,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "dropNA20Cols", "score_each_iteration" };
+  static public String[] own_fields = new String[] { "model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols", "score_each_iteration" };
 
   /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
   private transient String[] __fields_cache = null;
@@ -58,8 +54,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Parameters common to all models:
-  @API(help="Destination key for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
-  public ModelKeyV3 destination_key;
+  @API(help="Destination id for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
+  public ModelKeyV3 model_id;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
   public FrameKeyV3 training_frame;
@@ -70,8 +66,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
-  @API(help="Drop columns with more than 20% missing values", direction=API.Direction.INOUT)
-  public boolean dropNA20Cols; // Drop columns with more than 20% missing values
+  @API(help="Ignore constant columns", direction=API.Direction.INOUT)
+  public boolean ignore_const_cols;
 
   @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT)
   public boolean score_each_iteration;
@@ -111,33 +107,6 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
     return impl;
   }
-
-  public static class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S extends ValidationMessageBase<I, S>> extends Schema<I, S> {
-    @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)", direction=API.Direction.OUTPUT)
-    public String message_type;
-
-    @API(help="Field to which the message applies", direction=API.Direction.OUTPUT)
-    public String field_name;
-
-    @API(help="Message text", direction=API.Direction.OUTPUT)
-    public String message;
-
-    public I createImpl() { return (I) new ModelBuilder.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };
-
-    // Version&Schema-specific filling from the implementation object
-    public S fillFromImpl(ValidationMessage vm) {
-      PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
-      if (this.field_name != null) {
-        if (this.field_name.startsWith("_"))
-          this.field_name = this.field_name.substring(1);
-        else
-          Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
-      }
-      return (S)this;
-    }
-  }
-
-  public static final class ValidationMessageV2 extends ValidationMessageBase<ModelBuilder.ValidationMessage, ValidationMessageV2> {  }
 
   private static void compute_transitive_closure_of_is_mutually_exclusive(ModelParameterSchemaV3[] metadata) {
     // Form the transitive closure of the is_mutually_exclusive field lists by visiting

@@ -72,7 +72,9 @@ public class Frame extends Lockable<Frame> {
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   /** Creates an empty frame with given key. */
-  public Frame( Key key ) { this(key,null,new Vec[0]); }
+  public Frame( Key key ) {
+    this(key,null,new Vec[0]);
+  }
 
   /**
    * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
@@ -197,9 +199,39 @@ public class Frame extends Lockable<Frame> {
   /** Number of columns
    *  @return Number of columns */
   public int  numCols() { return _keys.length; }
+  /** Number of columns with categoricals expanded
+   * @return Number of columns with categoricals expanded into indicator columns */
+  public int numColsExp() { return numColsExp(true, false); }
+  public int numColsExp(boolean useAllFactorLevels, boolean missingBucket) {
+    if(_vecs == null) return 0;
+    int cols = 0;
+    for(int i = 0; i < _vecs.length; i++) {
+      if(_vecs[i].isEnum() && _vecs[i].domain() != null)
+        cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
+      else cols++;
+    }
+    return cols;
+  }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
+
+  /**
+   * Number of degrees of freedom (#numerical columns + sum(#categorical levels))
+   * @return Number of overall degrees of freedom
+   */
+  public long degreesOfFreedom() {
+    long dofs = 0;
+    String[][] dom = domains();
+    for (int i=0; i<numCols(); ++i) {
+      if (dom[i] == null) {
+        dofs++;
+      } else {
+        dofs+=dom[i].length;
+      }
+    }
+    return dofs;
+  }
 
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
@@ -239,6 +271,14 @@ public class Frame extends Lockable<Frame> {
       res[i] = all[idxs[i]];
     return res;
   }
+
+  public Vec[] vecs(String[] names) {
+    Vec [] res = new Vec[names.length];
+    for(int i = 0; i < names.length; ++i)
+      res[i] = vec(names[i]);
+    return res;
+  }
+
   // Compute vectors for caching
   private Vec[] vecs_impl() {
     // Load all Vec headers; load them all in parallel by starting prefetches
@@ -291,6 +331,15 @@ public class Frame extends Lockable<Frame> {
     return -1;
   }
 
+  /**   Finds the matching column index, or -1 if missing
+   *  @return the matching column index, or -1 if missing */
+  public int find( Key key ) {
+    for( int i=0; i<_keys.length; i++ )
+      if( key.equals(_keys[i]) )
+        return i;
+    return -1;
+  }
+
   /** Bulk {@link #find(String)} api
    *  @return An array of column indices matching the {@code names} array */
   public int[] find(String[] names) {
@@ -300,6 +349,8 @@ public class Frame extends Lockable<Frame> {
       res[i] = find(names[i]);
     return res;
   }
+
+
 
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
@@ -391,9 +442,12 @@ public class Frame extends Lockable<Frame> {
   }
 
   // Add a bunch of vecs
-  public void add( String[] names, Vec[] vecs ) {
+  public void add( String[] names, Vec[] vecs) {
+    add(names, vecs, vecs.length);
+  }
+  public void add( String[] names, Vec[] vecs, int cols ) {
     if (null == vecs || null == names) return;
-    for( int i=0; i<vecs.length; i++ )
+    for( int i=0; i<cols; i++ )
       add(names[i],vecs[i]);
   }
 
@@ -401,6 +455,7 @@ public class Frame extends Lockable<Frame> {
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
+    vec = makeCompatible(new Frame(vec)).anyVec();
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
     _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
@@ -412,7 +467,7 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
@@ -506,19 +561,30 @@ public class Frame extends Lockable<Frame> {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override public Futures remove_impl(Futures fs) {
-    for( Vec v : vecs() ) if( v != null ) v.remove(fs);
+    final Key[] keys = _keys;
+    if( keys.length==0 ) return fs;
+    final int ncs = anyVec().nChunks();
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    new MRTask() {
+      @Override public void setupLocal() {
+        for( Key k : keys ) if( k != null ) Vec.bulk_remove(k,ncs,_fs);
+      }
+    }.doAllNodes();
+
     return fs;
   }
 
   /** Replace one column with another. Caller must perform global update (DKV.put) on
-   * this updated frame.
+   *  this updated frame.
    *  @return The old column, for flow-coding */
   public Vec replace(int col, Vec nv) {
-    assert DKV.get(nv._key)!=null; // Already in DKV
     Vec rv = vecs()[col];
+    nv = ((new Frame(rv)).makeCompatible(new Frame(nv))).anyVec();
+    DKV.put(nv);
+    assert DKV.get(nv._key)!=null; // Already in DKV
     assert rv.group().equals(nv.group());
     _vecs[col] = nv;
     _keys[col] = nv._key;
@@ -558,7 +624,7 @@ public class Frame extends Lockable<Frame> {
    *  @return an array of the removed columns */
   public Vec[] remove( int[] idxs ) {
     for( int i : idxs )
-      if(i < 0 || i >= _vecs.length)
+      if(i < 0 || i >= vecs().length)
         throw new ArrayIndexOutOfBoundsException();
     Arrays.sort(idxs);
     Vec[] res = new Vec[idxs.length];
@@ -634,13 +700,18 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Restructure a Frame completely */
-  public void restructure( String[] names, Vec[] vecs ) {
+  public void restructure( String[] names, Vec[] vecs) {
+    restructure(names, vecs, vecs.length);
+  }
+
+  /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
+  public void restructure( String[] names, Vec[] vecs, int cols) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
     _names = new String[0];
     _keys  = new Key   [0];
     _vecs  = new Vec   [0];
-    add(names,vecs);
+    add(names,vecs,cols);
   }
 
   // --------------------------------------------
@@ -807,7 +878,7 @@ public class Frame extends Lockable<Frame> {
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames_vec")));
+      AppendableVec av = new AppendableVec(Vec.newKey());
       int r = 0;
       int c = 0;
       while (r < rows.length) {
@@ -829,7 +900,8 @@ public class Frame extends Lockable<Frame> {
       return fr2;
     }
     Frame frows = (Frame)orows;
-    Vec vrows = frows.anyVec();
+    Vec vrows = makeCompatible(new Frame(frows.anyVec())).anyVec();
+    DKV.put(vrows);
     // It's a compatible Vec; use it as boolean selector.
     // Build column names for the result.
     Vec [] vecs = new Vec[c2.length+1];

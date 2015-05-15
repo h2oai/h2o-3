@@ -6,15 +6,11 @@
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
 #' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
-#' @param destination_key (Optional) The unique \code{character} hex key assigned to the resulting
-#'        model. If none is given, a key will automatically be generated.
-#' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best
-#'        model found during traning. Defaults to \code{TRUE}.
-#' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then
-#'        \code{validation} must remain empty.
-#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation
-#'        dataset used to contruct the confusion matrix. If left blank, this defaults to the
-#'        training data when \code{nfolds = 0}
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#'        none is given, an id will automatically be generated.
+#' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
+#' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -79,7 +75,7 @@
 #' @param variable_importances Compute variable importances for input features (Gedeon method) - can
 #'        be slow for large networks)
 #' @param fast_mode Enable fast mode (minor approximations in back-propagation)
-#' @param ignore_const_cols Igrnore constant training columns (no information can be gained anwyay)
+#' @param ignore_const_cols Ignore constant columns (no information can be gained anwyay)
 #' @param force_load_balance Force extra load balancing to increase training speed for small
 #'        datasets (to keep all cores busy)
 #' @param replicate_training_data Replicate the entire training dataset onto every node for faster
@@ -108,8 +104,8 @@
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
-                             destination_key = "",
-                             override_with_best_model,
+                             model_id = "",
+                             overwrite_with_best_model,
                              n_folds = 0,
                              validation_frame,
                              checkpoint,
@@ -190,10 +186,10 @@ h2o.deeplearning <- function(x, y, training_frame,
   colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
   parms$response_column <- colargs$y
   parms$ignored_columns <- colargs$x_ignore
-  if(!missing(destination_key))
-    parms$destination_key <- destination_key
-  if(!missing(override_with_best_model))
-    parms$override_with_best_model <- override_with_best_model
+  if(!missing(model_id))
+    parms$model_id <- model_id
+  if(!missing(overwrite_with_best_model))
+    parms$overwrite_with_best_model <- overwrite_with_best_model
   if(!missing(n_folds))
     parms$n_folds <- n_folds
   if(!missing(validation_frame))
@@ -326,15 +322,15 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex, autoencoder = TRUE,
+#' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
 #' head(prostate.anon)
 #' @export
 h2o.anomaly <- function(object, data) {
-  url <- paste0('Predictions/models/', object@key, '/frames/', data@key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
-  key <- res$model_metrics[[1L]]$predictions$key$name
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
 
   h2o.getFrame(key)
 }
@@ -365,9 +361,9 @@ h2o.anomaly <- function(object, data) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
 
-  url <- paste0('Predictions/models/', object@key, '/frames/', data@key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
-  key <- res$destination_key$name
+  key <- res$predictions$name
 
   h2o.getFrame(key)
 }

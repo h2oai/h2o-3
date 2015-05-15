@@ -2,6 +2,7 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.MathUtils;
 
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
@@ -17,7 +18,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
     if( !(mm instanceof ModelMetricsBinomial) )
       throw new H2OIllegalArgumentException("Expected to find a Binomial ModelMetrics for model: " + model._key.toString() + " and frame: " + frame._key.toString(),
-              "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
+              "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + (mm == null ? null : mm.getClass()));
     return (ModelMetricsBinomial) mm;
   }
 
@@ -30,9 +31,12 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
-    double _logloss;
+    protected double _logloss;
     protected AUC2.AUCBuilder _auc;
+
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
+
+    public double auc() {return new AUC2(_auc)._auc;}
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
@@ -50,7 +54,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       // Compute log loss
       final double eps = 1e-15;
       _logloss += -Math.log(Math.max(eps,ds[iact+1]));
-
       _auc.perRow(ds[2],iact);
 
       return ds;                // Flow coding
@@ -71,6 +74,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       } else {
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, Double.NaN, null, Double.NaN, null, Double.NaN));
       }
+    }
+    public String toString(){
+      return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _count;
     }
   }
 }

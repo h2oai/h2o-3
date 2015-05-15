@@ -42,7 +42,10 @@ class RollupStats extends Iced {
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
-  private static final int MAX_SIZE = 1024; // Standard bin count; enums can have more bins
+  private static final int MAX_SIZE = 1000; // Standard bin count; enums can have more bins
+  // the choice of MAX_SIZE being a power of 10 (rather than 1024) just aligns-to-the-grid of the common input of fixed decimal
+  // precision numbers. It is still an estimate and makes no difference mathematically. It just gives tidier output in some
+  // simple cases without penalty.
   volatile long[] _bins;
   // Approximate data value closest to the Xth percentile
   double[] _pctiles;
@@ -208,7 +211,7 @@ class RollupStats extends Iced {
     _ninfs += rs._ninfs;
     double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
-    else {
+    else if(rs._rows != 0){
       _mean = (_mean * _rows + rs._mean * rs._rows) / (_rows + rs._rows);
       _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }
@@ -237,7 +240,17 @@ class RollupStats extends Iced {
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
-    @Override public void postGlobal() { if( _rs == null ) _rs = new RollupStats(0); else _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1)); }
+    @Override public void postGlobal() {
+      if( _rs == null )
+        _rs = new RollupStats(0);
+      else {
+        _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1));
+        if (_rs._rows < 5) for (int i=0; i<5-_rs._rows; i++) {  // Fix PUBDEV-150 for files under 5 rows
+          _rs._maxs[4-i] = Double.NaN;
+          _rs._mins[4-i] = Double.NaN;
+        }
+      }
+    }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
   }
@@ -255,6 +268,8 @@ class RollupStats extends Iced {
   }
 
   static RollupStats get(Vec vec, boolean computeHisto) {
+    if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
+
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
@@ -425,7 +440,7 @@ class RollupStats extends Iced {
       // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
       // - unless the count gets too high; allow a very high count for enums.
       int nbins=MAX_SIZE;
-      if( rs._isInt && (int)span==span ) {
+      if( rs._isInt && span < Integer.MAX_VALUE ) {
         nbins = (int)span+1;      // 1 bin per int
         int lim = vec.isEnum() ? Categorical.MAX_ENUM_SIZE : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels
@@ -437,27 +452,34 @@ class RollupStats extends Iced {
           rs._bins = histo._bins;
           // Compute percentiles from histogram
           rs._pctiles = new double[Vec.PERCENTILES.length];
-          int j = 0;                    // Histogram bin number
-          long hsum = 0;                // Rolling histogram sum
+          int j = 0;                 // Histogram bin number
+          int k = 0;                 // The next non-zero bin after j
+          long hsum = 0;             // Rolling histogram sum
           double base = rs.h_base();
           double stride = rs.h_stride();
-          long oldPint = 0;
-          double oldVal = rs._mins[0];
+          double lastP = -1.0;       // any negative value to pass assert below first time
           for (int i = 0; i < Vec.PERCENTILES.length; i++) {
             final double P = Vec.PERCENTILES[i];
-            long pint = (long) ((P * rows)+0.5);
-            if (pint == oldPint) { // can happen if rows < 100
-              rs._pctiles[i] = oldVal;
-              continue;
-            }
-            oldPint = pint;
+            assert P>=0 && P<=1 && P>=lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
+            lastP = P;
+            double pdouble = 1.0 + P*(rows-1);   // following stats:::quantile.default type 7
+            long pint = (long) pdouble;          // 1-based into bin vector
+            double h = pdouble - pint;           // any fraction h to linearly interpolate between?
+            assert P!=1 || (h==0.0 && pint==rows);  // i.e. max
             while (hsum < pint) hsum += rs._bins[j++];
-            // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
+            // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
+            // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
             rs._pctiles[i] = base + stride * (j - 1);
-            // linear interpolate stride, based on fraction of bin
-            if( stride != 1.0 || !rs._isInt )
-              rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
-            oldVal = rs._pctiles[i];
+            if (h>0 && pint==hsum) {
+              // linearly interpolate between adjacent non-zero bins
+              //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
+              // AND ii) h>0 so we do need to find the next non-zero bin
+              if (k<j) k=j; // if j jumped over the k needed for the last P, catch k up to j
+                            // Saves potentially winding k forward over the same zero stretch many times
+              while (rs._bins[k]==0) k++;  // find the next non-zero bin
+              rs._pctiles[i] += h * stride * (k-j+1);
+            } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
+            // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
           }
           installResponse(nnn,rs);
         }

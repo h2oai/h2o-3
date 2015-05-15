@@ -11,7 +11,7 @@ source('../../h2o-runit.R')
 test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), key="h2o.data")    
+	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
 	R.data = as.data.frame(as.matrix(h2o.data))
 	
 	print("Testing for family: POISSON")
@@ -26,8 +26,8 @@ test.linkFunctions <- function(conn) {
 	model.R.poisson.log <- glm(formula=R.formula, data=R.data[,2:9], family=poisson(link=log), na.action=na.omit)
 	
 	print("Compare model deviances for link function log")
-	deviance.h2o.log = model.h2o.poisson.log@model$residual_deviance / model.h2o.poisson.log@model$null_deviance
-	deviance.R.log = deviance(model.R.poisson.log)  / model.h2o.poisson.log@model$null_deviance
+	deviance.h2o.log = model.h2o.poisson.log@model$training_metrics@metrics$residual_deviance / model.h2o.poisson.log@model$training_metrics@metrics$null_deviance
+	deviance.R.log = deviance(model.R.poisson.log)  / model.h2o.poisson.log@model$training_metrics@metrics$null_deviance
 	difference = deviance.R.log - deviance.h2o.log
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.log))
@@ -40,8 +40,8 @@ test.linkFunctions <- function(conn) {
 	model.R.poisson.identity <- glm(formula=R.formula, data=R.data[,2:9], family=poisson(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")
-	deviance.h2o.identity = model.h2o.poisson.identity@model$residual_deviance / model.h2o.poisson.identity@model$null_deviance
-	deviance.R.identity = deviance(model.R.poisson.identity)  / model.h2o.poisson.identity@model$null_deviance
+	deviance.h2o.identity = model.h2o.poisson.identity@model$training_metrics@metrics$residual_deviance / model.h2o.poisson.identity@model$training_metrics@metrics$null_deviance
+	deviance.R.identity = deviance(model.R.poisson.identity)  / model.h2o.poisson.identity@model$training_metrics@metrics$null_deviance
 	difference = deviance.R.identity - deviance.h2o.identity
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.identity))

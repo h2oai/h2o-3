@@ -9,15 +9,15 @@ check.deeplearning_anomaly <- function(conn) {
   
   # set to FALSE for stand-alone demo
   if (TRUE) {
-    train_hex <- h2o.uploadFile(conn, locate(TRAIN), key = "train")
+    train_hex <- h2o.uploadFile(conn, locate(TRAIN), destination_frame = "train")
     test_hex <- h2o.uploadFile(conn, locate(TEST))
     print(train_hex)
   } else {
     library(h2o)
     conn <- h2o.init()
-    homedir <- paste0(path.expand("~"),"/h2o/") #modify if needed
-    train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',', key = 'train.hex')
-    test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',', key = 'test.hex')
+    homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
+    train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',', destination_frame = 'train.hex')
+    test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',', destination_frame = 'test.hex')
   }
   
   predictors = c(1:784)
@@ -49,12 +49,10 @@ check.deeplearning_anomaly <- function(conn) {
   }
   
   
-  ## START ANOMALY DETECTION DEMO
+  ## ANOMALY DETECTION DEMO
   
-  # 1) LEARN WHAT'S NORMAL
-  # train unsupervised Deep Learning autoencoder model on train_hex
+  # 1) LEARN WHAT'S NORMAL WITH UNSUPERVISED AUTOENCODER
   ae_model <- h2o.deeplearning(x=predictors,
-                               y=42, #response is ignored (pick any non-constant predictor column index)
                                training_frame=train_hex,
                                activation="Tanh",
                                autoencoder=T,
@@ -62,13 +60,11 @@ check.deeplearning_anomaly <- function(conn) {
                                l1=1e-5,
                                ignore_const_cols=F,
                                epochs=1)
-  
-  
+ 
   # 2) DETECT OUTLIERS
-  # anomaly app computes the per-row reconstruction error for the test data set
+  # h2o.anomaly computes the per-row reconstruction error for the test data set
   # (passing it through the autoencoder model and computing mean square error (MSE) for each row)
-  test_rec_error <- as.data.frame(h2o.anomaly(ae_model, test_hex))
-  
+  test_rec_error <- as.data.frame(h2o.anomaly(ae_model, test_hex)) 
   
   # 3) VISUALIZE OUTLIERS
   # Let's look at the test set points with low/median/high reconstruction errors.

@@ -1,0 +1,212 @@
+@import url(https://fonts.googleapis.com/css?family=Lato:300italic,700italic,300,700|Source+Code+Pro:400,600);
+
+body {
+  font:14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color:#222;
+  font-weight:300;
+  background: #EAEAEA;
+  margin: 0;
+  background-image:url(swirl.png);
+  background-attachment:fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color:#222;
+  margin:0 0 20px;
+}
+
+p, ul, ol, table, pre, dl {
+  margin:0 0 20px;
+}
+
+h1, h2, h3 {
+  line-height:1.1;
+}
+
+h1 {
+  font-size:28px;
+}
+
+h2 {
+  color:#393939;
+}
+
+h3, h4, h5, h6 {
+  color:#494949;
+}
+
+a {
+  color:#39c;
+  font-weight:400;
+  text-decoration:none;
+}
+
+a small {
+  font-size:11px;
+  color:#777;
+  margin-top:-0.6em;
+  display:block;
+}
+
+blockquote {
+  border-left:1px solid #e5e5e5;
+  margin:0;
+  padding:0 0 0 20px;
+  font-style:italic;
+}
+
+code, pre {
+  font-family:"Source Code Pro", Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal;
+  color:#333;
+  font-size:12px;
+}
+
+pre {
+  padding:8px 15px;
+  /* background: #f8f8f8;  
+  border:1px solid #e5e5e5; */
+  overflow-x: auto;
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAKElEQVQImWN89+4dAwODoKAgAwMDE5z1/v17xv///0NYUBkIS1BQEAB7Uw7Oc/qzUwAAAABJRU5ErkJggg==");
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+
+th, td {
+  text-align:left;
+  padding:5px 10px;
+  border-bottom:1px solid #e5e5e5;
+}
+
+dt {
+  color:#444;
+  font-weight:700;
+}
+
+th {
+  color:#444;
+}
+
+img {
+  max-width:100%;
+}
+
+strong {
+  color:#222;
+  font-weight:700;
+}
+small {
+  font-size:11px;
+}
+
+hr {
+  border:0;
+  background:#e5e5e5;
+  height:1px;
+  margin:0 0 20px;
+}
+
+.sidebar {
+  position:fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 230px;
+  overflow: auto;
+  padding: 25px;
+  background: #272b2d;
+  color: #999;
+  box-sizing: border-box;
+}
+
+.sidebar h1, .sidebar h2, .sidebar h3 {
+  color: #fef486;
+  font-weight:normal;
+}
+
+.sidebar h1 {
+  font-size:35px;
+  margin:20px 0;
+}
+
+.sidebar h1 sup {
+  font-size:12px;
+  color:#999;
+}
+
+.sidebar ul {
+  list-style:none;
+  padding:0;
+}
+
+.sidebar ul a {
+  color:#999;
+}
+.sidebar ul a:hover {
+  color:#fef486;
+}
+
+.content {
+  margin-left: 230px;
+  width: 700px;
+  padding: 50px;
+  background: white;
+  box-sizing: border-box;
+  box-shadow: 5px 0px 20px rgba(0,0,0,0.1);
+}
+
+.right {
+  text-align:right;
+}
+
+.red {
+  color: #b93d6a;
+}
+
+@media print, screen and (max-width: 960px) {
+  .sidebar, .content {
+    position:static;
+    width:auto;
+    margin:auto;
+    padding:50px;
+  }
+  
+  .sidebar ul li {
+    display: inline-block;
+    padding-right: 10px;
+  }
+}
+
+@media print, screen and (max-width: 720px) {
+  body {
+    word-wrap:break-word;
+  }
+  
+  .sidebar, .content {
+    padding:25px;
+  }
+  
+  pre, code {
+    word-wrap:normal;
+  }
+}
+
+@media print, screen and (max-width: 480px) {
+  .sidebar, .content {
+    padding:15px;
+  }
+  .sidebar ul li {
+    display: inherit;
+    padding-right: inherit;
+  }
+}
+
+@media print {
+  body {
+    padding:0.4in;
+    font-size:12pt;
+    color:#444;
+  }
+}

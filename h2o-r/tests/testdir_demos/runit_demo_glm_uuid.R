@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
   print("Reading in data (tiny airline with UUIDs).")
-    airline.hex <- h2o.uploadFile(conn, locate("smalldata/airlines/uuid_airline.csv"), key="airline.hex", header=TRUE)
+    airline.hex <- h2o.uploadFile(conn, locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
     print("Summary of airline data: ")
     print(summary(airline.hex))
     print("Head of airline data: ")
@@ -71,9 +71,9 @@ test <- function(conn) {
     perf@metrics$AUC
 
   print("Show distribution of predictions with quantile.")
-    print(quant <- quantile.H2OFrame(air.results$'1'))
+    print(quant <- quantile.H2OFrame(air.results$'p1'))
   print("Extract strongest predictions.")
-    top.air <- h2o.assign(air.results[air.results$'1' > quant['75%'], ],key="top.air")
+    top.air <- h2o.assign(air.results[air.results$'p1' > quant['75%'], ],key="top.air")
     print("Dimension of strongest predictions: ")
     dim(top.air)
     print("Head of strongest predictions: ")

@@ -2,23 +2,24 @@ package hex.kmeans;
 
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.Comparator;
 import org.junit.*;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MathUtils;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -82,7 +83,7 @@ public class KMeansTest extends TestUtil {
     // R k-means results for comparison
     double totssR = 355807.821599;
     double btwssR = 318155.162076;
-    double[] wmseR = new double[] {558.825556, 636.587500, 652.617347, 963.188000};
+    double[] wssR = new double[] {2546.350000, 6705.906667, 9136.642857, 19263.760000};
     double[][] centersR = ard(ard( 4.270000,  87.550000, 59.750000, 14.390000),
                               ard( 8.214286, 173.285714, 70.642857, 22.842857),
                               ard(11.766667, 257.916667, 68.416667, 28.933333),
@@ -119,10 +120,10 @@ public class KMeansTest extends TestUtil {
       for(int i = 0; i < centers.length; i++)
         assertArrayEquals(centersR[i], centers[i], threshold);
 
-      Arrays.sort(kmm._output._within_mse);
-      assertArrayEquals(wmseR, kmm._output._within_mse, threshold);
-      assertEquals(totssR / fr.numRows(), kmm._output._avg_ss, threshold);
-      assertEquals(btwssR / fr.numRows(), kmm._output._avg_between_ss, threshold);
+      Arrays.sort(kmm._output._withinss);
+      assertArrayEquals(wssR, kmm._output._withinss, threshold);
+      assertEquals(totssR, kmm._output._totss, threshold);
+      assertEquals(btwssR, kmm._output._betweenss, threshold);
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
@@ -265,7 +266,7 @@ public class KMeansTest extends TestUtil {
   }
 
   // Negative test - expect to throw IllegalArgumentException
-  @Test (expected = IllegalArgumentException.class) public void testTooManyK() {
+  @Test (expected = H2OModelBuilderIllegalArgumentException.class) public void testTooManyK() {
     Frame fr = frame(ard(d(1,0),d(0,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     Frame fr2=null;
     KMeansModel kmm = null;
@@ -327,10 +328,10 @@ public class KMeansTest extends TestUtil {
         SplitFrame sf = new SplitFrame(Key.make());
         sf.dataset = fr;
         sf.ratios = new double[] { 0.5 };
-        sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+        sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
         // Invoke the job
         sf.exec().get();
-        Key[] ksplits = sf.dest_keys;
+        Key[] ksplits = sf.destination_frames;
         tr = DKV.get(ksplits[0]).get();
         te = DKV.get(ksplits[1]).get();
 
@@ -417,30 +418,30 @@ public class KMeansTest extends TestUtil {
 
             Assert.assertTrue(
                     MathUtils.compare(
-                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_ss,
-                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_ss,
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._totss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._totss,
                             1e-6, 1e-6)
                 );
 
             Assert.assertTrue(
                     MathUtils.compare(
-                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
-                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_between_ss,
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._betweenss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._betweenss,
                             1e-6, 1e-6)
             );
 
             Assert.assertTrue(
                     MathUtils.compare(
-                            ((ModelMetricsClustering) kmm._output._training_metrics)._avg_within_ss,
-                            ((ModelMetricsClustering) kmm._output._validation_metrics)._avg_within_ss,
+                            ((ModelMetricsClustering) kmm._output._training_metrics)._tot_withinss,
+                            ((ModelMetricsClustering) kmm._output._validation_metrics)._tot_withinss,
                             1e-6, 1e-6)
             );
 
             for (int i=0; i<parms._k; ++i) {
               Assert.assertTrue(
                       MathUtils.compare(
-                              ((ModelMetricsClustering) kmm._output._training_metrics)._within_mse[i],
-                              ((ModelMetricsClustering) kmm._output._validation_metrics)._within_mse[i],
+                              ((ModelMetricsClustering) kmm._output._training_metrics)._withinss[i],
+                              ((ModelMetricsClustering) kmm._output._validation_metrics)._withinss[i],
                               1e-6, 1e-6)
               );
               Assert.assertEquals(

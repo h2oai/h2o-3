@@ -6,7 +6,7 @@ import water.IcedWrapper;
 import water.Weaver;
 import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.exceptions.H2OIllegalArgumentException;
-import water.util.IcedHashMap;
+import water.util.IcedHashMapBase;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -244,7 +244,7 @@ public final class SchemaMetadata extends Iced {
         return consType(schema, clz.getComponentType(), field_name) + "[]";
 
       if (Map.class.isAssignableFrom(clz)) {
-        if (IcedHashMap.class == clz.getSuperclass()) {
+        if (IcedHashMapBase.class.isAssignableFrom(clz)) {
           return "Map<" + ReflectionUtils.findActualClassParameter(clz, 0).getSimpleName() + "," + ReflectionUtils.findActualClassParameter(clz, 1).getSimpleName() + ">";
         } else {
           Log.warn("Schema Map field isn't a subclass of IcedHashMap, so its metadata won't have type parameters: " + schema.getClass().getSimpleName() + "." + field_name);
@@ -285,7 +285,7 @@ public final class SchemaMetadata extends Iced {
           if ((schema instanceof FieldMetadataV3 || schema instanceof FieldMetadataBase) && "value".equals(field_name))
             return "Polymorphic";
 
-          if ((schema instanceof TwoDimTableV3 && "data".equals(field_name))) // IcedWrapper
+          if (((schema instanceof TwoDimTableBase || schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
             return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);

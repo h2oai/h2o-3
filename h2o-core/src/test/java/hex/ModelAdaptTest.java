@@ -45,11 +45,7 @@ public class ModelAdaptTest extends TestUtil {
     // Response: merged test & train domains
     Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
 
-    Vec[] vecs = adapt.vecs();
-    for( int i=0; i<vecs.length; i++ )
-      if( tst.find(vecs[i]) != -1 ) // Exists in the original frame?
-        vecs[i] = null;             // Do not delete it
-    adapt.delete();
+    Model.cleanup_adapt( adapt, tst );
     tst.remove();
   }
 
@@ -74,11 +70,7 @@ public class ModelAdaptTest extends TestUtil {
     String[] warns = am.adaptTestForTrain(adapt,true);
     Assert.assertTrue(warns.length == 0); // No errors during adaption
 
-    Vec[] vecs = adapt.vecs();
-    for( int i=0; i<vecs.length; i++ )
-      if( tst.find(vecs[i]) != -1 ) // Exists in the original frame?
-        vecs[i] = null;             // Do not delete it
-    adapt.delete();
+    Model.cleanup_adapt( adapt, tst );
     tst.remove();
   }
 
@@ -103,11 +95,7 @@ public class ModelAdaptTest extends TestUtil {
     catch( IllegalArgumentException iae ) { saw_iae = true; }
     Assert.assertTrue(saw_iae);
 
-    Vec[] vecs = adapt.vecs();
-    for( int i=0; i<vecs.length; i++ )
-      if( tst.find(vecs[i]) != -1 ) // Exists in the original frame?
-        vecs[i] = null;             // Do not delete it
-    adapt.delete();
+    Model.cleanup_adapt( adapt, tst );
     tst.remove();
   }
 

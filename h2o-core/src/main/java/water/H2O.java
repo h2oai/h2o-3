@@ -1,5 +1,6 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -211,6 +212,9 @@ final public class H2O {
 
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
+
+    /** -beta, -experimental */
+    public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
   }
 
   private static void parseFailed(String message) {
@@ -359,6 +363,12 @@ final public class H2O {
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
       }
+      else if (s.matches("beta")) {
+        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Beta;
+      }
+      else if (s.matches("experimental")) {
+        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -396,31 +406,22 @@ final public class H2O {
     embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
   }
 
-  /**
-   * Notify embedding software instance H2O wants to exit.
-   * @param status H2O's requested process exit value.
+  /** Notify embedding software instance H2O wants to exit.  Shuts down a single Node.
+   *  @param status H2O's requested process exit value.
    */
   public static void exit(int status) {
-    // embeddedH2OConfig is only valid if this H2O node is living inside
-    // another software instance (e.g. a Hadoop mapper task).
-    //
-    // Expect embeddedH2OConfig to be null if H2O is run standalone.
-
-    // Cleanly shutdown internal H2O services.
-    // if (apiIpPortWatchdog != null) {
-    //   apiIpPortWatchdog.shutdown();
-    // }
-
-    if (embeddedH2OConfig == null) {
-      // Standalone H2O path.
-      System.exit(status);
-    }
-
     // Embedded H2O path (e.g. inside Hadoop mapper task).
-    embeddedH2OConfig.exit(status);
+    if( embeddedH2OConfig != null )
+      embeddedH2OConfig.exit(status);
 
-    // Should never reach here.
-    System.exit(222);
+    // Standalone H2O path,p or if the embedded config does not exit
+    System.exit(status);
+  }
+
+  /** Cluster shutdown itself by sending a shutdown UDP packet. */
+  public static void shutdown(int status) {
+    UDPRebooted.T.shutdown.send(H2O.SELF);
+    H2O.exit(status);
   }
 
   private static volatile boolean _shutdownRequested = false;
@@ -431,12 +432,6 @@ final public class H2O {
 
   public static boolean getShutdownRequested() {
     return _shutdownRequested;
-  }
-
-  /** Shutdown itself by sending a shutdown UDP packet. */
-  public static void shutdown() {
-    UDPRebooted.T.shutdown.send(H2O.SELF);
-    H2O.exit(0);
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -496,8 +491,7 @@ final public class H2O {
     Log.fatal("Stacktrace: ");
     Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
-    H2O.shutdown();
-    System.exit(-1);
+    H2O.shutdown(-1);
 
     // unreachable
     return new H2OFailException(msg);
@@ -1085,7 +1079,8 @@ final public class H2O {
   // Get the value from the store
   public static Value get( Key key ) { return STORE.get(key); }
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
-  static Value raw_get( Key key ) { return STORE.get(key); }
+  public static Value raw_get(Key key) { return STORE.get(key); }
+  public static void raw_remove(Key key) { STORE.remove(key); }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
@@ -1249,7 +1244,7 @@ final public class H2O {
   // Die horribly
   public static void die(String s) {
     Log.fatal(s);
-    H2O.exit(-1);
+    H2O.shutdown(-1);
   }
 
   public static class GAStartupReportThread extends Thread {

@@ -12,10 +12,14 @@ source('../../h2o-runit.R')
 test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), key="h2o.data")    
-	print(head(h2o.data))
+	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
+#	print(head(h2o.data))
+        head(h2o.data)
 	R.data = as.data.frame(as.matrix(h2o.data))
-	
+
+        foo = h2o.data[,2:9]
+        foo = R.data[,2:9]
+
 	print("Testing for family: GAUSSIAN")
 	print("Set variables for h2o.")
 	myY = "GLEASON"
@@ -25,11 +29,12 @@ test.linkFunctions <- function(conn) {
 
 	print("Create models with canonical link: IDENTITY")
 	model.h2o.gaussian.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="gaussian", link="identity",alpha=0.5, lambda=0, nfolds=0)
+        foo = R.data[,2:9]
 	model.R.gaussian.identity <- glm(formula=R.formula, data=R.data[,2:9], family=gaussian(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")
-	deviance.h2o.identity = model.h2o.gaussian.identity@model$residual_deviance / model.h2o.gaussian.identity@model$null_deviance
-	deviance.R.identity = deviance(model.R.gaussian.identity)  / model.h2o.gaussian.identity@model$null_deviance
+	deviance.h2o.identity = model.h2o.gaussian.identity@model$training_metrics@metrics$residual_deviance / model.h2o.gaussian.identity@model$training_metrics@metrics$null_deviance
+	deviance.R.identity = deviance(model.R.gaussian.identity)  / model.h2o.gaussian.identity@model$training_metrics@metrics$null_deviance
 	difference = deviance.R.identity - deviance.h2o.identity
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.identity))

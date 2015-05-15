@@ -143,7 +143,7 @@ class Basic(unittest.TestCase):
             # so went with this. Could add '[' and ']' to the list first, before the join.
             probsStr  = "[%s]" % ",".join(map(str,probsList))
             parameters = {
-                'destination_key': "a.hex",
+                'model_id': "a.hex",
                 'training_frame': parse_key,
                 'validation_frame': parse_key,
                 'ignored_columns': None,
@@ -153,7 +153,7 @@ class Basic(unittest.TestCase):
             model_key = 'qhex'
             bmResult = h2o.n0.build_model(
                 algo='quantile',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=10)

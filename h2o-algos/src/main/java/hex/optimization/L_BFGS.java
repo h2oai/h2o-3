@@ -12,7 +12,7 @@ import java.util.Random;
 /**
  * Created by tomasnykodym on 9/15/14.
  *
- * Generic L-BFGS optmizer implementation.
+ * Generic L-BFGS optimizer implementation.
  *
  * NOTE: The solver object keeps its state and so the same object can not be reused to solve different problems.
  * (but can be used for warm-starting/continuation of the same problem)
@@ -22,14 +22,14 @@ import java.util.Random;
  * To apply L-BFGS to your optimization problem, provide a GradientSolver with following 2 methods:
  *   1) double [] getGradient(double []):
  *      evaluate gradient at given coefficients, typically an MRTask
- *   2) double [] getObjVals(double[] beta,double[] direction):
+ *   2) double [] getObjVals(double[] beta, double[] direction):
  *      evaluate objective value at line-search search points (e.g. objVals[k] = obj(beta + step(k)*direction), step(k) = .75^k)
  *      typically a single MRTask
  *   @see hex.glm.GLM.GLMGradientSolver
  *
  * L-BFGS will then perform following loop:
  *   while(not converged):
- *     coefs    := doLineSearch (coefs, dir)  // distributed, 1 pass over data
+ *     coefs    := doLineSearch(coefs, dir)   // distributed, 1 pass over data
  *     gradient := getGradient(coefs)         // distributed, 1 pass over data
  *     history  += (coefs, gradient)          // local
  *     dir      := newDir(history, gradient)  // local
@@ -39,7 +39,9 @@ import java.util.Random;
 */
 public final class L_BFGS extends Iced {
   int _maxIter = 500;
+  int _minIter = 0;
   double _gradEps = 1e-8;
+  double _objEps = 1e-4;
   // line search params
   int _historySz = 20;
 
@@ -47,7 +49,9 @@ public final class L_BFGS extends Iced {
 
   public L_BFGS() {}
   public L_BFGS setMaxIter(int m) {_maxIter = m; return this;}
+  public L_BFGS setMinIter(int m) {_minIter = m; return this;}
   public L_BFGS setGradEps(double d) {_gradEps = d; return this;}
+  public L_BFGS setObjEps(double d) {_objEps = d; return this;}
   public L_BFGS setHistorySz(int sz) {_historySz = sz; return this;}
 
 
@@ -101,10 +105,8 @@ public final class L_BFGS extends Iced {
      * @param pk   - search direction
      * @return objective values evaluated at k line-search points beta + pk*step[k]
      */
-    protected abstract double [] getObjVals(double[] beta, double[] pk);
+    public abstract double [] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec);
 
-    protected double _startStep = 1.0;
-    protected double _stepDec = .75;
 
     /**
      * Perform line search at given solution and search direction.
@@ -114,15 +116,15 @@ public final class L_BFGS extends Iced {
      * @param direction - search direction
      * @return
      */
-    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, double tdec) {
-      double [] objVals = getObjVals(beta, direction);
+    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, int nSteps, double tdec) {
+      double [] objVals = getObjVals(beta, direction, nSteps, tdec);
       double t = 1;
       for (int i = 0; i < objVals.length; ++i) {
         if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
           return new LineSearchSol(true, objVals[i], t);
         t *= tdec;
       }
-      return new LineSearchSol(false, objVals[objVals.length-1], t);
+      return new LineSearchSol(objVals[objVals.length-1] < ginfo._objVal, objVals[objVals.length-1], t/tdec);
     }
   }
 
@@ -134,17 +136,19 @@ public final class L_BFGS extends Iced {
   }
 
   // constants used in line search
-  public static final double c1 = .1;
+  public static final double c1 = .25;
 
   public static final class Result {
     public final int iter;
     public final double [] coefs;
     public final GradientInfo ginfo;
+    public final boolean converged;
 
-    public Result(int iter, double [] coefs, GradientInfo ginfo){
+    public Result(boolean converged, int iter, double [] coefs, GradientInfo ginfo){
       this.iter = iter;
       this.coefs = coefs;
       this.ginfo = ginfo;
+      this.converged = converged;
     }
 
     public String toString(){
@@ -255,11 +259,17 @@ public final class L_BFGS extends Iced {
     int iter = 0;
     boolean doLineSearch = true;
     int ls_switch = 0;
-
-    while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
+    double rel_improvement = 1;
+    boolean converged = false;
+    while(pm.progress(beta, ginfo) &&  (iter < _minIter || ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps) && iter != _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
+      if(ArrayUtils.hasNaNsOrInfs(pk)) {
+        Log.warn("LBFGS: Got NaNs in search direction.");
+        break; //
+      }
+      double lsVal = Double.POSITIVE_INFINITY;
       if(doLineSearch) {
-        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, gslvr._stepDec);
+        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 24, .5);
         if(ls.step == 1) {
           if (++ls_switch == 2) {
             ls_switch = 0;
@@ -268,41 +278,34 @@ public final class L_BFGS extends Iced {
         } else {
           ls_switch = 0;
         }
-        if (ls.madeProgress || _hist._k < _hist._m) {
+        if (ls.madeProgress || _hist._k < 2) {
+          lsVal = ls.objVal;
           ArrayUtils.wadd(beta, pk, ls.step);
-        } else break; // ls did not make progress => converged
+        } else {
+          break; // ls did not make progress => converged
+        }
       } else  ArrayUtils.add(beta, pk);
       GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
+      if(doLineSearch && !(Double.isNaN(lsVal) && Double.isNaN(newGinfo._objVal)) && Math.abs(lsVal - newGinfo._objVal) > 1e-10*lsVal)
+        throw new IllegalArgumentException("L-BFGS: Got invalid gradient solver, objective values from line-search and gradient tasks differ, " + lsVal + " != " + newGinfo._objVal);
       if(!doLineSearch) //{
         if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
           if(++ls_switch == 2) {
             doLineSearch = true;
             ls_switch = 0;
           }
-          if(ginfo._objVal < newGinfo._objVal && (newGinfo._objVal - ginfo._objVal > .001*ginfo._objVal)) {
+          if(ginfo._objVal < newGinfo._objVal && (newGinfo._objVal - ginfo._objVal > _objEps*ginfo._objVal)) {
             doLineSearch = true;
             ArrayUtils.subtract(beta,pk,beta);
             continue;
           }
         } else ls_switch = 0;
-//        doLineSearch = true;
-//        Log.info("switching line search on");
-//        ArrayUtils.subtract(beta, pk);
-//        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
-//        Log.info("ls took " + (System.currentTimeMillis() - t) + "ms, found step " + ls.step);
-//        doLineSearch = ls.step < 1;
-//        if (ls.madeProgress || _hist._k < _hist._m) {
-//          ArrayUtils.mult(pk, ls.step);
-//          ArrayUtils.add(beta, pk);
-//          newGinfo = gslvr.getGradient(beta); // expensive / distributed
-//        } else break;
-//      }
       ++iter;
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
+      rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
-    return new Result(iter,beta, ginfo);
+    return new Result(iter < _maxIter || ArrayUtils.linfnorm(ginfo._gradient,false) < _gradEps || rel_improvement < _objEps,iter,beta, ginfo);
   }
 
   public static double [] startCoefs(int n, long seed){

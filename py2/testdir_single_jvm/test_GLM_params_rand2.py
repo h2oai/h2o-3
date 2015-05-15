@@ -15,11 +15,8 @@ def define_params():
         # 'solver': ['ADMM', 'L_BFGS', None],
         'solver': ['L_BFGS', None],
         'max_iterations': [1, 3, 15, None],
-        'dropNA20Cols': [None, 0, 1],
+        'drop_na20_cols': [None, 0, 1],
         'standardize': [None, 0, 1],
-        'tweedie_variance_power': [None, 0, 1],
-        'tweedie_link_power': [None, 0, 1],
-        'prior1': [0, 0.5, 1, None],
 
         'nlambdas': [None, 1,2,5], # number of lambdas to be used in a search
         'lambda_min_ratio': [None, .1, 0.9], # ratio of lambda max. Evidently can't take 1 ?
@@ -27,12 +24,10 @@ def define_params():
         'lambda_search': [None, 0, 1], # FIX! what if lambda is set when lambda_search=1
 
         'use_all_factor_levels': [None, 0, 1],
-        'beta_eps': [None, 0.0001],
         'alpha': [0,0.2,0.4],
         'family': ['family_default', 'gaussian', 'binomial', 'poisson', None],
         'link': ['logit', 'log', 'inverse', 'tweedie', None],
-        'ignored_columns': [1,'C1','1,2','C1,C2'],
-        'n_folds': [0,1],
+        'ignored_columns': [1,'"C1"','1,2','"C1","C2"'],
         'standardize': [None, 0,1],
         # 'intercept': [None, 0, 1],
         # 'non_negative': [None, 0,1], # require coefficents to be non-negative
@@ -108,7 +103,6 @@ class Basic(unittest.TestCase):
                 'alpha': 0.1,
                 # 'lambda': 1e-4, 
                 'lambda': 0,
-                'n_folds': 1,
             }
             h2o_glm.pickRandGlmParams(paramDict, parameters)
 
@@ -131,7 +125,7 @@ class Basic(unittest.TestCase):
             model_key = 'rand_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=model_key,
+                model_id=model_key,
                 training_frame=bHack,
                 parameters=parameters,
                 timeoutSecs=10)

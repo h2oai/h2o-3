@@ -5,6 +5,7 @@ description = "H2O Algorithms"
 
 dependencies {
   compile project(":h2o-core")
+  compile "com.google.code.gson:gson:2.3.1"
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   testRuntime("org.easyb:easyb-core:1.4") { transitive = true }
@@ -27,17 +28,4 @@ test {
 
   // Defeat task 'test' by running no tests.
   exclude '**'
-}
-
-task acceptanceTest(description: "Runs acceptance tests for this project ${project.name}", group: 'Verification') << {
-    ant.taskdef(name: "easyb", classname:"org.easyb.ant.BehaviorRunnerTask", classpath: sourceSets.test.runtimeClasspath.asPath)
-    def reports = "${project.buildDir}/reports"
-    new File(reports).mkdirs()
-    ant.easyb( classpath: sourceSets.test.runtimeClasspath.asPath, failureProperty:'easyb_failed' ) {
-        report( location:"${reports}/algosAcceptance.html", format:"html" )
-        behaviors( dir: "src/test/easyb" ) {
-            include( name:"**/*.story" )
-        }
-    }
-    ant.fail( if:'easyb_failed', message: 'Failures in easyb stories' )
 }

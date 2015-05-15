@@ -338,6 +338,7 @@ class H2O(object):
         # response['headers'] = r.headers
         response['url'] = r.url
         response['status_code'] = r.status_code
+        response['text'] = r.text
         rjson['__http_response'] = response
 
         return rjson
@@ -435,6 +436,16 @@ class H2O(object):
         H2O.verboseprint("\nsplit_frame result:", h2o_util.dump_json(a))
         return a
 
+    '''
+    Create interactions.
+    '''
+    def interaction(self, timeoutSecs=180, **kwargs):
+        a = self.__do_json_request('/3/Interaction', cmd="post",
+                                   timeout=timeoutSecs,
+                                   postData=kwargs
+        )
+        H2O.verboseprint("\ninteraction result:", h2o_util.dump_json(a))
+        return a
 
     ''' 
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
@@ -457,7 +468,7 @@ class H2O(object):
               noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
 
         #
-        # Call ParseSetup?source_keys=[keys] . . .
+        # Call ParseSetup?source_frames=[keys] . . .
         #
 
         if benchmarkLogging:
@@ -465,20 +476,20 @@ class H2O(object):
 
         # TODO: multiple keys
         parse_setup_params = {
-            'source_keys': '["' + key + '"]'  # NOTE: quote key names
+            'source_frames': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="/3/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
-        # and then Parse?source_keys=<keys list> and params from the ParseSetup result
-        # Parse?source_keys=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_key=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
+        # and then Parse?source_frames=<keys list> and params from the ParseSetup result
+        # Parse?source_frames=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_frame=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
         #
 
         parse_params = {
-            'source_keys': '["' + setup_result['source_keys'][0]['name'] + '"]', # TODO: cons up the whole list
-            'destination_key': dest_key if dest_key else setup_result['destination_key'],
+            'source_frames': '["' + setup_result['source_frames'][0]['name'] + '"]', # TODO: cons up the whole list
+            'destination_frame': dest_key if dest_key else setup_result['destination_frame'],
             'parse_type': setup_result['parse_type'],
             'separator': setup_result['separator'],
             'single_quotes': setup_result['single_quotes'],
@@ -638,7 +649,7 @@ class H2O(object):
         if training_frame is not None:
             frames = self.frames(key=training_frame)
             assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
-            assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+            assert frames['frames'][0]['frame_id']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['frame_id']['name'], training_frame)
             parameters['training_frame'] = training_frame
 
         # TODO: add parameter existence checks
@@ -653,7 +664,7 @@ class H2O(object):
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
     '''
-    def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
+    def build_model(self, algo, training_frame, parameters, model_id = None, timeoutSecs=60, asynchronous=False, **kwargs):
         # basic parameter checking
         assert algo is not None, 'FAIL: "algo" parameter is null'
         assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
@@ -669,16 +680,16 @@ class H2O(object):
         # Check for frame:
         frames = self.frames(key=training_frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
-        assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+        assert frames['frames'][0]['frame_id']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['frame_id']['name'], training_frame)
         parameters['training_frame'] = training_frame
 
-        if destination_key is not None:
-            parameters['destination_key'] = destination_key
+        if model_id is not None:
+            parameters['model_id'] = model_id
         result = self.__do_json_request('/3/ModelBuilders/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
 
         if asynchronous:
             return result
-        elif 'validation_error_count' in result and result['validation_error_count'] > 0:
+        elif 'error_count' in result and result['error_count'] > 0:
             # parameters validation failure
             return result
         elif result['__http_response']['status_code'] != 200:
@@ -701,12 +712,12 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['model_id']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['model_id']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
-        assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+        assert frames['frames'][0]['frame_id']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['frame_id']['name'], frame)
 
         result = self.__do_json_request('/3/ModelMetrics/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
 
@@ -715,20 +726,20 @@ class H2O(object):
         return mm
 
 
-    def predict(self, model, frame, destination_key = None, timeoutSecs=60, **kwargs):
+    def predict(self, model, frame, predictions_frame = None, timeoutSecs=60, **kwargs):
         assert model is not None, 'FAIL: "model" parameter is null'
         assert frame is not None, 'FAIL: "frame" parameter is null'
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['model_id']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['model_id']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
-        assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+        assert frames['frames'][0]['frame_id']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['frame_id']['name'], frame)
 
-        postData = { 'destination_key': destination_key }
+        postData = { 'predictions_frame': predictions_frame }
 
         result = self.__do_json_request('/3/Predictions/models/' + model + '/frames/' + frame, cmd='post', postData=postData, timeout=timeoutSecs)
         return result
@@ -840,3 +851,25 @@ class H2O(object):
         result = self.__do_json_request('/3/Metadata/schemas/' + schemaname, cmd='get', timeout=timeoutSecs)
 
         return result
+
+    def grid(self, algo, parameters, hyperParameters, timeoutSecs=60, asynchronous=False, **kwargs):
+        assert algo is not None, 'FAIL: "algo" parameter is null'
+        assert parameters is not None, 'FAIL: "parameters" parameter is null'
+
+        gridParams = parameters
+        gridParams['grid_parameters'] = json.dumps(hyperParameters)
+
+        result = self.__do_json_request('/3/Grid/' + algo, cmd='post', postData=gridParams, raiseIfNon200=False)
+
+        if asynchronous:
+            return result
+        elif result['__http_response']['status_code'] != 200:
+            return result
+        else:
+            assert 'job' in result, "FAIL: did not find job key in model build result: " + repr(result)
+            job = result['job']
+            job_key = job['key']['name']
+            H2O.verboseprint("grid search job_key: " + repr(job_key))
+            job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+            return result
+

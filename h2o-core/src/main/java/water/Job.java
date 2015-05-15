@@ -18,7 +18,7 @@ import java.util.Arrays;
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
-  static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
@@ -43,7 +43,7 @@ public class Job<T extends Keyed> extends Keyed {
     Key keys[] = new Key[j];
     for( int i=0; i<j; i++ ) keys[i] = jobs[i]._key;
     // One-shot throw-away attempt at remove dead jobs from the jobs list
-    DKV.DputIfMatch(LIST,val,new Value(LIST,new JobList(keys)),new Futures());
+    DKV.DputIfMatch(LIST,new Value(LIST,new JobList(keys)),val,new Futures());
     return jobs;
   }
 
@@ -236,7 +236,7 @@ public class Job<T extends Keyed> extends Keyed {
         return old;
       }
       // Run the onCancelled code synchronously, right now
-      @Override void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
+      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
     // Also immediately update immediately a possibly cached local POJO (might
     // be shared with the DKV cached job, might not).
