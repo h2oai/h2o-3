@@ -52,8 +52,8 @@ public class TypeMap {
     water.api.AboutHandler.AboutEntryV3.class.getName(),
     water.api.NodePersistentStorageV3.class.getName(),
     water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
-    water.api.DocsV3.class.getName(),
-    water.api.DocsBase.class.getName(),
+    water.api.MetadataV3.class.getName(),
+    water.api.MetadataBase.class.getName(),
     water.api.RouteV3.class.getName(),
     water.api.RouteBase.class.getName(),
   };
