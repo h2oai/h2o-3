@@ -329,7 +329,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     else {
       conn <- get("SERVER", .pkg.env)
       if( !is.null(conn) )
-        print( paste0("H2O is still running @: ", conn@ip, ":", conn@port) )
+        print( paste0("H2O is still running @: ", conn@ip_, ":", conn@port_) )
     }
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
