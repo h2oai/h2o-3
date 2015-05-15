@@ -320,19 +320,17 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
 
-  # Shut down local H2O when user exits from R
+  # Shut down local H2O when user exits from R, ONLY if h2o started from R
+  reg.finalizer(.h2o.jar.env, function(e) {
+    ip_    <- "127.0.0.1"
+    port_  <- 54321
+    myURL <- paste0("http://", ip, ":", port)
+    if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
 
-  # DO  NOT SHUTDOWN IF R QUITS!!
-#  pid_file <- .h2o.getTmpFile("pid")
-#  if(file.exists(pid_file)) file.remove(pid_file)
-#
-#  reg.finalizer(.h2o.jar.env, function(e) {
-#    ip_    <- "127.0.0.1"
-#    port_  <- 54321
-#    myURL <- paste0("http://", ip, ":", port)
-#    if( .h2o.startedH2O() && url.exists(myURL) )
-#      h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
-#  }, onexit = TRUE)
+    pid_file <- .h2o.getTmpFile("pid")
+    if(file.exists(pid_file)) file.remove(pid_file)
+
+  }, onexit = TRUE)
 }
 
 .onDetach <- function(libpath) {
