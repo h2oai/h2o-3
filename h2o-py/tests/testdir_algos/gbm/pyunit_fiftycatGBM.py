@@ -33,7 +33,7 @@ def fiftycatGBM(ip,port):
   # Get the confusion matrix and AUC
   #Log.info("Confusion matrix of predictions (max accuracy):\n")
   performance = model.model_performance(test)
-  test_cm = performance.confusion_matrices()
+  test_cm = performance.confusion_matrix()
   test_auc = performance.auc()
 
 if __name__ == "__main__":

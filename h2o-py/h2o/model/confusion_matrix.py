@@ -8,7 +8,7 @@ from . import H2OTwoDimTable
 class ConfusionMatrix(object):
   ROUND = 4  # round count_errs / sum
 
-  def __init__(self, cm, domains=None):
+  def __init__(self, cm, domains=None, table_header=None):
     if not cm: raise ValueError("Missing data, `cm_raw` is None")
     if not isinstance(cm, list):  raise ValueError("`cm` is not a list. Got: " + type(cm))
 
@@ -39,7 +39,7 @@ class ConfusionMatrix(object):
     # do the last row of cell_values ... the "totals" row
     cell_values[-1] = totals[0:-1] + [str(class_errs[-1])] + [class_err_strings[-1]]
 
-    table_header = "Confusion Matrix (Act/Pred)"
+    if table_header is None: table_header = "Confusion Matrix (Act/Pred)"
     col_header = [""]  # no column label for the "rows" column
     if domains is not None:
         import copy
@@ -63,6 +63,10 @@ class ConfusionMatrix(object):
   def __repr__(self):
     self.show()
     return ""
+
+  def to_list(self):
+    return [ [int(self.table.cell_values[0][1]), int(self.table.cell_values[0][2])],
+             [int(self.table.cell_values[1][1]), int(self.table.cell_values[1][2])] ]
 
   @staticmethod
   def read_cms(cms=None, domains=None):
