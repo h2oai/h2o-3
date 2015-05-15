@@ -317,7 +317,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         error("response", "Can not run glm on dataset with constant response. Response == " + itsk._ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + itsk._ymut._nobs + " rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
         return;
       } if (itsk._ymut._nobs < (_dinfo._adaptedFrame.numRows() >> 1)) { // running less than half of rows?
-        warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
+        warn("_training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
       }
       if(_parms._prior > 0)
         _iceptAdjust = -Math.log(itsk._ymut._ymu * (1-_parms._prior)/(_parms._prior * (1-itsk._ymut._ymu)));
@@ -343,15 +343,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         int i = 0;
         while (i < _parms._lambda.length && _parms._lambda[i] > _tInfos[0]._lambdaMax) ++i;
         if (i == _parms._lambda.length)
-          error("lambda", "All passed lambda values are > lambda_max = " + _tInfos[0]._lambdaMax + ", nothing to compute.");
+          error("_lambda", "All passed lambda values are > lambda_max = " + _tInfos[0]._lambdaMax + ", nothing to compute.");
         if (i > 0) {
           _parms._lambda = Arrays.copyOfRange(_parms._lambda, i, _parms._lambda.length);
-          warn("lambda", "removed " + i + " lambda values which were greater than lambda_max = " + _tInfos[0]._lambdaMax);
+          warn("_lambda", "removed " + i + " lambda values which were greater than lambda_max = " + _tInfos[0]._lambdaMax);
         }
       } else { // fill in the default lambda(s)
         if (_parms._lambda_search) {
           if (_parms._nlambdas == 1)
-             error("nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
+             error("_nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
           if (_parms._lambda_min_ratio == -1)
             _parms._lambda_min_ratio = _tInfos[0]._nobs > 25 * _dinfo.fullN() ? 1e-4 : 1e-2;
           final double d = Math.pow(_parms._lambda_min_ratio, 1.0 / (_parms._nlambdas - 1));
@@ -365,7 +365,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       _model = new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       String [] warns = _model.adaptTestForTrain(_valid, true);
-      for(String s:warns) warn("validation_frame",s);
+      for(String s:warns) warn("_validation_frame",s);
       final Submodel nullSm = new Submodel(_parms._lambda[0], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
       _model.setSubmodel(nullSm);
       _model._output._training_metrics = itsk._gtNull._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
