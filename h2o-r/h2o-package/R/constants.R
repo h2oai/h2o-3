@@ -5,6 +5,8 @@
 #'
 #' Additionally, environment variables for the H2O package are named here.
 
+#' Endpoint Version
+.h2o.__REST_API_VERSION <- 3L
 
 #'
 #' The H2O Package Environment
@@ -165,9 +167,6 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = TRUE,  row.names = "string",       stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = FALSE, row.names = "string[]",     stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE))
-
-#' Endpoint Version
-.h2o.__REST_API_VERSION <- 3L
 
 #' Administrative Endpoints
 .h2o.__JOBS           <- "Jobs"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
