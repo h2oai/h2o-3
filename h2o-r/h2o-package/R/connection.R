@@ -321,24 +321,27 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   packageStartupMessage(msg)
 
   # Shut down local H2O when user exits from R
-  pid_file <- .h2o.getTmpFile("pid")
-  if(file.exists(pid_file)) file.remove(pid_file)
 
-  reg.finalizer(.h2o.jar.env, function(e) {
-    ip    <- "127.0.0.1"
-    port  <- 54321
-    myURL <- paste0("http://", ip, ":", port)
-    if(.h2o.startedH2O() && url.exists(myURL))
-      h2o.shutdown(new("H2OConnection", ip=ip, port=port), prompt = FALSE)
-  }, onexit = TRUE)
+  # DO  NOT SHUTDOWN IF R QUITS!!
+#  pid_file <- .h2o.getTmpFile("pid")
+#  if(file.exists(pid_file)) file.remove(pid_file)
+#
+#  reg.finalizer(.h2o.jar.env, function(e) {
+#    ip_    <- "127.0.0.1"
+#    port_  <- 54321
+#    myURL <- paste0("http://", ip, ":", port)
+#    if( .h2o.startedH2O() && url.exists(myURL) )
+#      h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
+#  }, onexit = TRUE)
 }
 
 .onDetach <- function(libpath) {
-  ip    <- "127.0.0.1"
-  port  <- 54321
-  myURL <- paste0("http://", ip, ":", port)
-  if (url.exists(myURL)) {
-    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip, port = port), prompt = FALSE), error = function(e) {
+  ip_   <- "127.0.0.1"
+  port_ <- 54321
+  myURL <- paste0("http://", ip_, ":", port_)
+  print("A shutdown has been triggered. ")
+  if( url.exists(myURL) ) {
+    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
         "----------------------------------------------------------------------\n",
