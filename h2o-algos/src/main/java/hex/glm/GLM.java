@@ -381,18 +381,16 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       if(_parms._max_iterations == -1) {
         if(_parms._solver == Solver.IRLSM) {
-          _tInfos[0]._iterationsPerLambda = 10;
-          _parms._max_iterations = _parms._lambda_search ? _tInfos[0]._iterationsPerLambda * _parms._nlambdas : 50;
+
+          _parms._max_iterations = _parms._lambda_search ? 10 * _parms._nlambdas : 50;
         } else {
           _parms._max_iterations = Math.max(20,_dinfo.fullN() >> 2);
-          if(_parms._lambda_search) {
-            _tInfos[0]._iterationsPerLambda = Math.max(20,_parms._max_iterations / 20);
-            _parms._max_iterations *= _parms._nlambdas*_tInfos[0]._iterationsPerLambda;
-          }
+          if(_parms._lambda_search)
+            _parms._max_iterations = _parms._nlambdas * 100;
         }
-
       }
-      _tInfos[0]._workPerIteration = (int)(WORK_TOTAL /_parms._max_iterations);
+      _tInfos[0]._workPerIteration = _parms._lambda_search?0:(int)(WORK_TOTAL /_parms._max_iterations);
+      _tInfos[0]._workPerLambda = (int)(_parms._lambda_search?(WORK_TOTAL/_parms._nlambdas):0);
     }
   }
 
@@ -521,7 +519,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double          _objVal;     // full objective value including L1 pen
     int             _iter;
     int             _workPerIteration;
-    int             _iterationsPerLambda;
+    int             _workPerLambda;
     int             _worked;     // total number of worked units
     double          _nullGradNorm;
     double          _nullDevTrain;
@@ -661,15 +659,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override
       public void callback(H2OCountedCompleter h2OCountedCompleter) {
         assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + 1;
-        int workDiff = (_lambdaId + 1) * _tInfos[0]._iterationsPerLambda * _tInfos[0]._workPerIteration - _tInfos[0]._worked;
-        if (workDiff > 0) {
-          update(workDiff, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter);
-          _tInfos[0]._worked += workDiff;
-        }
         int rank = 0;
         for (int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept ? 1 : 0); ++i)
           if (_tInfos[0]._beta[i] != 0) ++rank;
         Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + " has " + rank + " nonzeros, gradient err = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
+        update(_tInfos[0]._workPerLambda, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter + ", got " + rank + "nonzeros");
         // launch next lambda
         ++_lambdaId;
 //        if (_parms._lambda_search && !_parms._exactLambdas && _lambdaId == _parms._lambda.length && _tInfos[0]._stopCnt == 0) {
