@@ -242,6 +242,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTToUpper());
     putPrefix(new ASTTrim());
 
+    putPrefix(new ASTFilterNACols());
+
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
 //    putPrefix(new ASTIsTRUE());
@@ -418,6 +420,43 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
+    env.pushAry(fr2);
+  }
+}
+
+class ASTFilterNACols extends ASTUniPrefixOp {
+  double _frac;
+  ASTFilterNACols() { super(); }
+  @Override String opStr() { return "filterNACols"; }
+  @Override ASTOp make() { return new ASTFilterNACols(); }
+  ASTFilterNACols parse_impl(Exec E) {
+    AST ary = E.parse();
+    _frac = E.nextDbl();
+    E.eatEnd();
+    ASTFilterNACols res = (ASTFilterNACols)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env env) {
+    Frame f = env.popAry();
+    ArrayList<Integer> colsToKeep = new ArrayList<>();
+    int i=0;
+    double nrow = f.numRows();
+    for( Vec v: f.vecs() ) {
+      if ((v.naCnt() / nrow) < _frac)
+        colsToKeep.add(i);
+      i++;
+    }
+
+    Futures fs = new Futures();
+    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+    AppendableVec v = new AppendableVec(key);
+    NewChunk chunk = new NewChunk(v, 0);
+    for (Integer aColsToKeep : colsToKeep) chunk.addNum(aColsToKeep);
+    chunk.close(0, fs);
+    Vec vec = v.close(fs);
+    fs.blockForPending();
+    Frame fr2 = new Frame(vec);
     env.pushAry(fr2);
   }
 }
