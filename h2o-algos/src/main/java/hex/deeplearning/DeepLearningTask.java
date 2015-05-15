@@ -15,7 +15,9 @@ import java.util.Random;
 public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final private boolean _training;
   private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _sharedmodel; //"consensus" model
-  hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _mymodel; //my workspace
+
+  //per-node model, never sent to anyone else, just used to copy into _sharedmodel and then reduced into actual _sharedmodel.
+  transient hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _mymodel;
   final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _mymodel; }
 
   transient Neurons[] _neurons;
