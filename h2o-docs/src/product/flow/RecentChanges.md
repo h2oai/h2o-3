@@ -2,7 +2,7 @@
 
 ##H2O 3.0
 
-###Shannon (0.3.#.#) - 5/15/15
+###Shannon (3.0.0.1) - 5/15/15
 
 ####New Features 
 The following features have been added since the last release: 
