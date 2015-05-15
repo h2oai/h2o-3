@@ -75,17 +75,20 @@ public class EnumWrappedVec extends WrappedVec {
       return;
     }
 
-    // The source Vec does not have a domain, hence is an integer column.
-    // The to[] mapping has the set of unique numbers, we need to map
-    // from those numbers to the index to the numbers.
+    // The source Vec does not have a domain, hence is an integer column.  The
+    // to[] mapping has the set of unique numbers, we need to map from those
+    // numbers to the index to the numbers.
     if( from==null ) {
+      int min = Integer.valueOf(to[0]);
+      int max = Integer.valueOf(to[to.length-1]);
+      Vec mvec = masterVec();
+      if( !(mvec.isInt() && mvec.min() >= min && mvec.max() <= max) )
+        throw new NumberFormatException(); // Unable to figure out a valid mapping
       setDomain(to);
       if( fromIsBad ) { _map = new int[0]; return; }
 
       // FIXME this is a bit of a hack to allow adapTo calls to play nice with negative ints in the domain...
       if( Integer.valueOf(to[0]) < 0 ) {
-        int min = Integer.valueOf(to[0]);
-        int max = Integer.valueOf(to[to.length-1]);
         _p=Math.max(0,max);
         _map = new int[(_p /*positive array of values*/) + (-1*min /*negative array of values*/) + 1 /*one more to store "max" value*/];
         for(int i=0;i<to.length;++i) {
@@ -96,8 +99,7 @@ public class EnumWrappedVec extends WrappedVec {
         return;
       }
 
-      int max = Integer.valueOf(to[to.length-1])+1;
-      _map = new int[max];
+      _map = new int[max+1];
       for( int i=0; i<to.length; i++ )
         _map[Integer.valueOf(to[i])] = i;
       return;
