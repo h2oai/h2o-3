@@ -1123,6 +1123,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
       header <-  "Confusion Matrix"
       if(t %in% metrics_thresholds) {
         m <- metrics_list[which(t == metrics_thresholds)]
+        if( length(m) > 1) m <- m[[1]]
         header <- paste(header, "for max", m, "@ threshold =", t)
       } else {
         header <- paste(header, "@ threshold =", row$threshold)
