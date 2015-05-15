@@ -1,4 +1,4 @@
-# ...On Hadoop
+# ... On Hadoop
 
 Currently supported versions: 
 - CDH 5.2

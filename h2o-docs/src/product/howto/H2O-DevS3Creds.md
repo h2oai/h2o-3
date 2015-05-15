@@ -1,9 +1,15 @@
-# ...On EC2 and S3 
+# ... On EC2 and S3 
 
+## On EC2
+
+**Note**: If you would like to try out H2O on an EC2 cluster, <a href="http://play.h2o.ai/login" target="_blank">play.h2o.ai</a> is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
+
+If you would still like to set up your own EC2 cluster, follow the instructions below. Make sure you have already <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">passed your S3 credentials to H2O</a>.
+
+ >Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI
 To make use of Amazon Web Services (AWS) storage solution S3 you will need to pass your S3 access credentials to H2O. This will allow you to access your data on S3 when importing data frames with path prefixes `s3n://...`.
 
 For security reasons, we recommend writing a script to read the access credentials that are stored in a separate file. This will not only keep your credentials from propagating to other locations, but it will also make it easier to change the credential information later. 
-
 
 ##Standalone Instance
 
@@ -27,8 +33,6 @@ Edit the properties in the core-site.xml file to include your Access Key ID and 
 Launch with the configuration file `core-site.xml` by running in the command line:
 
     java -jar h2o.jar -hdfs_config core-site.xml
-or 
-    `java -cp h2o.jar water.H2OApp -hdfs_config core-site.xml`
 
 Then import the data with the S3 url path: `s3n://bucket/path/to/file.csv` with importFile.
   
@@ -48,46 +52,7 @@ Then import the data with the S3 url path: `s3n://bucket/path/to/file.csv` with 
   
 
 
-##Accessing S3 Data from Hadoop Instance
 
-H2O launched atop Hadoop servers can still access S3 Data in addition to having access to HDFS. To do this, edit Hadoop's `core-site.xml` the same way. Set the `HADOOP_CONF_DIR` environment property to the directory containing the `core-site.xml` file. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). Typically, the configuration directory for most Hadoop distributions is `/etc/hadoop/conf`. 
-
-- To launch H2O without using any schedulers or with Yarn, use the same process as the standalone instance with the exception of the HDFS configuration directory path:
-
-        java -jar h2o.jar -hdfs_config $HADOOP_CONF_DIR/core-site.xml
-        java -cp h2o.jar water.H2OApp -hdfs_config $HADOOP_CONF_DIR/core-site.xml
-
-- Pass the S3 credentials when launching H2O using the hadoop jar command use the `-D` flag to pass the credentials:
-
-        hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
-    
-where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password.
-
-Then you can import the data with the S3 URL path: 
-
-  To import the data from the Flow API:
-
-        importFiles [ "s3n://bucket/path/to/file.csv" ]
-
-  To import the data from the R API:
-  
-        h2o.importFile(path = "s3n://bucket/path/to/file.csv")
-
-  To import the data from the Python API:
-  
-        h2o.import_frame(path = "s3n://bucket/path/to/file.csv")
-
-##Sparkling Water Instance
-
-  For Sparkling Water, the S3 credentials need to be passed via `HADOOP_CONF_DIR` that will point to a `core-site.xml` with the `AWS_ACCESS_KEY` AND `AWS_SECRET_KEY`. On Hadoop, typically the configuration directory is set to `/etc/hadoop/conf`:
-  
-        export HADOOP_CONF_DIR=/etc/hadoop/conf
-
-  If you are running a local instance, create a configuration directory locally with the `core-site.xml` and then export the path to the configuration directory:
-  
-        mkdir CONF
-        cd CONF
-        export HADOOP_CONF_DIR=`pwd`
 
 <a name="Example"></a>
 ##Core-site.xml Example
@@ -120,13 +85,7 @@ The following is an example core-site.xml file:
         </property>
         </configuration> 
     
-## On EC2
 
-**Note**: If you would like to try out H2O on an EC2 cluster, <a href="http://play.h2o.ai/login" target="_blank">play.h2o.ai</a> is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
-
-If you would still like to set up your own EC2 cluster, follow the instructions below. Make sure you have already <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">passed your S3 credentials to H2O</a>.
-
- >Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI
 
 ##Launch H2O
 
@@ -263,3 +222,27 @@ The user interface appears in your browser, and now H2O is ready to go.
 **WARNING**: 
   On Windows systems, Internet Explorer is frequently blocked due to
   security settings.  If you cannot reach http://localhost:54321, try using a different web browser, such as Firefox or Chrome.
+
+##Accessing S3 Data from Hadoop Instance
+
+H2O launched via Hadoop can still access S3 Data in addition to having access to HDFS. To do this, edit Hadoop's `core-site.xml` the same way. Set the `HADOOP_CONF_DIR` environment property to the directory containing the `core-site.xml` file. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). Typically, the configuration directory for most Hadoop distributions is `/etc/hadoop/conf`. 
+
+- Pass the S3 credentials when launching H2O using the hadoop jar command use the `-D` flag to pass the credentials:
+
+        hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
+    
+where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password.
+
+Then you can import the data with the S3 URL path: 
+
+  To import the data from the Flow API:
+
+        importFiles [ "s3n://bucket/path/to/file.csv" ]
+
+  To import the data from the R API:
+  
+        h2o.importFile(path = "s3n://bucket/path/to/file.csv")
+
+  To import the data from the Python API:
+  
+        h2o.import_frame(path = "s3n://bucket/path/to/file.csv")

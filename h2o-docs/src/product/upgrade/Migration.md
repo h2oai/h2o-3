@@ -2,52 +2,53 @@
 
 We're excited about the upcoming release of the latest and greatest version of H2O, and we hope you are too! H2O 3.0 has lots of improvements, including: 
 
-- Python support
-- A simplified R library
-- A brand-new intuitive web UI, Flow
+- Powerful Python APIs
+- Flow, a brand-new intuitive web UI
 - The ability to share, annotate, and modify workflows
-- Versioned APIs with full metadata
-- Sparkling Water support
+- Versioned REST APIs with full metadata
+- Spark integration using Sparkling Water
 - Improved algorithm accuracy and speed
 
-and much more! Overall, H2O has been retooled for better accuracy and performance and to provide additional functionalities. If you're a current user of H2O, we strongly encourage you to upgrade to the latest version to take advantage of the latest features and capabilities. 
+and much more! Overall, H2O has been retooled for better accuracy and performance and to provide additional functionality. If you're a current user of H2O, we strongly encourage you to upgrade to the latest version to take advantage of the latest features and capabilities. 
 
-Please be aware that H2O 3.0 will supersede all previous versions of H2O as the primary supported version as of May 15th, 2015. Support for previous versions will be offered for a limited time, but there will no longer be any significant updates to the previous version of H2O. 
+Please be aware that H2O 3.0 will supersede all previous versions of H2O as the primary version as of May 15th, 2015. Support for previous versions will be offered for a limited time, but there will no longer be any significant updates to the previous version of H2O. 
 
 The following information and links will inform you about what's new and different and help you prepare to upgrade to H2O 3.0. 
 
+Overall, H2O 3.0 is more stable, elegant, and simplified, with additional capabilities not available in previous versions of H2O. 
+
+##Web UI Changes
+
+Our web UI has been completely overhauled with a much more intuitive interface that is similar to IPython Notebook. Each point-and-click action is translated immediately into an individual workflow script that can be saved for later interactive and offline use.  As a result, you can now revise and rerun your workflows easily, and can even add comments and rich media. 
+
+For more information, refer to our [Getting Started with Flow](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md) guide, which comprehensively documents how to use Flow. You can also view this brief [video](https://www.youtube.com/watch?v=wzeuFfbW7WE), which provides an overview of Flow in action. 
+
 ##API Users
 
-H2O's new Python API allows Python users to use H2O in their favorite environment. Using the Python command line or an integrated development environment like iPython Notebook, H2O users can control clusters and manage massive datasets quickly. 
+H2O's new Python API allows Pythonistas to use H2O in their favorite environment. Using the Python command line or an integrated development environment like IPython Notebook H2O users can control clusters and manage massive datasets quickly. 
 
 H2O's REST API is the basis for the web UI (Flow), as well as the R and Python APIs, and is versioned for stability. It is also easier to understand and use, with full metadata available dynamically from the server, allowing for easier integration by developers. 
 
 ##Java Users
 
-There are some significant improvements for Java users as well: 
+Generated Java REST classes ease REST API use by external programs running in a Java Virtual Machine (JVM).
 
-- Generated Java REST classes enable REST API use by external programs running in a Java Virtual Machine (JVM) 
-- Export trained models as a Java object for easy integration into JVM applications
+As in previous versions of H2O, users can export trained models as Java objects for easy integration into JVM applications. H2O is currently the only ML tool that provides this capability, making it the data science tool of choice for enterprise developers. 
 
-##Github Users
-
-All users who pull directly from the H2O repo on github should be aware that the H2O-Dev repo will be renamed. To update to the new repository: 
-
->To be added (once new repo has been set up)
 
 ##R Users
 
-If you use H2O primarily in R, be aware that as a result of the improvements to the R package for H2O, scripts created using previous versions (Nunes 2.8.6.2 or prior) will not work with H2O 3.0. 
+If you use H2O primarily in R, be aware that as a result of the improvements to the R package for H2O scripts created using previous versions (Nunes 2.8.6.2 or prior) will require minor revisions to work with H2O 3.0. 
 
-However, to assist our R users in upgrading to H2O 3.0, a "shim" tool has been developed. The [shim](https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R) reviews your script, identifies deprecated or revised parameters and arguments, and suggests replacements. 
+To assist our R users in upgrading to H2O 3.0 a "shim" tool has been developed. The [shim](https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R) reviews your script, identifies deprecated or revised parameters and arguments, and suggests replacements. 
 
-There is also an [R Porting Guide](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md) available that provides a side-by-side comparison of the algorithm in the previous version of H2O with H2O 3.0. It outlines the new, revised, and deprecated commands and parameters for each algorithm, as well as the changes to the output. 
+There is also an [R Porting Guide](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md) available that provides a side-by-side comparison of the algorithms in the previous version of H2O with H2O 3.0. It outlines the new, revised, and deprecated parameters for each algorithm, as well as the changes to the output. 
 
 ##Algorithm Changes
 
-In general, most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include Gradient Boosting Machine, Deep Learning, Generalized Linear Model, K-means, Distributed Random Forest, and Naive Bayes. 
+Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include Gradient Boosting Machine, Deep Learning, Generalized Linear Model, K-means, Distributed Random Forest, and Naive Bayes. 
 
-However, there are a few algorithms that are still being refined to provide these same benefits and will be available in a future version of H2O. 
+There are a few algorithms that are still being refined to provide these same benefits and will be available in a future version of H2O. 
 
 Currently, the following algorithms and associated capabilities are still in development: 
 
@@ -58,15 +59,13 @@ Currently, the following algorithms and associated capabilities are still in dev
 
 >Anomaly Detection: Has this been integrated with Deep Learning?  
 
-Stay tuned, as these features will be back soon and better than before! 
+Check back for updates, as these algorithms will be re-introduced in an improved form in a future version of H2O. 
 
-**Note**: Random Forest - Big Data has been deprecated, as the Distributed Random Forest algorithm in H2O 3.0 detects the data type (classification or regression) based on the data, so now you no longer have select BigData or SpeeDRF. 
+**Note**: The SpeeDRF model has been removed, as it was originally intended as an optimization for small data only. This optimization will be added to the Distributed Random Forest model automatically for small data in a future version of H2O. 
 
-##Web UI Changes
 
-Our web UI has been completely overhauled into a much more intuitive format that is similar to iPython Notebooks. As a result, you can now revise, download, and rerun your workflows easily. Commands are entered in cells, which can be rearranged as needed, then saved and exported to share with other Flow users. You can even add comments and rich media to your workflow. 
+##Github Users
 
-For more information, refer to our [Getting Started with Flow](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md) guide, which comprehensively documents how to use Flow. You can also view this brief [video](https://www.youtube.com/watch?v=wzeuFfbW7WE), which provides a visual overview of Flow in action. 
+All users who pull directly from the H2O repo on github should be aware that the H2O-Dev repo will be renamed. To update to the new repository: 
 
-Overall, H2O 3.0 is more stable, elegant, and simplified, with additional capabilities not available in previous versions of H2O. 
-
+>To be added (once new repo has been set up)

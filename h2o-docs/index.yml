@@ -4,9 +4,9 @@ sources:
   - src/product/howto/H2O-DevS3Creds.md
   - src/product/howto/H2O-DevHadoop.md   
   - src/product/flow/README.md
+  - src/product/tutorials/datascience/DataScienceH2O-Dev.md
   - src/product/howto/H2O-DevLogs.md
   - src/product/upgrade/H2ODevPortingRScripts.md
-  - src/product/tutorials/datascience/DataScienceH2O-Dev.md
   - src/product/howto/FAQ.md
 assets:
   - 
