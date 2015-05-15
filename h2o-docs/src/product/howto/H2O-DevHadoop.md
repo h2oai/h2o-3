@@ -112,6 +112,28 @@ Hadoop Launch Parameters
 - `-flow_dir <Saved Flows directory>`: Specify the directory for saved flows. By default, H2O will try to find the HDFS home directory to use as the directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified using `-flow_dir`.
 
 
+##Accessing S3 Data from Hadoop
 
+H2O launched on Hadoop can access S3 Data in addition to to HDFS. To enable access, follow the instructions below.  
 
+Edit Hadoop's `core-site.xml`, then set the `HADOOP_CONF_DIR` environment property to the directory containing the `core-site.xml` file. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). Typically, the configuration directory for most Hadoop distributions is `/etc/hadoop/conf`. 
 
+You can also pass the S3 credentials when launching H2O with the Hadoop jar command. Use the `-D` flag to pass the credentials:
+
+        hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
+    
+where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password.
+
+Then import the data with the S3 URL path: 
+
+  - To import the data from the Flow API:
+
+        importFiles [ "s3n://bucket/path/to/file.csv" ]
+
+  - To import the data from the R API:
+  
+        h2o.importFile(path = "s3n://bucket/path/to/file.csv")
+
+  - To import the data from the Python API:
+  
+        h2o.import_frame(path = "s3n://bucket/path/to/file.csv")

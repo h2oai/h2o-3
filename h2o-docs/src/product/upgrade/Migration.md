@@ -66,6 +66,34 @@ Check back for updates, as these algorithms will be re-introduced in an improved
 
 ##Github Users
 
-All users who pull directly from the H2O repo on github should be aware that the H2O-Dev repo will be renamed. To update to the new repository: 
+All users who pull directly from the H2O classic repo on Github should be aware that this repo will be renamed. There are two ways update to the new H2O classic repository: 
 
->To be added (once new repo has been set up)
+**The simple way**
+
+This is the easiest way to update your local repo and is recommended for most users. 
+
+0. Enter `git remote -v` to view a list of your repositories. 
+0. Copy the address your H2O classic repo (refer to the text in brackets below - your address will vary depending on your connection method):
+
+  ```
+  H2O_User-MBP:h2o H2O_User$ git remote -v
+  origin	https://{H2O_User@github.com}/h2oai/h2o.git (fetch)
+  origin	https://{H2O_User@github.com}/h2oai/h2o.git (push)
+  ```
+0. Enter `git remote set-url origin {H2O_User@github.com}:h2oai/h2o-classic.git`, where `{H2O_User@github.com}` represents the address copied in the previous step. 
+
+**The more complicated way**
+
+This method involves editing the Github config file and should only be attempted by users who are confident enough with their knowledge of Github to do so. 
+
+0. Enter `vim .git/config`. 
+0. Look for the `[remote "origin"]` section:
+
+   ```
+   [remote "origin"]
+        url = https://H2O_User@github.com/h2oai/h2o.git
+        fetch = +refs/heads/*:refs/remotes/origin/*
+    ```
+0. In the `url =` line, change `h2o.git` to `h2o-classic.git`. 
+0. Save the changes.  
+
