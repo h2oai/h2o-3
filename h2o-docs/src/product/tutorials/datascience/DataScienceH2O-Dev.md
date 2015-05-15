@@ -1,4 +1,4 @@
-#Algorithms
+# Data Science Algorithms
 
 This document describes how to define the models, interpret the model, the algorithm itself, and an FAQ. 
 

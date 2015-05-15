@@ -1,13 +1,89 @@
 #Recent Changes   
 
-##H2O-Dev
+##H2O
 
+###Shannon (0.3.#.#) - 5/15/15
+
+####New Features 
+The following features have been added since the last release: 
+
+##### ModelMetrics
+
+- [PUBDEV-411](https://0xdata.atlassian.net/browse/PUBDEV-411): ModelMetrics by model category
+
+##### WebUI
+
+- [PUBDEV-942](https://0xdata.atlassian.net/browse/PUBDEV-942): ModelMetrics by model category - Autoencoder
+
+####Enhancements
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Web UI
+
+- [HEXDEV-181](https://0xdata.atlassian.net/browse/HEXDEV-181) Flow: Handle deep features prediction input and output
+
+######Python
+
+- [PUBDEV-852](https://0xdata.atlassian.net/browse/PUBDEV-852): Binomial: show per-metric-optimal CM and per-threshold CM in Python
+
+##### System
+
+- [PUBDEV-672](https://0xdata.atlassian.net/browse/PUBDEV-672) HTML version of the REST API docs should be available on the website
+- [PUBDEV-827](https://0xdata.atlassian.net/browse/PUBDEV-827): class GenModel duplicates part of code of Model
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+#####Algorithms
+
+- [HEXDEV-302](https://0xdata.atlassian.net/browse/HEXDEV-302): AIOOBE during Prediction with DL
+
+
+#####R
+
+- [PUBDEV-1116](https://0xdata.atlassian.net/browse/PUBDEV-1116): R: Parse that works from flow doesn't work from R using as.h2o
+- [PUBDEV-798](https://0xdata.atlassian.net/browse/PUBDEV-798): R: String Munging Functions Missing
+- [PUBDEV-584](https://0xdata.atlassian.net/browse/PUBDEV-584): R: hist() doesn't currently work for H2O objects
+- [PUBDEV-820](https://0xdata.atlassian.net/browse/PUBDEV-820): H2oR: model objects should return the CM when run classification like h2o1 
+- [PUBDEV-1113](https://0xdata.atlassian.net/browse/PUBDEV-1113): Remove Keys : Parse => Remove => doesn't complete
+- [PUBDEV-1102](https://0xdata.atlassian.net/browse/PUBDEV-1102): R: h2o.rbind fails to join two dataset together 
+- [PUBDEV-899](https://0xdata.atlassian.net/browse/PUBDEV-899): R: all doesn't work
+- [PUBDEV-555](https://0xdata.atlassian.net/browse/PUBDEV-555): H2O-R: str does not work
+- [PUBDEV-1110](https://0xdata.atlassian.net/browse/PUBDEV-1110): H2OR: while printing a gbm model object, get invalid format '%d'; use format %f, %e, %g or %a for numeric objects 
+- [PUBDEV-903](https://0xdata.atlassian.net/browse/PUBDEV-903): R: Errors from some rapids calls seem to fail to return an error
+- [HEXDEV-311](https://0xdata.atlassian.net/browse/HEXDEV-311): Performance bug from R with Expect: 100-continue
+- [PUBDEV-1030](https://0xdata.atlassian.net/browse/PUBDEV-1030): h2o.performance: ignores the user specified threshold 
+- [PUBDEV-1071](https://0xdata.atlassian.net/browse/PUBDEV-1071): R: regression models don't show in print statement r2 but it exists in the model object
+- [PUBDEV-1072](https://0xdata.atlassian.net/browse/PUBDEV-1072): R: missing accessors for glm specific fields
+- [PUBDEV-1032](https://0xdata.atlassian.net/browse/PUBDEV-1032): After running some R and  py demos when invoke a build model from flow get- rollup stats problem vec deleted error 
+- [PUBDEV-1069](https://0xdata.atlassian.net/browse/PUBDEV-1069): R: missing implementation for h2o.r2
+- [PUBDEV-1064](https://0xdata.atlassian.net/browse/PUBDEV-1064): Passing sep="," to h2o.importFile() fails with '400 Bad Request'
+- [PUBDEV-1092](https://0xdata.atlassian.net/browse/PUBDEV-1092): Get NPE while predicting 
+
+
+#####System
+
+- [PUBDEV-1091](https://0xdata.atlassian.net/browse/PUBDEV-1091): S3 gzip parse failure
+- [PUBDEV-1081](https://0xdata.atlassian.net/browse/PUBDEV-1081): Probably want to cleanly disable multicast (not retry) and print suggestion message, if multicast not supported on picked multicast network interface
+- [PUBDEV-1112](https://0xdata.atlassian.net/browse/PUBDEV-1112): User has no way to specify whether to drop constant columns
+- [PUBDEV-1109](https://0xdata.atlassian.net/browse/PUBDEV-1109): Change all extdata imports to uploadFile
+- [PUBDEV-1104](https://0xdata.atlassian.net/browse/PUBDEV-1104): .gz file parse exception from local filesystem
+
+
+##### Web UI
+
+- [PUBDEV-1134](https://0xdata.atlassian.net/browse/PUBDEV-1134): getPredictions in Flow returns error
+- [PUBDEV-1020](https://0xdata.atlassian.net/browse/PUBDEV-1020): Flow : Drop NA Cols enable => Should automatically populate the ignored columns 
+- [PUBDEV-1041](https://0xdata.atlassian.net/browse/PUBDEV-1041): Flow GLM: formatting needed for the model parameter listing in the model object
+- [PUBDEV-1108](https://0xdata.atlassian.net/browse/PUBDEV-1108): Flow: When predict on data with no response get :Error processing POST /3/Predictions/models/gbm-a179db76-ba96-420f-a643-0e166aea3af3/frames/subset_1  'undefined' is not an object (evaluating 'prediction.model')
+
+---
 
 ###Shackleford (0.2.3.6) - 5/8/15
 
 
 ####New Features 
-The following features have been added since the last release: 
 
 #####Python
 
@@ -18,7 +94,6 @@ The following features have been added since the last release:
 - Publish h2o-scala and h2o-app latest version to maven central [(PUBDEV-443)](https://0xdata.atlassian.net/browse/PUBDEV-443)
 
 ####Enhancements
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -79,7 +154,6 @@ The following changes are improvements to existing features (which includes chan
 
 ####Bug Fixes
 
-The following changes are to resolve incorrect software behavior: 
 
 #####Algorithms
 

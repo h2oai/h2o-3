@@ -1,4 +1,4 @@
-#Flow Web UI
+#Flow Web UI ...
 
 H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
 
@@ -8,7 +8,7 @@ Flow's hybrid user interface seamlessly blends command-line computing with a mod
 
 H2O Flow sends commands to H2O as a sequence of executable cells. The cells can be modified, rearranged, or saved to a library. Each cell contains an input field that allows you to enter commands, define functions, call other functions, and access other cells or objects on the page. When you execute the cell, the output is a graphical object, which can be inspected to view additional details. 
 
-While H2O Flow supports REST API, R scripts, and Coffeescript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
+While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
 
 ##Introduction
 
@@ -155,7 +155,7 @@ Now that you are familiar with the cell modes, let's import some data.
 ---
 
 <a name="ImportData"></a>
-# ...Importing Data
+# ... Importing Data
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
@@ -297,7 +297,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 ---
 
 <a name="BuildModel"></a>
-# ...Building Models
+# ... Building Models
 
 To build a model: 
 
@@ -576,7 +576,7 @@ To learn how to make predictions, continue to the next section.
 ---
 
 <a name="Predict"></a>
-# ...Making Predictions
+# ... Making Predictions
 
 After creating your model, click the key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
@@ -694,7 +694,7 @@ Select one of the above options from the drop-down **Color** menu to display the
 
 <a name="Flows"></a>
 
-# ...Using Flows
+# ... Using Flows
 
 You can use and modify flows in a variety of ways:
 
@@ -808,7 +808,7 @@ To load an exported flow, click the **Flow** menu and select **Open...**. In the
 ---
 
 <a name="Troubleshooting"></a>
-# ...Troubleshooting 
+# ...Troubleshooting Flow
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
