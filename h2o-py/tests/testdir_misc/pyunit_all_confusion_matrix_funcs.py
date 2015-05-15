@@ -58,20 +58,23 @@ def all_confusion_matrix_funcs(ip,port):
     for m in metrics:
         for t in train:
             for v in valid:
-                cm = gbm_bin.confusion_matrix(metric=m, train=t, valid=v)
+                cm = gbm_bin.confusion_matrix(metrics=m, train=t, valid=v)
                 if cm:
+                    cm = cm.to_list()
                     dim_check(cm, m, t, v)
                     type_check(cm, m, t, v)
                     count_check(cm, m, t, v)
 
-    # H2OBinomialModel.confusion_matrices()
+    # H2OBinomialModel.confusion_matrix()
     for x in range(10):
         for t in train:
             for v in valid:
                 thresholds = [gbm_bin.find_threshold_by_max_metric(m,t,v) for m in
                               random.sample(metrics,random.randint(1,len(metrics)))]
-                cms = gbm_bin.confusion_matrices(thresholds=thresholds, train=t, valid=v)
+                cms = gbm_bin.confusion_matrix(thresholds=thresholds, train=t, valid=v)
+                if not isinstance(cms, list): cms = [cms]
                 for idx, cm in enumerate(cms):
+                    cm = cm.to_list()
                     dim_check(cm, thresholds[idx], t, v)
                     type_check(cm, thresholds[idx], t, v)
                     count_check(cm, thresholds[idx], t, v)
@@ -88,18 +91,20 @@ def all_confusion_matrix_funcs(ip,port):
     # H2OBinomialModelMetrics.confusion_matrix()
     bin_perf = gbm_bin.model_performance(valid=True)
     for metric in metrics:
-        cm = bin_perf.confusion_matrix(metric=metric)
+        cm = bin_perf.confusion_matrix(metrics=metric).to_list()
         dim_check(cm, metric, False, True)
         type_check(cm, metric, False, True)
         count_check(cm, metric, False, True)
 
-    # H2OBinomialModelMetrics.confusion_matrices()
+    # H2OBinomialModelMetrics.confusion_matrix()
     bin_perf = gbm_bin.model_performance(train=True)
     for x in range(10):
         thresholds = [gbm_bin.find_threshold_by_max_metric(m,t,v) for m in
                       random.sample(metrics,random.randint(1,len(metrics)))]
-        cms = bin_perf.confusion_matrices(thresholds=thresholds)
+        cms = bin_perf.confusion_matrix(thresholds=thresholds)
+        if not isinstance(cms, list): cms = [cms]
         for idx, cm in enumerate(cms):
+            cm = cm.to_list()
             dim_check(cm, thresholds[idx], True, False)
             type_check(cm, thresholds[idx], True, False)
             count_check(cm, thresholds[idx], True, False)

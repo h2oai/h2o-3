@@ -9,11 +9,11 @@ import java.util.Map;
  * Markdown (and in the future perhaps HTML and PDF) documentation for REST API endpoints
  * and payload entities (aka Schemas).
  */
-public class DocsHandler extends Handler {
+public class MetadataHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return a list of all REST API Routes and a Markdown Table of Contents. */
-  public DocsV3 listRoutes(int version, DocsV3 docs) {
+  public MetadataV3 listRoutes(int version, MetadataV3 docs) {
     MarkdownBuilder builder = new MarkdownBuilder();
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
     builder.heading1("REST API Routes Table of Contents");
@@ -40,7 +40,7 @@ public class DocsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return the metadata for a REST API Route, specified either by number or path. */
-  public DocsV3 fetchRoute(int version, DocsV3 docs) {
+  public MetadataV3 fetchRoute(int version, MetadataV3 docs) {
     // DocsPojo docsPojo = docs.createAndFillImpl();
 
     Route route = null;
@@ -67,7 +67,7 @@ public class DocsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   @Deprecated
   /** Fetch the metadata for a Schema by its full internal classname, e.g. "hex.schemas.DeepLearningV2.DeepLearningParametersV2".  TODO: Do we still need this? */
-  public DocsV3 fetchSchemaMetadataByClass(int version, DocsV3 docs) {
+  public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw an exception if the classname isn't found:
     SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
@@ -77,7 +77,7 @@ public class DocsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for a Schema by its simple Schema name (e.g., "DeepLearningParametersV2"). */
-  public DocsV3 fetchSchemaMetadata(int version, DocsV3 docs) {
+  public MetadataV3 fetchSchemaMetadata(int version, MetadataV3 docs) {
     if ("void".equals(docs.schemaname)) {
       docs.schemas = new SchemaMetadataBase[0];
       return docs;
@@ -92,7 +92,7 @@ public class DocsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for all the Schemas. */
-  public DocsV3 listSchemas(int version, DocsV3 docs) {
+  public MetadataV3 listSchemas(int version, MetadataV3 docs) {
     Map<String, Class<? extends Schema>> ss = Schema.schemas();
     docs.schemas = new SchemaMetadataBase[ss.size()];
 
