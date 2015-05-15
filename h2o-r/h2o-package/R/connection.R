@@ -320,7 +320,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
 
-  # Shut down local H2O when user exits from R, ONLY if h2o started from R
+  # Shut down local H2O when user exits from R ONLY if h2o started from R
   reg.finalizer(.h2o.jar.env, function(e) {
     ip_    <- "127.0.0.1"
     port_  <- 54321

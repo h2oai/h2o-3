@@ -173,10 +173,6 @@ def get_frame(frame_id):
   vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
   return H2OFrame(vecs=vecs)
 
-# res <- .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
-# cnames <- unlist(lapply(res$columns, function(c) c$label))
-# .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames, linkToGC = linkToGC)
-
 """
 Here are some testing utilities for running the pyunit tests in conjunction with run.py.
 
@@ -268,10 +264,37 @@ def value_check(h2o_data, local_data, num_elements, col=None):
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   init(ip,port)
+  log_and_echo("------------------------------------------------------------")
+  log_and_echo("")
+  log_and_echo("STARTING TEST: "+str(ou()))
+  log_and_echo("")
+  log_and_echo("------------------------------------------------------------")
   num_keys = store_size()
   test_to_run(ip, port)
-  if keys_leaked(num_keys):
-    print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
+  if keys_leaked(num_keys): print "Leaked Keys!"
+
+def ou():
+  """
+  Where is my baguette!?
+  :return: the name of the baguette. oh uhr uhr huhr
+  """
+  from inspect import stack
+  return stack()[2][1]
+
+def log_and_echo(message):
+  """
+  Log a message on the server-side logs
+  This is helpful when running several pieces of work one after the other on a single H2O
+  cluster and you want to make a notation in the H2O server side log where one piece of
+  work ends and the next piece of work begins.
+
+  Sends a message to H2O for logging. Generally used for debugging purposes.
+
+  :param message: A character string with the message to write to the log.
+  :return: None
+  """
+  if message is None: message = ""
+  H2OConnection.post_json("LogAndEcho", message=message)
 
 def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
@@ -284,11 +307,12 @@ def ipy_notebook_exec(path,save_and_norun=False):
     with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
       f.write(program)
   else:
-    exec(program, globals())
+    d={}
+    exec program in d  # safe, but horrible (exec is horrible)
 
 def ipy_blocks(notebook):
   if 'worksheets' in notebook.keys():
-    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+    return notebook['worksheets'][0]['cells']  # just take the first worksheet
   elif 'cells' in notebook.keys():
     return notebook['cells']
   else:
@@ -328,7 +352,8 @@ def remove(object):
 
 def removeFrameShallow(key):
   """
-  Do a shallow DKV remove of the frame (does not remove any internal Vecs)
+  Do a shallow DKV remove of the frame (does not remove any internal Vecs).
+  This is a "soft" delete. Just removes the top level pointer, but all big data remains!
   :param key: A Frame Key to be removed
   :return: None
   """
