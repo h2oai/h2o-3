@@ -7,7 +7,7 @@ sources:
   - src/product/flow/README.md
   - src/product/tutorials/datascience/DataScienceH2O-Dev.md
   - src/product/howto/H2O-DevLogs.md
-  - src/product/upgrade/H2ODevPortingRScripts.md
+  - src/product/upgrade/Migration.md
   - src/product/howto/FAQ.md
   - src/product/howto/Videos.md
 
