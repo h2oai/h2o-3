@@ -8,6 +8,8 @@ sources:
   - src/product/howto/H2O-DevLogs.md
   - src/product/upgrade/H2ODevPortingRScripts.md
   - src/product/howto/FAQ.md
+  - src/product/howto/Videos.md
+
 assets:
   - 
     source: src/product/flow/images
