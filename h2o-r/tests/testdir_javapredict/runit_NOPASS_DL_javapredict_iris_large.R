@@ -23,13 +23,46 @@ x = c("sepal_len","sepal_wid","petal_len","petal_wid");
 y = "species"
 activation = "Tanh"
 epochs = 2
-autoencoder = F
 
 #----------------------------------------------------------------------
 # Run the tests
 #----------------------------------------------------------------------
 
+# AUTOENCODER
+autoencoder = T
+
+activation = "Rectifier"
+hidden = c(5,3,2)
+epochs = 3
+
+x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+y = c("petal_wid") #ignored
+source('../Utils/shared_javapredict_DL.R')
+
+# only numericals
+x = c("sepal_len","sepal_wid","petal_len","petal_wid");
+y = c("petal_wid") #ignored
+source('../Utils/shared_javapredict_DL.R')
+
+# mixed numericals and categoricals
+x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+y = c("petal_wid") #ignored
+source('../Utils/shared_javapredict_DL.R')
+
+activation = "Tanh"
+x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+y = c("petal_wid") #ignored
+source('../Utils/shared_javapredict_DL.R')
+
+hidden = c(3)
+activation = "Tanh"
+x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+y = c("petal_wid") #ignored
+source('../Utils/shared_javapredict_DL.R')
+
+
 # CLASSIFICATION
+autoencoder = F
 
 # large network
 hidden = c(500,500,500)
@@ -87,38 +120,4 @@ activation = "Maxout"
 source('../Utils/shared_javapredict_DL.R')
 
 activation = "MaxoutWithDropout"
-source('../Utils/shared_javapredict_DL.R')
-
-
-
-# AUTOENCODER
-autoencoder = T
-
-activation = "Rectifier"
-hidden = c(5,3,2)
-epochs = 3
-
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
-
-# only numericals
-x = c("sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
-
-# mixed numericals and categoricals
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "Tanh"
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
-
-hidden = c(3)
-activation = "Tanh"
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
 source('../Utils/shared_javapredict_DL.R')
