@@ -223,6 +223,18 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     return len(self)
 
+  def filterNACols(self, frac=0.2):
+    """
+    Filter columns with prportion of NAs >= frac.
+    :param frac: Fraction of NAs in the column.
+    :return: A  list of column indices.
+    """
+    fr = self.send_frame()
+    res = h2o.rapids("(filterNACols %{} #{})".format(fr,str(frac)))
+    l = res["head"][0]
+    h2o.removeFrameShallow(fr)
+    return [int(float(i)) for i in l]
+
   def dim(self):
     """
     Get the number of rows and columns in the H2OFrame.
