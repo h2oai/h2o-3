@@ -323,13 +323,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     final int nmid = (nlo+_nhi)>>>1; // Mid-point
     // Client mode: split left & right, but no local work
     if( H2O.ARGS.client ) {
-      _profile._rpcLstart = System.currentTimeMillis();
+      if(_doProfile)
+        _profile._rpcLstart = System.currentTimeMillis();
       _nleft = remote_compute(nlo ,nmid);
-      _profile._rpcRstart = System.currentTimeMillis();
+      if(_doProfile)
+        _profile._rpcRstart = System.currentTimeMillis();
       _nrite = remote_compute(nmid,_nhi);
-      _profile._rpcRdone  = System.currentTimeMillis();
+      if(_doProfile)
+        _profile._rpcRdone  = System.currentTimeMillis();
       setupLocal();               // Setup any user's shared local structures
-      _profile._localdone = System.currentTimeMillis();
+      if(_doProfile)
+        _profile._localdone = System.currentTimeMillis();
       return;
     }
     // Normal server mode: split left & right excluding self
