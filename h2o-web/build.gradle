@@ -153,7 +153,17 @@ task cleanUpSmokeTest << {
 }
 
 task compileAndInstallDocFiles(type: Exec) {
-    commandLine = getOsSpecificCommandLine(['.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee', 'help.coffee'])
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    def projectVersion = bv.getProjectVersion()
+    def branchName = bv.getBranch()
+    def buildNumber = bv.getBuildNumber()
+    def lastCommitHash = bv.getLastCommitHash()
+    commandLine = getOsSpecificCommandLine(['.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee', 'help.coffee',
+                                            "--project_version=" + projectVersion,
+                                            "--branch_name=" + branchName,
+                                            "--build_number=" + buildNumber,
+                                            "--last_commit_hash=" + lastCommitHash
+                                           ])
 }
 
 task deleteDocFiles(type: Delete) {
@@ -173,9 +183,9 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 
-compileAndInstallDocFiles.dependsOn copyFlowToWebRoot
-processResources.dependsOn compileAndInstallDocFiles
-
+compileAndInstallDocFiles.dependsOn installNpmPackages
+compileAndInstallDocFiles.dependsOn ":h2o-docs:build"
+build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
 clean.dependsOn deleteFlowFromWebRoot, deleteBowerModules, deleteNodeModules, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles

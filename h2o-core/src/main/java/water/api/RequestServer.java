@@ -711,7 +711,7 @@ public class RequestServer extends NanoHTTPD {
       if (mb.models.length != 1) {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
-      ModelSchema ms = mb.models[0];
+      ModelSchema ms = (ModelSchema)mb.models[0];
       return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
     case html: {
       RString html = new RString(_htmlTemplate);

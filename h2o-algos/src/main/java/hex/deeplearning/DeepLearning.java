@@ -131,14 +131,17 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         byte[] cs = new AutoBuffer().put(_parms).buf();
 
         Scope.enter();
-
+        // Init parameters
         init(true);
+        // Read lock input
+        _parms.read_lock_frames(DeepLearning.this);
+        // Something goes wrong
         if (error_count() > 0){
           DeepLearning.this.updateValidationMessages();
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         }
 
-        _parms.read_lock_frames(DeepLearning.this);
+
         buildModel();
 
         //check that _parms isn't changed during DL model training

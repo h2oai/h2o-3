@@ -16,10 +16,10 @@ public interface IGeneratedModel {
     public String[] getNames();
 
     /** The name of the response column. */
+    @Deprecated
     public String getResponseName();
 
-    /** Returns an index of the response column. */
-    @Deprecated
+    /** Returns an index of the response column inside getDomains(). */
     public int getResponseIdx();
 
     /** Get number of classes in in given column.
@@ -29,12 +29,16 @@ public interface IGeneratedModel {
 
     /** Return a number of classes in response column.
      *
-     * @return
+     * @return number of response classes
+     * @throws java.lang.UnsupportedOperationException in case that it is call on non-classifier model.
      */
     public int getNumResponseClasses();
 
     /** @return true if this model represents a classifier, else it is used for regression. */
     public boolean isClassifier();
+
+    /** @return true if this model represents an AutoEncoder. */
+    public boolean isAutoEncoder();
 
     /** Predict the given row and return prediction.
      *

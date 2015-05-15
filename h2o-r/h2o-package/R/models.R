@@ -333,6 +333,9 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
   }
   else if( !missingData ) {
+    mktmp <- !.is.eval(data)
+    if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
+
     parms <- list()
     parms[["model"]] <- model@model_id
     parms[["frame"]] <- data.frame_id
@@ -618,8 +621,7 @@ h2o.scoreHistory <- function(object, ...) {
   if( is(o, "H2OModel") ) {
     sh <- o@model$scoring_history
     if( is.null(sh) ) return(NULL)
-    print( sh )
-    invisible( sh )
+    sh
   } else {
     warning( paste0("No score history for ", class(o)) )
     return(NULL)

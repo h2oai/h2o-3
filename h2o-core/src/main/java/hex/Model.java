@@ -48,7 +48,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // NOT in the parameters - because this requires all model-builders to have
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
-    public boolean _drop_na20_cols;    // True if dropping cols > 20% NAs
     public boolean _ignore_const_cols;    // True if dropping constant cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
@@ -59,8 +58,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _score_each_iteration;
 
     // Public no-arg constructor for reflective creation
-    public Parameters() { _drop_na20_cols = defaultDropNA20Cols();
-                          _ignore_const_cols = defaultDropConsCols(); }
+    public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
@@ -70,8 +68,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
-      train().read_lock(job._key);
-      if( _valid != null && !_train.equals(_valid) )
+      Frame tr = train();
+      if (tr != null)
+        tr.read_lock(job._key);
+      if (_valid != null && !_train.equals(_valid))
         valid().read_lock(job._key);
     }
 
@@ -473,7 +473,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
 
-    cleanup_adapt( adaptFr, fr );
+    cleanup_adapt(adaptFr, fr);
     return output;
   }
 
@@ -779,7 +779,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return miss==0;
     } finally {
       // Remove temp keys.
-      cleanup_adapt( fr, data );
+      cleanup_adapt(fr, data);
     }
   }
 }

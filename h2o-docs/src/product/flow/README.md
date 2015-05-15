@@ -1,10 +1,6 @@
-#Introduction
+#Flow Web UI ...
 
-This guide will walk you through how to use H2O's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
-
-##About H2O Flow
-
-H2O Flow is an open-source user interface for H2O. It is a web-based interactive computational environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
+H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
 
 With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment. 
 
@@ -12,12 +8,17 @@ Flow's hybrid user interface seamlessly blends command-line computing with a mod
 
 H2O Flow sends commands to H2O as a sequence of executable cells. The cells can be modified, rearranged, or saved to a library. Each cell contains an input field that allows you to enter commands, define functions, call other functions, and access other cells or objects on the page. When you execute the cell, the output is a graphical object, which can be inspected to view additional details. 
 
-While H2O Flow supports REST API, R scripts, and Coffeescript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
+While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
+
+##Introduction
+
+This guide will walk you through how to use H2O's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
+
 
 ---
 
 <a name="GetHelp"></a> 
-# Getting Help 
+## Getting Help 
 ---
 
 First, let's go over the basics. Type `h` to view a list of helpful shortcuts. 
@@ -53,12 +54,12 @@ Before getting started with H2O Flow, make sure you understand the different cel
 ---
 
 <a name="Cell"></a>
-# Understanding Cell Modes
+## Understanding Cell Modes
 
 There are two modes for cells: edit and command. 
 
 
-##Using Edit Mode
+###Using Edit Mode
 In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
 
@@ -94,7 +95,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
  
  ![Cell executing](images/Flow_cellmode_runningflag.png)
 
-##Changing Cell Formats
+###Changing Cell Formats
 
 To change the cell's format (for example, from code to Markdown), make sure you are in not in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
 
@@ -110,7 +111,7 @@ Heading 4     | `4`
 Heading 5     | `5`
 Heading 6     | `6` 
 
-##Running Flows
+###Running Flows
 When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
 
   ![Flow Progress Bar](images/Flow_progressbar.png)
@@ -122,7 +123,7 @@ When the flow is complete, a message displays in the upper right.
   ![Flow - Did Not Complete](images/Flow_run_fail.png) 
 
 
-##Using Keyboard Shortcuts
+###Using Keyboard Shortcuts
 
 Here are some important keyboard shortcuts to remember: 
 
@@ -139,7 +140,7 @@ The following commands must be entered in [command mode](#CmdMode).
 You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar. 
 
 
-##Using Flow Buttons
+###Using Flow Buttons
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
 
  ![Flow buttons](images/Flow_buttons.png)
@@ -154,7 +155,7 @@ Now that you are familiar with the cell modes, let's import some data.
 ---
 
 <a name="ImportData"></a>
-# Importing Data
+# ... Importing Data
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
@@ -204,7 +205,7 @@ Ok, now that your data is available in H2O Flow, let's move on to the next step:
 ---
 
 <a name="ParseData"></a>
-# Parsing Data
+##Parsing Data
 
 After you have imported your data, parse the data.
 
@@ -253,11 +254,11 @@ Since we've submitted a couple of jobs (data import & parse) to H2O now, let's t
 --- 
  
 <a name="ViewJobs"></a>
-# Viewing Jobs
+## Viewing Jobs
 
 Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference.
 
-## Viewing All Jobs
+### Viewing All Jobs
 
 To view all jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
 
@@ -274,7 +275,7 @@ The following information displays:
 
 To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button. 
 
-## Viewing Specific Jobs
+### Viewing Specific Jobs
 
 To view a specific job, click the link in the "Destination" column. 
 
@@ -296,7 +297,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 ---
 
 <a name="BuildModel"></a>
-# Building Models
+# ... Building Models
 
 To build a model: 
 
@@ -351,8 +352,6 @@ The available options vary depending on the selected model. If an option is only
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
-
-- **Drop\_na20\_cols**: (Optional) Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
 
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
@@ -426,7 +425,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model (e.g., by a grid search).
 
-- **Use\_all\_factor\_levels**: ([GLM](#GLM), [DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
+- **Use\_all\_factor\_levels**: ([DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
 - **Train\_samples\_per\_iteration**: [(DL)](#DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2. The default is -2. 
 
@@ -575,7 +574,7 @@ To learn how to make predictions, continue to the next section.
 ---
 
 <a name="Predict"></a>
-# Making Predictions
+# ... Making Predictions
 
 After creating your model, click the key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
@@ -598,7 +597,7 @@ You can also view predictions by clicking the drop-down **Score** menu and selec
 ---
 
 <a name="ViewFrame"></a>
-# Viewing Frames
+## Viewing Frames
 
 To view a specific frame, click the "Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
 
@@ -644,7 +643,7 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 
 ---
 
-## Splitting Frames
+### Splitting Frames
 
 In H2O Flow, you can split datasets within Flow for use in training and testing. 
 
@@ -661,13 +660,13 @@ In H2O Flow, you can split datasets within Flow for use in training and testing.
 0. Click the **Create** button.  
 
 ---
-##Creating Frames
+### Creating Frames
 
 To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
 ---
 
-## Plotting Frames
+### Plotting Frames
 
 To create a plot from a frame, click the **Inspect** button, then click the **Plot** button. 
 
@@ -691,9 +690,22 @@ Select one of the above options from the drop-down **Color** menu to display the
 
 ---
 
+<a name="Flows"></a>
+
+# ... Using Flows
+
+You can use and modify flows in a variety of ways:
+
+- Clips allow you to save single cells 
+- Outlines display summaries of your workflow
+- Flows can be saved, duplicated, loaded, or downloaded
+
+---
+
+
 <a name="Clips"></a>
 
-# Using Clips
+## Using Clips
 
 Clips enable you to save cells containing your workflow for later reuse. To save a cell as a clip, click the paperclip icon to the right of the cell (highlighted in the red box in the following screenshot). 
  ![Paperclip icon](images/Flow_clips_paperclip.png)
@@ -713,7 +725,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 ---
 
 <a name="Outline"></a>
-# Viewing Outlines
+## Viewing Outlines
 
 The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
 
@@ -725,7 +737,7 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 ---
 
 <a name="SaveFlow"></a>
-# Saving Flows
+## Saving Flows
 
 You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
@@ -740,7 +752,7 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
 
  ![Flows](images/Flow_flows.png)
 
-## Finding Saved Flows on your Disk
+### Finding Saved Flows on your Disk
  
 By default, flows are saved to the `h2oflows` directory underneath your home directory.  The directory where flows are saved is printed to stdout:
  
@@ -756,7 +768,7 @@ To specify a different location for saved flows, use the command-line argument `
 
 where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified location.  If the directory does not exist, it will be created the first time you save a flow.
 
-## Saving Flows on a Hadoop cluster
+### Saving Flows on a Hadoop cluster
 
 **Note**: If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
 
@@ -764,18 +776,18 @@ where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified locatio
 
 The location specified in `flow_dir` may be either an hdfs or regular filesystem directory.  If the directory does not exist, it will be created the first time you save a flow.
 
-## Duplicating Flows
+### Duplicating Flows
 
 To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
 
-## Downloading Flows
+### Downloading Flows
 
-After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename> .flow`, where `<filename>` is the name specified when the flow was saved. 
+After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
 
 **Caution**: You must have an active internet connection to export flows. 
 
-## Loading Flows
+### Loading Flows
 
 To load a saved flow, click the **Flows** tab in the sidebar at the right. In the pop-up confirmation window that appears, select **Load Notebook**, or click **Cancel** to return to the current flow. 
 
@@ -794,7 +806,7 @@ To load an exported flow, click the **Flow** menu and select **Open...**. In the
 ---
 
 <a name="Troubleshooting"></a>
-# Troubleshooting 
+# ...Troubleshooting Flow
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 

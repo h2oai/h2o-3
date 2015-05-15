@@ -223,6 +223,18 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     return len(self)
 
+  def filterNACols(self, frac=0.2):
+    """
+    Filter columns with prportion of NAs >= frac.
+    :param frac: Fraction of NAs in the column.
+    :return: A  list of column indices.
+    """
+    fr = self.send_frame()
+    res = h2o.rapids("(filterNACols %{} #{})".format(fr,str(frac)))
+    l = res["head"][0]
+    h2o.removeFrameShallow(fr)
+    return [int(float(i)) for i in l]
+
   def dim(self):
     """
     Get the number of rows and columns in the H2OFrame.
@@ -372,8 +384,11 @@ class H2OFrame:
       self._row('missing_count', None)
     ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
-    dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
+    chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
+    dist_summary = chunk_dist_sum["distribution_summary"]
+    chunk_summary = chunk_dist_sum["chunk_summary"]
     h2o.removeFrameShallow(chunk_summary_tmp_key)
+    chunk_summary.show()
     dist_summary.show()
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 

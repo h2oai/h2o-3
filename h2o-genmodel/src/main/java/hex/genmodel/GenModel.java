@@ -10,7 +10,7 @@ import java.util.Map;
 public abstract class GenModel implements IGenModel, IGeneratedModel {
 
   /** Column names; last is response for supervised models */
-  public final String[] _names; 
+  public final String[] _names;
 
   /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
    *  Columns match the post-init cleanup columns.  The last column holds the
@@ -34,13 +34,18 @@ public abstract class GenModel implements IGenModel, IGeneratedModel {
     return nfeatures();
   }
   @Override public int getResponseIdx() {
-    throw new UnsupportedOperationException("This method is not supported!");
+    if (!isSupervised())
+      throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
+    return _domains.length - 1;
   }
   @Override public String getResponseName() {
-    return getNames()[getResponseIdx()];
+    throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
   }
   @Override public int getNumResponseClasses() {
-    return nclasses();
+    if (isClassifier())
+      return nclasses();
+    else
+      throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
   }
   @Override public String[] getNames() {
     return _names;
@@ -75,6 +80,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel {
   @Override public boolean isClassifier() {
     ModelCategory cat = getModelCategory();
     return cat == ModelCategory.Binomial || cat == ModelCategory.Multinomial;
+  }
+
+  @Override public boolean isAutoEncoder() {
+    ModelCategory cat = getModelCategory();
+    return cat == ModelCategory.AutoEncoder;
   }
 
   @Override public int getPredsSize() {

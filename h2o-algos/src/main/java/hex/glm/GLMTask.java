@@ -215,6 +215,7 @@ public abstract class GLMTask  {
   }
   static class GLMGradientTask extends MRTask<GLMGradientTask> {
     final GLMParameters _params;
+    GLMValidation _val;
     double _currentLambda;
     final double [] _beta;
     final protected DataInfo _dinfo;
@@ -224,7 +225,6 @@ public abstract class GLMTask  {
     protected transient boolean [] _skip;
     boolean _validate;
     double _ymu;
-    double _dev;
     Vec _rowFilter;
     long _nobs;
 
@@ -256,7 +256,7 @@ public abstract class GLMTask  {
         _nobs++;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
-        _dev += _params.deviance(row.response(0), mu);
+        _val.add(row.response(0), mu);
         _likelihood += _params.likelihood(row.response(0), eta, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
@@ -348,7 +348,7 @@ public abstract class GLMTask  {
         double y = responseChunk.atd(r);
         double offset = off;
         double mu = _params.linkInv(eta[r] + offset);
-        _dev += _params.deviance(y, mu);
+        _val.add(y, mu);
         _likelihood += _params.likelihood(y,eta[r],mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
@@ -416,7 +416,10 @@ public abstract class GLMTask  {
         if(_beta[i] != 0)
           ++rank;
       _gradient = MemoryManager.malloc8d(_beta.length);
-
+      String [] domain = _dinfo._adaptedFrame.lastVec().domain();
+      if(domain == null && _params._family == Family.binomial)
+        domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
+      _val = new GLMValidation(domain,_params._intercept,_ymu,_params,rank,0,_validate);
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       if(_rowFilter != null) {
         Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
@@ -432,7 +435,7 @@ public abstract class GLMTask  {
     public void reduce(GLMGradientTask grt) {
       _likelihood += grt._likelihood;
       _nobs += grt._nobs;
-      _dev += grt._dev;
+      _val.reduce(grt._val);
       ArrayUtils.add(_gradient, grt._gradient);
     }
   }

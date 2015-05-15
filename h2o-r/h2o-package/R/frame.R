@@ -335,6 +335,16 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
 }
 
+#'
+#' Filter NA Coluns
+#'
+#' @param data A dataset to filter on.
+#' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
+#' @export
+h2o.filterNACols <- function(data, frac=0.2) {
+  (as.data.frame(.h2o.nary_frame_op("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
+}
+
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
 #  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
 #    warning(data@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
@@ -2489,6 +2499,104 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
   else
     .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
+
+#'
+#' Compute A Histgram
+#'
+#' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
+#' in computing bin width.
+#'
+#' @param x A single numeric column from an H2OFrame.
+#' @param breaks Can be one of the following:
+#'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
+#'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
+#'               A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+#' @export
+h2o.hist <- function(x, breaks="Sturges") {
+  if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
+  mktmp <- !.is.eval(x)
+  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@frame_id)
+
+  if( is.character(breaks) ) {
+    if( breaks=="Sturges" ) breaks <- "sturges"
+    if( breaks=="Rice"    ) breaks <- "rice"
+    if( breaks=="Doane"   ) breaks <- "doane"
+    if( breaks=="FD"      ) breaks <- "fd"
+    if( breaks=="Scott"   ) breaks <- "scott"
+  }
+  h <- as.data.frame(.h2o.nary_frame_op("hist", x, breaks))
+  counts <- na.omit(h[,2])
+  mids <- na.omit(h[,3])
+  histo <- list()
+  histo$breaks <- h$breaks
+  histo$counts <- counts
+  histo$mids   <- mids
+  histo$xname  <- deparse(substitute(x))
+  oldClass(histo) <- "histogram"
+  plot(histo)
+  invisible(histo)
+}
+
+#'
+#' String Split
+#'
+#' @param x The column whose strings must be split.
+#' @param split The pattern to split on.
+#' @export
+h2o.strsplit <- function(x, split) { .h2o.nary_frame_op("strsplit", x, split) }
+
+#'
+#' To Lower
+#'
+#' Mutates the input!
+#'
+#' @param x An H2OFrame object whose strings should be lower'd
+#' @export
+h2o.tolower <- function(x) { .h2o.nary_frame_op("tolower", x) }
+
+#'
+#' To Upper
+#'
+#' Mutates the input!
+#'
+#' @param x An H2OFrame object whose strings should be upper'd
+#' @export
+h2o.toupper <- function(x) { .h2o.nary_frame_op("toupper", x) }
+
+#'
+#' String Substitute
+#'
+#' Mutates the input. Changes the first occurence of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) {
+  .h2o.nary_frame_op("sub", pattern, replacement,x,ignore.case)
+}
+
+#'
+#' String Global Substitute
+#'
+#' Mutates the input. Changes the all occurences of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) {
+  .h2o.nary_frame_op("gsub", pattern, replacement,x,ignore.case)
+}
+
+#'
+#' Trim Space
+#'
+#' @param x The column whose strings should be trimmed.
+#' @export
+h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
 
 #setMethod("findInterval", "H2OFrame", function(x, vec, rightmost.closed = FALSE, all.inside = FALSE) {
 #  if(any(is.na(vec)))

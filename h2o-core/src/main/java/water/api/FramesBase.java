@@ -29,7 +29,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
 
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
-  FrameV3[] frames;
+  FrameBase[] frames;
 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
   ModelSchema[] compatible_models;
@@ -45,14 +45,13 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
       f.frames = new Frame[frames.length];
 
       int i = 0;
-      for (FrameV3 frame : this.frames) {
+      for (FrameBase frame : this.frames) {
         f.frames[i++] = frame._fr;
       }
     }
     return f;
   }
 
-  // TODO: parameterize on the FrameVx Schema class
   @Override public FramesBase fillFromImpl(Frames f) {
     this.frame_id = new FrameKeyV3(f.frame_id);
     this.column = f.column; // NOTE: this is needed for request handling, but isn't really part of state
@@ -64,6 +63,20 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
       int i = 0;
       for (Frame frame : f.frames) {
         this.frames[i++] = new FrameV3(frame, f.offset, f.len);
+      }
+    }
+    return this;
+  }
+
+  public FramesBase fillFromImplWithSynopsis(Frames f) {
+    this.frame_id = new FrameKeyV3(f.frame_id);
+
+    if (null != f.frames) {
+      this.frames = new FrameSynopsisV3[f.frames.length];
+
+      int i = 0;
+      for (Frame frame : f.frames) {
+        this.frames[i++] = new FrameSynopsisV3(frame);
       }
     }
     return this;

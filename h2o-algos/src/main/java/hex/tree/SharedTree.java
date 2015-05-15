@@ -89,9 +89,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       try {
         Scope.enter();          // Cleanup temp keys
         init(true);             // Do any expensive tests & conversions now
-        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
-
+        // Do lock even before checking the errors, since this block is finalized by unlock
+        // (not the best solution, but the code is more readable)
         _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
+        if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
 
         // New Model?  Or continuing from a checkpoint?
         if( _parms._checkpoint && DKV.get(_parms._model_id) != null ) {
