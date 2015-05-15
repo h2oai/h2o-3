@@ -326,7 +326,11 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     port_  <- 54321
     myURL <- paste0("http://", ip, ":", port)
     if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
-
+    else {
+      conn <- get("SERVER", .pkg.env)
+      if( !is.null(conn) )
+        print( paste0("H2O is still running @: ", conn@ip, ":", conn@port) )
+    }
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
 
