@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -187,7 +186,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Quick compatibility check between Frames.  Used by some tests for efficient equality checks. */
-  public boolean checkCompatible( Frame fr ) {
+  public boolean isCompatible( Frame fr ) {
     if( numCols() != fr.numCols() ) return false;
     if( numRows() != fr.numRows() ) return false;
     for( int i=0; i<vecs().length; i++ )
@@ -1090,46 +1089,30 @@ public class Frame extends Lockable<Frame> {
    * @return The fresh copy of fr.
    */
   public Frame deepCopy(String keyName) {
-    ParallelVecCopy t;
-    H2O.submitTask(t=new ParallelVecCopy(this)).join();
+    DoCopyFrame t = new DoCopyFrame(this.vecs()).doAll(this);
     return keyName==null ? new Frame(names(),t._vecs) : new Frame(Key.make(keyName),names(),t._vecs);
   }
 
-  private static class VecCopyTask extends H2O.H2OCountedCompleter<VecCopyTask> {
-    private final Vec _from;
-    private final Vec[] _vecs;
-    private final int _i;
-    VecCopyTask(H2O.H2OCountedCompleter cc, Vec from, Vec[] vecs, int i) { super(cc); _from=from; _vecs=vecs; _i=i; }
-
-    @Override protected void compute2() {
-      _vecs[_i] = _from.makeCopy(_from.domain());
-      tryComplete();
+  // _vecs put into kv store already
+  private class DoCopyFrame extends MRTask<DoCopyFrame> {
+    final Vec[] _vecs;
+    DoCopyFrame(Vec[] vecs) {
+      _vecs = new Vec[vecs.length];
+      for(int i=0;i<vecs.length;++i)
+        _vecs[i] = new Vec(vecs[i].group().addVec(),vecs[i]._espc.clone());
     }
-  }
-
-  private static class ParallelVecCopy extends H2O.H2OCountedCompleter<ParallelVecCopy> {
-    private final Frame _fr;
-    private final AtomicInteger _ctr;
-    private final int _maxP=1000;
-
-    //out
-    private Vec[] _vecs;
-    ParallelVecCopy(Frame fr) { _fr=fr; _ctr=new AtomicInteger(_maxP-1); }
-
-    @Override protected void compute2() {
-      addToPendingCount(_fr.numCols()-1);
-      _vecs = new Vec[_fr.numCols()];
-      for( int i=0;i<Math.min(_maxP,_fr.numCols());++i) forkVecTask(i);
-    }
-    private void forkVecTask(final int i) { new VecCopyTask(new Callback(), _fr.vec(i), _vecs, i).fork(); }
-    private class Callback extends H2O.H2OCallback {
-      public Callback(){super(ParallelVecCopy.this);}
-      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
-        int i = _ctr.incrementAndGet();
-        if(i < _vecs.length)
-          forkVecTask(i);
+    @Override public void map(Chunk[] cs) {
+      int i=0;
+      for(Chunk c: cs) {
+        Chunk c2 = (Chunk)c.clone();
+        c2._vec=null;
+        c2._start=-1;
+        c2._cidx=-1;
+        c2._mem = c2._mem.clone();
+        DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs);
       }
     }
+    @Override public void postGlobal() { for (Vec _vec : _vecs) DKV.put(_vec); }
   }
 
   /**
@@ -1189,7 +1172,6 @@ public class Frame extends Lockable<Frame> {
     DKV.remove(k);
     return f2;
   }
-
 
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
