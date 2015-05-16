@@ -294,37 +294,21 @@ class H2OBinomialModel(ModelBase):
       metrics.append([t,row[midx]])
     return metrics
 
-  def confusion_matrix(self, metric="f1", train=False, valid=False):
+  def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False):
     """
-    Get the confusion matrix for the specified metric
+    Get the confusion matrix for the specified metrics/thresholds
     If both train and valid are False, return the train.
     If both train and valid are True, return the valid.
 
-    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "error", "accuracy", "f0point5", "f2", "f1"}
+    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
+    :param thresholds: A value (or list of values) between 0 and 1
     :param train: Return the max per class error for training data.
     :param valid: Return the max per class error for the validation data.
-    :return: the confusion matrix for the metric
-    """
-    print "Confusion matrix for metric: ", metric
-    print
-    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
-    if tm is None: return None
-    return tm.confusion_matrix(metric=metric)
-
-  def confusion_matrices(self, thresholds=None, train=False, valid=False):
-    """
-    Each threshold defines a confusion matrix. For each threshold in the thresholds list, return a 2x2 list.
-    If both train and valid are False, return the train.
-    If both train and valid are True, return the valid.
-
-    :param train: Return the max per class error for training data.
-    :param valid: Return the max per class error for the validation data.
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :return: A list of 2x2-lists: [, ..., [ [tns,fps], [fns,tps] ], ..., ]
+    :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix (if there is only one)
     """
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    return tm.confusion_matrices(thresholds=thresholds)
+    return tm.confusion_matrix(metrics=metrics, thresholds=thresholds)
 
   def find_threshold_by_max_metric(self,metric,train=False,valid=False):
     """
@@ -364,4 +348,12 @@ class H2OBinomialModel(ModelBase):
       t = float(e[0])
       if abs(t-threshold) < 0.00000001 * max(t,threshold):
         return i
-    raise ValueError("No threshold "+str(threshold))
+    if threshold >= 0 and threshold <= 1:
+      thresholds = [float(e[0]) for i,e in enumerate(thresh2d.cell_values)]
+      threshold_diffs = [abs(t - threshold) for t in thresholds]
+      closest_idx = threshold_diffs.index(min(threshold_diffs))
+      closest_threshold = thresholds[closest_idx]
+      print "Could not find exact threshold {0}; using closest threshold found {1}." \
+        .format(threshold, closest_threshold)
+      return closest_idx
+    raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))

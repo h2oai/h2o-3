@@ -34,7 +34,7 @@ def fiftycatRF(ip,port):
     #Log.info("Confusion matrix of predictions (max accuracy):\n")
     perf = model.model_performance(test)
     perf.show()
-    cm = perf.confusion_matrices()
+    cm = perf.confusion_matrix()
     print(cm)
 
 if __name__ == "__main__":
