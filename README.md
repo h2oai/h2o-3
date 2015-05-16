@@ -1,5 +1,7 @@
 # H2O
 
+[![Join the chat at https://gitter.im/h2oai/h2o-dev](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-dev?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 H2O makes Hadoop do math! H2O scales statistics, machine learning and math over BigData. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Excel & JSON so that BigData enthusiasts & experts can explore, munge, model and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O has a vision of online scoring and modeling in a single platform.
 
 * [Product Vision for First Cut](#Vision)
