@@ -2232,7 +2232,7 @@ class ASTCbind extends ASTUniPrefixOp {
 
     // loop over frames and combine
     Frame first=env.peekAryAt(0-argcnt+1);
-    Frame fr = _deepCopy ? first.deepCopy(null) : first;
+    Frame fr = _deepCopy ? first.deepCopy(null) : new Frame(first.names(),first.vecs());
     Frame ff;
     for(int i = 1; i < argcnt; i++) {
       Frame f = env.peekAryAt(i-argcnt+1);  // Reverse order off stack
