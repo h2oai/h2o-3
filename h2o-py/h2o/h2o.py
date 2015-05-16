@@ -419,7 +419,7 @@ def download_pojo(model,path=""):
   """
   model_id = model._key
 
-  java = H2OConnection.get( "Models/"+model_id+".java" )
+  java = H2OConnection.get( "Models.java/"+model_id )
   file_path = path + "/" + model_id + ".java"
   if path == "": print java.text
   else:
