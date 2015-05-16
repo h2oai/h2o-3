@@ -26,40 +26,47 @@ public class DeepLearningMNIST extends TestUtil {
     Scope.enter();
     try {
       File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
       if (file != null) {
         NFSFileVec trainfv = NFSFileVec.make(file);
         Frame frame = ParseDataset.parse(Key.make(), trainfv._key);
+        NFSFileVec validfv = NFSFileVec.make(valid);
+        Frame vframe = ParseDataset.parse(Key.make(), validfv._key);
         DeepLearningParameters p = new DeepLearningParameters();
 
         // populate model parameters
         p._model_id = Key.make("dl_mnist_model");
         p._train = frame._key;
+        p._valid = vframe._key;
         p._response_column = "C785"; // last column is the response
-        p._activation = DeepLearningParameters.Activation.Tanh;
-        p._hidden = new int[]{2500, 2000, 1500, 1000, 500};
-        p._train_samples_per_iteration = 1500 * H2O.getCloudSize(); //process 1500 rows per node per map-reduce step
-        p._epochs = 1.8 * (float) p._train_samples_per_iteration / frame.numRows(); //train long enough to do 2 map-reduce passes (with scoring each time)
+        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+        p._hidden = new int[]{1024, 1024, 2048};
+        p._train_samples_per_iteration = -2;
+        p._input_dropout_ratio = 0.2;
+        p._l1= 1e-5;
+        p._max_w2= 10;
+        p._epochs = 1000;
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
         Scope.track(frame.replace(ci, frame.vecs()[ci].toEnum())._key);
+        Scope.track(vframe.replace(ci, vframe.vecs()[ci].toEnum())._key);
         DKV.put(frame);
+        DKV.put(vframe);
 
         // speed up training
-        p._adaptive_rate = false; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)
-        p._replicate_training_data = false; //avoid extra communication cost upfront, got enough data on each node for load balancing
-        p._overwrite_with_best_model = false; //no need to keep the best model around
+        p._adaptive_rate = true; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)
+        p._replicate_training_data = true; //avoid extra communication cost upfront, got enough data on each node for load balancing
+        p._overwrite_with_best_model = true; //no need to keep the best model around
         p._diagnostics = false; //no need to compute statistics during training
-        p._score_interval = 20; //score and print progress report (only) every 20 seconds
-        p._score_training_samples = 50; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
+        p._classification_stop = -1;
+        p._score_interval = 60; //score and print progress report (only) every 20 seconds
+        p._score_training_samples = 10000; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
 
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel model = null;
         try {
           model = dl.trainModel().get();
-          if (model != null) {
-            Assert.assertTrue(1000. * model.model_info().get_processed_total() / model.run_time > 20); //we expect at least a training speed of 20 samples/second (MacBook Pro: ~50 samples/second)
-          }
         } catch (Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);
