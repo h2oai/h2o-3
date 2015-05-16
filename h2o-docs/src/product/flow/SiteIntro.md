@@ -16,7 +16,7 @@ We welcome your feedback! Please let us know if you have any questions or commen
 
 If you're just getting started with H2O, here are some links to help you learn more: 
 
-- <a href="http://h2o.ai/download/" target="_blank">Downloads page</a>: First things first - download a copy of H2O <a href="http://h2o.ai/download/" target="_blank">here</a> by selecting a build under "H2O-Dev" (the "Bleeding Edge" build contains the latest changes, while the latest alpha release represents a more stable build), then use the installation instruction tabs to install H2O on your client of choice ([standalone](http://s3.amazonaws.com/h2o-release/{{project_version}}/{{branch_name}}/{{build_number}}/index.html), [R](http://s3.amazonaws.com/h2o-release/{{project_version}}/{{branch_name}}/{{build_number}}/index.html#R), [Python](http://s3.amazonaws.com/h2o-release/{{project_version}}/{{branch_name}}/{{build_number}}/index.html#Python), [Hadoop](http://s3.amazonaws.com/h2o-release/{{project_version}}/{{branch_name}}/{{build_number}}/index.html#Hadoop), or [Maven](http://s3.amazonaws.com/h2o-release/{{project_version}}/{{branch_name}}/{{build_number}}/index.html#Maven)). 
+- <a href="http://h2o.ai/download/" target="_blank">Downloads page</a>: First things first - download a copy of H2O <a href="http://h2o.ai/download/" target="_blank">here</a> by selecting a build under "H2O-Dev" (the "Bleeding Edge" build contains the latest changes, while the latest alpha release represents a more stable build), then use the installation instruction tabs to install H2O on your client of choice ([standalone](http://h2o-release.s3.amazonaws.com/h2o-dev/{{branch_name}}/{{build_number}}/index.html),[R](http://h2o-release.s3.amazonaws.com/h2o-dev/{{branch_name}}/{{build_number}}/index.html#R), [Python](http://h2o-release.s3.amazonaws.com/h2o-dev/{{branch_name}}/{{build_number}}/index.html#Python), [Hadoop](http://h2o-release.s3.amazonaws.com/h2o-dev/{{branch_name}}/{{build_number}}/index.html#Hadoop), or [Maven](http://h2o-release.s3.amazonaws.com/h2o-dev/{{branch_name}}/{{build_number}}/index.html#Maven)). 
 
 	For first-time users, we recommend downloading the latest alpha release and the default standalone option (the first tab) as the installation method. 
 	
@@ -45,6 +45,8 @@ If you're just getting started with H2O, here are some links to help you learn m
 ##Experienced Users
 
 If you've used previous versions of H2O, the following links will help guide you through the process of upgrading to H2O 3.0. 
+
+- <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/Migration.md" target="_blank">Migration Guide</a>: This document provides a comprehensive guide to assist users in upgrading to H2O 3.0. It gives an overview of the changes to the algorithms and the web UI introduced in this version and describes the benefits of upgrading for users of R, APIs, and Java. 
 
 - <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md" target="_blank">Porting R Scripts</a>: This document is designed to assist users who have created R scripts using previous versions of H2O. Due to the many improvements in R, scripts created using previous versions of H2O need some revision to work with H2O 3.0. This document provides a side-by-side comparison of the changes in R for each algorithm, as well as overall structural enhancements R users should be aware of, and provides a link to a tool that assists users in upgrading their scripts. 
 
