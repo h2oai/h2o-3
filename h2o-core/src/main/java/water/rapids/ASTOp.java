@@ -3131,8 +3131,10 @@ class ASTRemoveFrame extends ASTUniPrefixOp {
     if( v instanceof ValFrame ) {
       fr = ((ValFrame) v)._fr;
       fr.restructure(new String[0], new Vec[0]);
+      assert fr.keys().length==0 : "Restructiring the frame failed in removeFrame";
       fr.remove();
     }
+    e.push(new ValNull());
   }
 }
 
