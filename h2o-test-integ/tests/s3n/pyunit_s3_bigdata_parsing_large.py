@@ -1,5 +1,5 @@
 import sys, os, timeit
-sys.path.insert(1, "../")
+sys.path.insert(1, "../../../h2o-")
 import h2o
 
 def s3timings(ip, port):
@@ -35,8 +35,8 @@ def s3timings(ip, port):
                            "s3://h2o-public-test-data/bigdata/server/milsongs/milsongs-train.csv"]')
   cup_run = timeit.Timer(stmt = 'h2o.import_frame(path = cup98)',
     setup = 'import h2o;\
-             cup98 = ["s3://h2o-public-test-data/bigdata/server/milsongs/milsongs-test.csv",\
-                      "s3://h2o-public-test-data/bigdata/server/milsongs/milsongs-train.csv"]')
+             cup98 = ["s3://h2o-public-test-data/bigdata/laptop/usecases/cup98LRN_z.csv",\
+                      "s3://h2o-public-test-data/bigdata/laptop/usecases/cup98VAL_z.csv"]')
   mnist_run = timeit.Timer(stmt  = 'h2o.import_frame(path = mnist)',
     setup = 'import h2o;\
              mnist = ["s3://h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz".\
