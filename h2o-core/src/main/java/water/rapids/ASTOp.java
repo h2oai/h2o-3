@@ -1912,7 +1912,7 @@ class ASTImpute extends ASTUniPrefixOp {
       final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
       final int nGrps = t._g.size();
       final ASTGroupBy.G[] grps = t._g.keySet().toArray(new ASTGroupBy.G[nGrps]);
-      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps)).join();
+      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps,null)).join();
       final long[] cols = _by;
       final int colIdx = _colIdx;
       if( _inplace ) {

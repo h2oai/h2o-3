@@ -776,7 +776,7 @@ class H2OFrame:
     h2o.removeFrameShallow(tmp_key)
     return H2OFrame(vecs=vecs)
 
-  def group_by(self,cols,a):
+  def group_by(self,cols,a,order_by=None):
     """
     GroupBy
     :param cols: The columns to group on.
@@ -790,6 +790,7 @@ class H2OFrame:
     "all" - include NAs
     "rm"  - exclude NAs
     "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    :param order_by: A list of column names or indices on which to order the results.
     :return: The group by frame.
     """
     if self._vecs is None or self._vecs == []:
@@ -810,7 +811,18 @@ class H2OFrame:
       aggs+=["\"{1}\" {2} \"{3}\" \"{0}\"".format(str(k),*aggregates[k])]
     aggs = "(agg {})".format(" ".join(aggs))
 
-    expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
+    # deal with order by
+    if order_by is None: order_by="()"
+    else:
+      if isinstance(order_by, list):
+        oby = [cols.index(i) for i in order_by]
+        order_by = "(llist #"+" #".join([str(o) for o in oby])+")"
+      elif isinstance(order_by, str):
+        order_by = "#" + str(self._find_idx(order_by))
+      else:
+        order_by = "#" + str(order_by)
+
+    expr = "(= !{} (GB %{} {} {} {}))".format(tmp_key,key,rapids_series,aggs,order_by)
     h2o.rapids(expr)  # group by
     # Remove h2o temp frame after groupby
     h2o.removeFrameShallow(key)
