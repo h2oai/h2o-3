@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "md",
+      "input": "#Quick Start Videos\n\nThe following videos provide step-by-step instructions on how to start H2O using Flow, Python, Hadoop, Sparkling Water, or R. \n\n##H2O Quick Start with Flow\n\n<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/_HVx9Jqr34Q?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0\" frameborder=\"0\" allowfullscreen></iframe>\n\n\n---\n\n##H2O Quick Start with Python\n\n<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/K8J3dPBEz1s?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0\" frameborder=\"0\" allowfullscreen></iframe>\n\n---\n\n##H2O Quick Start on Hadoop\n\n<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/B1ax_k_sSoY?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0\" frameborder=\"0\" allowfullscreen></iframe>\n\n---\n\n##H2O Quick Start with Sparkling Water\n\n<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/ypka6eX1G14?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0\" frameborder=\"0\" allowfullscreen></iframe>\n\n---\n\n##H2O Quick Start with R\n\n<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0\" frameborder=\"0\" allowfullscreen></iframe>\n\n\n---\n\n"
+    }
+  ]
+}
