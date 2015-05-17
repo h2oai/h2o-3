@@ -465,10 +465,10 @@ class H2OCloud:
 
         @return: none
         """
-        for node in self.nodes:
+        for node in self.client_nodes:
             node.terminate()
 
-        for node in self.client_nodes:
+        for node in self.nodes:
             node.terminate()
 
     def get_ip(self):

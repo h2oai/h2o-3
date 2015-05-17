@@ -563,14 +563,14 @@ public class Frame extends Lockable<Frame> {
   @Override public Futures remove_impl(Futures fs) {
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
-    final int ncs = anyVec().nChunks();
+    final int ncs = anyVec().nChunks(); // TODO: do not call anyVec which loads all Vecs... only to delete them
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];
     // Bulk dumb local remove - no JMM, no ordering, no safety.
     new MRTask() {
       @Override public void setupLocal() {
-        for( Key k : keys ) if( k != null ) Vec.bulk_remove(k,ncs,_fs);
+        for( Key k : keys ) if( k != null ) Vec.bulk_remove(k,ncs);
       }
     }.doAllNodes();
 

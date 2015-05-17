@@ -957,14 +957,14 @@ public class Vec extends Keyed<Vec> {
     // Bulk dumb local remove - no JMM, no ordering, no safety.
     final int ncs = nChunks();
     new MRTask() {
-      @Override public void setupLocal() { bulk_remove(_key,ncs,_fs); }
+      @Override public void setupLocal() { bulk_remove(_key,ncs); }
     }.doAllNodes();
     return fs;
  }
   // Bulk remove: removes LOCAL keys only, without regard to total visibility.
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
-  static Futures bulk_remove( Key vkey, int ncs, Futures fs ) {
+  static void bulk_remove( Key vkey, int ncs ) {
     for( int i=0; i<ncs; i++ ) {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);
@@ -972,7 +972,6 @@ public class Vec extends Keyed<Vec> {
     Key kr = chunkKey(vkey,-2);
     H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
-    return fs;
   }
 
   // ======= Whole Vec Transformations ======

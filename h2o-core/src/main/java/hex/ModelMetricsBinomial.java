@@ -43,11 +43,12 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override public double[] perRow(double ds[], float[] yact, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
-      _count++;
       final int iact = (int)yact[0];
+      if( iact != 0 && iact != 1 ) return ds; // The actual is effectively a NaN
+      _count++;
 
       // Compute error
-      double err = 1-ds[iact+1];  // Error: distance from predicting ycls as 1.0
+      double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
 
