@@ -324,7 +324,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   reg.finalizer(.h2o.jar.env, function(e) {
     ip_    <- "127.0.0.1"
     port_  <- 54321
-    myURL <- paste0("http://", ip, ":", port)
+    myURL <- paste0("http://", ip_, ":", port_)
     if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
     else {
       conn <- get("SERVER", .pkg.env)

@@ -78,7 +78,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
   :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
-  :return: A new parsed object  
+  :return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
   p = { 'destination_frame' : h2o_name,
@@ -93,7 +93,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
-    first_line_is_header = setup["check_header"] 
+    first_line_is_header = setup["check_header"]
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -350,6 +350,14 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
+def remove_all():
+  """
+  Remove all objects from H2O.
+
+  :return None
+  """
+  H2OConnection.delete("DKV")
+
 def removeFrameShallow(key):
   """
   Do a shallow DKV remove of the frame (does not remove any internal Vecs).
@@ -411,7 +419,7 @@ def download_pojo(model,path=""):
   """
   model_id = model._key
 
-  java = H2OConnection.get( "Models/"+model_id+".java" )
+  java = H2OConnection.get( "Models.java/"+model_id )
   file_path = path + "/" + model_id + ".java"
   if path == "": print java.text
   else:
