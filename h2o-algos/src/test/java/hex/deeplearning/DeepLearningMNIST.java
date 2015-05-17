@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -15,9 +14,38 @@ import java.io.File;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 /**
- * Simple Deep Neural Network on MNIST with ~12M parameters
- * ~50MB model size, won't fit in L3 cache -> main memory bandwidth (fprop) and latency (bprop) limited
+ * Simple Deep Neural Network on MNIST
  * Note: requires './gradlew syncBigDataLaptop'
+ *
+ * 7 hours on i7 5820k to get to 0.91% test set error (World-record: 0.83%)
+ *
+ *    Duration     Training Speed      Epochs   Samples  Training MSE  Training R^2  Training LogLoss  Training Classification Error  Validation MSE  Validation R^2  Validation LogLoss  Validation Classification Error
+ * 6:59:29.885  2384.428 rows/sec  1000.26288  60015771       0.00005       0.99999           0.00016                        0.00010         0.00823         0.99902             0.05626                          0.00910
+ * INFO: Confusion Matrix (vertical: actual; across: predicted):
+ * INFO:          0    1    2    3   4   5   6    7   8    9  Error          Rate
+ * INFO:      0 975    0    1    0   0   0   1    1   2    0 0.0051 =     5 / 980
+ * INFO:      1   0 1131    0    1   0   0   2    0   1    0 0.0035 =   4 / 1,135
+ * INFO:      2   0    0 1025    0   1   0   1    3   2    0 0.0068 =   7 / 1,032
+ * INFO:      3   0    0    1 1004   0   0   0    3   2    0 0.0059 =   6 / 1,010
+ * INFO:      4   1    0    0    0 970   0   5    0   0    6 0.0122 =    12 / 982
+ * INFO:      5   2    0    0    2   0 885   2    0   1    0 0.0078 =     7 / 892
+ * INFO:      6   3    3    0    0   1   2 948    0   1    0 0.0104 =    10 / 958
+ * INFO:      7   1    2    5    0   0   0   0 1017   1    2 0.0107 =  11 / 1,028
+ * INFO:      8   1    0    0    2   0   3   0    1 963    4 0.0113 =    11 / 974
+ * INFO:      9   1    2    0    3   6   2   0    4   0  991 0.0178 =  18 / 1,009
+ * INFO: Totals 984 1138 1032 1012 978 892 959 1029 973 1003 0.0091 = 91 / 10,000
+ * INFO: Top-10 Hit Ratios:
+ * INFO:  K  Hit Ratio
+ * INFO:  1   0.990900
+ * INFO:  2   0.998100
+ * INFO:  3   0.999200
+ * INFO:  4   0.999500
+ * INFO:  5   0.999900
+ * INFO:  6   0.999900
+ * INFO:  7   1.000000
+ * INFO:  8   1.000000
+ * INFO:  9   1.000000
+ * INFO: 10   1.000000
  */
 public class DeepLearningMNIST extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
