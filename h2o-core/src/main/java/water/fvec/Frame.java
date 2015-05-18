@@ -1096,12 +1096,10 @@ public class Frame extends Lockable<Frame> {
   // _vecs put into kv store already
   private class DoCopyFrame extends MRTask<DoCopyFrame> {
     final Vec[] _vecs;
-    private final Vec[] _inVecs;
     DoCopyFrame(Vec[] vecs) {
-      _inVecs=vecs;
       _vecs = new Vec[vecs.length];
       for(int i=0;i<vecs.length;++i)
-        _vecs[i] = new Vec(vecs[i].group().addVec(),vecs[i]._espc.clone());
+        _vecs[i] = new Vec(vecs[i].group().addVec(),vecs[i]._espc.clone(), vecs[i].domain(), vecs[i]._type);
     }
     @Override public void map(Chunk[] cs) {
       int i=0;
@@ -1114,13 +1112,7 @@ public class Frame extends Lockable<Frame> {
         DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs);
       }
     }
-    @Override public void postGlobal() {
-      int i=0;
-      for (Vec _vec : _vecs) {
-        _vec.setDomain(_inVecs[i++].domain());
-        DKV.put(_vec);
-      }
-    }
+    @Override public void postGlobal() { for( Vec _vec : _vecs ) DKV.put(_vec); }
   }
 
   /**
