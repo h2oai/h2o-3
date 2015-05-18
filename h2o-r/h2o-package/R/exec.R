@@ -1,12 +1,12 @@
-#'
-#' R -> AST
-#'
-#' This is the front-end of the execution interface between R and H2O.
-#'
-#' The workhorses of this front end are .h2o.unary_op, .h2o.binary_op, and .h2o.nary_op.
-#'
-#' Together, these three methods handle all of the available operations that can
-#' be done with H2OFrame objects (this includes H2OFrame objects and ASTNode objects).
+#~
+#~ R -> AST
+#~
+#~ This is the front-end of the execution interface between R and H2O.
+#~
+#~ The workhorses of this front end are .h2o.unary_op, .h2o.binary_op, and .h2o.nary_op.
+#~
+#~ Together, these three methods handle all of the available operations that can
+#~ be done with H2OFrame objects (this includes H2OFrame objects and ASTNode objects).
 
 # Result Types
 ARY    <- 0L
