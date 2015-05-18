@@ -125,7 +125,6 @@ public abstract class GLMTask  {
     @Override
     public void map(Chunk [] chks) {
       Chunk rowFilter = _rowFilter != null?_rowFilter.chunkForChunkIdx(chks[0].cidx()):null;
-
       Chunk responseChunk = chks[chks.length-1];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
       if(rowFilter != null)
@@ -135,12 +134,11 @@ public abstract class GLMTask  {
       double [] beta = _beta;
       double [] pk = _direction;
       // intercept
-      if(_dinfo._intercept) {
-        for (int r = 0; r < eta.length; ++r) {
-          int off = beta.length - 1;
-          double t = 1;
-          for (int j = 0; j < _nSteps; ++j, t *= _step)
-            eta[r][j] += beta[off] + pk[off] * t;
+      for (int r = 0; r < eta.length; ++r) {
+        double b = beta[beta.length - 1];
+        double t = pk[beta.length - 1];
+        for (int j = 0; j < _nSteps; ++j, t *= _step) {
+          eta[r][j] += b + t;
         }
       }
       // categoricals
@@ -153,9 +151,10 @@ public abstract class GLMTask  {
           }
           int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
           if(off != -1) {
-            double t = 1;
+            double t = pk[off];
+            double b = beta[off];
             for (int j = 0; j < _nSteps; ++j, t *= _step)
-              eta[r][j] += beta[off] + pk[off] * t;
+              eta[r][j] += b + t;
           }
         }
       }
@@ -184,10 +183,8 @@ public abstract class GLMTask  {
             d *= _dinfo._normMul[i];
           double b = beta[numStart+i];
           double s = pk[numStart+i];
-          for (int j = 0; j < _nSteps; ++j) {
+          for (int j = 0; j < _nSteps; ++j, s *= _step)
             eta[r][j] += (b + s) * d;
-            s *= _step;
-          }
         }
       }
       _likelihoods = MemoryManager.malloc8d(_nSteps);

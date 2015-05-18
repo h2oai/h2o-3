@@ -4,6 +4,7 @@ import hex.ModelMetricsBinomialGLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,14 +25,13 @@ import static org.junit.Assert.assertEquals;
 public class GLMBasicTest extends TestUtil {
   static Frame _prostate; // prostate_cat_replaced
 
+
   @Test
   public void testNoIntercept() {
     GLM job = null;
     GLMModel model = null;
     Frame score = null;
-    try{
-      Scope.enter();
-//      Call:  glm(formula = CAPSULE ~ . - 1, family = binomial, data = D)
+//        Call:  glm(formula = CAPSULE ~ . - 1, family = binomial, data = D)
 //
 //      Coefficients:
 //      ID        AGE        RACER1     RACER2     RACER3      DPROS      DCAPS      PSA        VOL        GLEASON
@@ -40,47 +40,54 @@ public class GLMBasicTest extends TestUtil {
 //      Degrees of Freedom: 380 Total (i.e. Null);  370 Residual
 //      Null Deviance:	    526.8
 //      Residual Deviance: 376.6 	AIC: 396.6
-      String [] cfs1 = new String [] {"AGE",      "RACE.R1",   "RACE.R2",  "RACE.R3",  "DPROS",    "DCAPS",    "PSA",      "VOL",     "GLEASON"};
-      double [] vals = new double [] {-0.01368,   -8.14867,    -7.82530,    -8.52895,  0.55964,   0.49548,     0.02794    ,-0.01104   ,0.97704 };
-      GLMParameters params = new GLMParameters(Family.binomial);
-      params._response_column = "CAPSULE";
-      params._ignored_columns = new String[]{"ID"};
-      params._train = _prostate._key;
-      params._lambda = new double[]{0};
-      params._alpha = new double[]{0};
-      params._standardize = false;
-      params._intercept = false;
-      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
-      model = job.trainModel().get();
-      HashMap<String, Double> coefs = model.coefficients();
-
-      for(int i = 0; i < cfs1.length; ++i)
-        assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
-
-      assertEquals(526.8, GLMTest.nullDeviance(model),1e-1);
-      assertEquals(378.3, GLMTest.residualDeviance(model),1e-1);
-      assertEquals(380,GLMTest.nullDOF(model),0);
-      assertEquals(371,GLMTest.resDOF(model),0);
-      assertEquals(396.3, GLMTest.aic(model),1e-1);
-      model.delete();
-      // test scoring
-      score = model.score(_prostate);
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostate);
-      hex.AUC2 adata = mm._auc;
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
-      assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
-      assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
-      Frame score1 = model.score(_prostate);
-      score1.remove();
-      mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostate);
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
-      assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
-      assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
-    } finally {
-      if(model != null)model.delete();
-      if(score != null)score.delete();
-      if( job != null ) job.remove();
-      Scope.exit();
+    String [] cfs1 = new String [] {"AGE",      "RACE.R1",   "RACE.R2",  "RACE.R3",  "DPROS",    "DCAPS",    "PSA",      "VOL",     "GLEASON"};
+    double [] vals = new double [] {-0.01368,   -8.14867,    -7.82530,    -8.52895,  0.55964,   0.49548,     0.02794    ,-0.01104   ,0.97704 };
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._response_column = "CAPSULE";
+    params._ignored_columns = new String[]{"ID"};
+    params._train = _prostate._key;
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._standardize = false;
+    params._intercept = false;
+    params._objective_epsilon = 0;
+    params._gradient_epsilon = 1e-6;
+    params._max_iterations = 100; // not expected to reach max iterations here
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
+      try {
+        params._solver = s;
+        System.out.println("SOLVER = " + s);
+        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+        model = job.trainModel().get();
+        HashMap<String, Double> coefs = model.coefficients();
+        System.out.println("coefs = " + coefs.toString());
+        System.out.println("metrics = " + model._output._training_metrics);
+        for (int i = 0; i < cfs1.length; ++i)
+          assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+        assertEquals(526.8, GLMTest.nullDeviance(model), 1e-1);
+        assertEquals(378.3, GLMTest.residualDeviance(model), 1e-1);
+        assertEquals(380, GLMTest.nullDOF(model), 0);
+        assertEquals(371, GLMTest.resDOF(model), 0);
+        assertEquals(396.3, GLMTest.aic(model), 1e-1);
+        model.delete();
+        // test scoring
+        score = model.score(_prostate);
+        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostate);
+        hex.AUC2 adata = mm._auc;
+        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+        assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+        Frame score1 = model.score(_prostate);
+        score1.remove();
+        mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostate);
+        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+        assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+      } finally {
+        if (model != null) model.delete();
+        if (score != null) score.delete();
+        if (job != null) job.remove();
+      }
     }
   }
 
