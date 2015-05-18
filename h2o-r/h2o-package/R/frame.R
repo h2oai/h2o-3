@@ -2406,15 +2406,16 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #' summary(apply(iris.hex, 1, sum))
 #' @export
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
+  mktmp <- !.is.eval(X)
+  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=X@mutable$ast, frame_id=X@frame_id)
   if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
-  if(missing(FUN)) stop("FUN must be an R function")
+  if( missing(FUN) ) stop("FUN must be an R function")
   .FUN <- NULL
-  if (is.character(FUN)) .FUN <- get(FUN)
-  if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
-  else if(is.null(.FUN) && !is.function(FUN))
-    stop("FUN must be an R function")
-  if (!is.null(.FUN)) FUN <- as.name(FUN)
+  if( is.character(FUN) ) .FUN <- get(FUN)
+  if( !is.null(.FUN) && !is.function(.FUN) )    stop("FUN must be an R function!")
+  else if( is.null(.FUN) && !is.function(FUN) ) stop("FUN must be an R function")
+  if( !is.null(.FUN) ) FUN <- as.name(FUN)
 
   l <- list(...)
   if(length(l) > 0L) {
@@ -2431,7 +2432,6 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
       l[idx] <- x
     }
   }
-
   # Process the function. Decide if it's an anonymous fcn, or a named one.
   myfun <- deparse(substitute(FUN), width.cutoff = 500L)
   fun.ast <- NULL
@@ -2456,10 +2456,12 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
 
-  if(length(l) == 0L)
-    .h2o.nary_frame_op("apply", X, MARGIN, fun.ast)
-  else
-    .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+  if(length(l) == 0L)  res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast)
+  else                 res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+
+  mktmp <- !.is.eval(res)
+  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=res@mutable$ast, frame_id=res@frame_id)
+  res
 })
 
 #' Apply Over a List in H2O
