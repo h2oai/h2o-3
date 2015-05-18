@@ -49,8 +49,13 @@ for(k in ncent) {
   clust.h2o <- getCenters(cross.km)
   
   # Sort in ascending order by first dimension for comparison purposes
-  clust.mllib <- clust.mllib[order(clust.mllib[,1]),]
-  clust.h2o <- clust.h2o[order(clust.h2o[,1]),]
+  ulen <- apply(clust.mllib, 2, function(x) { length(unique(x)) })
+  cidx <- which(ulen == nrow(clust.mllib))
+  cidx <- ifelse(length(cidx) == 0, 1, cidx[1])
+  
+  Log.info(paste("Sorting clusters in ascending order by column", cidx))
+  clust.mllib <- clust.mllib[order(clust.mllib[,cidx]),]
+  clust.h2o <- clust.h2o[order(clust.h2o[,cidx]),]
   colnames(clust.mllib) <- colnames(clust.h2o)
   # rownames(clust.mllib) <- 1:k
   # rownames(clust.h2o) <- 1:k
