@@ -2975,7 +2975,7 @@ class ASTHist extends ASTUniPrefixOp {
 
     private void bumpCount(int x) {
       long o = _counts[x];
-      while(!U.compareAndSwapLong(o,longRawIdx(x),o,o+1))
+      while(!U.compareAndSwapLong(_counts,longRawIdx(x),o,o+1))
         o=_counts[x];
     }
     private void setMinMax(long v, int x) {
