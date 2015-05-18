@@ -39,7 +39,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'drf', {\"model_id\":\"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\",\"training_frame\":\"ad.hex\",\"drop_na20_cols\":false,\"response_column\":\"C1559\",\"ntrees\":\"10\",\"max_depth\":20,\"min_rows\":10,\"nbins\":20,\"mtries\":\"1000\",\"sample_rate\":0.6666667,\"build_tree_one_node\":false,\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+      "input": "buildModel 'drf', {\"model_id\":\"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\",\"training_frame\":\"ad.hex\",\"response_column\":\"C1559\",\"ntrees\":\"10\",\"max_depth\":20,\"min_rows\":10,\"nbins\":20,\"mtries\":\"1000\",\"sample_rate\":0.6666667,\"build_tree_one_node\":false,\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
     },
     {
       "type": "md",

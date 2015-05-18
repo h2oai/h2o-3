@@ -223,6 +223,18 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     return len(self)
 
+  def filterNACols(self, frac=0.2):
+    """
+    Filter columns with prportion of NAs >= frac.
+    :param frac: Fraction of NAs in the column.
+    :return: A  list of column indices.
+    """
+    fr = self.send_frame()
+    res = h2o.rapids("(filterNACols %{} #{})".format(fr,str(frac)))
+    l = res["head"][0]
+    h2o.removeFrameShallow(fr)
+    return [int(float(i)) for i in l]
+
   def dim(self):
     """
     Get the number of rows and columns in the H2OFrame.
@@ -372,8 +384,11 @@ class H2OFrame:
       self._row('missing_count', None)
     ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
-    dist_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["distribution_summary"]
+    chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
+    dist_summary = chunk_dist_sum["distribution_summary"]
+    chunk_summary = chunk_dist_sum["chunk_summary"]
     h2o.removeFrameShallow(chunk_summary_tmp_key)
+    chunk_summary.show()
     dist_summary.show()
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
@@ -761,7 +776,7 @@ class H2OFrame:
     h2o.removeFrameShallow(tmp_key)
     return H2OFrame(vecs=vecs)
 
-  def group_by(self,cols,a):
+  def group_by(self,cols,a,order_by=None):
     """
     GroupBy
     :param cols: The columns to group on.
@@ -775,6 +790,7 @@ class H2OFrame:
     "all" - include NAs
     "rm"  - exclude NAs
     "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    :param order_by: A list of column names or indices on which to order the results.
     :return: The group by frame.
     """
     if self._vecs is None or self._vecs == []:
@@ -795,7 +811,18 @@ class H2OFrame:
       aggs+=["\"{1}\" {2} \"{3}\" \"{0}\"".format(str(k),*aggregates[k])]
     aggs = "(agg {})".format(" ".join(aggs))
 
-    expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
+    # deal with order by
+    if order_by is None: order_by="()"
+    else:
+      if isinstance(order_by, list):
+        oby = [cols.index(i) for i in order_by]
+        order_by = "(llist #"+" #".join([str(o) for o in oby])+")"
+      elif isinstance(order_by, str):
+        order_by = "#" + str(self._find_idx(order_by))
+      else:
+        order_by = "#" + str(order_by)
+
+    expr = "(= !{} (GB %{} {} {} {}))".format(tmp_key,key,rapids_series,aggs,order_by)
     h2o.rapids(expr)  # group by
     # Remove h2o temp frame after groupby
     h2o.removeFrameShallow(key)

@@ -1,4 +1,4 @@
-# ...From the Cmd Line
+# ... From the Cmd Line
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O 3.0. When you launch from the command line, you can include additional instructions to H2O 3.0, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 

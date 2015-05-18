@@ -335,6 +335,16 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
 }
 
+#'
+#' Filter NA Coluns
+#'
+#' @param data A dataset to filter on.
+#' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
+#' @export
+h2o.filterNACols <- function(data, frac=0.2) {
+  (as.data.frame(.h2o.nary_frame_op("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
+}
+
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
 #  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
 #    warning(data@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
@@ -1778,7 +1788,7 @@ setMethod("ifelse", signature(test="ANY",yes="H2OFrame", no="H2OFrame"), functio
 #' head(prostate.cbind)
 #' @export
 h2o.cbind <- function(...) {
-  li <- list(...)
+  li <- list(unlist(list(...)))
   use.args <- FALSE
   if( length(li)==1 && is.list(li[[1]]) ) {
     li <- li[[1]]
@@ -1894,12 +1904,13 @@ h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
 #' @param data an \linkS4class{H2OFrame} object.
 #' @param by a list of column names
 #' @param \dots any supported aggregate function.
+#' @param order.by Takes a vector column names or indices specifiying how to order the group by result.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
 #' @return Returns a new \linkS4class{H2OFrame} object with columns equivalent to the number of
 #'         groups created
 #' @export
-h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.names=NULL)) {
+h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
   if( !is(data, "H2OFrame") )
       stop("`data` must be of type H2OFrame")
 
@@ -1927,18 +1938,16 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
   a <- substitute(list(...))
   a[[1]] <- NULL  # drop the wrapping list()
-
   nAggs <- length(a)  # the number of aggregates
-
   # for each aggregate, build this list: (agg,col.idx,na.method,col.name)
   agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
-  col.idxs    <- unlist(lapply(a, function(agg) {
+  col.idxs    <- unlist(lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
     # if numeric, then eval it and return
     # otherwise, as.character the *name* and look it up in colnames(data) and fail/return appropriately
+    agg[[2]] <- eval(agg[[2]], envir)
     if( is.numeric(agg[[2]]) || is.integer(agg[[2]]) ) { return(eval(agg[[2]])) }
-
-    col.name <- as.character(agg[[2]])
+    col.name <- eval(as.character(agg[[2]]), parent.frame())
     col.idx <- match(col.name, colnames(data))
 
     # no such column, stop!
@@ -1946,7 +1955,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
     # got a good column index, return it.
     col.idx
-  }))
+  }, parent.frame()))
 
   # default to "all" na.method
   na.methods.defaults <- rep("all", nAggs)
@@ -2009,6 +2018,27 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
     list(agg.methods[idx], eval(col.idxs[idx]), gb.control$na.methods[idx], gb.control$col.names[idx])
   }))
 
+
+  ### ORDER BY ###
+  vars2 <- "()"
+  if( !is.null(order.by) ) {
+    if(is.character(order.by)) {
+        vars2 <- match(order.by, by)
+        if (any(is.na(vars2)))
+          stop('No column named ', order.by, ' in ', by, '.')
+      } else if(is.integer(order.by)) {
+        vars2 <- order.by
+      } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
+        vars2 <- as.integer(order.by)
+      }
+      # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
+      vars2 <- vars2 - 1L
+      if(vars2 < 0L || vars2 > (ncol(data)-1L)) stop('Column ', vars2, ' out of range for frame columns ', ncol(data), '.')
+#      if( any(!(vars2 %in% vars)) )             stop("ORDER BY columns must be used in the group by.")
+  }
+
+  ### END ORDER BY ###
+
   # create the AGG AST
   op <- new("ASTApply", op="agg")
   children <- list( unlist( .args.to.ast(.args=aggs) ) )
@@ -2017,7 +2047,8 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
   # create the group by AST
   op <- new("ASTApply", op="GB")
   vars <- .args.to.ast(vars)
-  GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG))
+  vars2 <- .args.to.ast(vars2)
+  GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG,vars2))
 
   mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
   finalizers <- data@finalizers

@@ -48,7 +48,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // NOT in the parameters - because this requires all model-builders to have
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
-    public boolean _drop_na20_cols;    // True if dropping cols > 20% NAs
     public boolean _ignore_const_cols;    // True if dropping constant cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
@@ -59,8 +58,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _score_each_iteration;
 
     // Public no-arg constructor for reflective creation
-    public Parameters() { _drop_na20_cols = defaultDropNA20Cols();
-                          _ignore_const_cols = defaultDropConsCols(); }
+    public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
@@ -371,7 +369,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec vec = test.vec(names[i]); // Search in the given validation set
 
       // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
-      boolean skipCol = (colNameToSkip != null && names[i].equals(colNameToSkip) && vec == null);
+      boolean isResponse = colNameToSkip != null && names[i].equals(colNameToSkip);
+      boolean skipCol = (isResponse && vec == null);
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null && !skipCol) {
@@ -395,6 +394,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
+            if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
+              throw new IllegalArgumentException("Validation set has a categorical response column "+names[i]+" with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Validation column " + names[i] + " has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             if (expensive) { vec = evec;  good++; } // Keep it

@@ -25,6 +25,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   public int row_count;
 
   // Output fields
+  @API(help="checksum", direction=API.Direction.OUTPUT)
+  public long checksum;
+
   @API(help="Number of rows in the Frame", direction=API.Direction.OUTPUT)
   public long rows;
 

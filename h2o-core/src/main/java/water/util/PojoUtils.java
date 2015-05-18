@@ -156,14 +156,17 @@ public class PojoUtils {
 
               // Look up the schema for each element of the array; if not found fall back to the schema for the base class.
               for (Iced impl : ((Iced[])orig_field.get(origin))) {
-                Schema s = null;
-                try {
-                  s = Schema.schema(version, impl);
+                if (null == impl) {
+                  translation[i++] = null;
+                } else {
+                  Schema s = null;
+                  try {
+                    s = Schema.schema(version, impl);
+                  } catch (H2ONotFoundArgumentException e) {
+                    s = ((Schema) dest_field.getType().getComponentType().newInstance());
+                  }
+                  translation[i++] = s.fillFromImpl(impl);
                 }
-                catch (H2ONotFoundArgumentException e) {
-                  s = ((Schema)dest_field.getType().getComponentType().newInstance());
-                }
-                translation[i++] = s.fillFromImpl(impl);
               }
               dest_field.set(dest, translation);
             } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {

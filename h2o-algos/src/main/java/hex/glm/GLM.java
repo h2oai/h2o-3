@@ -61,7 +61,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
                 + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
-                + ") - try reducing the number of columns and/or the number of categorical factors.";
+                + ") - try reducing the number of columns and/or the number of categorical factors (or switch to the L-BFGS solver).";
         error("_train", msg);
         cancel(msg);
       }
@@ -317,7 +317,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         error("response", "Can not run glm on dataset with constant response. Response == " + itsk._ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + itsk._ymut._nobs + " rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
         return;
       } if (itsk._ymut._nobs < (_dinfo._adaptedFrame.numRows() >> 1)) { // running less than half of rows?
-        warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
+        warn("_training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
       }
       if(_parms._prior > 0)
         _iceptAdjust = -Math.log(itsk._ymut._ymu * (1-_parms._prior)/(_parms._prior * (1-itsk._ymut._ymu)));
@@ -343,15 +343,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         int i = 0;
         while (i < _parms._lambda.length && _parms._lambda[i] > _tInfos[0]._lambdaMax) ++i;
         if (i == _parms._lambda.length)
-          error("lambda", "All passed lambda values are > lambda_max = " + _tInfos[0]._lambdaMax + ", nothing to compute.");
+          error("_lambda", "All passed lambda values are > lambda_max = " + _tInfos[0]._lambdaMax + ", nothing to compute.");
         if (i > 0) {
           _parms._lambda = Arrays.copyOfRange(_parms._lambda, i, _parms._lambda.length);
-          warn("lambda", "removed " + i + " lambda values which were greater than lambda_max = " + _tInfos[0]._lambdaMax);
+          warn("_lambda", "removed " + i + " lambda values which were greater than lambda_max = " + _tInfos[0]._lambdaMax);
         }
       } else { // fill in the default lambda(s)
         if (_parms._lambda_search) {
           if (_parms._nlambdas == 1)
-             error("nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
+             error("_nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
           if (_parms._lambda_min_ratio == -1)
             _parms._lambda_min_ratio = _tInfos[0]._nobs > 25 * _dinfo.fullN() ? 1e-4 : 1e-2;
           final double d = Math.pow(_parms._lambda_min_ratio, 1.0 / (_parms._nlambdas - 1));
@@ -365,7 +365,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       _model = new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       String [] warns = _model.adaptTestForTrain(_valid, true);
-      for(String s:warns) warn("validation_frame",s);
+      for(String s:warns) warn("_validation_frame",s);
       final Submodel nullSm = new Submodel(_parms._lambda[0], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
       _model.setSubmodel(nullSm);
       _model._output._training_metrics = itsk._gtNull._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
@@ -381,18 +381,16 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       if(_parms._max_iterations == -1) {
         if(_parms._solver == Solver.IRLSM) {
-          _tInfos[0]._iterationsPerLambda = 10;
-          _parms._max_iterations = _parms._lambda_search ? _tInfos[0]._iterationsPerLambda * _parms._nlambdas : 50;
+
+          _parms._max_iterations = _parms._lambda_search ? 10 * _parms._nlambdas : 50;
         } else {
           _parms._max_iterations = Math.max(20,_dinfo.fullN() >> 2);
-          if(_parms._lambda_search) {
-            _tInfos[0]._iterationsPerLambda = Math.max(20,_parms._max_iterations / 20);
-            _parms._max_iterations *= _parms._nlambdas*_tInfos[0]._iterationsPerLambda;
-          }
+          if(_parms._lambda_search)
+            _parms._max_iterations = _parms._nlambdas * 100;
         }
-
       }
-      _tInfos[0]._workPerIteration = (int)(WORK_TOTAL /_parms._max_iterations);
+      _tInfos[0]._workPerIteration = _parms._lambda_search?0:(int)(WORK_TOTAL /_parms._max_iterations);
+      _tInfos[0]._workPerLambda = (int)(_parms._lambda_search?(WORK_TOTAL/_parms._nlambdas):0);
     }
   }
 
@@ -521,7 +519,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double          _objVal;     // full objective value including L1 pen
     int             _iter;
     int             _workPerIteration;
-    int             _iterationsPerLambda;
+    int             _workPerLambda;
     int             _worked;     // total number of worked units
     double          _nullGradNorm;
     double          _nullDevTrain;
@@ -661,15 +659,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override
       public void callback(H2OCountedCompleter h2OCountedCompleter) {
         assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + 1;
-        int workDiff = (_lambdaId + 1) * _tInfos[0]._iterationsPerLambda * _tInfos[0]._workPerIteration - _tInfos[0]._worked;
-        if (workDiff > 0) {
-          update(workDiff, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter);
-          _tInfos[0]._worked += workDiff;
-        }
         int rank = 0;
         for (int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept ? 1 : 0); ++i)
           if (_tInfos[0]._beta[i] != 0) ++rank;
         Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + " has " + rank + " nonzeros, gradient err = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
+        update(_tInfos[0]._workPerLambda, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter + ", got " + rank + "nonzeros");
         // launch next lambda
         ++_lambdaId;
 //        if (_parms._lambda_search && !_parms._exactLambdas && _lambdaId == _parms._lambda.length && _tInfos[0]._stopCnt == 0) {

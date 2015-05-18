@@ -123,18 +123,18 @@ public class RequestServer extends NanoHTTPD {
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",
             "Return information about this H2O.");
 
-    register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"num"},
+    register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,MetadataHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
-    register("/3/Metadata/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"path"},
+    register("/3/Metadata/endpoints/(?<path>.*)"                     ,"GET"   ,MetadataHandler.class, "fetchRoute",                       new String[] {"path"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by path.");
-    register("/3/Metadata/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
+    register("/3/Metadata/endpoints"                                 ,"GET"   ,MetadataHandler.class, "listRoutes",
       "Return a list of all the REST API endpoints.");
 
-    register("/3/Metadata/schemaclasses/(?<classname>.*)"            ,"GET"   ,DocsHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
+    register("/3/Metadata/schemaclasses/(?<classname>.*)"            ,"GET"   ,MetadataHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
             "Return the REST API schema metadata for specified schema class.");
-    register("/3/Metadata/schemas/(?<schemaname>.*)"                 ,"GET"   ,DocsHandler.class, "fetchSchemaMetadata", new String[] {"schemaname"},
+    register("/3/Metadata/schemas/(?<schemaname>.*)"                 ,"GET"   ,MetadataHandler.class, "fetchSchemaMetadata", new String[] {"schemaname"},
             "Return the REST API schema metadata for specified schema.");
-    register("/3/Metadata/schemas"                                   ,"GET"   ,DocsHandler.class, "listSchemas",
+    register("/3/Metadata/schemas"                                   ,"GET"   ,MetadataHandler.class, "listSchemas",
             "Return list of all REST API schemas.");
 
 
@@ -711,7 +711,7 @@ public class RequestServer extends NanoHTTPD {
       if (mb.models.length != 1) {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
-      ModelSchema ms = mb.models[0];
+      ModelSchema ms = (ModelSchema)mb.models[0];
       return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
     case html: {
       RString html = new RString(_htmlTemplate);

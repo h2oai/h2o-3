@@ -11,6 +11,7 @@ import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.RandomUtils;
 
+import java.awt.geom.RoundRectangle2D;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -686,24 +687,22 @@ public abstract class Neurons {
       int i = 0, ncats = 0;
       for(; i < _dinfo._cats; ++i){
         assert(_dinfo._catMissing[i] != 0); //we now *always* have a categorical level for NAs, just in case.
-        // This can occur when testing data has categorical levels that are not part of training (or if there's a missing value)
         if (Double.isNaN(data[i])) {
-          if (_dinfo._catMissing[i]!=0) cats[ncats++] = (_dinfo._catOffsets[i+1]-1); //use the extra level made during training
-          else {
-            if (!_dinfo._useAllFactorLevels)
-              throw new IllegalArgumentException("Model was built without missing categorical factors in column "
-                      + _dinfo.coefNames()[i] + ", but found unknown (or missing) categorical factors during scoring."
-                      + "\nThe model needs to be built with use_all_factor_levels=true for this to work.");
-            // else just leave all activations at 0, and since all factor levels were enabled,
-            // this is OK (missing or new categorical doesn't activate any levels seen during training)
-          }
+          cats[ncats] = (_dinfo._catOffsets[i+1]-1); //use the extra level for NAs made during training
         } else {
           int c = (int)data[i];
+
           if (_dinfo._useAllFactorLevels)
-            cats[ncats++] = c + _dinfo._catOffsets[i];
+            cats[ncats] = c + _dinfo._catOffsets[i];
           else if (c!=0)
-            cats[ncats++] = c + _dinfo._catOffsets[i] - 1;
+            cats[ncats] = c + _dinfo._catOffsets[i] - 1;
+
+          // If factor level in test set was not seen by training, then turn it into an NA
+          if (cats[ncats] >= _dinfo._catOffsets[i+1]) {
+            cats[ncats] = (_dinfo._catOffsets[i+1]-1);
+          }
         }
+        ncats++;
       }
       final int n = data.length; // data contains only input features - no response is included
       for(;i < n;++i){

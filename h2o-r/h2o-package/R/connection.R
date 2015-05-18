@@ -320,25 +320,30 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
 
-  # Shut down local H2O when user exits from R
-  pid_file <- .h2o.getTmpFile("pid")
-  if(file.exists(pid_file)) file.remove(pid_file)
-
+  # Shut down local H2O when user exits from R ONLY if h2o started from R
   reg.finalizer(.h2o.jar.env, function(e) {
-    ip    <- "127.0.0.1"
-    port  <- 54321
-    myURL <- paste0("http://", ip, ":", port)
-    if(.h2o.startedH2O() && url.exists(myURL))
-      h2o.shutdown(new("H2OConnection", ip=ip, port=port), prompt = FALSE)
+    ip_    <- "127.0.0.1"
+    port_  <- 54321
+    myURL <- paste0("http://", ip_, ":", port_)
+    if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
+    else {
+      conn <- get("SERVER", .pkg.env)
+      if( !is.null(conn) )
+        print( paste0("H2O is still running @: ", conn@ip_, ":", conn@port_) )
+    }
+    pid_file <- .h2o.getTmpFile("pid")
+    if(file.exists(pid_file)) file.remove(pid_file)
+
   }, onexit = TRUE)
 }
 
 .onDetach <- function(libpath) {
-  ip    <- "127.0.0.1"
-  port  <- 54321
-  myURL <- paste0("http://", ip, ":", port)
-  if (url.exists(myURL)) {
-    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip, port = port), prompt = FALSE), error = function(e) {
+  ip_   <- "127.0.0.1"
+  port_ <- 54321
+  myURL <- paste0("http://", ip_, ":", port_)
+  print("A shutdown has been triggered. ")
+  if( url.exists(myURL) ) {
+    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
         "----------------------------------------------------------------------\n",
@@ -405,10 +410,12 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is.null(max_memory)) mem_args <- c(mem_args, paste0("-Xmx", max_memory))
 
   args <- mem_args
+  ltrs <- paste0(sample(letters,3, replace = TRUE), collapse="")
+  nums <- paste0(sample(0:9, 3,  replace = TRUE),     collapse="")
+  name <- paste0("H2O_started_from_R_", Sys.info()["user"],"_",ltrs,nums)
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
-  args <- c(args, "-name", "H2O_started_from_R")
-  args <- c(args, "-ip", "127.0.0.1")
+  args <- c(args, "-name", name)
   args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)

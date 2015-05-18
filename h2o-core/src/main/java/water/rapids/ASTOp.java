@@ -242,6 +242,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTToUpper());
     putPrefix(new ASTTrim());
 
+    putPrefix(new ASTFilterNACols());
+
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
 //    putPrefix(new ASTIsTRUE());
@@ -418,6 +420,43 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
+    env.pushAry(fr2);
+  }
+}
+
+class ASTFilterNACols extends ASTUniPrefixOp {
+  double _frac;
+  ASTFilterNACols() { super(); }
+  @Override String opStr() { return "filterNACols"; }
+  @Override ASTOp make() { return new ASTFilterNACols(); }
+  ASTFilterNACols parse_impl(Exec E) {
+    AST ary = E.parse();
+    _frac = E.nextDbl();
+    E.eatEnd();
+    ASTFilterNACols res = (ASTFilterNACols)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env env) {
+    Frame f = env.popAry();
+    ArrayList<Integer> colsToKeep = new ArrayList<>();
+    int i=0;
+    double nrow = f.numRows();
+    for( Vec v: f.vecs() ) {
+      if ((v.naCnt() / nrow) < _frac)
+        colsToKeep.add(i);
+      i++;
+    }
+
+    Futures fs = new Futures();
+    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+    AppendableVec v = new AppendableVec(key);
+    NewChunk chunk = new NewChunk(v, 0);
+    for (Integer aColsToKeep : colsToKeep) chunk.addNum(aColsToKeep);
+    chunk.close(0, fs);
+    Vec vec = v.close(fs);
+    fs.blockForPending();
+    Frame fr2 = new Frame(vec);
     env.pushAry(fr2);
   }
 }
@@ -1873,7 +1912,7 @@ class ASTImpute extends ASTUniPrefixOp {
       final ASTGroupBy.IcedNBHS<ASTGroupBy.G> s=new ASTGroupBy.IcedNBHS<>(); s.addAll(t._g.keySet());
       final int nGrps = t._g.size();
       final ASTGroupBy.G[] grps = t._g.keySet().toArray(new ASTGroupBy.G[nGrps]);
-      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps)).join();
+      H2O.submitTask(new ASTGroupBy.ParallelPostGlobal(grps, nGrps,null)).join();
       final long[] cols = _by;
       final int colIdx = _colIdx;
       if( _inplace ) {
@@ -2192,13 +2231,16 @@ class ASTCbind extends ASTUniPrefixOp {
     }
 
     // loop over frames and combine
-    Frame fr = new Frame(new String[0],new Vec[0]);
-    for(int i = 0; i < argcnt; i++) {
+    Frame first=env.peekAryAt(0-argcnt+1);
+    Frame fr = _deepCopy ? first.deepCopy(null) : new Frame(first.names(),first.vecs());
+    Frame ff;
+    for(int i = 1; i < argcnt; i++) {
       Frame f = env.peekAryAt(i-argcnt+1);  // Reverse order off stack
-      Frame ff = _deepCopy ? f.deepCopy(null) : f; // deep copy the frame, R semantics...
-      Frame new_frame = fr.makeCompatible(ff);
-      if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
-      else fr.add(new_frame);
+      if( fr.isCompatible(f) ) ff = _deepCopy ? f.deepCopy(null) : f;
+      else                     ff = fr.makeCompatible(f);
+
+      if (f.numCols() == 1) fr.add(f.names()[0], ff.anyVec());
+      else                  fr.add(ff);
     }
     env.pop(argcnt);
     env.pushAry(fr);
@@ -3092,8 +3134,10 @@ class ASTRemoveFrame extends ASTUniPrefixOp {
     if( v instanceof ValFrame ) {
       fr = ((ValFrame) v)._fr;
       fr.restructure(new String[0], new Vec[0]);
+      assert fr.keys().length==0 : "Restructiring the frame failed in removeFrame";
       fr.remove();
     }
+    e.push(new ValNull());
   }
 }
 

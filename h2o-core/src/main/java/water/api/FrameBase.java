@@ -12,13 +12,10 @@ public class FrameBase<I extends Iced, S extends Schema<I, S>> extends Schema<I,
   transient Frame _fr;         // Avoid a racey update to Key; cached loaded value
 
   // Input fields
-  @API(help="Frame ID",required=true)
+  @API(help="Frame ID",required=true, direction=API.Direction.INOUT)
   public FrameKeyV3 frame_id;
 
   // Output fields
-  @API(help="checksum", direction=API.Direction.OUTPUT)
-  public long checksum;
-
   @API(help="Total data size in bytes", direction=API.Direction.OUTPUT)
   public long byte_size;
 
