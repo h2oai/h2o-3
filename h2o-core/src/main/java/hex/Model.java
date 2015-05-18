@@ -3,6 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
@@ -390,12 +391,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             try {
               evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
             } catch( NumberFormatException nfe ) {
-              throw new IllegalArgumentException("Validation set has a non-categorical column "+names[i]+" which is categorical in the training data");
+              throw new H2OIllegalArgumentException("Validation set has a non-categorical column "+names[i]+" which is categorical in the training data");
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
-              throw new IllegalArgumentException("Validation set has a categorical response column "+names[i]+" with no levels in common with the model");
+              throw new H2OIllegalArgumentException("Validation set has a categorical response column "+names[i]+" with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Validation column " + names[i] + " has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             if (expensive) { vec = evec;  good++; } // Keep it
@@ -404,7 +405,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             good++;
           }
         } else if( vec.isEnum() ) {
-          throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
+          throw new H2OIllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
         } else {
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
@@ -412,7 +413,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       vvecs[i] = vec;
     }
     if( good == convNaN )
-      throw new IllegalArgumentException("Validation set has no columns in common with the training set");
+      throw new H2OIllegalArgumentException("Validation set has no columns in common with the training set");
     if( good == names.length || (colNameToSkip != null && test.find(colNameToSkip) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);
