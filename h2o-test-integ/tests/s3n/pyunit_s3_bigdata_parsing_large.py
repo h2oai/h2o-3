@@ -1,5 +1,5 @@
 import sys, os, timeit
-sys.path.insert(1, "../../../h2o-")
+sys.path.insert(1, "../../../h2o-py")
 import h2o
 
 def s3timings(ip, port):
