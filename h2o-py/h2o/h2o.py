@@ -78,7 +78,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
   :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
-  :return: A new parsed object  
+  :return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
   p = { 'destination_frame' : h2o_name,
@@ -93,7 +93,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
-    first_line_is_header = setup["check_header"] 
+    first_line_is_header = setup["check_header"]
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -172,10 +172,6 @@ def get_frame(frame_id):
   veckeys  = res["vec_ids"]
   vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
   return H2OFrame(vecs=vecs)
-
-# res <- .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
-# cnames <- unlist(lapply(res$columns, function(c) c$label))
-# .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames, linkToGC = linkToGC)
 
 """
 Here are some testing utilities for running the pyunit tests in conjunction with run.py.
@@ -268,10 +264,37 @@ def value_check(h2o_data, local_data, num_elements, col=None):
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   init(ip,port)
+  log_and_echo("------------------------------------------------------------")
+  log_and_echo("")
+  log_and_echo("STARTING TEST: "+str(ou()))
+  log_and_echo("")
+  log_and_echo("------------------------------------------------------------")
   num_keys = store_size()
   test_to_run(ip, port)
-  if keys_leaked(num_keys):
-    print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
+  if keys_leaked(num_keys): print "Leaked Keys!"
+
+def ou():
+  """
+  Where is my baguette!?
+  :return: the name of the baguette. oh uhr uhr huhr
+  """
+  from inspect import stack
+  return stack()[2][1]
+
+def log_and_echo(message):
+  """
+  Log a message on the server-side logs
+  This is helpful when running several pieces of work one after the other on a single H2O
+  cluster and you want to make a notation in the H2O server side log where one piece of
+  work ends and the next piece of work begins.
+
+  Sends a message to H2O for logging. Generally used for debugging purposes.
+
+  :param message: A character string with the message to write to the log.
+  :return: None
+  """
+  if message is None: message = ""
+  H2OConnection.post_json("LogAndEcho", message=message)
 
 def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
@@ -284,11 +307,12 @@ def ipy_notebook_exec(path,save_and_norun=False):
     with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
       f.write(program)
   else:
-    exec(program, globals())
+    d={}
+    exec program in d  # safe, but horrible (exec is horrible)
 
 def ipy_blocks(notebook):
   if 'worksheets' in notebook.keys():
-    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+    return notebook['worksheets'][0]['cells']  # just take the first worksheet
   elif 'cells' in notebook.keys():
     return notebook['cells']
   else:
@@ -326,9 +350,18 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
+def remove_all():
+  """
+  Remove all objects from H2O.
+
+  :return None
+  """
+  H2OConnection.delete("DKV")
+
 def removeFrameShallow(key):
   """
-  Do a shallow DKV remove of the frame (does not remove any internal Vecs)
+  Do a shallow DKV remove of the frame (does not remove any internal Vecs).
+  This is a "soft" delete. Just removes the top level pointer, but all big data remains!
   :param key: A Frame Key to be removed
   :return: None
   """
@@ -386,7 +419,7 @@ def download_pojo(model,path=""):
   """
   model_id = model._key
 
-  java = H2OConnection.get( "Models/"+model_id+".java" )
+  java = H2OConnection.get( "Models.java/"+model_id )
   file_path = path + "/" + model_id + ".java"
   if path == "": print java.text
   else:

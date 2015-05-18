@@ -1,4 +1,4 @@
-#setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.bad.headers <- function(conn) {

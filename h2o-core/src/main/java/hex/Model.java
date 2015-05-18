@@ -369,7 +369,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec vec = test.vec(names[i]); // Search in the given validation set
 
       // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
-      boolean skipCol = (colNameToSkip != null && names[i].equals(colNameToSkip) && vec == null);
+      boolean isResponse = colNameToSkip != null && names[i].equals(colNameToSkip);
+      boolean skipCol = (isResponse && vec == null);
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null && !skipCol) {
@@ -393,6 +394,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
+            if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
+              throw new IllegalArgumentException("Validation set has a categorical response column "+names[i]+" with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Validation column " + names[i] + " has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             if (expensive) { vec = evec;  good++; } // Keep it

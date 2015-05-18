@@ -28,7 +28,7 @@ function make_zip_common {
 }
 
 function make_zip {
-  PROJECT_BASE=h2o-dev-${PROJECT_VERSION}
+  PROJECT_BASE=h2o-${PROJECT_VERSION}
   IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
 
   mkdir -p $IMAGEDIR
@@ -39,7 +39,7 @@ function make_zip {
 
 function make_hadoop_zip {
   HADOOP_VERSION=$1
-  PROJECT_BASE=h2o-dev-${PROJECT_VERSION}-${HADOOP_VERSION}
+  PROJECT_BASE=h2o-${PROJECT_VERSION}-${HADOOP_VERSION}
   IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
 
   mkdir -p $IMAGEDIR

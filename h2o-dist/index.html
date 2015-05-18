@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>
-      Download H2O Dev SUBST_PROJECT_VERSION
+      Download H2O SUBST_PROJECT_VERSION
     </title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -173,7 +173,7 @@
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
       ga('create', 'UA-29263631-3');
-      ga('send', 'pageview', { 'title': 'H2O Dev Downloads for SUBST_PROJECT_VERSION' });
+      ga('send', 'pageview', { 'title': 'H2O Downloads for SUBST_PROJECT_VERSION' });
       <!-- GA sending events -->
       function trackLink(id, category, action) {
         var link = document.getElementById(id);
@@ -289,7 +289,7 @@
     <div id="container">
       <div id="title">
         <p class="links">
-          <a href="http://h2o.ai">H<sub>2</sub>O.ai</a> | <a href="https://github.com/0xdata/h2o-dev">Github</a>
+          <a href="http://h2o.ai">H<sub>2</sub>O.ai</a> | <a href="https://github.com/h2oai/h2o-dev">Github</a>
         </p>
         <h1><span>H<sub>2</sub>O</span></h1>
         <p class="version">Version SUBST_PROJECT_VERSION</p>
@@ -308,15 +308,15 @@
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
-              <a id="download-zip" class="download-button" href="h2o-dev-SUBST_PROJECT_VERSION.zip">Download H<sub>2</sub>O</a>
+              <a id="download-zip" class="download-button" href="h2o-SUBST_PROJECT_VERSION.zip">Download H<sub>2</sub>O</a>
             </div>
-            <h2>Get started with H<sub>2</sub>O Dev in 3 easy steps</h2>
-            <p>1. Download H<sub>2</sub>O Dev. This is a zip file that contains everything you need to get started.</p>
+            <h2>Get started with H<sub>2</sub>O in 3 easy steps</h2>
+            <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
             <p>2. From your terminal, run:</p>
             <p class="terminal">
               cd ~/Downloads<br/>
-              unzip h2o-dev-SUBST_PROJECT_VERSION.zip<br/>
-              cd h2o-dev-SUBST_PROJECT_VERSION<br/>
+              unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
+              cd h2o-SUBST_PROJECT_VERSION<br/>
               java -jar h2o.jar<br/>
             </p>
             <p>3. Point your browser to <a href="http://localhost:54321/" target="_blank">http://localhost:54321</a>
@@ -372,17 +372,17 @@
             <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
             <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
             <p class="terminal">
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-cdh5.2.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-cdh5.3.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-hdp2.2.zip<br/> 
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-mapr3.1.1.zip<br/> 
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.2.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.3.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.2.zip<br/> 
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip<br/> 
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
             </p>
             <p>2. Unpack the zip file and launch a 1g instance of H<sub>2</sub>O: </p>
             <p class="terminal">
-                unzip h2o-dev-SUBST_PROJECT_VERSION-*.zip<br/>
-                cd h2o-dev-SUBST_PROJECT_VERSION-*<br/>
+                unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
+                cd h2o-SUBST_PROJECT_VERSION-*<br/>
                 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName<br/>
             </p>
             <p>3. Point your browser to one of the H2O nodes (i.e. "H2O node ... reports H2O cluster size" in the output below):</p>
@@ -428,10 +428,10 @@ dependencies {</br>
           <ul>
             <li><a id="doc-flow" href="docs-website/h2o-docs/index.html">H2O Documentation</a></li>
             <li><a id="doc-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
-            <li><a id="doc-r-porting" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md">Porting Legacy H2O R Scripts to H2O-Dev</a></li>
+            <li><a id="doc-r-porting" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/upgrade/Migration.md">Porting H2O Classic R Scripts to H2O 3.x</a></li>
             <li><a id="doc-py" href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
             <li><a id="doc-sparkling-water" href="https://github.com/h2oai/sparkling-water/blob/master/README.md">Sparkling Water Readme</a></li>
-            <li><a id="doc-hadoop" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/howto/H2O-DevHadoop.md">Running H2O-Dev on Hadoop</a></li>
+            <li><a id="doc-hadoop" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/howto/H2O-DevHadoop.md">Running H2O on Hadoop</a></li>
             <li><a id="doc-recent-changes" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/RecentChanges.md">Recent Changes</a></li>
           </ul>
           <h2>Developer Documentation</h2>
