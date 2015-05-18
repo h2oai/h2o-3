@@ -166,7 +166,7 @@ def split_frame(data, ratios=[0.75], destination_frames=None):
 def get_frame(frame_id):
   if frame_id is None:
     raise ValueError("frame_id must not be None")
-  res = H2OConnection.get_json("Frames/"+frame_id)
+  res = H2OConnection.get_json("Frames/"+urllib.quote(frame_id))
   res = res["frames"][0]
   colnames = [v["label"] for v in res["columns"]]
   veckeys  = res["vec_ids"]
@@ -354,7 +354,7 @@ def frame(frame_id):
   :param frame_id: A pointer to a Frame  in H2O.
   :return: Meta information on the frame
   """
-  return H2OConnection.get_json("Frames/" + frame_id)
+  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
 
 
 def frames():
@@ -373,7 +373,7 @@ def frame_summary(key):
   :return: Meta and summary info on the frame
   """
   # frames_meta = H2OConnection.get_json("Frames/" + key)
-  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  frame_summary =  H2OConnection.get_json("Frames/" + urllib.quote(key) + "/summary")
   return frame_summary
 
 def download_pojo(model,path=""):
