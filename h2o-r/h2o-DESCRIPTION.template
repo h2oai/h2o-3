@@ -5,7 +5,11 @@ Title: R Interface for H2O
 Date: 2015-4-27
 Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
-Description: This is a package for running H2O via its REST API from within R.
+Description: R scripting functionality for H2O, the open source
+  math engine for big data that computes parallel distributed
+  machine learning algorithms such as generalized linear models,
+  gradient boosting machines, random forests, and neural networks
+  (deep learning) within various cluster environments.
 License: Apache License (== 2.0)
 URL: http://www.h2o.ai
 NeedsCompilation: no
