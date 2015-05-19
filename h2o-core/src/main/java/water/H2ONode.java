@@ -172,7 +172,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     try {
       if( H2O.CLOUD_MULTICAST_IF != null && !H2O.CLOUD_MULTICAST_IF.supportsMulticast() ) {
         Log.info("Selected H2O.CLOUD_MULTICAST_IF: "+H2O.CLOUD_MULTICAST_IF+ " doesn't support multicast");
-        H2O.CLOUD_MULTICAST_IF = null;
+//        H2O.CLOUD_MULTICAST_IF = null;
       } 
       if( H2O.CLOUD_MULTICAST_IF != null && !H2O.CLOUD_MULTICAST_IF.isUp() ) {
         throw new RuntimeException("Selected H2O.CLOUD_MULTICAST_IF: "+H2O.CLOUD_MULTICAST_IF+ " is not up and running");
