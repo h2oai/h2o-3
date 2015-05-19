@@ -1,6 +1,7 @@
 package water;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import water.util.ArrayUtils;
 import water.util.IcedBitSet;
@@ -8,7 +9,7 @@ import water.util.IcedBitSet;
 import java.util.Random;
 
 public class IcedBitSetTest extends TestUtil {
-  public IcedBitSetTest() { super(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   static void check(IcedBitSet bs, int bitoff, Integer[] idx) {
     String correct = "{";
