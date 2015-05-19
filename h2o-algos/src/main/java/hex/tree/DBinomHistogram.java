@@ -71,7 +71,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       idxs = MemoryManager.malloc4(nbins+1); // Reverse index
       for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
-      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
+      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : (double)_sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
       ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
         @Override
