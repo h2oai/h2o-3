@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Basically a worker-bee with CPUs, Memory and Disk.
  * One of this is the self-Node, but the rest are remote Nodes.
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 
