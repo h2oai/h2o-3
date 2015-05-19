@@ -83,7 +83,7 @@ public class IcedBitSetTest extends TestUtil {
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
     fill(bs, idx);
-    Assert.assertEquals(bs.size(), len);
+    Assert.assertEquals(bs.size(), Math.max(32,len));
     check(bs, 0, idx);
   }
 
@@ -92,7 +92,7 @@ public class IcedBitSetTest extends TestUtil {
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
     fill(bs, idx);
-    Assert.assertEquals(bs.size(), len);
+    Assert.assertEquals(bs.size(), Math.max(32,len));
     check(bs, 0, idx);
   }
 
@@ -107,7 +107,7 @@ public class IcedBitSetTest extends TestUtil {
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 200)];
     fill(bs, idx);
-    Assert.assertEquals(bs.size(), len);
+    Assert.assertEquals(bs.size(), Math.max(32,len));
     check(bs, 0, idx);
   }
 
@@ -116,7 +116,7 @@ public class IcedBitSetTest extends TestUtil {
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 200)];
     fill(bs, idx);
-    Assert.assertEquals(bs.size(), len);
+    Assert.assertEquals(bs.size(), Math.max(32,len));
     check(bs, 0, idx);
 
     for (int i = 0; i < idx.length; ++i) {
