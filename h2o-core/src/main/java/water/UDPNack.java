@@ -3,7 +3,7 @@ package water;
 /**
  * A remote task re-request; NACK indicating "we heard you"
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 
