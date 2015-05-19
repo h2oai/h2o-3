@@ -21,7 +21,7 @@ import java.util.Random;
  * we go to the ByteChannel for more/less.  Because DirectByteBuffers are
  * expensive to make, we keep a few pooled.
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  */
 public final class AutoBuffer {
   // The direct ByteBuffer for schlorping data about.

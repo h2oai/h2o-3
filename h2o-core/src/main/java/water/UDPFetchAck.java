@@ -3,7 +3,7 @@ package water;
 /**
  * A remote task request has just returned an ACK with answer
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

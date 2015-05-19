@@ -2817,7 +2817,12 @@ class ASTHist extends ASTUniPrefixOp {
     if( v instanceof ValStr )             algo      = ((ValStr)v)._s.toLowerCase();
     else if( v instanceof ValDoubleList ) breaks    = ((ValDoubleList)v)._d;
     else if( v instanceof ValNum )        numBreaks = (int)((ValNum)v)._d;
-    else throw new IllegalArgumentException("breaks must be a string, a list of doubles, or a number. Got: " + v.getClass());
+    else if( v instanceof ValLongList   ) {
+      long[] breaksLong = ((ValLongList)v)._l;
+      breaks = new double[breaksLong.length];
+      int i=0;
+      for(long l:breaksLong) breaks[i++]=l;
+    } else throw new IllegalArgumentException("breaks must be a string, a list of doubles, or a number. Got: " + v.getClass());
 
     Frame f = e.popAry();
     if( f.numCols() != 1) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
@@ -2837,7 +2842,7 @@ class ASTHist extends ASTUniPrefixOp {
         case "sqrt":    numBreaks = sqrt(vec);    h=(x1-x0)/numBreaks; break;
         case "doane":   numBreaks = doane(vec);   h=(x1-x0)/numBreaks; break;
         case "scott":   h=scotts_h(vec); numBreaks = scott(vec,h);     break;  // special bin width computation
-        case "fd":      h=fds_h(vec);    numBreaks = fd(vec, h);        break;  // special bin width computation
+        case "fd":      h=fds_h(vec);    numBreaks = fd(vec, h);       break;  // special bin width computation
         default:        numBreaks = sturges(vec); h=(x1-x0)/numBreaks;         // just do sturges even if junk passed in
       }
       t = new HistTask(computeCuts(vec,numBreaks),h,x0).doAll(vec);
@@ -2849,7 +2854,9 @@ class ASTHist extends ASTUniPrefixOp {
     // wanna make a new frame here [breaks,counts,mids]
     final double[] brks=t._breaks;
     final long  [] cnts=t._counts;
-    final double[] mids=t._mids;
+    final double[] mids_true=t._mids;
+    final double[] mids = new double[t._breaks.length-1];
+    for(int i=1;i<brks.length;++i) mids[i-1] = .5*(t._breaks[i-1]+t._breaks[i]);
     Vec layoutVec = Vec.makeZero(brks.length);
     fr2 = new MRTask() {
       @Override public void map(Chunk[] c, NewChunk[] nc) {
@@ -2859,13 +2866,15 @@ class ASTHist extends ASTUniPrefixOp {
           if(i==0) {
             nc[1].addNA();
             nc[2].addNA();
+            nc[3].addNA();
           } else {
             nc[1].addNum(cnts[(i-1)+start]);
-            nc[2].addNum(mids[(i-1)+start]);
+            nc[2].addNum(mids_true[(i-1)+start]);
+            nc[3].addNum(mids[(i-1)+start]);
           }
         }
       }
-    }.doAll(3, layoutVec).outputFrame(null, new String[]{"breaks", "counts", "mids"},null);
+    }.doAll(4, layoutVec).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
     layoutVec.remove();
     e.pushAry(fr2);
   }

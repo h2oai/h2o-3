@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * a home node is sometimes useful for Keys with very high update rates coming
  * from a specific Node.
  * <p>
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparable {

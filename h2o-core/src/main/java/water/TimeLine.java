@@ -14,7 +14,7 @@ import water.nbhm.UtilUnsafe;
  * whole-Cloud timeline for dumping.
  *
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 
