@@ -36,11 +36,10 @@ for(i in 1:length(rows)){ # changing number of rows
     ncols <- cols[j]
     col_grid[j] <- ncols
     names <- c(names, nrows * ncols) # set the name to be the problem size
-    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols,
-                                                 seed = 12345, randomize = T, value = 0, real_range = 100,
-                                                 categorical_fraction = 0.0, factors = 10,
-                                                 integer_fraction = 0.4, integer_range = 100,
-                                                 missing_fraction = 0, response_factors = 1, has_response = TRUE) )
+    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols, seed = 12345, 
+												 randomize = TRUE, real_range = 100, categorical_fraction = 0.0, 
+												 integer_fraction = 0.4, integer_range = 100, 
+												 missing_fraction = 0, has_response = FALSE) )
 
     create_frm_time[i,j] = as.numeric(sst[3])
     mem <- h2o.ls(conn)

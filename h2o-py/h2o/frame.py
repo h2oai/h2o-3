@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -338,7 +338,7 @@ class H2OFrame:
     if col < 0: col = 0
     if col >= self.ncol(): col = self.ncol() - 1
     vec = self._vecs[col]
-    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
+    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(urllib.quote(vec._expr.eager()), "C1"))
     return res["domain"][0]
 
   def setNames(self,names):

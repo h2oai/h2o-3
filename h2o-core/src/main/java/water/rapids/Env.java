@@ -401,7 +401,6 @@ public class Env extends Iced {
     for( Vec v: _refcnt.keySet()) {
       if( _refcnt.get(v)._val==0 && !hasLock(v._key) ) Keyed.remove(v._key); // no lock and zero counts, nuke it.
     }
-//    pop(); // could be bad here
   }
 
   private void remove_and_unlock(Frame fr) {

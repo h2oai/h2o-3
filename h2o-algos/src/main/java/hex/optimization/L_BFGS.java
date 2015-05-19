@@ -267,9 +267,10 @@ public final class L_BFGS extends Iced {
         Log.warn("LBFGS: Got NaNs in search direction.");
         break; //
       }
-      double lsVal = Double.POSITIVE_INFINITY;
+      LineSearchSol ls = null;
+
       if(doLineSearch) {
-        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 24, .5);
+        ls = gslvr.doLineSearch(ginfo, beta, pk, 24, .5);
         if(ls.step == 1) {
           if (++ls_switch == 2) {
             ls_switch = 0;
@@ -279,15 +280,15 @@ public final class L_BFGS extends Iced {
           ls_switch = 0;
         }
         if (ls.madeProgress || _hist._k < 2) {
-          lsVal = ls.objVal;
           ArrayUtils.wadd(beta, pk, ls.step);
         } else {
           break; // ls did not make progress => converged
         }
       } else  ArrayUtils.add(beta, pk);
       GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
-      if(doLineSearch && !(Double.isNaN(lsVal) && Double.isNaN(newGinfo._objVal)) && Math.abs(lsVal - newGinfo._objVal) > 1e-10*lsVal)
-        throw new IllegalArgumentException("L-BFGS: Got invalid gradient solver, objective values from line-search and gradient tasks differ, " + lsVal + " != " + newGinfo._objVal);
+      if(doLineSearch && !(Double.isNaN(ls.objVal) && Double.isNaN(newGinfo._objVal)) && Math.abs(ls.objVal - newGinfo._objVal) > 1e-10*ls.objVal) {
+        throw new IllegalArgumentException("L-BFGS: Got invalid gradient solver, objective values from line-search and gradient tasks differ, " + ls.objVal + " != " + newGinfo._objVal + ", step = " + ls.step);
+      }
       if(!doLineSearch) //{
         if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
           if(++ls_switch == 2) {

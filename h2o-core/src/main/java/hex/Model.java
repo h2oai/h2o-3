@@ -3,6 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 

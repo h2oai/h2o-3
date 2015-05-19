@@ -433,6 +433,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
       }).asyncExec(_dinfo._adaptedFrame);
     }
+    @Override public void onCompletion(CountedCompleter cc){
+      if(!_parms._intercept) { // null the intercept gradients
+        _gtNull._gradient[_gtNull._gradient.length-1] = 0;
+        if(_gtBetaStart != null)
+          _gtBetaStart._gradient[_gtBetaStart._gradient.length-1] = 0;
+      }
+    }
   }
   @Override
   public ModelBuilderSchema schema() {
@@ -1554,10 +1561,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     @Override
     public GLMGradientInfo getGradient(double[] beta) {
+      assert beta.length == _dinfo.fullN()+1;
+      if(!_glmp._intercept) // make sure intercept is 0
+        beta[beta.length-1] = 0;
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, _reg, _rowFilter ).doAll(_dinfo._adaptedFrame)
         :
       /*GLMGradientTask gt = */new GLMGradientTask(_dinfo, _glmp, _lambda, beta, _reg, _rowFilter).doAll(_dinfo._adaptedFrame);
+      if(!_glmp._intercept) // no intercept, null the gradient
+        gt._gradient[gt._gradient.length-1] = 0;
       return new GLMGradientInfo(gt._likelihood, gt._likelihood * _reg +  .5 * _lambda * ArrayUtils.l2norm2(beta,_dinfo._intercept), gt._gradient);
     }
 
