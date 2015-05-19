@@ -261,7 +261,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             a(a(0, 45000),
-              a(0, 45000)),
+                    a(0, 45000)),
             s("0", "1"));
   }
 
@@ -343,7 +343,7 @@ public class DRFTest extends TestUtil {
             },
             7,
             20, 1, 20, a(a(7958, 11707), //1-node
-              a(2709, 19024)),
+                    a(2709, 19024)),
 //          a(a(7841, 11822), //5-node
 //            a(2666, 19053)),
             s("NO", "YES"));
@@ -584,21 +584,25 @@ public class DRFTest extends TestUtil {
       // Load data, hack frames
       tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
       test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
+      for (int i : new int[]{4,5,6}) {
+        tfr.vecs()[i] = tfr.vecs()[i].toEnum();
+        test.vecs()[i] = test.vecs()[i].toEnum();
+      }
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
       parms._valid = test._key;
 //      parms._ignored_columns = new String[]{"UniqueCarrier","Origin","Dest"};
 //      parms._ignored_columns = new String[]{"UniqueCarrier","Origin"};
-      parms._ignored_columns = new String[]{"Month","DayofMonth","DayOfWeek","DepTime","UniqueCarrier","Origin","Distance"};
+//      parms._ignored_columns = new String[]{"Month","DayofMonth","DayOfWeek","DepTime","UniqueCarrier","Origin","Distance"};
       parms._response_column = "dep_delayed_15min";
       parms._nbins = 20;
-      parms._ntrees = 1;
-      parms._max_depth = 5;
-      parms._mtries = 1;
-      parms._sample_rate = 1;
-      parms._min_rows = 1;
-      parms._seed = 1;
+      parms._ntrees = 10;
+      parms._max_depth = 20;
+      parms._mtries = -1;
+      parms._sample_rate = 0.667f;
+      parms._min_rows = 10;
+      parms._seed = 12;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
