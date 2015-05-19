@@ -39,7 +39,7 @@ def s3timings(ip, port):
                       "s3://h2o-public-test-data/bigdata/laptop/usecases/cup98VAL_z.csv"]')
   mnist_run = timeit.Timer(stmt  = 'h2o.import_frame(path = mnist)',
     setup = 'import h2o;\
-             mnist = ["s3://h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz".\
+             mnist = ["s3://h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz",\
                       "s3://h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz"]')
   arc_run = timeit.Timer(stmt = 'h2o.import_frame(path = arcene)',
     setup = 'import h2o;\
