@@ -208,21 +208,17 @@ h2o.getConnection <- function() {
 #' }
 #' @export
 h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
-  if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
-  if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
+  if( !is(conn, "H2OConnection") ) stop("`conn` must be an H2OConnection object")
+  if( !h2o.clusterIsUp(conn) )     stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
   if(!is.logical(prompt) || length(prompt) != 1L || is.na(prompt)) stop("`prompt` must be TRUE or FALSE")
-  if(prompt) {
-    message = sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
-    ans = readline(message)
-    temp = substr(ans, 1L, 1L)
-  } else {
-    temp = "y"
-  }
+  if( prompt ) {
+    message <- sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
+    ans <- readline(message)
+    temp <- substr(ans, 1L, 1L)
+  } else { temp <- "y" }
 
-  if(temp == "Y" || temp == "y") {
-    .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
-  }
+  if(temp == "Y" || temp == "y") .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
 
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
     pid_file <- .h2o.getTmpFile("pid")
@@ -341,7 +337,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
   if( url.exists(myURL) ) {
-    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
+    tryCatch(h2o.shutdown(conn=new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
         "----------------------------------------------------------------------\n",
@@ -414,6 +410,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)
+  args <- c(args, "-ip", "127.0.0.1")
   args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
