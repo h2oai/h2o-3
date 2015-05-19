@@ -33,15 +33,19 @@ public class IcedBitSetTest extends TestUtil {
     Assert.assertTrue(s.equals(correct));
   }
 
+  static void fill(IcedBitSet bs, Integer[] idx) {
+    Random rng = new Random();
+    for (int i = 0; i < idx.length; ++i) {
+      idx[i] = rng.nextInt(bs.size());
+      bs.set(idx[i]);
+    }
+  }
+
   @Test public void fill8() {
     int len = 8;
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), 32);
     check(bs, 0, idx);
   }
@@ -50,11 +54,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 17;
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), 32);
     check(bs, 0, idx);
   }
@@ -63,11 +63,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 16;
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), 32);
     check(bs, 0, idx);
   }
@@ -76,11 +72,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 32;
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), len);
     check(bs, 0, idx);
   }
@@ -89,11 +81,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 33;
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), len);
     check(bs, 0, idx);
   }
@@ -102,11 +90,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 10 + (int) (10000 * new Random().nextDouble());
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 2)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), len);
     check(bs, 0, idx);
   }
@@ -121,11 +105,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 10 + (int) (10000 * new Random().nextDouble());
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 200)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), len);
     check(bs, 0, idx);
   }
@@ -134,11 +114,7 @@ public class IcedBitSetTest extends TestUtil {
     int len = 10 + (int) (10000 * new Random().nextDouble());
     IcedBitSet bs = new IcedBitSet(len);
     Integer[] idx = new Integer[(int) Math.floor(len / 200)];
-    Random rng = new Random();
-    for (int i = 0; i < idx.length; ++i) {
-      idx[i] = rng.nextInt(len);
-      bs.set(idx[i]);
-    }
+    fill(bs, idx);
     Assert.assertEquals(bs.size(), len);
     check(bs, 0, idx);
 
