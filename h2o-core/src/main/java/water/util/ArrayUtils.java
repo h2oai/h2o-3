@@ -423,7 +423,7 @@ public class ArrayUtils {
 
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
-    return pprint(arr,default_dformat);
+    return pprint(arr, default_dformat);
   }
   // pretty print Matrix(2D array of doubles)
   public static String pprint(double[][] arr,DecimalFormat dformat) {
@@ -795,18 +795,58 @@ public class ArrayUtils {
     return res;
   }
 
-  // Sort an indirection array (ints) without making zillions of Integers.
-  // Painful simple O(n^2) insertion sort, suitable for small arrays only.
   public interface IntComparator { public int compare(int a, int b); }
   public static void sort(final int[] data, final IntComparator comparator) {
-    for (int i = 0; i < data.length + 0; i++) {
-      for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
-        int tmp = data[j];
-        data[j] = data[j - 1];
-        data[j - 1] = tmp;
+    sort(data, comparator, false);
+  }
+  public static void sort(final int[] data, final IntComparator comparator, boolean slow) {
+    if (slow || data.length < 7) {
+      for (int i = 0; i < data.length; i++) {
+        for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
+          int tmp = data[j];
+          data[j] = data[j - 1];
+          data[j - 1] = tmp;
+        }
       }
+    } else {
+      int[] tempMergArr = new int[data.length];
+      mergeSort(data, 0, data.length - 1, tempMergArr, comparator);
     }
   }
+
+  private static void mergeSort(int[] data, int lo, int hi, int[] tmp, final IntComparator cmp) {
+    if (lo < hi) {
+      int middle = lo + (hi - lo) / 2;
+      mergeSort (data, lo,     middle, tmp, cmp);
+      mergeSort (data, middle + 1, hi, tmp, cmp);
+      mergeParts(data, lo, middle, hi, tmp, cmp);
+    }
+  }
+
+  private static void mergeParts(int[] data, int lo, int mi, int hiIdx, int[] tmp, final IntComparator cmp) {
+    for (int i = lo; i <= hiIdx; i++) {
+      tmp[i] = data[i];
+    }
+    int i = lo;
+    int j = mi + 1;
+    int k = lo;
+    while (i <= mi && j <= hiIdx) {
+      if (cmp.compare(tmp[j], tmp[i]) > 0) {
+        data[k] = tmp[i];
+        i++;
+      } else {
+        data[k] = tmp[j];
+        j++;
+      }
+      k++;
+    }
+    while (i <= mi) {
+      data[k] = tmp[i];
+      k++;
+      i++;
+    }
+  }
+
   public static double [] subtract (double [] a, double [] b) {
     double [] c = MemoryManager.malloc8d(a.length);
     subtract(a,b,c);
