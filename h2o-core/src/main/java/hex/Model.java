@@ -413,7 +413,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       vvecs[i] = vec;
     }
     if( good == convNaN )
-      throw new H2OIllegalArgumentException("Validation set has no columns in common with the training set");
+      throw new IllegalArgumentException("Validation set has no columns in common with the training set");
     if( good == names.length || (colNameToSkip != null && test.find(colNameToSkip) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);
