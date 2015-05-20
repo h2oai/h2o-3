@@ -192,13 +192,13 @@ task cleanUpSmokeTest << {
 
 clean.dependsOn cleanUp, cleanUpSmokeTest
 setProperties.dependsOn gitbranch, getRVersion, pdflatex
-setPackageFiles.dependsOn setProperties
+cpH2OAppJar.dependsOn setProperties
+setPackageFiles.dependsOn cpH2OAppJar
 buildPackageDocumentation.dependsOn setPackageFiles
 genPDF.dependsOn setPackageFiles
 genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
-cpH2OAppJar.dependsOn cpPDF
-buildPKG.dependsOn cpH2OAppJar
+buildPKG.dependsOn cpPDF
 cpToR.dependsOn buildPKG
 untar.dependsOn cpToR
 cleaner.dependsOn untar
