@@ -6,6 +6,8 @@ import water.util.AtomicUtils;
 import water.util.IcedBitSet;
 import water.util.MathUtils;
 
+import java.util.Comparator;
+
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>Sums and sums-of-squares of floats
@@ -83,8 +85,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
       for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
-      ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() { 
-          @Override public int compare( int x, int y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
+      ArrayUtils.sort(idxs, new Comparator<Integer>() {
+          @Override public int compare( Integer x, Integer y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
         });
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.

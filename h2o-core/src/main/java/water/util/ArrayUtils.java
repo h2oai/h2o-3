@@ -4,6 +4,7 @@ import water.MemoryManager;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
@@ -551,7 +552,7 @@ public class ArrayUtils {
 
   public static int[] toInt(String[] a, int off, int len) {
     int[] res = new int[len];
-    for(int i=0; i<len; i++) res[i] = Integer.valueOf(a[off+i]);
+    for(int i=0; i<len; i++) res[i] = Integer.valueOf(a[off + i]);
     return res;
   }
 
@@ -795,22 +796,17 @@ public class ArrayUtils {
     return res;
   }
 
-  public interface IntComparator { public int compare(int a, int b); }
   /**
    * Sort an integer array of indices based on comparator (which returns array values for a given index)
    * @param data Indices
    * @param comparator IntComparator
    */
-  public static void sort(final int[] data, final IntComparator comparator) {
-    sort(data, comparator, 100);
+  public static void sort(final int[] data, final Comparator<Integer> comparator) {
+    sort(data, comparator, 50);
   }
-
-  /**
-   * Sort
-   * Uses merge sort if array is large enough, otherwise insertion sort
-   */
-  public static void sort(final int[] data, final IntComparator comparator, int cutoff) {
+  public static void sort(final int[] data, final Comparator<Integer> comparator, int cutoff) {
     if (data.length < cutoff) {
+      //hand-rolled insertion sort
       for (int i = 0; i < data.length; i++) {
         for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
           int tmp = data[j];
@@ -819,37 +815,12 @@ public class ArrayUtils {
         }
       }
     } else {
-      int[] tmp = new int[data.length];
-      mergeSort(data, 0, data.length - 1, tmp, comparator);
-    }
-  }
-  private static void mergeSort(int[] data, int lo, int hi, int[] tmp, final IntComparator cmp) {
-    if (lo < hi) {
-      int middle = lo + (hi-lo)/2;
-      mergeSort (data, lo,     middle, tmp, cmp);
-      mergeSort (data, middle+1,   hi, tmp, cmp);
-      merge(data, lo, middle, hi, tmp, cmp);
-    }
-  }
-  private static void merge(int[] data, int lo, int mi, int hi, int[] tmp, final IntComparator cmp) {
-    for (int i = lo; i <= hi; i++) tmp[i] = data[i];
-    int i = lo;
-    int j = mi+1;
-    int k = lo;
-    while (i <= mi && j <= hi) {
-      if (cmp.compare(tmp[j], tmp[i]) > 0) {
-        data[k] = tmp[i];
-        i++;
-      } else {
-        data[k] = tmp[j];
-        j++;
-      }
-      k++;
-    }
-    while (i <= mi) {
-      data[k] = tmp[i];
-      k++;
-      i++;
+      //hand-rolled insertion sort
+      Integer[] d = new Integer[data.length];
+      for (int i = 0; i < data.length; ++i) d[i] = data[i];
+      //Arrays.parallelSort(d, comparator); // might be too aggressive in using threads
+      Arrays.sort(d, comparator);
+      for (int i = 0; i < data.length; ++i) data[i] = d[i];
     }
   }
 

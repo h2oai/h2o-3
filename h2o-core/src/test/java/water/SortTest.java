@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.util.ArrayUtils;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Random;
 
 public class SortTest extends TestUtil {
@@ -13,9 +14,9 @@ public class SortTest extends TestUtil {
   @Test public void runSmall() {
     int[] idxs = new int[]{0,1,2,3,4};
     final double[] avgs = new double[]{4.2,1.0,-1,4.3,2.0};
-    ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
+    ArrayUtils.sort(idxs, new Comparator<Integer>() {
       @Override
-      public int compare(int x, int y) {
+      public int compare(Integer x, Integer y) {
         return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
       }
     });
@@ -25,9 +26,9 @@ public class SortTest extends TestUtil {
   @Test public void runMid() {
     int[] idxs = new int[]{0,1,2,3,4,5,6,7,8};
     final double[] avgs = new double[]{0.1,-0.3,0.5,9.0,4.2,1.0,-1,4.3,2.0};
-    ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
+    ArrayUtils.sort(idxs, new Comparator<Integer>() {
       @Override
-      public int compare(int x, int y) {
+      public int compare(Integer x, Integer y) {
         return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
       }
     });
@@ -42,7 +43,7 @@ public class SortTest extends TestUtil {
 
       long merge = 0;
       long insertion = 0;
-      int reps = 1; //increase for better timing
+      int reps = 10; //increase for better timing
       for (int rep = 0; rep < reps; ++rep) {
         final double[] values = new double[idxs.length];
         Random rng = new Random();
@@ -52,18 +53,18 @@ public class SortTest extends TestUtil {
           values[i] = rng.nextDouble();
         }
         long before = System.nanoTime();
-        ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
+        ArrayUtils.sort(idxs, new Comparator<Integer>() {
           @Override
-          public int compare(int x, int y) {
+          public int compare(Integer x, Integer y) {
             return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
           }
         });
         merge += System.nanoTime() - before;
 
         before = System.nanoTime();
-        ArrayUtils.sort(idxs2, new ArrayUtils.IntComparator() {
+        ArrayUtils.sort(idxs2, new Comparator<Integer>() {
           @Override
-          public int compare(int x, int y) {
+          public int compare(Integer x, Integer y) {
             return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
           }
         }, Integer.MAX_VALUE); //always do insertion sort
