@@ -2048,6 +2048,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   op <- new("ASTApply", op="GB")
   vars <- .args.to.ast(vars)
   if( !is.null(vars2) ) vars2 <- .args.to.ast(vars2)
+  else                  vars2 <- "()"
   GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG,vars2))
 
   mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
