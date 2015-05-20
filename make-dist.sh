@@ -57,13 +57,8 @@ if [ -n "$DO_RELEASE" ]; then
   DO_RELEASE="-PdoRelease"
 fi
 
-if [ -z "$DO_FAST" ]; then
-  # Run some required gradle tasks to produce final build output.
-  #./gradlew :h2o-core:javadoc
-  #./gradlew :h2o-algos:javadoc
-  #./gradlew :h2o-scala:scaladoc
-  ./gradlew $DO_RELEASE publish
-fi
+# Run some required gradle tasks to produce final build output.
+./gradlew $DO_RELEASE publish
 
 # Create target dir, which is uploaded to s3.
 mkdir target
@@ -72,13 +67,30 @@ echo ${PROJECT_VERSION} > target/project_version
 # Create zip files and add them to target.
 make_zip
 
-for HADOOP_VERSION in $HADOOP_VERSIONS; do
-  make_hadoop_zip $HADOOP_VERSION
-done
+if [ -z "$DO_FAST" ]; then
+  for HADOOP_VERSION in $HADOOP_VERSIONS; do
+    make_hadoop_zip $HADOOP_VERSION
+  done
+fi
 
 # Add R CRAN structure to target.
 mkdir -p target/R/src
 cp -rp h2o-r/R/src/contrib target/R/src
+
+# Create shrunken Rcran CRAN source package with no h2o.jar file.
+# Create Rjar directory for .h2o.downloadJar()
+mkdir target/Rcran
+mkdir target/Rjar
+cd target/Rcran
+cp -p ../R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz .
+tar zxvf h2o_${PROJECT_VERSION}.tar.gz
+mv h2o/inst/java/h2o.jar ../Rjar
+rm -f h2o_${PROJECT_VERSION}.tar.gz
+tar cvf h2o_${PROJECT_VERSION}.tar h2o
+gzip h2o_${PROJECT_VERSION}.tar
+rm -fr h2o
+cd ../..
+openssl dgst target/Rjar/h2o.jar | sed 's/.*= //' > target/Rjar/h2o.jar.md5
 
 # Add Python dist to target.
 mkdir -p target/Python
