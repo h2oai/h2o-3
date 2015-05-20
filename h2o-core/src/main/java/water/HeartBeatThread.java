@@ -10,7 +10,7 @@ import water.init.*;
  * Starts a thread publishing multicast HeartBeats to the local subnet: the
  * Leader of this Cloud.
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 public class HeartBeatThread extends Thread {

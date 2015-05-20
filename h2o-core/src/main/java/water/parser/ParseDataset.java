@@ -171,6 +171,8 @@ public final class ParseDataset extends Job<Frame> {
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
+    if (fkeys.length > 1) job.update(0, "Ingesting files.");
+    else job.update(0, "Ingesting file.");
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
 /*    if (mfpt._errors != null) {
@@ -229,11 +231,13 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
+      job.update(0,"Compressing data.");
       fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(setup._number_columns),AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
+      job.update(0,"Unifying categoricals across nodes.");
       Vec[] vecs = fr.vecs();
       int j=0;
       for( int i=0; i<ecols.length; i++ ) {
@@ -253,6 +257,7 @@ public final class ParseDataset extends Job<Frame> {
       Log.trace("Done unifying categoricals across nodes.");
 
     } else {                    // No enums case
+      job.update(0,"Compressing data.");
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
     }
@@ -265,6 +270,7 @@ public final class ParseDataset extends Job<Frame> {
     if( mfpt._errors != null )
       for( String err : mfpt._errors )
         Log.warn(err);
+    job.update(0,"Calculating data summary.");
     logParseResults(job, fr);
     // Release the frame for overwriting
     fr.update(job._key);

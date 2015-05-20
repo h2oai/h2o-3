@@ -28,7 +28,7 @@ import com.brsanthu.googleanalytics.EventHit;
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
-* @author <a href="mailto:cliffc@0xdata.com"></a>
+* @author <a href="mailto:cliffc@h2o.ai"></a>
 * @version 1.0
 */
 final public class H2O {

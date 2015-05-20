@@ -112,9 +112,11 @@ public class IcedBitSet extends Iced {
 
     int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
-      if( i>0 ) sb.p(' ');
-      for( int j=0; j<8; j++ )
-        sb.p((_val[_byteoff+i]>>j)&1);
+      if( i>0 && _bitoff + 8*i < size()) sb.p(' ');
+      for( int j=0; j<8; j++ ) {
+        if (_bitoff + 8*i + j >= size()) break;
+        sb.p((_val[_byteoff + i] >> j) & 1);
+      }
     }
     return sb.p("}");
   }

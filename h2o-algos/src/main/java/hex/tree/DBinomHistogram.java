@@ -4,6 +4,8 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.IcedBitSet;
 
+import java.util.Comparator;
+
 /**
    A Histogram, computed in parallel over a Vec.
    <p>
@@ -71,14 +73,9 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       idxs = MemoryManager.malloc4(nbins+1); // Reverse index
       for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
-      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
+      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : (double)_sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
-      ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
-        @Override
-        public int compare(int x, int y) {
-          return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
-        }
-      });
+      ArrayUtils.sort(idxs, avgs);
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
       sums = MemoryManager.malloc4(nbins);

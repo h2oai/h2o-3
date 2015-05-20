@@ -75,7 +75,8 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup.params$source_frames = .collapse.char(data@frame_id)
 
   # set field sep
-  if( nchar(sep) > 0 ) parseSetup.params$separator <- .asc(sep)
+  # if( nchar(sep) > 0 ) parseSetup.params$separator <- .asc(sep)
+  if( nzchar(sep) ) parseSetup.params$separator <- .asc(sep)
 
   # check the header
   if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
@@ -125,7 +126,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 .collapse.array <- function(v) {
-  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char), collapse=','), ']') 
+  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char), collapse=','), ']')
   else "[]"
 }
 

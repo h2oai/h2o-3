@@ -111,7 +111,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     // model-building.
     assert _min <= col_data && col_data < _maxEx : "Coldata "+col_data+" out of range "+this;
     int idx1  = (int)((col_data-_min)*_step);
-    assert 0 <= idx1 && idx1 <= _bins.length;
+    assert 0 <= idx1 && idx1 <= _bins.length : idx1 + " " + _bins.length;
     if( idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
     return idx1;
   }

@@ -434,6 +434,10 @@
     }
     x
   }
+  # hack that counters the fact that RCurl will escape already escaped string
+  txt <- gsub("\\\"","\"",txt); 
+  txt <- gsub("\\\\,","\\,",txt);
+
   res <- processMatrices(fromJSON(txt, ...))
   processTables(res)
 }
