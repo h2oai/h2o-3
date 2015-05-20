@@ -818,7 +818,7 @@ public class ArrayUtils {
     } else {
       Integer[] d = new Integer[idxs.length];
       for (int i = 0; i < idxs.length; ++i) d[i] = idxs[i];
-      //Arrays.parallelSort(d, comparator); // might be too aggressive in using threads
+//      Arrays.parallelSort(d, new Comparator<Integer>() {
       Arrays.sort(d, new Comparator<Integer>() {
         @Override
         public int compare(Integer x, Integer y) {
