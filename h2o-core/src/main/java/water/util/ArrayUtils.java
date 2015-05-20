@@ -816,7 +816,6 @@ public class ArrayUtils {
         }
       }
     } else {
-      //hand-rolled insertion sort
       Integer[] d = new Integer[idxs.length];
       for (int i = 0; i < idxs.length; ++i) d[i] = idxs[i];
       //Arrays.parallelSort(d, comparator); // might be too aggressive in using threads
