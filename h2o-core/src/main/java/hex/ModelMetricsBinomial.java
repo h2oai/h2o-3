@@ -25,7 +25,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   @Override public AUC2 auc() { return _auc; }
   @Override public ConfusionMatrix cm() {
     if( _auc == null ) return null;
-    long[][] cm = _auc.defaultCM();
+    double[][] cm = _auc.defaultCM();
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
 
