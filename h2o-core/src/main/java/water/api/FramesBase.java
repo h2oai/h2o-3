@@ -24,7 +24,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
   @API(help="File output path",json=false)
   public String path;
 
-  @API(help="Overwrite existing fil",json=false)
+  @API(help="Overwrite existing file",json=false)
   public boolean force;
 
   // Output fields
