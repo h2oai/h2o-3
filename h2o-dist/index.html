@@ -266,13 +266,18 @@
         if (hash && hash.indexOf('#Python') == 0) {
           showPyTab();
         }
+        if (hash && hash.indexOf('#Hadoop') == 0) {
+          showHadoopTab();
+        }
+        if (hash && hash.indexOf('#Maven') == 0) {
+          showMavenTab();
+        }
       }
       <!-- DOM 0 style without jquery -->
       window.onload = function() {
         trackLink('download-zip', 'Download', 'ZIP');
         trackLink('doc-flow', 'Documentation', 'Flow');
         trackLink('doc-r-pdf', 'Documentation', 'R');
-        trackLink('doc-hadoop', 'Documentation', 'Hadoop');
         trackLink('doc-py', 'Documentation', 'Hadoop');
         trackLink('doc-rest', 'Documentation', 'REST API');
         trackLink('doc-h2o-core-javadoc', 'Documentation', 'H2O Core Javadoc');
@@ -427,12 +432,10 @@ dependencies {</br>
           <h2>User Documentation</h2>
           <ul>
             <li><a id="doc-flow" href="docs-website/h2o-docs/index.html">H2O Documentation</a></li>
-            <li><a id="doc-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
-            <li><a id="doc-r-porting" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/upgrade/Migration.md">Porting H2O Classic R Scripts to H2O 3.x</a></li>
-            <li><a id="doc-py" href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
-            <li><a id="doc-sparkling-water" href="https://github.com/h2oai/sparkling-water/blob/master/README.md">Sparkling Water Readme</a></li>
-            <li><a id="doc-hadoop" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/howto/H2O-DevHadoop.md">Running H2O on Hadoop</a></li>
             <li><a id="doc-recent-changes" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/RecentChanges.md">Recent Changes</a></li>
+            <li><a id="doc-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
+            <li><a id="doc-py" href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
+            <li><a id="doc-sparkling-water" href="docs-website/h2o-docs/index.html#Welcome%20to%20H2O%203.0-Sparkling%20Water%20Users">Sparkling Water Readme</a></li>
           </ul>
           <h2>Developer Documentation</h2>
           <ul>
