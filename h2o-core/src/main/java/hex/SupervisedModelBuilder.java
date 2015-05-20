@@ -125,7 +125,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
         _train.add(_parms._offset_column, off);
       }
       if(_valid != null) {
-        off = _train.remove(_parms._offset_column);
+        off = _valid.remove(_parms._offset_column);
         if(off == null) {
           error("_offset", "Offset column '" + _parms._offset_column + "' not found in the validation frame");
           error("_validation_frame", "Offset column '" + _parms._offset_column + "' not found in the validation frame");
