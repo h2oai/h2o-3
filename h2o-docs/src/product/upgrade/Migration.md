@@ -623,6 +623,9 @@ H2O Classic | H2O 3.0  | Model Type
 `@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
 `@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
 
+<!---
+
+##commenting out until repo is renamed - the information below will change
 
 ##Github Users
 
@@ -658,3 +661,4 @@ This method involves editing the Github config file and should only be attempted
 0. Save the changes.  
 
 
+-->
