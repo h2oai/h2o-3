@@ -9,7 +9,11 @@ australia.hex = h2o.uploadFile(localH2O, system.file("extdata", "australia.csv",
 summary(australia.hex)
 
 australia.pca = h2o.prcomp(australia.hex, k = 8)
-print(australia.pca)
+print("Eigenvectors of the PCA model...")
+print(australia.pca@model$eigenvectors)
+screeplot(australia.pca)
 
-australia.pca2 = h2o.prcomp(australia.hex, k = 4, gamma = 0.5, center = TRUE, scale. = TRUE)
-print(australia.pca2)
+print("Eigenvectors of the PCA model...")
+australia.pca2 = h2o.prcomp(australia.hex, k = 4, transform = "STANDARDIZE")
+print(australia.pca2@model$eigenvectors)
+screeplot(australia.pca2)
