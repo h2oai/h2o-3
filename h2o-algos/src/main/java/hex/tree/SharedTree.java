@@ -389,7 +389,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
       out._mse_train[out._ntrees] = mm._MSE; // Store score results in the model output
       training_r2 = mm.r2();
-      Log.info("training r2 is "+(float)mm.r2()+", MSE is "+(float)mm._MSE + train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
+      Log.info("training r2 is "+(float)mm.r2()+", MSE is "+(float)mm._MSE + train_logloss + ", with "+_model._output._ntrees+"x"+(_nclass==2 ? 1 : _nclass)+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
       }
