@@ -1386,8 +1386,12 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       # compute a width for the factor levels and also one for the counts
       width <- c( max(nchar(domains),0L), max(nchar(counts),0L) )
       # construct the result
-      paste0(domains,sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),":",
-                     sapply(counts,  function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }), counts, " ")
+      paste0(domains,sapply(domains, function(x) {
+                      x <- max(0, nchar(x), na.rm = TRUE)
+                      ifelse(width[1L] == x, "", paste(rep(' ', width[1L] - x), collapse='')) }),":",
+                     sapply(counts,  function(y) {
+                      y <- max(0, nchar(y), na.rm = TRUE)
+                      ifelse(width[2L] == y, "", paste(rep(' ', width[2L] - y), collapse='')) }), counts, " ")
 
     } else {
       # types are time, uuid, string ... ignore for now?
@@ -2553,9 +2557,8 @@ h2o.hist <- function(x, breaks="Sturges") {
   mids <- na.omit(h[,3])
   histo <- list()
   histo$breaks <- h$breaks
-  histo$counts <- as.vector(counts)
-  histo$mids   <- as.vector(mids)
-  histo$density <- histo$counts/sum(histo$counts) * (1/diff(h$breaks))
+  histo$counts <- counts
+  histo$mids   <- mids
   histo$xname  <- deparse(substitute(x))
   oldClass(histo) <- "histogram"
   plot(histo)
