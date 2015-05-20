@@ -62,9 +62,9 @@ If you've used previous versions of H2O, the following links will help guide you
 ---
 
 <a name="OS"></a>
-##Open Source Users
+##Enterprise Users
 
-If you're considering using H2O in a open-source environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
+If you're considering using H2O in an enterprise environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
 
 The following video provides step-by-step instructions on how to start H2O on Hadoop: 
 

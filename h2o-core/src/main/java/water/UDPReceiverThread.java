@@ -12,7 +12,7 @@ import water.util.Log;
  * This thread just spins on reading UDP packets from the kernel and either
  * dispatching on them directly itself (if the request is known short) or
  * queuing them up for worker threads.
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

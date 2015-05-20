@@ -3,7 +3,7 @@ package water;
 /**
  * A task initiator has his response, we can quit sending him ACKs.
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

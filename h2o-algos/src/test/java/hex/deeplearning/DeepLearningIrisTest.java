@@ -38,7 +38,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
       for (int repeat = 0; repeat < 5; ++repeat) {
         // Testing different things
-        // Note: Microsoft reference implementation is only for Tanh + MSE, rectifier and MCE are implemented by 0xdata (trivial).
+        // Note: Microsoft reference implementation is only for Tanh + MSE.
+        // Note: Rectifier and MCE are implemented by H2O.ai (trivial).
         // Note: Initial weight distributions are copied, but what is tested is the stability behavior.
 
         Activation[] activations = {Activation.Tanh, Activation.Rectifier};

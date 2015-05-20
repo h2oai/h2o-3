@@ -32,6 +32,26 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     "CXD",                      // Sparse doubles
     "C8D",                      //leave this as last -> no compression
   };
+  final transient static String[] chunkNames = new String[]{
+          "Constant Integers",
+          "Constant Reals",
+          "Bits",
+          "Sparse Bits",
+          "Sparse Integers",
+          "1-Byte Integers",
+          "1-Byte Integers (w/o NAs)",
+          "1-Byte Fractions",
+          "2-Byte Integers",
+          "2-Byte Fractions",
+          "4-Byte Integers",
+          "4-Byte Fractions",
+          "32-bit Reals",
+          "64-bit Integers",
+          "128-bit UUID",
+          "String",
+          "Sparse Reals",
+          "64-bit Reals",
+  };
 
   // OUTPUT
   private long[] chunk_counts;
@@ -153,9 +173,9 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     int rows = 0;
     for (int j = 0; j < chunkTypes.length; ++j) if (chunk_counts != null && chunk_counts[j] > 0) rows++;
     final String[] rowHeaders = new String[rows];
-    final String[] colHeaders = new String[]{"Chunk Type", "Count", "Count Percentage", "Size", "Size Percentage"};
-    final String[] colTypes = new String[]{"string", "int", "float", "string", "float"};
-    final String[] colFormats = new String[]{"%8s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
+    final String[] colHeaders = new String[]{"Chunk Type", "Chunk Name", "Count", "Count Percentage", "Size", "Size Percentage"};
+    final String[] colTypes = new String[]{"string", "string", "int", "float", "string", "float"};
+    final String[] colFormats = new String[]{"%8s", "%s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
     final String colHeaderForRowHeaders = null;
     TwoDimTable table = new TwoDimTable(tableHeader, null, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
@@ -163,10 +183,11 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (int j = 0; j < chunkTypes.length; ++j) {
       if (chunk_counts != null && chunk_counts[j] > 0) {
         table.set(row, 0, chunkTypes[j]);
-        table.set(row, 1, chunk_counts[j]);
-        table.set(row, 2, (float) chunk_counts[j] / total_chunk_count * 100.);
-        table.set(row, 3, display(chunk_byte_sizes[j]));
-        table.set(row, 4, (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.);
+        table.set(row, 1, chunkNames[j]);
+        table.set(row, 2, chunk_counts[j]);
+        table.set(row, 3, (float) chunk_counts[j] / total_chunk_count * 100.);
+        table.set(row, 4, display(chunk_byte_sizes[j]));
+        table.set(row, 5, (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.);
         row++;
       }
     }

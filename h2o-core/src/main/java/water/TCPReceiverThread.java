@@ -9,7 +9,7 @@ import water.util.Log;
  * The Thread that looks for TCP Cloud requests.
  *
  * This thread just spins on reading TCP requests from other Nodes.
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

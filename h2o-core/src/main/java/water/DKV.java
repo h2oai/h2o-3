@@ -46,7 +46,7 @@ package water;
  *  {@link water.fvec.Chunk} Keys - instead it serves as the building block for such
  *  structures.
  *  <p>
- *  @author <a href="mailto:cliffc@0xdata.com"></a>
+ *  @author <a href="mailto:cliffc@h2o.ai"></a>
  *  @version 1.0
  */
 public abstract class DKV {
