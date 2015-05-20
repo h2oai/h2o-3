@@ -22,7 +22,7 @@ The main benefits to using H2O are:
 
 ###Ease of Use
 
-- Flow, an intuitive web UI that is similar to IPython Notebook, allows you to modify, save, export, and share your workflow with others
+- Flow, an intuitive web UI that is designed to simplify a data scientist's workflow, allows you to modify, save, export, and share your workflow with others
 
 ###Extensibility
 
@@ -47,7 +47,7 @@ Gradient Boosting (GBM) | A method to produce a prediction model in the form of 
 K-Means | A method to uncover groups or clusters of data points often used for segmentation. It clusters observations into k certain points with the nearest mean.
 Anomaly Detection | Identify the outliers in your data by invoking a powerful pattern recognition model.
 Deep Learning | Model high-level abstractions in data by using non-linear transformations in a layer-by-layer method. Deep learning is an example of unsupervised learning and can make use of unlabeled data that other algorithms cannot.
-Naïve Bayes | A probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
+Naïve Bayes | A probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
 
 ### Scoring Models with Confidence
 Score Tool | Description	
