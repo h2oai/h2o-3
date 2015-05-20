@@ -71,7 +71,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       old = _maxIn;
   }
 
-  private static int MAX_FACTOR_BINS=1024; // Allow more bins for factors
+  private static int MAX_FACTOR_BINS=1<<16; // Allow more bins for factors
   public DHistogram( String name, final int nbins, final byte isInt, final float min, final float maxEx, long nelems ) {
     assert nelems > 0;
     assert nbins >= 1;
@@ -111,7 +111,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     // model-building.
     assert _min <= col_data && col_data < _maxEx : "Coldata "+col_data+" out of range "+this;
     int idx1  = (int)((col_data-_min)*_step);
-    assert 0 <= idx1 && idx1 <= _bins.length;
+    assert 0 <= idx1 && idx1 <= _bins.length : idx1 + " " + _bins.length;
     if( idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
     return idx1;
   }
