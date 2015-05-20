@@ -69,6 +69,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     public double[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
 
     public SupervisedOutput() { this(null); }
+    public SupervisedOutput(boolean hasWeights, boolean hasOffset) {super(hasWeights,hasOffset);}
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum

@@ -16,7 +16,7 @@ import java.util.HashMap;
  * Created by tomasnykodym on 8/27/14.
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
-  public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs, boolean hasWeights, boolean hasOffset) {
     super(selfKey, parms, null);
     _ymu = ymu;
     _ySigma = ySigma;
@@ -451,9 +451,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
+      super(dinfo._weights, dinfo._offset);
       _dinfo = dinfo;
-      _offset = _dinfo._offset;
-      _weights = _dinfo._weights;
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
@@ -650,7 +649,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     return preds;
   }
 
-  @Override protected double[] score0(double[] data, double[] preds) {
+  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
+  @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
     double eta = 0.0;
     final double [] b = beta();
     for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) {
@@ -667,7 +667,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*data[i];
     eta += b[b.length-1]; // reduce intercept
-    double mu = _parms.linkInv(eta);
+    double mu = _parms.linkInv(eta + o);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){

@@ -109,7 +109,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   private void add2(double yreal, double ymodel, double weight, double offset) {
     residual_deviance  += weight*_glm.deviance(yreal, ymodel);
-    double ynull = offset == 0?_ymu:_glm.linkInv(_ymuLink + offset);
+    double ynull = offset == 0?_ymu:_glm.linkInv(offset);
     null_deviance += weight*_glm.deviance(yreal,ynull);
     ++nobs;
     if( _glm._family == Family.poisson ) { // AIC for poisson

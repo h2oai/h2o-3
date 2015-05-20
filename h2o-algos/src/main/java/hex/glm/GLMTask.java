@@ -488,7 +488,7 @@ public abstract class GLMTask  {
         double y = -1 + 2*row.response(0);
         if(row.bad) continue;
         ++_nobs;
-        double eta = row.innerProduct(b);
+        double eta = row.innerProduct(b) + row.offset;
         double gval;
         double d = 1 + Math.exp(-y * eta);
         _likelihood += Math.log(d);

@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by tomasnykodym on 4/26/15.
@@ -104,41 +105,50 @@ public class GLMBasicTest extends TestUtil {
     params._objective_epsilon = 0;
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
-      try {
-        params._solver = s;
-        System.out.println("SOLVER = " + s);
-        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-        model = job.trainModel().get();
-        HashMap<String, Double> coefs = model.coefficients();
-        System.out.println("coefs = " + coefs.toString());
-        System.out.println("metrics = " + model._output._training_metrics);
-        for (int i = 0; i < cfs1.length; ++i)
-          assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
-        assertEquals(511.4, GLMTest.nullDeviance(model), 1e-1);
-        assertEquals(380.8, GLMTest.residualDeviance(model), 1e-1);
-        assertEquals(379, GLMTest.nullDOF(model), 0);
-        assertEquals(373, GLMTest.resDOF(model), 0);
-        assertEquals(394.8, GLMTest.aic(model), 1e-1);
-        model.delete();
-        // test scoring
-        score = model.score(_prostate);
-        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostate);
-        hex.AUC2 adata = mm._auc;
-        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
-        assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
-        assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
-        Frame score1 = model.score(_prostate);
-        score1.remove();
-        mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostate);
-        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
-        assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
-        assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
-      } finally {
-        if (model != null) model.delete();
-        if (score != null) score.delete();
-        if (job != null) job.remove();
+    try {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+        try {
+          params._solver = s;
+          System.out.println("SOLVER = " + s);
+          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+          model = job.trainModel().get();
+          HashMap<String, Double> coefs = model.coefficients();
+          System.out.println("coefs = " + coefs.toString());
+          System.out.println("metrics = " + model._output._training_metrics);
+          for (int i = 0; i < cfs1.length; ++i)
+            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+          assertEquals(511.4, GLMTest.nullDeviance(model), 1e-1);
+          assertEquals(380.8, GLMTest.residualDeviance(model), 1e-1);
+          assertEquals(379, GLMTest.nullDOF(model), 0);
+          assertEquals(373, GLMTest.resDOF(model), 0);
+          assertEquals(394.8, GLMTest.aic(model), 1e-1);
+          // test scoring
+          try {
+            score = model.score(_prostate); // todo if I use wrong frame, silently ignored
+            assertTrue("shoul've thrown IAE", false);
+          } catch (IllegalArgumentException iae) {
+            assertTrue(iae.getMessage().contains("Test dataset is missing offset vector"));
+          }
+          score = model.score(f); // todo if I use wrong frame, silently ignored
+          hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, f);
+          hex.AUC2 adata = mm._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+          Frame score1 = model.score(f);
+          score1.remove();
+          mm = hex.ModelMetricsBinomial.getFromDKV(model, f);
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+        } finally {
+          if (model != null) model.delete();
+          if (score != null) score.delete();
+          if (job != null) job.remove();
+        }
       }
+    } finally {
+      if (f != null) f.delete();
     }
   }
 

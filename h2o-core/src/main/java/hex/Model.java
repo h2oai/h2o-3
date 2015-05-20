@@ -3,7 +3,6 @@ package hex;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
@@ -182,6 +181,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
 
+    public Output(boolean hasWeights, boolean hasOffset) {
+      _hasWeights = hasWeights;
+      _hasOffset = hasOffset;
+    }
 
     /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
     public int nfeatures() { return _names.length; }
@@ -226,26 +229,32 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
-      if( b == null ) return;
+      if( b == null ) {
+        _hasOffset = false;
+        _hasWeights = false;
+        return;
+      }
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
       _names  = b._train.names  ();
       _domains= b._train.domains();
+      _hasOffset = b.hasOffset();
+      _hasWeights = b.hasWeights();
     }
     public boolean isSupervised() { return false; }
     /** The name of the response column (which is always the last column). */
-    protected boolean _offset;
-    protected boolean _weights;
-    public boolean hasOffset  () { return _offset;}
-    public boolean hasWeights () { return _weights;}
+    protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
+    protected final boolean _hasWeights;// only need to know if we have them
+    public boolean hasOffset  () { return _hasOffset;}
+    public boolean hasWeights () { return _hasWeights;}
     public String responseName() { return _names[responseIdx()];}
-    public String weightsName () { return _weights?_names[weightsIdx()]:null;}
-    public String offsetName  () { return _offset?_names[offsetIdx()]:null;}
+    public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
+    public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     // Vec layout is  [c1,c2,...,cn,w?,r,o?], cn are predcitor cols, r is reponse, w and o are weights and offset, both are optional
-    public int responseIdx    () { return _names.length-(_offset?2:1);}
-    public int weightsIdx     () { return _weights?_names.length-2 -(_offset?1:0):-1;}
-    public int offsetIdx      () { return _offset?_names.length-1:-1;}
+    public int responseIdx    () { return _names.length-(_hasOffset ?2:1);}
+    public int weightsIdx     () { return _hasWeights ?_names.length-2 -(_hasOffset ?1:0):-1;}
+    public int offsetIdx      () { return _hasOffset ?_names.length-1:-1;}
 
     /** The names of the levels for an enum (categorical) response column. */
     public String[] classNames() { assert isSupervised(); return _domains[_domains.length-1]; }
@@ -393,7 +402,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       boolean skipCol = ((isResponse || isWeights) && vec == null);
       if(vec == null && isOffset)
-        throw new IllegalArgumentException("Te4st dataset is missing weights vector ('" + offset + "'");
+        throw new IllegalArgumentException("Test dataset is missing offset vector ('" + offset + "'");
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null && !skipCol) {
         String str = "Validation set is missing training column "+names[i];
@@ -543,7 +552,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasOffset() && adaptFrm.find(_output.offsetName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
@@ -558,11 +567,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean _hasWeights;
 
 
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights , boolean computeMetrics ) {
+    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics ) {
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics;
-      if(_output._weights && _computeMetrics && !testHasWeights)
+      if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
       _hasWeights = testHasWeights;
+
     }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
@@ -617,16 +627,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
+    for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    return score0(tmp,weight, offset, preds);
+    return score0(tmp, preds, weight, offset);
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
-  protected double[] score0(double data[/*ncols*/], double weight, double offset, double preds[/*nclasses+1*/]) {
+  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
     throw H2O.unimpl();
   }
   // Version where the user has just ponied-up an array of data to be scored.
