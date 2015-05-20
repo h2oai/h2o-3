@@ -39,7 +39,7 @@ public class FrameUtils {
   /** Parse given set of URIs and produce a frame's key representing output.
    *
    * @param okey key for ouput frame. Can be null
-   * @param uris array of URI (file://, hdfs://, s3n://, s3://, ...) to parse
+   * @param uris array of URI (file://, hdfs://, s3n://, s3a://, s3://, ...) to parse
    * @return a frame which is saved into DKV under okey
    * @throws IOException in case of parse error.
    */
