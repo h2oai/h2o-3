@@ -4,6 +4,7 @@ import water.MemoryManager;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
@@ -48,7 +49,7 @@ public class ArrayUtils {
     return result;
   }
 
-  public static double l2norm2(double [] x){ return l2norm2(x,false); }
+  public static double l2norm2(double [] x){ return l2norm2(x, false); }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length - (skipLast?1:0);
@@ -423,7 +424,7 @@ public class ArrayUtils {
 
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
-    return pprint(arr,default_dformat);
+    return pprint(arr, default_dformat);
   }
   // pretty print Matrix(2D array of doubles)
   public static String pprint(double[][] arr,DecimalFormat dformat) {
@@ -551,7 +552,7 @@ public class ArrayUtils {
 
   public static int[] toInt(String[] a, int off, int len) {
     int[] res = new int[len];
-    for(int i=0; i<len; i++) res[i] = Integer.valueOf(a[off+i]);
+    for(int i=0; i<len; i++) res[i] = Integer.valueOf(a[off + i]);
     return res;
   }
 
@@ -581,7 +582,7 @@ public class ArrayUtils {
     int[] ai = toInt(a, 0, cIinA); Arrays.sort(ai); // extract int part but sort it in numeric order
     int[] bi = toInt(b, 0, cIinB); Arrays.sort(bi);
     String[] ri = toString(union(ai,bi)); // integer part
-    String[] si = union(a,b,cIinA,a.length-cIinA,cIinB,b.length-cIinB,true);
+    String[] si = union(a, b, cIinA, a.length - cIinA, cIinB, b.length - cIinB, true);
     return join(ri, si);
   }
 
@@ -795,18 +796,39 @@ public class ArrayUtils {
     return res;
   }
 
-  // Sort an indirection array (ints) without making zillions of Integers.
-  // Painful simple O(n^2) insertion sort, suitable for small arrays only.
-  public interface IntComparator { public int compare(int a, int b); }
-  public static void sort(final int[] data, final IntComparator comparator) {
-    for (int i = 0; i < data.length + 0; i++) {
-      for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
-        int tmp = data[j];
-        data[j] = data[j - 1];
-        data[j - 1] = tmp;
+  /**
+   * Sort an integer array of indices based on values
+   * Updates indices in place, keeps values the same
+   * @param idxs indices
+   * @param values values
+   */
+  public static void sort(final int[] idxs, final double[] values) {
+    sort(idxs, values, 50);
+  }
+  public static void sort(final int[] idxs, final double[] values, int cutoff) {
+    if (idxs.length < cutoff) {
+      //hand-rolled insertion sort
+      for (int i = 0; i < idxs.length; i++) {
+        for (int j = i; j > 0 && values[idxs[j - 1]] > values[idxs[j]]; j--) {
+          int tmp = idxs[j];
+          idxs[j] = idxs[j - 1];
+          idxs[j - 1] = tmp;
+        }
       }
+    } else {
+      Integer[] d = new Integer[idxs.length];
+      for (int i = 0; i < idxs.length; ++i) d[i] = idxs[i];
+//      Arrays.parallelSort(d, new Comparator<Integer>() {
+      Arrays.sort(d, new Comparator<Integer>() {
+        @Override
+        public int compare(Integer x, Integer y) {
+          return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+        }
+      });
+      for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
     }
   }
+
   public static double [] subtract (double [] a, double [] b) {
     double [] c = MemoryManager.malloc8d(a.length);
     subtract(a,b,c);

@@ -584,7 +584,7 @@ public class DRFTest extends TestUtil {
       // Load data, hack frames
       tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
       test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
-      for (int i : new int[]{4,5,6}) {
+      for (int i : new int[]{0,1,2}) {
         tfr.vecs()[i] = tfr.vecs()[i].toEnum();
         test.vecs()[i] = test.vecs()[i].toEnum();
       }
@@ -597,7 +597,7 @@ public class DRFTest extends TestUtil {
 //      parms._ignored_columns = new String[]{"Month","DayofMonth","DayOfWeek","DepTime","UniqueCarrier","Origin","Distance"};
       parms._response_column = "dep_delayed_15min";
       parms._nbins = 20;
-      parms._ntrees = 10;
+      parms._ntrees = 100;
       parms._max_depth = 20;
       parms._mtries = -1;
       parms._sample_rate = 0.667f;

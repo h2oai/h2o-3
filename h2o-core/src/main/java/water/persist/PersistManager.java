@@ -52,7 +52,8 @@ public class PersistManager {
 
   public static boolean isHdfsPath(String path) {
     String s = path.toLowerCase();
-    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
+                          || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       return true;
     }
     return false;
@@ -60,7 +61,7 @@ public class PersistManager {
 
   private void validateHdfsConfigured() {
     if (I[Value.HDFS] == null) {
-      throw new H2OIllegalArgumentException("HDFS, S3 and S3N support is not configured");
+      throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
     }
   }
 
@@ -163,7 +164,7 @@ public class PersistManager {
     String scheme = uri.getScheme();
     if ("hdfs".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("s3".equals(scheme) || "s3n".equals(scheme)) {
+    } else if ("s3".equals(scheme) || "s3n".equals(scheme) || "s3a".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
@@ -182,9 +183,10 @@ public class PersistManager {
    */
   public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
     String s = filter.toLowerCase();
-    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
+                          || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
-        throw new H2OIllegalArgumentException("HDFS, S3 and S3N support is not configured");
+        throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
       }
 
       return I[Value.HDFS].calcTypeaheadMatches(filter, limit);
@@ -234,9 +236,10 @@ public class PersistManager {
 
       return;
     }
-    else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
+                               || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
-        throw new H2OIllegalArgumentException("HDFS, S3 and S3N support is not configured");
+        throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
       }
 
       I[Value.HDFS].importFiles(path, files, keys, fails, dels);
