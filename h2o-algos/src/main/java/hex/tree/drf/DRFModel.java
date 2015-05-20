@@ -47,8 +47,13 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       return preds;
     }
     else { // classification
-      double sum = MathUtils.sum(preds);
-      if (sum>0) MathUtils.div(preds, sum);
+      if (_output.nclasses() == 2) {
+        preds[1] /= N; //average probability
+        preds[2] = 1. - preds[1];
+      } else {
+        double sum = MathUtils.sum(preds);
+        if (sum > 0) MathUtils.div(preds, sum);
+      }
       if (_parms._balance_classes)
         GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
@@ -60,9 +65,14 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
-      body.ip("double sum = 0;").nl();
-      body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
-      body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
+      if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
+        body.ip("preds[1] /= " + _output._ntrees + ";").nl();
+        body.ip("preds[2] = 1.0 - preds[1];").nl();
+      } else {
+        body.ip("double sum = 0;").nl();
+        body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
+        body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
+      }
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + " );").nl();
