@@ -11,7 +11,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     int _mtries = -1;
-    float _sample_rate = 2f/3f;
+    float _sample_rate = 0.632f;
     public boolean _build_tree_one_node = false;
     public DRFParameters() {
       super();

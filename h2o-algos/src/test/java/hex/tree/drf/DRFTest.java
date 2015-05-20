@@ -600,7 +600,7 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 100;
       parms._max_depth = 20;
       parms._mtries = -1;
-      parms._sample_rate = 0.667f;
+      parms._sample_rate = 0.632f;
       parms._min_rows = 10;
       parms._seed = 12;
 
