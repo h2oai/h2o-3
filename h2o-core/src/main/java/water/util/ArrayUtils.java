@@ -49,7 +49,7 @@ public class ArrayUtils {
     return result;
   }
 
-  public static double l2norm2(double [] x){ return l2norm2(x,false); }
+  public static double l2norm2(double [] x){ return l2norm2(x, false); }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length - (skipLast?1:0);
@@ -797,30 +797,36 @@ public class ArrayUtils {
   }
 
   /**
-   * Sort an integer array of indices based on comparator (which returns array values for a given index)
-   * @param data Indices
-   * @param comparator IntComparator
+   * Sort an integer array of indices based on values
+   * Updates indices in place, keeps values the same
+   * @param idxs indices
+   * @param values values
    */
-  public static void sort(final int[] data, final Comparator<Integer> comparator) {
-    sort(data, comparator, 50);
+  public static void sort(final int[] idxs, final double[] values) {
+    sort(idxs, values, 50);
   }
-  public static void sort(final int[] data, final Comparator<Integer> comparator, int cutoff) {
-    if (data.length < cutoff) {
+  public static void sort(final int[] idxs, final double[] values, int cutoff) {
+    if (idxs.length < cutoff) {
       //hand-rolled insertion sort
-      for (int i = 0; i < data.length; i++) {
-        for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
-          int tmp = data[j];
-          data[j] = data[j - 1];
-          data[j - 1] = tmp;
+      for (int i = 0; i < idxs.length; i++) {
+        for (int j = i; j > 0 && values[idxs[j - 1]] > values[idxs[j]]; j--) {
+          int tmp = idxs[j];
+          idxs[j] = idxs[j - 1];
+          idxs[j - 1] = tmp;
         }
       }
     } else {
       //hand-rolled insertion sort
-      Integer[] d = new Integer[data.length];
-      for (int i = 0; i < data.length; ++i) d[i] = data[i];
+      Integer[] d = new Integer[idxs.length];
+      for (int i = 0; i < idxs.length; ++i) d[i] = idxs[i];
       //Arrays.parallelSort(d, comparator); // might be too aggressive in using threads
-      Arrays.sort(d, comparator);
-      for (int i = 0; i < data.length; ++i) data[i] = d[i];
+      Arrays.sort(d, new Comparator<Integer>() {
+        @Override
+        public int compare(Integer x, Integer y) {
+          return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+        }
+      });
+      for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
     }
   }
 

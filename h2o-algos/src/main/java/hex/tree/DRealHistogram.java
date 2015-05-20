@@ -85,9 +85,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
       for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
-      ArrayUtils.sort(idxs, new Comparator<Integer>() {
-          @Override public int compare( Integer x, Integer y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
-        });
+      ArrayUtils.sort(idxs, avgs);
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
       sums = MemoryManager.malloc8d(nbins);

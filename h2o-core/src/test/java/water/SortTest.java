@@ -13,25 +13,15 @@ public class SortTest extends TestUtil {
 
   @Test public void runSmall() {
     int[] idxs = new int[]{0,1,2,3,4};
-    final double[] avgs = new double[]{4.2,1.0,-1,4.3,2.0};
-    ArrayUtils.sort(idxs, new Comparator<Integer>() {
-      @Override
-      public int compare(Integer x, Integer y) {
-        return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
-      }
-    });
+    final double[] values = new double[]{4.2,1.0,-1,4.3,2.0};
+    ArrayUtils.sort(idxs, values);
     Assert.assertTrue(Arrays.equals(idxs, new int[]{2, 1, 4, 0, 3}));
   }
 
   @Test public void runMid() {
     int[] idxs = new int[]{0,1,2,3,4,5,6,7,8};
-    final double[] avgs = new double[]{0.1,-0.3,0.5,9.0,4.2,1.0,-1,4.3,2.0};
-    ArrayUtils.sort(idxs, new Comparator<Integer>() {
-      @Override
-      public int compare(Integer x, Integer y) {
-        return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
-      }
-    });
+    final double[] values = new double[]{0.1,-0.3,0.5,9.0,4.2,1.0,-1,4.3,2.0};
+    ArrayUtils.sort(idxs, values);
     Assert.assertTrue(Arrays.equals(idxs, new int[]{6, 1, 0, 2, 5, 8, 4, 7, 3}));
   }
 
@@ -53,21 +43,11 @@ public class SortTest extends TestUtil {
           values[i] = rng.nextDouble();
         }
         long before = System.nanoTime();
-        ArrayUtils.sort(idxs, new Comparator<Integer>() {
-          @Override
-          public int compare(Integer x, Integer y) {
-            return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
-          }
-        });
+        ArrayUtils.sort(idxs, values);
         merge += System.nanoTime() - before;
 
         before = System.nanoTime();
-        ArrayUtils.sort(idxs2, new Comparator<Integer>() {
-          @Override
-          public int compare(Integer x, Integer y) {
-            return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
-          }
-        }, Integer.MAX_VALUE); //always do insertion sort
+        ArrayUtils.sort(idxs2, values, Integer.MAX_VALUE); //always do insertion sort
         insertion += System.nanoTime() - before;
       }
       System.err.println("Merge sort: " + (double)merge/1e9/reps );
