@@ -1384,7 +1384,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       counts <- as.character(df.domains.subset[,2L])
 
       # compute a width for the factor levels and also one for the counts
-      width <- c( max(nchar(domains),0L), max(nchar(counts),0L) )
+      width <- c( max(nchar(domains),0L, na.rm = TRUE), max(nchar(counts),0L, na.rm = TRUE) )
       # construct the result
       paste0(domains,sapply(domains, function(x) {
                       x <- max(0, nchar(x), na.rm = TRUE)
