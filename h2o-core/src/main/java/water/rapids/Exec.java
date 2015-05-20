@@ -114,7 +114,7 @@ public class Exec extends Iced {
     if (sym != null) return sym.make();
     sym = ASTOp.UDF_OPS.get(tok);
     if (sym != null) return sym.make();
-    throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
+    throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@h2o.ai for more information.");
   }
 
   String parseID() {

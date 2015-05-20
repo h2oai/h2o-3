@@ -5,7 +5,7 @@ import water.init.JarHash;
 
 /**
  * Struct holding H2ONode health info.
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  */
 public class HeartBeat extends Iced<HeartBeat> {
   int _hb_version;

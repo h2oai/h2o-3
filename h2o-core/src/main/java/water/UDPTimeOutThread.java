@@ -5,7 +5,7 @@ import java.util.concurrent.DelayQueue;
 
 /**
  * The Thread that looks for RPCs that are timing out
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

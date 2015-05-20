@@ -55,7 +55,7 @@ If you are configuring many nodes, it is faster and easier to use the `-flatfile
 To configure H2O on a multi-node cluster:
 
 0. Locate a set of hosts. 
-0. [Download](http://h2o.ai/download)the appropriate version of H2O for your environment. 
+0. [Download](http://h2o.ai/download) the appropriate version of H2O for your environment. 
 0. Verify that the same h2o.jar file is available on all hosts. 
 0. Create a flatfile (a plain text file with the IP and port numbers of the hosts). Use one entry per line. For example:
    

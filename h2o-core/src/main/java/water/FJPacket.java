@@ -7,7 +7,7 @@ import water.H2O.H2OCountedCompleter;
  * small amount of work based on the packet contents (such as returning a Value
  * requested by another Node, or recording a heartbeat).
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 class FJPacket extends H2OCountedCompleter {

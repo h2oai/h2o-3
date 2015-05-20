@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 /**
  * Auto-gen doc support, for JSON and REST API docs
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  */
 public abstract class DocGen<T extends DocGen> {
 
