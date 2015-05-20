@@ -501,7 +501,13 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
          "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
-.h2o.downloadJar <- function(branch, version, overwrite = FALSE) {
+# This function returns a string to the valid path on the local filesystem of the h2o.jar file,
+# or it calls stop() and does not return.
+#
+# It will download a jar file if it needs to.
+.h2o.downloadJar <- function(overwrite = FALSE) {
+  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+
   if (is.null(.h2o.pkg.path)) {
     pkg_path = dirname(system.file(".", package = "h2o"))
   } else {
@@ -514,24 +520,37 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     }
   }
 
-  if (missing(branch)) {
-    branchFile <- file.path(pkg_path, "branch.txt")
-    branch <- readLines(branchFile)
+  # Check for jar file in 'java' directory.
+  if (! overwrite) {
+    possible_file <- file.path(pkg_path, "java", "h2o.jar")
+    if (file.exists(possible_file)) {
+      return(possible_file)
+    }
   }
 
-  if (missing(version)) {
-    buildnumFile <- file.path(pkg_path, "buildnum.txt")
-    version <- readLines(buildnumFile)
+  # Check for jar file in 'inst/java' directory.
+  if (! overwrite) {
+    possible_file <- file.path(pkg_path, "inst", "java", "h2o.jar")
+    if (file.exists(possible_file)) {
+      return(possible_file)
+    }
   }
 
-  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+  branchFile <- file.path(pkg_path, "branch.txt")
+  branch <- readLines(branchFile)
+
+  buildnumFile <- file.path(pkg_path, "buildnum.txt")
+  version <- readLines(buildnumFile)
 
   dest_folder <- file.path(pkg_path, "java")
-  if(!file.exists(dest_folder)) dir.create(dest_folder)
+  if (!file.exists(dest_folder)) {
+    dir.create(dest_folder)
+  }
+
   dest_file <- file.path(dest_folder, "h2o.jar")
 
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
-  if(overwrite || !file.exists(dest_file)) {
+  if (TRUE) {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
 
@@ -569,7 +588,8 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     # Move good file into final position
     file.rename(temp_file, dest_file)
   }
-  dest_file
+
+  return(dest_file)
 }
 
 #' View Network Traffic Speed
