@@ -33,7 +33,7 @@ public class SortTest extends TestUtil {
 
       long merge = 0;
       long insertion = 0;
-      int reps = 10; //increase for better timing
+      int reps = 1; //increase for better timing
       for (int rep = 0; rep < reps; ++rep) {
         final double[] values = new double[idxs.length];
         Random rng = new Random();
