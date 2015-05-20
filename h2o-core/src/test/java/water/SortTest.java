@@ -35,33 +35,44 @@ public class SortTest extends TestUtil {
   }
 
   @Test public void runHuge() {
-    int[] idxs = new int[50000];
-    int[] idxs2 = new int[50000];
-    final double[] values = new double[idxs.length];
-    Random rng = new Random();
-    for (int i=0; i<idxs.length; ++i) {
-      idxs[i] = i;
-      idxs2[i] = i;
-      values[i] = rng.nextDouble();
+    for (int N=1<<6;N<1<<17;N<<=1) {
+      System.err.println("N: " + N);
+      int[] idxs = new int[N];
+      int[] idxs2 = new int[N];
+
+      long merge = 0;
+      long insertion = 0;
+      int reps = 1; //increase for better timing
+      for (int rep = 0; rep < reps; ++rep) {
+        final double[] values = new double[idxs.length];
+        Random rng = new Random();
+        for (int i = 0; i < idxs.length; ++i) {
+          idxs[i] = i;
+          idxs2[i] = i;
+          values[i] = rng.nextDouble();
+        }
+        long before = System.nanoTime();
+        ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
+          @Override
+          public int compare(int x, int y) {
+            return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+          }
+        });
+        merge += System.nanoTime() - before;
+
+        before = System.nanoTime();
+        ArrayUtils.sort(idxs2, new ArrayUtils.IntComparator() {
+          @Override
+          public int compare(int x, int y) {
+            return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
+          }
+        }, Integer.MAX_VALUE); //always do insertion sort
+        insertion += System.nanoTime() - before;
+      }
+      System.err.println("Merge sort: " + (double)merge/1e9/reps );
+      System.err.println("Insertion sort: " + (double)insertion/1e9/reps);
+
+      Assert.assertTrue(Arrays.equals(idxs, idxs2));
     }
-    long before = System.currentTimeMillis();
-    ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
-      @Override
-      public int compare(int x, int y) {
-        return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
-      }
-    }, false);
-    System.out.println("Merge sort: " + (System.currentTimeMillis()-before)/1000.);
-
-    before = System.currentTimeMillis();
-    ArrayUtils.sort(idxs2, new ArrayUtils.IntComparator() {
-      @Override
-      public int compare(int x, int y) {
-        return values[x] < values[y] ? -1 : (values[x] > values[y] ? 1 : 0);
-      }
-    }, true);
-    System.out.println("Insertion sort: " + (System.currentTimeMillis()-before)/1000.);
-
-    Assert.assertTrue(Arrays.equals(idxs, idxs2));
   }
 }
