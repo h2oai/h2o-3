@@ -117,7 +117,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       double logfactorial = 0;
       for( long i = 2; i <= y; ++i )
         logfactorial += Math.log(i);
-      _aic2 += weight + (yreal * Math.log(ymodel) - logfactorial - ymodel);
+      _aic2 += weight * (yreal * Math.log(ymodel) - logfactorial - ymodel);
     }
   }
 
