@@ -3,12 +3,7 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.TransformType;
 import hex.glm.GLMModel.GLMParameters.Family;
-import jsr166y.RecursiveAction;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.DTask.DKeyTask;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -16,8 +11,6 @@ import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -54,7 +47,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if(domain == null && _parms._family == Family.binomial)
       domain = new String[]{"0","1"};
-    return new GLMValidation(domain,_parms._intercept,_parms._intercept?_ymu:_parms._family == Family.binomial?.5:0, _parms, rank(beta()), _output._threshold, true);
+    return new GLMValidation(domain,_parms._intercept, _ymu, _parms, rank(beta()), _output._threshold, true);
   }
 
   public double [] beta() { return _output._global_beta;}
@@ -267,7 +260,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public final double likelihood(double yr, double eta, double ym){
+    public final double likelihood(double yr, double ym){
       switch(_family){
         case gaussian:
           return .5 * (yr - ym) * (yr - ym);
@@ -459,6 +452,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       _dinfo = dinfo;
+      _offset = _dinfo._offset;
+      _weights = _dinfo._weights;
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;

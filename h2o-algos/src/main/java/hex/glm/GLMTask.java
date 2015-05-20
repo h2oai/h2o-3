@@ -33,10 +33,12 @@ public abstract class GLMTask  {
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long   _nobs;
    final Vec _fVec; // boolean row filter
+   final int _responseId;
 
    public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
      super(cmp);
      _fVec = mVec;
+     _responseId = dinfo.responseChunkId();
    }
 
    @Override public void setupLocal(){
@@ -48,7 +50,7 @@ public abstract class GLMTask  {
      for(int i = 0; i < chunks.length; ++i)
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
          skip[r] |= chunks[i].isNA(r);
-     Chunk response = chunks[chunks.length-1];
+     Chunk response = chunks[_responseId];
      for(int r = 0; r < response._len; ++r) {
        if(skip[r]) continue;
        double d = response.atd(r);
@@ -125,14 +127,20 @@ public abstract class GLMTask  {
     @Override
     public void map(Chunk [] chks) {
       Chunk rowFilter = _rowFilter != null?_rowFilter.chunkForChunkIdx(chks[0].cidx()):null;
-      Chunk responseChunk = chks[chks.length-1];
+      Chunk responseChunk = chks[_dinfo.responseChunkId()];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
       if(rowFilter != null)
         for(int r = 0; r < skip.length; ++r)
           skip[r] = rowFilter.at8(r) == 1;
       double [][] eta = new double[responseChunk._len][_nSteps];
+      if(_dinfo._offset) {
+        Chunk offsetChunk = chks[_dinfo.offsetChunkId()];
+        for (int r = 0; r < eta.length; ++r)
+          Arrays.fill(eta[r], offsetChunk.atd(r));
+      }
       double [] beta = _beta;
       double [] pk = _direction;
+
       // intercept
       for (int r = 0; r < eta.length; ++r) {
         double b = beta[beta.length - 1];
@@ -200,7 +208,7 @@ public abstract class GLMTask  {
             _likelihoods[i] += Math.log(1 + Math.exp(-yy * e));
           } else {
             double mu = _params.linkInv(e);
-            _likelihoods[i] += _params.likelihood(y, e, mu);
+            _likelihoods[i] += _params.likelihood(y,mu);
           }
         }
       }
@@ -221,9 +229,9 @@ public abstract class GLMTask  {
     public double _likelihood;
     protected transient boolean [] _skip;
     boolean _validate;
-    double _ymu;
     Vec _rowFilter;
     long _nobs;
+    double _ymu;
 
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, Vec rowFilter){this(dinfo,params, lambda, beta,reg,rowFilter, null);}
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, Vec rowFilter, H2OCountedCompleter cc){
@@ -251,10 +259,10 @@ public abstract class GLMTask  {
         row = _dinfo.extractDenseRow(chks, rid, row);
         if(row.bad) continue;
         _nobs++;
-        double eta = row.innerProduct(b);
+        double eta = row.innerProduct(b) + row.offset;
         double mu = _params.linkInv(eta);
-        _val.add(row.response(0), mu);
-        _likelihood += _params.likelihood(row.response(0), eta, mu);
+        _val.add(row.response(0), mu, row.weight, row.offset);
+        _likelihood += _params.likelihood(row.response(0), mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
@@ -283,6 +291,10 @@ public abstract class GLMTask  {
       double [] eta = MemoryManager.malloc8d(chks[0]._len);
       if(_dinfo._intercept)
         Arrays.fill(eta,_beta[_beta.length-1]);
+      if(_dinfo._offset) {
+        for (int i = 0; i < eta.length; ++i)
+          eta[i] += chks[_dinfo.offsetChunkId()].atd(i);
+      }
       double [] b = _beta;
       // do categoricals first
       for(int i = 0; i < _dinfo._cats; ++i) {
@@ -325,31 +337,26 @@ public abstract class GLMTask  {
 
     protected void goByCols(Chunk [] chks, boolean [] skp){
       int numStart = _dinfo.numStart();
-      double  [] eta = computeEtaByCols(chks,skp);
+      double  [] eta = computeEtaByCols(chks, skp);
       double  [] b = _beta;
       double  [] g = _gradient;
-      Chunk offsetChunk = null;
-      int nxs = chks.length-1; // -1 for response
-      if(_dinfo._offset) {
-        nxs -= 1;
-        offsetChunk = chks[nxs];
-      }
-      Chunk responseChunk = chks[nxs];
+      Chunk offsetChunk = _dinfo._offset?chks[_dinfo.offsetChunkId()]:new C0DChunk(0,chks[0]._len);
+      Chunk weightChunk = _dinfo._weights ?chks[_dinfo.weightChunkId()]:new C0DChunk(1,chks[0]._len);
+      Chunk responseChunk = chks[_dinfo.responseChunkId()];
       double eta_sum = 0;
       // compute the predicted mean and variance and gradient for each row
       for(int r = 0; r < chks[0]._len; ++r){
         if(skp[r] || responseChunk.isNA(r))
           continue;
         _nobs++;
-        double off = (_dinfo._offset?offsetChunk.atd(r):0);
+        double w = weightChunk.atd(r);
         double y = responseChunk.atd(r);
-        double offset = off;
-        double mu = _params.linkInv(eta[r] + offset);
-        _val.add(y, mu);
-        _likelihood += _params.likelihood(y,eta[r],mu);
+        double mu = _params.linkInv(eta[r]);
+        _val.add(y, mu, w, offsetChunk.atd(r));
+        _likelihood += w*_params.likelihood(y, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
-        eta[r] = (mu-y) / (var * _params.linkDeriv(mu));
+        eta[r] = w * (mu-y) / (var * _params.linkDeriv(mu));
         eta_sum += eta[r];
       }
       // finally go over the columns again and compute gradient for each column
@@ -416,7 +423,7 @@ public abstract class GLMTask  {
       String [] domain = _dinfo._adaptedFrame.lastVec().domain();
       if(domain == null && _params._family == Family.binomial)
         domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
-      _val = new GLMValidation(domain,_params._intercept,_ymu,_params,rank,0,_validate);
+      _val = new GLMValidation(domain,_params._intercept, _ymu, _params,rank,0,_validate);
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       if(_rowFilter != null) {
         Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
@@ -635,7 +642,7 @@ public abstract class GLMTask  {
   public static class GLMIterationTask extends MRTask<GLMIterationTask> {
     final Key _jobKey;
     final DataInfo _dinfo;
-    final GLMParameters _glm;
+    final GLMParameters _params;
     final double [] _beta;
     protected Gram  _gram;
     double [] _xy;
@@ -650,11 +657,12 @@ public abstract class GLMTask  {
     boolean _sparse;
     Vec _rowFilter;
 
+
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp);
       _jobKey = jobKey;
       _dinfo = dinfo;
-      _glm = glm;
+      _params = glm;
       _beta = beta;
       _ymu = ymu;
       _validate = validate;
@@ -681,12 +689,12 @@ public abstract class GLMTask  {
         int rank = 0;
         if(_beta != null) for(double d:_beta) if(d != 0)++rank;
         String [] domain = _dinfo._adaptedFrame.lastVec().domain();
-        if(domain == null && _glm._family == Family.binomial)
+        if(domain == null && _params._family == Family.binomial)
           domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
-        _val = new GLMValidation(domain, true, _ymu, _glm, rank, .5, true); // todo pass correct threshold
+        _val = new GLMValidation(domain, true, _ymu, _params, rank, .5, true); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
-      if(_glm._family == Family.binomial && _validate){
+      if(_params._family == Family.binomial && _validate){
         _ti = new int[2];
       }
       // compute
@@ -701,7 +709,7 @@ public abstract class GLMTask  {
             processRow(_dinfo.extractDenseRow(chks, r, row));
         }
       }
-      if(_validate && _glm._family == Family.binomial) {
+      if(_validate && _params._family == Family.binomial) {
         assert _val != null;
       }
     }
@@ -710,29 +718,27 @@ public abstract class GLMTask  {
       if(r.bad) return;
       ++_nobs;
       final double y = r.response(0);
-      assert ((_glm._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
-      assert ((_glm._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+      assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+      assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
       final double w, eta, mu, var, z;
       final int numStart = _dinfo.numStart();
       double d = 1;
-      if( _glm._family == Family.gaussian && _glm._link == Link.identity){
+      if( _params._family == Family.gaussian && _params._link == Link.identity){
         w = 1;
-        z = y;
+        z = y - r.offset;
         mu = 0;
-        var = 1;
         eta = mu;
       } else {
         eta = r.innerProduct(_beta);
-        mu = _glm.linkInv(eta);
-        var = Math.max(1e-6, _glm.variance(mu)); // avoid numerical problems with 0 variance
-        d = _glm.linkDeriv(mu);
+        mu = _params.linkInv(eta + r.offset);
+        var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+        d = _params.linkDeriv(mu);
         z = eta + (y-mu)*d;
         w = 1.0/(var*d*d);
       }
-      if(_validate) {
-        _val.add(y, mu);
-      }
-      _likelihood += _glm.likelihood(y,eta,mu);
+      if(_validate)
+        _val.add(y, mu, r.weight, r.offset);
+      _likelihood += _params.likelihood(y,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       double wz = w * z;
       _yy += wz * z;

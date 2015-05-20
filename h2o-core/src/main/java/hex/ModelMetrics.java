@@ -142,6 +142,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public long _count;
 
     abstract public double[] perRow(double ds[], float yact[], Model m);
+    public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
+      throw H2O.unimpl();
+    }
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

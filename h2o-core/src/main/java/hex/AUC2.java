@@ -186,7 +186,7 @@ public class AUC2 extends Iced {
       AUCBuilder bldr = _bldr = new AUCBuilder(_nBins);
       for( int row = 0; row < ps._len; row++ )
         if( !ps.isNA(row) && !as.isNA(row) )
-          bldr.perRow(ps.atd(row),(int)as.at8(row));
+          bldr.perRow(ps.atd(row),(int)as.at8(row),1);
     }
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }
@@ -210,7 +210,7 @@ public class AUC2 extends Iced {
       _ssx = -1;                   // Unknown best merge bin
     }
 
-    public void perRow(double pred, int act ) {
+    public void perRow(double pred, int act, double w ) {
       // Insert the prediction into the set of histograms in sorted order, as
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);

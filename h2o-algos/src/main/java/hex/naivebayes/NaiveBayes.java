@@ -188,7 +188,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         init(true);
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
-        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesModel.NaiveBayesOutput(NaiveBayes.this));

@@ -20,9 +20,10 @@ import water.util.MathUtils;
  *
  */
 public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
-  final double [] _ymu;
   double residual_deviance;
   double null_deviance;
+  final double _ymu;
+  final double _ymuLink;
   long nobs;
   double aic;// internal AIC used only for poisson family!
   private double _aic2;// internal AIC used only for poisson family!
@@ -32,35 +33,45 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   AUC2 _auc2;
   MetricBuilder _metricBuilder;
   boolean _intercept = true;
+
   final boolean _computeMetrics;
   public GLMValidation(String[] domain, boolean intercept, double ymu, GLMParameters glm, int rank, double threshold, boolean computeMetrics){
     super(domain);
     _intercept = intercept;
     _rank = rank;
-    _ymu = new double[]{ymu};
     _glm = glm;
     _threshold = threshold;
     _computeMetrics = computeMetrics;
+    _ymu = ymu;
+    _ymuLink = _glm.link(ymu);
     if(_computeMetrics)
       _metricBuilder = _glm._family == Family.binomial
         ?new MetricBuilderBinomial(domain)
         :new MetricBuilderRegression();
   }
 
-
-
   public double explainedDev(){
     return 1.0 - residualDeviance()/nullDeviance();
   }
-
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if (_glm._family == Family.binomial)
-        add2(yact[0], ds[2]);
+        add2(yact[0], ds[2], 1, 0);
       else
-        add2(yact[0], ds[0]);
+        add2(yact[0], ds[0], 1, 0);
+    }
+    return ds;
+  }
+
+  @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
+    _metricBuilder.perRow(ds,yact,weight,offset,m);
+    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
+      if (_glm._family == Family.binomial)
+        add2(yact[0], ds[2], weight, offset);
+      else
+        add2(yact[0], ds[0], weight, offset);
     }
     return ds;
   }
@@ -82,7 +93,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   transient float [] _yact = new float[1];
 
 
-  public void add(double yreal, double ymodel) {
+  public void add(double yreal, double ymodel, double weight, double offset) {
     _yact[0] = (float) yreal;
     if(_glm._family == Family.binomial) {
       _ds[0] = ymodel > _threshold ? 1 : 0;
@@ -92,19 +103,21 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       _ds[0] = ymodel;
     }
     if(_computeMetrics)
-      _metricBuilder.perRow(_ds, _yact, null);
-    add2(yreal, ymodel);
+      _metricBuilder.perRow(_ds, _yact, weight, offset, null);
+    add2(yreal, ymodel, weight, offset );
   }
-  private void add2(double yreal, double ymodel) {
-    null_deviance += _glm.deviance(yreal, _ymu[0]);
-    residual_deviance  += _glm.deviance(yreal, ymodel);
+
+  private void add2(double yreal, double ymodel, double weight, double offset) {
+    residual_deviance  += weight*_glm.deviance(yreal, ymodel);
+    double ynull = offset == 0?_ymu:_glm.linkInv(_ymuLink + offset);
+    null_deviance += weight*_glm.deviance(yreal,ynull);
     ++nobs;
     if( _glm._family == Family.poisson ) { // AIC for poisson
       long y = Math.round(yreal);
       double logfactorial = 0;
       for( long i = 2; i <= y; ++i )
         logfactorial += Math.log(i);
-      _aic2 += (yreal * Math.log(ymodel) - logfactorial - ymodel);
+      _aic2 += weight + (yreal * Math.log(ymodel) - logfactorial - ymodel);
     }
   }
 
@@ -116,18 +129,17 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     nobs += v.nobs;
     _aic2 += v._aic2;
   }
-  public final double nullDeviance(){return null_deviance;}
-  public final double residualDeviance(){return residual_deviance;}
-  public final long nullDOF(){return nobs - (_intercept?1:0);}
-  public final long resDOF(){return nobs - _rank;}
+  public final double nullDeviance() { return null_deviance;}
+  public final double residualDeviance() { return residual_deviance;}
+  public final long nullDOF() { return nobs - (_intercept?1:0);}
+  public final long resDOF() { return nobs - _rank;}
 
   protected double computeAUC(){
     if(_glm._family != Family.binomial)
       throw new IllegalArgumentException("AUC only defined for family == 'binomial', got '" + _glm._family + "'");
     return ((MetricBuilderBinomial)_metricBuilder).auc();
   }
-  public double bestThreshold(){ return _auc2==null ? Double.NaN : _auc2.defaultThreshold();}
-//  public double AIC(){return aic;}
+
   protected void computeAIC(){
     aic = 0;
     switch( _glm._family) {

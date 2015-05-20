@@ -133,7 +133,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false);
+        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -179,7 +179,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           fr = new Frame(null, vecs);
           u = new Frame(_parms._u_key, null, uvecs);
-          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
+          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */ false);
           DKV.put(uinfo._key, uinfo);
           DKV.put(u._key, u);
 

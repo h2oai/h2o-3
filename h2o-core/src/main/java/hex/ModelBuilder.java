@@ -49,6 +49,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Map the algo name (e.g., "deeplearning") to the Model class (e.g., DeepLearningModel.class):
   private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
 
+  private transient Vec _weights;
+  private Key  _weights_key;
+
+  public boolean hasOffset(){return false;}
+  public Vec offset(){return null;}
+  public boolean hasWeights(){return _weights_key != null;}
+  public Vec weights() {
+    if(_weights_key == null) return null;
+    return _weights == null?DKV.<Vec>getGet(_weights_key):_weights;
+  }
+
   /**
    * Register a ModelBuilder, assigning it an algo name.
    */
@@ -265,13 +276,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
 
+    if(_parms._weights_column != null) {
+      Vec w = _train.remove(_parms._weights_column);
+      if(w == null)
+        error("_offset","Weights column '" + _parms._weights_column  + "' not found in the training frame");
+      else {// add offset to the end
+        _weights = w;
+        _weights_key = w._key;
+        _train.add(_parms._weights_column, w);
+      }
+    }
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
     Frame va = _parms.valid();  // User-given validation set
     if (va != null)
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(_train._names,null,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
+      String[] msgs = Model.adaptTestForTrain(_train._names,_parms._weights_column, _parms._offset_column, null,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
       if( expensive ) {
         for( String s : msgs ) {
           Log.info(s);
