@@ -288,11 +288,15 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 summary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
 
-    for (Vec vec : frame.vecs()) {
-      // Compute second pass of rollups: the histograms.
-      if (!vec.isString()) {
-        vec.bins();
+    if (null != frame) {
+      Futures fs = new Futures();
+      Vec[] vecArr = frame.vecs();
+      for (Vec v : vecArr) {
+        if (! v.isString()) {
+          v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
+        }
       }
+      fs.blockForPending();
     }
 
     return doFetch(version, s, FrameV3.ColV3.FORCE_SUMMARY);

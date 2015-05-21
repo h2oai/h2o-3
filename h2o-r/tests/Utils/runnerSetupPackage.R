@@ -21,6 +21,13 @@ invisible(lapply(packages, usePackage))
 library(R.utils)
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
+if(Sys.getenv()["USER"] == "jenkins") {
+  print("JENKINS R_LIBS_USER PATH SET TO: ")
+  print( Sys.getenv()["R_LIBS_USER"] )
+  print("R .libPaths(): ")
+  print( .libPaths() )
+}
+
 if( "h2o" %in% rownames(installed.packages()) ) {
   lapply(.libPaths(), function(p) {
     tryCatch(remove.packages("h2o", p), error=function(e) { paste0("No h2o package in libPath: ", p) })
