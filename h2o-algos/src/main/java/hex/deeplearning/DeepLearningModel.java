@@ -771,46 +771,30 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
     if (!_output.autoencoder) {
-      colHeaders.add("Training R^2");
-      colTypes.add("double");
-      colFormat.add("%.5f");
+      colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.isClassifier()) {
-      colHeaders.add("Training LogLoss");
-      colTypes.add("double");
-      colFormat.add("%.5f");
+      colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
-      colHeaders.add("Training AUC");
-      colTypes.add("double");
-      colFormat.add("%.5f");
+      colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
-      colHeaders.add("Training Classification Error");
-      colTypes.add("double");
-      colFormat.add("%.5f");
+      colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (get_params()._valid != null) {
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (!_output.autoencoder) {
-        colHeaders.add("Validation R^2");
-        colTypes.add("double");
-        colFormat.add("%.5f");
+        colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
-        colHeaders.add("Validation LogLoss");
-        colTypes.add("double");
-        colFormat.add("%.5f");
+        colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
-        colHeaders.add("Validation AUC");
-        colTypes.add("double");
-        colFormat.add("%.5f");
+        colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
-        colHeaders.add("Validation Classification Error");
-        colTypes.add("double");
-        colFormat.add("%.5f");
+        colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
     } else if (get_params().getNumFolds() > 0) {
       colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
