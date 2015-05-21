@@ -2,7 +2,10 @@ package hex;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import water.Iced;
+import water.util.ArrayUtils;
 import water.util.MathUtils;
+
+import java.util.Arrays;
 
 /**
  * Low-weight keeper of scores
@@ -40,6 +43,11 @@ public class ScoreKeeper extends Iced {
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
     }
   }
+
+  /**
+   * Light-weight print of metrics to a String, meant to take least amount of lines possible
+   * @return String containing metrics printed for human consumption
+   */
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("r2 is " + String.format("%5f",_r2) + ", MSE is " + String.format("%5f",_mse));
@@ -50,9 +58,23 @@ public class ScoreKeeper extends Iced {
     return sb.toString();
 
   }
-  @Override public boolean equals(Object obj) {
-    if (! (obj instanceof ScoreKeeper)) return false;
-    ScoreKeeper o = (ScoreKeeper)obj;
+
+  /**
+   * Compare this ScoreKeeper with that ScoreKeeper
+   * @param that
+   * @return true if they are equal (up to 1e-6 absolute and relative error, or both contain NaN for the same values)
+   */
+  @Override public boolean equals(Object that) {
+    if (! (that instanceof ScoreKeeper)) return false;
+    ScoreKeeper o = (ScoreKeeper)that;
+    if (_hitratio == null && ((ScoreKeeper) that)._hitratio != null) return false;
+    if (_hitratio != null && ((ScoreKeeper) that)._hitratio == null) return false;
+    if (_hitratio != null && ((ScoreKeeper) that)._hitratio != null) {
+      if (_hitratio.length != ((ScoreKeeper) that)._hitratio.length) return false;
+      for (int i=0; i<_hitratio.length; ++i) {
+        if (!MathUtils.compare(_hitratio[i], ((ScoreKeeper) that)._hitratio[i], 1e-6, 1e-6)) return false;
+      }
+    }
     return MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
             && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)

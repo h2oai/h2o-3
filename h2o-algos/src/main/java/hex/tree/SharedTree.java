@@ -383,7 +383,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _timeLastScoreStart = now;
       // Score on training data
       Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
-      ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
+      ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
 
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -396,12 +396,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,false,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
-        ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
+        ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
         if (out._ntrees > 0) {
           Log.info("Validation " + out._scored_valid[out._ntrees].toString());
-          if (mmv.hr() != null) Log.info(getHitRatioTable(mm.hr()));
+          if (mmv.hr() != null) Log.info(getHitRatioTable(mmv.hr()));
         }
       }
 
