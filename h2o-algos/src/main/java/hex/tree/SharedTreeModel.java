@@ -22,7 +22,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
-    public long _seed;          // Seed for pseudo-random redistribution
+    public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
 
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
@@ -48,7 +48,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      *
      *  From this, the mse for 0 trees can be computed as follows:
      *  mean((yi-p)^2)
-     *  This is what is stored in _mse_train[0]
+     *  This is what is stored in _scored_train[0]
      * */
     public double _init_f;
 
@@ -61,11 +61,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Trees get big, so store each one seperately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    /** Train and validation errors per-tree (scored).  Zero index is the no-tree
-     *  error, guessing only the class distribution.  Not all trees are
-     *  scored, NaN represents trees not scored. */
-    public double _mse_train[/*_ntrees+1*/];
-    public double _mse_valid[/*_ntrees+1*/];
+    public ScoreKeeper _scored_train[/*ntrees+1*/];
+    public ScoreKeeper _scored_valid[/*ntrees+1*/];
 
     /** Training time */
     public long _training_time_ms[/*ntrees+1*/] = new long[]{System.currentTimeMillis()};
@@ -80,8 +77,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
-      _mse_train = new double[]{mse_train};
-      _mse_valid = new double[]{mse_valid};
+      _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
+      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
     }
 
     // Append next set of K trees
@@ -99,9 +96,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         _treeStats.updateBy(trees[i]); // Update tree shape stats
       }
       _ntrees++;
-      // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
-      _mse_train = ArrayUtils.copyAndFillOf(_mse_train, _ntrees+1, Double.NaN);
-      _mse_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN) : null;
+      // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
+      _scored_train = ArrayUtils.copyAndFillOf(_scored_train, _ntrees+1, new ScoreKeeper());
+      _scored_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoreKeeper()) : null;
       _training_time_ms = ArrayUtils.copyAndFillOf(_training_time_ms, _ntrees+1, System.currentTimeMillis());
       fs.blockForPending();
     }
@@ -184,4 +181,5 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   abstract protected void toJavaUnifyPreds( SB body, SB file );
   protected SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
   protected SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
+
 }

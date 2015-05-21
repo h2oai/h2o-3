@@ -73,8 +73,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
     if (DEBUG_DETERMINISTIC && _parms._seed == -1) _parms._seed = 0x1321e74a0192470cL; // fixed version of seed
-    else if (_parms._seed == -1) _actual_seed = RandomUtils.getRNG(0xd280524ad7fe0602L).nextLong();
-    else _actual_seed = _parms._seed;
+    else if (_parms._seed == -1) _actual_seed = new Random().nextLong(); // time-based random seed
+    else _actual_seed = _parms._seed; // user-given seed
     if( _parms._mtries < 1 && _parms._mtries != -1 ) error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
