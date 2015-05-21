@@ -26,7 +26,7 @@ class RapidsHandler extends Handler {
 
 
   public RapidsV3 exec(int version, RapidsV3 rapids) {
-    synchronized (_lock) {
+    synchronized( _lock ) {
       if( rapids == null ) return null;
       Throwable e = null;
       Env env = null;
