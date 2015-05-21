@@ -958,6 +958,24 @@ public class GLMTest  extends TestUtil {
       return metrics._resDev;
     }
   }
+  public static double residualDevianceTest(GLMModel m) {
+    if(m._parms._family == Family.binomial) {
+      ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._validation_metrics;
+      return metrics._resDev;
+    } else {
+      ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM)m._output._validation_metrics;
+      return metrics._resDev;
+    }
+  }
+  public static double nullDevianceTest(GLMModel m) {
+    if(m._parms._family == Family.binomial) {
+      ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._validation_metrics;
+      return metrics._nullDev;
+    } else {
+      ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM)m._output._validation_metrics;
+      return metrics._nullDev;
+    }
+  }
   public static double aic(GLMModel m) {
     if(m._parms._family == Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._training_metrics;

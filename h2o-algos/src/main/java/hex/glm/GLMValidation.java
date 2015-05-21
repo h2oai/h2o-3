@@ -7,8 +7,6 @@ import hex.ModelMetricsRegression.MetricBuilderRegression;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.DKV;
-import water.Iced;
-import water.Key;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
@@ -27,7 +25,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   long nobs;
   double aic;// internal AIC used only for poisson family!
   private double _aic2;// internal AIC used only for poisson family!
-  final GLMModel.GLMParameters _glm;
+  final GLMModel.GLMParameters _parms;
   final private int _rank;
   final double _threshold;
   AUC2 _auc2;
@@ -35,17 +33,17 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   boolean _intercept = true;
 
   final boolean _computeMetrics;
-  public GLMValidation(String[] domain, boolean intercept, double ymu, GLMParameters glm, int rank, double threshold, boolean computeMetrics){
+  public GLMValidation(String[] domain, boolean intercept, double ymu, GLMParameters parms, int rank, double threshold, boolean computeMetrics){
     super(domain);
     _intercept = intercept;
     _rank = rank;
-    _glm = glm;
+    _parms = parms;
     _threshold = threshold;
     _computeMetrics = computeMetrics;
-    _ymu = ymu;
-    _ymuLink = _glm.link(ymu);
+    _ymu = parms._intercept?ymu:parms._family == Family.binomial?.5:0;
+    _ymuLink = _parms.link(ymu);
     if(_computeMetrics)
-      _metricBuilder = _glm._family == Family.binomial
+      _metricBuilder = _parms._family == Family.binomial
         ?new MetricBuilderBinomial(domain)
         :new MetricBuilderRegression();
   }
@@ -57,7 +55,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
     _metricBuilder.perRow(ds,yact,m);
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if (_glm._family == Family.binomial)
+      if (_parms._family == Family.binomial)
         add2(yact[0], ds[2], 1, 0);
       else
         add2(yact[0], ds[0], 1, 0);
@@ -68,7 +66,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     _metricBuilder.perRow(ds,yact,weight,offset,m);
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if (_glm._family == Family.binomial)
+      if (_parms._family == Family.binomial)
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -95,7 +93,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 
   public void add(double yreal, double ymodel, double weight, double offset) {
     _yact[0] = (float) yreal;
-    if(_glm._family == Family.binomial) {
+    if(_parms._family == Family.binomial) {
       _ds[0] = ymodel > _threshold ? 1 : 0;
       _ds[1] = 1 - ymodel;
       _ds[2] = ymodel;
@@ -108,11 +106,11 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
 
   private void add2(double yreal, double ymodel, double weight, double offset) {
-    residual_deviance  += weight*_glm.deviance(yreal, ymodel);
-    double ynull = offset == 0?_ymu:_glm.linkInv(offset);
-    null_deviance += weight*_glm.deviance(yreal,ynull);
+    residual_deviance  += weight* _parms.deviance(yreal, ymodel);
+    double ynull = offset == 0?_ymu: _parms.linkInv(offset);
+    null_deviance += weight* _parms.deviance(yreal,ynull);
     ++nobs;
-    if( _glm._family == Family.poisson ) { // AIC for poisson
+    if( _parms._family == Family.poisson ) { // AIC for poisson
       long y = Math.round(yreal);
       double logfactorial = 0;
       for( long i = 2; i <= y; ++i )
@@ -135,14 +133,14 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   public final long resDOF() { return nobs - _rank;}
 
   protected double computeAUC(){
-    if(_glm._family != Family.binomial)
-      throw new IllegalArgumentException("AUC only defined for family == 'binomial', got '" + _glm._family + "'");
+    if(_parms._family != Family.binomial)
+      throw new IllegalArgumentException("AUC only defined for family == 'binomial', got '" + _parms._family + "'");
     return ((MetricBuilderBinomial)_metricBuilder).auc();
   }
 
   protected void computeAIC(){
     aic = 0;
-    switch( _glm._family) {
+    switch( _parms._family) {
       case gaussian:
         aic =  nobs * (Math.log(residual_deviance / nobs * 2 * Math.PI) + 1) + 2;
         break;
@@ -159,7 +157,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
 //        aic = Double.NaN;
 //        break;
       default:
-        assert false : "missing implementation for family " + _glm._family;
+        assert false : "missing implementation for family " + _parms._family;
     }
     aic += 2*_rank;
   }
@@ -177,7 +175,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     GLMModel gm = (GLMModel)m;
     computeAIC();
     ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f, sigma):_metrics;
-    if (_glm._family == Family.binomial) {
+    if (_parms._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     } else {
