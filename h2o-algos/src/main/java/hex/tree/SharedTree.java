@@ -71,6 +71,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
     }
     if (_parms._nbins <= 1) error ("_nbins", "_nbins must be > 1.");
+    if (_parms._nbins >= 1<<16) error ("_nbins", "_nbins must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
@@ -385,10 +386,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
-      String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
+      String train_class = isClassifier() ? ", logloss is " +
+              ( _nclass == 2 ?
+                      (String.format("%5f", ((ModelMetricsBinomial)mm)._logloss)) //binomial
+                      : String.format("%5f", (((ModelMetricsMultinomial)mm)._logloss)) //multinomial
+              ) : ""; //regression - show nothing
+      if (_nclass == 2 && ((ModelMetricsBinomial)mm)._auc != null)
+        train_class += ", AUC is " + String.format("%5f", ((ModelMetricsBinomial)mm)._auc._auc);
+
       out._mse_train[out._ntrees] = mm._MSE; // Store score results in the model output
       training_r2 = mm.r2();
-      Log.info("training r2 is "+(float)mm.r2()+", MSE is "+(float)mm._MSE + train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
+      Log.info("training r2 is "+(float)mm.r2()+", MSE is "+(float)mm._MSE + train_class + ", with "+_model._output._ntrees+"x"+(_nclass==2 ? 1 : _nclass)+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
       }
@@ -398,8 +406,15 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._MSE; // Store score results in the model output
         out._validation_metrics = mmv;
-        String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
-        Log.info("validation r2 is "+(float)mmv.r2()+", MSE is "+(float)mmv._MSE + valid_logloss);
+        String valid_class = isClassifier() ? ", logloss is " +
+                ( _nclass == 2 ?
+                        (String.format("%5f", ((ModelMetricsBinomial)mmv)._logloss)) //binomial
+                        : String.format("%5f", (((ModelMetricsMultinomial)mmv)._logloss)) //multinomial
+                ) : ""; //regression - show nothing
+        if (_nclass == 2 && ((ModelMetricsBinomial)mm)._auc != null)
+          valid_class += ", AUC is " + String.format("%5f", ((ModelMetricsBinomial)mm)._auc._auc);
+
+        Log.info("validation r2 is "+(float)mmv.r2()+", MSE is "+(float)mmv._MSE + valid_class);
         if (mmv.hr() != null) {
           Log.info(getHitRatioTable(mm.hr()));
         }

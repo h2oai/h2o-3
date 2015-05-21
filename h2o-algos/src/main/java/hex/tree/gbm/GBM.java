@@ -1,6 +1,5 @@
 package hex.tree.gbm;
 
-import hex.Model;
 import hex.ModelCategory;
 import hex.schemas.GBMV3;
 import hex.tree.*;

@@ -382,7 +382,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Mtries**: Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
-- **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0 and the default value is 0.6666667. 
+- **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
 
 - **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 

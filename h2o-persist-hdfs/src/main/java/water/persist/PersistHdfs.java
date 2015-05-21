@@ -282,7 +282,8 @@ public final class PersistHdfs extends Persist {
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
-    assert "hdfs".equals(uri.getScheme()) || "s3".equals(uri.getScheme()) || "s3n".equals(uri.getScheme()) : "Expected hdfs, s3 or s3n scheme, but uri is " + uri;
+    assert "hdfs".equals(uri.getScheme()) || "s3".equals(uri.getScheme())
+            || "s3n".equals(uri.getScheme()) || "s3a".equals(uri.getScheme()) : "Expected hdfs, s3 s3n, or s3a scheme, but uri is " + uri;
 
     FileSystem fs = FileSystem.get(uri, PersistHdfs.CONF);
     FileStatus[] fstatus = fs.listStatus(new Path(uri));
@@ -300,8 +301,8 @@ public final class PersistHdfs extends Persist {
   // We don't handle HDFS style S3 storage, just native storage.  But all users
   // don't know about HDFS style S3 so treat S3 as a request for a native file
   private static final String convertS3toS3N(String s) {
-    if (Pattern.compile("^s3://.*").matcher(s).matches())
-      return s.replaceFirst("^s3://", "s3n://");
+    if (Pattern.compile("^s3[a]?://.*").matcher(s).matches())
+      return s.replaceFirst("^s3[a]?://", "s3n://");
     else return s;
   }
 
