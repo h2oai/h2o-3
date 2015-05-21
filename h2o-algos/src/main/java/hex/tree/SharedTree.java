@@ -389,11 +389,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
 
       out._scored_train[out._ntrees].fillFrom(mm);
-      Log.info(out._scored_train[out._ntrees].toString()
-              + ", with "+_model._output._ntrees+"x"+(_nclass==2 ? 1 : _nclass)+" trees (average of "
-              +(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
-      if (mm.hr() != null) {
-        Log.info(getHitRatioTable(mm.hr()));
+      if (out._ntrees > 0) {
+        Log.info("Training " + out._scored_train[out._ntrees].toString());
+        if (mm.hr() != null) Log.info(getHitRatioTable(mm.hr()));
       }
       // Score again on validation data
       if( _parms._valid != null ) {
@@ -401,9 +399,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
-        Log.info(out._scored_valid[out._ntrees].toString());
-        if (mmv.hr() != null) {
-          Log.info(getHitRatioTable(mm.hr()));
+        if (out._ntrees > 0) {
+          Log.info("Validation " + out._scored_valid[out._ntrees].toString());
+          if (mmv.hr() != null) Log.info(getHitRatioTable(mm.hr()));
         }
       }
 
@@ -528,7 +526,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, fmt.print(_output._training_time_ms[i]));
       table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _start_time, true));
       table.set(row, col++, i);
-      ScoredClassifierRegressor st = _output._scored_train[i];
+      ScoreKeeper st = _output._scored_train[i];
       table.set(row, col++, st._mse);
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);

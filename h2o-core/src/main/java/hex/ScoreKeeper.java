@@ -1,21 +1,25 @@
 package hex;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import water.Iced;
 import water.util.MathUtils;
 
-/** Train and validation errors per-tree (scored).  Zero index is the no-tree
- *  error, guessing only the class distribution (if applicable). Not all trees are
- *  scored, NaN values represents trees not scored. */
-public class ScoredClassifierRegressor extends Iced {
+/**
+ * Low-weight keeper of scores
+ * Solely intended for display (either direct or as helper to create scoring history TwoDimTable)
+ * Not intended to store large AUC object or ConfusionMatrices, etc.
+ */
+public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
   public double _mse = Double.NaN;
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
   public double _classError = Double.NaN;
+  public float[] _hitratio;
 
-  public ScoredClassifierRegressor() {}
-  public ScoredClassifierRegressor(double mse) { _mse = mse; }
-  public ScoredClassifierRegressor(ModelMetrics mm) { fillFrom(mm); }
+  public ScoreKeeper() {}
+  public ScoreKeeper(double mse) { _mse = mse; }
+  public ScoreKeeper(ModelMetrics mm) { fillFrom(mm); }
 
   public void fillFrom(ModelMetrics m) {
     if (m == null) return;
@@ -33,20 +37,22 @@ public class ScoredClassifierRegressor extends Iced {
     else if (m instanceof ModelMetricsMultinomial) {
       _logloss = ((ModelMetricsMultinomial)m)._logloss;
       _classError = ((ModelMetricsMultinomial)m)._cm.err();
+      _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
     }
   }
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("training r2 is " + String.format("%5f",_r2) + ", MSE is " + String.format("%5f",_mse));
+    sb.append("r2 is " + String.format("%5f",_r2) + ", MSE is " + String.format("%5f",_mse));
     if (!Double.isNaN(_logloss)) sb.append(", logloss is " + String.format("%5f",_logloss));
     if (!Double.isNaN(_AUC)) sb.append(", AUC is " + String.format("%5f",_AUC));
     if (!Double.isNaN(_classError)) sb.append(", classification error is " + String.format("%5f",_classError));
+    if (_hitratio != null) sb.append("\n" + getHitRatioTable(_hitratio));
     return sb.toString();
 
   }
   @Override public boolean equals(Object obj) {
-    if (! (obj instanceof ScoredClassifierRegressor)) return false;
-    ScoredClassifierRegressor o = (ScoredClassifierRegressor)obj;
+    if (! (obj instanceof ScoreKeeper)) return false;
+    ScoreKeeper o = (ScoreKeeper)obj;
     return MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
             && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)

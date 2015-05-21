@@ -663,8 +663,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     VarImp variable_importances;
 
     // classification
-    ScoredClassifierRegressor scored_train;
-    ScoredClassifierRegressor scored_valid;
+    ScoreKeeper scored_train = new ScoreKeeper();
+    ScoreKeeper scored_valid = new ScoreKeeper();
     public ConfusionMatrix train_confusion_matrix;
     public ConfusionMatrix valid_confusion_matrix;
 //    public double train_err = Double.NaN;
@@ -673,8 +673,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    public double valid_logloss = Double.NaN;
     public AUC2 training_AUC;
     public AUC2 validation_AUC;
-    public float[] train_hitratio; // "Hit ratio on training data"
-    public float[] valid_hitratio; // "Hit ratio on validation data"
 
     // regression
 //    public double training_MSE = Double.NaN;
@@ -693,30 +691,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
-      sb.append("Training MSE: " + scored_train._mse + "\n");
-      sb.append("Training R^2: " + scored_train._r2 + "\n");
-      if (classification) {
-        sb.append("Training LogLoss: " + scored_train._logloss + "\n");
-        sb.append("Training " + train_confusion_matrix.table().toString(1));
-        sb.append("Training Misclassification"
-                + (training_AUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
-                + String.format("%.2f", 100 * scored_train._classError) + "%");
-        if (training_AUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * training_AUC._auc) + "%");
-      }
+      if (scored_train!=null) sb.append("Training " + scored_train.toString());
+      if (classification) sb.append("Training " + train_confusion_matrix.table().toString(1));
       if (validation || num_folds>0) {
-        if (num_folds > 0) {
-          sb.append("\nDoing " + num_folds + "-fold cross-validation:");
-        }
-        sb.append("\nValidation MSE: " + scored_valid._mse + "\n");
-        sb.append("Validation R^2: " + scored_valid._r2 + "\n");
-        if (classification) {
-          sb.append("Validation LogLoss: " + scored_valid._logloss + "\n");
-          sb.append("Validation " + valid_confusion_matrix.table().toString(1));
-          sb.append("Validation Misclassification"
-                  + (validation_AUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
-                  + String.format("%.2f", (100 * scored_valid._classError)) + "%");
-          if (validation_AUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * validation_AUC._auc) + "%");
-        }
+        if (num_folds > 0) sb.append("\nDoing " + num_folds + "-fold cross-validation:");
+        if (scored_valid!=null) sb.append("Validation " + scored_valid.toString());
+        if (classification) sb.append("Validation " + valid_confusion_matrix.table().toString(1));
       }
       sb.append("\n");
       return sb.toString();
@@ -1677,7 +1657,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             mse_frame.delete();
             ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain); //updated by model.score
             _output._training_metrics = mtrain;
-            err.scored_train = new ScoredClassifierRegressor(mtrain);
+            err.scored_train = new ScoreKeeper(mtrain);
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
@@ -1686,7 +1666,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             mse_frame.delete();
             ModelMetrics mtest = ModelMetrics.getFromDKV(this,ftest); //updated by model.score
             _output._validation_metrics = mtest;
-            err.scored_valid = new ScoredClassifierRegressor(mtest);
+            err.scored_valid = new ScoreKeeper(mtest);
           }
         } else {
           if (printme) Log.info("Scoring the model.");
@@ -1696,9 +1676,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           final Frame trainPredict = score(ftrain);
           trainPredict.delete();
 
-          hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain);
+          hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this, ftrain);
           _output._training_metrics = mtrain;
-          err.scored_train = new ScoredClassifierRegressor(mtrain);
+          err.scored_train = new ScoreKeeper(mtrain);
           hex.ModelMetrics mtest = null;
 
           hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
@@ -1709,7 +1689,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           else if (mm1 instanceof ModelMetricsMultinomial) {
             ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
             err.train_confusion_matrix = mm.cm();
-            err.train_hitratio = mm._hit_ratios;
           }
           if (get_params()._score_training_samples != 0 && get_params()._score_training_samples < ftrain.numRows()) {
             _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
@@ -1721,7 +1700,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             if (ftest != null) {
               mtest = ModelMetrics.getFromDKV(this, ftest);
               _output._validation_metrics = mtest;
-              err.scored_valid = new ScoredClassifierRegressor(mtest);
+              err.scored_valid = new ScoreKeeper(mtest);
             }
             if (mtest != null) {
               if (mtest instanceof ModelMetricsBinomial) {
@@ -1731,7 +1710,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               } else if (mtest instanceof ModelMetricsMultinomial) {
                 ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mtest;
                 err.valid_confusion_matrix = mm.cm();
-                err.valid_hitratio = mm._hit_ratios;
               }
               if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {
                 _output._validation_metrics._description = "Metrics reported on " + ftest.numRows() + " validation set samples";

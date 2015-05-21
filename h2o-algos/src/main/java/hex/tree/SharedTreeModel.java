@@ -61,8 +61,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Trees get big, so store each one seperately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    public ScoredClassifierRegressor _scored_train[/*ntrees+1*/];
-    public ScoredClassifierRegressor _scored_valid[/*ntrees+1*/];
+    public ScoreKeeper _scored_train[/*ntrees+1*/];
+    public ScoreKeeper _scored_valid[/*ntrees+1*/];
 
     /** Training time */
     public long _training_time_ms[/*ntrees+1*/] = new long[]{System.currentTimeMillis()};
@@ -77,8 +77,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
-      _scored_train = new ScoredClassifierRegressor[]{new ScoredClassifierRegressor(mse_train)};
-      _scored_valid = new ScoredClassifierRegressor[]{new ScoredClassifierRegressor(mse_valid)};
+      _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
+      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
     }
 
     // Append next set of K trees
@@ -97,8 +97,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       }
       _ntrees++;
       // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
-      _scored_train = ArrayUtils.copyAndFillOf(_scored_train, _ntrees+1, new ScoredClassifierRegressor());
-      _scored_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoredClassifierRegressor()) : null;
+      _scored_train = ArrayUtils.copyAndFillOf(_scored_train, _ntrees+1, new ScoreKeeper());
+      _scored_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoreKeeper()) : null;
       _training_time_ms = ArrayUtils.copyAndFillOf(_training_time_ms, _ntrees+1, System.currentTimeMillis());
       fs.blockForPending();
     }
