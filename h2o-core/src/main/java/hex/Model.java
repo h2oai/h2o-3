@@ -592,15 +592,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       double [] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
+      int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
         double [] p = hasWeightsOrOffset?score0(chks, weightsChunk.atd(row), offsetChunk.atd(row), row, tmp, preds):score0(chks, row, tmp, preds);
         if (_computeMetrics) {
-          float[] actual = new float[]{(float)chks[_output.responseIdx()].atd(row)};
-//          for (int c = startcol; c < chks.length; c++) {
-//            actual[c - startcol] = (float) chks[c].atd(row);
-//          }
+          float[] actual;
+          if(Model.this instanceof SupervisedModel) {
+            // assuming only 1 response, need to be revisited if we ever have multiple responses
+            actual = new float[]{(float)chks[_output.responseIdx()].atd(row)};
+          } else {
+            actual = new float[chks.length];
+            for (int c = 0; c < chks.length; c++) {
+              actual[c - startcol] = (float) chks[c].atd(row);
+            }
+          }
           if(hasWeightsOrOffset){
             _mb.perRow(preds, actual, weightsChunk.atd(row), offsetChunk.atd(row), Model.this);
           } else
