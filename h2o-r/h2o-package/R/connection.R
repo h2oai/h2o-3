@@ -601,3 +601,8 @@ h2o.networkTest <- function(conn = h2o.getConnection()) {
 
   res$table
 }
+
+# Trigger an explicit garbage collection across all nodes in the H2O cluster.
+.h2o.garbageCollect <- function(conn = h2o.getConnection()) {
+  res <- .h2o.__remoteSend(conn = conn, "GarbageCollect", method = "POST")
+}

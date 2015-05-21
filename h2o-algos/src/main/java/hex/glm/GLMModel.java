@@ -16,6 +16,7 @@ import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -25,11 +26,13 @@ import java.util.concurrent.Future;
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, null);
+
+    // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
     _ymu = ymu;
     _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
-    _output = new GLMOutput(job);
+    _output = job == null?new GLMOutput():new GLMOutput(job);
   }
 
   @Override
@@ -592,6 +595,42 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
     _output._model_summary.set(0, 6 + lambdaSearch, train.toString());
     return _output._model_summary;
+  }
+
+  /**
+   * Make GLM model with given coefficients (predictors can be numeric only at the moment)
+   *
+   * Example: @see GLMTest.testMakeModel().
+   *
+   * @param fam - glm family, always uses canonical link
+   * @param coefficients - vector of coefficients, assumed the same order as predictor names, intercept in the end
+   * @param predictors - NAmes of predictor columns, does not include Intercept
+   * @return GLM model usable for scoring
+   */
+  public static GLMModel makeGLMModel(Family fam, double [] coefficients, String [] predictors, String response) {
+    if(coefficients.length != predictors.length+1)
+      throw new IllegalArgumentException("coefficients length is expected to be predictros.length + 1, as each coefficient must have name + intercept term with no name.");
+    GLMParameters parms = new GLMParameters(Family.binomial);
+    parms._alpha = new double[]{0};
+    parms._lambda = new double[]{0};
+    parms._standardize = false;
+    parms._prior = -1;
+    parms._train = null;
+    GLMModel m = new GLMModel(Key.make(),parms,null, fam == Family.binomial?.5:0,Double.NaN,Double.NaN,-1);
+    predictors = ArrayUtils.append(predictors, new String[]{response});
+    m._output._names = predictors;
+    m._output._coefficient_names = predictors;
+    m._output._dinfo = DataInfo.makeEmpty(coefficients.length-1);
+    m._output._domains = new String[predictors.length][];
+    // double lambda , double [] beta, int iteration, double devTrain, double devTest
+    m.setSubmodel(new Submodel(0, coefficients, -1, Double.NaN, Double.NaN));
+    m._output.setSubmodelIdx(0);
+    return m;
+  }
+
+  @Override public long checksum_impl(){
+    if(_parms._train == null) return 0;
+    return super.checksum_impl();
   }
 
   @Override
