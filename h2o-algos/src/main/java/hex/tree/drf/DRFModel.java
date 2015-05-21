@@ -15,10 +15,10 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     public boolean _build_tree_one_node = false;
     public DRFParameters() {
       super();
-      // Set DRF-specific defaults (that differ from SharedTreeModel's defaults)
+      // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
       _ntrees = 50;
-      _max_depth = -1;
-      _min_rows = -1;
+      _max_depth = 20;
+      _min_rows = 10;
     }
   }
 
