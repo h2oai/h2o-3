@@ -22,7 +22,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
-    public long _seed;          // Seed for pseudo-random redistribution
+    public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
 
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
