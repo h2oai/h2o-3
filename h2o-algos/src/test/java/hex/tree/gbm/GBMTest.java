@@ -609,6 +609,7 @@ public class GBMTest extends TestUtil {
         parms._min_rows = 10;
         parms._distribution = Family.bernoulli;
         parms._balance_classes = true;
+        parms._seed = 0;
 
         // Build a first model; all remaining models should be equal
         GBM job = new GBM(parms);
