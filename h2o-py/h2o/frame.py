@@ -288,12 +288,6 @@ class H2OFrame:
     cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
     rapids_call += cbind
-    # h2o.rapids(cbind)
-    # And frame columns
-    colnames = "(colnames= %" + fr + " (: #0 #" + str(len(self) - 1) + ") "
-    cnames = "(slist \"" + '" "'.join([vec._name for vec in self._vecs]) +"\")"
-    colnames += cnames
-    rapids_call += colnames
     res = h2o.rapids(rapids_call)
     h2o.removeFrameShallow(fr)
     head_rows = [range(1, nrows + 1, 1)]
@@ -326,12 +320,6 @@ class H2OFrame:
       cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
       cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
       rapids_call += cbind
-      # h2o.rapids(cbind)
-      # And frame columns
-      colnames = "(colnames= %" + fr + " (: #0 #" + str(len(self) - 1) + ") "
-      cnames = "(slist \"" + '" "'.join([vec._name for vec in self._vecs]) +"\")"
-      colnames += cnames
-      rapids_call += colnames
       res = h2o.rapids(rapids_call)
       h2o.removeFrameShallow(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
