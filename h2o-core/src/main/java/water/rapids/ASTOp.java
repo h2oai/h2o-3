@@ -2349,6 +2349,8 @@ class ASTMad extends ASTReducerOp {
   }
 
   static double mad(Frame f, QuantileModel.CombineMethod cm, double constant) {
+    Key tk=null;
+    if( f._key == null ) { DKV.put(tk=Key.make(), f=new Frame(tk, f.names(),f.vecs())); }
     final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
@@ -2356,7 +2358,10 @@ class ASTMad extends ASTReducerOp {
           nc.addNum(Math.abs(c.at8(i)-median));
       }
     }.doAll(1, f).outputFrame();
+    if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
+    DKV.remove(f._key); // drp mapping, keep vec
+    DKV.remove(abs_dev._key);
     return constant*mad;
   }
 }
@@ -2917,9 +2922,9 @@ class ASTHist extends ASTUniPrefixOp {
   private static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
   private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
   private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
-  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
-  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
-  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
+  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / h); }
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
+  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.length(),-1./3.); }
   private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
   private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
   private static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
