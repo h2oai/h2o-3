@@ -592,7 +592,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       double [] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
-      int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
@@ -604,9 +603,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             actual = new float[]{(float)chks[_output.responseIdx()].atd(row)};
           } else {
             actual = new float[chks.length];
-            for (int c = 0; c < chks.length; c++) {
-              actual[c - startcol] = (float) chks[c].atd(row);
-            }
+            for (int c = 0; c < chks.length - (_hasWeights?1:0); c++)
+              actual[c] = (float) chks[c].atd(row);
           }
           if(hasWeightsOrOffset){
             _mb.perRow(preds, actual, weightsChunk.atd(row), offsetChunk.atd(row), Model.this);
