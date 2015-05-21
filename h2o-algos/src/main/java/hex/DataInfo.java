@@ -56,7 +56,19 @@ public class DataInfo extends Keyed {
     ab.flipForReading();
     return (DataInfo)new DataInfo().read(ab);
   }
+  // make *empty* data info for numeric only datasets with no regularization
+  public static DataInfo makeEmpty(int fullN) {
+    return new DataInfo(fullN);
+  }
 
+  private DataInfo(int nums) {
+    _nums = nums;
+    _catOffsets = new int[]{0};
+    _predictor_transform = TransformType.NONE;
+    _response_transform = TransformType.NONE;
+    _skipMissing = true;
+    _catLvls = null;
+  }
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
