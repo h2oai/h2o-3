@@ -389,20 +389,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
 
       out._scored_train[out._ntrees].fillFrom(mm);
-      if (out._ntrees > 0) {
-        Log.info("Training " + out._scored_train[out._ntrees].toString());
-        if (mm.hr() != null) Log.info(getHitRatioTable(mm.hr()));
-      }
+      if (out._ntrees > 0) Log.info("Training " + out._scored_train[out._ntrees].toString());
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,false,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
-        if (out._ntrees > 0) {
-          Log.info("Validation " + out._scored_valid[out._ntrees].toString());
-          if (mmv.hr() != null) Log.info(getHitRatioTable(mmv.hr()));
-        }
+        if (out._ntrees > 0) Log.info("Validation " + out._scored_valid[out._ntrees].toString());
       }
 
       if( out._ntrees > 0 ) {    // Compute variable importances
