@@ -15,9 +15,10 @@ public class ScoredClassifierRegressor extends Iced {
 
   public ScoredClassifierRegressor() {}
   public ScoredClassifierRegressor(double mse) { _mse = mse; }
-
+  public ScoredClassifierRegressor(ModelMetrics mm) { fillFrom(mm); }
 
   public void fillFrom(ModelMetrics m) {
+    if (m == null) return;
     _mse = m._MSE;
     if (m instanceof ModelMetricsSupervised) {
       _r2 = ((ModelMetricsSupervised)m).r2();
