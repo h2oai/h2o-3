@@ -8,7 +8,7 @@ import water.util.Log;
 /**
  * A UDP Rebooted packet: this node recently rebooted
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

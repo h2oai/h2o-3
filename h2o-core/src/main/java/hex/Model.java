@@ -3,9 +3,11 @@ package hex;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -674,6 +676,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names, _output.nfeatures()), "Names of columns used by model."); }
   protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
+
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     String modelName = JCodeGen.toJavaId(_key.toString());
     sb.nl();

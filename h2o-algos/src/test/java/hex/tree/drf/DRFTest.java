@@ -102,9 +102,9 @@ public class DRFTest extends TestUtil {
             1,
             20,
             a(a(3,   0, 0,  0,  0),
-              a(2, 177, 1,  4,  0),
+              a(2, 178, 1,  3,  0),
               a(0,   1, 1,  0,  0),
-              a(0,   2, 2, 69,  1),
+              a(0,   3, 2, 68,  1),
               a(0,   0, 0,  3, 87)),
             s("3", "4", "5", "6", "8"));
   }
@@ -261,7 +261,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             a(a(0, 45000),
-              a(0, 45000)),
+                    a(0, 45000)),
             s("0", "1"));
   }
 
@@ -343,7 +343,7 @@ public class DRFTest extends TestUtil {
             },
             7,
             20, 1, 20, a(a(7958, 11707), //1-node
-              a(2709, 19024)),
+                    a(2709, 19024)),
 //          a(a(7841, 11822), //5-node
 //            a(2666, 19053)),
             s("NO", "YES"));
@@ -428,6 +428,9 @@ public class DRFTest extends TestUtil {
       test = parse_test_file(fnametrain);
       res = model.score(test);
 
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(test,res,1e-15));
+
       if (classification && expCM != null) {
         Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
                 Arrays.deepEquals(mm.cm()._cm, expCM));
@@ -443,9 +446,6 @@ public class DRFTest extends TestUtil {
       }
 
       hex.ModelMetrics.getFromDKV(model, test);
-
-      // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(test,res,1e-15));
 
     } finally {
       if (frTrain!=null) frTrain.remove();
@@ -495,7 +495,7 @@ public class DRFTest extends TestUtil {
         DRFModel drf = job.trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
-        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
         job.remove();
         drf.delete();
       }
@@ -557,7 +557,7 @@ public class DRFTest extends TestUtil {
         DRFModel drf = job.trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
-        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
         job.remove();
         drf.delete();
       }
@@ -569,7 +569,52 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20462305452536414, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2093151515479678, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
+  }
+
+  // HEXDEV-319
+  @Ignore
+  @Test public void testAirline() {
+    Frame tfr=null;
+    Frame test=null;
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
+      test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
+      for (int i : new int[]{0,1,2}) {
+        tfr.vecs()[i] = tfr.vecs()[i].toEnum();
+        test.vecs()[i] = test.vecs()[i].toEnum();
+      }
+
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._valid = test._key;
+//      parms._ignored_columns = new String[]{"UniqueCarrier","Origin","Dest"};
+//      parms._ignored_columns = new String[]{"UniqueCarrier","Origin"};
+//      parms._ignored_columns = new String[]{"Month","DayofMonth","DayOfWeek","DepTime","UniqueCarrier","Origin","Distance"};
+      parms._response_column = "dep_delayed_15min";
+      parms._nbins = 20;
+      parms._ntrees = 100;
+      parms._max_depth = 20;
+      parms._mtries = -1;
+      parms._sample_rate = 0.632f;
+      parms._min_rows = 10;
+      parms._seed = 12;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+      Log.info("Test set AUC: " + drf._output._validation_metrics.auc()._auc);
+
+      job.remove();
+      drf.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (test != null) test.remove();
+    }
+    Scope.exit();
   }
 }

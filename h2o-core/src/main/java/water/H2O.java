@@ -28,7 +28,7 @@ import com.brsanthu.googleanalytics.EventHit;
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
-* @author <a href="mailto:cliffc@0xdata.com"></a>
+* @author <a href="mailto:cliffc@h2o.ai"></a>
 * @version 1.0
 */
 final public class H2O {
@@ -1081,6 +1081,7 @@ final public class H2O {
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
+  public static void raw_clear() { STORE.clear(); }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }

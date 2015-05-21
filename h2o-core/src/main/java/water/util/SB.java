@@ -100,6 +100,13 @@ public final class SB {
     if( ss.length > 0 ) toJavaStringInit(ss[ss.length-1]);
     return p('}');
   }
+  public SB toJavaStringInit( double[][][] ss ) {
+    if (ss==null) return p("null");
+    p('{');
+    for( int i=0; i<ss.length-1; i++ ) toJavaStringInit(ss[i]).p(',');
+    if( ss.length > 0 ) toJavaStringInit(ss[ss.length-1]);
+    return p('}');
+  }
   public SB toJSArray(float[] nums) {
     p('[');
     for (int i=0; i<nums.length; i++) {

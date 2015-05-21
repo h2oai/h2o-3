@@ -459,7 +459,7 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
      * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
      * times the dataset size or larger).
      */
-    @API(help = "Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to #nodes x #rows)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean shuffle_training_data;
 
     @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT)

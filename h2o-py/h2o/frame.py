@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -283,11 +283,12 @@ class H2OFrame:
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
-
     fr = H2OFrame.py_tmp_key()
-    cbind = "(, (gput " + fr + " (cbind %FALSE %"
-    cbind += " %".join([vec._expr.eager() for vec in self]) + ")))"
-    res = h2o.rapids(cbind)
+    rapids_call = "(, "  # fold into a single rapids call
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+    rapids_call += cbind
+    res = h2o.rapids(rapids_call)
     h2o.removeFrameShallow(fr)
     head_rows = [range(1, nrows + 1, 1)]
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
@@ -315,9 +316,11 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(, (gput " + fr + " (cbind %FALSE %"
-      cbind += " %".join([vec._expr.eager() for vec in vecs]) + ")))"
-      res = h2o.rapids(cbind)
+      rapids_call = "(, "  # fold into a single rapids call
+      cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+      cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+      rapids_call += cbind
+      res = h2o.rapids(rapids_call)
       h2o.removeFrameShallow(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
@@ -338,7 +341,7 @@ class H2OFrame:
     if col < 0: col = 0
     if col >= self.ncol(): col = self.ncol() - 1
     vec = self._vecs[col]
-    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
+    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(urllib.quote(vec._expr.eager()), "C1"))
     return res["domain"][0]
 
   def setNames(self,names):

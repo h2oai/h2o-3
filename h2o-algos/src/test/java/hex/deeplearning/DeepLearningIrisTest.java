@@ -38,7 +38,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
       for (int repeat = 0; repeat < 5; ++repeat) {
         // Testing different things
-        // Note: Microsoft reference implementation is only for Tanh + MSE, rectifier and MCE are implemented by 0xdata (trivial).
+        // Note: Microsoft reference implementation is only for Tanh + MSE.
+        // Note: Rectifier and MCE are implemented by H2O.ai (trivial).
         // Note: Initial weight distributions are copied, but what is tested is the stability behavior.
 
         Activation[] activations = {Activation.Tanh, Activation.Rectifier};
@@ -307,7 +308,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 // get the actual best error on training data
                                 float best_err = Float.MAX_VALUE;
                                 for (DeepLearningScoring err : mymodel.scoring_history()) {
-                                  best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
+                                  best_err = Math.min(best_err, (float) (Double.isNaN(err.scored_train._classError) ? best_err : err.scored_train._classError)); //multi-class classification
                                 }
                                 Log.info("Actual best error : " + best_err * 100 + "%.");
                                 

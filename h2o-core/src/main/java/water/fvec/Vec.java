@@ -189,6 +189,9 @@ public class Vec extends Keyed<Vec> {
   byte _type;                   // Vec Type
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
+  public static final boolean DO_HISTOGRAMS = true;
+  public static final boolean NO_HISTOGRAMS = false;
+
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Categorical column.  */

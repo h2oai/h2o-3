@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * 12.5- Sender receives dup ACK's, sends dup ACKACK's back
  * 13- Target receives ACKACK, removes TASKS tracking
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

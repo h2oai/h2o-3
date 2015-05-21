@@ -434,6 +434,10 @@
     }
     x
   }
+  # hack that counters the fact that RCurl will escape already escaped string
+  txt <- gsub("\\\"","\"",txt); 
+  txt <- gsub("\\\\,","\\,",txt);
+
   res <- processMatrices(fromJSON(txt, ...))
   processTables(res)
 }
@@ -452,7 +456,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   formats <- attr(x, "formats")
   xx <- x
   for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%i"
+    if( formats[j] == "%d" ) formats[j] <- "%f"
     xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
   }
 

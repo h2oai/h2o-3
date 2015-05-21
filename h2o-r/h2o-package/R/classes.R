@@ -688,7 +688,7 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
     cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
     l <- list()
     for( i in 1:nc ) {
-      cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep="")
+      cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
       first.10.rows <- df[,i]
       if( isfactor[i] ) {
         nl <- num.levels[i]

@@ -1,17 +1,18 @@
 package water.init;
 
+import water.H2O;
+import water.H2ONode;
+import water.TCPReceiverThread;
+import water.util.Log;
+
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import water.H2O;
-import water.TCPReceiverThread;
-import water.H2ONode;
-import water.util.Log;
-import java.nio.channels.ServerSocketChannel;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
@@ -328,7 +329,9 @@ public class NetworkInit {
         // Enabling SO_REUSEADDR prior to binding the socket using bind(SocketAddress)
         // allows the socket to be bound even though a previous connection is in a timeout state.
         // cnc: this is busted on windows.  Back to the old code.
-        _apiSocket = new ServerSocket(H2O.API_PORT);
+        _apiSocket = H2O.ARGS.ip == null
+                ? new ServerSocket(H2O.API_PORT)
+                : new ServerSocket(H2O.API_PORT, -1/*defaultBacklog*/, H2O.SELF_ADDRESS);
         _apiSocket.setReuseAddress(true);
         // Bind to the UDP socket
         _udpSocket = DatagramChannel.open();
