@@ -244,6 +244,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTTrim());
 
     putPrefix(new ASTFilterNACols());
+    putPrefix(new ASTSetDomain());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -2348,6 +2349,8 @@ class ASTMad extends ASTReducerOp {
   }
 
   static double mad(Frame f, QuantileModel.CombineMethod cm, double constant) {
+    Key tk=null;
+    if( f._key == null ) { DKV.put(tk=Key.make(), f=new Frame(tk, f.names(),f.vecs())); }
     final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
@@ -2355,7 +2358,10 @@ class ASTMad extends ASTReducerOp {
           nc.addNum(Math.abs(c.at8(i)-median));
       }
     }.doAll(1, f).outputFrame();
+    if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
+    DKV.remove(f._key); // drp mapping, keep vec
+    DKV.remove(abs_dev._key);
     return constant*mad;
   }
 }
@@ -2732,6 +2738,37 @@ class ASTSeq extends ASTUniPrefixOp {
   }
 }
 
+class ASTSetDomain extends ASTUniPrefixOp {
+  String[] _domains;
+  @Override String opStr() { return "setDomain"; }
+  public ASTSetDomain() { super(new String[]{"setDomain", "x", "slist"}); }
+  @Override ASTOp make() { return new ASTSetDomain(); }
+  ASTSetDomain parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTStringList ) _domains = ((ASTStringList)a)._s;
+    else if( a instanceof ASTNull  ) _domains = null;
+    else throw new IllegalArgumentException("domains expected to an array of strings. Got :" + a.getClass());
+    ASTSetDomain res = (ASTSetDomain)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    // pop frame, should be a single ENUM Vec
+    // push in new domain
+    // DKV put the updated vec
+    // no stack pop or push
+    Frame f = env.peekAry();
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
+    Vec v = f.anyVec();
+    if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
+    if( _domains!=null && _domains.length != v.domain().length)
+      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + _domains.length);
+    v.setDomain(_domains);
+    DKV.put(v);
+  }
+}
+
 class ASTRepLen extends ASTUniPrefixOp {
   double _length;
   @Override String opStr() { return "rep_len"; }
@@ -2885,9 +2922,9 @@ class ASTHist extends ASTUniPrefixOp {
   private static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
   private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
   private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
-  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
-  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
-  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
+  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / h); }
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
+  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.length(),-1./3.); }
   private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
   private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
   private static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
