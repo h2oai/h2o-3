@@ -236,17 +236,16 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // view for all k-trees
       final long[] _distribution = _model._output._distribution;
       long rseed = rand.nextLong();
-      // Initially setup as-if an empty-split had just happened
-      for( int k=0; k<_nclass; k++ ) {
-        if( _distribution[k] != 0 ) { // Ignore missing classes
-          // The Boolean Optimization cannot be applied here for RF !
+        // Initially setup as-if an empty-split had just happened
+      for (int k = 0; k < _nclass; k++) {
+        if (_distribution[k] != 0) { // Ignore missing classes
+          // The Boolean Optimization
           // This optimization assumes the 2nd tree of a 2-class system is the
-          // inverse of the first.  This is false for DRF (and true for GBM) -
-          // DRF picks a random different set of columns for the 2nd tree.
-          //if( k==1 && _nclass==2 ) continue;
-          ktrees[k] = new DRFTree(fr,_ncols,(char)_parms._nbins,(char)_nclass,_parms._min_rows,mtrys,rseed);
+          // inverse of the first (and that the same columns were picked)
+          if( k==1 && _nclass==2 ) continue;
+          ktrees[k] = new DRFTree(fr, _ncols, (char) _parms._nbins, (char) _nclass, _parms._min_rows, mtrys, rseed);
           boolean isBinom = isClassifier();
-          new DRFUndecidedNode(ktrees[k],-1, DHistogram.initialHist(fr,_ncols,adj_nbins,hcs[k][0],isBinom) ); // The "root" node
+          new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, hcs[k][0], isBinom)); // The "root" node
         }
       }
 
@@ -368,9 +367,13 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
               double prediction = ((LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
               if (importance) rpred[1 + k] = (float) prediction; // for both regression and classification
-              ct.set(row, (float) (ct.atd(row) + prediction));
+              double count = oobt.atd(row);
+              if (isClassifier())
+                ct.set(row, (float) (ct.atd(row)*count + prediction)/(count+1)); //store avg prediction
+              else
+                ct.set(row, (float) (ct.atd(row) + prediction));
               // For this tree this row is out-of-bag - i.e., a tree voted for this row
-              oobt.set(row, _nclass > 1 ? 1 : oobt.atd(row) + 1); // for regression track number of trees, for classification boolean flag is enough
+              oobt.set(row, oobt.atd(row) + 1); // track number of trees
             }
             // reset help column for this row and this k-class
             nids.set(row, 0);
@@ -498,10 +501,16 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
     double sum = 0;
-    if (_nclass > 1) { //classification
+    if (_nclass > 2) { //multinomial
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = chk_tree(chks, k).atd(row));
-    } else { //regression
+    }
+    else if (_nclass==2) { //binomial optimization
+      fs[1] = chk_tree(chks, 0).atd(row);
+      assert(fs[1] >= 0 && fs[1] <= 1);
+      fs[2] = 1. - fs[1];
+    }
+    else { //regression
       // average per trees voted for this row (only trees which have row in "out-of-bag"
       sum += (fs[0] = chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row) );
       fs[1] = 0;
