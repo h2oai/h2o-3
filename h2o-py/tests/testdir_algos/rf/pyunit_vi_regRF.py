@@ -9,7 +9,7 @@ def vi_reg(ip,port):
     data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/BostonHousing.csv"))
     #data.summary()
 
-    rf = h2o.random_forest(x=data[0:13], y=data[13], ntrees=100, max_depth=20, nbins=100)
+    rf = h2o.random_forest(x=data[0:13], y=data[13], ntrees=100, max_depth=20, nbins=100, seed=0)
 
     ranking = [rf._model_json['output']['variable_importances'].cell_values[v][0] for v in range(data.ncol()-1)]
     print(ranking)

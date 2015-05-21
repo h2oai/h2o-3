@@ -45,7 +45,7 @@ public class DRFGridTest extends TestUtil {
       Model[] ms = gs.models();
       for( Model m : ms ) {
         DRFModel drf = (DRFModel)m;
-        System.out.println(drf._output._mse_train[drf._output._ntrees] + " " + Arrays.toString(g2.getHypers(drf._parms)));
+        System.out.println(drf._output._scored_train[drf._output._ntrees]._mse + " " + Arrays.toString(g2.getHypers(drf._parms)));
       }
 
     } finally {

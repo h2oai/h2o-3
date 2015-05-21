@@ -308,7 +308,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 // get the actual best error on training data
                                 float best_err = Float.MAX_VALUE;
                                 for (DeepLearningScoring err : mymodel.scoring_history()) {
-                                  best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
+                                  best_err = Math.min(best_err, (float) (Double.isNaN(err.scored_train._classError) ? best_err : err.scored_train._classError)); //multi-class classification
                                 }
                                 Log.info("Actual best error : " + best_err * 100 + "%.");
                                 

@@ -47,7 +47,7 @@ public class GBMGridTest extends TestUtil {
       Model[] ms = gs.models();
       for( Model m : ms ) {
         GBMModel gbm = (GBMModel)m;
-        System.out.println(gbm._output._mse_train[gbm._output._ntrees] + " " + Arrays.toString(g2.getHypers(gbm._parms)));
+        System.out.println(gbm._output._scored_train[gbm._output._ntrees]._mse + " " + Arrays.toString(g2.getHypers(gbm._parms)));
       }
 
     } finally {

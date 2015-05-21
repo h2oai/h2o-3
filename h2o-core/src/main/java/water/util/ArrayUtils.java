@@ -57,7 +57,7 @@ public class ArrayUtils {
       sum += x[i]*x[i];
     return sum;
   }
-  public static double l1norm(double [] x){ return l1norm(x,false); }
+  public static double l1norm(double [] x){ return l1norm(x, false); }
   public static double l1norm(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length -(skipLast?1:0);
@@ -737,6 +737,17 @@ public class ArrayUtils {
     nary[0] = s;
     System.arraycopy(ary,0,nary,1,ary.length);
     return nary;
+  }
+  static public <T> T[] copyAndFillOf(T[] original, int newLength, T padding) {
+    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
+    T[] newArray = Arrays.copyOf(original, newLength);
+    if(original.length < newLength) {
+      System.arraycopy(original, 0, newArray, 0, original.length);
+      Arrays.fill(newArray, original.length, newArray.length, padding);
+    } else
+      System.arraycopy(original, 0, newArray, 0, newLength);
+    return newArray;
+
   }
 
   static public double[] copyAndFillOf(double[] original, int newLength, double padding) {
