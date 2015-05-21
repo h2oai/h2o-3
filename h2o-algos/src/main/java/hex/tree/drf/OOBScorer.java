@@ -35,8 +35,6 @@ import water.fvec.Chunk;
       Random rng = rngForTree(_trees[tidx], coobt.cidx());
       for (int row=0; row<coobt._len; row++) {
         if( rng.nextFloat() >= _rate || Double.isNaN(cys.atd(row)) ) {
-          // Mark oob row and store number of trees voting for this row (only for regression)
-          coobt.set(row, _nclass>1?1:coobt.atd(row)+1);
           // Make a prediction
           for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row);
           Arrays.fill(preds, 0);
@@ -44,11 +42,18 @@ import water.fvec.Chunk;
           if (_nclass==1) preds[1]=preds[0]; // Only for regression, keep consistency
           // Write tree predictions
           for (int c=0;c<_nclass;c++) { // over all class
+            double prediction = preds[1+c];
             if (preds[1+c] != 0) {
               Chunk ctree = chk_tree(chks, c);
-              ctree.set(row, (float)(ctree.atd(row) + preds[1+c]));
+              long count = coobt.at8(row);
+              if (_nclass >= 2)
+                ctree.set(row, (float) (ctree.atd(row)*count + prediction)/(count+1)); //store avg prediction
+              else
+                ctree.set(row, (float) (ctree.atd(row) + prediction));
             }
           }
+          // Mark oob row and store number of trees voting for this row (only for regression)
+          coobt.set(row, coobt.atd(row)+1);
         }
       }
     }
