@@ -143,7 +143,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
     return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
   }
-  protected boolean binomialOpt() { return false; }
+  protected boolean binomialOpt() { return true; }
   @Override protected SB toJavaInit(SB sb, SB fileContext) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();

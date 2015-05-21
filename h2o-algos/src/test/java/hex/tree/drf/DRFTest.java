@@ -102,9 +102,9 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(3,   0, 0,  0,  0),
-              ard(2, 177, 1,  4,  0),
+              ard(2, 178, 1,  3,  0),
               ard(0,   1, 1,  0,  0),
-              ard(0,   2, 2, 69,  1),
+              ard(0,   3, 2, 68,  1),
               ard(0,   0, 0,  3, 87)),
             s("3", "4", "5", "6", "8"));
   }
@@ -428,6 +428,9 @@ public class DRFTest extends TestUtil {
       test = parse_test_file(fnametrain);
       res = model.score(test);
 
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(test,res,1e-15));
+
       if (classification && expCM != null) {
         Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
                 Arrays.deepEquals(mm.cm()._cm, expCM));
@@ -443,9 +446,6 @@ public class DRFTest extends TestUtil {
       }
 
       hex.ModelMetrics.getFromDKV(model, test);
-
-      // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(test,res,1e-15));
 
     } finally {
       if (frTrain!=null) frTrain.remove();
@@ -569,7 +569,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20430759039450014, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2093151515479678, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -600,7 +600,7 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 100;
       parms._max_depth = 20;
       parms._mtries = -1;
-      parms._sample_rate = 0.667f;
+      parms._sample_rate = 0.632f;
       parms._min_rows = 10;
       parms._seed = 12;
 
