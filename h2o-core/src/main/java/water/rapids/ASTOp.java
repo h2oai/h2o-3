@@ -244,6 +244,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTTrim());
 
     putPrefix(new ASTFilterNACols());
+    putPrefix(new ASTSetDomain());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -2729,6 +2730,37 @@ class ASTSeq extends ASTUniPrefixOp {
         env.pushAry(fr);
       }
     }
+  }
+}
+
+class ASTSetDomain extends ASTUniPrefixOp {
+  String[] _domains;
+  @Override String opStr() { return "setDomain"; }
+  public ASTSetDomain() { super(new String[]{"setDomain", "x", "slist"}); }
+  @Override ASTOp make() { return new ASTSetDomain(); }
+  ASTSetDomain parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTStringList ) _domains = ((ASTStringList)a)._s;
+    else if( a instanceof ASTNull  ) _domains = null;
+    else throw new IllegalArgumentException("domains expected to an array of strings. Got :" + a.getClass());
+    ASTSetDomain res = (ASTSetDomain)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    // pop frame, should be a single ENUM Vec
+    // push in new domain
+    // DKV put the updated vec
+    // no stack pop or push
+    Frame f = env.peekAry();
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
+    Vec v = f.anyVec();
+    if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
+    if( _domains!=null && _domains.length != v.domain().length)
+      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + _domains.length);
+    v.setDomain(_domains);
+    DKV.put(v);
   }
 }
 
