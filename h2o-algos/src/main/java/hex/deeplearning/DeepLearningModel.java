@@ -1667,9 +1667,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         err.score_training_samples = ftrain.numRows();
         err.classification = _output.isClassifier();
 
-        hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain);
-        err.scored_train = new ScoredClassifierRegressor(mtrain);
-
         if (get_params()._autoencoder) {
           if (printme) Log.info("Scoring the auto-encoder.");
           // training
@@ -1678,20 +1675,18 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             mse_frame.delete();
-
-            hex.ModelMetricsAutoEncoder mm1 = (ModelMetricsAutoEncoder)ModelMetrics.getFromDKV(this,ftrain);
-            assert(err.scored_train._mse == l2.mean());
-            _output._training_metrics = mm1;
+            ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain); //updated by model.score
+            _output._training_metrics = mtrain;
+            err.scored_train = new ScoredClassifierRegressor(mtrain);
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
             mse_frame.delete();
-
-            hex.ModelMetricsAutoEncoder mm1 = (ModelMetricsAutoEncoder)ModelMetrics.getFromDKV(this,ftest);
-            assert(err.scored_valid._mse == l2.mean());
-            _output._validation_metrics = mm1;
+            ModelMetrics mtest = ModelMetrics.getFromDKV(this,ftest); //updated by model.score
+            _output._validation_metrics = mtest;
+            err.scored_valid = new ScoredClassifierRegressor(mtest);
           }
         } else {
           if (printme) Log.info("Scoring the model.");
@@ -1701,8 +1696,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           final Frame trainPredict = score(ftrain);
           trainPredict.delete();
 
+          hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain);
+          _output._training_metrics = mtrain;
+          err.scored_train = new ScoredClassifierRegressor(mtrain);
+          hex.ModelMetrics mtest = null;
+
           hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
-          _output._training_metrics = mm1;
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
             err.train_confusion_matrix = mm.cm();
@@ -1719,10 +1718,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (ftest != null) {
             Frame validPred = score(ftest);
             validPred.delete();
-            hex.ModelMetrics mtest = hex.ModelMetrics.getFromDKV(this, ftest);
-            err.scored_valid = new ScoredClassifierRegressor(mtest);
-            if (mtest != null) {
+            if (ftest != null) {
+              mtest = ModelMetrics.getFromDKV(this, ftest);
               _output._validation_metrics = mtest;
+              err.scored_valid = new ScoredClassifierRegressor(mtest);
+            }
+            if (mtest != null) {
               if (mtest instanceof ModelMetricsBinomial) {
                 ModelMetricsBinomial mm = (ModelMetricsBinomial)mtest;
                 err.validation_AUC = mm._auc;
