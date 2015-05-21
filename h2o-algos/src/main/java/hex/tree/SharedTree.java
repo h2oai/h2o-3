@@ -388,9 +388,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       String train_class = isClassifier() ? ", logloss is " +
               ( _nclass == 2 ?
-                      (String.format("%5f", ((ModelMetricsBinomial)mm)._logloss) + ", AUC is " + String.format("%5f", ((ModelMetricsBinomial)mm)._auc._auc)) //binomial
+                      (String.format("%5f", ((ModelMetricsBinomial)mm)._logloss)) //binomial
                       : String.format("%5f", (((ModelMetricsMultinomial)mm)._logloss)) //multinomial
               ) : ""; //regression - show nothing
+      if (_nclass == 2 && ((ModelMetricsBinomial)mm)._auc != null)
+        train_class += ", AUC is " + String.format("%5f", ((ModelMetricsBinomial)mm)._auc._auc);
 
       out._mse_train[out._ntrees] = mm._MSE; // Store score results in the model output
       training_r2 = mm.r2();
@@ -406,9 +408,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._validation_metrics = mmv;
         String valid_class = isClassifier() ? ", logloss is " +
                 ( _nclass == 2 ?
-                        (String.format("%5f", ((ModelMetricsBinomial)mmv)._logloss) + ", AUC is " + String.format("%5f", ((ModelMetricsBinomial)mmv)._auc._auc)) //binomial
+                        (String.format("%5f", ((ModelMetricsBinomial)mmv)._logloss)) //binomial
                         : String.format("%5f", (((ModelMetricsMultinomial)mmv)._logloss)) //multinomial
                 ) : ""; //regression - show nothing
+        if (_nclass == 2 && ((ModelMetricsBinomial)mm)._auc != null)
+          valid_class += ", AUC is " + String.format("%5f", ((ModelMetricsBinomial)mm)._auc._auc);
 
         Log.info("validation r2 is "+(float)mmv.r2()+", MSE is "+(float)mmv._MSE + valid_class);
         if (mmv.hr() != null) {
