@@ -254,6 +254,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/3/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
+    register("/3/GarbageCollect"                                   ,"POST"  ,GarbageCollectHandler.class, "gc", "Explicitly call System.gc().");
 
     register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
   }
