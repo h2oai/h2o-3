@@ -494,14 +494,14 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 # TODO: s4 year, month impls as well?
 #' Convert Milliseconds to Years in H2O Datasets
 #'
-#' Conver the entries of a \linkS4class{H2OFrame} object from milliseconds to years, indexed
+#' Convert the entries of a \linkS4class{H2OFrame} object from milliseconds to years, indexed
 #' starting from 1900.
 #'
 # is this still true?
 #' This method calls the function of the MutableDateTime class in Java.
 #' @param x An \linkS4class{H2OFrame} object.
 #' @return A \linkS4class{H2OFrame} object containig the entries of \code{x} converted to years
-#'         starting from 1900, e.g. 69 correspons to the year 1969.
+#'         starting from 1900, e.g. 69 corresponds to the year 1969.
 #' @seealso \code{\link{h2o.month}}
 #' @export
 h2o.year <- function(x){
@@ -514,7 +514,7 @@ h2o.year <- function(x){
 #' Convert Milliseconds to Months in H2O Datasets
 #'
 #' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 0 to
-#' 11) scale.
+#' 11 scale).
 #'
 #' @param x An \linkS4class{H2OFrame} object.
 #' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to months of
@@ -526,18 +526,112 @@ h2o.month <- function(x){
   if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
   .h2o.unary_frame_op('month', x)
 }
+
+#' Convert Milliseconds to Week of Week Year in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to weeks of the week
+#' year (starting from 1).
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to weeks of
+#'         the week year.
+#' @seealso \code{\link{h2o.month}}
+#' @export
+h2o.week <- function(x){
+  if( missing(x) ) stop('must specify x')
+  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
+  .h2o.unary_frame_op('week', x)
+}
+
+#' Convert Milliseconds to Day of Month in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to days of the month
+#' (on a 1 to 31 scale).
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to days of
+#'         the month.
+#' @seealso \code{\link{h2o.month}}
+#' @export
+h2o.day <- function(x){
+  if( missing(x) ) stop('must specify x')
+  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
+  .h2o.unary_frame_op('day', x)
+}
+
+#' Convert Milliseconds to Day of Week in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to days of the week
+#' (on a 0 to 6 scale).
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to days of
+#'         the week.
+#' @seealso \code{\link{h2o.day}, \link{h2o.month}}
+#' @export
+h2o.dayOfWeek <- function(x){
+  if( missing(x) ) stop('must specify x')
+  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
+  .h2o.unary_frame_op('dayOfWeek', x)
+}
+
+#' Convert Milliseconds to Hour of Day in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to hours of the day
+#' (on a 0 to 23 scale).
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to hours of
+#'         the day.
+#' @seealso \code{\link{h2o.day}}
+#' @export
+h2o.hour <- function(x){
+  if( missing(x) ) stop('must specify x')
+  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
+  .h2o.unary_frame_op('hour', x)
+}
+
 #' @rdname h2o.year
 #' @export
 year <- function(x) UseMethod('year', x)
 #' @rdname h2o.year
 #' @export
 year.H2OFrame <- h2o.year
+
 #' @rdname h2o.month
 #' @export
 month <- function(x) UseMethod('month', x)
 #' @rdname h2o.month
 #' @export
 month.H2OFrame <- h2o.month
+
+#' @rdname h2o.week
+#' @export
+week <- function(x) UseMethod('week', x)
+#' @rdname h2o.week
+#' @export
+week.H2OFrame <- h2o.week
+
+#' @rdname h2o.day
+#' @export
+day <- function(x) UseMethod('day', x)
+#' @rdname h2o.day
+#' @export
+day.H2OFrame <- h2o.day
+
+#' @rdname h2o.dayOfWeek
+#' @export
+dayOfWeek <- function(x) UseMethod('dayOfWeek', x)
+#' @rdname h2o.dayOfWeek
+#' @export
+dayOfWeek.H2OFrame <- h2o.dayOfWeek
+
+#' @rdname h2o.hour
+#' @export
+hour <- function(x) UseMethod('hour', x)
+#' @rdname h2o.hour
+#' @export
+hour.H2OFrame <- h2o.hour
 
 #' @export
 as.Date.H2OFrame <- function(x, format, ...) {
@@ -670,6 +764,7 @@ h2o.anyFactor <- function(x) {
 #' @param value an array-like H2O object similar to \code{x}.
 NULL
 
+#' @aliases [,H2OFrame-method
 #' @rdname H2OFrame-Extract
 #' @export
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
@@ -1137,6 +1232,17 @@ h2o.levels <- function(x, i) {
   res <- .h2o.__remoteSend(x@conn, .h2o.__COL_DOMAIN(x@frame_id, colnames(x)[col_idx]), method="GET")
   res$domain[[1]]
 }
+
+#'
+#' Set Levels of H2O Factor Column
+#'
+#' Works on a single categorical vector. New domains must be aligned with the old domains.
+#' This call has SIDE EFFECTS and mutates the column in place (does not make a copy).
+#'
+#' @param x A single categorical column.
+#' @param levels A character vector specifiying the new levels. The number of new levels must match the number of old levels.
+#' @export
+h2o.setLevels <- function(x, levels) .h2o.nary_frame_op("setDomain", x, levels)
 
 #'
 #' Returns the Dimensions of a Parsed H2O Data Object.

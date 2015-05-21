@@ -495,7 +495,7 @@ public class DRFTest extends TestUtil {
         DRFModel drf = job.trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
-        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
         job.remove();
         drf.delete();
       }
@@ -557,7 +557,7 @@ public class DRFTest extends TestUtil {
         DRFModel drf = job.trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
-        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
         job.remove();
         drf.delete();
       }
