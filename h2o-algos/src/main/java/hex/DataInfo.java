@@ -62,6 +62,8 @@ public class DataInfo extends Keyed {
   }
 
   private DataInfo(int nums) {
+    _offset = false;
+    _weights = false;
     _nums = nums;
     _catOffsets = new int[]{0};
     _predictor_transform = TransformType.NONE;
