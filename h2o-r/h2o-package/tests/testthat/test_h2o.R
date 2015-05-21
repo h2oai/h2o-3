@@ -66,31 +66,33 @@ test_that("doSafeGET works", {
   if(.skip_if_not_developer()) return("Skipped")
   prologue()
 
-  h = new("H2OConnection", ip="www.omegahat.org", port=80)
-  payload = .h2o.doSafeGET(conn = h, h2oRestApiVersion = -1, urlSuffix = "")
+  h = h2o.init()
+  payload = .h2o.doSafeGET(conn = h, urlSuffix = "Cloud")
   expect_equal(nchar(payload) >= 500, TRUE)
 
   ttFailed = FALSE
-  tryCatch(.h2o.doSafeGET(conn = h, urlSuffix = ""),
+  tryCatch(.h2o.doSafeGET(conn = h, urlSuffix = "DoesNotExist"),
            error = function(x) { ttFailed <<- TRUE })
   expect_equal(ttFailed, TRUE)
+  h2o.shutdown(h, prompt = FALSE)
 })
 
 test_that("doSafePOST works", {
   if(.skip_if_not_developer()) return("Skipped")
   prologue()
 
-  h = new("H2OConnection", ip="www.omegahat.org", port=80)
-  payload = .h2o.doSafePOST(conn = h, h2oRestApiVersion = -1, urlSuffix = "")
-  expect_equal(nchar(payload) >= 500, TRUE)
+  h = h2o.init()
+  payload = .h2o.doSafePOST(conn = h, urlSuffix = "LogAndEcho")
+  expect_equal(nchar(payload) >= 50, TRUE)
 
-  parms = list(arg1="hi", arg2="there")
-  rv = .h2o.doRawPOST(conn = h, urlSuffix = "", parms = parms)
-  expect_equal(rv$url, "http://www.omegahat.org:80/")
-  expect_equal(rv$postBody, "arg1=hi&arg2=there")
+  parms = list(message="hi_there")
+  rv = .h2o.doRawPOST(conn = h, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "LogAndEcho", parms = parms)
+  expect_equal(rv$url, "http://127.0.0.1:54321/3/LogAndEcho")
+  expect_equal(rv$postBody, "message=hi_there")
   expect_equal(rv$curlError, FALSE)
   expect_equal(rv$httpStatusCode, 200)
-  expect_equal(nchar(rv$payload) >= 500, TRUE)
+  expect_equal(nchar(rv$payload) >= 100, TRUE)
+  h2o.shutdown(h, prompt = FALSE)
 })
 
 doUploadFileTests <- function(h) {
