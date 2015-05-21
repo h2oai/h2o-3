@@ -502,7 +502,7 @@ H2O Classic | H2O 3.0
 `key="",` | `model_id,` 
 `validation,` | `validation_frame,` 
 `mtries = -1,` | `mtries = -1,` 
-`sample.rate=2/3,` | `sample_rate = 0.6666667,` 
+`sample.rate=2/3,` | `sample_rate = 0.632,` 
  &nbsp; | `build_tree_one_node = FALSE,` 
 `ntree=50` | `ntrees=50,` 
 `depth=20,` | `max_depth = 20,` 
