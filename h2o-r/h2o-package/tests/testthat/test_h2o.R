@@ -96,7 +96,8 @@ test_that("doSafePOST works", {
 })
 
 doUploadFileTests <- function(h) {
-  df = h2o.uploadFile(h, "../../../../smalldata/iris/iris_wheader.csv")
+  irisPath <- system.file("extdata", "iris.csv", package="h2o")
+  df = h2o.uploadFile(h, irisPath)
   expect_equal(nrow(df), 150)
   expect_equal(ncol(df), 5)
 
