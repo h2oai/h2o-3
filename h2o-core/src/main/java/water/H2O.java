@@ -1116,6 +1116,32 @@ final public class H2O {
   private static NodePersistentStorage NPS;
   public static NodePersistentStorage getNPS() { return NPS; }
 
+  /**
+   * Run System.gc() on every node in the H2O cluster.
+   *
+   * Having to call this manually from user code is a sign that something is wrong and a better
+   * heuristic is needed internally.
+   */
+  public static void gc() {
+    class GCTask extends DTask<GCTask> {
+      public GCTask() {}
+
+      @Override public void compute2() {
+        Log.info("Calling System.gc() now...");
+        System.gc();
+        Log.info("System.gc() finished");
+        tryComplete();
+      }
+
+      @Override public byte priority() { return H2O.MIN_HI_PRIORITY; }
+    }
+
+    for (H2ONode node : H2O.CLOUD._memary) {
+      GCTask t = new GCTask();
+      new RPC<>(node, t).call().get();
+    }
+  }
+
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
 
