@@ -764,6 +764,7 @@ h2o.anyFactor <- function(x) {
 #' @param value an array-like H2O object similar to \code{x}.
 NULL
 
+#' @aliases [,H2OFrame-method
 #' @rdname H2OFrame-Extract
 #' @export
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
