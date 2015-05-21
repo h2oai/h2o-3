@@ -581,19 +581,43 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return table;
   }
 
-  @Override protected void checkMemoryFootPrint() {
-    if (_model._output._ntrees == 0) return;
-    int model_mem_size = 0; //only need to count the compressed trees
-    int trees_so_far = _model._output._ntrees; //existing trees
-    _model._output._treeStats._byte_size = 0;
-    for (int i=0; i< trees_so_far; ++i) {
-      Key<CompressedTree>[] per_class = _model._output._treeKeys[i];
-      for (int j=0; j<per_class.length; ++j) {
-        if (per_class[j] == null) continue; //GBM binomial
-        model_mem_size += DKV.get(per_class[j])._max;
-        _model._output._treeStats._byte_size += (long)model_mem_size;
+  /**
+   * Compute the *actual* byte size of a tree model in the KV store
+   */
+  private static class ComputeModelSize extends MRTask<ComputeModelSize> {
+    long _model_mem_size; //OUTPUT
+    final int trees_so_far; //INPUT
+    final public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys; //INPUT
+
+    public ComputeModelSize(int trees_so_far, Key<CompressedTree>[][] _treeKeys) {
+      this.trees_so_far = trees_so_far;
+      this._treeKeys = _treeKeys;
+    }
+
+    @Override protected void setupLocal() {
+      _model_mem_size = 0;
+      for (int i=0; i< trees_so_far; ++i) {
+        Key<CompressedTree>[] per_class = _treeKeys[i];
+        for (int j=0; j<per_class.length; ++j) {
+          if (per_class[j] == null) continue;
+          if (!per_class[j].home()) continue;
+          // only look at homed tree keys
+          _model_mem_size += DKV.get(per_class[j])._max;
+        }
       }
     }
+
+    @Override public void reduce(ComputeModelSize cms){
+      if (cms != null)
+        _model_mem_size += cms._model_mem_size;
+    }
+  }
+
+  @Override protected void checkMemoryFootPrint() {
+    if (_model._output._ntrees == 0) return;
+    int trees_so_far = _model._output._ntrees; //existing trees
+    long model_mem_size = new ComputeModelSize(trees_so_far, _model._output._treeKeys).doAllNodes()._model_mem_size;
+    _model._output._treeStats._byte_size = model_mem_size;
     double avg_tree_mem_size = (double)model_mem_size / trees_so_far;
     Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
 
