@@ -471,7 +471,7 @@ public class Frame extends Lockable<Frame> {
     _keys = Arrays.copyOf(_keys, ncols+N);
     _vecs = Arrays.copyOf(_vecs, ncols+N);
     for (int i=0; i<N; ++i) {
-      _names[ncols+i] = names[i];
+      _names[ncols+i] = tmpnames[i];
       _keys[ncols+i] = vecs[i]._key;
       _vecs[ncols+i] = vecs[i];
     }
