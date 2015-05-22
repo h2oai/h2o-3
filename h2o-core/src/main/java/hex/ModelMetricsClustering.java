@@ -93,7 +93,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       int clus = (int)preds[0];
       double [] colSum = new double[_colSum.length];
       double [] colSumSq = new double[_colSumSq.length];
-      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, clm._output._domains, sub, mul, colSum, colSumSq);
+      double sqr = hex.genmodel.GenModel.KMeans.distance(centers[clus], dataRow, clm._output._domains, sub, mul, colSum, colSumSq);
       ArrayUtils.add(_colSum, colSum);
       ArrayUtils.add(_colSumSq, colSumSq);
       _count++;
