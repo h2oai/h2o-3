@@ -770,7 +770,7 @@ class TestRunner:
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
-                 failed_output_dir, path_to_tar, produce_unit_reports, testreport_dir):
+                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir):
         """
         Create a runner.
 
@@ -788,6 +788,7 @@ class TestRunner:
         @param output_dir: Directory for output files.
         @param failed_output_dir: Directory to copy failed test output.
         @param path_to_tar: NA
+        @param path_to_whl: NA
         @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
         @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
         @return: The runner object.
@@ -826,6 +827,7 @@ class TestRunner:
         self.nopass_counter = 0
         self.nofeature_counter = 0
         self.path_to_tar = path_to_tar
+        self.path_to_whl = path_to_whl
 
         if (use_cloud):
             node_num = 0
@@ -1089,6 +1091,28 @@ class TestRunner:
                 sys.exit(1)
             out.close()
 
+        elif self._have_some_py_tests() and self.path_to_whl is not None:  # basically only do this if we have a whl to install
+          self._log("")
+          self._log("Setting up Python H2O package...")
+          out_file_name = os.path.join(self.output_dir, "pythonSetup.out.txt")
+          out = open(out_file_name, "w")
+
+          cmd = ["pip","install",self.path_to_whl, "--force-reinstall"]
+          child = subprocess.Popen(args=cmd,
+                                   stdout=out,
+                                   stderr=subprocess.STDOUT)
+          rv = child.wait()
+          if (self.terminated):
+            return
+          if (rv != 0):
+            print("")
+            print("ERROR: Python setup failed.")
+            print("       (See " + out_file_name + ")")
+            print("")
+            sys.exit(1)
+          out.close()
+
+
         num_tests = len(self.tests)
         num_nodes = self.num_clouds * self.nodes_per_cloud
         self._log("")
@@ -1295,6 +1319,17 @@ class TestRunner:
 
         return False
 
+    def _have_some_py_tests(self):
+      """
+      dumbass check for pyuntis
+      """
+      for test in self.tests:
+        test_name = test.get_test_name()
+        if (is_python_test_file(test_name)):
+          return True
+
+      return False
+
     def _create_failed_output_dir(self):
         try:
             os.makedirs(self.failed_output_dir)
@@ -1469,6 +1504,7 @@ g_output_dir = None
 g_runner = None
 g_handling_signal = False
 g_path_to_tar = None
+g_path_to_whl = None
 g_produce_unit_reports = True
 g_testreport_dir = None
 
@@ -1630,6 +1666,7 @@ def parse_args(argv):
     global g_nopass
     global g_convenient
     global g_path_to_tar
+    global g_path_to_whl
 
     i = 1
     while (i < len(argv)):
@@ -1714,6 +1751,9 @@ def parse_args(argv):
         elif s == "--tar":
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])
+        elif s == "--whl":
+            i += 1
+            g_path_to_whl = os.path.abspath(argv[i])
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
@@ -1796,6 +1836,7 @@ def main(argv):
     global g_runner
     global g_nopass
     global g_path_to_tar
+    global g_path_to_whl
     global g_testreport_dir
 
     g_script_name = os.path.basename(argv[0])
@@ -1844,7 +1885,7 @@ def main(argv):
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
-                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_produce_unit_reports, g_testreport_dir)
+                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports, g_testreport_dir)
 
     # Build test list.
     if (g_test_to_run is not None):
