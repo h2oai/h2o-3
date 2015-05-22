@@ -107,7 +107,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         for (int r=0; r<numCenters; r++) {
           for (int c=0; c<numCols; c++){
             centers[r][c] = centersVecs[c].at(r);
-            centers[r][c] = normData(centers[r][c], c, means, mults, vecs[c].cardinality());
+            centers[r][c] = data(centers[r][c], c, means, mults, vecs[c].cardinality());
           }
         }
       }
@@ -160,7 +160,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
       long row = task._worst_row;
       Log.warn("KMeans: Re-initializing cluster " + clu + " to row " + row);
-      loadRowData(centers[clu] = task._cMeans[clu], vecs, row, means, mults);
+      data(centers[clu] = task._cMeans[clu], vecs, row, means, mults);
       task._size[clu] = 1; //FIXME: PUBDEV-871 Some other cluster had their membership count reduced by one! (which one?)
 
       // Find any MORE bad clusters; we only fixed the first one
@@ -438,28 +438,31 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // IN
     final double[] _means, _mults;
     final String[][] _isCats;
+
     // OUT
     double _tss;
 
     TotSS(double[] means, double[] mults, String[][] isCats) {
       _means = means;
       _mults = mults;
+      _tss = 0;
       _isCats = isCats;
     }
 
-    @Override public void map(Chunk[] chks) {
-      // de-standardize the cluster centers
-      double[] centers = Arrays.copyOf(_means, _means.length);
-      if (_mults!=null)
-        for (int i=0; i<centers.length; ++i)
-          centers[i] = (centers[i] - _means[i])/_mults[i];
+    @Override public void map(Chunk[] cs) {
+      // de-standardize the cluster means
+      double[] means = Arrays.copyOf(_means, _means.length);
 
-      double[] rowData = new double[chks.length];
-      for( int row = 0; row < chks[0]._len; row++ ) {
+      if (_mults!=null)
+        for (int i=0; i<means.length; ++i)
+          means[i] = (means[i] - _means[i])/_mults[i];
+
+      for( int row = 0; row < cs[0]._len; row++ ) {
+        double[] values = new double[cs.length];
         // fetch the data - using consistent NA and categorical data handling (same as for training)
-        loadRowData(rowData, chks, row, _means, _mults);
+        data(values, cs, row, _means, _mults);
         // compute the distance from the (standardized) cluster centroids
-        _tss += hex.genmodel.GenModel.KMeans.distance(centers, rowData, _isCats, null, null);
+        _tss += hex.genmodel.GenModel.KMeans_distance(means, values, _isCats, null, null);
       }
     }
 
@@ -488,7 +491,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       double[] values = new double[cs.length];
       ClusterDist cd = new ClusterDist();
       for( int row = 0; row < cs[0]._len; row++ ) {
-        loadRowData(values, cs, row, _means, _mults);
+        data(values, cs, row, _means, _mults);
         _sqr += minSqr(_centers, values, _isCats, cd);
       }
       _means = _mults = null;
@@ -530,7 +533,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       ClusterDist cd = new ClusterDist();
 
       for( int row = 0; row < cs[0]._len; row++ ) {
-        loadRowData(values, cs, row, _means, _mults);
+        data(values, cs, row, _means, _mults);
         double sqr = minSqr(_centers, values, _isCats, cd);
         if( _probability * sqr > rand.nextDouble() * _sqr )
           list.add(values.clone());
@@ -594,7 +597,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       double[] values = new double[N]; // Temp data to hold row as doubles
       ClusterDist cd = new ClusterDist();
       for( int row = 0; row < cs[0]._len; row++ ) {
-        loadRowData(values, cs, row, _means, _mults); // Load row as doubles
+        data(values, cs, row, _means, _mults); // Load row as doubles
         closest(_centers, values, _isCats, cd); // Find closest cluster center
         int clu = cd._cluster;
         assert clu != -1;       // No broken rows
@@ -710,7 +713,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   private void randomRow(Vec[] vecs, Random rand, double[] center, double[] means, double[] mults) {
     long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
-    loadRowData(center, vecs, row, means, mults);
+    data(center, vecs, row, means, mults);
   }
 
   // Pick most common cat level for each cluster_centers' cat columns
@@ -737,24 +740,24 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return value;
   }
 
-  private static void loadRowData(double[] rowData, Vec[] vecs, long row, double[] means, double[] mults) {
-    for( int i = 0; i < rowData.length; i++ ) {
+  private static void data(double[] values, Vec[] vecs, long row, double[] means, double[] mults) {
+    for( int i = 0; i < values.length; i++ ) {
       double d = vecs[i].at(row);
-      rowData[i] = normData(d, i, means, mults, vecs[i].cardinality());
+      values[i] = data(d, i, means, mults, vecs[i].cardinality());
     }
   }
 
-  private static void loadRowData(double[] rowData, Chunk[] chks, int row, double[] means, double[] mults) {
-    for( int i = 0; i < rowData.length; i++ ) {
+  private static void data(double[] values, Chunk[] chks, int row, double[] means, double[] mults) {
+    for( int i = 0; i < values.length; i++ ) {
       double d = chks[i].atd(row);
-      rowData[i] = normData(d, i, means, mults, chks[i].vec().cardinality());
+      values[i] = data(d, i, means, mults, chks[i].vec().cardinality());
     }
   }
 
   /**
    * Takes mean if NaN, standardize if requested.
    */
-  private static double normData(double d, int i, double[] means, double[] mults, int cardinality) {
+  private static double data(double d, int i, double[] means, double[] mults, int cardinality) {
     if(cardinality == -1) {
       if( Double.isNaN(d) )
         d = means[i];

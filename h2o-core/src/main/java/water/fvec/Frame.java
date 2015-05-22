@@ -13,51 +13,50 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 
-/** 
- * A collection of named {@link Vec} instances, essentially an R-like
- * Distributed Data Frame.
+/** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
- * <p>A Frame represents a large distributed 2-D table with named columns
- * ({@link Vec}s) and numbered rows.  A reasonable <em>column</em> limit is
- * 100K columns, but there's no hard-coded limit.  There's no real <em>row</em>
- * limit except memory; Frames (and Vecs) with many billions of rows are used
- * routinely.
+ *  <p>Frames represent a large distributed 2-D table with named columns
+ *  ({@link Vec}s) and numbered rows.  A reasonable <em>column</em> limit is
+ *  100K columns, but there's no hard-coded limit.  There's no real <em>row</em>
+ *  limit except memory; Frames (and Vecs) with many billions of rows are used
+ *  routinely.
  *
- * <p>A Frame is a collection of named Vecs; a Vec is a collection of numbered
- * {@link Chunk}s.  A Frame is small, cheaply and easily manipulated, it is
- * commonly passed-by-value.  It exists on one node, and <em>may</em> be stored
- * in the {@link DKV}.  Vecs, on the other hand, <em>must</em> be stored in the
- * {@link DKV}, as they represent the shared common management state for a
- * collection of distributed Chunks.
+ *  <p>A Frame is a collection of named Vecs; a Vec is a collection of numbered
+ *  {@link Chunk}s.  A Frame is small, cheaply and easily manipulated, it is
+ *  commonly passed-by-Value.  It exists on one node, and <em>may</em> be
+ *  stored in the {@link DKV}.  Vecs, on the other hand, <em>must</em> be stored in the
+ *  {@link DKV}, as they represent the shared common management state for a collection
+ *  of distributed Chunks.
  *
- * <p>Multiple Frames can reference the same Vecs, although this sharing can
- * make Vec lifetime management complex.  Commonly temporary Frames are used
- * to work with a subset of some other Frame (often during algorithm
- * execution, when some columns are dropped from the modeling process).  The
- * temporary Frame can simply be ignored, allowing the normal GC process to
- * reclaim it.  Such temp Frames usually have a {@code null} key.
+ *  <p>Multiple Frames can reference the same Vecs, although this sharing can
+ *  make Vec lifetime management complex.  Commonly temporary Frames are used
+ *  to work with a subset of some other Frame (often during algorithm
+ *  execution, when some columns are dropped from the modeling process).  The
+ *  temporary Frame can simply be ignored, allowing the normal GC process to
+ *  reclaim it.  Such temp Frames usually have a {@code null} key.
  *
- * <p>All the Vecs in a Frame belong to the same {@link Vec.VectorGroup} which
- * then enforces {@link Chunk} row alignment across Vecs (or at least enforces
- * a low-cost access model).  Parallel and distributed execution touching all
- * the data in a Frame relies on this alignment to get good performance.
+ *  <p>All the Vecs in a Frame belong to the same {@link Vec.VectorGroup} which
+ *  then enforces {@link Chunk} row alignment across Vecs (or at least enforces
+ *  a low-cost access model).  Parallel and distributed execution touching all
+ *  the data in a Frame relies on this alignment to get good performance.
+ *  
+ *  <p>Example: Make a Frame from a CSV file:<pre>
+ *  File file = ...
+ *  NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
+ *  Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
+ *  </pre>
  * 
- * <p>Example: Make a Frame from a CSV file:<pre>
- * File file = ...
- * NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
- * Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
- * </pre>
- * 
- * <p>Example: Find and remove the Vec called "unique_id" from the Frame,
- * since modeling with a unique_id can lead to overfitting:
- * <pre>
- * Vec uid = fr.remove("unique_id");
- * </pre>
+ *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,
+ *  since modeling with a unique_id can lead to overfitting:
+ *  <pre>
+ *  Vec uid = fr.remove("unique_id");
+ *  </pre>
  *
- * <p>Example: Move the response column to the last position:
- * <pre>
- * fr.add("response",fr.remove("response"));
- * </pre>
+ *  <p>Example: Move the response column to the last position:
+ *  <pre>
+ *  fr.add("response",fr.remove("response"));
+ *  </pre>
+ *
  */
 public class Frame extends Lockable<Frame> {
   /** Vec names */
@@ -521,10 +520,9 @@ public class Frame extends Lockable<Frame> {
    */
   public Frame[] subframe(String[] names, double c) { return subframe(names, true, c); }
 
-  /** Create a subframe from this frame based on desired names.  Throws an
-   *  exception if desired column is not in this frame and
-   *  <code>replaceBy</code> is <code>false</code>.  Else replace a missing
-   *  column by a constant column with given value.
+  /** Create a subframe from this frame based on desired names.
+   *  Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.
+   *  Else replace a missing column by a constant column with given value.
    *
    *  @param names list of column names to extract
    *  @param replaceBy should be missing column replaced by a constant column
@@ -562,10 +560,6 @@ public class Frame extends Lockable<Frame> {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override public Futures remove_impl(Futures fs) {
-    // Old, slow code - slow for running out of network bandwidth passing Keys
-    // and Invalidates around during the delete:
-    //    for( Key k : _keys ) DKV.getGet<Vec>().remove(fs);  return fs;
-    // Fast bulk version
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
     final int ncs = anyVec().nChunks(); // TODO: do not call anyVec which loads all Vecs... only to delete them
