@@ -21,7 +21,7 @@ function make_zip_common {
 
   mkdir $IMAGEDIR/python
 
-  cp h2o-py/dist/h2o-${PROJECT_VERSION}-py2-p3-none-any.whl $IMAGEDIR/python
+  cp h2o-py/dist/*whl $IMAGEDIR/python
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
