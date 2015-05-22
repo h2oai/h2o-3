@@ -283,11 +283,12 @@ class H2OFrame:
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
-
     fr = H2OFrame.py_tmp_key()
-    cbind = "(, (gput " + fr + " (cbind %FALSE %"
-    cbind += " %".join([vec._expr.eager() for vec in self]) + ")))"
-    res = h2o.rapids(cbind)
+    rapids_call = "(, "  # fold into a single rapids call
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+    rapids_call += cbind
+    res = h2o.rapids(rapids_call)
     h2o.removeFrameShallow(fr)
     head_rows = [range(1, nrows + 1, 1)]
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
@@ -315,9 +316,11 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(, (gput " + fr + " (cbind %FALSE %"
-      cbind += " %".join([vec._expr.eager() for vec in vecs]) + ")))"
-      res = h2o.rapids(cbind)
+      rapids_call = "(, "  # fold into a single rapids call
+      cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+      cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+      rapids_call += cbind
+      res = h2o.rapids(rapids_call)
       h2o.removeFrameShallow(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
@@ -559,6 +562,7 @@ class H2OFrame:
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
+  def __mod__(self, i): return self._simple_frames_bin_op(i, "mod")
   def __and__(self, i): return self._simple_frames_bin_op(i, "&")
   def __gt__ (self, i): return self._simple_frames_bin_op(i, "g")
   def __sub__(self, i): return self._simple_frames_bin_op(i,"-" )
@@ -573,6 +577,7 @@ class H2OFrame:
   def __lt__ (self, i): return self._simple_frames_bin_op(i,"l" )
 
   # rops
+  def __rmod__(self, i): return self._simple_frames_bin_rop(i,"mod")
   def __radd__(self, i): return self.__add__(i)
   def __rsub__(self, i): return self._simple_frames_bin_rop(i,"-")
   def __rand__(self, i): return self.__and__(i)
@@ -1202,6 +1207,7 @@ class H2OVec:
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))
 
+  def __mod__(self, i):  return self._simple_vec_bin_op(i, "mod")
   def __add__(self, i):  return self._simple_vec_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_vec_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_vec_bin_op(i,"&" )
@@ -1216,6 +1222,7 @@ class H2OVec:
   def __le__ (self, i):  return self._simple_vec_bin_op(i,"L")
   def __lt__ (self, i):  return self._simple_vec_bin_op(i,"l" )
 
+  def __rmod__(self, i): return self._simple_vec_bin_rop(i,"mod")
   def __radd__(self, i): return self.__add__(i)  # commutativity
   def __rsub__(self, i): return self._simple_vec_bin_rop(i,"-")  # not commutative
   def __rand__(self, i): return self.__and__(i)  # commutativity (no short circuiting)
