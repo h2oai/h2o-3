@@ -232,7 +232,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       if( oldCenters==null ) return false; // No prior iteration, not stopping
       double average_change = 0;
       for( int clu=0; clu<_parms._k; clu++ )
-        average_change += hex.genmodel.GenModel.KMeans.distance(oldCenters[clu],newCenters[clu],_isCats,null,null);
+        average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_isCats,null,null);
       average_change /= _parms._k;  // Average change per cluster
       model._output._avg_centroids_chg = ArrayUtils.copyAndFillOf(
               model._output._avg_centroids_chg,
@@ -654,7 +654,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < count; cluster++ ) {
-      double sqr = hex.genmodel.GenModel.KMeans.distance(centers[cluster],point,isCats,null,null);
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[cluster],point,isCats,null,null);
       if( sqr < minSqr ) {      // Record nearest cluster
         min = cluster;
         minSqr = sqr;

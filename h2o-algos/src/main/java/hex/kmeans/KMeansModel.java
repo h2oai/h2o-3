@@ -60,7 +60,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
-    preds[0] = hex.genmodel.GenModel.KMeans.closest(centers,data,_output._domains,_output._normSub,_output._normMul);
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains,_output._normSub,_output._normMul);
     return preds;
   }
 
@@ -73,11 +73,11 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       JCodeGen.toStaticVar(classCtxSb,"MULTS",_output._normMul,"Reciprocal of column standard deviations of training data");
       JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_std_raw, "Normalized cluster centers[K][features]");
       // Predict function body: main work function is a utility in GenModel class.
-      bodySb.ip("preds[0] = KMeans.closest(CENTERS,data,DOMAINS,MEANS,MULTS);").nl(); // at function level
+      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,MEANS,MULTS);").nl(); // at function level
     } else {
       JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_raw, "Denormalized cluster centers[K][features]");
       // Predict function body: main work function is a utility in GenModel class.
-      bodySb.ip("preds[0] = KMeans.closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
+      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
     }
   }
 
