@@ -442,12 +442,39 @@ public class Frame extends Lockable<Frame> {
 
   // Add a bunch of vecs
   public void add( String[] names, Vec[] vecs) {
-    add(names, vecs, vecs.length);
+    bulkAdd(names, vecs);
   }
   public void add( String[] names, Vec[] vecs, int cols ) {
     if (null == vecs || null == names) return;
-    for( int i=0; i<cols; i++ )
-      add(names[i],vecs[i]);
+    if (cols == names.length && cols == vecs.length) {
+      bulkAdd(names, vecs);
+    } else {
+      for (int i = 0; i < cols; i++)
+        add(names[i], vecs[i]);
+    }
+  }
+
+  /** Append multiple named Vecs to the Frame.  Names are forced unique, by appending a
+   *  unique number if needed.
+   */
+  private void bulkAdd(String[] names, Vec[] vecs) {
+    Vec vec = vecs != null && vecs.length >0 ? makeCompatible(new Frame(vecs[0])).anyVec() : null;
+    String[] tmpnames = names.clone();
+    int N = names.length;
+    assert(names.length == vecs.length);
+    for (int i=0; i<N; ++i) {
+      checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vec);  // Throw IAE is mismatch
+    }
+
+    int ncols = _keys.length;
+    _names = Arrays.copyOf(_names, ncols+N);
+    _keys = Arrays.copyOf(_keys, ncols+N);
+    _vecs = Arrays.copyOf(_vecs, ncols+N);
+    for (int i=0; i<N; ++i) {
+      _names[ncols+i] = names[i];
+      _keys[ncols+i] = vecs[i]._key;
+      _vecs[ncols+i] = vecs[i];
+    }
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
