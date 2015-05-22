@@ -360,7 +360,11 @@ h2o.anomaly <- function(object, data) {
 #' @export
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
-
+  tmp <- !.is.eval(data)
+  if( tmp ) {
+    temp_key <- data@frame_id
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
+  }
   url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name

@@ -71,6 +71,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
     }
     if (_parms._nbins <= 1) error ("_nbins", "_nbins must be > 1.");
+    if (_parms._nbins >= 1<<16) error ("_nbins", "_nbins must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
@@ -382,27 +383,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _timeLastScoreStart = now;
       // Score on training data
       Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
-      ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
+      ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
-      String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
-      out._mse_train[out._ntrees] = mm._MSE; // Store score results in the model output
-      training_r2 = mm.r2();
-      Log.info("training r2 is "+(float)mm.r2()+", MSE is "+(float)mm._MSE + train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
-      if (mm.hr() != null) {
-        Log.info(getHitRatioTable(mm.hr()));
-      }
+      out._scored_train[out._ntrees].fillFrom(mm);
+      if (out._ntrees > 0) Log.info("Training " + out._scored_train[out._ntrees].toString());
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,false,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
-        ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
-        out._mse_valid[out._ntrees] = mmv._MSE; // Store score results in the model output
+        Score scv = new Score(this,false,false,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._validation_metrics = mmv;
-        String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
-        Log.info("validation r2 is "+(float)mmv.r2()+", MSE is "+(float)mmv._MSE + valid_logloss);
-        if (mmv.hr() != null) {
-          Log.info(getHitRatioTable(mm.hr()));
-        }
+        out._scored_valid[out._ntrees].fillFrom(mmv);
+        if (out._ntrees > 0) Log.info("Validation " + out._scored_valid[out._ntrees].toString());
       }
 
       if( out._ntrees > 0 ) {    // Compute variable importances
@@ -482,11 +474,33 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
-    if (valid() != null) {
-      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    if (_output.isClassifier()) {
+      colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
+    }
+    if (_output.getModelCategory() == ModelCategory.Binomial) {
+      colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+    }
+    if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
+      colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
 
-    final int rows = _output._mse_train.length-1;
+    if (valid() != null) {
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+      if (_output.isClassifier()) {
+        colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (_output.isClassifier()) {
+        colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+    }
+
+    int rows = 0;
+    for( int i = 1; i<_output._scored_train.length; i++ ) {
+      if (!Double.isNaN(_output._scored_train[i]._mse)) ++rows;
+    }
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
             new String[rows],
@@ -495,7 +509,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             colFormat.toArray(new String[0]),
             "");
     int row = 0;
-    for( int i = 1; i<=rows; i++ ) {
+    for( int i = 1; i<_output._scored_train.length; i++ ) {
+      if (Double.isNaN(_output._scored_train[i]._mse)) continue;
       int col = 0;
       assert(row < table.getRowDim());
       assert(col < table.getColDim());
@@ -503,8 +518,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, fmt.print(_output._training_time_ms[i]));
       table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _start_time, true));
       table.set(row, col++, i);
-      table.set(row, col++, _output._mse_train[i]);
-      if (_valid != null) table.set(row, col++, _output._mse_valid[i]);
+      ScoreKeeper st = _output._scored_train[i];
+      table.set(row, col++, st._mse);
+      if (_output.isClassifier()) table.set(row, col++, st._logloss);
+      if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
+      if (_output.isClassifier()) table.set(row, col++, st._classError);
+
+      if (_valid != null) {
+        st = _output._scored_valid[i];
+        table.set(row, col++, st._mse);
+        if (_output.isClassifier()) table.set(row, col++, st._logloss);
+        if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
+        if (_output.isClassifier()) table.set(row, col++, st._classError);
+      }
       row++;
     }
     return table;
@@ -547,19 +573,43 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return table;
   }
 
-  @Override protected void checkMemoryFootPrint() {
-    if (_model._output._ntrees == 0) return;
-    int model_mem_size = 0; //only need to count the compressed trees
-    int trees_so_far = _model._output._ntrees; //existing trees
-    _model._output._treeStats._byte_size = 0;
-    for (int i=0; i< trees_so_far; ++i) {
-      Key<CompressedTree>[] per_class = _model._output._treeKeys[i];
-      for (int j=0; j<per_class.length; ++j) {
-        if (per_class[j] == null) continue; //GBM binomial
-        model_mem_size += DKV.get(per_class[j])._max;
-        _model._output._treeStats._byte_size += (long)model_mem_size;
+  /**
+   * Compute the *actual* byte size of a tree model in the KV store
+   */
+  private static class ComputeModelSize extends MRTask<ComputeModelSize> {
+    long _model_mem_size; //OUTPUT
+    final int trees_so_far; //INPUT
+    final public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys; //INPUT
+
+    public ComputeModelSize(int trees_so_far, Key<CompressedTree>[][] _treeKeys) {
+      this.trees_so_far = trees_so_far;
+      this._treeKeys = _treeKeys;
+    }
+
+    @Override protected void setupLocal() {
+      _model_mem_size = 0;
+      for (int i=0; i< trees_so_far; ++i) {
+        Key<CompressedTree>[] per_class = _treeKeys[i];
+        for (int j=0; j<per_class.length; ++j) {
+          if (per_class[j] == null) continue;
+          if (!per_class[j].home()) continue;
+          // only look at homed tree keys
+          _model_mem_size += DKV.get(per_class[j])._max;
+        }
       }
     }
+
+    @Override public void reduce(ComputeModelSize cms){
+      if (cms != null)
+        _model_mem_size += cms._model_mem_size;
+    }
+  }
+
+  @Override protected void checkMemoryFootPrint() {
+    if (_model._output._ntrees == 0) return;
+    int trees_so_far = _model._output._ntrees; //existing trees
+    long model_mem_size = new ComputeModelSize(trees_so_far, _model._output._treeKeys).doAllNodes()._model_mem_size;
+    _model._output._treeStats._byte_size = model_mem_size;
     double avg_tree_mem_size = (double)model_mem_size / trees_so_far;
     Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
 

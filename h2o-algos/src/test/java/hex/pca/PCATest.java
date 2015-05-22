@@ -1,9 +1,11 @@
 package hex.pca;
 
 import hex.DataInfo;
+import hex.SplitFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -106,6 +108,9 @@ public class PCATest extends TestUtil {
         score = model.score(train);
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
         TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+
+        // Build a POJO, validate same results
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -158,6 +163,9 @@ public class PCATest extends TestUtil {
         score = model.score(train);
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
         TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+
+        // Build a POJO, validate same results
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -171,6 +179,57 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
+      if (model != null) {
+        if (model._parms._keep_loading)
+          model._parms._loading_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
+  @Test public void testIrisSplitScoring() throws InterruptedException, ExecutionException {
+    PCA job = null;
+    PCAModel model = null;
+    Frame fr = null, fr2= null;
+    Frame tr = null, te= null;
+
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      SplitFrame sf = new SplitFrame(Key.make());
+      sf.dataset = fr;
+      sf.ratios = new double[] { 0.5 };
+      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+
+      // Invoke the job
+      sf.exec().get();
+      Key[] ksplits = sf.destination_frames;
+      tr = DKV.get(ksplits[0]).get();
+      te = DKV.get(ksplits[1]).get();
+
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = ksplits[0];
+      parms._valid = ksplits[1];
+      parms._k = 4;
+      parms._max_iterations = 10;
+
+      try {
+        job = new PCA(parms);
+        model = job.trainModel().get();
+      } finally {
+        if (job != null) job.remove();
+      }
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = model.score(te);
+      Assert.assertTrue(model.testJavaScoring(te, fr2, 1e-5));
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( tr  != null ) tr .delete();
+      if( te  != null ) te .delete();
       if (model != null) {
         if (model._parms._keep_loading)
           model._parms._loading_key.get().delete();

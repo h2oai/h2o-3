@@ -25,7 +25,7 @@
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
-#' @seealso \href{http://docs.h2o.ai/Ruser/top.html}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
+#' @seealso \href{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
 #' \dontrun{
 #' # Try to connect to a local H2O instance that is already running.
@@ -208,21 +208,17 @@ h2o.getConnection <- function() {
 #' }
 #' @export
 h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
-  if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
-  if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
+  if( !is(conn, "H2OConnection") ) stop("`conn` must be an H2OConnection object")
+  if( !h2o.clusterIsUp(conn) )     stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
   if(!is.logical(prompt) || length(prompt) != 1L || is.na(prompt)) stop("`prompt` must be TRUE or FALSE")
-  if(prompt) {
-    message = sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
-    ans = readline(message)
-    temp = substr(ans, 1L, 1L)
-  } else {
-    temp = "y"
-  }
+  if( prompt ) {
+    message <- sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
+    ans <- readline(message)
+    temp <- substr(ans, 1L, 1L)
+  } else { temp <- "y" }
 
-  if(temp == "Y" || temp == "y") {
-    .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
-  }
+  if(temp == "Y" || temp == "y") .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
 
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
     pid_file <- .h2o.getTmpFile("pid")
@@ -328,8 +324,6 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
     else {
       conn <- get("SERVER", .pkg.env)
-      if( !is.null(conn) )
-        print( paste0("H2O is still running @: ", conn@ip_, ":", conn@port_) )
     }
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
@@ -343,7 +337,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
   if( url.exists(myURL) ) {
-    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
+    tryCatch(h2o.shutdown(conn=new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
         "----------------------------------------------------------------------\n",
@@ -416,6 +410,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)
+  args <- c(args, "-ip", "127.0.0.1")
   args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
@@ -504,7 +499,13 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
          "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
-.h2o.downloadJar <- function(branch, version, overwrite = FALSE) {
+# This function returns a string to the valid path on the local filesystem of the h2o.jar file,
+# or it calls stop() and does not return.
+#
+# It will download a jar file if it needs to.
+.h2o.downloadJar <- function(overwrite = FALSE) {
+  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+
   if (is.null(.h2o.pkg.path)) {
     pkg_path = dirname(system.file(".", package = "h2o"))
   } else {
@@ -517,24 +518,37 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     }
   }
 
-  if (missing(branch)) {
-    branchFile <- file.path(pkg_path, "branch.txt")
-    branch <- readLines(branchFile)
+  # Check for jar file in 'java' directory.
+  if (! overwrite) {
+    possible_file <- file.path(pkg_path, "java", "h2o.jar")
+    if (file.exists(possible_file)) {
+      return(possible_file)
+    }
   }
 
-  if (missing(version)) {
-    buildnumFile <- file.path(pkg_path, "buildnum.txt")
-    version <- readLines(buildnumFile)
+  # Check for jar file in 'inst/java' directory.
+  if (! overwrite) {
+    possible_file <- file.path(pkg_path, "inst", "java", "h2o.jar")
+    if (file.exists(possible_file)) {
+      return(possible_file)
+    }
   }
 
-  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+  branchFile <- file.path(pkg_path, "branch.txt")
+  branch <- readLines(branchFile)
+
+  buildnumFile <- file.path(pkg_path, "buildnum.txt")
+  version <- readLines(buildnumFile)
 
   dest_folder <- file.path(pkg_path, "java")
-  if(!file.exists(dest_folder)) dir.create(dest_folder)
+  if (!file.exists(dest_folder)) {
+    dir.create(dest_folder)
+  }
+
   dest_file <- file.path(dest_folder, "h2o.jar")
 
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
-  if(overwrite || !file.exists(dest_file)) {
+  if (TRUE) {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
 
@@ -572,7 +586,8 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     # Move good file into final position
     file.rename(temp_file, dest_file)
   }
-  dest_file
+
+  return(dest_file)
 }
 
 #' View Network Traffic Speed
@@ -585,4 +600,9 @@ h2o.networkTest <- function(conn = h2o.getConnection()) {
   res <- .h2o.__remoteSend(conn = conn, "NetworkTest", method = "GET")
 
   res$table
+}
+
+# Trigger an explicit garbage collection across all nodes in the H2O cluster.
+.h2o.garbageCollect <- function(conn = h2o.getConnection()) {
+  res <- .h2o.__remoteSend(conn = conn, "GarbageCollect", method = "POST")
 }

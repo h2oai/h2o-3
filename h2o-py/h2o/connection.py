@@ -33,7 +33,7 @@ class H2OConnection(object):
   """
 
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
+               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"

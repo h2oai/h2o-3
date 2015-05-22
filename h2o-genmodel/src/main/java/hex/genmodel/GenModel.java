@@ -3,11 +3,12 @@ package hex.genmodel;
 import water.genmodel.IGeneratedModel;
 import hex.ModelCategory;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 
 /** This is a helper class to support Java generated models. */
-public abstract class GenModel implements IGenModel, IGeneratedModel {
+public abstract class GenModel implements IGenModel, IGeneratedModel, Serializable {
 
   /** Column names; last is response for supervised models */
   public final String[] _names;
@@ -15,10 +16,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel {
   /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
    *  Columns match the post-init cleanup columns.  The last column holds the
    *  response col enums for SupervisedModels.  */
-  public final String _domains[][];
+  public final String[][] _domains;
 
 
-  public GenModel( String[] names, String domains[][] ) { _names = names; _domains = domains; }
+  public GenModel( String[] names, String[][] domains ) { _names = names; _domains = domains; }
 
   @Override public boolean isSupervised() {
     // FIXME: can be derived directly from model category?

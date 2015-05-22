@@ -166,7 +166,7 @@ def split_frame(data, ratios=[0.75], destination_frames=None):
 def get_frame(frame_id):
   if frame_id is None:
     raise ValueError("frame_id must not be None")
-  res = H2OConnection.get_json("Frames/"+frame_id)
+  res = H2OConnection.get_json("Frames/"+urllib.quote(frame_id))
   res = res["frames"][0]
   colnames = [v["label"] for v in res["columns"]]
   veckeys  = res["vec_ids"]
@@ -262,6 +262,9 @@ def value_check(h2o_data, local_data, num_elements, col=None):
     assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
 
 def run_test(sys_args, test_to_run):
+  import pkg_resources
+  ver = pkg_resources.get_distribution("h2o").version
+  print "H2O PYTHON PACKAGE VERSION: " + str(ver)
   ip, port = sys_args[2].split(":")
   init(ip,port)
   log_and_echo("------------------------------------------------------------")
@@ -387,7 +390,7 @@ def frame(frame_id):
   :param frame_id: A pointer to a Frame  in H2O.
   :return: Meta information on the frame
   """
-  return H2OConnection.get_json("Frames/" + frame_id)
+  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
 
 
 def frames():
@@ -406,7 +409,7 @@ def frame_summary(key):
   :return: Meta and summary info on the frame
   """
   # frames_meta = H2OConnection.get_json("Frames/" + key)
-  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  frame_summary =  H2OConnection.get_json("Frames/" + urllib.quote(key) + "/summary")
   return frame_summary
 
 def download_pojo(model,path=""):
@@ -466,7 +469,7 @@ def cbind(left,right):
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
   """
   Initiate an H2O connection to the specified ip and port.
 

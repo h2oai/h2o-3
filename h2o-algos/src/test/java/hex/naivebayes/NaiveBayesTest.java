@@ -32,7 +32,10 @@ public class NaiveBayesTest extends TestUtil {
       try {
         job = new NaiveBayes(parms);
         model = job.trainModel().get();
+
+        // Done building model; produce a score column with class assignments
         score = model.score(train);
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-6));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -81,7 +84,7 @@ public class NaiveBayesTest extends TestUtil {
 
         // Done building model; produce a score column with class assignments
         fr2 = model.score(te);
-        // Assert.assertTrue(model.testJavaScoring(te,fr2,1e-15));
+        Assert.assertTrue(model.testJavaScoring(te,fr2,1e-6));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -100,7 +103,7 @@ public class NaiveBayesTest extends TestUtil {
   @Test public void testProstate() throws InterruptedException, ExecutionException {
     NaiveBayes job = null;
     NaiveBayesModel model = null;
-    Frame train = null;
+    Frame train = null, score = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
 
     try {
@@ -120,6 +123,10 @@ public class NaiveBayesTest extends TestUtil {
       try {
         job = new NaiveBayes(parms);
         model = job.trainModel().get();
+
+        // Done building model; produce a score column with class assignments
+        score = model.score(train);
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-6));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -131,6 +138,7 @@ public class NaiveBayesTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
+      if (score != null) score.delete();
       if (model != null) model.delete();
       Scope.exit();
     }
@@ -156,7 +164,10 @@ public class NaiveBayesTest extends TestUtil {
       try {
         job = new NaiveBayes(parms);
         model = job.trainModel().get();
+
+        // Done building model; produce a score column with class assignments
         score = model.score(train);
+        Assert.assertTrue(model.testJavaScoring(train,score,1e-6));
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

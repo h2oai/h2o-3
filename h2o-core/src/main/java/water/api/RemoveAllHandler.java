@@ -10,24 +10,14 @@ public class RemoveAllHandler extends Handler {
   public RemoveAllV3 remove(int version, RemoveAllV3 u) {
     Log.info("Removing all objects");
     Futures fs = new Futures();
-    for (Job j : Job.jobs()) { j.cancel(); j.remove(fs); }
+    for( Job j : Job.jobs() ) { j.cancel(); j.remove(fs); }
     fs.blockForPending();
-    new RemoveAllTask().doAllNodes();
+    // Bulk brainless key removal.  Completely wipes all Keys without regard.
+    new MRTask(){
+      @Override public byte priority() { return H2O.GUI_PRIORITY; }
+      @Override public void setupLocal() {  H2O.raw_clear(); }
+    }.doAllNodes();
     Log.info("Finished removing objects");
     return u;
-  }
-
-  public class RemoveAllTask extends MRTask<RemoveAllTask> {
-    @Override public byte priority() { return H2O.GUI_PRIORITY; }
-
-    @Override public void setupLocal() {
-      final Set<Key> kys = H2O.localKeySet();
-      Log.info("Removing "+kys.size()+ " objects from nodeIdx("+H2O.SELF.index()+") out of "+H2O.CLOUD.size()+" nodes.");
-      Futures fs = new Futures();
-      for (Key k : kys)
-        DKV.remove(k, fs);
-      fs.blockForPending();
-      Log.info("Objects remaining: "+H2O.store_size());
-    }
   }
 }

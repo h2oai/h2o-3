@@ -1,11 +1,67 @@
 #Recent Changes   
 
-##H2O 3.0
+##H2O
 
-###Shannon (3.0.0.1) - 5/15/15
+###Shannon (3.0.0.7) - 5/18/15
+
+####Enhancements
+The following changes are improvements to existing features (which includes changed default values):
+
+##### API
+
+- [PUBDEV-711](https://0xdata.atlassian.net/browse/PUBDEV-711): take a final look at all REST API parameter names and help strings
+- [PUBDEV-757](https://0xdata.atlassian.net/browse/PUBDEV-757): Rename DocsV1 + DocsHandler to MetadataV1 + MetadataHandler
+- [PUBDEV-1138](https://0xdata.atlassian.net/browse/PUBDEV-1138): Performance improvements for big data sets => getModels
+- [PUBDEV-1126](https://0xdata.atlassian.net/browse/PUBDEV-1126): Performance improvements for big data sets => Get frame summary
+
+
+#####System
+
+- [HEXDEV-316](https://0xdata.atlassian.net/browse/HEXDEV-316): ImportFiles should not download files from HTTP
+
+
+#####Web UI
+
+- [PUBDEV-1144](https://0xdata.atlassian.net/browse/PUBDEV-1144): Update/Fix Flow API for CreateFrame
+
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+
+##### API
+
+- [PUBDEV-501](https://0xdata.atlassian.net/browse/PUBDEV-501): H2OPredict: does not complain when you build a model with one dataset and predict on completely different dataset
+- [PUBDEV-1047](https://0xdata.atlassian.net/browse/PUBDEV-1047): API : Get frames and Build model => takes long time to get frames
+- [HEXDEV-149](https://0xdata.atlassian.net/browse/HEXDEV-149): Allow JobsV3 to return properly typed jobs, not always instances of JobV3
+- [PUBDEV-1036](https://0xdata.atlassian.net/browse/PUBDEV-1036): rename straggler V2 schemas to V3
+
+##### R
+
+- [PUBDEV-1159](https://0xdata.atlassian.net/browse/PUBDEV-1159): R: h2o.hist takes too long to run
+
+
+#####System
+
+- [PUBDEV-1034](https://0xdata.atlassian.net/browse/PUBDEV-1034): Windows 7/8/2012 Multicast Error UDP
+- [PUBDEV-862](https://0xdata.atlassian.net/browse/PUBDEV-862): Building a model without training file -> NPE
+- [HEXDEV-253](https://0xdata.atlassian.net/browse/HEXDEV-253): model output consistency
+- [PUBDEV-1135](https://0xdata.atlassian.net/browse/PUBDEV-1135): While predicting get:class water.fvec.RollupStats$ComputeRollupsTask; class java.lang.ArrayIndexOutOfBoundsException: 5
+- [PUBDEV-1090](https://0xdata.atlassian.net/browse/PUBDEV-1090): POJO: Models with "." in key name (ex. pros.glm) can't access pojo endpoint
+- [PUBDEV-1077](https://0xdata.atlassian.net/browse/PUBDEV-1077): Getting an IcedHashMap warning from H2O startup
+
+#####Web UI
+
+- [PUBDEV-1133](https://0xdata.atlassian.net/browse/PUBDEV-1133): getModels in Flow returns error
+- [PUBDEV-926](https://0xdata.atlassian.net/browse/PUBDEV-926): Flow: When user hits build model without specifying the training frame, it would be good if Flow  guides the user. It presently shows an NPE msg 
+- [PUBDEV-1131](https://0xdata.atlassian.net/browse/PUBDEV-1131): GBM crashes after calling getJobs in Flow
+
+---
+
+###Shannon (3.0.0.2) - 5/15/15
 
 ####New Features 
-The following features have been added since the last release: 
 
 ##### ModelMetrics
 
@@ -16,7 +72,6 @@ The following features have been added since the last release:
 - [PUBDEV-942](https://0xdata.atlassian.net/browse/PUBDEV-942): ModelMetrics by model category - Autoencoder
 
 ####Enhancements
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -53,8 +108,6 @@ The following changes are improvements to existing features (which includes chan
 - [github](https://github.com/h2oai/h2o-dev/commit/7639e27): removed `use_all_factor_levels` from glm flows
 
 ####Bug Fixes
-
-The following changes are to resolve incorrect software behavior: 
 
 #####Algorithms
 

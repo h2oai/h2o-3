@@ -6,7 +6,7 @@ import water.util.UnsafeUtils;
  * Do Something with an incoming UDP packet
  *
  * Classic Single Abstract Method pattern.
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

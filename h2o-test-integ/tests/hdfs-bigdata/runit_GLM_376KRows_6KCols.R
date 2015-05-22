@@ -35,7 +35,7 @@ train = data.hex[s <= 0.8,]
 valid = data.hex[s > 0.8,]
 
 #GLM Model
-glm_time <- system.time(model.glm <- h2o.glm(x = 3:(ncol(train)), y = 2, training_frame = train, validation_frame=valid, family = "binomial", solver = "L_BFGS"))
+glm_time <- system.time(model.glm <- h2o.glm(x = 3:(ncol(train)), y = 6, training_frame = train, validation_frame=valid, family = "binomial", solver = "L_BFGS"))
 paste("Time it took to build GLM ", glm_time[[1]])
 model.glm
 

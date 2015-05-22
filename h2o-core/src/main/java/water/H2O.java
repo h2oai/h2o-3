@@ -28,7 +28,7 @@ import com.brsanthu.googleanalytics.EventHit;
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
-* @author <a href="mailto:cliffc@0xdata.com"></a>
+* @author <a href="mailto:cliffc@h2o.ai"></a>
 * @version 1.0
 */
 final public class H2O {
@@ -1081,6 +1081,7 @@ final public class H2O {
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
+  public static void raw_clear() { STORE.clear(); }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
@@ -1114,6 +1115,32 @@ final public class H2O {
   // Node persistent storage
   private static NodePersistentStorage NPS;
   public static NodePersistentStorage getNPS() { return NPS; }
+
+  /**
+   * Run System.gc() on every node in the H2O cluster.
+   *
+   * Having to call this manually from user code is a sign that something is wrong and a better
+   * heuristic is needed internally.
+   */
+  public static void gc() {
+    class GCTask extends DTask<GCTask> {
+      public GCTask() {}
+
+      @Override public void compute2() {
+        Log.info("Calling System.gc() now...");
+        System.gc();
+        Log.info("System.gc() finished");
+        tryComplete();
+      }
+
+      @Override public byte priority() { return H2O.MIN_HI_PRIORITY; }
+    }
+
+    for (H2ONode node : H2O.CLOUD._memary) {
+      GCTask t = new GCTask();
+      new RPC<>(node, t).call().get();
+    }
+  }
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {

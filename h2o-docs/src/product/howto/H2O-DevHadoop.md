@@ -45,12 +45,12 @@ The following tutorial will walk the user through the download or build of H2O a
 
 0. Download the latest H2O release for your version of Hadoop:
 
-		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-cdh5.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-cdh5.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-hdp2.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-hdp2.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-mapr3.1.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o-dev/master/1110/h2o-dev-0.3.0.1110-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-cdh5.2.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-cdh5.3.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-hdp2.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-hdp2.2.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-mapr3.1.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-mapr4.0.1.zip
 		
 	**Note**: Enter only one of the above commands.
 

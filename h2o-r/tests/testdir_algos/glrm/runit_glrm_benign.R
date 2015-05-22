@@ -7,9 +7,10 @@ test.glrm.benign <- function(conn) {
   benign.sum <- summary(benign.hex)
   print(benign.sum)
 
-  for( i in 8:14 ) {
+  rank <- seq(from = 8, to = 14, by = 2)
+  for( i in rank ) {
     Log.info(paste("H2O GLRM with rank", i, "decomposition:\n"))
-    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = as.numeric(i), init = "PlusPlus", recover_pca = TRUE)
+    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = i, init = "PlusPlus", recover_pca = TRUE)
     print(benign.glrm)
     h2o.rm(benign.glrm@model$loading_key$name)   # Remove loading matrix to free memory
   }

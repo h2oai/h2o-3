@@ -432,6 +432,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
+        if(!mp._shuffle_training_data && mp._balance_classes && !mp._reproducible) {
+          Log.info("Enabling training data shuffling, because balance_classes is enabled.");
+          mp._shuffle_training_data = true;
+        }
 
         if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {

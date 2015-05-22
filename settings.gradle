@@ -1,4 +1,4 @@
-rootProject.name = 'h2o-dev'
+rootProject.name = 'h2o-3'
 
 include 'h2o-core'
 include 'h2o-algos'

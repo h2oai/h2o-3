@@ -212,7 +212,9 @@ After you have imported your data, parse the data.
 Select the parser type (if necessary) from the drop-down **Parser** list. For most data parsing, H2O automatically recognizes the data type, so the default settings typically do not need to be changed. The following options are available: 
 
 - Auto
+- ARFF
 - XLS
+- XLSX
 - CSV
 - SVMLight
 
@@ -243,7 +245,6 @@ A preview of the data displays in the "Data Preview" section.
 
 
 After making your selections, click the **Parse** button. 
-
 
 After you click the **Parse** button, the code for the current job displays. 
 
@@ -317,6 +318,10 @@ To build a model:
 
 
 The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). 
+
+
+ ![Model Builder](images/Flow_ModelBuilder.png)
+
  
 In the **Build a Model** cell, select an algorithm from the drop-down menu: 
 
@@ -330,7 +335,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 - **Distributed RF**: Create a distributed Random Forest model.  
 
 <a name="NB"></a>
-- **Naive Bayes**: Create a Naive Bayes model. 
+- **Naïve Bayes**: Create a Naïve Bayes model. 
 
 <a name="PCA"></a> 
 - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
@@ -351,14 +356,14 @@ The available options vary depending on the selected model. If an option is only
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **->** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **<-** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. 
 
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
 - **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
 
-- **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [NaiveBayes](#NB)) Select the column to use as the independent variable.
+- **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [Naïve Bayes](#NB)) Select the column to use as the independent variable.
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is IRLSM. 
 
@@ -372,7 +377,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
-- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.6666667. 
+- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
 
 - **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
@@ -382,7 +387,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
-- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [NaiveBayes](#NB), [PCA](#PCA), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
+- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
 
 - **K**: [(K-Means)](#Kmeans), [(PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
 
@@ -406,15 +411,15 @@ The available options vary depending on the selected model. If an option is only
 
 - **Variable_importances**: ([DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **Laplace**: [(NaiveBayes)](#NB) Specify the Laplace smoothing parameter. The default value is 0. 
+- **Laplace**: [(Naïve Bayes)](#NB) Specify the Laplace smoothing parameter. The default value is 0. 
 
-- **Min\_sdev**: [(NaiveBayes)](#NB) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
+- **Min\_sdev**: [(Naïve Bayes)](#NB) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
 
-- **Eps\_sdev**: [(NaiveBayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_sdev**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
 
-- **Min\_prob**: [(NaiveBayes)](#NB) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
+- **Min\_prob**: [(Naïve Bayes)](#NB) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
 
-- **Eps\_prob**: [(NaiveBayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_prob**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
@@ -448,11 +453,11 @@ The available options vary depending on the selected model. If an option is only
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
    **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#DRF), [DL](#DL), [NaiveBayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#DRF), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
-- **Max\_confusion\_matrix\_size**: ([DRF](#DRF), [NaiveBayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+- **Max\_confusion\_matrix\_size**: ([DRF](#DRF), [Naïve Bayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
-- **Max\_hit\_ratio\_k**: ([DRF](#DRF), [NaiveBayes](#NB)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+- **Max\_hit\_ratio\_k**: ([DRF](#DRF), [Naïve Bayes](#NB)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
 - **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
 
@@ -534,7 +539,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Export\_weights\_and\_biases**: [(DL)](#DL) To export the neural network weights and biases as H2O frames, check this checkbox. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [NaiveBayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
@@ -563,8 +568,6 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
    **NOTE**: The **Clone this model...** button will be supported in a future version. 
  
-To compare models, check the checkboxes for the models to use in the comparison and click the **Compare selected models** button. To select all models, check the checkbox at the top of the checkbox column (next to the **KEY** heading). 
-
 To delete a model, click the **Delete** button. 
 
 To generate a POJO to be able to use the model outside of H2O, click the **Preview POJO** button. 
@@ -599,25 +602,26 @@ You can also view predictions by clicking the drop-down **Score** menu and selec
 <a name="ViewFrame"></a>
 ## Viewing Frames
 
-To view a specific frame, click the "Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
+To view a specific frame, click the "Key" link for the specified frame, or enter `getFrameSummary "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
 
  ![Viewing specified frame](images/Flow_getFrame.png) 
 
 
-From the `getFrame` cell, you can: 
+From the `getFrameSummary` cell, you can: 
 
 - view a truncated list of the rows in the data frame by clicking the **View Data** button
+- split the dataset by clicking the **Split...** button
+- view the columns, data, and factors in more detail or plot a graph by clicking the **Inspect** button
 - create a model by clicking the **Build Model** button
 - make a prediction based on the data by clicking the **Predict** button
 - download the data as a .csv file by clicking the **Download** button
-- view the columns, data, and factors in more detail or plot a graph by clicking the **Inspect** button
 - view the characteristics or domain of a specific column by clicking the **Summary** link
 
-When you view a frame, you can "drill-down" to the necessary level of detail (such as a specific column or row) using the **View Data** and **Inspect** buttons. The following screenshot displays the results of clicking the **Inspect** button.
+When you view a frame, you can "drill-down" to the necessary level of detail (such as a specific column or row) using the **Inspect** button or by clicking the links. The following screenshot displays the results of clicking the **Inspect** button for a frame.
 
 ![Inspecting Frames](images/Flow_inspectFrame.png)
 
-This screenshot displays the results of clicking the **Summary** link for the first column. 
+This screenshot displays the results of clicking the **columns** link. 
 
 ![Inspecting Columns](images/Flow_inspectCol.png)
 
@@ -627,7 +631,7 @@ To view all frames, click the **Assist Me!** button, then click the **getFrames*
 A list of the current frames in H2O displays that includes the following information for each frame: 
 
 
-- Column headings
+- Link to the frame (the "key")
 - Number of rows and columns
 - Size 
 
@@ -645,7 +649,7 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 
 ### Splitting Frames
 
-In H2O Flow, you can split datasets within Flow for use in training and testing. 
+Datasets can be split within Flow for use in model training and testing. 
 
  ![splitFrame cell](images/Flow_splitFrame.png)
 
@@ -670,18 +674,18 @@ To create a frame with a large amount of random data (for example, to use for te
 
 To create a plot from a frame, click the **Inspect** button, then click the **Plot** button. 
 
-Select the type of plot (point, line, area, or interval) from the drop-down **Type** menu, then select the x-axis and y-axis from the following options: 
+Select the type of plot (point, path, or rect) from the drop-down **Type** menu, then select the x-axis and y-axis from the following options: 
 
 - label 
+- type
 - missing 
 - zeros
-- pinfs 
-- ninfs 
+- +Inf
+- -Inf
 - min
 - max
 - mean
 - sigma
-- type
 - cardinality
 
 Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
@@ -776,7 +780,7 @@ where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified locatio
 
 The location specified in `flow_dir` may be either an hdfs or regular filesystem directory.  If the directory does not exist, it will be created the first time you save a flow.
 
-### Duplicating Flows
+### Copying Flows
 
 To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
@@ -785,7 +789,7 @@ To create a copy of the current flow, select the **Flow** menu, then click **Mak
 
 After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
 
-**Caution**: You must have an active internet connection to export flows. 
+**Caution**: You must have an active internet connection to download flows. 
 
 ### Loading Flows
 
@@ -819,6 +823,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Cluster health
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
+  
   **Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
 - H2O version
 - Number of used and available nodes
@@ -860,7 +865,7 @@ To view the logs for a specific node, select it from the drop-down **Select Node
 
 ## Downloading Logs
 
-To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to support@h2o.ai for issue resolution. 
+To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to [support@h2o.ai](mailto:support@h2o.ai) for issue resolution. 
 
 ---
 

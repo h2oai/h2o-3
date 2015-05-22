@@ -249,6 +249,7 @@ class Expr(object):
   def logical_negation(self):  return Expr("not", self)
 
   def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
+  def __mod__(self, i):  return self._simple_expr_bin_op(i, "mod")
   def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_expr_bin_op(i,"&" )
   def __or__ (self, i):  return self._simple_expr_bin_op(i,"|" )
@@ -263,6 +264,7 @@ class Expr(object):
   def __lt__ (self, i):  return self._simple_expr_bin_op(i,"l" )
 
   def __radd__(self, i): return self.__add__(i)
+  def __rmod__(self, i): return self._simple_expr_bin_rop(i,"mod")
   def __rsub__(self, i): return self._simple_expr_bin_rop(i,"-")
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
@@ -476,9 +478,9 @@ class Expr(object):
     # Do not try/catch NotImplementedError - it blows the original stack trace
     # so then you can't see what's not implemented
 
-    if self._op in ["+", "&", "|", "-", "*", "/", "^", "n", "N", "g", "G", "l", "L"]:   # in self.BINARY_INFIX_OPS:
+    if self._op in ["+", "&", "|", "-", "*", "/", "^", "n", "N", "g", "G", "l", "L", "mod"]:   # in self.BINARY_INFIX_OPS:
       rapids_dict = {"+":"+", "&":"&", "|":"|", "-":"-", "*":"*", "/":"/", "^":"**", "n":"==", "N":"!=", "g":">", "G":">=", "l":"<",
-                     "L":"<="}
+                     "L":"<=", "mod":"mod"}
       #   num op num
       #   num op []
       if isinstance(left._data, (int, float,str)):

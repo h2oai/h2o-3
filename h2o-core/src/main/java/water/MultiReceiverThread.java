@@ -11,7 +11,7 @@ import water.util.Log;
  * or queuing them up for worker threads.  Multicast *Channels* are available
  * Java 7, but we are writing to Java 6 JDKs.  SO back to the old-school
  * MulticastSocket.
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 

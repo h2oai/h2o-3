@@ -14,7 +14,7 @@
 #'        none is given, an id will automatically be generated.
 #' @param mtries Columns to randomly select at each level, or -1 for
 #'        sqrt(#cols).
-#' @param sample_rate Sample rate, from 0. to 1.0.
+#' @param sample_rate Sample rate, from 0 to 1.0.
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param ntrees A nonnegative integer that determines the number of trees to
@@ -38,7 +38,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              model_id,
                              validation_frame,
                              mtries = -1,
-                             sample_rate = 2/3,
+                             sample_rate = 0.632,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
                              max_depth = 20,
