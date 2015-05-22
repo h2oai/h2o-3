@@ -18,7 +18,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-import water.util.RandomUtils;
 import water.util.Timer;
 
 import java.util.Arrays;
@@ -34,7 +33,6 @@ import static hex.tree.drf.TreeMeasuresCollector.asVotes;
  */
 public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel.DRFParameters, hex.tree.drf.DRFModel.DRFOutput> {
   protected int _mtry;
-  protected long _actual_seed;
 
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
@@ -45,9 +43,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
-
-  static final boolean DEBUG_DETERMINISTIC = false; //for debugging only
-
 
   // Called from an http request
   public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF",parms); init(false); }
@@ -72,9 +67,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     // Initialize local variables
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
-    if (DEBUG_DETERMINISTIC && _parms._seed == -1) _parms._seed = 0x1321e74a0192470cL; // fixed version of seed
-    else if (_parms._seed == -1) _actual_seed = new Random().nextLong(); // time-based random seed
-    else _actual_seed = _parms._seed; // user-given seed
     if( _parms._mtries < 1 && _parms._mtries != -1 ) error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
@@ -179,7 +171,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       new SetWrkTask().doAll(_train);
       // If there was a check point recompute tree_<_> and oob columns based on predictions from previous trees
       // but only if OOB validation is requested.
-      if (_valid==null && _parms._checkpoint) {
+      if (_parms._checkpoint) {
         Timer t = new Timer();
         // Compute oob votes for each output level
         new OOBScorer(_ncols, _nclass, _parms._sample_rate, _model._output._treeKeys).doAll(_train);
@@ -187,7 +179,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       }
 
       // The RNG used to pick split columns
-      Random rand = createRNG(_actual_seed);
+      Random rand = createRNG(_parms._seed);
       // To be deterministic get random numbers for previous trees and
       // put random generator to the same state
       for (int i=0; i<_ntreesFromCheckpoint; i++) rand.nextLong();
@@ -198,7 +190,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Build trees until we hit the limit
       for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          double training_r2 = doScoringAndSaveModel(false, true, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error
         }
@@ -213,7 +205,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
 
       }
-      doScoringAndSaveModel(true, _valid==null, _parms._build_tree_one_node);
+      doScoringAndSaveModel(true, true, _parms._build_tree_one_node);
     }
 
 
