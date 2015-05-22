@@ -24,7 +24,7 @@ test.tableau <- function(conn) {
   data.glm <- h2o.glm(x = xvars , y = 'Cancelled', training_frame = data.hex, family = 'binomial', nfolds = 0, standardize=TRUE)
   
   glmModelTemp <- eval(parse(text = 'data.glm' ))
-  .arg1 <- levels(data.hex$Origin)
+  .arg1 <- h2o.levels(data.hex$Origin)
   if(!(length(.arg1) > 0)) stop("Didn't grab all the factor levels in the Origin column.")
   ## Tableau grab coefficients corresponding to predictor variable
   tableau_catFormat <- function( modelKey , variableStr, predictorVariable) {
@@ -48,7 +48,7 @@ test.tableau <- function(conn) {
     tableau_input}
   
   Log.info ('Finish setting up for Tableau function')
-  coeff <- sapply(originFactors, function(factor) tableau_catFormat( glmModelTemp, 'Origin' , factor) )
+  coeff <- sapply(.arg1, function(factor) tableau_catFormat( glmModelTemp, 'Origin' , factor) )
   if(!(length(coeff)>0)) stop("There are no coefficients filter back out!")
   
   testEnd()

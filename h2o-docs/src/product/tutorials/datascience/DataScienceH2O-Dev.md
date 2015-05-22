@@ -623,7 +623,7 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 <a name="PCA"></a>
 ##PCA
 
-  >PCA is currently in progress in H2O-Dev. Once implementation of this algorithm is complete, this section of the document will be updated. 
+  >PCA is currently in progress in H2O. Once implementation of this algorithm is complete, this section of the document will be updated. 
 
 <!---
 ###Introduction

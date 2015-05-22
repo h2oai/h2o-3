@@ -3,8 +3,7 @@ package water.parser;
 import java.io.*;
 import java.util.Arrays;
 
-import water.H2O;
-import water.exceptions.H2OParseException;
+import water.util.Log;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
@@ -144,6 +143,7 @@ class SVMLightParser extends Parser {
             } else if(c == 'q'){
               lstate = QID0;
             } else { // failed, skip the line
+              Log.warn("Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'  Skipping line.");
               dout.invalidLine("Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'");
               lstate = SKIP_LINE;
               continue MAIN_LOOP;
@@ -186,16 +186,17 @@ class SVMLightParser extends Parser {
                     // or too small (col ids currently must fit into int)
                     String err;
                     if(number <= colIdx)
-                      err = "Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ".";
+                      Log.warn("Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ".  Skipping entry.");
                     else if(exp != 0)
-                      err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp);
+                      Log.warn("Got non-integer as column id: " + number*PrettyPrint.pow10(exp) + ".  Skipping entry");
                     else
-                      err = "column index out of range, " + number + " does not fit into integer.";
-                    dout.invalidLine("invalid column id:" + err);
+                      Log.warn("Column index out of range, " + number + " does not fit into integer.  Skipping entry");
+                    dout.invalidLine("Invalid column id.");
                     lstate = SKIP_LINE;
                   }
                 } else { // we're probably out of sync, skip the rest of the line
-                  dout.invalidLine("unexpected character after column id: " + c);
+                  Log.warn("Unexpected character after column id: " + c + ".  Skipping entry.");
+                  dout.invalidLine("Unexpected character after column id: " + c);
                   lstate = SKIP_LINE;
                 }
                 break NEXT_CHAR;
@@ -216,6 +217,7 @@ class SVMLightParser extends Parser {
               if (number < LARGEST_DIGIT_NUMBER) {
                 number = (number*PrettyPrint.pow10i(zeros+1))+(c-'0');
               } else {
+                Log.warn("Number " + number + " is out of bounds.  Skipping entry.");
                 dout.invalidLine("number " + number + " is out of bounds.");
                 lstate = SKIP_LINE;
               }
@@ -268,6 +270,7 @@ class SVMLightParser extends Parser {
           case INVALID_NUMBER:
             if(gstate == TGT) { // invalid tgt -> skip the whole row
               lstate = SKIP_LINE;
+              Log.warn("Invalid number (expecting target).  Skipping row.");
               dout.invalidLine("invalid number (expecting target)");
               continue MAIN_LOOP;
             }
