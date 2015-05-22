@@ -17,7 +17,7 @@ test.australia.golden <- function(H2Oserver) {
   predH2O <- predict(fitH2O, australiaH2O)
   Log.info("R Projection:"); print(head(predR))
   Log.info("H2O Projection:"); print(head(predH2O))
-  isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-5)
+  isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-4)
   expect_equal(isFlipped1, isFlipped2)
   
   testEnd()
