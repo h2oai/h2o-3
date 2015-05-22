@@ -217,101 +217,105 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   // --------------------------------------------------------------------------
   // KMeans utilities
   // For KMeansModel scoring; just the closest cluster center
-  public static int KMeans_closest(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
-    int min = -1;
-    double minSqr = Double.MAX_VALUE;
-    for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      double sqr = KMeans_distance(centers[cluster],point,domains,means,mults);
-      if( sqr < minSqr ) {      // Record nearest cluster center
-        min = cluster;
-        minSqr = sqr;
-      }
-    }
-    return min;
-  }
-
-  // only used for metric builder - uses float[] and fills up colSum & colSumSq arrays, otherwise the same as method below.
-  // WARNING - if changing this code - also change the code below
-  public static double KMeans_distance(double[] center, float[] point, String[][] domains, double[] means, double[] mults,
-                                       double[] colSum, double[] colSumSq) {
-    double sqr = 0;             // Sum of dimensional distances
-    int pts = point.length;     // Count of valid points
-
-    for(int column = 0; column < center.length; column++) {
-      float d = point[column];
-      if( Float.isNaN(d) ) { pts--; continue; }
-      if( domains[column] != null ) { // Categorical?
-        if( d != center[column] ) {
-          sqr += 1.0;           // Manhattan distance
+  public static class KMeans {
+    public static int closest(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
+      int min = -1;
+      double minSqr = Double.MAX_VALUE;
+      for( int cluster = 0; cluster < centers.length; cluster++ ) {
+        double sqr = distance(centers[cluster],point,domains,means,mults);
+        if( sqr < minSqr ) {      // Record nearest cluster center
+          min = cluster;
+          minSqr = sqr;
         }
-      } else {                  // Euclidean distance
-        if( mults != null ) {   // Standardize if requested
-          d -= means[column];
-          d *= mults[column];
-        }
-        double delta = d - center[column];
-        sqr += delta * delta;
       }
-      colSum[column] += d;
-      colSumSq[column] += d*d;
+      return min;
     }
-    // Scale distance by ratio of valid dimensions to all dimensions - since
-    // we did not add any error term for the missing point, the sum of errors
-    // is small - ratio up "as if" the missing error term is equal to the
-    // average of other error terms.  Same math another way:
-    //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
-    //   sqr = sqr * point.length;    // Total dist is average*#dimensions
-    if( 0 < pts && pts < point.length ) {
-      double scale = point.length / pts;
-      sqr *= scale;
-//      for (int i=0; i<colSum.length; ++i) {
-//        colSum[i] *= Math.sqrt(scale);
-//        colSumSq[i] *= scale;
-//      }
-    }
-    return sqr;
-  }
 
-  // WARNING - if changing this code - also change the code above
-  public static double KMeans_distance(double[] center, double[] point, String[][] domains, double[] means, double[] mults) {
-    double sqr = 0;             // Sum of dimensional distances
-    int pts = point.length;     // Count of valid points
+    // only used for metric builder - uses float[] and fills up colSum & colSumSq arrays, otherwise the same as method below.
+    // WARNING - if changing this code - also change the code below
+    public static double distance(double[] center, float[] point, String[][] domains, double[] means, double[] mults,
+                                  double[] colSum, double[] colSumSq) {
+      double sqr = 0;             // Sum of dimensional distances
+      int pts = point.length;     // Count of valid points
 
-    for(int column = 0; column < center.length; column++) {
-      double d = point[column];
-      if( Double.isNaN(d) ) { pts--; continue; }
-      if( domains[column] != null ) { // Categorical?
-        if( d != center[column] )
-          sqr += 1.0;           // Manhattan distance
-      } else {                  // Euclidean distance
-        if( mults != null ) {   // Standardize if requested
-          d -= means[column];
-          d *= mults[column];
+      for(int column = 0; column < center.length; column++) {
+        float d = point[column];
+        if( Float.isNaN(d) ) { pts--; continue; }
+        if( domains[column] != null ) { // Categorical?
+          if( d != center[column] ) {
+            sqr += 1.0;           // Manhattan distance
+          }
+        } else {                  // Euclidean distance
+          if( mults != null ) {   // Standardize if requested
+            d -= means[column];
+            d *= mults[column];
+          }
+          double delta = d - center[column];
+          sqr += delta * delta;
         }
-        double delta = d - center[column];
-        sqr += delta * delta;
+        colSum[column] += d;
+        colSumSq[column] += d*d;
       }
+      // Scale distance by ratio of valid dimensions to all dimensions - since
+      // we did not add any error term for the missing point, the sum of errors
+      // is small - ratio up "as if" the missing error term is equal to the
+      // average of other error terms.  Same math another way:
+      //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
+      //   sqr = sqr * point.length;    // Total dist is average*#dimensions
+      if( 0 < pts && pts < point.length ) {
+        double scale = point.length / pts;
+        sqr *= scale;
+        //      for (int i=0; i<colSum.length; ++i) {
+        //        colSum[i] *= Math.sqrt(scale);
+        //        colSumSq[i] *= scale;
+        //      }
+      }
+      return sqr;
     }
-    // Scale distance by ratio of valid dimensions to all dimensions - since
-    // we did not add any error term for the missing point, the sum of errors
-    // is small - ratio up "as if" the missing error term is equal to the
-    // average of other error terms.  Same math another way:
-    //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
-    //   sqr = sqr * point.length;    // Total dist is average*#dimensions
-    if( 0 < pts && pts < point.length )
-      sqr *= point.length / pts;
-    return sqr;
+
+    // WARNING - if changing this code - also change the code above
+    public static double distance(double[] center, double[] point, String[][] domains, double[] means, double[] mults) {
+      double sqr = 0;             // Sum of dimensional distances
+      int pts = point.length;     // Count of valid points
+
+      for(int column = 0; column < center.length; column++) {
+        double d = point[column];
+        if( Double.isNaN(d) ) { pts--; continue; }
+        if( domains[column] != null ) { // Categorical?
+          if( d != center[column] )
+            sqr += 1.0;           // Manhattan distance
+        } else {                  // Euclidean distance
+          if( mults != null ) {   // Standardize if requested
+            d -= means[column];
+            d *= mults[column];
+          }
+          double delta = d - center[column];
+          sqr += delta * delta;
+        }
+      }
+      // Scale distance by ratio of valid dimensions to all dimensions - since
+      // we did not add any error term for the missing point, the sum of errors
+      // is small - ratio up "as if" the missing error term is equal to the
+      // average of other error terms.  Same math another way:
+      //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
+      //   sqr = sqr * point.length;    // Total dist is average*#dimensions
+      if( 0 < pts && pts < point.length )
+        sqr *= point.length / pts;
+      return sqr;
+    }
   }
 
   // --------------------------------------------------------------------------
   // SharedTree utilities
 
-  // Tree scoring; NaNs always "go left": count as -Float.MAX_VALUE
-  public static double[] SharedTree_clean( double[] data ) {
-    double[] fs = new double[data.length];
-    for( int i=0; i<data.length; i++ )
-      fs[i] = Double.isNaN(data[i]) ? -Double.MAX_VALUE : data[i];
-    return fs;
+  public static class SharedTree {
+    // Tree scoring; NaNs always "go left": count as -Float.MAX_VALUE
+    public static double[] clean( double[] data ) {
+      double[] fs = new double[data.length];
+      for( int i=0; i<data.length; i++ )
+        fs[i] = Double.isNaN(data[i]) ? -Double.MAX_VALUE : data[i];
+      return fs;
+    }
   }
 
   // Build a class distribution from a log scale.
@@ -332,17 +336,21 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Build a class distribution from a log scale; find the top prediction
-  public static void GBM_rescale(double[] preds) {
-    double sum = log_rescale(preds);
-    for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
+  public static class GBM {
+    public static void rescale(double[] preds) {
+      double sum = log_rescale(preds);
+      for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
+    }
   }
 
   // --------------------------------------------------------------------------
   // GLM utilities
-  public static double GLM_identityInv( double x ) { return x; }
-  public static double GLM_logitInv( double x ) { return 1.0 / (Math.exp(-x) + 1.0); }
-  public static double GLM_logInv( double x ) { return Math.exp(x); }
-  public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
-  public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
+  public static class GLM {
+    public static double identityInv( double x ) { return x; }
+    public static double logitInv( double x ) { return 1.0 / (Math.exp(-x) + 1.0); }
+    public static double logInv( double x ) { return Math.exp(x); }
+    public static double inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
+    public static double tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
+  }
 
 }

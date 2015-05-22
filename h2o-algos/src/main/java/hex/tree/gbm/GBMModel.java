@@ -57,7 +57,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       preds[1] += _output._init_f;
       preds[2] = - preds[1];
     }
-    hex.genmodel.GenModel.GBM_rescale(preds);
+    hex.genmodel.GenModel.GBM.rescale(preds);
     if (_parms._balance_classes)
       GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
     preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
