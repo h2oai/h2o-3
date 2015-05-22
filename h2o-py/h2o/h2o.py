@@ -262,6 +262,9 @@ def value_check(h2o_data, local_data, num_elements, col=None):
     assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
 
 def run_test(sys_args, test_to_run):
+  import pkg_resources
+  ver = pkg_resources.get_distribution("h2o").version
+  print "H2O PYTHON PACKAGE VERSION: " + str(ver)
   ip, port = sys_args[2].split(":")
   init(ip,port)
   log_and_echo("------------------------------------------------------------")

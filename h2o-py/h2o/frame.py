@@ -562,6 +562,7 @@ class H2OFrame:
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
+  def __mod__(self, i): return self._simple_frames_bin_op(i, "mod")
   def __and__(self, i): return self._simple_frames_bin_op(i, "&")
   def __gt__ (self, i): return self._simple_frames_bin_op(i, "g")
   def __sub__(self, i): return self._simple_frames_bin_op(i,"-" )
@@ -576,6 +577,7 @@ class H2OFrame:
   def __lt__ (self, i): return self._simple_frames_bin_op(i,"l" )
 
   # rops
+  def __rmod__(self, i): return self._simple_frames_bin_rop(i,"mod")
   def __radd__(self, i): return self.__add__(i)
   def __rsub__(self, i): return self._simple_frames_bin_rop(i,"-")
   def __rand__(self, i): return self.__and__(i)
@@ -1205,6 +1207,7 @@ class H2OVec:
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))
 
+  def __mod__(self, i):  return self._simple_vec_bin_op(i, "mod")
   def __add__(self, i):  return self._simple_vec_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_vec_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_vec_bin_op(i,"&" )
@@ -1219,6 +1222,7 @@ class H2OVec:
   def __le__ (self, i):  return self._simple_vec_bin_op(i,"L")
   def __lt__ (self, i):  return self._simple_vec_bin_op(i,"l" )
 
+  def __rmod__(self, i): return self._simple_vec_bin_rop(i,"mod")
   def __radd__(self, i): return self.__add__(i)  # commutativity
   def __rsub__(self, i): return self._simple_vec_bin_rop(i,"-")  # not commutative
   def __rand__(self, i): return self.__and__(i)  # commutativity (no short circuiting)
