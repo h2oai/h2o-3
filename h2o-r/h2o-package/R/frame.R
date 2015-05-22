@@ -1240,7 +1240,7 @@ h2o.levels <- function(x, i) {
 #' This call has SIDE EFFECTS and mutates the column in place (does not make a copy).
 #'
 #' @param x A single categorical column.
-#' @param levels A character vector specifiying the new levels. The number of new levels must match the number of old levels.
+#' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
 #' @export
 h2o.setLevels <- function(x, levels) .h2o.nary_frame_op("setDomain", x, levels)
 

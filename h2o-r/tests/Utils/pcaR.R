@@ -12,7 +12,7 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
     #  expect_equal(object[,j], expected[,j], tolerance = tolerance)
     mult <- ifelse(isFlipped[j], -1, 1)
     for(i in 1:nrow(object))
-      expect_equal(mult*object[i,j], expected[i,j], tolerance = tolerance)
+      expect_equal(mult*object[i,j], expected[i,j], tolerance = tolerance, scale = 1)
   }
   return(isFlipped)
 }
@@ -22,7 +22,7 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {
   sdevH2O <- fitH2O@model$std_deviation
   Log.info("Compare Standard Deviations between R and H2O\n") 
   Log.info(paste("H2O Std Dev : ", sdevH2O, "\t\t", "R Std Dev : ", sdevR))
-  expect_equal(fitH2O@model$std_deviation, fitR$sdev, tolerance = tolerance)
+  expect_equal(fitH2O@model$std_deviation, fitR$sdev, tolerance = tolerance, scale = 1)
   
   Log.info("Compare Principal Components between R and H2O\n") 
   Log.info("R Principal Components:"); print(fitR$rotation)

@@ -1,10 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-# Compare within-cluster sum of squared error
 test.pcavanilla.golden <- function(H2Oserver) {
   # Import data: 
-  Log.info("Importing arrests.csv data...") 
+  Log.info("Importing USArrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
   arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   
