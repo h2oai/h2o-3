@@ -3,7 +3,7 @@
  '(jde-global-classpath (quote ("./build/classes" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.17.jar")))
  '(jde-compile-option-target (quote ("1.7")))
  '(jde-run-application-class "org.junit.runner.JUnitCore")
- '(jde-run-working-directory "$DESK/h2o-dev/h2o-core")
+ '(jde-run-working-directory "$DESK/h2o-3/h2o-core")
  '(jde-compile-option-source (quote ("1.7")))
  '(jde-run-option-enable-assertions "Everywhere")
  '(jde-lib-directory-names (quote ("./../lib")))

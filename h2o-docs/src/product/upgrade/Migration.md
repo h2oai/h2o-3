@@ -623,9 +623,6 @@ H2O Classic | H2O 3.0  | Model Type
 `@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
 `@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
 
-<!---
-
-##commenting out until repo is renamed - the information below will change
 
 ##Github Users
 
@@ -643,7 +640,7 @@ This is the easiest way to change your local repo and is recommended for most us
   origin	https://{H2O_User@github.com}/h2oai/h2o.git (fetch)
   origin	https://{H2O_User@github.com}/h2oai/h2o.git (push)
   ```
-0. Enter `git remote set-url origin {H2O_User@github.com}:h2oai/h2o-classic.git`, where `{H2O_User@github.com}` represents the address copied in the previous step. 
+0. Enter `git remote set-url origin {H2O_User@github.com}:h2oai/h2o-2.git`, where `{H2O_User@github.com}` represents the address copied in the previous step. 
 
 **The more complicated way**
 
@@ -657,8 +654,7 @@ This method involves editing the Github config file and should only be attempted
         url = https://H2O_User@github.com/h2oai/h2o.git
         fetch = +refs/heads/*:refs/remotes/origin/*
     ```
-0. In the `url =` line, change `h2o.git` to `h2o-classic.git`. 
+0. In the `url =` line, change `h2o.git` to `h2o-2.git`. 
 0. Save the changes.  
 
-
--->
+The latest version of H2O is stored in the `h2o-3` repository. All previous links to this repo will still work, but if you would like to manually update your Github configuration, follow the instructions above, replacing `h2o-2` with `h2o-3`. 
