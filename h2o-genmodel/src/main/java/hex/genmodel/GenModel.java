@@ -308,12 +308,14 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   // --------------------------------------------------------------------------
   // SharedTree utilities
 
-  // Tree scoring; NaNs always "go left": count as -Float.MAX_VALUE
-  public static double[] SharedTree_clean( double[] data ) {
-    double[] fs = new double[data.length];
-    for( int i=0; i<data.length; i++ )
-      fs[i] = Double.isNaN(data[i]) ? -Double.MAX_VALUE : data[i];
-    return fs;
+  public static class SharedTree {
+    // Tree scoring; NaNs always "go left": count as -Float.MAX_VALUE
+    public static double[] clean( double[] data ) {
+      double[] fs = new double[data.length];
+      for( int i=0; i<data.length; i++ )
+        fs[i] = Double.isNaN(data[i]) ? -Double.MAX_VALUE : data[i];
+      return fs;
+    }
   }
 
   // Build a class distribution from a log scale.
@@ -334,17 +336,21 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Build a class distribution from a log scale; find the top prediction
-  public static void GBM_rescale(double[] preds) {
-    double sum = log_rescale(preds);
-    for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
+  public static class GBM {
+    public static void rescale(double[] preds) {
+      double sum = log_rescale(preds);
+      for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
+    }
   }
 
   // --------------------------------------------------------------------------
   // GLM utilities
-  public static double GLM_identityInv( double x ) { return x; }
-  public static double GLM_logitInv( double x ) { return 1.0 / (Math.exp(-x) + 1.0); }
-  public static double GLM_logInv( double x ) { return Math.exp(x); }
-  public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
-  public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
+  public static class GLM {
+    public static double identityInv( double x ) { return x; }
+    public static double logitInv( double x ) { return 1.0 / (Math.exp(-x) + 1.0); }
+    public static double logInv( double x ) { return Math.exp(x); }
+    public static double inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
+    public static double tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
+  }
 
 }
