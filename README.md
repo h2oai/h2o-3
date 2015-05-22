@@ -265,15 +265,15 @@ To install these packages from within an R session:
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
-##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
-OS X should have with Git installed. To download and update h2o-dev source codes:
+OS X should have with Git installed. To download and update h2o-3 source codes:
 
-    git clone https://github.com/h2oai/h2o-dev
+    git clone https://github.com/h2oai/h2o-3
 
 ##### Step 5. Run the top-level gradle build:
 
-    cd h2o-dev
+    cd h2o-3
     ./gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
@@ -298,19 +298,19 @@ Installation instructions can be found here [R installation](http://cran.r-proje
 
 To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
 
-##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
 If you don't already have a Git client:
 
     sudo apt-get install git
 
-Download and update h2o-dev source codes:
+Download and update h2o-3 source codes:
 
-    git clone https://github.com/h2oai/h2o-dev
+    git clone https://github.com/h2oai/h2o-3
 
 ##### Step 5. Run the top-level gradle build:
 
-    cd h2o-dev
+    cd h2o-3
     ./gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
@@ -352,9 +352,9 @@ For users of Eclipse, generate project files with:
 <a name="BuildingHadoop"></a>
 ## 6. Building H2O on Hadoop
 
-Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-dev.
+Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
 
-To build H2O with Hadoop support yourself, do the following from the top-level h2o-dev directory:
+To build H2O with Hadoop support yourself, do the following from the top-level h2o-3 directory:
 
     (export BUILD_HADOOP=1; ./gradlew build -x test)
     ./gradlew dist
@@ -369,7 +369,7 @@ In the h2o-hadoop directory each hadoop version has a build directory for the dr
 You need to:
 
 1.  Add a new driver directory and assembly directory (each with a build.gradle file) in h2o-hadoop
-2.  Add these new projects to h2o-dev/settings.gradle
+2.  Add these new projects to h2o-3/settings.gradle
 3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
 4.  Add the new hadoop version to wget list in h2o-dist/index.html
 
@@ -442,7 +442,7 @@ Here are links to resources for Sparkling Water:
 
 To generate the REST API documentation, use the following commands: 
 
-    cd ~/h2o-dev
+    cd ~/h2o-3
     cd py
     python ./generate_rest_api_docs.py  # to generate Markdown only
     python ./generate_rest_api_docs.py --generate_html  --github_user GITHUB_USER --github_password GITHUB_PASSWORD # to generate Markdown and HTML
