@@ -18,7 +18,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-import water.util.RandomUtils;
 import water.util.Timer;
 
 import java.util.Arrays;
@@ -179,7 +178,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       new SetWrkTask().doAll(_train);
       // If there was a check point recompute tree_<_> and oob columns based on predictions from previous trees
       // but only if OOB validation is requested.
-      if (_valid==null && _parms._checkpoint) {
+      if (_parms._checkpoint) {
         Timer t = new Timer();
         // Compute oob votes for each output level
         new OOBScorer(_ncols, _nclass, _parms._sample_rate, _model._output._treeKeys).doAll(_train);
@@ -198,7 +197,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Build trees until we hit the limit
       for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, _valid==null, _parms._build_tree_one_node);
+          double training_r2 = doScoringAndSaveModel(false, true, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error
         }
@@ -213,7 +212,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
 
       }
-      doScoringAndSaveModel(true, _valid==null, _parms._build_tree_one_node);
+      doScoringAndSaveModel(true, true, _parms._build_tree_one_node);
     }
 
 
