@@ -26,14 +26,14 @@ While most of this README is oriented towards developers who do their own builds
 ## 2. Open Source Resources
 
 *  Github
-    * <https://github.com/h2oai/h2o-dev>
+    * <https://github.com/h2oai/h2o-3>
 *  JIRA (PUBDEV contains issues for the current H2O Dev project; PUB contains issues for the legacy H2O project)
     * <http://jira.h2o.ai>
 *  h2ostream community forum (this is where to ask a question)
     * Web: <https://groups.google.com/d/forum/h2ostream>
     * Mail to: [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com)
 *  Documentation
-    * Bleeding edge nightly build page: <http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html>
+    * Bleeding edge nightly build page: <http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html>
     * FAQ: <http://h2o.ai/product/faq/>
 *  Download (pre-built packages)
     * <http://h2o.ai/download>
@@ -49,18 +49,18 @@ While most of this README is oriented towards developers who do their own builds
 
 Every nightly build publishes R, Python, Java and Scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
 
-Here is an example snippet of a gradle build file using h2o-dev as a dependency.  Replace x, y, z, and nnnn with valid numbers.
+Here is an example snippet of a gradle build file using h2o-3 as a dependency.  Replace x, y, z, and nnnn with valid numbers.
 
 ```
-// h2o-dev dependency information
+// h2o-3 dependency information
 def h2oBranch = 'master'
 def h2oBuildNumber = 'nnnn'
 def h2oProjectVersion = "x.y.z.${h2oBuildNumber}"
 
 repositories {
-  // h2o-dev dependencies
+  // h2o-3 dependencies
   maven {
-    url "https://s3.amazonaws.com/h2o-release/h2o-dev/${h2oBranch}/${h2oBuildNumber}/maven/repo/"
+    url "https://s3.amazonaws.com/h2o-release/h2o-3/${h2oBranch}/${h2oBuildNumber}/maven/repo/"
   }
 }
 
@@ -72,7 +72,7 @@ dependencies {
 }
 ```
 
-See the latest H2O Dev bleeding edge [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html) for information about installing nightly build artifacts.
+See the latest H2O Dev bleeding edge [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html) for information about installing nightly build artifacts.
 
 See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use java artifacts with gradle.
 
@@ -93,8 +93,8 @@ The assumption is the setup steps described in section 5.2 and beyond have been 
 
 ```
 # Build H2O
-git clone https://github.com/h2oai/h2o-dev.git
-cd h2o-dev
+git clone https://github.com/h2oai/h2o-3.git
+cd h2o-3
 ./gradlew build -x test
 
 # Start H2O
@@ -107,8 +107,8 @@ java -jar build/h2o.jar
 #### Recipe 2:  Fresh clone and build, running tests
 
 ```
-git clone https://github.com/h2oai/h2o-dev.git
-cd h2o-dev
+git clone https://github.com/h2oai/h2o-3.git
+cd h2o-3
 ./gradlew syncSmalldata
 ./gradlew build
 ```
@@ -204,17 +204,17 @@ If Cygwin is already installed, remove the Python packages or ensure that Native
 
 ##### Step 7. Update or validate the Windows PATH variable to include R, Java JDK, Cygwin. 
 
-##### Step 8. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 8. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
 If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
 
-Download and update h2o-dev source codes:
+Download and update h2o-3 source codes:
 
-    git clone https://github.com/h2oai/h2o-dev
+    git clone https://github.com/h2oai/h2o-3
 
 ##### Step 9. Run the top-level gradle build:
 
-    cd h2o-dev
+    cd h2o-3
     gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
@@ -265,15 +265,15 @@ To install these packages from within an R session:
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
-##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
-OS X should have with Git installed. To download and update h2o-dev source codes:
+OS X should have with Git installed. To download and update h2o-3 source codes:
 
-    git clone https://github.com/h2oai/h2o-dev
+    git clone https://github.com/h2oai/h2o-3
 
 ##### Step 5. Run the top-level gradle build:
 
-    cd h2o-dev
+    cd h2o-3
     ./gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
@@ -298,19 +298,19 @@ Installation instructions can be found here [R installation](http://cran.r-proje
 
 To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
 
-##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
 If you don't already have a Git client:
 
     sudo apt-get install git
 
-Download and update h2o-dev source codes:
+Download and update h2o-3 source codes:
 
-    git clone https://github.com/h2oai/h2o-dev
+    git clone https://github.com/h2oai/h2o-3
 
 ##### Step 5. Run the top-level gradle build:
 
-    cd h2o-dev
+    cd h2o-3
     ./gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
@@ -352,9 +352,9 @@ For users of Eclipse, generate project files with:
 <a name="BuildingHadoop"></a>
 ## 6. Building H2O on Hadoop
 
-Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-dev.
+Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
 
-To build H2O with Hadoop support yourself, do the following from the top-level h2o-dev directory:
+To build H2O with Hadoop support yourself, do the following from the top-level h2o-3 directory:
 
     (export BUILD_HADOOP=1; ./gradlew build -x test)
     ./gradlew dist
@@ -369,7 +369,7 @@ In the h2o-hadoop directory each hadoop version has a build directory for the dr
 You need to:
 
 1.  Add a new driver directory and assembly directory (each with a build.gradle file) in h2o-hadoop
-2.  Add these new projects to h2o-dev/settings.gradle
+2.  Add these new projects to h2o-3/settings.gradle
 3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
 4.  Add the new hadoop version to wget list in h2o-dist/index.html
 
@@ -442,7 +442,7 @@ Here are links to resources for Sparkling Water:
 
 To generate the REST API documentation, use the following commands: 
 
-    cd ~/h2o-dev
+    cd ~/h2o-3
     cd py
     python ./generate_rest_api_docs.py  # to generate Markdown only
     python ./generate_rest_api_docs.py --generate_html  --github_user GITHUB_USER --github_password GITHUB_PASSWORD # to generate Markdown and HTML
@@ -451,7 +451,7 @@ The default location for the generated documentation is `build/docs/REST`.
 
 ### Bleeding edge build documentation
 
-Documentation for each bleeding edge nightly build is reachable from the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html).
+Documentation for each bleeding edge nightly build is reachable from the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html).
 
 -----
 -----
