@@ -271,7 +271,7 @@ class H2OConnection(object):
   @staticmethod
   def _tmp_file(type):
     if sys.platform == "windows":
-      usr = re.sub("[^A-Za-z0-9]", "_", os.getenv("USERNMAME"))
+      usr = re.sub("[^A-Za-z0-9]", "_", os.getenv("USERNAME"))
     else:
       usr = re.sub("[^A-Za-z0-9]", "_", os.getenv("USER"))
 
