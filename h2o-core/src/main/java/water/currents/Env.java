@@ -2,7 +2,8 @@ package water.currents;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import water.Futures;
+import water.*;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedInt;
 
@@ -108,17 +109,45 @@ public class Env {
     }
   }
 
+  // Variable lookup
+  Val lookup( String id ) {
+    // Lexically scoped functions first
+
+    // Now the DKV
+    Value value = DKV.get(Key.make(id));
+    if( value != null ) {
+      Vec vec = null;
+      if( value.isFrame() ) {
+        Frame fr = value.get();
+        if( fr.numCols()==1 ) vec = fr.anyVec();
+      } else if( value.isVec() ) {
+        vec = value.get();
+      }
+      if( vec != null ) {
+        //if( vec.length()==1 ) {
+        //  if( vec.isString() ) return new ValStr(vec.atStr(0));
+        //  else if( vec.isNumeric() ) return new ValNum(vec.at(0));
+        //}
+        return new ValVec(vec);
+      }
+      // Only understand Vecs right now
+      throw new IllegalArgumentException("DKV name lookup of "+id+" yielded an instance of type "+value.className()+", but only Vec is supported");
+    }
+
+    // Now the built-ins
+    AST ast = AST.PRIMS.get(id);
+    if( ast != null ) return new ValFun(ast);
+
+    throw new IllegalArgumentException("Name lookup of "+id+" failed");
+  }
 
   /*
    * Utility & Cleanup
    */
 
-  String toString(int i) { return peek(i).toString(); }
-
   @Override public String toString() {
-    int sp = sp();
     String s="{";
-    for( int i=-sp+1; i <= 0; i++ ) s += toString(i)+",";
+    for( int i=0, sp=sp(); i < sp; i++ ) s += peek(-sp+i).toString()+",";
     return s+"}";
   }
 
@@ -141,6 +170,7 @@ public class Env {
 
 abstract class Val {
   abstract int type();
+  Val exec(Env env) { return this; }
   boolean isNum() { return false; }
   boolean isStr() { return false; }
   boolean isVec() { return false; }
@@ -189,4 +219,5 @@ class ValID extends Val {
   @Override public String toString() { return _id.toString(); }
   @Override int type () { return Env.ID; }
   @Override boolean isID() { return true; }
+  Val exec(Env env) { return env.lookup(_id); }
 }

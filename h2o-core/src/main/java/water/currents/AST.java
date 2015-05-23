@@ -1,6 +1,7 @@
 package water.currents;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 abstract class AST {
   final Val[] _vals;
@@ -8,6 +9,8 @@ abstract class AST {
 
   // Subclasses define their execution
   abstract Val exec( Env env );
+
+  abstract public String toString();
 
   // Parse a subtree
   static AST parse( Exec exec ) {
@@ -23,5 +26,10 @@ abstract class AST {
     exec.xpeek(')');
     return new ASTExec(vals.toArray(new Val[vals.size()]));
   }
+
+  static final HashMap<String,AST> PRIMS = new HashMap<>();
+
+  static void init(AST ast ) { PRIMS.put(ast.toString(),ast); }
+
 }
 
