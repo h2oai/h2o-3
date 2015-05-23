@@ -87,7 +87,7 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    return 1 - tm.metric("accuracy", thresholds=thresholds)
+    return [[acc[0],1-acc[1]] for acc in tm.metric("accuracy", thresholds=thresholds)]
 
   def precision(self, thresholds=None, train=False, valid=False):
     """
