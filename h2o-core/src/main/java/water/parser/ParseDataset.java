@@ -144,14 +144,18 @@ public final class ParseDataset extends Job<Frame> {
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       if( _job != null ) {
         if (ex instanceof H2OParseException) {
+          _job._mfpt = null;
           _job.cancel();
           throw (H2OParseException) ex;
         }
-        else _job.failed(ex);
+        else {
+          _job._mfpt = null;
+          _job.failed(ex);
+        }
       }
       return true;
     }
-    @Override public void onCompletion(CountedCompleter caller) { _job.done(); }
+    @Override public void onCompletion(CountedCompleter caller) { _job._mfpt = null; _job.done(); }
   }
 
   private static class EnumMapping extends Iced {

@@ -9,8 +9,9 @@ import water.parser.ParseSetup
 /**
  * Wrapper around H2O Frame to provide more Scala-like API.
  */
-class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[Vec] )
-  extends Frame(key,names,vecs) {
+class H2OFrame private (key: Key[Frame], names: Array[String], vecs: Array[Vec])
+  extends Frame(key, names, vecs)
+  with FrameOps {
   // Row type
   type T = Array[Option[Any]]
 
