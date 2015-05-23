@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 rmVecs <- function(conn) {
   prosPath <- locate("smalldata/logreg/prostate.csv")
 
-  prostate.hex = h2o.importFile(H2Oserver, path = prosPath, key = "prostate.hex")
+  prostate.hex = h2o.importFile(conn, path = prosPath)
 
   if(ncol(prostate.hex) != 9) stop('import done incorrectly')
   newcols <- setdiff(names(prostate.hex), c('ID', 'GLEASON'))
