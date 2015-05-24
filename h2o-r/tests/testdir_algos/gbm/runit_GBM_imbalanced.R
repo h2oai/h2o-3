@@ -5,8 +5,8 @@ test.gbm.imbalanced <- function(conn) {
   covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
 
-  hh_imbalanced<-h2o.gbm(x=c(1:54),y=55,ntrees=10,min_rows=5,learn_rate=0.2,training_frame=covtype,distribution="multinomial",balance_classes=F)
-  hh_balanced  <-h2o.gbm(x=c(1:54),y=55,ntrees=10,min_rows=5,learn_rate=0.2,training_frame=covtype,distribution="multinomial",balance_classes=T)
+  hh_imbalanced<-h2o.gbm(x=c(1:54),y=55,ntrees=10,min_rows=5,learn_rate=0.2,training_frame=covtype,distribution="multinomial",balance_classes=F, seed=0)
+  hh_balanced  <-h2o.gbm(x=c(1:54),y=55,ntrees=10,min_rows=5,learn_rate=0.2,training_frame=covtype,distribution="multinomial",balance_classes=T, seed=0)
   hh_imbalanced_metrics <- h2o.performance(hh_imbalanced)
   hh_balanced_metrics   <- h2o.performance(hh_balanced  )
 
