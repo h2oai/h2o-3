@@ -4,6 +4,7 @@ import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
 import h2o
 from connection import H2OConnection
 from expr import Expr
+from job  import H2OJob
 
 
 class H2OFrame:
@@ -963,6 +964,30 @@ class H2OFrame:
     vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
     h2o.removeFrameShallow(tmp_key)
     return H2OFrame(vecs=vecs)
+
+  def insert_missing_values(self, fraction = 0.1, seed=None):
+    """
+    Inserting Missing Values to an H2OFrame
+    *This is primarily used for testing*. Randomly replaces a user-specified fraction of entries in a H2O dataset with
+    missing values.
+    WARNING: This will modify the original dataset. Unless this is intended, this function should only be called on a
+    subset of the original.
+
+    :param fraction: A number between 0 and 1 indicating the fraction of entries to replace with missing.
+    :param seed: A random number used to select which entries to replace with missing values. Default of seed = -1 will
+    automatically generate a seed in H2O.
+    :return: H2OFrame with missing values inserted
+    """
+    kwargs = {}
+    data_key = self.send_frame()
+    kwargs['dataset'] = data_key
+    kwargs['fraction'] = fraction
+    if seed is not None: kwargs['seed'] = seed
+
+    job = {}
+    job['job'] = H2OConnection.post_json("MissingInserter", **kwargs)
+    H2OJob(job, job_type=("Insert Missing Values")).poll()
+    return self
 
   # generic reducers (min, max, sum, var)
   def min(self):

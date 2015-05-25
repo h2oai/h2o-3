@@ -77,13 +77,13 @@ To configure H2O on a multi-node cluster:
  The output will resemble the following: 
 
 	```
-	04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   1. Open a terminal and run 'ssh -L 55555:localhost:54321 H2O-DevUser@###.###.#.##'
+	04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   1. Open a terminal and run 'ssh -L 55555:localhost:54321 H2O-3User@###.###.#.##'
 	04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   2. Point your browser to http://localhost:55555
-	04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Log dir: '/tmp/h2o-H2O-DevUser/h2ologs'
-	04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Cur dir: '/Users/H2O-DevUser/h2o-dev'
+	04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Log dir: '/tmp/h2o-H2O-3User/h2ologs'
+	04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Cur dir: '/Users/H2O-3User/h2o-3'
 	04-20 16:14:00.459 192.168.1.70:54321    2754   main      INFO: HDFS subsystem successfully initialized
 	04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: S3 subsystem successfully initialized
-	04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: Flow dir: '/Users/H2O-DevUser/h2oflows'
+	04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: Flow dir: '/Users/H2O-3User/h2oflows'
 	04-20 16:14:00.475 192.168.1.70:54321    2754   main      INFO: Cloud of size 1 formed [/192.168.1.70:54321]
 	```
 
@@ -168,7 +168,7 @@ Running H2O on a multi-node cluster allows you to use more memory for large-scal
 	05-11 16:40:46.342 172.16.2.39:54322     34242  main      INFO:   1. Open a terminal and run 'ssh -L 55555:localhost:54322 H2OUser@172.16.2.39'
 	05-11 16:40:46.342 172.16.2.39:54322     34242  main      INFO:   2. Point your browser to http://localhost:55555
 	05-11 16:40:46.542 172.16.2.39:54322     34242  main      INFO: Log dir: '/tmp/h2o-H2OUser/h2ologs'
-	05-11 16:40:46.543 172.16.2.39:54322     34242  main      INFO: Cur dir: '/Users/H2OUser/h2o-dev'
+	05-11 16:40:46.543 172.16.2.39:54322     34242  main      INFO: Cur dir: '/Users/H2OUser/h2o-3'
 	05-11 16:40:46.564 172.16.2.39:54322     34242  main      INFO: HDFS subsystem successfully initialized
 	05-11 16:40:46.565 172.16.2.39:54322     34242  main      INFO: S3 subsystem successfully initialized
 	05-11 16:40:46.565 172.16.2.39:54322     34242  main      INFO: Flow dir: '/Users/H2OUser/h2oflows'
