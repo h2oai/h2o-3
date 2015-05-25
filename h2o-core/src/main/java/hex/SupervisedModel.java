@@ -98,6 +98,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
       _modelClassDist = _priorClassDist;
     }
 
+    public int responseIdx    () { return _names.length-1;}
+    public int offsetIdx      () { return _hasOffset?_names.length-2:-1;}
+    public int weightsIdx     () { return _hasWeights ?_names.length-(_hasOffset?3:2):-1;}
+
+
     /** @return Returns number of input features */
     @Override public int nfeatures() { return _names.length - 1; }
 

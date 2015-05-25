@@ -39,9 +39,9 @@ public class DataInfo extends Keyed {
   public boolean _intercept = true;
   public final boolean _offset;
   public final boolean _weights;
-  public int responseChunkId(){return _cats + _nums;}
-  public int offsetChunkId(){return _cats + _nums + _responses + (_weights ?1:0);}
-  public int weightChunkId(){return _cats + _nums + _responses;}
+  public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
+  public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
+  public int weightChunkId(){return _cats + _nums;}
   public final boolean _skipMissing;
   public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
   final int [][] _catLvls;

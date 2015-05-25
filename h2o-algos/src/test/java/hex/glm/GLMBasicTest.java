@@ -14,9 +14,7 @@ import water.fvec.*;
 import water.parser.ParseDataset;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class GLMBasicTest extends TestUtil {
   static Frame _prostateTrain; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
-
+  static Frame _abcd; // tiny corner case dataset
   @Test
   public void testOffset() {
     GLM job = null;
@@ -174,7 +172,7 @@ public class GLMBasicTest extends TestUtil {
           adata = mmTest._auc;
           assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
-          assertEquals(((ModelMetricsBinomialGLM)model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           // test the actual predictions
           Vec preds = scoreTest.vec("p1");
           for(int i = 0; i < pred_test.length; ++i)
@@ -189,16 +187,43 @@ public class GLMBasicTest extends TestUtil {
     } finally {
       if (fTrain != null) fTrain.delete();
       if(fTest != null)fTest.delete();
-
     }
   }
 
+  // test various problematic inputs to make sure fron-tend (ignoring/moving cols) works.
+
+  @Test
+  public void testCornerCases() {
+//    new GLM2("GLM testing constant offset on a toy dataset.", Key.make(), modelKey, new GLM2.Source(fr, fr.vec("D"), false, false, fr.vec("E")), Family.gaussian).setRegularization(new double[]{0}, new double[]{0}).doInit().fork().get();
+//    just test it does not blow up and the model is sane
+//    model = DKV.get(modelKey).get();
+//    assertEquals(model.coefficients().get("E"), 1, 0); // should be exactly 1
+    GLMParameters parms = new GLMParameters(Family.gaussian);
+    parms._response_column = "D";
+    parms._offset_column = "E";
+    parms._train = _abcd._key;
+    parms._intercept = false;
+    parms._standardize = false;
+    GLMModel m = null;
+    GLM job = null;
+    try {
+      job = new GLM(Key.make("glm_abcd"), "glm test abcd", parms);
+      m = job.trainModel().get();
+      System.out.println(m.coefficients());
+//      assertEquals(m.coefficients().get("E"), 1, 0); // should be exactly 1
+    } finally {
+      if(m != null)
+        m.delete();
+      if(job != null)
+        job.remove();
+    }
+
+  }
 
   @Test
   public void testNoIntercept() {
     GLM job = null;
     GLMModel model = null;
-
 //    Call:  glm(formula = CAPSULE ~ . - 1 - RACE - DCAPS, family = binomial,
 //      data = train)
 //
@@ -290,6 +315,12 @@ public class GLMBasicTest extends TestUtil {
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("prostate_cat_test.hex");
     _prostateTest = ParseDataset.parse(outputKey, nfs._key);
+
+    f = find_test_file_static("smalldata/glm_test/abcd.csv");
+    assert f.exists();
+    nfs = NFSFileVec.make(f);
+    outputKey = Key.make("abcd.hex");
+    _abcd = ParseDataset.parse(outputKey, nfs._key);
   }
 
   @AfterClass
@@ -298,5 +329,7 @@ public class GLMBasicTest extends TestUtil {
       _prostateTrain.delete();
     if(_prostateTest != null)
       _prostateTest.delete();
+    if(_abcd != null)
+      _abcd.delete();
   }
 }

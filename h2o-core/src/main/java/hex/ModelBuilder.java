@@ -203,6 +203,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   }
 
+
+  // put special vecs at the end
+  // return number of special vecs
+  protected int reorderVecs() {
+    if(_parms._weights_column != null) {
+      Vec w = _train.remove(_parms._weights_column);
+      if(w == null)
+        error("_weights_column","Weights column '" + _parms._weights_column  + "' not found in the training frame");
+      else {// add offset to the end
+        _weights = w;
+        _weights_key = w._key;
+        _train.add(_parms._weights_column, w);
+        return 1;
+      }
+    }
+    return 0;
+  }
+
+  protected void ignoreConstColumns(int npredictors, boolean expensive){
+    // Drop all-constant and all-bad columns.
+    if( _parms._ignore_const_cols)
+      new FilterCols(npredictors) {
+        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
+      }.doIt(_train,"Dropping constant columns: ",expensive);
+  }
   /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
@@ -250,11 +275,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
-    // Drop all-constant and all-bad columns.
-    if( _parms._ignore_const_cols)
-      new FilterCols() { 
-        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
-      }.doIt(_train,"Dropping constant columns: ",expensive);
+
 
     /*
     We now do this only through Rapids.  There should be an easy way to do it through the Java API for Sparkling Water users.
@@ -268,24 +289,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
-    new FilterCols() { 
-      @Override protected boolean filter(Vec v) { return v.isString() || v.isUUID(); }
-    }.doIt(_train,"Dropping String and UUID columns: ",expensive);
-
+    ignoreConstColumns(reorderVecs(),expensive);
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
 
-    if(_parms._weights_column != null) {
-      Vec w = _train.remove(_parms._weights_column);
-      if(w == null)
-        error("_offset","Weights column '" + _parms._weights_column  + "' not found in the training frame");
-      else {// add offset to the end
-        _weights = w;
-        _weights_key = w._key;
-        _train.add(_parms._weights_column, w);
-      }
-    }
+
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
     Frame va = _parms.valid();  // User-given validation set
@@ -332,10 +341,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
   abstract class FilterCols {
+    final int _specialVecs; // special vecs to skip at the end
+    public FilterCols(int n) {_specialVecs = n;}
+
     abstract protected boolean filter(Vec v);
+
     void doIt( Frame f, String msg, boolean expensive ) {
       boolean any=false;
-      for( int i = 0; i < f.vecs().length; i++ ) {
+      for( int i = 0; i < f.vecs().length - _specialVecs; i++ ) {
         if( filter(f.vecs()[i]) ) {
           if( any ) msg += ", "; // Log dropped cols
           any = true;

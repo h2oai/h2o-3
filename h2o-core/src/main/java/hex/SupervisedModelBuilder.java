@@ -37,6 +37,31 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
 
+
+  @Override
+  protected int reorderVecs() {
+    int res = super.reorderVecs();
+    if(_parms._offset_column != null) {
+      Vec o = _train.remove(_parms._offset_column);
+      if(o == null)
+        error("_offset_column","Offset column '" + _parms._offset_column  + "' not found in the training frame");
+      else { // add offset to the end
+        _offset = o;
+        _offset_key = o._key;
+        _train.add(_parms._offset_column, o);
+        ++res;
+      }
+    }
+    Vec r = _train.remove(_parms._response_column);
+    if(r == null)
+      error("_response_column","Response column '" + _parms._response_column  + "' not found in the training frame");
+    else {
+      _train.add(_parms._response_column, r);
+      ++res;
+    }
+    return res;
+  }
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -114,25 +139,6 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       }
       if (_nclass <= 2) hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
       if (_nclass <= 2) hide("_max_confusion_matrix_size", "Only for multi-class classification problems.");
-    }
-    if(_parms._offset_column != null) {
-      Vec off = _train.remove(_parms._offset_column);
-      if(off == null)
-        error("_offset","Offset column '" + _parms._offset_column  + "' not found in the training frame");
-      else {// add offset to the end
-        _offset = off;
-        _offset_key = off._key;
-        _train.add(_parms._offset_column, off);
-      }
-      if(_valid != null) {
-        off = _valid.remove(_parms._offset_column);
-        if(off == null) {
-          error("_offset", "Offset column '" + _parms._offset_column + "' not found in the validation frame");
-          error("_validation_frame", "Offset column '" + _parms._offset_column + "' not found in the validation frame");
-        } else
-          // add offset to the end
-          _valid.add(_parms._offset_column,off);
-      }
     }
   }    
 }

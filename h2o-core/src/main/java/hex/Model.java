@@ -253,9 +253,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     // Vec layout is  [c1,c2,...,cn,w?,r,o?], cn are predcitor cols, r is reponse, w and o are weights and offset, both are optional
-    public int responseIdx    () { return _names.length-(_hasOffset ?2:1);}
-    public int weightsIdx     () { return _hasWeights ?_names.length-2 -(_hasOffset ?1:0):-1;}
-    public int offsetIdx      () { return _hasOffset ?_names.length-1:-1;}
+    public int responseIdx    () { return -1;}
+    public int weightsIdx     () { return _hasWeights ?_names.length-1:-1;}
+    public int offsetIdx      () { return -1;}
 
     /** The names of the levels for an enum (categorical) response column. */
     public String[] classNames() { assert isSupervised(); return _domains[_domains.length-1]; }
@@ -580,7 +580,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int n = chks.length;
       Chunk offsetChunk = null, weightsChunk = null;
       if(_output.hasOffset())
-        offsetChunk = chks[chks.length-1]; // offset chunk is always the last, can not use output offsetChunkIdx call here cause response and/or weights might be missing
+        offsetChunk = chks[_output.offsetIdx()]; // offset chunk is always the last, can not use output offsetChunkIdx call here cause response and/or weights might be missing
       if(_hasWeights && _computeMetrics)
         weightsChunk = chks[_output.weightsIdx()];
       boolean hasWeightsOrOffset = offsetChunk != null || weightsChunk != null;
@@ -632,7 +632,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score0(tmp,preds);
   }
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=_output._names.length;
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp, preds, weight, offset);
