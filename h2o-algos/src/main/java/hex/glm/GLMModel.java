@@ -691,20 +691,21 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
     double eta = 0.0;
     final double [] b = beta();
-    for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) {
+    final DataInfo dinfo = _output._dinfo;
+    for(int i = 0; i < dinfo._cats; ++i) {
       int ival = (int) data[i];
       if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
-      ival += dinfo()._catOffsets[i];
+      ival += dinfo._catOffsets[i];
       if (!_parms._use_all_factor_levels)
         --ival;
       // can get values out of bounds for cat levels not seen in training
-      if (ival >= 0 && ival < dinfo()._catOffsets[i + 1])
+      if (ival >= dinfo._catOffsets[i] && ival < dinfo._catOffsets[i + 1])
         eta += b[ival];
     }
-    int noff = dinfo().numStart() - dinfo()._cats;
-    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*data[i];
-    eta += b[b.length-1]; // reduce intercept
+    int noff = dinfo.numStart();
+    for(int i = 0; i < dinfo._nums; ++i)
+      eta += b[noff+i]*data[dinfo._cats + i];
+    eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta + o);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction

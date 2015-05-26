@@ -92,7 +92,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0);
+    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0);
     assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
@@ -463,6 +463,8 @@ public class DataInfo extends Keyed {
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
+    if(_weights)
+      row.weight = chunks[weightChunkId()].atd(rid);
     return row;
   }
   public Row newDenseRow(){

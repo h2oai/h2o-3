@@ -127,7 +127,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
   @Override public Frame score(Frame fr, String destination_key) {
     Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true);   // Adapt
+    adaptTestForTrain(adaptFr, true, false);   // Adapt
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;

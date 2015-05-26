@@ -12,6 +12,7 @@ import water.TestUtil;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.util.MathUtils;
 
 import java.io.File;
 import java.util.HashMap;
@@ -463,6 +464,155 @@ public class GLMBasicTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testWeights(){
+    System.out.println("got " + _prostateTrain.anyVec().nChunks() + " chunks");
+    GLM job = null;
+    GLMModel model = null;
+
+    // random observation weights, integers in 0 - 9 range
+    double [] weights = new double[] {
+      0, 6, 5, 4, 4, 8, 2, 4, 9, 5,
+      2, 0, 0, 4, 0, 0, 6, 3, 6, 5,
+      5, 5, 6, 0, 9, 9, 8, 6, 6, 5,
+      6, 1, 0, 6, 8, 6, 9, 2, 8, 0,
+      3, 0, 2, 3, 0, 2, 5, 0, 0, 3,
+      7, 4, 8, 4, 1, 9, 3, 7, 1, 3,
+      8, 6, 9, 5, 5, 1, 9, 5, 2, 1,
+      0, 6, 4, 0, 5, 3, 1, 2, 4, 0,
+      7, 9, 6, 8, 0, 2, 3, 7, 5, 8,
+      3, 4, 7, 8, 1, 2, 5, 7, 3, 7,
+      1, 1, 5, 7, 4, 9, 2, 6, 3, 5,
+      4, 9, 8, 1, 8, 5, 3, 0, 4, 5,
+      1, 2, 2, 7, 8, 3, 4, 9, 0, 1,
+      3, 9, 8, 7, 0, 8, 2, 7, 1, 9,
+      0, 7, 7, 5, 2, 9, 7, 6, 4, 3,
+      4, 6, 9, 1, 5, 0, 7, 9, 4, 1,
+      6, 8, 8, 5, 4, 2, 5, 9, 8, 1,
+      9, 2, 9, 2, 3, 0, 6, 7, 3, 2,
+      3, 0, 9, 5, 1, 8, 0, 2, 8, 6,
+      9, 5, 1, 2, 3, 1, 3, 5, 0, 7,
+      4, 0, 5, 5, 7, 9, 3, 0, 0, 0,
+      1, 5, 3, 2, 8, 9, 9, 1, 6, 2,
+      2, 0, 5, 5, 6, 2, 8, 8, 9, 8,
+      5, 0, 1, 5, 3, 0, 2, 5, 4, 0,
+      6, 5, 4, 5, 9, 7, 5, 6, 2, 2,
+      6, 2, 5, 1, 5, 9, 0, 3, 0, 2,
+      7, 0, 4, 7, 7, 9, 3, 7, 9, 7,
+      9, 6, 2, 6, 2, 2, 9, 0, 9, 8,
+      1, 2, 6, 3, 4, 1, 2, 2, 3, 0
+    };
+
+
+
+    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
+    Vec.Writer vw = offsetVecTrain.open();
+    for(int i = 0; i < weights.length; ++i)
+      vw.set(i,weights[i]);
+    vw.close();
+
+//    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
+//    vw = offsetVecTest.open();
+//    for(int i = 0; i < weights.length; ++i)
+//      vw.set(i,weights[i]);
+//    vw.close();
+    Key fKeyTrain = Key.make("prostate_with_weights_train");
+//    Key fKeyTest  = Key.make("prostate_with_offset_test");
+    Frame fTrain = new Frame(fKeyTrain, new String[]{"weights"}, new Vec[]{offsetVecTrain});
+    fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
+    DKV.put(fKeyTrain,fTrain);
+//    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+//    fTest.add(_prostateTest.names(),_prostateTest.vecs());
+//    DKV.put(fKeyTest,fTest);
+//    Call:  glm(formula = CAPSULE ~ . - ID, family = binomial, data = train,
+//      weights = w)
+//
+//    Coefficients:
+//    (Intercept)          AGE       RACER2       RACER3       DPROSb       DPROSc
+//    -6.019527    -0.027350    -0.424333    -0.869188     1.359856     1.745655
+//    DPROSd       DCAPSb          PSA          VOL      GLEASON
+//    1.517155     0.664479     0.034541    -0.005819     0.947644
+//
+//    Degrees of Freedom: 251 Total (i.e. Null);  241 Residual
+//    Null Deviance:	    1673
+//    Residual Deviance: 1195 	AIC: 1217
+    String [] cfs1 = new String [] { "Intercept",  "AGE",     "RACER2",  "RACER3", "DPROSb", "DPROSc", "DPROSd", "DCAPSb", "PSA",     "VOL",    "GLEASON"};
+    double [] vals = new double [] { -6.019527,    -0.027350, -0.424333, -0.869188, 1.359856, 1.745655, 1.517155, 0.664479, 0.034541, -0.005819, 0.947644};
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._response_column = "CAPSULE";
+    params._ignored_columns = new String[]{"ID"};
+    params._train = fKeyTrain;
+//    params._valid = fKeyTest;
+    params._weights_column = "weights";
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._standardize = false;
+    params._objective_epsilon = 0;
+    params._gradient_epsilon = 1e-6;
+    params._beta_epsilon = 1e-6;
+    params._max_iterations = 100; // not expected to reach max iterations here
+    try {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+        Frame scoreTrain = null, scoreTest = null;
+        try {
+          params._solver = s;
+          System.out.println("SOLVER = " + s);
+          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+          model = job.trainModel().get();
+          HashMap<String, Double> coefs = model.coefficients();
+          System.out.println("coefs = " + coefs);
+          System.out.println(model._output._training_metrics);
+//          for (int i = 0; i < cfs1.length; ++i)
+//            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+          assertEquals(1673, GLMTest.nullDeviance(model),1);
+          assertEquals(1195, GLMTest.residualDeviance(model),1);
+          assertEquals(251,   GLMTest.nullDOF(model), 0);
+          assertEquals(241,   GLMTest.resDOF(model), 0);
+          assertEquals(1217, GLMTest.aic(model), 1);
+//          assertEquals(76.8525, GLMTest.residualDevianceTest(model),1e-4);
+          // test scoring
+          try {
+            scoreTrain = model.score(_prostateTrain);
+            assertTrue("shoul've thrown IAE", false);
+          } catch (IllegalArgumentException iae) {
+            assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
+          }
+          hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
+          hex.AUC2 adata = mmTrain._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+          scoreTrain = model.score(fTrain);
+          mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
+          adata = mmTrain._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+//          scoreTest = model.score(fTest);
+//          ModelMetricsBinomialGLM mmTest = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTest);
+//          adata = mmTest._auc;
+//          assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
+//          assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
+//          assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
+//          // test the actual predictions
+//          Vec preds = scoreTest.vec("p1");
+//          for(int i = 0; i < pred_test.length; ++i)
+//            assertEquals(pred_test[i],preds.at(i),1e-6);
+        } finally {
+          if (model != null) model.delete();
+          if (scoreTrain != null) scoreTrain.delete();
+          if (scoreTest != null) scoreTest.delete();
+          if (job != null) job.remove();
+        }
+      }
+    } finally {
+      if (fTrain != null) fTrain.delete();
+//      if(fTest != null)fTest.delete();
+    }
+
+
+
+  }
 
   @BeforeClass
   public static void setup() {

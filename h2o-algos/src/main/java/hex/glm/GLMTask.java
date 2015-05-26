@@ -31,14 +31,18 @@ public abstract class GLMTask  {
  static class YMUTask extends MRTask<YMUTask> {
    double _ymu;
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
-   long   _nobs;
+   long _nobs;
+   double _wsum;
    final Vec _fVec; // boolean row filter
    final int _responseId;
+
+   final int _weightId;
 
    public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
      super(cmp);
      _fVec = mVec;
      _responseId = dinfo.responseChunkId();
+     _weightId = dinfo.weightChunkId();
    }
 
    @Override public void setupLocal(){
@@ -51,9 +55,16 @@ public abstract class GLMTask  {
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
          skip[r] |= chunks[i].isNA(r);
      Chunk response = chunks[_responseId];
+     Chunk weight = _weightId >= 0?chunks[_weightId]:new C0DChunk(chunks[0]._len,1);
      for(int r = 0; r < response._len; ++r) {
        if(skip[r]) continue;
-       double d = response.atd(r);
+       double w = weight.atd(r);
+       if(w == 0) {
+         skip[r] = true;
+         continue;
+       }
+       _wsum += w;
+       double d = w*response.atd(r);
        assert !Double.isNaN(d);
        assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
        _ymu += d;
@@ -61,13 +72,13 @@ public abstract class GLMTask  {
          _yMin = d;
        if(d > _yMax)
          _yMax = d;
-       ++_nobs;
+       _nobs++;
      }
      if(_fVec != null)
        DKV.put(_fVec.chunkKey(chunks[0].cidx()), new CBSChunk(skip));
    }
    @Override public void postGlobal() {
-     _ymu /= _nobs;
+     _ymu /= _wsum;
      Futures fs = new Futures();
      _fVec.postWrite(fs); // we just overwrote the vec
      fs.blockForPending();
@@ -138,6 +149,7 @@ public abstract class GLMTask  {
         for (int r = 0; r < eta.length; ++r)
           Arrays.fill(eta[r], offsetChunk.atd(r));
       }
+      Chunk weightsChunk = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(chks[0]._len,1);
       double [] beta = _beta;
       double [] pk = _direction;
 
@@ -196,19 +208,20 @@ public abstract class GLMTask  {
         }
       }
       _likelihoods = MemoryManager.malloc8d(_nSteps);
-      for(int r = 0; r < chks[0]._len; ++r){
+      for (int r = 0; r < chks[0]._len; ++r) {
+        double w = weightsChunk.atd(r);
         if(skip[r] || responseChunk.isNA(r))
           continue;
         _nobs++;
         double y = responseChunk.atd(r);
         double yy = -1 + 2*y;
-        for(int i = 0; i < _nSteps; ++i) {
+        for (int i = 0; i < _nSteps; ++i) {
           double e = eta[r][i] + off[i];
-          if(_params._family == Family.binomial && _useFasterMetrics) {
-            _likelihoods[i] += Math.log(1 + Math.exp(-yy * e));
+          if (_params._family == Family.binomial && _useFasterMetrics) {
+            _likelihoods[i] += w*Math.log(1 + Math.exp(-yy * e));
           } else {
             double mu = _params.linkInv(e);
-            _likelihoods[i] += _params.likelihood(y,mu);
+            _likelihoods[i] += w*_params.likelihood(y,mu);
           }
         }
       }
@@ -257,12 +270,12 @@ public abstract class GLMTask  {
       for(int rid = 0; rid < chks[0]._len; ++rid) {
         if(skp[rid]) continue;
         row = _dinfo.extractDenseRow(chks, rid, row);
-        if(row.bad) continue;
+        if(row.bad || row.weight == 0) continue;
         _nobs++;
         double eta = row.innerProduct(b) + row.offset;
         double mu = _params.linkInv(eta);
         _val.add(row.response(0), mu, row.weight, row.offset);
-        _likelihood += _params.likelihood(row.response(0), mu);
+        _likelihood += row.weight*_params.likelihood(row.response(0), mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
@@ -348,8 +361,10 @@ public abstract class GLMTask  {
       for(int r = 0; r < chks[0]._len; ++r){
         if(skp[r] || responseChunk.isNA(r))
           continue;
-        _nobs++;
         double w = weightChunk.atd(r);
+        if(w == 0)
+          continue;
+        _nobs++;
         double y = responseChunk.atd(r);
         double mu = _params.linkInv(eta[r]);
         _val.add(y, mu, w, offsetChunk.atd(r));
@@ -517,9 +532,12 @@ public abstract class GLMTask  {
         offsetChunk = chks[nxs];
       }
       Chunk responseChunk = chks[nxs];
+      Chunk weightsChunk = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(chks[0]._len,1);
+
       double eta_sum = 0;
       // compute the predicted mean and variance and gradient for each row
       for(int r = 0; r < chks[0]._len; ++r){
+        double w = weightsChunk.atd(r);
         if(skp[r] || responseChunk.isNA(r))
           continue;
         ++_nobs;
@@ -528,14 +546,14 @@ public abstract class GLMTask  {
         switch(_params._family) {
           case gaussian:
             double diff = e - responseChunk.atd(r);
-            _likelihood += diff*diff;
+            _likelihood += w*diff*diff;
             eta[r] = diff;
             break;
           case binomial:
             double y = -1 + 2*responseChunk.atd(r);
             double d = 1 + Math.exp(-y * e);
-            _likelihood += Math.log(d);
-            eta[r] = -y * (1 - 1.0 / d);
+            _likelihood += w*Math.log(d);
+            eta[r] = w * -y * (1 - 1.0 / d);
             break;
           default:
             throw H2O.unimpl();
@@ -715,7 +733,7 @@ public abstract class GLMTask  {
     }
 
     protected final void processRow(Row r) {
-      if(r.bad) return;
+      if(r.bad || r.weight == 0) return;
       ++_nobs;
       final double y = r.response(0);
       assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
@@ -724,7 +742,7 @@ public abstract class GLMTask  {
       final int numStart = _dinfo.numStart();
       double d = 1;
       if( _params._family == Family.gaussian && _params._link == Link.identity){
-        w = 1;
+        w = r.weight;
         z = y - r.offset;
         mu = 0;
         eta = mu;
@@ -734,11 +752,11 @@ public abstract class GLMTask  {
         var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
         d = _params.linkDeriv(mu);
         z = eta + (y-mu)*d;
-        w = 1.0/(var*d*d);
+        w = r.weight/(var*d*d);
       }
       if(_validate)
         _val.add(y, mu, r.weight, r.offset);
-      _likelihood += _params.likelihood(y,mu);
+      _likelihood += r.weight*_params.likelihood(y,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       double wz = w * z;
       _yy += wz * z;

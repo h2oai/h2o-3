@@ -302,7 +302,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (va != null)
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(_train._names,_parms._weights_column, _parms._offset_column, null,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
+      String[] msgs = Model.adaptTestForTrain(_train._names,_parms._weights_column, _parms._offset_column, null,_train.domains(),_valid,_parms.missingColumnsType(),expensive, true);
       if( expensive ) {
         for( String s : msgs ) {
           Log.info(s);

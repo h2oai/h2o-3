@@ -188,7 +188,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
-    public int nfeatures() { return _names.length; }
+    public int nfeatures() { return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0);}
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
@@ -369,8 +369,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Throws {@code IllegalArgumentException} if no columns are in common, or
    *  if any factor column has no levels in common.
    */
-  public String[] adaptTestForTrain( Frame test, boolean expensive ) {
-    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive);
+  public String[] adaptTestForTrain( Frame test, boolean expensive, boolean computeMetrics) {
+    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics);
   }
   /**
    *  @param names Training column names
@@ -381,7 +381,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  @param domains Training column levels
    *  @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain( String[] names, String weights, String offset, String response, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain( String[] names, String weights, String offset, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -407,6 +407,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean skipCol = ((isResponse || isWeights) && vec == null);
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test dataset is missing offset vector ('" + offset + "'");
+      if(vec == null && isWeights && computeMetrics)
+        throw new IllegalArgumentException("Test dataset is missing weights vector ('" + offset + "'");
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null && !skipCol) {
         String str = "Validation set is missing training column "+names[i];
@@ -482,16 +484,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr,true);   // Adapt
+    boolean computeMetrics = adaptFr.find(_output.responseName()) != -1;
+    adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     Frame output = scoreImpl(fr,adaptFr, destination_key); // Score
-
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
-    if( _output.isClassifier() && adaptFr.find(_output.responseName()) != -1) {
+    if(_output.isClassifier() && computeMetrics) {
 //      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
@@ -502,7 +504,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
       }
-
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
@@ -581,7 +582,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       int n = chks.length;
-      Chunk offsetChunk = null, weightsChunk = null;
+      Chunk offsetChunk = null, weightsChunk = null, responseChunk = null;
       if(_output.hasOffset())
         offsetChunk = chks[_output.offsetIdx()]; // offset chunk is always the last, can not use output offsetChunkIdx call here cause response and/or weights might be missing
       if(_hasWeights && _computeMetrics)
@@ -595,20 +596,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         chks = Arrays.copyOf(chks, n);
       }
       double [] tmp = new double[_output.nfeatures()];
-      _mb = Model.this.makeMetricBuilder(_domain);
+      float [] actual = null;
+      if (_computeMetrics) {
+        _mb = Model.this.makeMetricBuilder(_domain);
+        if (Model.this instanceof SupervisedModel) {
+          actual = new float[1];
+          responseChunk = chks[_output.responseIdx()];
+        } else
+          actual = new float[chks.length];
+      }
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        double [] p = hasWeightsOrOffset?score0(chks, weightsChunk.atd(row), offsetChunk.atd(row), row, tmp, preds):score0(chks, row, tmp, preds);
+        double [] p = hasWeightsOrOffset
+          ?score0(chks, weightsChunk.atd(row), offsetChunk.atd(row), row, tmp, preds)
+          :score0(chks, row, tmp, preds);
         if (_computeMetrics) {
-          float[] actual;
           if(Model.this instanceof SupervisedModel) {
-            // assuming only 1 response, need to be revisited if we ever have multiple responses
-            actual = new float[]{(float)chks[_output.responseIdx()].atd(row)};
+            actual[0] = (float)responseChunk.atd(row);
           } else {
-            actual = new float[chks.length];
-            for (int c = 0; c < chks.length - (_hasWeights?1:0); c++)
-              actual[c] = (float) chks[c].atd(row);
+            for(int i = 0; i < actual.length; ++i)
+              actual[i] = (float)chks[i].atd(row);
           }
           if(hasWeightsOrOffset){
             _mb.perRow(preds, actual, weightsChunk.atd(row), offsetChunk.atd(row), Model.this);
@@ -619,9 +627,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           cpreds[c].addNum(p[c]);
       }
     }
-    @Override public void reduce( BigScore bs ) { _mb.reduce(bs._mb); }
+    @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
 
-    @Override protected void postGlobal() { _mb.postGlobal(); }
+    @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
@@ -801,8 +809,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
     assert data.numRows()==model_predictions.numRows();
     final Frame fr = new Frame(data);
+    boolean computeMetrics = data.find(_output.responseName()) != -1;
     try {
-      String[] warns = adaptTestForTrain(fr,true);
+      String[] warns = adaptTestForTrain(fr,true, computeMetrics);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
       
