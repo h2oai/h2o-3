@@ -3,13 +3,28 @@ package water.currents;
 import water.H2O;
 import water.util.SB;
 
+import java.util.ArrayList;
+
 // Apply a function
 class ASTExec extends AST {
-  protected ASTExec( Val[] vals ) { super(vals); }
+  final AST[] _asts;
+  protected ASTExec( Exec e ) { 
+    e.xpeek('(');
+    AST ast = e.parse();
+    if( !ast instanceof ASTExec && !ast instanceof ASTId )
+      e.throwErr("Expected a function but found a "+ast.getClass());
+    ArrayList<AST> asts = new ArrayList<>();
+    asts.add(0,ast);
+    while( e.skipWS() != ')' )
+      asts.add(e.ast());
+    e.xpeek(')');
+    _asts = asts.toArray(new AST[asts.size()]);
+  }
+
   @Override public String toString() { 
     SB sb = new SB().p('(');
-    for( Val val : _vals )
-      sb.p(val.toString()).p(' ');
+    for( Ast ast : _asts )
+      sb.p(ast.toString()).p(' ');
     return sb.p(')').toString();
   }
   // Default execution pattern for most things: evaluate all arguments and push

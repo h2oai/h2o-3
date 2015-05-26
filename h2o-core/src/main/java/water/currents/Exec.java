@@ -10,11 +10,14 @@ import water.currents.Env.*;
  * Trees have a Lisp-like structure with the following "reserved" special
  * characters:
  *
- *     '('   signals the parser to find a nested expression
- *     '#'   signals the parser to parse a double: attached_token
- *     '%'   signals the parser to parse an ID: attached_token
- *     '"'   signals the parser to parse a String (double quote): attached_token
- *     "'"   signals the parser to parse a String (single quote): attached_token
+ *     '('   a nested function application expression ')
+ *     '{'   a nested function definition  expression '}'
+ *     '#'   a double: attached_token
+ *     '%'   an ID: attached_token
+ *     '"'   a String (double quote): attached_token
+ *     "'"   a String (single quote): attached_token
+ *     digits: a double
+ *     letters or other specials: an ID
  *
  * In the above, attached_token signals that the special char has extra chars
  * that must be parsed separately.  These are variable names (in the case of
@@ -33,13 +36,30 @@ public class Exec {
   public static Val exec( String str ) throws IllegalArgumentException {
     cluster_init();
     // Parse
-    AST ast = AST.parse(new Exec(str));
+    AST ast = new Exec(str).parse();
     // Execute
     Val val = ast.exec(new Env());
     // Results
     return val;
   }
 
+
+  // Parse an expression
+  AST parse( ) {
+    switch( skipWS() ) {
+    case '(': return new ASTExec(this); // function application
+    case '{': throw H2O.unimpl();    // function definition
+    case '#': _x++;                     // Skip before double, FALL THRU
+    case '0':  case '1':  case '2':  case '3':  case '4':
+    case '5':  case '6':  case '7':  case '8':  case '9':
+      return new ASTNum(this);
+    case '\"': return new ASTStr(this,'\"');
+    case '\'': return new ASTStr(this,'\'');
+    case ' ': throw new IllegalASTException("Expected an expression but ran out of text");
+    case '%': _x++;             // Skip before ID, FALL THRU
+    default: return new ASTId(this);
+    }    
+  }
 
   char peek() { return (char)_str.charAt(_x); } // peek ahead
   // Peek, and throw if not found an expected character

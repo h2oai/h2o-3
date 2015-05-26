@@ -1,35 +1,34 @@
 package water.currents;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 abstract class AST {
-  final Val[] _vals;
-  protected AST( Val[] vals ) { _vals = vals; }
-
   // Subclasses define their execution
   abstract Val exec( Env env );
-
   abstract public String toString();
 
-  // Parse a subtree
-  static AST parse( Exec exec ) {
-    exec.skipWS();
-    exec.xpeek('(');
-    Val val = exec.val();
-    if( !val.isFun() && !val.isID() )
-      exec.throwErr("Expected a function but found a "+val.getClass());
-    ArrayList<Val> vals = new ArrayList<>();
-    vals.add(0,val);
-    while( exec.skipWS() != ')' )
-      vals.add(exec.val());
-    exec.xpeek(')');
-    return new ASTExec(vals.toArray(new Val[vals.size()]));
-  }
-
+  // Built-in primitives, done after other namespace lookups happen
   static final HashMap<String,AST> PRIMS = new HashMap<>();
-
   static void init(AST ast ) { PRIMS.put(ast.toString(),ast); }
-
 }
 
+class ASTNum extends AST {
+  final ValNum _d;
+  ASTNum( Exec e ) { _d = new ValNum(Double.valueOf(e.token())); }
+  @Override public String toString() { return _d.toString(); }
+  @Override Val exec( Env env ) { return _d; }
+}
+
+class ASTStr extends AST {
+  final ValStr _str;
+  ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
+  @Override public String toString() { return _str.toString(); }
+  @Override Val exec(Env env) { return _str; }
+}
+
+class ASTId extends AST {
+  final String _id;
+  ASTId(Exec e) { _id = e.token(); }
+  @Override public String toString() { return _id.toString(); }
+  @Override Val exec(Env env) { return env.lookup(_id); }
+}

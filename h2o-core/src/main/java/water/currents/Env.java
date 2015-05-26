@@ -30,8 +30,7 @@ public class Env {
   final static int STR   =2;    // string scalar
   final static int VEC   =3;    // Vec, not a Frame
   final static int FUN   =4;    // Function
-  final static int ID    =5;    // ID, not yet looked up
-  final static String[] TYPE_NAMES = new String[] { "null", "num", "str", "vec", "fun", "id" };
+  final static String[] TYPE_NAMES = new String[] { "null", "num", "str", "vec", "fun" };
 
   /**
    * The RefCnt API
@@ -175,13 +174,11 @@ abstract class Val {
   boolean isStr() { return false; }
   boolean isVec() { return false; }
   boolean isFun() { return false; }
-  boolean isID () { return false; }
 }
 
 class ValNum extends Val {
   final double _d;
   ValNum(double d) { _d = d; }
-  ValNum(Exec e) { e._x++; _d = Double.valueOf(e.token()); }
   @Override public String toString() { return ""+_d; }
   @Override int type () { return Env.NUM; }
   @Override boolean isNum() { return true; }
@@ -190,7 +187,6 @@ class ValNum extends Val {
 class ValStr extends Val {
   final String _s;
   ValStr(String s) { _s = s; }
-  ValStr(Exec e, char c) { _s = e.match(c); }
   @Override public String toString() { return _s; }
   @Override int type () { return Env.STR; }
   @Override boolean isStr() { return true; }
@@ -207,17 +203,7 @@ class ValVec extends Val {
 class ValFun extends Val {
   final AST _ast;
   ValFun(AST ast) { _ast = ast; }
-  ValFun(Exec e) { _ast = AST.parse(e); }
   @Override public String toString() { return _ast.toString(); }
   @Override int type () { return Env.FUN; }
   @Override boolean isFun() { return true; }
-}
-
-class ValID extends Val {
-  final String _id;
-  ValID(Exec e) { _id = e.token(); }
-  @Override public String toString() { return _id.toString(); }
-  @Override int type () { return Env.ID; }
-  @Override boolean isID() { return true; }
-  Val exec(Env env) { return env.lookup(_id); }
 }
