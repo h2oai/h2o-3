@@ -217,7 +217,172 @@ public class GLMBasicTest extends TestUtil {
       if(job != null)
         job.remove();
     }
+  }
 
+  @Test
+  public void testNoInterceptWithOffset() {
+    GLM job = null;
+    GLMModel model = null;
+
+    double [] offset_train = new double[] {
+      -0.39771185,+1.20479170,-0.16374109,-0.97885903,-1.42996530,+0.83474893,+0.83474893,-0.74488827,+0.83474893,+0.86851236,
+      +1.41589611,+1.41589611,-1.42996530,-0.39771185,-2.01111248,-0.39771185,-0.16374109,+0.62364452,-0.39771185,+0.60262749,
+      -0.06143251,-1.42996530,-0.06143251,-0.06143251,+0.14967191,-0.06143251,-0.39771185,+0.14967191,+1.20479170,-0.39771185,
+      -0.16374109,-0.06143251,-0.06143251,-1.42996530,-0.39771185,-0.39771185,-0.64257969,+1.65774729,-0.97885903,-0.39771185,
+      -0.39771185,-0.39771185,-1.42996530,+1.41589611,-0.06143251,-0.06143251,-0.39771185,-0.06143251,-0.06143251,-0.39771185,
+      -0.06143251,+0.14967191,-0.39771185,-1.42996530,-0.39771185,-0.64257969,-0.39771185,-0.06143251,-0.06143251,-0.06143251,
+      -1.42996530,-2.01111248,-0.06143251,-0.39771185,-0.39771185,-1.42996530,-0.39771185,-1.42996530,-0.06143251,+1.41589611,
+      +0.14967191,-1.42996530,-1.42996530,-0.06143251,-1.42996530,-1.42996530,-0.06143251,-1.42996530,-0.06143251,-0.39771185,
+      -0.06143251,-1.42996530,-0.06143251,-0.39771185,-1.42996530,-0.06143251,-0.06143251,-0.06143251,-1.42996530,-0.39771185,
+      -1.42996530,-0.43147527,-0.39771185,-0.39771185,-0.39771185,-1.42996530,-1.42996530,-0.43147527,-0.39771185,-0.39771185,
+      -0.39771185,-0.39771185,-1.42996530,-1.42996530,-1.42996530,-0.39771185,+0.14967191,+1.41589611,-1.42996530,+1.41589611,
+      -1.42996530,+1.41589611,-0.06143251,+0.14967191,-0.39771185,-0.97885903,-1.42996530,-0.39771185,-0.39771185,-0.39771185,
+      -0.39771185,-1.42996530,-0.39771185,-0.97885903,-0.06143251,-0.06143251,+0.86851236,-0.39771185,-0.39771185,-0.06143251,
+      -0.39771185,-0.39771185,-0.06143251,+0.14967191,-1.42996530,-1.42996530,-0.39771185,+1.20479170,-1.42996530,-0.39771185,
+      -0.06143251,-1.42996530,-0.97885903,+0.14967191,+0.14967191,-1.42996530,-1.42996530,-0.39771185,-0.06143251,-0.43147527,
+      -0.06143251,-0.39771185,-1.42996530,-0.06143251,-0.39771185,-0.39771185,-1.42996530,-0.39771185,-0.39771185,-0.06143251,
+      -0.39771185,-0.39771185,+0.14967191,-0.06143251,+1.41589611,-0.06143251,-0.39771185,-0.39771185,-0.06143251,-1.42996530,
+      -0.06143251,-1.42996530,-0.39771185,-0.64257969,-0.06143251,+1.20479170,-0.43147527,-0.97885903,-0.39771185,-0.39771185,
+      -0.39771185,+0.14967191,-2.01111248,-1.42996530,-0.06143251,+0.83474893,-1.42996530,-1.42996530,-2.01111248,-1.42996530,
+      -0.06143251,+0.86851236,+0.05524374,-0.39771185,-0.39771185,-0.39771185,+1.41589611,-1.42996530,-0.39771185,-1.42996530,
+      -0.39771185,-0.39771185,-0.06143251,+0.14967191,-1.42996530,-0.39771185,-1.42996530,-1.42996530,-0.39771185,-0.39771185,
+      -0.06143251,-1.42996530,-0.97885903,-1.42996530,-0.39771185,-0.06143251,-0.39771185,-0.06143251,-1.42996530,-1.42996530,
+      -0.06143251,-1.42996530,-0.39771185,+0.14967191,-0.06143251,-1.42996530,-1.42996530,+0.14967191,-0.39771185,-0.39771185,
+      -1.42996530,-0.06143251,-0.06143251,-1.42996530,-0.06143251,-1.42996530,+0.14967191,+1.20479170,-1.42996530,-0.06143251,
+      -0.39771185,-0.39771185,-0.06143251,+0.14967191,-0.06143251,-1.42996530,-1.42996530,-1.42996530,-0.39771185,-0.39771185,
+      -0.39771185,+0.86851236,-0.06143251,-0.97885903,-0.06143251,-0.64257969,+0.14967191,+0.86851236,-0.39771185,-0.39771185,
+      -0.39771185,-0.64257969,-1.42996530,-0.06143251,-0.39771185,-0.39771185,-1.42996530,-1.42996530,-0.06143251,+0.14967191,
+      -0.06143251,+0.86851236,-0.97885903,-1.42996530,-1.42996530,-1.42996530,-1.42996530,+0.86851236,+0.14967191,-1.42996530,
+      -0.97885903,-1.42996530,-1.42996530,-0.06143251,+0.14967191,-1.42996530,-0.64257969,-2.01111248,-0.97885903,-0.39771185
+    };
+
+    double [] offset_test = new double [] {
+      +1.65774729,-0.97700971,-0.97700971,-0.97700971,+0.05524374,+0.05524374,+0.05524374,+0.05524374,+0.39152308,+0.39152308,
+      +0.39152308,+0.05524374,+0.05524374,+0.05524374,+0.39152308,-0.97700971,+0.05524374,+1.32146795,+0.39152308,+1.65774729,
+      -0.97700971,+1.65774729,+0.39152308,+0.39152308,+1.65774729,+0.60262749,+0.05524374,+0.05524374,+0.05524374,+0.60262749,
+      +0.05524374,-0.97700971,-0.97885903,+0.05524374,-2.01111248,-0.97700971,+0.05524374,+0.39152308,+0.05524374,+0.60262749,
+      +0.60262749,+0.39152308,+0.60262749,-0.97700971,+0.39152308,+1.65774729,+0.39152308,+0.39152308,+0.05524374,+1.86885170,
+      +0.05524374,-0.97700971,+0.60262749,-0.97700971,+0.60262749,-0.97700971,+0.39152308,-0.97700971,-0.43147527,+1.32146795,
+      +0.05524374,+0.05524374,+0.39152308,+0.39152308,+0.05524374,+0.39152308,-0.97700971,+0.05524374,+0.39152308,+0.05524374,
+      +0.60262749,+1.86885170,+0.05524374,+0.05524374,+1.86885170,+0.60262749,-0.64257969,-0.97700971,+0.60262749,+0.39152308,
+      -0.97700971,-0.97700971,+0.05524374,-0.97700971,-0.97700971,+0.05524374,+0.05524374,+0.60262749,+0.05524374,+0.05524374
+    };
+
+    double [] pred_test = new double[] {
+      +0.88475366,+0.23100271,+0.40966315,+0.08957188,+0.47333302,+0.44622513,+0.56450046,+0.74271010,+0.45129280,+0.72359111,
+      +0.67918401,+0.19882802,+0.42330391,+0.62734862,+0.38055506,+0.47286476,+0.40180469,+0.97907526,+0.61428344,+0.97109299,
+      +0.30489181,+0.81303545,+0.36130639,+0.65434899,+0.98863675,+0.58301866,+0.37950467,+0.53679205,+0.30636941,+0.70320372,
+      +0.45303278,+0.35011042,+0.78165074,+0.44915160,+0.09008065,+0.16789833,+0.45748862,+0.59328118,+0.75002334,+0.35170410,
+      +0.57550279,+0.42038237,+0.76349569,+0.28883753,+0.84824847,+0.72396381,+0.56782477,+0.54078190,+0.51169047,+0.80828547,
+      +0.52001699,+0.26202346,+0.81014557,+0.29986016,+0.62011569,+0.33034872,+0.62284802,+0.28303618,+0.38470707,+0.96444405,
+      +0.36155179,+0.46368503,+0.65192144,+0.43597041,+0.30906461,+0.69259415,+0.21819579,+0.49998652,+0.57162728,+0.44255738,
+      +0.80820564,+0.90616782,+0.49377901,+0.34235025,+0.99621673,+0.65768252,+0.43909050,+0.23205826,+0.71124897,+0.42908417,
+      +0.47880901,+0.29185818,+0.42648317,+0.01247279,+0.18372518,+0.27281535,+0.63807876,+0.44563524,+0.32821696,+0.43636099
+    };
+
+    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
+    Vec.Writer vw = offsetVecTrain.open();
+    for(int i = 0; i < offset_train.length; ++i)
+      vw.set(i,offset_train[i]);
+    vw.close();
+
+    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
+    vw = offsetVecTest.open();
+    for(int i = 0; i < offset_test.length; ++i)
+      vw.set(i,offset_test[i]);
+    vw.close();
+
+    Key fKeyTrain = Key.make("prostate_with_offset_train");
+    Key fKeyTest  = Key.make("prostate_with_offset_test");
+    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset"}, new Vec[]{offsetVecTrain});
+    fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
+    DKV.put(fKeyTrain,fTrain);
+    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+    fTest.add(_prostateTest.names(),_prostateTest.vecs());
+    DKV.put(fKeyTest,fTest);
+//    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,
+//      data = train, offset = offset_train)
+//
+//    Coefficients:
+//     AGE        PSA        VOL        GLEASON
+//    -0.054102   0.027517  -0.008937   0.516363
+//
+//    Degrees of Freedom: 290 Total (i.e. Null);  286 Residual
+//    Null Deviance:	    355.7
+//    Residual Deviance: 313 	AIC: 321
+    String [] cfs1 = new String [] { "Intercept",  "AGE"   ,  "PSA",     "VOL",    "GLEASON"};
+    double [] vals = new double [] {  0,           -0.054102,  0.027517, -0.008937, 0.516363};
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._response_column = "CAPSULE";
+    params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
+    params._train = fKeyTrain;
+    params._valid = fKeyTest;
+    params._offset_column = "offset";
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._standardize = false;
+    params._objective_epsilon = 0;
+    params._gradient_epsilon = 1e-6;
+    params._max_iterations = 100; // not expected to reach max iterations here
+    params._intercept = false;
+    params._beta_epsilon = 1e-6;
+    try {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+        Frame scoreTrain = null, scoreTest = null;
+        try {
+          params._solver = s;
+          System.out.println("SOLVER = " + s);
+          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+          model = job.trainModel().get();
+          HashMap<String, Double> coefs = model.coefficients();
+          System.out.println("coefs = " + coefs);
+          for (int i = 0; i < cfs1.length; ++i)
+            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+          assertEquals(355.7, GLMTest.nullDeviance(model), 1e-1);
+          assertEquals(313.0, GLMTest.residualDeviance(model), 1e-1);
+          assertEquals(290,   GLMTest.nullDOF(model), 0);
+          assertEquals(286,   GLMTest.resDOF(model), 0);
+          assertEquals(321,   GLMTest.aic(model), 1e-1);
+          assertEquals(88.72363, GLMTest.residualDevianceTest(model),1e-4);
+          // test scoring
+          try {
+            scoreTrain = model.score(_prostateTrain);
+            assertTrue("shoul've thrown IAE", false);
+          } catch (IllegalArgumentException iae) {
+            assertTrue(iae.getMessage().contains("Test dataset is missing offset vector"));
+          }
+          hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
+          hex.AUC2 adata = mmTrain._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+          scoreTrain = model.score(fTrain);
+          mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
+          adata = mmTrain._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+          scoreTest = model.score(fTest);
+          ModelMetricsBinomialGLM mmTest = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTest);
+          adata = mmTest._auc;
+          assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
+          // test the actual predictions
+          Vec preds = scoreTest.vec("p1");
+          for(int i = 0; i < pred_test.length; ++i)
+            assertEquals(pred_test[i],preds.at(i),1e-6);
+        } finally {
+          if (model != null) model.delete();
+          if (scoreTrain != null) scoreTrain.delete();
+          if (scoreTest != null) scoreTest.delete();
+          if (job != null) job.remove();
+        }
+      }
+    } finally {
+      if (fTrain != null) fTrain.delete();
+      if(fTest != null)fTest.delete();
+    }
   }
 
   @Test
