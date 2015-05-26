@@ -321,7 +321,7 @@ class Expr(object):
     return Expr("median", self).eager()
 
   def __del__(self):
-    if self.removed_by_frame_del(): return
+    if self.removed_by_frame_del(): return   # see H2OFrame.__del__
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return
     assert self.is_remote(), "Data wasn't remote. Hrm..."

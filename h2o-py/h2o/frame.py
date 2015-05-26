@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -15,9 +15,20 @@ class H2OFrame:
     """
 
     # this is essentially a hack to short-circuit the Expr.__del__ method when doing /DKV/<frame> remove
-    for v in self:
-      v._expr._removed_by_frame_del=True
-    h2o.remove(self)
+    vecs=[]
+    for v in self._vecs:
+      cnt = sys.getrefcount(v)
+      # magical count of 4 for each vec if it will NOT be deleted
+      # 1 for __del__ call, 1 for __del__ local dict
+      # 1 for _vecs
+      # 1 for parent
+      if cnt>=4 or v._expr.is_pending(): continue  # leave vec alone!
+      else:               # collect the vecs to be deleted in bulk.
+        v._expr._removed_by_frame_del=True
+        vecs+=[v]
+
+    if len(vecs)==0: return
+    h2o.remove(H2OFrame(vecs=vecs))
 
   def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
     """
@@ -172,7 +183,11 @@ class H2OFrame:
 
     :return: An iterator over the H2OFrame
     """
+    import traceback
     if self._vecs is None or self._vecs == []:
+      for line in traceback.format_stack():
+        print line.strip()
+      print "PADASDAS"
       raise ValueError("Frame Removed")
     return (vec for vec in self._vecs.__iter__() if vec is not None)
 
