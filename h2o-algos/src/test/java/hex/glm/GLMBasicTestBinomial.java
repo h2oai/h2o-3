@@ -7,6 +7,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.*;
@@ -181,13 +182,20 @@ public class GLMBasicTestBinomial extends TestUtil {
         } finally {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
-          if (scoreTest != null) scoreTest.delete();
+
+          if (scoreTest != null)  scoreTest.delete();
           if (job != null) job.remove();
         }
       }
     } finally {
-      if (fTrain != null) fTrain.delete();
-      if(fTest != null)fTest.delete();
+      if (fTrain != null) {
+        fTrain.remove("offset").remove();
+        DKV.remove(fTrain._key);
+      }
+      if(fTest != null){
+        fTest.remove("offset").remove();
+        DKV.remove(fTest._key);
+      }
     }
   }
 
@@ -211,7 +219,6 @@ public class GLMBasicTestBinomial extends TestUtil {
       job = new GLM(Key.make("glm_abcd"), "glm test abcd", parms);
       m = job.trainModel().get();
       System.out.println(m.coefficients());
-//      assertEquals(m.coefficients().get("E"), 1, 0); // should be exactly 1
     } finally {
       if(m != null)
         m.delete();
@@ -224,7 +231,6 @@ public class GLMBasicTestBinomial extends TestUtil {
   public void testNoInterceptWithOffset() {
     GLM job = null;
     GLMModel model = null;
-
     double [] offset_train = new double[] {
       -0.39771185,+1.20479170,-0.16374109,-0.97885903,-1.42996530,+0.83474893,+0.83474893,-0.74488827,+0.83474893,+0.86851236,
       +1.41589611,+1.41589611,-1.42996530,-0.39771185,-2.01111248,-0.39771185,-0.16374109,+0.62364452,-0.39771185,+0.60262749,
@@ -381,8 +387,14 @@ public class GLMBasicTestBinomial extends TestUtil {
         }
       }
     } finally {
-      if (fTrain != null) fTrain.delete();
-      if(fTest != null)fTest.delete();
+      if (fTrain != null) {
+        fTrain.remove("offset").remove();
+        DKV.remove(fTrain._key);
+      }
+      if(fTest != null) {
+        fTest.remove("offset").remove();
+        DKV.remove(fTest._key);
+      }
     }
   }
 
@@ -600,13 +612,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //            assertEquals(pred_test[i],preds.at(i),1e-6);
         } finally {
           if (model != null) model.delete();
-          if (scoreTrain != null) scoreTrain.delete();
-          if (scoreTest != null) scoreTest.delete();
+          if (scoreTrain != null)
+            scoreTrain.delete();
+          if (scoreTest != null)
+            scoreTest.delete();
+
           if (job != null) job.remove();
         }
       }
     } finally {
-      if (fTrain != null) fTrain.delete();
+      if (fTrain != null) {
+        fTrain.remove("weights").remove();
+        DKV.remove(fTrain._key);
+      }
 //      if(fTest != null)fTest.delete();
     }
 

@@ -42,7 +42,7 @@ public abstract class GLMTask  {
      super(cmp);
      _fVec = mVec;
      _responseId = dinfo.responseChunkId();
-     _weightId = dinfo.weightChunkId();
+     _weightId = dinfo._weights?dinfo.weightChunkId():-1;
    }
 
    @Override public void setupLocal(){
@@ -55,7 +55,7 @@ public abstract class GLMTask  {
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
          skip[r] |= chunks[i].isNA(r);
      Chunk response = chunks[_responseId];
-     Chunk weight = _weightId >= 0?chunks[_weightId]:new C0DChunk(chunks[0]._len,1);
+     Chunk weight = _weightId >= 0?chunks[_weightId]:new C0DChunk(1,chunks[0]._len);
      for(int r = 0; r < response._len; ++r) {
        if(skip[r]) continue;
        double w = weight.atd(r);
@@ -149,7 +149,7 @@ public abstract class GLMTask  {
         for (int r = 0; r < eta.length; ++r)
           Arrays.fill(eta[r], offsetChunk.atd(r));
       }
-      Chunk weightsChunk = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(chks[0]._len,1);
+      Chunk weightsChunk = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,chks[0]._len);
       double [] beta = _beta;
       double [] pk = _direction;
 
@@ -244,6 +244,7 @@ public abstract class GLMTask  {
     boolean _validate;
     Vec _rowFilter;
     long _nobs;
+    double _wsum;
     double _ymu;
 
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, Vec rowFilter){this(dinfo,params, lambda, beta,reg,rowFilter, null);}
@@ -272,6 +273,7 @@ public abstract class GLMTask  {
         row = _dinfo.extractDenseRow(chks, rid, row);
         if(row.bad || row.weight == 0) continue;
         _nobs++;
+        _wsum += row.weight;
         double eta = row.innerProduct(b) + row.offset;
         double mu = _params.linkInv(eta);
         _val.add(row.response(0), mu, row.weight, row.offset);
@@ -365,6 +367,7 @@ public abstract class GLMTask  {
         if(w == 0)
           continue;
         _nobs++;
+        _wsum += w;
         double y = responseChunk.atd(r);
         double mu = _params.linkInv(eta[r]);
         _val.add(y, mu, w, offsetChunk.atd(r));
@@ -454,6 +457,7 @@ public abstract class GLMTask  {
     public void reduce(GLMGradientTask grt) {
       _likelihood += grt._likelihood;
       _nobs += grt._nobs;
+      _wsum += grt._wsum;
       _val.reduce(grt._val);
       ArrayUtils.add(_gradient, grt._gradient);
     }
@@ -532,7 +536,7 @@ public abstract class GLMTask  {
         offsetChunk = chks[nxs];
       }
       Chunk responseChunk = chks[nxs];
-      Chunk weightsChunk = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(chks[0]._len,1);
+      Chunk weightsChunk = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,chks[0]._len);
 
       double eta_sum = 0;
       // compute the predicted mean and variance and gradient for each row
