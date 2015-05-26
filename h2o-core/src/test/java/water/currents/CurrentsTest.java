@@ -94,10 +94,10 @@ public class CurrentsTest extends TestUtil {
       Val val = Exec.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
-      if( val instanceof ValVec ) {
-        Vec vec= ((ValVec)val)._vec;
-        System.out.println(vec.at(0));
-        vec.remove();
+      if( val instanceof ValFrame ) {
+        Frame fr2= ((ValFrame)val)._fr;
+        System.out.println(fr2.vec(0));
+        fr2.remove();
       } else if( val instanceof ValNum ) {
         System.out.println(((ValNum)val)._d);
       }

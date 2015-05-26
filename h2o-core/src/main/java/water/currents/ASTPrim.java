@@ -11,7 +11,7 @@ abstract class ASTPrim extends AST {
   @Override Val exec( Env env ) { return _fun; }
 }
 
-// Subclasses of this class auto-widen between NUM and VEC
+// Subclasses of this class auto-widen between NUM and FRM
 abstract class ASTBinOp extends ASTPrim {
   @Override Val apply( Env env, AST asts[] ) {
     try (Env.StackHelp stk = env.stk()) {
@@ -27,58 +27,29 @@ abstract class ASTBinOp extends ASTPrim {
       final double dlf = ((ValNum)left)._d;
       
       switch( rite.type() ) {
-      case Env.NUM:         // scalar op scalar
-        final double drt = ((ValNum)rite)._d;
-        return new ValNum(op(dlf,drt));
-
-      case Env.VEC:         // scalar op Vec
-        Vec vrt = ((ValVec)rite)._vec;
-        return new ValVec(new MRTask() {
-            @Override public void map( Chunk crt, NewChunk cres ) {
-              for( int i=0; i<crt._len; i++ )
-                cres.addNum(op(dlf,crt.atd(i)));
-            }
-          }.doAll(1,vrt).outputFrame().vec(0));
-
-      case Env.STR: throw H2O.unimpl();
+      case Env.NUM:  return new ValNum( op (dlf,((ValNum  )rite)._d ));
+      case Env.FRM:  return scalar_op_frame(dlf,((ValFrame)rite)._fr) ;
+      case Env.STR:  throw H2O.unimpl();
       default: throw H2O.fail();
       }
 
-    case Env.VEC: 
-      Vec vlf = ((ValVec)left)._vec;
+    case Env.FRM: 
+      Frame flf = ((ValFrame)left)._fr;
 
       switch( rite.type() ) {
-      case Env.NUM:         // Vec op scalar
-        if( !vlf.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
-        final double drt = ((ValNum)rite)._d;
-        return new ValVec(new MRTask() {
-            @Override public void map( Chunk clf, NewChunk cres ) {
-              for( int i=0; i<clf._len; i++ )
-                cres.addNum(op(clf.atd(i),drt));
-            }
-          }.doAll(1,vlf).outputFrame().vec(0));
-
-      case Env.VEC:         // Vec op Vec
-        Vec vrt = ((ValVec)rite)._vec;
-        if( vlf.get_type() != vrt.get_type() ) 
-          throw new IllegalArgumentException("Cannot mix types "+vlf.get_type_str()+" and "+vrt.get_type_str());
-        return new ValVec(new MRTask() {
-            @Override public void map( Chunk clf, Chunk crt, NewChunk cres ) {
-              for( int i=0; i<clf._len; i++ )
-                cres.addNum(op(clf.atd(i),crt.atd(i)));
-            }
-          }.doAll(1,vlf,vrt).outputFrame().vec(0));
-
-      case Env.STR:
-        if( !vlf.isString() ) throw new IllegalArgumentException("Cannot mix String and non-String types");
-        final ValueString srt = new ValueString(((ValStr)rite)._str);
-        return new ValVec(new MRTask() {
-            @Override public void map( Chunk clf, NewChunk cres ) {
-              ValueString vstr = new ValueString();
-              for( int i=0; i<clf._len; i++ )
-                cres.addNum(str_op(clf.atStr(vstr,i),srt));
-            }
-          }.doAll(1,vlf).outputFrame().vec(0));
+      case Env.NUM:  return frame_op_scalar(flf, ((ValNum)rite)._d  );
+      case Env.STR:  return frame_op_scalar(flf, ((ValStr)rite)._str);
+      case Env.FRM:         // Frame op Frame
+        throw H2O.unimpl();
+        //Frame frt = ((ValFrame)rite)._fr;
+        //if( vlf.get_type() != vrt.get_type() ) 
+        //  throw new IllegalArgumentException("Cannot mix types "+vlf.get_type_str()+" and "+vrt.get_type_str());
+        //return new ValFrame(new MRTask() {
+        //    @Override public void map( Chunk clf, Chunk crt, NewChunk cres ) {
+        //      for( int i=0; i<clf._len; i++ )
+        //        cres.addNum(op(clf.atd(i),crt.atd(i)));
+        //    }
+        //  }.doAll(1,flf,frt).outputFrame());
 
       default: throw H2O.fail();
       }
@@ -89,10 +60,54 @@ abstract class ASTBinOp extends ASTPrim {
   }
   abstract double op( double l, double r );
   double str_op( ValueString l, ValueString r ) { throw H2O.fail(); }
+
+  private ValFrame scalar_op_frame( final double d, Frame fr ) {
+    for( Vec vec : fr.vecs() )
+      if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
+    return new ValFrame(new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk cres ) {
+          for( int c=0; c<chks.length; c++ ) {
+            Chunk chk = chks[c];
+            for( int i=0; i<chk._len; i++ )
+              cres.addNum(op(d,chk.atd(i)));
+          }
+        }
+      }.doAll(1,fr).outputFrame());
+  }
+
+  private ValFrame frame_op_scalar( Frame fr, final double d ) {
+    for( Vec vec : fr.vecs() )
+      if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
+    return new ValFrame(new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk cres ) {
+          for( int c=0; c<chks.length; c++ ) {
+            Chunk chk = chks[c];
+            for( int i=0; i<chk._len; i++ )
+              cres.addNum(op(chk.atd(i),d));
+          }
+        }
+      }.doAll(1,fr).outputFrame());
+  }
+
+  private ValFrame frame_op_scalar( Frame fr, String str ) {
+    for( Vec vec : fr.vecs() )
+      if( !vec.isString() ) throw new IllegalArgumentException("Cannot mix String and non-String types");
+    final ValueString srt = new ValueString(str);
+    return new ValFrame(new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk cres ) {
+          ValueString vstr = new ValueString();
+          for( int c=0; c<chks.length; c++ ) {
+            Chunk chk = chks[c];
+            for( int i=0; i<chk._len; i++ )
+              cres.addNum(str_op(chk.atStr(vstr,i),srt));
+          }
+        }
+      }.doAll(1,fr).outputFrame());
+  }
 }
 
 // ----------------------------------------------------------------------------
-// Expressions that auto-widen between NUM and VEC
+// Expressions that auto-widen between NUM and FRM
 class ASTAnd  extends ASTBinOp { String str() { return "&" ; } double op( double l, double r ) { return ASTLAnd.and_op(l,r); } }
 class ASTDiv  extends ASTBinOp { String str() { return "/" ; } double op( double l, double r ) { return l/ r; } }
 class ASTMul  extends ASTBinOp { String str() { return "*" ; } double op( double l, double r ) { return l* r; } }

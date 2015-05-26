@@ -14,41 +14,42 @@ import water.fvec.Vec;
  *  stack and is not explicit.
  *
  *  For efficiency, reference counting is employed to recycle objects already
- *  in use rather than creating copies upon copies (a la R).  When a Vec is
+ *  in use rather than creating copies upon copies (a la R).  When a Frame is
  *  `pushed` on to the stack, its reference count is incremented by 1.  When a
- *  Vec is `popped` off of the stack, its reference count is decremented by 1.
- *  When the reference count is 0, the Env instance will dispose of the object.
- *  All objects live and die by the Env's that create them.  That means that
- *  any object not created by an Env instance shalt not be DKV.removed.
+ *  Frame is `popped` off of the stack, its reference count is decremented by
+ *  1.  When the reference count is 0, the Env instance will dispose of the
+ *  object.  All objects live and die by the Env's that create them.  That
+ *  means that any object not created by an Env instance shalt not be
+ *  DKV.removed.
  *
  *  Therefore, the Env class is a stack of values + an API for reference counting.
  */
 public class Env {
 
   // Things on the execution stack
-  final static int NUM   =1;    // scalar
-  final static int STR   =2;    // string scalar
-  final static int VEC   =3;    // Vec, not a Frame
-  final static int FUN   =4;    // Function
+  final static int NUM = 1;     // scalar
+  final static int STR = 2;     // string scalar
+  final static int FRM = 3;     // Frame, not a Vec.  Can be a Frame of 1 Vec
+  final static int FUN = 4;     // Function
 
   /**
    * The refcnt API.  Looks like a Stack, because lifetimes are stack-like, but
    * just counts refs by unary stack-slot counting.
    */
-  private final ArrayList<Vec> _refcnt = new ArrayList<>();
-  private final HashSet<Vec> _globals = new HashSet<>();
+  private final ArrayList<Frame> _refcnt = new ArrayList<>();
+  private final HashSet<Frame> _globals = new HashSet<>();
   public int sp() { return _refcnt.size(); }
-  public Vec peek(int x) { return _refcnt.get(sp()+x);  }
+  public Frame peek(int x) { return _refcnt.get(sp()+x);  }
 
-  // Deletes dead Vecs & forces good stack cleanliness at opcode end.  
+  // Deletes dead Frames & forces good stack cleanliness at opcode end.  
   // One per Opcode implementation.
   StackHelp stk() { return new StackHelp(); }
   class StackHelp implements AutoCloseable {
     final int _sp = sp();
     // Push & track
     public Val track(Val v) {
-      if( v instanceof ValVec )
-        _refcnt.add(sp(),((ValVec)v)._vec);
+      if( v instanceof ValFrame )
+        _refcnt.add(sp(),((ValFrame)v)._fr);
       return v; 
     }
     // Pop-all and remove dead
@@ -56,14 +57,17 @@ public class Env {
       Futures fs = null;
       int i, sp = sp();
       while( sp > _sp ) {
-        Vec vec = _refcnt.remove(--sp);
-        if( _globals.contains(vec) ) continue;
-        for( i=0; i<sp; i++ )
-          if( _refcnt.get(i)==vec )
-            break;
-        if( i==sp ) {
-          if( fs == null ) fs = new Futures();
-          vec.remove(fs);
+        Frame fr = _refcnt.remove(--sp);
+        if( _globals.contains(fr) ) continue;
+        assert fr._key==null;   // Not in the DKV
+        for( Vec vec : fr.vecs() ) {
+          for( i=0; i<_sp; i++ )
+            if( _refcnt.get(i).find(vec) != -1 )
+              break;
+          if( i==sp ) {
+            if( fs == null ) fs = new Futures();
+            vec.remove(fs);
+          }
         }
       }
       if( fs != null ) fs.blockForPending();
@@ -80,23 +84,15 @@ public class Env {
     // Now the DKV
     Value value = DKV.get(Key.make(id));
     if( value != null ) {
-      Vec vec = null;
+      Frame vec = null;
       if( value.isFrame() ) {
         Frame fr = value.get();
-        if( fr.numCols()==1 ) vec = fr.anyVec();
-      } else if( value.isVec() ) {
-        vec = value.get();
+        assert fr._key.toString().equals(id);
+        _globals.add(fr);
+        return new ValFrame(fr);
       }
-      if( vec != null ) {
-        //if( vec.length()==1 ) {
-        //  if( vec.isString() ) return new ValStr(vec.atStr(0));
-        //  else if( vec.isNumeric() ) return new ValNum(vec.at(0));
-        //}
-        _globals.add(vec);
-        return new ValVec(vec);
-      }
-      // Only understand Vecs right now
-      throw new IllegalArgumentException("DKV name lookup of "+id+" yielded an instance of type "+value.className()+", but only Vec is supported");
+      // Only understand Frames right now
+      throw new IllegalArgumentException("DKV name lookup of "+id+" yielded an instance of type "+value.className()+", but only Frame is supported");
     }
 
     // Now the built-ins
@@ -119,7 +115,7 @@ public class Env {
 //  @Override public AutoBuffer write_impl(AutoBuffer ab) {
 //    // write _refcnt
 //    ab.put4(_refcnt.size());
-//    for (Vec v: _refcnt.keySet()) { ab.putStr(v._key.toString()); ab.put4(_refcnt.get(v)._val); }
+//    for (Frame v: _refcnt.keySet()) { ab.putStr(v._key.toString()); ab.put4(_refcnt.get(v)._val); }
 //    return ab;
 //  }
 //
@@ -128,7 +124,7 @@ public class Env {
 //    _refcnt = new HashMap<>();
 //    int len = ab.get4();
 //    for (int i = 0; i < len; ++i)
-//      _refcnt.put((Vec)DKV.getGet(ab.getStr()), new IcedInt(ab.get4()));
+//      _refcnt.put((Frame)DKV.getGet(ab.getStr()), new IcedInt(ab.get4()));
 //    return this;
 //  }
 }
@@ -137,7 +133,7 @@ abstract class Val {
   abstract int type();
   boolean isNum() { return false; }
   boolean isStr() { return false; }
-  boolean isVec() { return false; }
+  boolean isFrame() { return false; }
   boolean isFun() { return false; }
 }
 
@@ -157,12 +153,12 @@ class ValStr extends Val {
   @Override boolean isStr() { return true; }
 }
 
-class ValVec extends Val {
-  final Vec _vec;
-  ValVec(Vec vec) { _vec = vec; }
-  @Override public String toString() { return _vec.toString(); }
-  @Override int type () { return Env.VEC; }
-  @Override boolean isVec() { return true; }
+class ValFrame extends Val {
+  final Frame _fr;
+  ValFrame(Frame fr) { _fr = fr; }
+  @Override public String toString() { return _fr.toString(); }
+  @Override int type () { return Env.FRM; }
+  @Override boolean isFrame() { return true; }
 }
 
 class ValFun extends Val {
