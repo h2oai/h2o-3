@@ -3,18 +3,14 @@ package hex.glm;
 import hex.ModelMetricsBinomialGLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
-import water.util.MathUtils;
-
 import java.io.File;
 import java.util.HashMap;
 
@@ -583,12 +579,17 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(1217, GLMTest.aic(model), 1);
 //          assertEquals(76.8525, GLMTest.residualDevianceTest(model),1e-4);
           // test scoring
-          try {
+          try { // check we get IAE if computing metrics on data with no weights (but trained with weights)
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
             assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
           }
+          Frame f = new Frame(_prostateTrain);
+          f.remove("CAPSULE");
+          // test we can generate predictions with no weights (no metrics)
+          scoreTrain = model.score(f);
+          scoreTrain.delete();
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
           assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
@@ -616,7 +617,6 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain.delete();
           if (scoreTest != null)
             scoreTest.delete();
-
           if (job != null) job.remove();
         }
       }

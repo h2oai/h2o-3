@@ -537,8 +537,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
-    assert Arrays.equals(computeMetrics ? _output._names : Arrays.copyOf(_output._names, _output._names.length-1), adaptFrm._names);
-
     // Build up the names & domains.
     final int nc = _output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
@@ -597,8 +595,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
+      _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
-        _mb = Model.this.makeMetricBuilder(_domain);
         if (Model.this instanceof SupervisedModel) {
           actual = new float[1];
           responseChunk = chks[_output.responseIdx()];

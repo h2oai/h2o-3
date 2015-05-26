@@ -85,6 +85,7 @@ public abstract class GLMTask  {
    }
    @Override public void reduce(YMUTask ymt) {
      if(_nobs > 0 && ymt._nobs > 0) {
+       _wsum += ymt._wsum;
        _ymu += ymt._ymu;
        _nobs += ymt._nobs;
        if(_yMin > ymt._yMin)
@@ -92,6 +93,7 @@ public abstract class GLMTask  {
        if(_yMax < ymt._yMax)
          _yMax = ymt._yMax;
      } else if (_nobs == 0) {
+       _wsum = ymt._wsum;
        _ymu = ymt._ymu;
        _nobs = ymt._nobs;
        _yMin = ymt._yMin;
