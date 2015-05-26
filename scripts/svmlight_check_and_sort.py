@@ -26,6 +26,14 @@ if __name__ == "__main__":
             dsorted = sorted(d.iteritems(), key=itemgetter(0), reverse=False)
             with open(output, "a") as g:
                 g.write(target + ' ')
+                prev_i=-1
                 for (i,j) in dsorted:
+                    if(i == 0):
+                         print("Column index must be >= 1: " + dsorted)
+                         exit(1)
+                    if(i == prev_i):
+                         print("Repeats found: " + dsorted)
+                         exit(1)
+                    prev_i = i
                     g.write(str(i)+':'+str(j)+' ')
                 g.write('\n')

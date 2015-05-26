@@ -218,7 +218,7 @@ function(stmnt) {
     # should never get here
     } else {
       stop("Fail in statement processing to AST. Failing statement was: ", stmnt, "\n",
-           "Please contact support@0xdata.com")
+           "Please contact support@h2oai.com")
     }
   }
 

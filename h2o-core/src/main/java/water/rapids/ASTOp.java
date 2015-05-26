@@ -245,6 +245,7 @@ public abstract class ASTOp extends AST {
 
     putPrefix(new ASTFilterNACols());
     putPrefix(new ASTSetDomain());
+    putPrefix(new ASTRemoveVecs());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -3186,6 +3187,35 @@ class ASTRemoveFrame extends ASTUniPrefixOp {
       fr.remove();
     }
     e.push(new ValNull());
+  }
+}
+
+//remove vecs by index&frame lookup. push subset frame onto stack
+class ASTRemoveVecs extends ASTUniPrefixOp {
+  long[] _rmVecs;
+  @Override String opStr() { return "removeVecs"; }
+  ASTRemoveVecs() { super(new String[] {"", "ary", "llist"}); }
+  @Override ASTOp make() { return new ASTRemoveVecs(); }
+  ASTRemoveVecs parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTLongList ) _rmVecs = ((ASTLongList)a)._l;
+    else if( a instanceof ASTNum ) _rmVecs = new long[]{(long)((ASTNum)a)._d};
+    else throw new IllegalArgumentException("Expected to get an `llist` or `num`. Got: " + a.getClass());
+    E.eatEnd(); // eat the ending ')'
+    ASTRemoveVecs res = (ASTRemoveVecs) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env e) {
+    int[] idxs = new int[_rmVecs.length];
+    int i=0;
+    for(long l:_rmVecs) idxs[i++]=(int)l;
+    Frame fr = e.popAry();
+    for(Vec v:fr.remove(idxs)) v.remove(); // a little inefficeint... each vec blocks 'til it's gone.
+    DKV.put(fr._key, fr);
+    e.pushAry(fr);
   }
 }
 

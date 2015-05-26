@@ -3,8 +3,7 @@ package water.parser;
 import java.io.*;
 import java.util.Arrays;
 
-import water.H2O;
-import water.exceptions.H2OParseException;
+import water.util.Log;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
@@ -195,7 +194,7 @@ class SVMLightParser extends Parser {
                     lstate = SKIP_LINE;
                   }
                 } else { // we're probably out of sync, skip the rest of the line
-                  dout.invalidLine("unexpected character after column id: " + c);
+                  dout.invalidLine("Unexpected character after column id: " + c);
                   lstate = SKIP_LINE;
                 }
                 break NEXT_CHAR;

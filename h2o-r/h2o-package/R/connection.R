@@ -48,7 +48,7 @@
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = FALSE) {
+                     ice_root = tempdir(), strict_version_check = TRUE) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -311,7 +311,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "    > ??h2o\n",
     "\n",
     "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit http://docs.0xdata.com\n",
+    "For more information visit http://docs.h2oai.com\n",
     "\n",
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
@@ -345,7 +345,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
             "Could not shut down the H2O Java Process!\n",
             "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
             "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
-            "For more information visit http://docs.0xdata.com\n",
+            "For more information visit http://docs.h2oai.com\n",
             "\n",
             "----------------------------------------------------------------------\n",
             sep = "")
