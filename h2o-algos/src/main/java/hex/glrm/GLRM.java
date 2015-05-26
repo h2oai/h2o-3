@@ -57,7 +57,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
 
   public enum Initialization {
-    SVD, PlusPlus, User
+    Random, SVD, PlusPlus, User
   }
 
   // Called from an http request
@@ -85,6 +85,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     int k_min = (int) Math.min(_train.numCols(), _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
+      if (_parms._init != GLRM.Initialization.User)
+        error("init", "init must be 'User' if providing user-specified points");
+
       if (_parms._user_points.get().numCols() != _train.numCols())
         error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       else if (_parms._user_points.get().numRows() != _parms._k)
@@ -185,6 +188,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Permute cluster columns to align with dinfo and expand out categoricals
         centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
         centers_exp = expandCats(centers, dinfo);
+
+      } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
+        return ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
