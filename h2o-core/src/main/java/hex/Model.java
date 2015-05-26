@@ -249,7 +249,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected final boolean _hasWeights;// only need to know if we have them
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
-    public String responseName() { return _names[responseIdx()];}
+    public String responseName() {
+      int ridx = responseIdx();
+      return ridx >= 0?_names[responseIdx()]:null;
+    }
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     // Vec layout is  [c1,c2,...,cn,w?,r,o?], cn are predcitor cols, r is reponse, w and o are weights and offset, both are optional
