@@ -52,7 +52,7 @@ randomParams <- function(distribution, train, test, x, y) {
         parms$max_after_balance_size <- runif(1, 1, 1000)
         Log.info(paste("max_after_balance_size:", parms$max_after_balance_size))
       } else {
-        parms$max_after_balance_size <- runif(1)
+        parms$max_after_balance_size <- runif(1,0.1,1)
         Log.info(paste("max_after_balance_size:", parms$max_after_balance_size))
       }
     hh <- do.call("h2o.gbm", parms)
