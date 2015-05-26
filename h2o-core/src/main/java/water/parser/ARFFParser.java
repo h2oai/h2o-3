@@ -64,7 +64,7 @@ class ARFFParser extends CsvParser {
       if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
         throw new H2OParseSetupException("Expected line to start with @ATTRIBUTE.");
       } else {
-        if (data[i].length != 3 ) {
+        if (data[i].length < 3 ) {
           throw new H2OParseSetupException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
         }
         labels[i] = data[i][1];
@@ -93,8 +93,12 @@ class ARFFParser extends CsvParser {
         else if (type.equalsIgnoreCase("RELATIONAL")) {
           throw new UnsupportedOperationException("Relational ARFF format is not supported.");
         }
-        else if (type.startsWith("{") && type.endsWith("}")) {
-          domains[i] = data[i][2].replaceAll("[{}]", "").split(",");
+        else if (type.startsWith("{") && data[i][data[i].length-1].endsWith("}")) {
+          StringBuilder builder = new StringBuilder();
+          for(int j = 2; j < data[i].length; j++) {
+            builder.append(data[i][j]);
+          }
+          domains[i] = builder.toString().replaceAll("[{}]", "").split(",");
           if (domains[i][0].length() > 0) {
             // case of {A,B,C} (valid list of factors)
             ctypes[i] = Vec.T_ENUM;

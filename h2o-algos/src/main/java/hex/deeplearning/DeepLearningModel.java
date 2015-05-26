@@ -1684,6 +1684,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
+            err.training_AUC = mm._auc;
             err.train_confusion_matrix = mm.cm();
           }
           else if (mm1 instanceof ModelMetricsMultinomial) {

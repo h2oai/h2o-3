@@ -16,22 +16,27 @@ locate_source <- function(s) {
 # Takes column in the specified format 'MM/dd/yyyy hh:mm:ss a' and refines
 # it into 8 columns: "Day", "Month", "Year", "WeekNum", "WeekDay", "Weekend",
 # "Season", "HourOfDay"
-ComputeDateCols <- function(col, datePattern, dateTimeZone = "UTC") {
+ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
   if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
   d <- as.Date(col, format = datePattern)
   ds <- c(Day = h2o.day(d), Month = h2o.month(d), Year = h2o.year(d), WeekNum = h2o.week(d),
     WeekDay = h2o.dayOfWeek(d), HourOfDay = h2o.hour(d))
-  ds$Weekend <- as.factor(ifelse(ds$WeekDay == "Sun" | ds$WeekDay == "Sat", 1, 0))
+  
+  # Indicator column of whether day is on the weekend
+  ds$Weekend <- ifelse(ds$WeekDay == "Sun" | ds$WeekDay == "Sat", 1, 0)
+  # ds$Weekend <- as.factor(ds$Weekend)
+  
+  # Categorical column of season: Spring = 0, Summer = 1, Autumn = 2, Winter = 3
   # TODO: Replace this with an apply method when implemented
-  # TODO: Need to set levels to 'Spring', 'Summer', 'Autumn', 'Winter'
-  ds$Season <- ifelse(ds$Month >= 2 & ds$Month <= 4, 0, 
-                      ifelse(ds$Month >= 5 & ds$Month <= 7, 1,
-                             ifelse(ds$Month >= 8 & ds$Month <= 9, 2, 3)))
+  ds$Season <- ifelse(ds$Month >= 2 & ds$Month <= 4, 0,
+               ifelse(ds$Month >= 5 & ds$Month <= 7, 1,
+               ifelse(ds$Month >= 8 & ds$Month <= 9, 2, 3)))
   ds$Season <- as.factor(ds$Season)
+  h2o.setLevels(ds$Season, c("Spring", "Summer", "Autumn", "Winter"))
   return(ds)
 }
 
-RefineDateColumn <- function(train, dateCol, datePattern, dateTimeZone = "UTC") {
+RefineDateColumn <- function(train, dateCol, datePattern, dateTimeZone = "Etc/UTC") {
   refinedDateCols <- ComputeDateCols(train[,dateCol], datePattern, dateTimeZone)
   # mapply(function(val, nam) { do.call("$<-", list(train, nam, val)) }, refinedDateCols, names(refinedDateCols))
   train$Day <- refinedDateCols$Day
@@ -69,17 +74,17 @@ test.chicago.demo <- function(conn) {
   names(weather)[match(c("month", "day", "year"), names(weather))] <- c("Month", "Day", "Year")
   crimeMerge <- h2o.merge(crimeMerge, weather)
 
-  print("Split final dataset into test/train")
+  Log.info("Split final dataset into test/train")
   frs <- h2o.splitFrame(crimeMerge, ratios = c(0.8,0.2))
   train <- frs[1]
   test <- frs[2]
   
-  print("Build a GBM model and score")
+  Log.info("Build a GBM model and score")
   myY <- "Arrest"
   myX <- setdiff(1:ncol(train), which(colnames(train) == myY))
   gbmModel <- h2o.gbm(x = myX, y = myY, training_frame = train, validation_frame = test, ntrees = 10, max_depth = 6, distribution = "bernoulli")
   
-  print("Build a Deep Learning model and score")
+  Log.info("Build a Deep Learning model and score")
   dlModel <- h2o.deeplearning(x = myX, y = myY, training_frame = train, validation_frame = test, variable_importances = TRUE)
   
   cat("\nModel performance:")
@@ -88,10 +93,13 @@ test.chicago.demo <- function(conn) {
   cat("\n\tDL:\n\t\ttrain AUC = ", dlModel@model$training_metric@metrics$AUC)
   cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC)
   
-  print("Predict on new crime data")
-  crimeExamples <- data.frame(rbind(c("02/08/2015 11:43:58 PM", 1811, "NARCOTICS", "STREET", "false", 422, 4, 7, 46, 18),
+  Log.info("Predict on new crime data")
+  crimeExamples.r <- data.frame(rbind(c("02/08/2015 11:43:58 PM", 1811, "NARCOTICS", "STREET", "false", 422, 4, 7, 46, 18),
                                     c("02/08/2015 11:00:39 PM", 1150, "DECEPTIVE PRACTICE", "RESIDENCE", "false", 923, 9, 14, 63, 11)))
-  colnames(crimeExamples) <- c("Date", "IUCR", "Primary.Type", "Location.Description", "Domestic", "Beat", "District", "Ward", "Community.Area", "FBI.Code")
+  colnames(crimeExamples.r) <- c("Date", "IUCR", "Primary.Type", "Location.Description", "Domestic", "Beat", "District", "Ward", "Community.Area", "FBI.Code")
+  crimeExamples <- as.h2o(crimeExamples.r, conn)
+  crimeExamples <- RefineDateColumn(crimeExamples, which(colnames(crimeExamples) == "Date"), datePattern = "%m/%d/%Y %I:%M:%S %p")
+  crimeExamples$Date <- NULL   # Remove redundant date columns
   crimeExamplesMerge <- h2o.merge(crimeExamples, census)
   
   predGBM <- predict(gbmModel, crimeExamplesMerge)
@@ -101,7 +109,6 @@ test.chicago.demo <- function(conn) {
     cat("\n\tProbability of arrest using GBM:", predGBM$true[i])
     cat("\n\tProbability of arrest using Deep Learning:", predDL$true[i])
   }
-  
   testEnd()
 }
 

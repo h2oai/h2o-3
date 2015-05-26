@@ -19,6 +19,10 @@ function make_zip_common {
   mkdir $IMAGEDIR/R
   cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
 
+  mkdir $IMAGEDIR/python
+
+  cp h2o-py/dist/*whl $IMAGEDIR/python
+
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
   cd $TOPDIR

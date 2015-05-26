@@ -2,10 +2,71 @@
 
 ##H2O
 
-###Shannon (3.0.0.7) - 5/18/15
+###Shannon (3.0.0.#) - 5/22/15
 
 ####Enhancements
 The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [PUBDEV-1179](https://0xdata.atlassian.net/browse/PUBDEV-1179): DRF: investigate if larger seeds giving better models
+- [PUBDEV-1178](https://0xdata.atlassian.net/browse/PUBDEV-1178): Add logloss/AUC/Error to GBM/DRF Logs & ScoringHistory
+- [PUBDEV-1169](https://0xdata.atlassian.net/browse/PUBDEV-1169): Use only 1 tree for DRF binomial
+- [PUBDEV-1170](https://0xdata.atlassian.net/browse/PUBDEV-1170): Wrong ROC is shown for DRF (Training ROC, even though Validation is given)
+- [PUBDEV-1162](https://0xdata.atlassian.net/browse/PUBDEV-1162): Speed up sorting of histograms with O(N log N) instead of O(N^2)
+
+
+
+#####System
+
+- [PUBDEV-1152](https://0xdata.atlassian.net/browse/PUBDEV-1152): Accept s3a URLs
+- [HEXDEV-316](https://0xdata.atlassian.net/browse/HEXDEV-316): ImportFiles should not download files from HTTP
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+
+#####Algorithms
+
+- [HEXDEV-253](https://0xdata.atlassian.net/browse/HEXDEV-253): model output consistency
+- [HEXDEV-319](https://0xdata.atlassian.net/browse/HEXDEV-319): DRF in h2o 3.0 is worse than in h2o 2.0 for Airline
+
+
+
+#####API
+
+- [PUBDEV-501](https://0xdata.atlassian.net/browse/PUBDEV-501): H2OPredict: does not complain when you build a model with one dataset and predict on completely different dataset
+
+
+
+#####R
+
+- [PUBDEV-1160](https://0xdata.atlassian.net/browse/PUBDEV-1160): R: h2o.hist doesn't support breaks argument
+- [PUBDEV-1159](https://0xdata.atlassian.net/browse/PUBDEV-1159): R: h2o.hist takes too long to run
+- [PUBDEV-1150](https://0xdata.atlassian.net/browse/PUBDEV-1150): R CMD Check: URLs not working
+- [PUBDEV-1149](https://0xdata.atlassian.net/browse/PUBDEV-1149): R CMD check not happy with our use of .OnAttach
+- [PUBDEV-1174](https://0xdata.atlassian.net/browse/PUBDEV-1174): R: h2o.hist FD implementation broken
+- [PUBDEV-1167](https://0xdata.atlassian.net/browse/PUBDEV-1167): R: h2o.group_by broken
+- [HEXDEV-318](https://0xdata.atlassian.net/browse/HEXDEV-318): the fix to H2O startup for the host unreachable from R causes a security hole
+
+
+#####System
+
+- [PUBDEV-862](https://0xdata.atlassian.net/browse/PUBDEV-862): Building a model without training file -> NPE
+- [HEXDEV-315](https://0xdata.atlassian.net/browse/HEXDEV-315): importFile fails: Error in fromJSON(txt, ...) : unexpected character: A
+- [PUBDEV-1137](https://0xdata.atlassian.net/browse/PUBDEV-1137): Parse: upload and import gives different chunk compression on the same file
+
+#####Web UI
+- [PUBDEV-1182](https://0xdata.atlassian.net/browse/PUBDEV-1182): Flow: when upload file fails, the control does not come back to the flow screen, and have to refresh the whole page to get it back
+- [PUBDEV-1131](https://0xdata.atlassian.net/browse/PUBDEV-1131): GBM crashes after calling getJobs in Flow
+
+---
+
+###Shannon (3.0.0.7) - 5/18/15
+
+####Enhancements
 
 ##### API
 
@@ -1122,7 +1183,7 @@ The following changes are to resolve incorrect software behavior:
 
 #####System
 - Flow: When balance class = F then flow should not show max_after_balance_size = 5 in the parameter listing [(PUBDEV-503)](https://0xdata.atlassian.net/browse/PUBDEV-503)
-- 3 jvms, doing ModelMetrics on prostate, class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: *** Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <=  122 [(PUBDEV-495)](https://0xdata.atlassian.net/browse/PUBDEV-495)
+- 3 jvms, doing ModelMetrics on prostate, class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: --- Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <=  122 [(PUBDEV-495)](https://0xdata.atlassian.net/browse/PUBDEV-495)
 - Not able to start h2o on hadoop [(PUBDEV-487)](https://0xdata.atlassian.net/browse/PUBDEV-487)
 - one row (one col) dataset seems to get assertion error in parse setup request [(PUBDEV-96)](https://0xdata.atlassian.net/browse/PUBDEV-96)
 - Parse : Import file (move.com) => Parse => First row contains column names => column names not selected [(HEXDEV-171)](https://0xdata.atlassian.net/browse/HEXDEV-171) [(github)](https://github.com/h2oai/h2o-dev/commit/6f6d7023f9f2bafcb5461f46cf2825f233779f4a)
@@ -1328,7 +1389,7 @@ The following changes are to resolve incorrect software behavior:
 
 #####System
 - Flow: When balance class = F then flow should not show max_after_balance_size = 5 in the parameter listing [(PUBDEV-503)](https://0xdata.atlassian.net/browse/PUBDEV-503)
-- 3 jvms, doing ModelMetrics on prostate, class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: *** Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <=  122 [(PUBDEV-495)](https://0xdata.atlassian.net/browse/PUBDEV-495)
+- 3 jvms, doing ModelMetrics on prostate, class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: --- Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <=  122 [(PUBDEV-495)](https://0xdata.atlassian.net/browse/PUBDEV-495)
 - Not able to start h2o on hadoop [(PUBDEV-487)](https://0xdata.atlassian.net/browse/PUBDEV-487)
 - one row (one col) dataset seems to get assertion error in parse setup request [(PUBDEV-96)](https://0xdata.atlassian.net/browse/PUBDEV-96)
 - Parse : Import file (move.com) => Parse => First row contains column names => column names not selected [(HEXDEV-171)](https://0xdata.atlassian.net/browse/HEXDEV-171) [(github)](https://github.com/h2oai/h2o-dev/commit/6f6d7023f9f2bafcb5461f46cf2825f233779f4a)
@@ -1484,7 +1545,7 @@ The following changes are to resolve incorrect software behavior:
 - Python end-to-end data science example 1 runs correctly [(PUBDEV-182)](https://0xdata.atlassian.net/browse/PUBDEV-182)
 - 3/NodePersistentStorage.json/foo/id should throw 404 instead of 500 for 'not-found' [(HEXDEV-163)](https://0xdata.atlassian.net/browse/HEXDEV-163)
 - POST /3/NodePersistentStorage.json should handle Content-Type:multipart/form-data [(HEXDEV-165)](https://0xdata.atlassian.net/browse/HEXDEV-165)
-- by class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: *** Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <= 122 [(PUBDEV-92)](https://0xdata.atlassian.net/browse/PUBDEV-92)
+- by class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: --- Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <= 122 [(PUBDEV-92)](https://0xdata.atlassian.net/browse/PUBDEV-92)
 - Sparkling water : val train:DataFrame = prostateRDD => Fails with ArrayIndexOutOfBoundsException [(PUBDEV-392)](https://0xdata.atlassian.net/browse/PUBDEV-392)
 - Flow : getModels produces error: Error calling GET /3/Models.json [(PUBDEV-254)](https://0xdata.atlassian.net/browse/PUBDEV-254)
 - Flow : Splitframe => java.lang.ArrayIndexOutOfBoundsException [(PUBDEV-410)](https://0xdata.atlassian.net/browse/PUBDEV-410)

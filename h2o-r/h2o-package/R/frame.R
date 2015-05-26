@@ -1240,7 +1240,7 @@ h2o.levels <- function(x, i) {
 #' This call has SIDE EFFECTS and mutates the column in place (does not make a copy).
 #'
 #' @param x A single categorical column.
-#' @param levels A character vector specifiying the new levels. The number of new levels must match the number of old levels.
+#' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
 #' @export
 h2o.setLevels <- function(x, levels) .h2o.nary_frame_op("setDomain", x, levels)
 
@@ -1796,6 +1796,28 @@ setMethod("as.environment", "H2OFrame", function(x) {
     assign(j, x[[j]], env)
   env
 })
+
+#'
+#' Delete Columns from a H2OFrame
+#'
+#' Delete the specified columns from the H2OFrame. Returns a H2OFrame without the specified
+#' columns. This will trigger any lazy computation of the frame, and has side-effects.
+#'
+#' @param data The H2OFrame.
+#' @param cols The columns to remove.
+#' @export
+h2o.removeVecs <- function(data, cols) {
+  if( !is(data, "H2OFrame") ) stop("`data` must be an H2OFrame.")
+  if( missing(cols) ) stop("`cols` must be specified")
+  mktmp <- !.is.eval(data)
+  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
+  del.cols <- cols
+  if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
+  del.cols <- del.cols - 1L # 1 idx -> 0 idx
+  fr <- .h2o.nary_frame_op("removeVecs", data, del.cols)
+  res <- .h2o.eval.frame(conn=h2o.getConnection(),ast=fr@mutable$ast,frame_id=data@frame_id)
+  res
+}
 
 #'
 #' Return the number of levels in the column.
