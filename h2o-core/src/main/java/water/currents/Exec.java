@@ -87,7 +87,7 @@ public class Exec {
 
 
   // Return unparsed text, useful in error messages
-  String unparsed() { return _str.substring(_x,_str.length()-_x); }
+  String unparsed() { return _str.substring(_x,_str.length()); }
 
   static boolean isWS(char c) { return c==' '; }
 

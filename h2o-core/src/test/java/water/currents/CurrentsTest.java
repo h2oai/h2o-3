@@ -18,12 +18,12 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
   }
 
-  //@Test public void test2() {
-  //  // Checking `hex + 5 + 10`
-  //  String tree = "(+ %a.hex (+ #5 #10))";
-  //  checkTree(tree);
-  //}
-  //
+  @Test public void test2() {
+    // Checking `hex + 5 + 10`
+    String tree = "(+ %a.hex (+ #5 #10))";
+    checkTree(tree);
+  }
+
   //@Test public void test3() {
   //  // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
   //  String tree = "(+ (- (+ %a.hex #5) (* #1 %a.hex)) (* #15 (/ #23 %a.hex)))";
