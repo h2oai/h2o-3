@@ -1,16 +1,17 @@
 package water.currents;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
+
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedInt;
 
 /** Execute a set of instructions in the context of an H2O cloud.
  *
  *  An Env (environment) object is a classic stack of values used during
- *  execution of an AST.  
+ *  execution of an AST.  The stack is hidden in the normal Java execution
+ *  stack and is not explicit.
  *
  *  For efficiency, reference counting is employed to recycle objects already
  *  in use rather than creating copies upon copies (a la R).  When a Vec is
@@ -25,92 +26,56 @@ import water.util.IcedInt;
 public class Env {
 
   // Things on the execution stack
-  final static int NULL  =0;    // missing
   final static int NUM   =1;    // scalar
   final static int STR   =2;    // string scalar
   final static int VEC   =3;    // Vec, not a Frame
   final static int FUN   =4;    // Function
-  final static String[] TYPE_NAMES = new String[] { "null", "num", "str", "vec", "fun" };
 
   /**
-   * The RefCnt API
+   * The refcnt API.  Looks like a Stack, because lifetimes are stack-like, but
+   * just counts refs by unary stack-slot counting.
    */
-  // Vecs on the stack, or held on to in the local names space are refcnt'd.
-  // When counts go to zero, they get deleted - when op_end() is called.
-  private final HashMap<Vec,IcedInt> _refcnt = new HashMap<>(); // Ref Counts for each vector
+  private final ArrayList<Vec> _refcnt = new ArrayList<>();
+  private final HashSet<Vec> _globals = new HashSet<>();
+  public int sp() { return _refcnt.size(); }
+  public Vec peek(int x) { return _refcnt.get(sp()+x);  }
 
-  // Add a refcnt
-  private Vec addRef( Vec vec ) {
-    IcedInt I = _refcnt.get(vec);
-    assert I == null || I._val >= 0;
-    _refcnt.put(vec, new IcedInt(I == null ? 1 : I._val + 1));
-    return vec;                 // Flow coding
-  }
-
-  // Lower a refcnt - does NOT delete on zero counts
-  private int subRef( Vec vec ) {
-    int cnt = _refcnt.get(vec)._val - 1;
-    assert cnt >= 0;
-    _refcnt.put(vec, new IcedInt(cnt));
-    return cnt;                 // Flow coding
-  }
-  
-  /**
-   * The stack API
-   */
-  private final ArrayList<Val> _stack = new ArrayList<>();
-  public int sp() { return _stack.size(); }
-  public boolean isEmpty() { return _stack.isEmpty(); }
-  public Val peek(int x) { return _stack.get(sp()+x);  }
-  public Val peek() { return peek(-1); }
-  // ?!?!?! No push & pop here!!!!
-  // Use an instance of StackHelp to do push & pop
-
-  // One per Opcode implementation.  Forces good stack cleanliness at opcode end.
+  // Deletes dead Vecs & forces good stack cleanliness at opcode end.  
+  // One per Opcode implementation.
   StackHelp stk() { return new StackHelp(); }
   class StackHelp implements AutoCloseable {
-    // A set of Vecs, whose refcnts hit zero recently
-    private ArrayList<Vec> _mayBeDead = null;
-    // Push, raise refcnts
-    public Val push(Val v) {
-      if( v.isVec() )
-        addRef(((ValVec)v)._vec);
-      _stack.add(sp(),v);
+    final int _sp = sp();
+    // Push & track
+    public Val track(Val v) {
+      if( v instanceof ValVec )
+        _refcnt.add(sp(),((ValVec)v)._vec);
       return v; 
     }
-
-    // Pop, lower refcnts
-    public Val pop() { 
-      Val v = _stack.remove(sp()-1);
-      if( v.isVec() ) {
-        Vec vec = ((ValVec)v)._vec;
-        if( subRef(vec) == 0 ) {
-          if( _mayBeDead==null ) _mayBeDead = new ArrayList<>();
-          _mayBeDead.add(vec); // If refcnt goes zero, even temporarily, record it
-        }
-      }
-      return v;
-    }
-
-    // Remove all Vecs who's refcnt goes to zero
+    // Pop-all and remove dead
     @Override public void close() {
-      if( _mayBeDead == null ) return;
       Futures fs = null;
-      for( Vec vec : _mayBeDead ) {
-        int cnt = _refcnt.get(vec)._val;
-        if( cnt <=0 ) {
+      int i, sp = sp();
+      while( sp > _sp ) {
+        Vec vec = _refcnt.remove(--sp);
+        if( _globals.contains(vec) ) continue;
+        for( i=0; i<sp; i++ )
+          if( _refcnt.get(i)==vec )
+            break;
+        if( i==sp ) {
           if( fs == null ) fs = new Futures();
           vec.remove(fs);
-          _refcnt.remove(vec);
         }
       }
       if( fs != null ) fs.blockForPending();
     }
   }
 
+  // ----
   // Variable lookup
   Val lookup( String id ) {
     // Lexically scoped functions first
+    
+    // Not currently implemented
 
     // Now the DKV
     Value value = DKV.get(Key.make(id));
@@ -127,6 +92,7 @@ public class Env {
         //  if( vec.isString() ) return new ValStr(vec.atStr(0));
         //  else if( vec.isNumeric() ) return new ValNum(vec.at(0));
         //}
+        _globals.add(vec);
         return new ValVec(vec);
       }
       // Only understand Vecs right now
@@ -169,7 +135,6 @@ public class Env {
 
 abstract class Val {
   abstract int type();
-  Val exec(Env env) { return this; }
   boolean isNum() { return false; }
   boolean isStr() { return false; }
   boolean isVec() { return false; }
@@ -185,9 +150,9 @@ class ValNum extends Val {
 }
 
 class ValStr extends Val {
-  final String _s;
-  ValStr(String s) { _s = s; }
-  @Override public String toString() { return _s; }
+  final String _str;
+  ValStr(String str) { _str = str; }
+  @Override public String toString() { return _str; }
   @Override int type () { return Env.STR; }
   @Override boolean isStr() { return true; }
 }

@@ -2,7 +2,6 @@ package water.currents;
 
 import water.H2O;
 import water.MRTask;
-import water.currents.Env.*;
 
 /**
  * Exec is an interpreter of abstract syntax trees.
@@ -45,23 +44,31 @@ public class Exec {
 
 
   // Parse an expression
+  //   '('   a nested function application expression ')
+  //   '{'   a nested function definition  expression '}'
+  //   '#'   a double: attached_token
+  //   '%'   an ID: attached_token
+  //   '"'   a String (double quote): attached_token
+  //   "'"   a String (single quote): attached_token
+  //   digits: a double
+  //   letters or other specials: an ID
   AST parse( ) {
     switch( skipWS() ) {
-    case '(': return new ASTExec(this); // function application
-    case '{': throw H2O.unimpl();    // function definition
-    case '#': _x++;                     // Skip before double, FALL THRU
+    case '(':  return new ASTExec(this); // function application
+    case '{':  throw H2O.unimpl();       // function definition
+    case '#':  _x++;                     // Skip before double, FALL THRU
     case '0':  case '1':  case '2':  case '3':  case '4':
     case '5':  case '6':  case '7':  case '8':  case '9':
       return new ASTNum(this);
     case '\"': return new ASTStr(this,'\"');
     case '\'': return new ASTStr(this,'\'');
-    case ' ': throw new IllegalASTException("Expected an expression but ran out of text");
-    case '%': _x++;             // Skip before ID, FALL THRU
-    default: return new ASTId(this);
+    case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
+    case '%':  _x++;             // Skip before ID, FALL THRU
+    default:  return new ASTId(this);
     }    
   }
 
-  char peek() { return (char)_str.charAt(_x); } // peek ahead
+  char peek() { return _str.charAt(_x); } // peek ahead
   // Peek, and throw if not found an expected character
   void xpeek(char c) {
     if( peek() != c )
@@ -73,20 +80,6 @@ public class Exec {
     char c=' ';
     while( _x < _str.length() && isWS(c=peek()) ) _x++;
     return c;
-  }
-
-  // Parse a Val, one of the special tokens above, or a nested expression
-  Val val() {
-    char c = skipWS();
-    switch( c ) {
-    case '#':  return new ValNum(this);
-    case '\"': return new ValStr(this,'\"');
-    case '\'': return new ValStr(this,'\'');
-    case '(':  return new ValFun(this);
-    case ')':  xpeek('(');      // Will throw, should not be here with leading ')'
-    case '%':  _x++;            // ID lookup, optional lead-in char
-    default:   return new ValID (this); // ID lookup, lazily done but lexically scoped
-    }
   }
 
   // Parse till whitespace or close-paren
