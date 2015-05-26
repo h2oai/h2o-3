@@ -65,14 +65,27 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
-  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
+  if(!is.character(path) || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
-  res <- .h2o.__remoteSend(conn, .h2o.__IMPORT, path=path)
+  if(length(path) > 1L) {
+    destFrames <- c()
+    fails <- c()
+    for(path2 in path){
+      res <-.h2o.__remoteSend(conn, .h2o.__IMPORT, path=path2)
+      destFrames <- c(destFrames, res$destination_frames)
+      fails <- c(fails, res$fails)
+    }
+    res$destination_frames <- destFrames
+    res$fails <- fails
+  } else {
+    res <- .h2o.__remoteSend(conn, .h2o.__IMPORT, path=path)
+  }
+  
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
