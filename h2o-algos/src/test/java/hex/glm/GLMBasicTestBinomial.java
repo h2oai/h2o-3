@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomasnykodym on 4/26/15.
  */
-public class GLMBasicTest extends TestUtil {
+public class GLMBasicTestBinomial extends TestUtil {
   static Frame _prostateTrain; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
   static Frame _abcd; // tiny corner case dataset

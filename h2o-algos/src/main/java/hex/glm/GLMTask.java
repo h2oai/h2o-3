@@ -506,8 +506,8 @@ public abstract class GLMTask  {
         double eta = row.innerProduct(b) + row.offset;
         double gval;
         double d = 1 + Math.exp(-y * eta);
-        _likelihood += Math.log(d);
-        gval = -y*(1-1.0/d);
+        _likelihood += row.weight*Math.log(d);
+        gval = row.weight*-y*(1-1.0/d);
         // categoricals
         for(int i = 0; i < row.nBins; ++i)
           g[row.binIds[i]] += gval;
