@@ -46,6 +46,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
 
+    // Expanded column names of adapted training frame
+    public String[] _names_expanded;
+
     public SVDOutput(SVD b) { super(b); }
 
     @Override public ModelCategory getModelCategory() { return ModelCategory.DimReduction; }

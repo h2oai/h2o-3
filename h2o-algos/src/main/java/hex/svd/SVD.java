@@ -147,6 +147,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._nnums = dinfo._nums;
         model._output._ncats = dinfo._cats;
         model._output._catOffsets = dinfo._catOffsets;
+        model._output._names_expanded = dinfo.coefNames();
 
         // Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
