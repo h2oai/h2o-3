@@ -311,7 +311,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "    > ??h2o\n",
     "\n",
     "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit http://docs.0xdata.com\n",
+    "For more information visit http://docs.h2oai.com\n",
     "\n",
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
@@ -345,7 +345,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
             "Could not shut down the H2O Java Process!\n",
             "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
             "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
-            "For more information visit http://docs.0xdata.com\n",
+            "For more information visit http://docs.h2oai.com\n",
             "\n",
             "----------------------------------------------------------------------\n",
             sep = "")
