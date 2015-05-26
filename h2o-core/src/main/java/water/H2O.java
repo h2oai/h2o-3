@@ -461,7 +461,7 @@ final public class H2O {
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OIllegalArgumentException unimpl() { return new H2OIllegalArgumentException("unimplemented"); }
+  public static H2OIllegalArgumentException unimpl() { throw new H2OIllegalArgumentException("unimplemented"); }
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -469,7 +469,7 @@ final public class H2O {
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OIllegalArgumentException unimpl(String msg) { return new H2OIllegalArgumentException("unimplemented: " + msg); }
+  public static H2OIllegalArgumentException unimpl(String msg) { throw new H2OIllegalArgumentException("unimplemented: " + msg); }
 
   /**
    * H2O.fail is intended to be used in code where something should never happen, and if
@@ -491,23 +491,24 @@ final public class H2O {
     Log.fatal("Stacktrace: ");
     Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
-    H2O.shutdown(-1);
+    // CNC - Actually, don't shutdown.  Throw the friggin' exception so it prints "normally" so you can click it in ideaj.  This is a debugging death call, not an alternate way to shutdown the cluster.
+    //H2O.shutdown(-1);
 
     // unreachable
-    return new H2OFailException(msg);
+    throw new H2OFailException(msg);
   }
 
   /**
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OFailException fail() { return H2O.fail("Unknown code failure"); }
+  public static H2OFailException fail() { throw H2O.fail("Unknown code failure"); }
 
   /**
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OFailException fail(String msg) { return H2O.fail(msg, null); }
+  public static H2OFailException fail(String msg) { throw H2O.fail(msg, null); }
 
 
 
