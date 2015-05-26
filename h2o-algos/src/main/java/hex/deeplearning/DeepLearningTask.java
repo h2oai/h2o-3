@@ -18,7 +18,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   //per-node model, never sent to anyone else, just used to copy into _sharedmodel and then reduced into actual _sharedmodel.
   transient hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _mymodel;
-  final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _mymodel; }
 
   transient Neurons[] _neurons;
   transient Random _dropout_rng;
@@ -36,13 +35,24 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     assert(_mymodel == null);
   }
 
+  /**
+   * Get the shared (average, consensus) model coefficients
+   * @return shared model (not the per-node model)
+   */
+  final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() {
+    return _sharedmodel;
+  }
+
   // transfer ownership from input to output (which will be worked on)
   @Override protected void setupLocal(){
     super.setupLocal();
     if (consensusADMM) {
-//      Log.info("Loading my local model checkpoint.");
       if (DKV.get(_sharedmodel.myModelInfoKey(H2O.SELF)) != null) {
+//        Log.info("Loading my local model checkpoint.");
+        assert(_mymodel == null);
         _mymodel = DKV.getGet(_sharedmodel.myModelInfoKey(H2O.SELF));
+        _mymodel.set_processed_global(_sharedmodel.get_processed_global());
+        assert(_mymodel.get_processed_local() == 0);
       } else {
 //        Log.info("Starting with global initial model.");
         _mymodel = _sharedmodel; //first time
@@ -83,32 +93,32 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   protected void postLocal() {
     if (consensusADMM) {
 //      Log.info("Storing my local model checkpoint.");
-      DKV.put(_sharedmodel.myModelInfoKey(H2O.SELF), _mymodel);
-//      Log.info("Getting my local model ready for reduction.");
-//      assert(_output == null);
-      _sharedmodel = _mymodel.deep_clone(); //no longer need _sharedmodel for training, use it to send back
-    } else {
-      _sharedmodel = _mymodel;
+      assert(_mymodel.get_processed_local() > 0);
+      DKV.put(_mymodel.myModelInfoKey(H2O.SELF), _mymodel);
+////      Log.info("Getting my local model ready for reduction.");
+//      _sharedmodel = _mymodel.deep_clone(); //no longer need _sharedmodel for training, use it to send back
+//    } else {
+//      _sharedmodel = _mymodel;
     }
     super.postLocal();
   }
 
-
-  // average the per-node models (that are now stored in _sharedmodel after postLocal)
+  // average the per-node models (already wrote them to DKV in postLocal())
   @Override public void reduce(DeepLearningTask other){
-    if (_sharedmodel != null && other._sharedmodel != null && other._sharedmodel.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
-            && other._sharedmodel != _sharedmodel) //other NNTask worked on a different model_info
+    if (_mymodel != null && other._mymodel != null && other._mymodel.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
+            && other._mymodel != _mymodel) //other NNTask worked on a different model_info
     {
       // avoid adding remote model info to unprocessed local data, still random
       // (this can happen if we have no chunks on the master node)
-      if (_sharedmodel.get_processed_local() == 0) {
-        _sharedmodel = other._sharedmodel;
+      if (_mymodel.get_processed_local() == 0) {
+        _mymodel = other._mymodel;
         _chunk_node_count = other._chunk_node_count;
       } else {
-        _sharedmodel.add(other._sharedmodel);
+//        Log.info("Reducing shared model.");
+        _mymodel.add(other._mymodel);
         _chunk_node_count += other._chunk_node_count;
       }
-      if (other._sharedmodel.unstable()) _sharedmodel.set_unstable();
+      if (other._mymodel.unstable()) _mymodel.set_unstable();
     }
   }
 
@@ -125,10 +135,20 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _warnCount++;
       }
     }
-    if (_sharedmodel!=null && (!_sharedmodel.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) ) {
-      _sharedmodel.div(_chunk_node_count);
-      _sharedmodel.add_processed_global(_sharedmodel.get_processed_local());
-      _sharedmodel.set_processed_local(0l);
+    // Average models here for single-node operation
+    // For multi-node or when data is not replicated, DLTask2 will do the same
+    if (_mymodel!=null && (!_mymodel.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) ) {
+      Log.info("Averaging per-node models.");
+      if (_chunk_node_count > 1) _mymodel.div(_chunk_node_count);
+      _mymodel.add_processed_global(_mymodel.get_processed_local());
+      _mymodel.set_processed_local(0l);
+      if (consensusADMM && _mymodel != _sharedmodel) {
+        Log.info("Adding per-node model averages to consensus model.");
+        _sharedmodel.div(1.f/0.9f); //multiply by 0.9 - time average
+        _mymodel.div(10f); //add 1/10 of the averaged per-node models
+        _sharedmodel.add(_mymodel);
+        _mymodel = null; //each node needs to pull its local model again from DKV
+      }
     }
   }
 
