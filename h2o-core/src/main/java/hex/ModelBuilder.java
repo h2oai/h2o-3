@@ -221,11 +221,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return 0;
   }
 
+  protected  boolean ignoreStringColumns(){return true;}
   protected void ignoreConstColumns(int npredictors, boolean expensive){
     // Drop all-constant and all-bad columns.
     if( _parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
+        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad() || (ignoreStringColumns() && v.isString()); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
   }
   /**
