@@ -9,6 +9,16 @@ from job  import H2OJob
 
 class H2OFrame:
 
+  def __del__(self):
+    """
+    :return: None
+    """
+
+    # this is essentially a hack to short-circuit the Expr.__del__ method when doing /DKV/<frame> remove
+    for v in self:
+      v._expr._removed_by_frame_del=True
+    h2o.remove(self)
+
   def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.

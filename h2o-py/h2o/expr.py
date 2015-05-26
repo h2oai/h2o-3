@@ -50,6 +50,7 @@ class Expr(object):
     self._len     = None
     self._vecname = ""     # the name of the Vec, if any
     self._isslice = False  # if a slice, then return a new H2OVec from show
+    self._removed_by_frame_del = False  # True if H2OFrame.__del__ is called over this expr (i.e., expr is rep of some vec that got deleted in a H2OFrame.__del__)
 
     if isinstance(op, str):
       self._op, self._data = (op, None)
@@ -103,6 +104,8 @@ class Expr(object):
   def is_remote(self): return isinstance(self._data, unicode)
 
   def is_pending(self): return self._data is None
+
+  def removed_by_frame_del(self): return self._removed_by_frame_del
 
   def is_computed(self): return not self.is_pending()
 
@@ -318,6 +321,7 @@ class Expr(object):
     return Expr("median", self).eager()
 
   def __del__(self):
+    if self.removed_by_frame_del(): return
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return
     assert self.is_remote(), "Data wasn't remote. Hrm..."
