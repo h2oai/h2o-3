@@ -280,8 +280,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Categorical cols expanded into 0/1 indicator cols
       double sum = 0;
       for (int j = 0; j < dinfo._cats; j++) {
-        int i = (int)cs[j].atd(row);
-        sum += vec[dinfo._catOffsets[j]+i];
+        int level = (int)cs[j].atd(row);
+        if (dinfo._catOffsets[j]+level >= dinfo._catOffsets[j+1]) continue;   // Skip additional factor when useAllFactorLevels = false
+        sum += vec[dinfo._catOffsets[j]+level];
       }
 
       // Numeric cols normalized before multiplying through
