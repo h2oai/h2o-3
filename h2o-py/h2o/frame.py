@@ -389,6 +389,34 @@ class H2OFrame:
     for name, vec in zip(names,self._vecs):
       vec._name = name
 
+  def summary(self):
+    """
+    Generate summary of the frame on a per-Vec basis.
+    :return: None
+    """
+    frtmp=self.send_frame()
+    fr_sum = h2o.frame_summary(frtmp)["frames"][0]  # only ONE frame summary at a time, the first one...
+    h2o.removeFrameShallow(frtmp)  # wipe the frame binding the vecs immediately
+    type = ["type"]
+    mins = ["mins"]
+    mean = ["mean"]
+    maxs = ["maxs"]
+    sigma= ["sigma"]
+    zeros= ["zero_count"]
+    miss = ["missing_count"]
+    for v in fr_sum["columns"]:
+      type.append(v["type"])
+      mins.append(v["mins"][0] if v is not None else v["mins"])
+      mean.append(v["mean"])
+      maxs.append(v["maxs"][0] if v is not None else v["maxs"])
+      sigma.append(v["sigma"])
+      zeros.append(v["zero_count"])
+      miss.append(v["missing_count"])
+
+    table = [type,mins,maxs,sigma,zeros,miss]
+    headers = [vec._name for vec in self._vecs]
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -402,16 +430,6 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Rows:", thousands_sep.format(len(self._vecs[0])), "Cols:", thousands_sep.format(len(self))
-    headers = [vec._name for vec in self._vecs]
-    table = [
-      self._row('type', None),
-      self._row('mins', 0),
-      self._row('mean', None),
-      self._row('maxs', 0),
-      self._row('sigma', None),
-      self._row('zero_count', None),
-      self._row('missing_count', None)
-    ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
     chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
     dist_summary = chunk_dist_sum["distribution_summary"]
@@ -419,13 +437,15 @@ class H2OFrame:
     h2o.removeFrameShallow(chunk_summary_tmp_key)
     chunk_summary.show()
     dist_summary.show()
-    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+    self.summary()
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
   #     raise ValueError("Frame Removed")
   #   self.show()
   #   return ""
+
+
 
   # Find a named H2OVec and return it.  Error is name is missing
   def _find(self,name):
