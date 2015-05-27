@@ -23,7 +23,7 @@ class H2OFrame:
       # 1 for _vecs
       # 1 for parent
       if cnt>=4 or v._expr.is_pending(): continue  # leave vec alone!
-      else:               # collect the vecs to be deleted in bulk.
+      else:                                        # collect the vecs to be deleted in bulk.
         v._expr._removed_by_frame_del=True
         vecs+=[v]
 
@@ -140,11 +140,11 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()            # write the header
-    csv_writer.writerows(data_to_write) # write the data
-    tmp_file.close()                    # close the streams
-    self._upload_raw_data(tmp_path, header) # actually upload the data to H2O
-    os.remove(tmp_path)                     # delete the tmp file
+    csv_writer.writeheader()                 # write the header
+    csv_writer.writerows(data_to_write)      # write the data
+    tmp_file.close()                         # close the streams
+    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
+    os.remove(tmp_path)                      # delete the tmp file
 
   def _handle_text_key(self, text_key, column_names):
     """
