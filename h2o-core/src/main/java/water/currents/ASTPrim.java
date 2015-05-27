@@ -37,20 +37,9 @@ abstract class ASTBinOp extends ASTPrim {
       Frame flf = ((ValFrame)left)._fr;
 
       switch( rite.type() ) {
-      case Env.NUM:  return frame_op_scalar(flf, ((ValNum)rite)._d  );
-      case Env.STR:  return frame_op_scalar(flf, ((ValStr)rite)._str);
-      case Env.FRM:         // Frame op Frame
-        throw H2O.unimpl();
-        //Frame frt = ((ValFrame)rite)._fr;
-        //if( vlf.get_type() != vrt.get_type() ) 
-        //  throw new IllegalArgumentException("Cannot mix types "+vlf.get_type_str()+" and "+vrt.get_type_str());
-        //return new ValFrame(new MRTask() {
-        //    @Override public void map( Chunk clf, Chunk crt, NewChunk cres ) {
-        //      for( int i=0; i<clf._len; i++ )
-        //        cres.addNum(op(clf.atd(i),crt.atd(i)));
-        //    }
-        //  }.doAll(1,flf,frt).outputFrame());
-
+      case Env.NUM:  return frame_op_scalar(flf,((ValNum  )rite)._d  );
+      case Env.STR:  return frame_op_scalar(flf,((ValStr  )rite)._str);
+      case Env.FRM:  return frame_op_frame (flf,((ValFrame)rite)._fr );
       default: throw H2O.fail();
       }
           
@@ -65,23 +54,25 @@ abstract class ASTBinOp extends ASTPrim {
     for( Vec vec : fr.vecs() )
       if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
     return new ValFrame(new MRTask() {
-        @Override public void map( Chunk[] chks, NewChunk cres ) {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
+            NewChunk cres = cress[c];
             for( int i=0; i<chk._len; i++ )
               cres.addNum(op(d,chk.atd(i)));
           }
         }
-      }.doAll(1,fr).outputFrame());
+      }.doAll(fr.numCols(),fr).outputFrame());
   }
 
   private ValFrame frame_op_scalar( Frame fr, final double d ) {
     for( Vec vec : fr.vecs() )
       if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
     return new ValFrame(new MRTask() {
-        @Override public void map( Chunk[] chks, NewChunk cres ) {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
+            NewChunk cres = cress[c];
             for( int i=0; i<chk._len; i++ )
               cres.addNum(op(chk.atd(i),d));
           }
@@ -94,15 +85,47 @@ abstract class ASTBinOp extends ASTPrim {
       if( !vec.isString() ) throw new IllegalArgumentException("Cannot mix String and non-String types");
     final ValueString srt = new ValueString(str);
     return new ValFrame(new MRTask() {
-        @Override public void map( Chunk[] chks, NewChunk cres ) {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           ValueString vstr = new ValueString();
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
+            NewChunk cres = cress[c];
             for( int i=0; i<chk._len; i++ )
               cres.addNum(str_op(chk.atStr(vstr,i),srt));
           }
         }
       }.doAll(1,fr).outputFrame());
+  }
+
+  private ValFrame frame_op_frame( Frame lf, Frame rt ) {
+    if( lf.numRows() != rt.numRows() ) 
+      throw new IllegalArgumentException("Frames must have same rows, found "+lf.numRows()+" rows and "+rt.numRows()+" rows.");
+    if( lf.numCols() == 0 ) return new ValFrame(lf);
+    if( rt.numCols() == 0 ) return new ValFrame(rt);
+    if( lf.numCols() == 1 && rt.numCols() > 1 ) return vec_op_frame(lf.vecs()[0],rt);
+    if( rt.numCols() == 1 && lf.numCols() > 1 ) return frame_op_vec(lf,rt.vecs()[0]);
+    if( lf.numCols() != rt.numCols() )
+      throw new IllegalArgumentException("Frames must have same columns, found "+lf.numCols()+" columns and "+rt.numCols()+" columns.");
+
+    return new ValFrame(new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+          assert (cress.length<<1) == chks.length;
+          for( int c=0; c<cress.length; c++ ) {
+            Chunk clf = chks[c];
+            Chunk crt = chks[c+cress.length];
+            NewChunk cres = cress[c];
+            for( int i=0; i<clf._len; i++ )
+              cres.addNum(op(clf.atd(i),crt.atd(i)));
+          }
+        }
+      }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame());
+  }
+
+  private ValFrame vec_op_frame( Vec vec, Frame fr ) {
+    throw H2O.unimpl();
+  }
+  private ValFrame frame_op_vec( Frame fr, Vec vec ) {
+    throw H2O.unimpl();
   }
 }
 

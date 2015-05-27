@@ -7,7 +7,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 public class CurrentsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }

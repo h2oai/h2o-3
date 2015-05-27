@@ -64,7 +64,7 @@ public class Env {
           for( i=0; i<_sp; i++ )
             if( _refcnt.get(i).find(vec) != -1 )
               break;
-          if( i==sp ) {
+          if( i==_sp ) {
             if( fs == null ) fs = new Futures();
             vec.remove(fs);
           }
