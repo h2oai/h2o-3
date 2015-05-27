@@ -19,10 +19,9 @@ import water.util.TwoDimTable;
 import java.util.Arrays;
 
 /**
- * Quadratically Regularized PCA
- * This is an algorithm for dimensionality reduction of numerical data.
- * It is a general, parallelized implementation of PCA with quadratic regularization.
- * <a href = "http://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Models</a>
+ * Principal Components Analysis
+ * It computes the principal components from the singular value decomposition using the power method.
+ * <a href = "http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf">SVD via Power Method Algorithm</a>
  * @author anqi_fu
  *
  */

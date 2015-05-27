@@ -28,6 +28,9 @@ import java.util.Arrays;
 
 /**
  * Generalized Low Rank Models
+ * This is an algorithm for dimensionality reduction of a dataset. It is a general, parallelized
+ * optimization algorithm that applies to a variety of loss and regularization functions.
+ * Categorical columns are handled by expansion into 0/1 indicator columns for each level.
  * <a href = "http://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Models</a>
  * @author anqi_fu
  */
