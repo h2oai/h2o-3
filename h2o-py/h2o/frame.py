@@ -22,7 +22,7 @@ class H2OFrame:
       # 1 for __del__ call, 1 for __del__ local dict
       # 1 for _vecs
       # 1 for parent
-      if cnt>=4 or v._expr.is_pending(): continue  # leave vec alone!
+      if v._expr.is_pending() or cnt>=4: continue  # leave vec alone!
       else:                                        # collect the vecs to be deleted in bulk.
         v._expr._removed_by_frame_del=True
         vecs+=[v]

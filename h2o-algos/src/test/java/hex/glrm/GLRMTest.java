@@ -96,6 +96,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 0.5;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._init = GLRM.Initialization.User;
       parms._recover_pca = false;
       parms._user_points = yinit._key;
       parms._seed = seed;
@@ -183,6 +184,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 0;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       // parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GLRM.Initialization.User;
       parms._user_points = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
