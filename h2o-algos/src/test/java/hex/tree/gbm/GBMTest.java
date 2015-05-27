@@ -233,8 +233,8 @@ public class GBMTest extends TestUtil {
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
       double auc = mm._auc._auc;
       Assert.assertTrue(0.84 <= auc && auc < 0.86); // Sanely good model
-      long[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ar(ar(315, 78), ar(26, 81)), cm);
+      double[][] cm = mm._auc.defaultCM();
+      Assert.assertArrayEquals(ard(ard(315, 78), ard(26, 81)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();

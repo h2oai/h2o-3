@@ -104,7 +104,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         if (frame_column_names.containsAll(model_cols)) {
           // See if adapt throws an exception or not.
           try {
-            if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
+            if( model.adaptTestForTrain(new Frame(frame), false, false).length == 0 )
               compatible_models.add(model);
           } catch( IllegalArgumentException e ) {
             // skip

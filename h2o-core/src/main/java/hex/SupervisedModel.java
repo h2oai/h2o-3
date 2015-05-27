@@ -69,6 +69,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     public double[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
 
     public SupervisedOutput() { this(null); }
+    public SupervisedOutput(boolean hasWeights, boolean hasOffset) {super(hasWeights,hasOffset);}
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
@@ -97,8 +98,13 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
       _modelClassDist = _priorClassDist;
     }
 
+    public int responseIdx    () { return _names.length-1;}
+    public int offsetIdx      () { return _hasOffset?_names.length-2:-1;}
+    public int weightsIdx     () { return _hasWeights ?_names.length-(_hasOffset?3:2):-1;}
+
+
     /** @return Returns number of input features */
-    @Override public int nfeatures() { return _names.length - 1; }
+    @Override public int nfeatures() { return _names.length - 1  - (_hasOffset?1:0)  - (_hasWeights?1:0);}
 
     @Override public boolean isSupervised() { return true; }
 

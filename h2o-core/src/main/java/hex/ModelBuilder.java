@@ -49,6 +49,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Map the algo name (e.g., "deeplearning") to the Model class (e.g., DeepLearningModel.class):
   private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
 
+  private transient Vec _weights;
+  private Key  _weights_key;
+
+  public boolean hasOffset(){return false;}
+  public Vec offset(){return null;}
+  public boolean hasWeights(){return _weights_key != null;}
+  public Vec weights() {
+    if(_weights_key == null) return null;
+    return _weights == null?DKV.<Vec>getGet(_weights_key):_weights;
+  }
+
   /**
    * Register a ModelBuilder, assigning it an algo name.
    */
@@ -192,6 +203,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   }
 
+
+  // put special vecs at the end
+  // return number of special vecs
+  protected int reorderVecs() {
+    if(_parms._weights_column != null) {
+      Vec w = _train.remove(_parms._weights_column);
+      if(w == null)
+        error("_weights_column","Weights column '" + _parms._weights_column  + "' not found in the training frame");
+      else {// add offset to the end
+        _weights = w;
+        _weights_key = w._key;
+        _train.add(_parms._weights_column, w);
+        return 1;
+      }
+    }
+    return 0;
+  }
+
+  protected  boolean ignoreStringColumns(){return true;}
+  protected void ignoreConstColumns(int npredictors, boolean expensive){
+    // Drop all-constant and all-bad columns.
+    if( _parms._ignore_const_cols)
+      new FilterCols(npredictors) {
+        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad() || (ignoreStringColumns() && v.isString()); }
+      }.doIt(_train,"Dropping constant columns: ",expensive);
+  }
   /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
@@ -239,11 +276,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
-    // Drop all-constant and all-bad columns.
-    if( _parms._ignore_const_cols)
-      new FilterCols() { 
-        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
-      }.doIt(_train,"Dropping constant columns: ",expensive);
+
 
     /*
     We now do this only through Rapids.  There should be an easy way to do it through the Java API for Sparkling Water users.
@@ -257,13 +290,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
-    new FilterCols() { 
-      @Override protected boolean filter(Vec v) { return v.isString() || v.isUUID(); }
-    }.doIt(_train,"Dropping String and UUID columns: ",expensive);
-
+    ignoreConstColumns(reorderVecs(),expensive);
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
+
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
@@ -271,17 +302,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (va != null)
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(_train._names,null,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
+      String[] msgs = Model.adaptTestForTrain(_train._names,_parms._weights_column, _parms._offset_column, null,_train.domains(),_valid,_parms.missingColumnsType(),expensive, true);
       if( expensive ) {
         for( String s : msgs ) {
           Log.info(s);
           info("_valid", s);
         }
       }
+      assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
     } catch( IllegalArgumentException iae ) {
       error("_valid",iae.getMessage());
     }
-    assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
   }
 
   /**
@@ -311,10 +342,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
   abstract class FilterCols {
+    final int _specialVecs; // special vecs to skip at the end
+    public FilterCols(int n) {_specialVecs = n;}
+
     abstract protected boolean filter(Vec v);
+
     void doIt( Frame f, String msg, boolean expensive ) {
       boolean any=false;
-      for( int i = 0; i < f.vecs().length; i++ ) {
+      for( int i = 0; i < f.vecs().length - _specialVecs; i++ ) {
         if( filter(f.vecs()[i]) ) {
           if( any ) msg += ", "; // Log dropped cols
           any = true;

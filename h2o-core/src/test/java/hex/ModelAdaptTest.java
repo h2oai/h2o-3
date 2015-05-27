@@ -31,7 +31,7 @@ public class ModelAdaptTest extends TestUtil {
     
     Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
-    String[] warns = am.adaptTestForTrain(adapt,true);
+    String[] warns = am.adaptTestForTrain(adapt,true, true);
     Assert.assertTrue(ArrayUtils.find(warns,"Validation column Feature_1 has levels not trained on: [D]")!= -1);
     Assert.assertTrue(ArrayUtils.find(warns, "Validation set is missing training column Const: substituting in a column of NAs") != -1);
     Assert.assertTrue(ArrayUtils.find(warns, "Validation set is missing training column Useless: substituting in a column of NAs") != -1);
@@ -67,7 +67,7 @@ public class ModelAdaptTest extends TestUtil {
     Frame tst = new Frame();
     tst.add("cat", cat.makeCon(Double.NaN)); // All NAN/missing column
     Frame adapt = new Frame(tst);
-    String[] warns = am.adaptTestForTrain(adapt,true);
+    String[] warns = am.adaptTestForTrain(adapt,true, true);
     Assert.assertTrue(warns.length == 0); // No errors during adaption
 
     Model.cleanup_adapt( adapt, tst );
@@ -91,7 +91,7 @@ public class ModelAdaptTest extends TestUtil {
     tst.add("dog",vec(2, 3, 2, 3));
     Frame adapt = new Frame(tst);
     boolean saw_iae = false;
-    try { am.adaptTestForTrain(adapt, true); }
+    try { am.adaptTestForTrain(adapt, true, true); }
     catch( IllegalArgumentException iae ) { saw_iae = true; }
     Assert.assertTrue(saw_iae);
 

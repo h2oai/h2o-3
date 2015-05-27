@@ -23,7 +23,6 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
-import water.util.MathUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -228,7 +227,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless", fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
       DKV.put(dinfo._key, dinfo);
 
       double[] beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
@@ -293,9 +292,9 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless", fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
-      DKV.put(dinfo._key, dinfo);
-      double[] beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      DKV.put(dinfo._key,dinfo);
+      double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       Random rnd = new Random(987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
@@ -310,9 +309,9 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
       params._use_all_factor_levels = false;
       dinfo.remove();
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
-      DKV.put(dinfo._key, dinfo);
-      beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      DKV.put(dinfo._key,dinfo);
+      beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       rnd = new Random(1987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
@@ -328,9 +327,9 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._use_all_factor_levels = true;
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
-      DKV.put(dinfo._key, dinfo);
-      beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      DKV.put(dinfo._key,dinfo);
+      beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       rnd = new Random(987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
@@ -542,10 +541,10 @@ public class GLMTest  extends TestUtil {
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       // now check the gradient
-      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false);
-      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, 0, beta, 1.0 / 380.0, null).doAll(dinfo._adaptedFrame);
-      double[] grad = lt._gradient;
-      String[] names = model.dinfo().coefNames();
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, null).doAll(dinfo._adaptedFrame);
+      double [] grad = lt._gradient;
+      String [] names = model.dinfo().coefNames();
       ValueString vs = new ValueString();
       outer:
       for (int i = 0; i < names.length; ++i) {
@@ -611,7 +610,7 @@ public class GLMTest  extends TestUtil {
       model = DKV.get(modelKey).get();
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the gradient
-      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
       // todo: remove, result from h2o.1
       // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, 0, beta_1, 1.0 / 380.0, null).doAll(dinfo._adaptedFrame);
@@ -806,9 +805,9 @@ public class GLMTest  extends TestUtil {
     Vec v12 = Vec.makeVec(d9, Vec.newKey());
 
     Key k = Key.make("TestData");
-    Frame f = new Frame(v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12);
-    DKV.put(k, f);
-    DataInfo dinfo = new DataInfo(Key.make(), f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false);
+    Frame f = new Frame(v01,v02,v03,v04,v05,v05,v06,v07,v08,v09,v10,v11,v12);
+    DKV.put(k,f);
+    DataInfo dinfo = new DataInfo(Key.make(),f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);
     final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, null, null).setSparse(true).doAll(dinfo._adaptedFrame);
     final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, null, null).setSparse(false).doAll(dinfo._adaptedFrame);
@@ -881,10 +880,10 @@ public class GLMTest  extends TestUtil {
       params._train = frMM._key;
       params._use_all_factor_levels = true;
       // test the gram
-      DataInfo dinfo = new DataInfo(Key.make(), frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false);
-      GLMIterationTask glmt = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, null, null).doAll(dinfo._adaptedFrame);
-      for (int i = 0; i < glmt._xy.length; ++i) {
-        for (int j = 0; j <= i; ++j) {
+      DataInfo dinfo = new DataInfo(Key.make(),frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false);
+      GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0,null, null).doAll(dinfo._adaptedFrame);
+      for(int i = 0; i < glmt._xy.length; ++i) {
+        for(int j = 0; j <= i; ++j ) {
           assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);
         }
         assertEquals(xy.at(i), glmt._xy[i], 1e-5);
@@ -979,7 +978,24 @@ public class GLMTest  extends TestUtil {
       return metrics._resDev;
     }
   }
-
+  public static double residualDevianceTest(GLMModel m) {
+    if(m._parms._family == Family.binomial) {
+      ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._validation_metrics;
+      return metrics._resDev;
+    } else {
+      ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM)m._output._validation_metrics;
+      return metrics._resDev;
+    }
+  }
+  public static double nullDevianceTest(GLMModel m) {
+    if(m._parms._family == Family.binomial) {
+      ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._validation_metrics;
+      return metrics._nullDev;
+    } else {
+      ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM)m._output._validation_metrics;
+      return metrics._nullDev;
+    }
+  }
   public static double aic(GLMModel m) {
     if (m._parms._family == Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
@@ -1013,6 +1029,20 @@ public class GLMTest  extends TestUtil {
   public static double auc(GLMModel m) {
     ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
     return metrics.auc()._auc;
+  }
+  public static double logloss(GLMModel m) {
+    ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
+    return metrics._logloss;
+  }
+
+  public static double mse(GLMModel m) {
+    if (m._parms._family == Family.binomial) {
+      ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
+      return metrics._MSE;
+    } else {
+      ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM) m._output._training_metrics;
+      return metrics._MSE;
+    }
   }
 
   public static double nullDeviance(GLMModel m) {
@@ -1095,6 +1125,7 @@ public class GLMTest  extends TestUtil {
       if(m != null)m.delete();
     }
   }
+
   /**
    * Simple test for binomial family (no regularization, test both lsm solvers).
    * Runs the classical prostate, using dataset with race replaced by categoricals (probably as it's supposed to be?), in any case,
@@ -1177,7 +1208,7 @@ public class GLMTest  extends TestUtil {
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       fr.remove("ID").remove();
       DKV.put(fr._key,fr);
-      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
       new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
       score = model3.score(fr);
       mm3 = ModelMetrics.getFromDKV(model3,fr);
