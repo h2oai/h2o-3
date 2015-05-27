@@ -25,11 +25,11 @@ buildscript {
     }
 
     dependencies {
-        classpath 'eu.appsatori:gradle-fatjar-plugin:0.2'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.1'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'de.undercouch:gradle-download-task:1.1'
-        classpath 'joda-time:joda-time:2.2'
+        classpath 'joda-time:joda-time:2.3'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
     }
 }
