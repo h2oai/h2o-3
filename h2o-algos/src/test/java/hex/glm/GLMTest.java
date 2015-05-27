@@ -1030,6 +1030,20 @@ public class GLMTest  extends TestUtil {
     ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
     return metrics.auc()._auc;
   }
+  public static double logloss(GLMModel m) {
+    ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
+    return metrics._logloss;
+  }
+
+  public static double mse(GLMModel m) {
+    if (m._parms._family == Family.binomial) {
+      ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
+      return metrics._MSE;
+    } else {
+      ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM) m._output._training_metrics;
+      return metrics._MSE;
+    }
+  }
 
   public static double nullDeviance(GLMModel m) {
     if (m._parms._family == Family.binomial) {

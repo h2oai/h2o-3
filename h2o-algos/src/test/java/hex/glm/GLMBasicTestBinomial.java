@@ -590,6 +590,8 @@ public class GLMBasicTestBinomial extends TestUtil {
             assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
           }
           assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);
+          assertEquals(GLMTest.logloss(modelUpsampled),GLMTest.logloss(model),1e-4);
+          assertEquals(GLMTest.mse(modelUpsampled),GLMTest.mse(model),1e-4);
           assertEquals(1673, GLMTest.nullDeviance(model),1);
           assertEquals(1195, GLMTest.residualDeviance(model),1);
           assertEquals(251,   GLMTest.nullDOF(model), 0);
