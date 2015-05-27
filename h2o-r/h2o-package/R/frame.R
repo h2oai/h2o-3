@@ -2694,8 +2694,10 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
   histo$mids   <- mids
   histo$xname  <- deparse(substitute(x))
   oldClass(histo) <- "histogram"
-  plot(histo)
-  invisible(histo)
+  if( plot ) {
+    plot(histo)
+    invisible(histo)
+  } else histo
 }
 
 #'
