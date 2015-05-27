@@ -394,8 +394,9 @@ class H2OFrame:
     Generate summary of the frame on a per-Vec basis.
     :return: None
     """
-    fr_sum = h2o.frame_summary(self.send_frame())["frames"][0]  # only ONE frame summary at a time, the first one...
-
+    frtmp=self.send_frame()
+    fr_sum = h2o.frame_summary(frtmp)["frames"][0]  # only ONE frame summary at a time, the first one...
+    h2o.removeFrameShallow(frtmp)  # wipe the frame binding the vecs immediately
     type = ["type"]
     mins = ["mins"]
     mean = ["mean"]
