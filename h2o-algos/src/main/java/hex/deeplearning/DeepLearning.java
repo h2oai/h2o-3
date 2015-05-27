@@ -1,10 +1,10 @@
 package hex.deeplearning;
 
-
 import hex.DataInfo;
-import hex.Model;
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SupervisedModelBuilder;
+import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -28,7 +28,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
+public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> {
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
@@ -405,7 +405,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
           model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
         }
-        model._output.autoencoder = _parms._autoencoder;
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
 

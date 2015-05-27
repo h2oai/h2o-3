@@ -25,7 +25,7 @@ public class Score extends MRTask<Score> {
   
   @Override public void map( Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
-    final int nclass = _bldr._nclass; 
+    final int nclass = _bldr.nclasses();
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
