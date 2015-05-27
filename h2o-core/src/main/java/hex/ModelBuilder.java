@@ -309,10 +309,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           info("_valid", s);
         }
       }
+      assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
     } catch( IllegalArgumentException iae ) {
       error("_valid",iae.getMessage());
     }
-    assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
   }
 
   /**

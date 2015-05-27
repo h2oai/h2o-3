@@ -408,7 +408,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test dataset is missing offset vector ('" + offset + "'");
       if(vec == null && isWeights && computeMetrics)
-        throw new IllegalArgumentException("Test dataset is missing weights vector ('" + offset + "'");
+        throw new IllegalArgumentException("Test dataset is missing weights vector ('" + weights + "'");
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null && !skipCol) {
         String str = "Validation set is missing training column "+names[i];

@@ -781,7 +781,6 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
     params._train = fKeyTrain;
-//    params._valid = fKeyTest;
     params._offset_column = "offset";
     params._weights_column = "weights";
     params._lambda = new double[]{0};
@@ -797,7 +796,15 @@ public class GLMBasicTestBinomial extends TestUtil {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
+          params._valid = fKeyTest;
           System.out.println("SOLVER = " + s);
+          try {
+            job = new GLM(Key.make("prostate_model"), "glm test", params);
+            model = job.trainModel().get();
+          } catch(Exception iae) {
+            assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
+          }
+          params._valid = null;
           job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
           model = job.trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
