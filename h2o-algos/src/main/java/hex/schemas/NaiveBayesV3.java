@@ -2,11 +2,12 @@ package hex.schemas;
 
 import hex.naivebayes.NaiveBayes;
 import hex.naivebayes.NaiveBayesModel;
+import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.api.API;
-import water.api.SupervisedModelParametersSchema;
+import water.api.ModelParametersSchema;
 
-public class NaiveBayesV3 extends SupervisedModelBuilderSchema<NaiveBayes,NaiveBayesV3,NaiveBayesV3.NaiveBayesParametersV3> {
-  public static final class NaiveBayesParametersV3 extends SupervisedModelParametersSchema<NaiveBayesModel.NaiveBayesParameters, NaiveBayesParametersV3> {
+public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,NaiveBayesV3.NaiveBayesParametersV3> {
+  public static final class NaiveBayesParametersV3 extends ModelParametersSchema<NaiveBayesParameters, NaiveBayesParametersV3> {
     static public String[] own_fields = new String[]{"laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob", "compute_metrics"};
 
     @API(help = "Laplace smoothing parameter")

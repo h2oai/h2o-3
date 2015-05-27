@@ -16,7 +16,7 @@ import java.util.Arrays;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
+public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[] {

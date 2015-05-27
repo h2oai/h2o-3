@@ -23,7 +23,7 @@ import java.util.Random;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
-public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
+public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
 
   // Number of trees requested, including prior trees from a checkpoint
@@ -41,6 +41,25 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Sum of variable empirical improvement in squared-error.  The value is not scaled.
   private transient float[/*nfeatures*/] _improvPerVar;
 
+  public boolean isSupervised(){return true;}
+
+  Key _response_key;
+  Key _vresponse_key;
+
+  @Override
+  public Vec response() {
+    return _response == null ? (_response = DKV.getGet(_response_key)) : _response;
+  }
+
+  @Override
+  public Vec vresponse() {
+    if(_vresponse_key == null) return response();
+    return _vresponse != null ? _vresponse:(_vresponse = DKV.getGet(_vresponse_key));
+  }
+
+  @Override
+  protected boolean computePriorClassDistribution(){ return true;}
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -51,7 +70,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    *  the number of classes to predict on; validate a checkpoint.  */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-
+    if(_vresponse != null)
+      _vresponse_key = _vresponse._key;
+    if(_response != null)
+      _response_key = _response._key;
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
       error("_nclass", "Too many levels in response column!");
 
@@ -104,8 +126,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
           _model = makeModel(_dest, _parms, 
-                             initial_MSE(response(), response()), 
-                             _valid == null ? Double.NaN : initial_MSE(response(),vresponse())); // Make a fresh model
+                             initial_MSE(_response, _response),
+                             _valid == null ? Double.NaN : initial_MSE(_response,_vresponse)); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
           _model._output._init_f = _initialPrediction;
         }

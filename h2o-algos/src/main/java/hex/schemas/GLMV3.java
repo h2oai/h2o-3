@@ -2,22 +2,22 @@ package hex.schemas;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
 import water.api.FrameV3.ColSpecifierV3;
 import water.api.KeyV3.FrameKeyV3;
-import water.api.SupervisedModelParametersSchema;
+import water.api.ModelParametersSchema;
 
 /**
  * Created by tomasnykodym on 8/29/14.
  */
-public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
+public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
-  public static final class GLMParametersV3 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV3> {
+  public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
     static public String[] own_fields = new String[]{
+            "response_column",
             "offset_column",
             "weights_column",
             "family",
@@ -39,6 +39,9 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
             "beta_constraints",
             "max_active_predictors"
     };
+
+    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 response_column;
 
     // todo move this up in the hierarchy when there is offset support?
     @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)

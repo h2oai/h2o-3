@@ -15,7 +15,7 @@ import java.util.HashMap;
 /**
  * Created by tomasnykodym on 8/27/14.
  */
-public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs, boolean hasWeights, boolean hasOffset) {
     super(selfKey, parms, null);
 
@@ -57,7 +57,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
 
 
-  public static class GLMParameters extends SupervisedModel.SupervisedParameters {
+  public static class GLMParameters extends Model.Parameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
@@ -432,7 +432,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public final double _ySigma;
   public final long   _nobs;
 
-  public static class GLMOutput extends SupervisedModel.SupervisedOutput {
+  public static class GLMOutput extends Model.Output {
     Submodel[] _submodels;
     DataInfo _dinfo;
     String[] _coefficient_names;
@@ -465,7 +465,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public GLMOutput() { }
+    public GLMOutput() {_isSupervised = true;}
 
     public GLMOutput(GLM glm) {
       super(glm);

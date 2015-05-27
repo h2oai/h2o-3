@@ -39,8 +39,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 
-  @Override public Vec vresponse() { return super.vresponse() == null ? response() : super.vresponse(); }
-
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
