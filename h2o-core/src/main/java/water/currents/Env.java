@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import water.*;
+import water.util.SB;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -46,13 +47,28 @@ public class Env {
   StackHelp stk() { return new StackHelp(); }
   class StackHelp implements AutoCloseable {
     final int _sp = sp();
-    // Push & track
+    // Push & track.  Called on every Val that spans a (nested) exec call.
+    // Used to track Frames with lifetimes spanning other AST executions.
     public Val track(Val v) {
       if( v instanceof ValFrame )
         _refcnt.add(sp(),((ValFrame)v)._fr);
       return v; 
     }
-    // Pop-all and remove dead
+    // If an opcode is returning a Frame, it must call "returning(frame)" to
+    // track the returned Frame.  Otherwise shared input Vecs who's last use is
+    // in this opcode will get deleted as the opcode exits - even if they are
+    // shared in the returning output Frame.
+    private Frame _ret_fr;      // Optionally return a Frame on stack scope exit
+    public ValFrame returning( ValFrame fr ) {
+      assert _ret_fr == null;
+      _ret_fr = fr._fr;
+      return fr;
+    }
+
+    // Pop-all and remove dead.  If a Frame was not "tracked" above, then if it
+    // goes dead it will leak on function exit.  If a Frame is returned from a
+    // function and not declared "returning", any Vecs it shares with Frames
+    // that are dying in this opcode will be deleted out from under it.
     @Override public void close() {
       Futures fs = null;
       int i, sp = sp();
@@ -64,7 +80,7 @@ public class Env {
           for( i=0; i<_sp; i++ )
             if( _refcnt.get(i).find(vec) != -1 )
               break;
-          if( i==_sp ) {
+          if( i==_sp && (_ret_fr==null || _ret_fr.find(vec)== -1) ) {
             if( fs == null ) fs = new Futures();
             vec.remove(fs);
           }
@@ -135,6 +151,11 @@ abstract class Val {
   boolean isStr() { return false; }
   boolean isFrame() { return false; }
   boolean isFun() { return false; }
+
+  double getNum() { throw new IllegalArgumentException("Expected a number but found a "+getClass()); }
+  String getStr() { throw new IllegalArgumentException("Expected a String but found a "+getClass()); }
+  Frame  getFrame(){throw new IllegalArgumentException("Expected a Frame but found a "+getClass()); }
+  AST    getFun() { throw new IllegalArgumentException("Expected a function but found a "+getClass()); }
 }
 
 class ValNum extends Val {
@@ -143,6 +164,7 @@ class ValNum extends Val {
   @Override public String toString() { return ""+_d; }
   @Override int type () { return Env.NUM; }
   @Override boolean isNum() { return true; }
+  @Override double getNum() { return _d; }
 }
 
 class ValStr extends Val {
@@ -151,6 +173,7 @@ class ValStr extends Val {
   @Override public String toString() { return _str; }
   @Override int type () { return Env.STR; }
   @Override boolean isStr() { return true; }
+  @Override String getStr() { return _str; }
 }
 
 class ValFrame extends Val {
@@ -159,6 +182,7 @@ class ValFrame extends Val {
   @Override public String toString() { return _fr.toString(); }
   @Override int type () { return Env.FRM; }
   @Override boolean isFrame() { return true; }
+  @Override Frame getFrame() { return _fr; }
 }
 
 class ValFun extends Val {
@@ -167,4 +191,5 @@ class ValFun extends Val {
   @Override public String toString() { return _ast.toString(); }
   @Override int type () { return Env.FUN; }
   @Override boolean isFun() { return true; }
+  @Override AST getFun() { return _ast; }
 }

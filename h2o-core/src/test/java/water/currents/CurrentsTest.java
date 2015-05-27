@@ -63,25 +63,18 @@ public class CurrentsTest extends TestUtil {
 
   @Test public void test6() {
     // Checking `hex[,1]`
-    String tree = "([col] %a.hex 0)";
+    String tree = "(cols %a.hex [0])";
     checkTree(tree);
     // Checking `hex[1,5]`
-    tree = "([row] ([col] %a.hex 5) 0)";
+    tree = "(rows (cols %a.hex [0]) [5])";
     checkTree(tree);
     // Checking `hex[c(1:5,7,9),6]`
-    tree = "([ %a.hex (llist (: #0 #4) #6 #8) #5)";
+    tree = "(cols (rows %a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[1,c(1:5,7,8)]`
-    tree = "([ %a.hex #0 (llist (: #0 #4) #6 #7))";
-    checkTree(tree);
+    //tree = "([ %a.hex #0 (llist (: #0 #4) #6 #7))";
+    //checkTree(tree);
   }
-
-  //@Test public void test7() {
-  //  Frame fr = parse_test_file(Key.make("iris.hex"),"smalldata/iris/iris_wheader.csv");
-  //  String x = "(del %iris.hex 'class')";
-  //  checkTree(x);
-  //  fr.delete();
-  //}
 
   private static void checkTree(String tree) { checkTree(tree,false); }
   private static void checkTree(String tree, boolean expectThrow) {
@@ -101,7 +94,7 @@ public class CurrentsTest extends TestUtil {
         System.out.println(((ValNum)val)._d);
       }
     } catch( IllegalArgumentException iae ) {
-      Assert.assertTrue(expectThrow);
+      if( !expectThrow ) throw iae;
     } finally {
       fr.delete();
       r.delete();

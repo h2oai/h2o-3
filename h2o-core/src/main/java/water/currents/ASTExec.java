@@ -34,6 +34,13 @@ class ASTExec extends AST {
     Val fun = _asts[0].exec(env);
     if( !fun.isFun() )
       throw new IllegalArgumentException("Expected a function but found "+fun.getClass());
-    return ((ValFun)fun)._ast.apply(env,_asts);
+    AST ast = ((ValFun)fun)._ast;
+    int nargs = ast.nargs();
+    if( nargs != -1 && nargs != _asts.length )
+      throw new IllegalArgumentException("Incorrect number of arguments; "+ast+" expects "+nargs+" but was passed "+_asts.length);
+    return ast.apply(env,_asts);
   }
+
+  // No expected argument count
+  @Override int nargs() { return -1; }
 }

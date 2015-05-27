@@ -47,6 +47,7 @@ public class Exec {
   //   '('   a nested function application expression ')
   //   '{'   a nested function definition  expression '}'
   //   '#'   a double: attached_token
+  //   '['   a numeric list expression, till ']'
   //   '%'   an ID: attached_token
   //   '"'   a String (double quote): attached_token
   //   "'"   a String (single quote): attached_token
@@ -63,6 +64,7 @@ public class Exec {
       return new ASTNum(this);
     case '\"': return new ASTStr(this,'\"');
     case '\'': return new ASTStr(this,'\'');
+    case '[':  return new ASTNumList(this);
     case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
     case '%':  _x++;             // Skip before ID, FALL THRU
     default:  return new ASTId(this);
@@ -89,6 +91,14 @@ public class Exec {
     char c;
     while( !isWS(c=peek()) && c!=')' ) _x++;
     return _str.substring(start,_x);
+  }
+
+  // Parse while number-like, and return the number
+  double number() {
+    int start = _x;
+    char c;
+    while( !isWS(c=peek()) && c!=')' && c!=']' && c!=',' && c!=':' ) _x++;
+    return Double.valueOf(_str.substring(start,_x));
   }
 
   // Parse till matching

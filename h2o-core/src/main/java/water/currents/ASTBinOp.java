@@ -9,6 +9,7 @@ import water.parser.ValueString;
  * Subclasses auto-widen between scalars and Frames, and have exactly two arguments
  */
 abstract class ASTBinOp extends ASTPrim {
+  @Override int nargs() { return 1+2; }
   @Override Val apply( Env env, AST asts[] ) {
     try (Env.StackHelp stk = env.stk()) {
         Val left = stk.track(asts[1].exec(env));
@@ -20,22 +21,22 @@ abstract class ASTBinOp extends ASTPrim {
   Val prim_apply( Val left, Val rite ) {
     switch( left.type() ) {
     case Env.NUM: 
-      final double dlf = ((ValNum)left)._d;
+      final double dlf = left.getNum();
       
       switch( rite.type() ) {
-      case Env.NUM:  return new ValNum( op (dlf,((ValNum  )rite)._d ));
-      case Env.FRM:  return scalar_op_frame(dlf,((ValFrame)rite)._fr) ;
+      case Env.NUM:  return new ValNum( op (dlf,rite.getNum()));
+      case Env.FRM:  return scalar_op_frame(dlf,rite.getFrame());
       case Env.STR:  throw H2O.unimpl();
       default: throw H2O.fail();
       }
 
     case Env.FRM: 
-      Frame flf = ((ValFrame)left)._fr;
+      Frame flf = left.getFrame();
 
       switch( rite.type() ) {
-      case Env.NUM:  return frame_op_scalar(flf,((ValNum  )rite)._d  );
-      case Env.STR:  return frame_op_scalar(flf,((ValStr  )rite)._str);
-      case Env.FRM:  return frame_op_frame (flf,((ValFrame)rite)._fr );
+      case Env.NUM:  return frame_op_scalar(flf,rite.getNum());
+      case Env.STR:  return frame_op_scalar(flf,rite.getStr());
+      case Env.FRM:  return frame_op_frame (flf,rite.getFrame());
       default: throw H2O.fail();
       }
           

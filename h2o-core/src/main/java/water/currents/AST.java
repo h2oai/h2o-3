@@ -28,6 +28,10 @@ abstract class AST {
   abstract String str();
   @Override public String toString() { return str(); }
 
+  // Number of arguments, if that makes sense.  Always count 1 for self, so a
+  // binary operator like '+' actually has 3 nargs.
+  abstract int nargs();
+
   // Built-in primitives, done after other namespace lookups happen
   static final HashMap<String,AST> PRIMS = new HashMap<>();
   static void init(AST ast) { PRIMS.put(ast.str(),ast); }
@@ -51,6 +55,10 @@ abstract class AST {
     // Logical - includes short-circuit evaluation
     init(new ASTLAnd());
     init(new ASTLOr());
+
+    // Generic data mungers
+    init(new ASTColSlice());
+    init(new ASTRowSlice());
   }
 }
 
@@ -60,6 +68,7 @@ class ASTNum extends AST {
   ASTNum( Exec e ) { _d = new ValNum(Double.valueOf(e.token())); }
   @Override public String str() { return _d.toString(); }
   @Override Val exec( Env env ) { return _d; }
+  @Override int nargs() { return 1; }
 }
 
 /** A String.  Execution is just to return the constant. */
@@ -68,6 +77,7 @@ class ASTStr extends AST {
   ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
   @Override public String str() { return _str.toString(); }
   @Override Val exec(Env env) { return _str; }
+  @Override int nargs() { return 1; }
 }
 
 /** An ID.  Execution does lookup in the current scope. */
@@ -76,6 +86,7 @@ class ASTId extends AST {
   ASTId(Exec e) { _id = e.token(); }
   @Override public String str() { return _id; }
   @Override Val exec(Env env) { return env.lookup(_id); }
+  @Override int nargs() { return 1; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*
