@@ -36,8 +36,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   //public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
-
-
+  
   @Override
   protected int reorderVecs() {
     int res = super.reorderVecs();
@@ -53,9 +52,10 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       }
     }
     Vec r = _train.remove(_parms._response_column);
-    if(r == null)
-      error("_response_column","Response column '" + _parms._response_column  + "' not found in the training frame");
-    else {
+    if(r == null) {
+      if(isSupervised())
+        error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
+    } else {
       _train.add(_parms._response_column, r);
       ++res;
     }
