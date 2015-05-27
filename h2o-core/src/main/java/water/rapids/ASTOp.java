@@ -2998,9 +2998,9 @@ class ASTHist extends ASTUniPrefixOp {
     }
     @Override public void map(Chunk c) {
       // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
-      int x;
-      int xx=1;
       for( int i = 0; i < c._len; ++i ) {
+        int x;
+        int xx=1;
         if( c.isNA(i) ) continue;
         double r = c.atd(i);
         if( _h==-1 ) {
