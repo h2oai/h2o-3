@@ -46,8 +46,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
       if( iact != 0 && iact != 1 ) return ds; // The actual is effectively a NaN
-      _count += w;
-
+      _wsum += w;
+      _count++;
       // Compute error
       double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
       _sumsqe += w*err*err;           // Squared error
@@ -68,8 +68,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       if (sigma != 0.0 && _count > 0 ) {
-        double mse = _sumsqe / _count;
-        double logloss = _logloss / _count;
+        double mse = _sumsqe / _wsum;
+        double logloss = _logloss / _wsum;
         AUC2 auc = new AUC2(_auc);
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc, logloss));
       } else {

@@ -140,6 +140,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     transient public double[] _work;
     public double _sumsqe;      // Sum-squared-error
     public long _count;
+    public double _wsum;
 
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
@@ -148,6 +149,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
+      _wsum += _wsum;
     }
 
     public void postGlobal() {}

@@ -258,10 +258,9 @@ public class AUC2 extends Iced {
       // Insert into the histogram
       _ths[idx] = pred;         // New histogram center
       _sqe[idx] = 0;            // Only 1 point, so no squared error
-      if( act==0 ) { _tps[idx]=0; _fps[idx]=1; }
-      else         { _tps[idx]=1; _fps[idx]=0; }
+      if( act==0 ) { _tps[idx]=0; _fps[idx]=w; }
+      else         { _tps[idx]=w; _fps[idx]=0; }
       _n++;
-
       if( _n > _nBins )         // Merge as needed back down to nBins
         mergeOneBin();          // Merge best pair of bins
     }

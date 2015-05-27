@@ -11,6 +11,8 @@ import water.TestUtil;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
+
 import java.io.File;
 import java.util.HashMap;
 
@@ -22,6 +24,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class GLMBasicTestBinomial extends TestUtil {
   static Frame _prostateTrain; // prostate_cat_replaced
+  static Frame _prostateTrainUpsampled; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
   static Frame _abcd; // tiny corner case dataset
   @Test
@@ -476,7 +479,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   public void testWeights(){
     System.out.println("got " + _prostateTrain.anyVec().nChunks() + " chunks");
     GLM job = null;
-    GLMModel model = null;
+    GLMModel model = null, modelUpsampled = null;
 
     // random observation weights, integers in 0 - 9 range
     double [] weights = new double[] {
@@ -544,7 +547,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    Degrees of Freedom: 251 Total (i.e. Null);  241 Residual
 //    Null Deviance:	    1673
 //    Residual Deviance: 1195 	AIC: 1217
-    String [] cfs1 = new String [] { "Intercept",  "AGE",     "RACER2",  "RACER3", "DPROSb", "DPROSc", "DPROSd", "DCAPSb", "PSA",     "VOL",    "GLEASON"};
+    String [] cfs1 = new String [] { "Intercept",  "AGE",     "RACE.R2",  "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA",     "VOL",    "GLEASON"};
     double [] vals = new double [] { -6.019527,    -0.027350, -0.424333, -0.869188, 1.359856, 1.745655, 1.517155, 0.664479, 0.034541, -0.005819, 0.947644};
     GLMParameters params = new GLMParameters(Family.binomial);
     params._response_column = "CAPSULE";
@@ -558,25 +561,44 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 0;
     params._gradient_epsilon = 1e-6;
     params._beta_epsilon = 1e-6;
-    params._max_iterations = 100; // not expected to reach max iterations here
+    params._max_iterations = 1000; // not expected to reach max iterations here
     try {
       for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
+          params._train = fKeyTrain;
+          params._weights_column = "weights";
+          params._gradient_epsilon = 1e-8;
+          params._objective_epsilon = 0;
           System.out.println("SOLVER = " + s);
-          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+          job = new GLM(Key.make("prostate_model"), "glm test", params);
           model = job.trainModel().get();
+          params._train = _prostateTrainUpsampled._key;
+          params._weights_column = null;
+          GLM job2 = new GLM(Key.make("prostate_model_upsampled"), "glm test", params);
+          modelUpsampled = job2.trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
+          HashMap<String, Double> coefsUpsampled = modelUpsampled.coefficients();
           System.out.println("coefs = " + coefs);
+          System.out.println("coefs upsampled = " + coefsUpsampled);
           System.out.println(model._output._training_metrics);
-//          for (int i = 0; i < cfs1.length; ++i)
-//            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+          System.out.println(modelUpsampled._output._training_metrics);
+          for (int i = 0; i < cfs1.length; ++i) {
+            System.out.println("cfs = " + cfs1[i]);
+            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-10:1e-6);
+            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+          }
+          assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);
           assertEquals(1673, GLMTest.nullDeviance(model),1);
           assertEquals(1195, GLMTest.residualDeviance(model),1);
           assertEquals(251,   GLMTest.nullDOF(model), 0);
           assertEquals(241,   GLMTest.resDOF(model), 0);
           assertEquals(1217, GLMTest.aic(model), 1);
+          // mse computed in R on upsampled data
+          assertEquals(0.1604573,model._output._training_metrics._MSE,1e-5);
+          // auc computed in R on explicitly upsampled data
+          assertEquals(0.8348088,GLMTest.auc(model),1e-4);
 //          assertEquals(76.8525, GLMTest.residualDevianceTest(model),1e-4);
           // test scoring
           try { // check we get IAE if computing metrics on data with no weights (but trained with weights)
@@ -601,6 +623,9 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+
+          // test we got auc
+
 //          scoreTest = model.score(fTest);
 //          ModelMetricsBinomialGLM mmTest = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTest);
 //          adata = mmTest._auc;
@@ -613,6 +638,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //            assertEquals(pred_test[i],preds.at(i),1e-6);
         } finally {
           if (model != null) model.delete();
+          if (modelUpsampled != null) modelUpsampled.delete();
           if (scoreTrain != null)
             scoreTrain.delete();
           if (scoreTest != null)
@@ -637,17 +663,21 @@ public class GLMBasicTestBinomial extends TestUtil {
     stall_till_cloudsize(1);
     File f = find_test_file_static("smalldata/glm_test/prostate_cat_train.csv");
     assert f.exists();
-
     NFSFileVec nfs = NFSFileVec.make(f);
     Key outputKey = Key.make("prostate_cat_train.hex");
     _prostateTrain = ParseDataset.parse(outputKey, nfs._key);
 
     f = find_test_file_static("smalldata/glm_test/prostate_cat_test.csv");
     assert f.exists();
-
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("prostate_cat_test.hex");
     _prostateTest = ParseDataset.parse(outputKey, nfs._key);
+
+    f = find_test_file_static("smalldata/glm_test/prostate_cat_train_upsampled.csv");
+    assert f.exists();
+    nfs = NFSFileVec.make(f);
+    outputKey = Key.make("prostate_cat_train_upsampled.hex");
+    _prostateTrainUpsampled = ParseDataset.parse(outputKey, nfs._key);
 
     f = find_test_file_static("smalldata/glm_test/abcd.csv");
     assert f.exists();
@@ -660,6 +690,8 @@ public class GLMBasicTestBinomial extends TestUtil {
   public static void cleanUp() {
     if(_prostateTrain != null)
       _prostateTrain.delete();
+    if(_prostateTrainUpsampled != null)
+      _prostateTrainUpsampled.delete();
     if(_prostateTest != null)
       _prostateTest.delete();
     if(_abcd != null)
