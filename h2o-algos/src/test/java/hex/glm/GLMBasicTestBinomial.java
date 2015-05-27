@@ -11,7 +11,6 @@ import water.TestUtil;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
-import water.parser.ParseSetup;
 
 import java.io.File;
 import java.util.HashMap;
@@ -655,9 +654,208 @@ public class GLMBasicTestBinomial extends TestUtil {
       }
 //      if(fTest != null)fTest.delete();
     }
+  }
+
+  @Test
+  public void testNoInterceptWithOffsetAndWeights() {
+    GLM job = null;
+    GLMModel model = null;
+    double [] offset_train = new double[] {
+      -0.39771185,+1.20479170,-0.16374109,-0.97885903,-1.42996530,+0.83474893,+0.83474893,-0.74488827,+0.83474893,+0.86851236,
+      +1.41589611,+1.41589611,-1.42996530,-0.39771185,-2.01111248,-0.39771185,-0.16374109,+0.62364452,-0.39771185,+0.60262749,
+      -0.06143251,-1.42996530,-0.06143251,-0.06143251,+0.14967191,-0.06143251,-0.39771185,+0.14967191,+1.20479170,-0.39771185,
+      -0.16374109,-0.06143251,-0.06143251,-1.42996530,-0.39771185,-0.39771185,-0.64257969,+1.65774729,-0.97885903,-0.39771185,
+      -0.39771185,-0.39771185,-1.42996530,+1.41589611,-0.06143251,-0.06143251,-0.39771185,-0.06143251,-0.06143251,-0.39771185,
+      -0.06143251,+0.14967191,-0.39771185,-1.42996530,-0.39771185,-0.64257969,-0.39771185,-0.06143251,-0.06143251,-0.06143251,
+      -1.42996530,-2.01111248,-0.06143251,-0.39771185,-0.39771185,-1.42996530,-0.39771185,-1.42996530,-0.06143251,+1.41589611,
+      +0.14967191,-1.42996530,-1.42996530,-0.06143251,-1.42996530,-1.42996530,-0.06143251,-1.42996530,-0.06143251,-0.39771185,
+      -0.06143251,-1.42996530,-0.06143251,-0.39771185,-1.42996530,-0.06143251,-0.06143251,-0.06143251,-1.42996530,-0.39771185,
+      -1.42996530,-0.43147527,-0.39771185,-0.39771185,-0.39771185,-1.42996530,-1.42996530,-0.43147527,-0.39771185,-0.39771185,
+      -0.39771185,-0.39771185,-1.42996530,-1.42996530,-1.42996530,-0.39771185,+0.14967191,+1.41589611,-1.42996530,+1.41589611,
+      -1.42996530,+1.41589611,-0.06143251,+0.14967191,-0.39771185,-0.97885903,-1.42996530,-0.39771185,-0.39771185,-0.39771185,
+      -0.39771185,-1.42996530,-0.39771185,-0.97885903,-0.06143251,-0.06143251,+0.86851236,-0.39771185,-0.39771185,-0.06143251,
+      -0.39771185,-0.39771185,-0.06143251,+0.14967191,-1.42996530,-1.42996530,-0.39771185,+1.20479170,-1.42996530,-0.39771185,
+      -0.06143251,-1.42996530,-0.97885903,+0.14967191,+0.14967191,-1.42996530,-1.42996530,-0.39771185,-0.06143251,-0.43147527,
+      -0.06143251,-0.39771185,-1.42996530,-0.06143251,-0.39771185,-0.39771185,-1.42996530,-0.39771185,-0.39771185,-0.06143251,
+      -0.39771185,-0.39771185,+0.14967191,-0.06143251,+1.41589611,-0.06143251,-0.39771185,-0.39771185,-0.06143251,-1.42996530,
+      -0.06143251,-1.42996530,-0.39771185,-0.64257969,-0.06143251,+1.20479170,-0.43147527,-0.97885903,-0.39771185,-0.39771185,
+      -0.39771185,+0.14967191,-2.01111248,-1.42996530,-0.06143251,+0.83474893,-1.42996530,-1.42996530,-2.01111248,-1.42996530,
+      -0.06143251,+0.86851236,+0.05524374,-0.39771185,-0.39771185,-0.39771185,+1.41589611,-1.42996530,-0.39771185,-1.42996530,
+      -0.39771185,-0.39771185,-0.06143251,+0.14967191,-1.42996530,-0.39771185,-1.42996530,-1.42996530,-0.39771185,-0.39771185,
+      -0.06143251,-1.42996530,-0.97885903,-1.42996530,-0.39771185,-0.06143251,-0.39771185,-0.06143251,-1.42996530,-1.42996530,
+      -0.06143251,-1.42996530,-0.39771185,+0.14967191,-0.06143251,-1.42996530,-1.42996530,+0.14967191,-0.39771185,-0.39771185,
+      -1.42996530,-0.06143251,-0.06143251,-1.42996530,-0.06143251,-1.42996530,+0.14967191,+1.20479170,-1.42996530,-0.06143251,
+      -0.39771185,-0.39771185,-0.06143251,+0.14967191,-0.06143251,-1.42996530,-1.42996530,-1.42996530,-0.39771185,-0.39771185,
+      -0.39771185,+0.86851236,-0.06143251,-0.97885903,-0.06143251,-0.64257969,+0.14967191,+0.86851236,-0.39771185,-0.39771185,
+      -0.39771185,-0.64257969,-1.42996530,-0.06143251,-0.39771185,-0.39771185,-1.42996530,-1.42996530,-0.06143251,+0.14967191,
+      -0.06143251,+0.86851236,-0.97885903,-1.42996530,-1.42996530,-1.42996530,-1.42996530,+0.86851236,+0.14967191,-1.42996530,
+      -0.97885903,-1.42996530,-1.42996530,-0.06143251,+0.14967191,-1.42996530,-0.64257969,-2.01111248,-0.97885903,-0.39771185
+    };
+
+    double [] offset_test = new double [] {
+      +1.65774729,-0.97700971,-0.97700971,-0.97700971,+0.05524374,+0.05524374,+0.05524374,+0.05524374,+0.39152308,+0.39152308,
+      +0.39152308,+0.05524374,+0.05524374,+0.05524374,+0.39152308,-0.97700971,+0.05524374,+1.32146795,+0.39152308,+1.65774729,
+      -0.97700971,+1.65774729,+0.39152308,+0.39152308,+1.65774729,+0.60262749,+0.05524374,+0.05524374,+0.05524374,+0.60262749,
+      +0.05524374,-0.97700971,-0.97885903,+0.05524374,-2.01111248,-0.97700971,+0.05524374,+0.39152308,+0.05524374,+0.60262749,
+      +0.60262749,+0.39152308,+0.60262749,-0.97700971,+0.39152308,+1.65774729,+0.39152308,+0.39152308,+0.05524374,+1.86885170,
+      +0.05524374,-0.97700971,+0.60262749,-0.97700971,+0.60262749,-0.97700971,+0.39152308,-0.97700971,-0.43147527,+1.32146795,
+      +0.05524374,+0.05524374,+0.39152308,+0.39152308,+0.05524374,+0.39152308,-0.97700971,+0.05524374,+0.39152308,+0.05524374,
+      +0.60262749,+1.86885170,+0.05524374,+0.05524374,+1.86885170,+0.60262749,-0.64257969,-0.97700971,+0.60262749,+0.39152308,
+      -0.97700971,-0.97700971,+0.05524374,-0.97700971,-0.97700971,+0.05524374,+0.05524374,+0.60262749,+0.05524374,+0.05524374
+    };
+
+    // random observation weights, integers in 0 - 9 range
+    double [] weights_train = new double[] {
+      0, 6, 5, 4, 4, 8, 2, 4, 9, 5,
+      2, 0, 0, 4, 0, 0, 6, 3, 6, 5,
+      5, 5, 6, 0, 9, 9, 8, 6, 6, 5,
+      6, 1, 0, 6, 8, 6, 9, 2, 8, 0,
+      3, 0, 2, 3, 0, 2, 5, 0, 0, 3,
+      7, 4, 8, 4, 1, 9, 3, 7, 1, 3,
+      8, 6, 9, 5, 5, 1, 9, 5, 2, 1,
+      0, 6, 4, 0, 5, 3, 1, 2, 4, 0,
+      7, 9, 6, 8, 0, 2, 3, 7, 5, 8,
+      3, 4, 7, 8, 1, 2, 5, 7, 3, 7,
+      1, 1, 5, 7, 4, 9, 2, 6, 3, 5,
+      4, 9, 8, 1, 8, 5, 3, 0, 4, 5,
+      1, 2, 2, 7, 8, 3, 4, 9, 0, 1,
+      3, 9, 8, 7, 0, 8, 2, 7, 1, 9,
+      0, 7, 7, 5, 2, 9, 7, 6, 4, 3,
+      4, 6, 9, 1, 5, 0, 7, 9, 4, 1,
+      6, 8, 8, 5, 4, 2, 5, 9, 8, 1,
+      9, 2, 9, 2, 3, 0, 6, 7, 3, 2,
+      3, 0, 9, 5, 1, 8, 0, 2, 8, 6,
+      9, 5, 1, 2, 3, 1, 3, 5, 0, 7,
+      4, 0, 5, 5, 7, 9, 3, 0, 0, 0,
+      1, 5, 3, 2, 8, 9, 9, 1, 6, 2,
+      2, 0, 5, 5, 6, 2, 8, 8, 9, 8,
+      5, 0, 1, 5, 3, 0, 2, 5, 4, 0,
+      6, 5, 4, 5, 9, 7, 5, 6, 2, 2,
+      6, 2, 5, 1, 5, 9, 0, 3, 0, 2,
+      7, 0, 4, 7, 7, 9, 3, 7, 9, 7,
+      9, 6, 2, 6, 2, 2, 9, 0, 9, 8,
+      1, 2, 6, 3, 4, 1, 2, 2, 3, 0
+    };
 
 
 
+    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
+    Vec.Writer vw = offsetVecTrain.open();
+    for(int i = 0; i < offset_train.length; ++i)
+      vw.set(i,offset_train[i]);
+    vw.close();
+
+    Vec weightsVecTrain = _prostateTrain.anyVec().makeZero();
+    vw = weightsVecTrain.open();
+    for(int i = 0; i < weights_train.length; ++i)
+      vw.set(i,weights_train[i]);
+    vw.close();
+
+    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
+    vw = offsetVecTest.open();
+    for(int i = 0; i < offset_test.length; ++i)
+      vw.set(i,offset_test[i]);
+    vw.close();
+
+    Key fKeyTrain = Key.make("prostate_with_offset_train");
+    Key fKeyTest  = Key.make("prostate_with_offset_test");
+    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
+    fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
+    DKV.put(fKeyTrain,fTrain);
+    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+    fTest.add(_prostateTest.names(),_prostateTest.vecs());
+    DKV.put(fKeyTest,fTest);
+//    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,
+//      data = train, weights = w, offset = offset_train)
+//
+//    Coefficients:
+//    AGE       PSA        VOL        GLEASON
+//   -0.070637  0.034939  -0.006326   0.645700
+//
+//    Degrees of Freedom: 252 Total (i.e. Null);  248 Residual
+//    Null Deviance:	    1494
+//    Residual Deviance: 1235 	AIC: 1243
+    String [] cfs1 = new String [] { "Intercept",  "AGE"   ,  "PSA",     "VOL",    "GLEASON"};
+    double [] vals = new double [] {  0,           -0.070637,   0.034939, -0.006326, 0.645700};
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._response_column = "CAPSULE";
+    params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
+    params._train = fKeyTrain;
+//    params._valid = fKeyTest;
+    params._offset_column = "offset";
+    params._weights_column = "weights";
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._standardize = false;
+    params._objective_epsilon = 0;
+    params._gradient_epsilon = 1e-6;
+    params._max_iterations = 100; // not expected to reach max iterations here
+    params._intercept = false;
+    params._beta_epsilon = 1e-6;
+    try {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+        Frame scoreTrain = null, scoreTest = null;
+        try {
+          params._solver = s;
+          System.out.println("SOLVER = " + s);
+          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+          model = job.trainModel().get();
+          HashMap<String, Double> coefs = model.coefficients();
+          System.out.println("coefs = " + coefs);
+          for (int i = 0; i < cfs1.length; ++i)
+            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+          assertEquals(1494, GLMTest.nullDeviance(model), 1);
+          assertEquals(1235, GLMTest.residualDeviance(model), 1);
+          assertEquals(252,   GLMTest.nullDOF(model), 0);
+          assertEquals(248,   GLMTest.resDOF(model), 0);
+          assertEquals(1243,   GLMTest.aic(model), 1);
+//          assertEquals(88.72363, GLMTest.residualDevianceTest(model),1e-4);
+          // test scoring
+          try {
+            scoreTrain = model.score(_prostateTrain);
+            assertTrue("shoul've thrown IAE", false);
+          } catch (IllegalArgumentException iae) {
+            assertTrue(iae.getMessage().contains("Test dataset is missing"));
+          }
+          hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
+          hex.AUC2 adata = mmTrain._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+          scoreTrain = model.score(fTrain);
+          mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
+          adata = mmTrain._auc;
+          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
+          assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
+//          scoreTest = model.score(fTest);
+//          ModelMetricsBinomialGLM mmTest = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTest);
+//          adata = mmTest._auc;
+//          assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
+//          assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
+//          assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
+//          // test the actual predictions
+//          Vec preds = scoreTest.vec("p1");
+//          for(int i = 0; i < pred_test.length; ++i)
+//            assertEquals(pred_test[i],preds.at(i),1e-6);
+        } finally {
+          if (model != null) model.delete();
+          if (scoreTrain != null) scoreTrain.delete();
+          if (scoreTest != null) scoreTest.delete();
+          if (job != null) job.remove();
+        }
+      }
+    } finally {
+      if (fTrain != null) {
+        fTrain.remove("offset").remove();
+        fTrain.remove("weights").remove();
+        DKV.remove(fTrain._key);
+      }
+      if(fTest != null) {
+        fTest.remove("offset").remove();
+        DKV.remove(fTest._key);
+      }
+    }
   }
 
   @BeforeClass
