@@ -2670,8 +2670,9 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
 #'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
 #'               A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+#' @param plot A logical value indicating whether or not a plot should be generated (default is TRUE).
 #' @export
-h2o.hist <- function(x, breaks="Sturges") {
+h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
   if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
   mktmp <- !.is.eval(x)
   if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@frame_id)
@@ -2685,10 +2686,11 @@ h2o.hist <- function(x, breaks="Sturges") {
   }
   h <- as.data.frame(.h2o.nary_frame_op("hist", x, breaks))
   counts <- na.omit(h[,2])
-  mids <- na.omit(h[,3])
+  mids <- na.omit(h[,4])
   histo <- list()
   histo$breaks <- h$breaks
   histo$counts <- counts
+  histo$density <- histo$counts / sum(histo$counts) * 1 / diff(histo$breaks)
   histo$mids   <- mids
   histo$xname  <- deparse(substitute(x))
   oldClass(histo) <- "histogram"
