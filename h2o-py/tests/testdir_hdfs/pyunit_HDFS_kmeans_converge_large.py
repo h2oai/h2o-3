@@ -39,7 +39,7 @@ def hdfs_kmeans_converge(ip, port):
         print "Check k-means converged or maximum iterations reached"
         c1 = h2o.H2OFrame(cross1_km.centers())
         c2 = h2o.H2OFrame(cross2_km.centers())
-        avg_change = (v1-v2) ** 2).sum() / ncent
+        avg_change = ((v1-v2)**2).sum() / ncent
         iters = cross1_km._model_json['output']['model_summary'].cell_values[0][3]
         assert avg_change < 1e-6 or iters > miters, "Expected k-means to converge or reach max iterations. avg_change = " \
                                                     "{0} and iterations = {1}".format(avg_change, iters)
