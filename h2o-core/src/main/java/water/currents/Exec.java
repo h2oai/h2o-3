@@ -52,6 +52,7 @@ public class Exec {
   //   "'"   a String (single quote): attached_token
   //   digits: a double
   //   letters or other specials: an ID
+  @SuppressWarnings({"fallthrough"}) 
   AST parse( ) {
     switch( skipWS() ) {
     case '(':  return new ASTExec(this); // function application
@@ -98,8 +99,7 @@ public class Exec {
     return _str.substring(start,_x-1);
   }
 
-
-  // Return unparsed text, useful in error messages
+  // Return unparsed text, useful in error messages and debugging
   String unparsed() { return _str.substring(_x,_str.length()); }
 
   static boolean isWS(char c) { return c==' '; }
@@ -125,7 +125,7 @@ public class Exec {
   // To avoid a class-circularity hang, we need to force other members of the
   // cluster to load the Exec & AST classes BEFORE trying to execute code
   // remotely, because e.g. ddply runs functions on all nodes.
-  private static boolean _inited;       // One-shot init
+  private static volatile boolean _inited; // One-shot init
   static void cluster_init() {
     if( _inited ) return;
     // Touch a common class to force loading

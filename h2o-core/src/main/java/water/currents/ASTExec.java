@@ -1,15 +1,16 @@
 package water.currents;
 
+import java.util.ArrayList;
 import water.util.SB;
 
-import java.util.ArrayList;
-
-// Apply a function
+/** Apply A Function.  Basic function execution. */
 class ASTExec extends AST {
   final AST[] _asts;
   protected ASTExec( Exec e ) { 
     e.xpeek('(');
     AST ast = e.parse();
+    // An eager "must fail at runtime" test.  Not all ASTId's will yield a
+    // function, so still need a runtime test.
     if( !(ast instanceof ASTExec) && !(ast instanceof ASTId) )
       e.throwErr("Expected a function but found a "+ast.getClass());
     ArrayList<AST> asts = new ArrayList<>();
@@ -27,9 +28,8 @@ class ASTExec extends AST {
     return sb.p(')').toString();
   }
 
-  // Default execution pattern for most things: evaluate all arguments and push
-  // them on the stack in reverse order, with the function last.  Then pop and
-  // apply the function.
+  // Function application.  Execute the first AST and verify that it is a
+  // function.  Then call that function's apply method.
   @Override Val exec( Env env ) {
     Val fun = _asts[0].exec(env);
     if( !fun.isFun() )

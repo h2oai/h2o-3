@@ -63,10 +63,10 @@ public class CurrentsTest extends TestUtil {
 
   @Test public void test6() {
     // Checking `hex[,1]`
-    String tree = "([ %a.hex \"null\" #1)";
+    String tree = "([col] %a.hex 0)";
     checkTree(tree);
     // Checking `hex[1,5]`
-    tree = "([ %a.hex #0 #5)";
+    tree = "([row] ([col] %a.hex 5) 0)";
     checkTree(tree);
     // Checking `hex[c(1:5,7,9),6]`
     tree = "([ %a.hex (llist (: #0 #4) #6 #8) #5)";

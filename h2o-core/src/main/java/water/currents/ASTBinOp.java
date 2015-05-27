@@ -5,13 +5,9 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.ValueString;
 
-abstract class ASTPrim extends AST {
-  final ValFun _fun;
-  ASTPrim( ) { _fun = new ValFun(this); }
-  @Override Val exec( Env env ) { return _fun; }
-}
-
-// Subclasses of this class auto-widen between NUM and FRM
+/**
+ * Subclasses auto-widen between scalars and Frames, and have exactly two arguments
+ */
 abstract class ASTBinOp extends ASTPrim {
   @Override Val apply( Env env, AST asts[] ) {
     try (Env.StackHelp stk = env.stk()) {
@@ -47,9 +43,11 @@ abstract class ASTBinOp extends ASTPrim {
     default: throw H2O.fail();
     }
   }
+  /** Override to express a basic math primitive */
   abstract double op( double l, double r );
   double str_op( ValueString l, ValueString r ) { throw H2O.fail(); }
 
+  /** Auto-widen the scalar to every element of the frame */
   private ValFrame scalar_op_frame( final double d, Frame fr ) {
     for( Vec vec : fr.vecs() )
       if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
@@ -65,6 +63,7 @@ abstract class ASTBinOp extends ASTPrim {
       }.doAll(fr.numCols(),fr).outputFrame());
   }
 
+  /** Auto-widen the scalar to every element of the frame */
   private ValFrame frame_op_scalar( Frame fr, final double d ) {
     for( Vec vec : fr.vecs() )
       if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
@@ -80,6 +79,7 @@ abstract class ASTBinOp extends ASTPrim {
       }.doAll(1,fr).outputFrame());
   }
 
+  /** Auto-widen the scalar to every element of the frame */
   private ValFrame frame_op_scalar( Frame fr, String str ) {
     for( Vec vec : fr.vecs() )
       if( !vec.isString() ) throw new IllegalArgumentException("Cannot mix String and non-String types");
@@ -97,6 +97,10 @@ abstract class ASTBinOp extends ASTPrim {
       }.doAll(1,fr).outputFrame());
   }
 
+  /** Auto-widen: If one frame has only 1 column, auto-widen that 1 column to
+   *  the rest.  Otherwise the frames must have the same column count, and
+   *  auto-widen element-by-element.  Short-cut if one frame has zero
+   *  columns. */
   private ValFrame frame_op_frame( Frame lf, Frame rt ) {
     if( lf.numRows() != rt.numRows() ) 
       throw new IllegalArgumentException("Frames must have same rows, found "+lf.numRows()+" rows and "+rt.numRows()+" rows.");
