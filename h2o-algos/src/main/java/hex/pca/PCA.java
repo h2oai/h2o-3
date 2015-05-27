@@ -11,6 +11,7 @@ import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -18,10 +19,9 @@ import water.util.TwoDimTable;
 import java.util.Arrays;
 
 /**
- * Quadratically Regularized PCA
- * This is an algorithm for dimensionality reduction of numerical data.
- * It is a general, parallelized implementation of PCA with quadratic regularization.
- * <a href = "http://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Models</a>
+ * Principal Components Analysis
+ * It computes the principal components from the singular value decomposition using the power method.
+ * <a href = "http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf">SVD via Power Method Algorithm</a>
  * @author anqi_fu
  *
  */
@@ -141,10 +141,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       String[] colHeaders = new String[_parms._k];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
+
+      assert svd._output._names_expanded.length == svd._output._v.length;
       for (int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i + 1);
       pca._output._eigenvectors_raw = svd._output._v;
-      pca._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
-              colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], svd._output._v);
+      pca._output._eigenvectors = new TwoDimTable("Rotation", null, svd._output._names_expanded,
+              colHeaders, colTypes, colFormats, "", new String[svd._output._v.length][], svd._output._v);
 
       // Compute standard deviation
       double[] sdev = new double[svd._output._d.length];
