@@ -1421,7 +1421,7 @@ quantile.H2OFrame <- function(x,
 NULL
 #' @rdname h2o.summary
 #' @export
-setMethod("summary", "H2OFrame", function(object, factors=6L, cols=100, ...) {
+setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
   FORMAT.DIGITS <- 4L
   cnames <- colnames(object)
