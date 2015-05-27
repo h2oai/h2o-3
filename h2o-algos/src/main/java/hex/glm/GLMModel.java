@@ -3,12 +3,7 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.TransformType;
 import hex.glm.GLMModel.GLMParameters.Family;
-import jsr166y.RecursiveAction;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.DTask.DKeyTask;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -16,15 +11,12 @@ import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Created by tomasnykodym on 8/27/14.
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
-  public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs, boolean hasWeights, boolean hasOffset) {
     super(selfKey, parms, null);
 
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
@@ -57,7 +49,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if(domain == null && _parms._family == Family.binomial)
       domain = new String[]{"0","1"};
-    return new GLMValidation(domain,_parms._intercept,_parms._intercept?_ymu:_parms._family == Family.binomial?.5:0, _parms, rank(beta()), _output._threshold, true);
+    return new GLMValidation(domain,_parms._intercept, _ymu, _parms, rank(beta()), _output._threshold, true);
   }
 
   public double [] beta() { return _output._global_beta;}
@@ -270,7 +262,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public final double likelihood(double yr, double eta, double ym){
+    public final double likelihood(double yr, double ym){
       switch(_family){
         case gaussian:
           return .5 * (yr - ym) * (yr - ym);
@@ -461,6 +453,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
+      super(dinfo._weights, dinfo._offset);
       _dinfo = dinfo;
       _names = column_names;
       _domains = domains;
@@ -616,7 +609,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     parms._standardize = false;
     parms._prior = -1;
     parms._train = null;
-    GLMModel m = new GLMModel(Key.make(),parms,null, fam == Family.binomial?.5:0,Double.NaN,Double.NaN,-1);
+    GLMModel m = new GLMModel(Key.make(),parms,null, fam == Family.binomial?.5:0,Double.NaN,Double.NaN,-1, false, false);
     predictors = ArrayUtils.append(predictors, new String[]{response});
     m._output._names = predictors;
     m._output._coefficient_names = predictors;
@@ -694,24 +687,26 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     return preds;
   }
 
-  @Override protected double[] score0(double[] data, double[] preds) {
+  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
+  @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
     double eta = 0.0;
     final double [] b = beta();
-    for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) {
+    final DataInfo dinfo = _output._dinfo;
+    for(int i = 0; i < dinfo._cats; ++i) {
       int ival = (int) data[i];
       if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
-      ival += dinfo()._catOffsets[i];
+      ival += dinfo._catOffsets[i];
       if (!_parms._use_all_factor_levels)
         --ival;
       // can get values out of bounds for cat levels not seen in training
-      if (ival >= 0 && ival < dinfo()._catOffsets[i + 1])
+      if (ival >= dinfo._catOffsets[i] && ival < dinfo._catOffsets[i + 1])
         eta += b[ival];
     }
-    int noff = dinfo().numStart() - dinfo()._cats;
-    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*data[i];
-    eta += b[b.length-1]; // reduce intercept
-    double mu = _parms.linkInv(eta);
+    int noff = dinfo.numStart();
+    for(int i = 0; i < dinfo._nums; ++i)
+      eta += b[noff+i]*data[dinfo._cats + i];
+    eta += b[b.length-1]; // add intercept
+    double mu = _parms.linkInv(eta + o);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){

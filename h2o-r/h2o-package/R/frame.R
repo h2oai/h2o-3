@@ -79,6 +79,7 @@
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
 #' @return Returns a \linkS4class{H2OFrame} object.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1,
@@ -90,6 +91,7 @@
 #' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5,
 #'                         categorical_fraction = 0, integer_fraction = 0)
 #' summary(hex2)
+#' }
 #' @export
 h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
@@ -1428,10 +1430,10 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
-
-  cols <- sapply(cnames, function(col) {
-    col.rest <- .h2o.__remoteSend(object@conn, .h2o.__COL_SUMMARY(object@frame_id, col), method = "GET")
-    col.sum <- col.rest$frames[[1]]$columns[[1]]   # this is the tru column summary
+  fr.sum <- .h2o.__remoteSend(object@conn, paste0("Frames/", object@frame_id, "/summary"), method = "GET")$frames[[1]]
+  col.sums <- fr.sum$columns
+  cols <- sapply(col.sums, function(col) {
+    col.sum <- col
     col.type <- col.sum$type  # enum, string, int, real, time, uuid
 
     # numeric column: [min,1Q,median,mean,3Q,max]
@@ -1505,7 +1507,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       NULL
     }
   })
-
+  names(cols) <- cnames
   result <- NULL
   if( is.matrix(cols) && ncol(cols) == 1L ) {
     result <- as.table(as.matrix(as.data.frame(cols, stringsAsFactors=FALSE)))
@@ -1524,6 +1526,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       result <- as.table(as.matrix(cols))
     }
   }
+  colnames(result) <- cnames
   if( is.null(result) ) return(NULL)
   rownames(result) <- rep("", nrow(result))
   result

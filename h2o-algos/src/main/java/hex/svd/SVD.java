@@ -133,7 +133,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false);
+        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -147,6 +147,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._nnums = dinfo._nums;
         model._output._ncats = dinfo._cats;
         model._output._catOffsets = dinfo._catOffsets;
+        model._output._names_expanded = dinfo.coefNames();
 
         // Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
@@ -179,7 +180,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           fr = new Frame(null, vecs);
           u = new Frame(_parms._u_key, null, uvecs);
-          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false);
+          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */ false);
           DKV.put(uinfo._key, uinfo);
           DKV.put(u._key, u);
 
@@ -279,8 +280,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Categorical cols expanded into 0/1 indicator cols
       double sum = 0;
       for (int j = 0; j < dinfo._cats; j++) {
-        int i = (int)cs[j].atd(row);
-        sum += vec[dinfo._catOffsets[j]+i];
+        int level = (int)cs[j].atd(row);
+        if (dinfo._catOffsets[j]+level >= dinfo._catOffsets[j+1]) continue;   // Skip additional factor when useAllFactorLevels = false
+        sum += vec[dinfo._catOffsets[j]+level];
       }
 
       // Numeric cols normalized before multiplying through

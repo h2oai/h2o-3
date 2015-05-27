@@ -460,7 +460,7 @@ public class Frame extends Lockable<Frame> {
   private void bulkAdd(String[] names, Vec[] vecs) {
     String[] tmpnames = names.clone();
     int N = names.length;
-    assert(names.length == vecs.length);
+    assert(names.length == vecs.length):"names = " + Arrays.toString(names) + ", vecs len = " + vecs.length;
     for (int i=0; i<N; ++i) {
       vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i])).anyVec() : null;
       checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch

@@ -90,7 +90,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
             parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
-            true); //always add a bucket for missing values
+            true,  // always add a bucket for missing values
+            false, // no weights
+            false  // no offset
+      );
   }
 
   @Override

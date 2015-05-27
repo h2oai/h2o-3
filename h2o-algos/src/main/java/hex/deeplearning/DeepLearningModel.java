@@ -1907,7 +1907,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Frame adaptFrm = new Frame(frame);
     Vec v0 = adaptFrm.anyVec().makeZero();
     Scope.enter();
-    adaptTestForTrain(adaptFrm,true);
+    adaptTestForTrain(adaptFrm,true, false);
     adaptFrm.add("Reconstruction.MSE", v0);
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
@@ -1935,7 +1935,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return super.score(fr, destination_key);
     else {
       Frame adaptFr = new Frame(fr);
-      adaptTestForTrain(adaptFr, true);   // Adapt
+      adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
       Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
       cleanup_adapt( adaptFr, fr );
       return output;
@@ -1967,7 +1967,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(_output._names, null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

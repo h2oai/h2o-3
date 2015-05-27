@@ -6,9 +6,23 @@ import water.fvec.Vec;
 abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends ModelBuilder<M,P,O> {
 
   protected transient Vec _response; // Handy response column
-  public Key _response_key; // Handy response column
-  public Vec response() { return _response == null ? (_response = DKV.getGet(_response_key)) : _response; }
 
+  protected transient Vec _offset; // Handy offset column
+  public Key _response_key; // Handy response column
+
+  public Vec response() {
+    return _response == null ? (_response = DKV.getGet(_response_key)) : _response;
+  }
+
+  public Key _offset_key; // Handy response column
+
+  @Override
+  public Vec offset() {
+    if (_offset_key == null) return null;
+    return _offset == null ? (_offset = DKV.getGet(_offset_key)) : _offset;
+  }
+  @Override
+  public boolean hasOffset(){ return _offset_key != null;}
   protected transient Vec _vresponse; // Handy validation response column
   public Key _vresponse_key; // Handy response column
   public Vec vresponse() { return _vresponse == null ? (_vresponse = DKV.getGet(_vresponse_key)) : _vresponse; }
@@ -22,6 +36,31 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   //public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
+  
+  @Override
+  protected int reorderVecs() {
+    int res = super.reorderVecs();
+    if(_parms._offset_column != null) {
+      Vec o = _train.remove(_parms._offset_column);
+      if(o == null)
+        error("_offset_column","Offset column '" + _parms._offset_column  + "' not found in the training frame");
+      else { // add offset to the end
+        _offset = o;
+        _offset_key = o._key;
+        _train.add(_parms._offset_column, o);
+        ++res;
+      }
+    }
+    Vec r = _train.remove(_parms._response_column);
+    if(r == null) {
+      if(isSupervised())
+        error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
+    } else {
+      _train.add(_parms._response_column, r);
+      ++res;
+    }
+    return res;
+  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -55,17 +94,14 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       _nclass = 1;
       return;
     }
-
     if( null == _parms._response_column) {
       error("_response_column", "Response column parameter not set.");
       return;
     }
-
     if( !_parms._balance_classes ) {
       hide("_max_after_balance_size", "Only used with balanced classes");
       hide("_class_sampling_factors", "Class sampling factors is only applicable if balancing classes.");
     }
-
     // put response to the end (if not already)
     int ridx = _train.find(_parms._response_column);
     if( ridx == -1 ) { // Actually, think should not get here either (cutout at higher layer)

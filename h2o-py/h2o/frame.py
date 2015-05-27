@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -8,6 +8,27 @@ from job  import H2OJob
 
 
 class H2OFrame:
+
+  def __del__(self):
+    """
+    :return: None
+    """
+
+    # this is essentially a hack to short-circuit the Expr.__del__ method when doing /DKV/<frame> remove
+    vecs=[]
+    for v in self._vecs:
+      cnt = sys.getrefcount(v)
+      # magical count of 4 for each vec if it will NOT be deleted
+      # 1 for __del__ call, 1 for __del__ local dict
+      # 1 for _vecs
+      # 1 for parent
+      if v._expr.is_pending() or cnt>=4: continue  # leave vec alone!
+      else:                                        # collect the vecs to be deleted in bulk.
+        v._expr._removed_by_frame_del=True
+        vecs+=[v]
+
+    if len(vecs)==0: return
+    h2o.remove(H2OFrame(vecs=vecs))
 
   def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
     """
@@ -119,11 +140,11 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()            # write the header
-    csv_writer.writerows(data_to_write) # write the data
-    tmp_file.close()                    # close the streams
-    self._upload_raw_data(tmp_path, header) # actually upload the data to H2O
-    os.remove(tmp_path)                     # delete the tmp file
+    csv_writer.writeheader()                 # write the header
+    csv_writer.writerows(data_to_write)      # write the data
+    tmp_file.close()                         # close the streams
+    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
+    os.remove(tmp_path)                      # delete the tmp file
 
   def _handle_text_key(self, text_key, column_names):
     """
@@ -162,7 +183,11 @@ class H2OFrame:
 
     :return: An iterator over the H2OFrame
     """
+    import traceback
     if self._vecs is None or self._vecs == []:
+      for line in traceback.format_stack():
+        print line.strip()
+      print "PADASDAS"
       raise ValueError("Frame Removed")
     return (vec for vec in self._vecs.__iter__() if vec is not None)
 
@@ -364,6 +389,34 @@ class H2OFrame:
     for name, vec in zip(names,self._vecs):
       vec._name = name
 
+  def summary(self):
+    """
+    Generate summary of the frame on a per-Vec basis.
+    :return: None
+    """
+    frtmp=self.send_frame()
+    fr_sum = h2o.frame_summary(frtmp)["frames"][0]  # only ONE frame summary at a time, the first one...
+    h2o.removeFrameShallow(frtmp)  # wipe the frame binding the vecs immediately
+    type = ["type"]
+    mins = ["mins"]
+    mean = ["mean"]
+    maxs = ["maxs"]
+    sigma= ["sigma"]
+    zeros= ["zero_count"]
+    miss = ["missing_count"]
+    for v in fr_sum["columns"]:
+      type.append(v["type"])
+      mins.append(v["mins"][0] if v is not None else v["mins"])
+      mean.append(v["mean"])
+      maxs.append(v["maxs"][0] if v is not None else v["maxs"])
+      sigma.append(v["sigma"])
+      zeros.append(v["zero_count"])
+      miss.append(v["missing_count"])
+
+    table = [type,mins,maxs,sigma,zeros,miss]
+    headers = [vec._name for vec in self._vecs]
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -377,16 +430,6 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Rows:", thousands_sep.format(len(self._vecs[0])), "Cols:", thousands_sep.format(len(self))
-    headers = [vec._name for vec in self._vecs]
-    table = [
-      self._row('type', None),
-      self._row('mins', 0),
-      self._row('mean', None),
-      self._row('maxs', 0),
-      self._row('sigma', None),
-      self._row('zero_count', None),
-      self._row('missing_count', None)
-    ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
     chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
     dist_summary = chunk_dist_sum["distribution_summary"]
@@ -394,13 +437,15 @@ class H2OFrame:
     h2o.removeFrameShallow(chunk_summary_tmp_key)
     chunk_summary.show()
     dist_summary.show()
-    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+    self.summary()
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
   #     raise ValueError("Frame Removed")
   #   self.show()
   #   return ""
+
+
 
   # Find a named H2OVec and return it.  Error is name is missing
   def _find(self,name):

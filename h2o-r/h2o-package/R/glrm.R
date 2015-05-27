@@ -39,7 +39,8 @@
 #'        termination condition is reached.
 #' @param min_step_size Minimum step size upon which the algorithm is terminated.
 #' @param init A character string indicating how to select the initial Y matrix. 
-#'        Possible values are "PlusPlus": for initialization using the clusters
+#'        Possible values are "Random": for initialization to a random array from the
+#'        standard normal distribution, "PlusPlus": for initialization using the clusters
 #'        from k-means++ initialization, or "SVD": for initialization using the 
 #'        first k right singular vectors. Additionally, the user may specify the 
 #'        initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
@@ -59,7 +60,7 @@ h2o.glrm <- function(training_frame, x, k,
                      max_iterations = 1000,
                      init_step_size = 1.0,
                      min_step_size = 0.001,
-                     init = c("PlusPlus", "SVD", "User"),
+                     init = c("Random", "PlusPlus", "SVD"),
                      recover_pca = FALSE,
                      seed)
 {
@@ -131,11 +132,11 @@ h2o.glrm <- function(training_frame, x, k,
     }
     parms[["k"]] <- as.numeric(nrow(init))
   }
-  else if ( is.character(init) ) { # PlusPlus or SVD
+  else if ( is.character(init) ) { # Random, PlusPlus or SVD
     parms[["user_points"]] <- NULL
   }
   else{
-    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+    stop ("argument init must be set to Random, PlusPlus, SVD, or a valid set of user-defined starting points.")
   }
   
   # Error check and build model

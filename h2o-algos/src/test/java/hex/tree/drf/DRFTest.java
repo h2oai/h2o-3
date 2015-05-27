@@ -37,9 +37,9 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(25, 0, 0),
-              a(0, 17, 1),
-              a(2, 1, 15)),
+            ard(ard(25, 0, 0),
+              ard(0, 17, 1),
+              ard(2, 1, 15)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -58,9 +58,9 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(41, 0, 0),
-              a(1, 39, 2),
-              a(1, 3, 41)),
+            ard(ard(41, 0, 0),
+              ard(1, 39, 2),
+              ard(1, 3, 41)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -79,11 +79,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(0, 0, 0, 0, 0),
-              a(3,64, 0, 2, 0),
-              a(0, 1, 0, 0, 0),
-              a(0, 0, 1,30, 0),
-              a(0, 0, 0, 1,39)),
+            ard(ard(0, 0, 0, 0, 0),
+              ard(3,64, 0, 2, 0),
+              ard(0, 1, 0, 0, 0),
+              ard(0, 0, 1,30, 0),
+              ard(0, 0, 0, 1,39)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -101,11 +101,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(3,   0, 0,  0,  0),
-              a(2, 178, 1,  3,  0),
-              a(0,   1, 1,  0,  0),
-              a(0,   3, 2, 68,  1),
-              a(0,   0, 0,  3, 87)),
+            ard(ard(3,   0, 0,  0,  0),
+              ard(2, 178, 1,  3,  0),
+              ard(0,   1, 1,  0,  0),
+              ard(0,   3, 2, 68,  1),
+              ard(0,   0, 0,  3, 87)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -142,8 +142,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(6, 0),
-              a(9, 1)),
+            ard(ard(6, 0),
+              ard(9, 1)),
             s("0", "1"));
   }
 
@@ -162,8 +162,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(46294, 202),
-              a( 3187, 107)),
+            ard(ard(46294, 202),
+              ard( 3187, 107)),
             s("0", "1"));
 
   }
@@ -182,8 +182,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(0, 81),
-              a(0, 53)),
+            ard(ard(0, 81),
+              ard(0, 53)),
             s("0", "1"));
 
   }
@@ -260,8 +260,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(0, 45000),
-                    a(0, 45000)),
+            ard(ard(0, 45000),
+                    ard(0, 45000)),
             s("0", "1"));
   }
 
@@ -303,8 +303,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            a(a(664, 0),
-              a(0, 702)),
+            ard(ard(664, 0),
+              ard(0, 702)),
             s("0", "1"));
   }
   @Test public void testAlphabetRegression() throws Throwable {
@@ -342,8 +342,8 @@ public class DRFTest extends TestUtil {
               }
             },
             7,
-            20, 1, 20, a(a(7958, 11707), //1-node
-                    a(2709, 19024)),
+            20, 1, 20, ard(ard(7958, 11707), //1-node
+                    ard(2709, 19024)),
 //          a(a(7841, 11822), //5-node
 //            a(2666, 19053)),
             s("NO", "YES"));
@@ -371,14 +371,14 @@ public class DRFTest extends TestUtil {
     return ret;
   }
 
-  public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, long[][] expCM, String[] expRespDom) throws Throwable {
+  public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double[][] expCM, String[] expRespDom) throws Throwable {
     basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, true, min_rows, expCM, -1, expRespDom);
   }
   public void basicDRFTestOOBE_Regression(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double expMSE) throws Throwable {
     basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, false, min_rows, null, expMSE, null);
   }
 
-  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, long[][] expCM, double expMSE, String[] expRespDom) throws Throwable {
+  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom) throws Throwable {
     Scope.enter();
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     Frame frTest = null, pred = null;

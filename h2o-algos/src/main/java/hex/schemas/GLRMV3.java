@@ -47,7 +47,7 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     @API(help = "RNG seed for initialization")
     public long seed;
 
-    @API(help = "Initialization mode", values = { "SVD", "PlusPlus", "User" }) // TODO: pull out of enum class
+    @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }) // TODO: pull out of enum class
     public GLRM.Initialization init;
 
     @API(help = "User-specified initial Y", required = false)
