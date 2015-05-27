@@ -149,7 +149,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
-      _wsum += _wsum;
+      _wsum += mb._wsum;
     }
 
     public void postGlobal() {}
