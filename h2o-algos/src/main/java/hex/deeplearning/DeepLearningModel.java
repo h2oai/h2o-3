@@ -1633,7 +1633,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                       &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
         if (progressKey != null) {
           new Job.ProgressUpdate("Scoring on " + ftrain.numRows() + " training samples" +
-                  (ftest != null ? (", " + ftest.numRows() + " validation samples)") : ")")
+                  (ftest != null ? (", " + ftest.numRows() + " validation samples") : "")
           ).fork(progressKey);
         }
         final boolean printme = !get_params()._quiet_mode;

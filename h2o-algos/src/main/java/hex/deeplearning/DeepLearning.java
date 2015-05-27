@@ -56,7 +56,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     // We look at _train before init(true) is called, so step around that here:
     long work = 1;
     if (null != _train)
-      work = (long)_parms._epochs * _train.numRows();
+      work = (long)(_parms._epochs * _train.numRows());
     return start(new DeepLearningDriver(), work);
   }
 
@@ -454,7 +454,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         do {
           DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
           final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
-          final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
+          final String etl = model.run_time == 0 || progress() == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
           model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode

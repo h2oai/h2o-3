@@ -340,6 +340,8 @@ def remove(object):
     raise ValueError("remove with no object is not supported, for your protection")
 
   if isinstance(object, H2OFrame):
+    fr = H2OFrame.send_frame(object)
+    remove(fr)
     object._vecs=[]
 
   elif isinstance(object, H2OVec):

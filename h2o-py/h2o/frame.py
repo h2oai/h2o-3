@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -8,6 +8,27 @@ from job  import H2OJob
 
 
 class H2OFrame:
+
+  def __del__(self):
+    """
+    :return: None
+    """
+
+    # this is essentially a hack to short-circuit the Expr.__del__ method when doing /DKV/<frame> remove
+    vecs=[]
+    for v in self._vecs:
+      cnt = sys.getrefcount(v)
+      # magical count of 4 for each vec if it will NOT be deleted
+      # 1 for __del__ call, 1 for __del__ local dict
+      # 1 for _vecs
+      # 1 for parent
+      if cnt>=4 or v._expr.is_pending(): continue  # leave vec alone!
+      else:                                        # collect the vecs to be deleted in bulk.
+        v._expr._removed_by_frame_del=True
+        vecs+=[v]
+
+    if len(vecs)==0: return
+    h2o.remove(H2OFrame(vecs=vecs))
 
   def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
     """
@@ -119,11 +140,11 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()            # write the header
-    csv_writer.writerows(data_to_write) # write the data
-    tmp_file.close()                    # close the streams
-    self._upload_raw_data(tmp_path, header) # actually upload the data to H2O
-    os.remove(tmp_path)                     # delete the tmp file
+    csv_writer.writeheader()                 # write the header
+    csv_writer.writerows(data_to_write)      # write the data
+    tmp_file.close()                         # close the streams
+    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
+    os.remove(tmp_path)                      # delete the tmp file
 
   def _handle_text_key(self, text_key, column_names):
     """
@@ -162,7 +183,11 @@ class H2OFrame:
 
     :return: An iterator over the H2OFrame
     """
+    import traceback
     if self._vecs is None or self._vecs == []:
+      for line in traceback.format_stack():
+        print line.strip()
+      print "PADASDAS"
       raise ValueError("Frame Removed")
     return (vec for vec in self._vecs.__iter__() if vec is not None)
 

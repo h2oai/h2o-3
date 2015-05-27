@@ -9,10 +9,10 @@ def expr_reducers(ip,port):
     h2o.init(ip,port)
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
-    h2o_data = h2o.H2OFrame(python_obj=data)
+    h2o_data_1 = h2o.H2OFrame(python_obj=data)
     np_data = np.array(data)
-    row, col = h2o_data.dim()
-    h2o_data = h2o_data + 2
+    row, col = h2o_data_1.dim()
+    h2o_data = h2o_data_1 + 2
     np_data = np_data + 2
 
     def check_values(h2o_data, numpy_data):
