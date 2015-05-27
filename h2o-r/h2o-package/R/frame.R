@@ -79,6 +79,7 @@
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
 #' @return Returns a \linkS4class{H2OFrame} object.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1,
@@ -90,6 +91,7 @@
 #' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5,
 #'                         categorical_fraction = 0, integer_fraction = 0)
 #' summary(hex2)
+#' }
 #' @export
 h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,

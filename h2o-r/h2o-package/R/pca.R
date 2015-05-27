@@ -10,8 +10,6 @@
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
 #'        between 1 and min(ncol(training_frame), nrow(training_frame)) inclusive.
-#' @param retx A logical value indicating whether the projected variables should
-#'        be returned.
 #' @param model_id (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
 #' @param max_iterations The maximum number of iterations to run each power
@@ -41,21 +39,21 @@ h2o.prcomp <- function(training_frame, x, k,
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
-  
+
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
-  
+
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(training_frame)
   if( delete ) {
     temp_key <- training_frame@frame_id
     .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
   }
-  
+
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
@@ -71,7 +69,7 @@ h2o.prcomp <- function(training_frame, x, k,
     parms$transform <- transform
   if(!missing(seed))
     parms$seed <- seed
-  
+
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'pca', parms)
 }
