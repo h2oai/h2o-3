@@ -6,9 +6,9 @@ import water.util.*;
 
 import java.util.Arrays;
 
-public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
+public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
-  public abstract static class SharedTreeParameters extends SupervisedModel.SupervisedParameters {
+  public abstract static class SharedTreeParameters extends Model.Parameters {
     /** Maximal number of supported levels in response. */
     static final int MAX_SUPPORTED_LEVELS = 1000;
 
@@ -38,7 +38,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
   }
 
-  public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
+  public abstract static class SharedTreeOutput extends Model.Output {
     /** InitF value (for zero trees)
      *  f0 = mean(yi) for gaussian
      *  f0 = log(yi/1-yi) for bernoulli
@@ -79,6 +79,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeStats = new TreeStats();
       _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
       _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
+      _modelClassDist = _priorClassDist;
     }
 
     // Append next set of K trees

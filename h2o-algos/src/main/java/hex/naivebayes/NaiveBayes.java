@@ -26,11 +26,13 @@ import java.util.List;
  * @author anqi_fu
  *
  */
-public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
+public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
     return new NaiveBayesV3();
   }
+
+  public boolean isSupervised(){return true;}
 
   @Override
   public Job<NaiveBayesModel> trainModel() {

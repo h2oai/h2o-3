@@ -1,8 +1,8 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;
@@ -38,9 +38,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Generalized linear model implementation.
  */
-public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   static final double LINE_SEARCH_STEP = .5;
   static final int NUM_LINE_SEARCH_STEPS = 16;
+
+  public boolean isSupervised(){return true;}
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
