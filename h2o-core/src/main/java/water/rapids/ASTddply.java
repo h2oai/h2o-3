@@ -327,7 +327,7 @@ public class ASTddply extends ASTOp {
     private void go() {
       Futures fs = new Futures();
       for( int i=0;i<_frameKeys.length;++i) {
-        assert DKV.getGet(_frameKeys[i]) !=null : "Frame was NULL: " + _frameKeys[i];
+        assert DKV.getGet(_frameKeys[i]) !=null : "Frame #" + i + " was NULL: " + _frameKeys[i];
         fs.add(RPC.call(_frameKeys[i].home_node(), _remoteTasks[i] = new RemoteRapids(_frameKeys[i], _FUN, _funArgs, _grps[i]._ds)));
       }
       fs.blockForPending();
