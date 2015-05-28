@@ -425,7 +425,6 @@ public class DataInfo extends Keyed {
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
-
     row.bad = false;
     row.rid = rid + chunks[0].start();
     if (_skipMissing)
@@ -486,16 +485,23 @@ public class DataInfo extends Keyed {
     for (int i = 0; i < rows.length; ++i) {
       rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
       rows[i].rid = chunks[0].start() + i;
-      if(_offset) rows[i].offset = chunks[offsetChunkId()].atd(i);
+      if(_offset)  {
+        rows[i].offset = chunks[offsetChunkId()].atd(i);
+        if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
+      }
+      if(_weights) {
+        rows[i].weight = chunks[weightChunkId()].atd(i);
+        if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
+      }
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
+        if(row.bad)continue;
         if (chunks[i].isNA(r)) {
           if (_skipMissing) {
             row.bad = true;
-            continue;
           } else
             row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
         } else {
@@ -512,9 +518,9 @@ public class DataInfo extends Keyed {
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
         if(!c.isSparse() && c.atd(r) == 0)continue;
         Row row = rows[r];
+        if (row.bad) continue;
         if (c.isNA(r))
           row.bad = _skipMissing;
-        if (row.bad) continue;
         row.addBinId(cid + numStart);
       }
     }
@@ -527,8 +533,8 @@ public class DataInfo extends Keyed {
         assert r > oldRow;
         oldRow = r;
         Row row = rows[r];
-        if (c.isNA(r)) row.bad = _skipMissing;
         if (row.bad) continue;
+        if (c.isNA(r)) row.bad = _skipMissing;
         double d = c.atd(r);
         if(_normMul != null)
           d *= _normMul[cid]; // no centering here, we already have etaOffset
@@ -540,7 +546,7 @@ public class DataInfo extends Keyed {
       Chunk rChunk = chunks[responseChunkId()];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        double d = rChunk.atd(r);
+        if(row.bad) continue;
         row.response[row.response.length - i] = rChunk.atd(r);
         if (_normRespMul != null) {
           assert false;
