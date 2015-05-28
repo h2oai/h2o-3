@@ -309,8 +309,13 @@ public abstract class GLMTask  {
       if(_dinfo._intercept)
         Arrays.fill(eta,_beta[_beta.length-1]);
       if(_dinfo._offset) {
-        for (int i = 0; i < eta.length; ++i)
-          eta[i] += chks[_dinfo.offsetChunkId()].atd(i);
+        for (int i = 0; i < eta.length; ++i) {
+          if(!skip[i]) {
+            eta[i] += chks[_dinfo.offsetChunkId()].atd(i);
+            if (Double.isNaN(eta[i]))
+              skip[i] = true;
+          }
+        }
       }
       double [] b = _beta;
       // do categoricals first
@@ -366,14 +371,14 @@ public abstract class GLMTask  {
         if(skp[r] || responseChunk.isNA(r))
           continue;
         double w = weightChunk.atd(r);
-        if(w == 0)
+        if(w == 0 || Double.isNaN(w))
           continue;
         _nobs++;
         _wsum += w;
         double y = responseChunk.atd(r);
         double mu = _params.linkInv(eta[r]);
         _val.add(y, mu, w, offsetChunk.atd(r));
-        _likelihood += w*_params.likelihood(y, mu);
+        _likelihood += w * _params.likelihood(y, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         eta[r] = w * (mu-y) / (var * _params.linkDeriv(mu));
