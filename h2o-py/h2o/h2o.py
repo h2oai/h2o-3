@@ -6,7 +6,10 @@ By simply
 import os
 import os.path
 import re
+import pandas
 import urllib
+import csv
+import imp
 import urllib2
 import json
 import random
@@ -610,39 +613,61 @@ def keys_leaked(num_keys):
   """
   return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
 
-def as_list(data):
+def as_list(data, use_pandas=True):
   """
-  If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
-  environment an H2O Frame is represented as a list of lists (each element in the broader list represents a row).
-  Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
-  100 rows. This function is only intended to be used within the testing framework. More robust functionality must
-  be constructed for production conversion between H2O and python data types.
+  Convert an H2O data object into a python-specific object.
 
+  WARNING: This will pull all data local!
+
+  If Pandas is available (and use_pandas is True), then pandas will be used to parse the data frame.
+  Otherwise, a list-of-lists populated by character data will be returned (so the types of data will
+  all be str).
+
+  :param data: An H2O data object.
+  :paran use_pandas: Try to use pandas for reading in the data.
   :return: List of list (Rows x Columns).
   """
+
+  # check to see if we can use pandas
+  found_pandas=False
+  try:
+    imp.find_module('pandas')  # if have pandas, use this to eat a frame
+    found_pandas = True
+  except ImportError:
+    found_pandas = False
+
+  # if frame, download the frame and jam into lol or pandas df
+  if isinstance(data, H2OFrame):
+    fr = H2OFrame.send_frame(data)
+    res = _as_data_frame(fr, use_pandas and found_pandas)
+    removeFrameShallow(fr)
+    return res
+
   if isinstance(data, Expr):
     if data.is_local(): return data._data
     if data.is_pending():
       data.eager()
       if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
-    j = frame(data._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+    return _as_data_frame(data._data, use_pandas and found_pandas)
+
   if isinstance(data, H2OVec):
     if data._expr.is_local(): return data._expr._data
     if data._expr.is_pending():
       data._expr.eager()
       if data._expr.is_local(): return [[data._expr._data]]
-    j = frame(data._expr._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
-  if isinstance(data, H2OFrame):
-    vec_as_list = [as_list(v) for v in data._vecs]
-    frm = []
-    for row in range(len(vec_as_list[0])):
-      tmp = []
-      for col in range(len(vec_as_list)):
-        tmp.append(vec_as_list[col][row][0])
-      frm.append(tmp)
-    return frm
+
+    return as_list(H2OFrame(vecs=[data]), use_pandas)
+
+def _as_data_frame(id, use_pandas):
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(id) + "&hex_string=false"
+  response = urllib2.urlopen(url)
+  if use_pandas:
+    return pandas.read_csv(response, low_memory=False)
+  else:
+    cr = csv.reader(response)
+    rows = []
+    for row in cr: rows.append(row)
+    return rows
 
 def logical_negation(data) : return data.logical_negation()
 
@@ -717,6 +742,8 @@ class H2ODisplay:
     # if holding onto a display object, then may have odd printing behavior
     # the __repr__ and _repr_html_ methods will try to save you from many prints,
     # but just be WARNED that your mileage may vary!
+    #
+    # In other words, it's better to just new one of these when you're ready to print out.
 
     if self.table_header is not None:
       print
