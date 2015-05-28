@@ -1,9 +1,6 @@
 package water.currents;
 
-import water.H2O;
-import water.MRTask;
 import water.fvec.*;
-import water.parser.ValueString;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {

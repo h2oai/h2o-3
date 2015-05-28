@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import water.*;
-import water.util.SB;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -100,7 +99,6 @@ public class Env {
     // Now the DKV
     Value value = DKV.get(Key.make(id));
     if( value != null ) {
-      Frame vec = null;
       if( value.isFrame() ) {
         Frame fr = value.get();
         assert fr._key.toString().equals(id);

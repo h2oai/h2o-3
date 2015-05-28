@@ -3,11 +3,8 @@ package water.currents;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.DKV;
-import water.H2O;
-import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.parser.ValueString;
 
 /**
  * Quantiles: 
