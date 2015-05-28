@@ -91,10 +91,14 @@ public class Env {
 
   // ----
   // Variable lookup
+
+  ASTFun _scope;                // Current lexical scope lookup
+
   Val lookup( String id ) {
     // Lexically scoped functions first
     
-    // Not currently implemented
+    Val val = _scope.lookup(id);
+    if( val != null ) return val;
 
     // Now the DKV
     Value value = DKV.get(Key.make(id));

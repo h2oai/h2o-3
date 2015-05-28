@@ -11,7 +11,7 @@ class ASTExec extends AST {
     AST ast = e.parse();
     // An eager "must fail at runtime" test.  Not all ASTId's will yield a
     // function, so still need a runtime test.
-    if( !(ast instanceof ASTExec) && !(ast instanceof ASTId) )
+    if( !(ast instanceof ASTExec) && !(ast instanceof ASTId) && !(ast instanceof ASTFun) )
       e.throwErr("Expected a function but found a "+ast.getClass());
     ArrayList<AST> asts = new ArrayList<>();
     asts.add(0,ast);

@@ -1,6 +1,5 @@
 package water.currents;
 
-import water.H2O;
 import water.MRTask;
 
 /**
@@ -57,7 +56,7 @@ public class Exec {
   AST parse( ) {
     switch( skipWS() ) {
     case '(':  return new ASTExec(this); // function application
-    case '{':  throw H2O.unimpl();       // function definition
+    case '{':  return new ASTFun(this);  // function definition
     case '#':  _x++;                     // Skip before double, FALL THRU
     case '0':  case '1':  case '2':  case '3':  case '4':
     case '5':  case '6':  case '7':  case '8':  case '9':
@@ -89,7 +88,7 @@ public class Exec {
   String token() {
     int start = _x;
     char c;
-    while( !isWS(c=peek()) && c!=')' ) _x++;
+    while( !isWS(c=peek()) && c!=')' && c!='}') _x++;
     return _str.substring(start,_x);
   }
 

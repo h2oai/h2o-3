@@ -77,6 +77,41 @@ public class CurrentsTest extends TestUtil {
     //checkTree(tree);
   }
 
+  @Test public void testFun() {
+    // Compute 3*3; single variable defined in function body
+    String tree = "({var1 . (* var1 var1)} 3)";
+    checkTree(tree);
+    // Unknown var2
+    tree = "({var1 . (* var1 var2)} 3)";
+    checkTree(tree,true);
+    // Compute 3* a.hex[0,0]
+    tree = "({var1 . (* var1 (rows %a.hex [0]))} 3)";
+    checkTree(tree);
+
+    // Some more horrible functions.  Drop the passed function and return a 3
+    tree = "({fun . 3} {y . (* y y)})";
+    checkTree(tree);
+    // Apply a 3 to the passed function
+    tree = "({fun . (fun 3)} {y . (* y y)})";
+    checkTree(tree);
+    // Pass the squaring function thru the ID function
+    tree = "({fun . fun} {y . (* y y)})";
+    checkTree(tree);
+    // Pass the squaring function thru the twice-apply-3 function
+    tree = "({fun . (fun (fun 3))} {y . (* y y)})";
+    checkTree(tree);
+    // Pass the squaring function thru the twice-apply-x function
+    tree = "({fun x . (fun (fun x))} {y . (* y y)} 3)";
+    checkTree(tree);
+    // Pass the squaring function thru the twice-apply function
+    tree = " ({fun . {x . (fun (fun x))}} {y . (* y y)})   ";
+    checkTree(tree);
+    // Pass the squaring function thru the twice-apply function, and apply it
+    tree = "(({fun . {x . (fun (fun x))}} {y . (* y y)}) 3)";
+    checkTree(tree);
+  }
+
+
   private static void checkTree(String tree) { checkTree(tree,false); }
   private static void checkTree(String tree, boolean expectThrow) {
     Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
@@ -91,8 +126,6 @@ public class CurrentsTest extends TestUtil {
         Frame fr2= ((ValFrame)val)._fr;
         System.out.println(fr2.vec(0));
         fr2.remove();
-      } else if( val instanceof ValNum ) {
-        System.out.println(((ValNum)val)._d);
       }
     } catch( IllegalArgumentException iae ) {
       if( !expectThrow ) throw iae;
