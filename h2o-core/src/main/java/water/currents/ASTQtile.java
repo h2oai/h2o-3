@@ -1,10 +1,13 @@
 package water.currents;
 
-import water.H2O;
-import water.parser.ValueString;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
+import water.DKV;
+import water.H2O;
+import water.Key;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.parser.ValueString;
 
 /**
  * Quantiles: 
@@ -15,15 +18,38 @@ class ASTQtile extends ASTPrim {
   @Override String str() { return "quantile"; }
   @Override Val apply( Env env, AST asts[] ) {
     try (Env.StackHelp stk = env.stk()) {
+        QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
         Frame fr = stk.track(asts[1].exec(env)).getFrame();
-        ASTNumList probs = ((ASTNumList)asts[2]);
-        
+        Frame fr_wkey = new Frame(fr); // Force a bogus Key for Quantiles ModelBuilder
+        DKV.put(fr_wkey);
+        parms._train = fr_wkey._key;
 
+        parms._probs = ((ASTNumList)asts[2]).expand();
+        for( double d : parms._probs )
+          if( d < 0 || d > 1 ) throw new IllegalArgumentException("Probability must be between 0 and 1: "+d);
 
         String inter = asts[3].exec(env).getStr();
-        QuantileModel.CombineMethod combine_method = QuantileModel.CombineMethod.valueOf(inter.toUpperCase());
-        
-        throw H2O.unimpl();
+        parms._combine_method = QuantileModel.CombineMethod.valueOf(inter.toUpperCase());
+
+        // Compute Quantiles
+        QuantileModel q = new Quantile(parms).trainModel().get();
+
+        // Remove bogus Key
+        DKV.remove(fr_wkey._key);
+
+        // Reshape all outputs as a Frame, with probs in col 0 and the
+        // quantiles in cols 1 thru fr.numCols()
+        Vec[] vecs = new Vec[1 /*1 more for the probs themselves*/ +fr.numCols()];
+        String[] names = new String[vecs.length];
+        vecs [0] = Vec.makeCon(null,parms._probs);
+        names[0] = "Probs";
+        for( int i=0; i<fr.numCols(); ++i ) {
+          vecs [i+1] = Vec.makeCon(null,q._output._quantiles[i]);
+          names[i+1] = fr._names[i]+"Quantiles";
+        }
+        q.delete();
+
+        return new ValFrame(new Frame(names,vecs));
       }
   }
 }

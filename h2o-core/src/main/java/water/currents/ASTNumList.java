@@ -78,4 +78,17 @@ class ASTNumList extends AST {
   }
   // Strange count of args, due to custom parsing
   @Override int nargs() { return -1; }
+
+  // Expand the compressed form into an array of doubles
+  double[] expand() {
+    // Count total values
+    int nrows=0, r=0;
+    for( int i=0; i<_bases.length; i++ ) nrows += _cnts[i];
+    // Fill in values
+    double[] vals = new double[nrows];
+    for( int i=0; i<_bases.length; i++ )
+      for( double d = _bases[i]; d<_bases[i]+_cnts[i]*_strides[i]; d+=_strides[i] )
+        vals[r++] = d;
+    return vals;
+  }
 }
