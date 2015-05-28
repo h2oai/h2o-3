@@ -15,7 +15,7 @@ def demo(func=None, interactive=True, echo=True, test=False):
     >>> h2o.demo("gbm")
     """
     if func == "gbm": gbm_demo(interactive, echo, test)
-    else: raise NotImplementedError("Demo for {0} has not been implemented.".format(func))
+    else: print "Demo for {0} has not been implemented.".format(func)
 
 def gbm_demo(interactive, echo, test):
     demo_description = ['\n-----------------------------------------------------------------',
