@@ -137,7 +137,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 #'
 #' The H2OFrame Constructor
 .h2o.parsedData <- function(conn = h2o.getConnection(), destination_frame, nrows, ncols, col_names, linkToGC = TRUE) {
-  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
+  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
   .newH2OFrame("H2OFrame", conn=conn, frame_id=destination_frame, mutable=mutable, linkToGC=linkToGC)
 }
 

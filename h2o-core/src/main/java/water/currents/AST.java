@@ -7,7 +7,7 @@ import java.util.HashMap;
  *
  * Subclasses define the program semantics
  */
-abstract class AST {
+abstract public class AST {
   // Subclasses define their execution.  Constants like Numbers & Strings just
   // return a ValXXX.  Constant functions also just return a ValFun.
 

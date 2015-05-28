@@ -20,27 +20,27 @@ abstract class ASTBinOp extends ASTPrim {
 
   Val prim_apply( Val left, Val rite ) {
     switch( left.type() ) {
-    case Env.NUM: 
+    case Val.NUM: 
       final double dlf = left.getNum();
       
       switch( rite.type() ) {
-      case Env.NUM:  return new ValNum( op (dlf,rite.getNum()));
-      case Env.FRM:  return scalar_op_frame(dlf,rite.getFrame());
-      case Env.STR:  throw H2O.unimpl();
+      case Val.NUM:  return new ValNum( op (dlf,rite.getNum()));
+      case Val.FRM:  return scalar_op_frame(dlf,rite.getFrame());
+      case Val.STR:  throw H2O.unimpl();
       default: throw H2O.fail();
       }
 
-    case Env.FRM: 
+    case Val.FRM: 
       Frame flf = left.getFrame();
 
       switch( rite.type() ) {
-      case Env.NUM:  return frame_op_scalar(flf,rite.getNum());
-      case Env.STR:  return frame_op_scalar(flf,rite.getStr());
-      case Env.FRM:  return frame_op_frame (flf,rite.getFrame());
+      case Val.NUM:  return frame_op_scalar(flf,rite.getNum());
+      case Val.STR:  return frame_op_scalar(flf,rite.getStr());
+      case Val.FRM:  return frame_op_frame (flf,rite.getFrame());
       default: throw H2O.fail();
       }
           
-    case Env.STR: throw H2O.unimpl();
+    case Val.STR: throw H2O.unimpl();
     default: throw H2O.fail();
     }
   }

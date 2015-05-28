@@ -217,11 +217,10 @@ function(conn, ast) {
 .h2o.eval.frame<-
 function(conn, ast, frame_id=.key.make(conn, "rapids"), linkToGC=FALSE) {
   # Prepare the AST
-  ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', frame_id), right=ast))
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, id=frame_id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
   h2o.getFrame(frame_id, conn, linkToGC=linkToGC)
@@ -244,31 +243,17 @@ function(conn, ast, frame_id, finalizers) {
 
 .byref.update.frame<-
 function(x, scalarAsFrame = TRUE) {
-  .update_x <- function(x, temp) {
-    x@mutable$ast <- temp@mutable$ast
-    # FIXME: JSON returns a 1 x 1 Frame as a scalar (nrows = 0, ncols = 0)
-    if ((temp@mutable$nrows == 0L) && (temp@mutable$ncols == 0L)) {
-      if (scalarAsFrame) {
-        x@mutable$nrows     <- 1L
-        x@mutable$ncols     <- 1L
-        x@mutable$col_names <- colnames(as.data.frame(x))
-      }
-    } else {
-      x@mutable$nrows     <- temp@mutable$nrows
-      x@mutable$ncols     <- temp@mutable$ncols
-      x@mutable$col_names <- temp@mutable$col_names
-    }
-    invisible(x)
-  }
-
   if (is.na(x@frame_id)) {
     # Nothing to do
-  } else if (!is.null(x@mutable$ast) && !.is.eval(x)) {
+  } else if (!is.null(x@mutable$ast) && !x@mutable$computed) {
     temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, frame_id = x@frame_id, linkToGC = FALSE)
-    .update_x(x, temp)
-  } else if (is.na(x@mutable$nrows) || is.na(x@mutable$ncols) || is.na(x@mutable$col_names[1L])) {
+    x@mutable$computed <- T
+    x@mutable$nrows    <- temp@mutable$nrows
+    x@mutable$ncols    <- temp@mutable$ncols
+  } else if (is.na(x@mutable$nrows) || is.na(x@mutable$ncols) ) {
     temp <- h2o.getFrame(x@frame_id, x@conn, linkToGC = FALSE)
-    .update_x(x, temp)
+    x@mutable$nrows    <- temp@mutable$nrows
+    x@mutable$ncols    <- temp@mutable$ncols
   }
   invisible(x)
 }

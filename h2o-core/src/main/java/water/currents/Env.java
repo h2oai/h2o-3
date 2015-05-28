@@ -26,12 +26,6 @@ import water.fvec.Vec;
  */
 public class Env {
 
-  // Things on the execution stack
-  final static int NUM = 1;     // scalar
-  final static int STR = 2;     // string scalar
-  final static int FRM = 3;     // Frame, not a Vec.  Can be a Frame of 1 Vec
-  final static int FUN = 4;     // Function
-
   /**
    * The refcnt API.  Looks like a Stack, because lifetimes are stack-like, but
    * just counts refs by unary stack-slot counting.
@@ -97,7 +91,7 @@ public class Env {
   Val lookup( String id ) {
     // Lexically scoped functions first
     
-    Val val = _scope.lookup(id);
+    Val val = _scope==null ? null : _scope.lookup(id);
     if( val != null ) return val;
 
     // Now the DKV
@@ -145,53 +139,4 @@ public class Env {
 //      _refcnt.put((Frame)DKV.getGet(ab.getStr()), new IcedInt(ab.get4()));
 //    return this;
 //  }
-}
-
-abstract class Val {
-  abstract int type();
-  boolean isNum() { return false; }
-  boolean isStr() { return false; }
-  boolean isFrame() { return false; }
-  boolean isFun() { return false; }
-
-  double getNum() { throw new IllegalArgumentException("Expected a number but found a "+getClass()); }
-  String getStr() { throw new IllegalArgumentException("Expected a String but found a "+getClass()); }
-  Frame  getFrame(){throw new IllegalArgumentException("Expected a Frame but found a "+getClass()); }
-  AST    getFun() { throw new IllegalArgumentException("Expected a function but found a "+getClass()); }
-}
-
-class ValNum extends Val {
-  final double _d;
-  ValNum(double d) { _d = d; }
-  @Override public String toString() { return ""+_d; }
-  @Override int type () { return Env.NUM; }
-  @Override boolean isNum() { return true; }
-  @Override double getNum() { return _d; }
-}
-
-class ValStr extends Val {
-  final String _str;
-  ValStr(String str) { _str = str; }
-  @Override public String toString() { return _str; }
-  @Override int type () { return Env.STR; }
-  @Override boolean isStr() { return true; }
-  @Override String getStr() { return _str; }
-}
-
-class ValFrame extends Val {
-  final Frame _fr;
-  ValFrame(Frame fr) { _fr = fr; }
-  @Override public String toString() { return _fr.toString(); }
-  @Override int type () { return Env.FRM; }
-  @Override boolean isFrame() { return true; }
-  @Override Frame getFrame() { return _fr; }
-}
-
-class ValFun extends Val {
-  final AST _ast;
-  ValFun(AST ast) { _ast = ast; }
-  @Override public String toString() { return _ast.toString(); }
-  @Override int type () { return Env.FUN; }
-  @Override boolean isFun() { return true; }
-  @Override AST getFun() { return _ast; }
 }

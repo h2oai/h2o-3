@@ -208,11 +208,11 @@ if (inherits(try(getRefClass("H2OFrameMutableState"), silent = TRUE), "try-error
 #' @aliases H2OFrameMutableState
 #' @export
 setRefClass("H2OFrameMutableState",
-            fields = list(ast = "ASTNodeOrNULL", nrows = "numeric", ncols = "numeric", col_names = "character"),
+            fields = list(ast = "ASTNodeOrNULL", nrows = "numeric", ncols = "numeric", col_names = "character", computed = "logical"),
             methods = list(
               initialize =
-              function(..., ast = NULL, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-                .self$initFields(ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+              function(..., ast = NULL, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_, computed = F) {
+                .self$initFields(ast = ast, nrows = nrows, ncols = ncols, col_names = col_names, computed = computed)
                 callSuper(...)
               }))
 }

@@ -2,7 +2,6 @@ package water.currents;
 
 import java.util.ArrayList;
 import water.util.SB;
-import water.H2O;
 
 /** Define a function
  *  Syntax: { ids... . expr }
