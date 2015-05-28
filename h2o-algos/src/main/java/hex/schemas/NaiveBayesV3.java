@@ -62,10 +62,7 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
     public int max_hit_ratio_k;
 
     //
-
-
-
-
+    
     @API(help = "Laplace smoothing parameter")
     public double laplace;
 
