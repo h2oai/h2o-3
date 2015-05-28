@@ -140,10 +140,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           DeepLearning.this.updateValidationMessages();
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         }
-
-
         buildModel();
-
         //check that _parms isn't changed during DL model training
         byte[] cs2 = new AutoBuffer().put(_parms).buf();
         assert(Arrays.equals(cs, cs2));
@@ -450,11 +447,13 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         //main loop
         do {
           DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
+          assert(mi.get_processed_local() == 0);
           final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
+          assert(mi.get_params()._replicate_training_data == mp._replicate_training_data);
           model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
+                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
                   new DeepLearningTask(self(), mi, rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress

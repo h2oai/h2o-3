@@ -581,7 +581,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
   private volatile DeepLearningModelInfo model_info;
-  void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
+  void set_model_info(DeepLearningModelInfo mi) { assert(mi != null); model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
   final public VarImp varImp() { return _output.errors.variable_importances; }
 
@@ -853,7 +853,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // This describes the model, together with the parameters
   // This will be shared: one per node
   public static class DeepLearningModelInfo extends Iced {
-    public Key myModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); }
+    public Key localModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); }
     public TwoDimTable summaryTable;
     private DataInfo data_info;
     public DataInfo data_info() { return data_info; }
@@ -898,7 +898,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     //accessor to shared parameter defining avg activations
     public final Neurons.DenseVector get_avg_activations(int i) { return avg_activations[i]; }
 
-    private DeepLearningParameters parameters;
+    public DeepLearningParameters parameters;
     public final DeepLearningParameters get_params() { return parameters; }
 
     private float[] mean_rate;
@@ -2091,7 +2091,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     super.delete();
     for (H2ONode node : H2O.CLOUD._memary) {
-      DKV.remove(model_info().myModelInfoKey(node));
+      DKV.remove(model_info().localModelInfoKey(node));
     }
   }
 

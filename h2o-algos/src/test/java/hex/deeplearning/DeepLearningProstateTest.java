@@ -23,7 +23,7 @@ import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
 
   @Test public void run() throws Exception { runFraction(0.000025f); }
 
@@ -63,7 +63,7 @@ public class DeepLearningProstateTest extends TestUtil {
             if ( !classification && loss == DeepLearningParameters.Loss.CrossEntropy ) continue;
 
             for (boolean replicate : new boolean[]{
-                    true,
+//                    true,
                     false,
             }) {
               for (DeepLearningParameters.Activation activation : new DeepLearningParameters.Activation[]{
