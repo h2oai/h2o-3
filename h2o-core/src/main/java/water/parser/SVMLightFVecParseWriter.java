@@ -44,13 +44,13 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
     _nCols = _nvs.length;
     return super.close(fs);
   }
-  private void addColumns(int ncols){
-    if(ncols > _nvs.length){
-      int _nCols = _vecs.length;
-      _nvs   = Arrays.copyOf(_nvs, ncols);
-      _vecs  = Arrays.copyOf(_vecs  , ncols);
-      _ctypes= Arrays.copyOf(_ctypes, ncols);
-      for(int i = _nCols; i < ncols; ++i) {
+  private void addColumns(int newColCnt){
+    int oldColCnt = _vecs.length;
+    if(newColCnt > oldColCnt){
+      _nvs   = Arrays.copyOf(_nvs, newColCnt);
+      _vecs  = Arrays.copyOf(_vecs  , newColCnt);
+      _ctypes= Arrays.copyOf(_ctypes, newColCnt);
+      for(int i = oldColCnt; i < newColCnt; ++i) {
         _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._espc,_vecs[0]._chunkOff);
         _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
       }
