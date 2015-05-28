@@ -1,8 +1,8 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;
@@ -38,9 +38,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Generalized linear model implementation.
  */
-public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   static final double LINE_SEARCH_STEP = .5;
   static final int NUM_LINE_SEARCH_STEPS = 16;
+
+  public boolean isSupervised(){return true;}
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
@@ -168,7 +170,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ?6000:100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, hasWeights(), offset() != null);
+      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, hasWeights(), hasOffset());
       DKV.put(_dinfo._key, _dinfo);
       if(_valid != null) {
         _validDinfo = _dinfo.validDinfo(_valid);

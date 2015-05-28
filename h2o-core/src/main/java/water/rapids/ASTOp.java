@@ -2998,15 +2998,14 @@ class ASTHist extends ASTUniPrefixOp {
     }
     @Override public void map(Chunk c) {
       // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
-      int x;
-      int xx=1;
       for( int i = 0; i < c._len; ++i ) {
+        int x=1;
         if( c.isNA(i) ) continue;
         double r = c.atd(i);
         if( _h==-1 ) {
-          for(; xx < _counts.length; xx++)
-            if( r <= _breaks[xx] ) break;
-          x=xx-1;
+          for(; x < _counts.length; x++)
+            if( r <= _breaks[x] ) break;
+          x--; // back into the bin where count should go
         } else
           x = Math.min( _counts.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
         bumpCount(x);

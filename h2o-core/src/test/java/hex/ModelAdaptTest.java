@@ -12,12 +12,12 @@ public class ModelAdaptTest extends TestUtil {
 
 
   // Private junk model class to test Adaption logic
-  private static class AModel extends SupervisedModel {
-    AModel( Key key, SupervisedParameters p, SupervisedOutput o ) { super(key,p,o); } 
+  private static class AModel extends Model {
+    AModel( Key key, Parameters p, Output o ) { super(key,p,o); }
     @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) { throw H2O.unimpl(); }
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }
-    static class AParms extends SupervisedModel.SupervisedParameters { }
-    static class AOutput extends SupervisedModel.SupervisedOutput { }
+    static class AParms extends Model.Parameters { }
+    static class AOutput extends Model.Output { }
   }
 
   @Test public void testModelAdaptMultinomial() {

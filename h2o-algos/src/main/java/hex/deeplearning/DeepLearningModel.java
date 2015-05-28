@@ -29,9 +29,9 @@ import static java.lang.Double.isNaN;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
+public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
-  public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
+  public static class DeepLearningParameters extends Model.Parameters {
 
     @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
 
@@ -437,7 +437,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     void validate( DeepLearning dl, boolean expensive ) {
       dl.hide("_score_each_iteration", "Not used by Deep Learning.");
-      boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
+      boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
       for( int h : _hidden ) if( h<=0 ) dl.error("_hidden", "Hidden layer size must be positive.");
@@ -509,7 +509,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.error("_n_folds", "n_folds is not yet implemented.");
 
       if (_loss == null) {
-        if (expensive || dl._nclass != 0) {
+        if (expensive || dl.nclasses() != 0) {
           dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
         }
         //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
@@ -558,13 +558,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
-  public static class DeepLearningModelOutput extends SupervisedModel.SupervisedOutput {
+  public static class DeepLearningModelOutput extends Model.Output {
+
     @Override public int nfeatures() {
       return _names.length - (autoencoder ? 0 : 1);
     }
-    public DeepLearningModelOutput() { super(); }
-    public DeepLearningModelOutput(DeepLearning b) { super(b); }
-    boolean autoencoder;
+    public DeepLearningModelOutput() { super(); autoencoder = false;}
+    public DeepLearningModelOutput(DeepLearning b) {
+      super(b);
+      autoencoder = b._parms._autoencoder;
+      assert b.isSupervised() == !autoencoder;
+    }
+    final boolean autoencoder;
+
     DeepLearningScoring errors;
     Key[] weights;
     Key[] biases;
@@ -574,7 +580,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
 
-    @Override public boolean isSupervised() { return !autoencoder; }
+    @Override public boolean isSupervised() {
+      return !autoencoder;
+    }
   }
 
   // Default publicly visible Schema is V2

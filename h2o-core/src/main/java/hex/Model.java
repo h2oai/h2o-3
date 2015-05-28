@@ -28,6 +28,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
+  public double defaultThreshold(){return .5;}
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   /** Model-specific parameter class.  Each model sub-class contains an
@@ -58,6 +59,35 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // costs to less than 10% of the build time.  This flag forces scoring for
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
+
+    /** Supervised models have an expected response they get to train with! */
+    public String _response_column; // response column name
+
+    /** Should all classes be over/under-sampled to balance the class
+     *  distribution? */
+    public boolean _balance_classes = false;
+
+    /** When classes are being balanced, limit the resulting dataset size to
+     *  the specified multiple of the original dataset size.  Maximum relative
+     *  size of the training data after balancing class counts (can be less
+     *  than 1.0) */
+    public float _max_after_balance_size = 5.0f;
+
+    /**
+     * Desired over/under-sampling ratios per class (lexicographic order).
+     * Only when balance_classes is enabled.
+     * If not specified, they will be automatically computed to obtain class balance during training.
+     */
+    public float[] _class_sampling_factors;
+
+    /** The maximum number (top K) of predictions to use for hit ratio
+     *  computation (for multi-class only, 0 to disable) */
+    public int _max_hit_ratio_k = 10;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -182,13 +212,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
 
+    public Output(){this(false,false);}
     public Output(boolean hasWeights, boolean hasOffset) {
       _hasWeights = hasWeights;
       _hasOffset = hasOffset;
     }
 
+    /** Any final prep-work just before model-building starts, but after the
+     *  user has clicked "go".  E.g., converting a response column to an enum
+     *  touches the entire column (can be expensive), makes a parallel vec
+     *  (Key/Data leak management issues), and might throw IAE if there are too
+     *  many classes. */
+    public Output( ModelBuilder b ) {
+      if( b == null ) {
+        _hasOffset = false;
+        _hasWeights = false;
+        return;
+      }
+      _isSupervised = b.isSupervised();
+      if( b.error_count() > 0 )
+        throw new IllegalArgumentException(b.validationErrors());
+      // Capture the data "shape" the model is valid on
+      _names  = b._train.names  ();
+      _domains= b._train.domains();
+      _hasOffset = b.hasOffset();
+      _hasWeights = b.hasWeights();
+      _distribution = b._distribution;
+      _priorClassDist = b._priorClassDist;
+    }
+
     /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
-    public int nfeatures() { return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0);}
+    public int nfeatures() { return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (isSupervised()?1:0);}
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
@@ -224,57 +278,54 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public TwoDimTable _scoring_history;
 
-    /** Any final prep-work just before model-building starts, but after the
-     *  user has clicked "go".  E.g., converting a response column to an enum
-     *  touches the entire column (can be expensive), makes a parallel vec
-     *  (Key/Data leak management issues), and might throw IAE if there are too
-     *  many classes. */
-    public Output( ModelBuilder b ) {
-      if( b == null ) {
-        _hasOffset = false;
-        _hasWeights = false;
-        return;
-      }
-      if( b.error_count() > 0 )
-        throw new IllegalArgumentException(b.validationErrors());
-      // Capture the data "shape" the model is valid on
-      _names  = b._train.names  ();
-      _domains= b._train.domains();
-      _hasOffset = b.hasOffset();
-      _hasWeights = b.hasWeights();
-    }
-    public boolean isSupervised() { return false; }
+    protected boolean _isSupervised;
+
+
+
+    public boolean isSupervised() { return _isSupervised; }
     /** The name of the response column (which is always the last column). */
     protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
     protected final boolean _hasWeights;// only need to know if we have them
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
-    public String responseName() {
-      int ridx = responseIdx();
-      return ridx >= 0?_names[responseIdx()]:null;
-    }
+    public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     // Vec layout is  [c1,c2,...,cn,w?,r,o?], cn are predcitor cols, r is reponse, w and o are weights and offset, both are optional
-    public int responseIdx    () { return -1;}
-    public int weightsIdx     () { return _hasWeights ?_names.length-1:-1;}
-    public int offsetIdx      () { return -1;}
+    public int responseIdx    () {
+      if(!isSupervised()) return -1;
+      return _names.length-1;
+    }
+    public int weightsIdx     () {
+      if(!_hasWeights) return -1;
+      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1;
+    }
+    public int offsetIdx      () {
+      if(!_hasOffset) return -1;
+      return _names.length - (isSupervised()?1:0) - 1;
+    }
 
     /** The names of the levels for an enum (categorical) response column. */
-    public String[] classNames() { assert isSupervised(); return _domains[_domains.length-1]; }
+    public String[] classNames() { assert isSupervised();
+      return _domains[_domains.length-1];
+    }
     /** Is this model a classification model? (v. a regression or clustering model) */
-    public boolean isClassifier() { return isSupervised() && classNames() != null ; }
+    public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
     public int nclasses() {
       assert isSupervised();
       String cns[] = classNames();
       return cns==null ? 1 : cns.length;
     }
-
+    public long [] _distribution;
+    public double [] _modelClassDist;
+    public double [] _priorClassDist;
     // Note: some algorithms MUST redefine this method to return other model categories
     public ModelCategory getModelCategory() {
-      return (isClassifier() ?
-              (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
-              ModelCategory.Regression);
+      if(isSupervised())
+        return (isClassifier() ?
+                (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
+                ModelCategory.Regression);
+      return ModelCategory.Unknown;
     }
 
     // TODO: Needs to be Atomic update, not just synchronized
@@ -404,13 +455,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
 
-      boolean skipCol = ((isResponse || isWeights) && vec == null);
+      if(vec == null && isResponse && computeMetrics)
+        throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
-        throw new IllegalArgumentException("Test dataset is missing offset vector ('" + offset + "'");
+        throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics)
-        throw new IllegalArgumentException("Test dataset is missing weights vector ('" + weights + "'");
+        throw new IllegalArgumentException("Test dataset is missing weights vector '" + weights + "'");
       // If a training set column is missing in the validation set, complain and fill in with NAs.
-      if( vec == null && !skipCol) {
+      if( vec == null) {
         String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
           str = str + ": substituting in a column of NAs";
@@ -498,7 +550,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < ((SupervisedModel.SupervisedParameters)_parms)._max_confusion_matrix_size/*Print size limitation*/ ) {
+        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
           Log.info(cm.table().toString(1));
         }
       if (mm.hr() != null) {
@@ -557,7 +609,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
     if (computeMetrics)
-      bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
+      bs._mb.makeModelMetrics(this,fr, isSupervised() ? adaptFrm.lastVec().sigma() : Double.NaN);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
   }
 
@@ -597,7 +649,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
-        if (Model.this instanceof SupervisedModel) {
+        if (isSupervised()) {
           actual = new float[1];
           responseChunk = chks[_output.responseIdx()];
         } else
@@ -610,13 +662,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           ?score0(chks, weightsChunk.atd(row), offsetChunk.atd(row), row, tmp, preds)
           :score0(chks, row, tmp, preds);
         if (_computeMetrics) {
-          if(Model.this instanceof SupervisedModel) {
+          if(isSupervised()) {
             actual[0] = (float)responseChunk.atd(row);
           } else {
             for(int i = 0; i < actual.length; ++i)
               actual[i] = (float)chks[i].atd(row);
           }
-          if(hasWeightsOrOffset){
+          if (hasWeightsOrOffset) {
             _mb.perRow(preds, actual, weightsChunk.atd(row), offsetChunk.atd(row), Model.this);
           } else
             _mb.perRow(preds, actual, Model.this);
@@ -636,14 +688,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
+    int nfeatures = _output.nfeatures();
+    for( int i=0; i<nfeatures; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    return score0(tmp,preds);
+    double [] scored = score0(tmp,preds);
+    if(isSupervised()) {
+      // Correct probabilities obtained from training on oversampled data back to original distribution
+      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+      if( _output.isClassifier()) {
+        if (_parms._balance_classes)
+          GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
+        //assign label at the very end (after potentially correcting probabilities)
+        scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
+      }
+    }
+    return scored;
   }
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    return score0(tmp, preds, weight, offset);
+    double [] scored = score0(tmp, preds, weight, offset);
+    if(isSupervised()) {
+      // Correct probabilities obtained from training on oversampled data back to original distribution
+      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+      if( _output.isClassifier()) {
+        if (_parms._balance_classes)
+          GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
+        //assign label at the very end (after potentially correcting probabilities)
+        scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
+      }
+    }
+    return scored;
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
@@ -770,7 +845,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     return sb.ip("};").nl();
   }
-  protected SB toJavaPROB( SB sb) { return sb; }
+  protected SB toJavaPROB( SB sb) {
+    if(isSupervised()) {
+      JCodeGen.toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
+      JCodeGen.toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
+    }
+    return sb;
+  }
   protected boolean toJavaCheckTooBig() {
     Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
     return true;
