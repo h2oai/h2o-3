@@ -71,10 +71,10 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       old = _maxIn;
   }
 
-  private static int MAX_FACTOR_BINS=1024; // Allow more bins for factors
-  public DHistogram( String name, final int nbins, final byte isInt, final float min, final float maxEx, long nelems ) {
+  public DHistogram(String name, final int nbins, int nbins_cats, final byte isInt, final float min, final float maxEx, long nelems) {
     assert nelems > 0;
-    assert nbins >= 1;
+    assert nbins > 1;
+    assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
     _isInt = isInt;
     _name = name;
@@ -83,16 +83,14 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     _min2 =  Float.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Float.MAX_VALUE;
     // See if we can show there are fewer unique elements than nbins.
-    // Common for e.g. boolean columns, or near leaves.  Allow more
-    // than the usual nbins for factors and ints
-    int xbins = nbins;
-    if( isInt>0 && maxEx-min <= Math.max(nbins,(isInt==2?MAX_FACTOR_BINS:nbins)) ) {
+    // Common for e.g. boolean columns, or near leaves.
+    int xbins = isInt == 2 ? nbins_cats : nbins;
+    if( isInt>0 && maxEx-min <= xbins ) {
       assert ((long)min)==min;                // No overflow
       xbins = (char)((long)maxEx-(long)min);  // Shrink bins
-      assert xbins > 1;                       // Caller ensures enough range to bother
       _step = 1.0f;                           // Fixed stepsize
     } else {
-      _step = nbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
+      _step = xbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
       assert _step > 0 && !Float.isInfinite(_step);
     }
     _nbin = (char)xbins;
@@ -179,7 +177,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   abstract public DTree.Split scoreMSE( int col, int min_rows );
 
   // The initial histogram bins are setup from the Vec rollups.
-  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], boolean isBinom) {
+  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, DHistogram hs[], boolean isBinom) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -188,15 +186,15 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       final float maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins,(byte)(v.isEnum() ? 2 : (v.isInt()?1:0)),minIn,maxEx,vlen,isBinom);
+        make(fr._names[c],nbins, nbins_cats, (byte)(v.isEnum() ? 2 : (v.isInt()?1:0)), minIn, maxEx, vlen, isBinom);
     }
     return hs;
   }
 
-  static public DHistogram make( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean isBinom ) {
+  static public DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx, long nelems, boolean isBinom) {
     return isBinom
-      ? new DBinomHistogram(name,nbins,isInt,min,maxEx,nelems)
-      : new  DRealHistogram(name,nbins,isInt,min,maxEx,nelems);
+      ? new DBinomHistogram(name,nbins, nbins_cats, isInt, min, maxEx, nelems)
+      : new  DRealHistogram(name,nbins, nbins_cats, isInt, min, maxEx, nelems);
   }
 
   // Check for a constant response variable
