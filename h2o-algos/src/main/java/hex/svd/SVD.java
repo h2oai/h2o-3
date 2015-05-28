@@ -330,7 +330,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
-      _sval += l2norm2(cs, _svec, 0, _dinfo, _normSub, _normMul);   // Update \sigma_1 and u_1 <- Av_1
+      _sval = l2norm2(cs, _svec, 0, _dinfo, _normSub, _normMul);    // Update \sigma_1 and u_1 <- Av_1
+    }
+
+    @Override public void reduce(CalcSigmaU other) {
+      _sval += other._sval;
     }
 
     @Override protected void postGlobal() {
@@ -347,7 +351,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final double[] _normSub;
     final double[] _normMul;
     final int _ncols;
-
     double _sval;     // Output: Singular value (\sigma_k)
 
     CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
@@ -366,8 +369,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
-      _sval += l2norm2(cs, _svec, _k, _dinfo, _normSub, _normMul);    // Update \sigma_k and save u_k <- A_{k-1}v_k
+      _sval = l2norm2(cs, _svec, _k, _dinfo, _normSub, _normMul);   // Update \sigma_k and save u_k <- A_{k-1}v_k
       div(chk_u(cs,_k-1,_ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
+    }
+
+    @Override public void reduce(CalcSigmaUNorm other) {
+      _sval += other._sval;
     }
 
     @Override protected void postGlobal() {
