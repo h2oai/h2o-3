@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static hex.ModelMetricsMultinomial.getHitRatioTable;
-
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
 
@@ -94,6 +92,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if (_parms._nbins <= 1) error ("_nbins", "_nbins must be > 1.");
     if (_parms._nbins >= 1<<16) error ("_nbins", "_nbins must be < " + (1<<16));
+    if (_parms._nbins_cats <= 1) error ("_nbins_cats", "_nbins_cats must be > 1.");
+    if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "_nbins_cats must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
@@ -221,7 +221,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
-  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean subset, boolean build_tree_one_node) {
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean subset, boolean build_tree_one_node) {
     // Build K trees, one per class.
 
     // Build up the next-generation tree splits from the current histograms.
@@ -241,7 +241,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
       fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
       // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -258,7 +258,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   private static class ScoreBuildOneTree extends H2OCountedCompleter {
     final SharedTree _st;
     final int _k;               // The tree
-    final int _nbins;           // Number of histogram bins
+    final int _nbins;           // Numerical columns: Number of histogram bins
+    final int _nbins_cats;      // Categorical columns: Number of histogram bins
     final DTree _tree;
     final int _leafs[/*nclass*/];
     final DHistogram _hcs[/*nclass*/][][];
@@ -268,10 +269,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     float[] _improvPerVar;      // Squared Error improvement per variable per split
     
     boolean _did_split;
-    ScoreBuildOneTree( SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar ) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
+      _nbins_cats= nbins_cats;
       _tree = tree;
       _leafs= leafs;
       _hcs  = hcs;
@@ -289,7 +291,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins,_tree, _leafs[_k],_hcs[_k],_subset).dfork(0,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset).dfork(0,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
