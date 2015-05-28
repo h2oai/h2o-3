@@ -40,7 +40,7 @@ class ASTNumList extends AST {
       }
       if( base < last )
         throw new IllegalArgumentException("Number lists must always increase, but "+last+" is not less than "+base);
-      last = base+cnt*stride;
+      last = base+(cnt-1)*stride; // last max value
       bases.add(base);  
       cnts.add((long)cnt);  
       strides.add(stride);

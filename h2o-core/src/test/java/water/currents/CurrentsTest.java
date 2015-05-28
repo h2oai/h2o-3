@@ -7,6 +7,7 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import java.util.Arrays;
 
 public class CurrentsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -125,35 +126,34 @@ public class CurrentsTest extends TestUtil {
 //      if( l != null ) l.delete();
 //    }
 //  }
-//
-//
-//  @Test public void testQuantile() {
-//    Frame f = null;
-//    try {
-//      Frame fr = frame(ard(ard(1.223292e-02),
-//                           ard(1.635312e-25),
-//                           ard(1.601522e-11),
-//                           ard(8.452298e-10),
-//                           ard(2.643733e-10),
-//                           ard(2.671520e-06),
-//                           ard(1.165381e-06),
-//                           ard(7.193265e-10),
-//                           ard(3.383532e-04),
-//                           ard(2.561221e-05)));
-//      Frame pr = frame(ard(ard(0.001), ard(0.005), ard(.01), ard(.02), ard(.05), ard(.10), ard(.50), ard(.8883), ard(.90), ard(.99)));
-//      String x = String.format("(quantile %%%s %%%s \"interpolate\")", fr._key, pr._key);
-//      Env env = Exec.exec(x);
-//      fr.delete();
-//      pr.delete();
-//      f = env.popAry();
-//      Assert.assertEquals(2,f.numCols());
-//      // Expected values computed as golden values from R's quantile call
-//      double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
-//                         1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
-//      for( int i=0; i<exp.length; i++ )
-//        Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(1).at(i), water.util.MathUtils.compare(exp[i],f.vec(1).at(i),1e-6,1e-6) );
-//    } finally {
-//      if( f != null ) f.delete();
-//    }
-//  }
+
+
+  @Test public void testQuantile() {
+    Frame f = null;
+    try {
+      Frame fr = frame(ard(ard(1.223292e-02),
+                           ard(1.635312e-25),
+                           ard(1.601522e-11),
+                           ard(8.452298e-10),
+                           ard(2.643733e-10),
+                           ard(2.671520e-06),
+                           ard(1.165381e-06),
+                           ard(7.193265e-10),
+                           ard(3.383532e-04),
+                           ard(2.561221e-05)));
+      double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
+      String x = String.format("(quantile %%%s %s \"interpolate\")", fr._key, Arrays.toString(probs));
+      Val val = Exec.exec(x);
+      fr.delete();
+      f = val.getFrame();
+      Assert.assertEquals(2,f.numCols());
+      // Expected values computed as golden values from R's quantile call
+      double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
+                         1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
+      for( int i=0; i<exp.length; i++ )
+        Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(1).at(i), water.util.MathUtils.compare(exp[i],f.vec(1).at(i),1e-6,1e-6) );
+    } finally {
+      if( f != null ) f.delete();
+    }
+  }
 }

@@ -59,6 +59,9 @@ abstract class AST {
     // Generic data mungers
     init(new ASTColSlice());
     init(new ASTRowSlice());
+
+    // Model Calls
+    init(new ASTQtile());
   }
 }
 
