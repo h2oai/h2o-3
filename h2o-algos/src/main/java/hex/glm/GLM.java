@@ -301,6 +301,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho);
       }
+      if(_parms._non_negative) {
+        if(_bc._betaLB != null) {
+          for (int i = 0; i < _bc._betaLB.length - 1; ++i)
+            _bc._betaLB[i] = Math.max(0, _bc._betaLB[i]);
+        } else {
+          _bc._betaLB = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+          _bc._betaLB[_dinfo.fullN()] = Double.NEGATIVE_INFINITY;
+          _bc._betaUB = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+          Arrays.fill(_bc._betaUB,Double.POSITIVE_INFINITY);
+        }
+      }
       _tInfos = new GLMTaskInfo[_parms._n_folds + 1];
       InitTsk itsk = new InitTsk(0, _parms._intercept, null);
       H2O.submitTask(itsk).join();
@@ -845,9 +856,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double abstol = L1Solver.DEFAULT_ABSTOL;
             double ADMM_gradEps = 1e-2;
             if(_bc != null)
-              new ADMM.L1Solver(ADMM_gradEps, 100, reltol, abstol).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(ADMM_gradEps, 100, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen);
+              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen);
           } else {
             Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new L_BFGS.ProgressMonitor() {
               @Override

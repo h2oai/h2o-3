@@ -27,6 +27,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_search",
             "nlambdas",
             "standardize",
+            "non_negative",
             "max_iterations",
             "objective_epsilon",
             "beta_epsilon",
@@ -80,6 +81,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
     public boolean standardize;
 
+    @API(help = "Restrict coefficients (not intercept) to be non-negative")
+    public boolean non_negative;
+
     @API(help = "Maximum number of iterations", level = Level.secondary)
     public int max_iterations;
 
@@ -117,9 +121,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public int max_active_predictors = -1;
 
 
-    // dead unused args, formely inherited from supervised model schema
+    // dead unused args, formerly inherited from supervised model schema
 
-     /*Imbalanced Classes*/
+     /* Imbalanced Classes*/
     /**
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
