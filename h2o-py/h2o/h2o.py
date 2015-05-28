@@ -11,9 +11,9 @@ import csv
 import imp
 import urllib2
 import json
+import imp
 import random
 import tabulate
-import numpy as np
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -217,8 +217,8 @@ def is_running_internal_to_h2o():
 def dim_check(data1, data2):
   """
   Check that the dimensions of the data1 and data2 are the same
-  :param data1: an H2OFrame, H2OVec or Expr
-  :param data2: an H2OFrame, H2OVec or Expr
+  :param data1: an H2OFrame or H2OVec
+  :param data2: an H2OFrame or H2OVec
   :return: None
   """
   data1_rows, data1_cols = data1.dim()
@@ -229,11 +229,18 @@ def dim_check(data1, data2):
 def np_comparison_check(h2o_data, np_data, num_elements):
   """
   Check values achieved by h2o against values achieved by numpy
-  :param h2o_data: an H2OFrame, H2OVec or Expr
+  :param h2o_data: an H2OFrame or H2OVec
   :param np_data: a numpy array
   :param num_elements: number of elements to compare
   :return: None
   """
+  # Check for numpy
+  try:
+    imp.find_module('numpy')
+  except ImportError:
+    assert False, "failed comparison check because unable to import numpy"
+
+  import numpy as np
   rows, cols = h2o_data.dim()
   for i in range(num_elements):
     r = random.randint(0,rows-1)
@@ -242,26 +249,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
     assert np.absolute(h2o_val - np_val) < 1e-6, \
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
-
-def value_check(h2o_data, local_data, num_elements, col=None):
-  """
-  Check that the values of h2o_data and local_data are the same. In a testing context, this could be used to check
-  that an operation did not alter the original h2o_data.
-
-  :param h2o_data: an H2OFrame, H2OVec or Expr
-  :param local_data: a list of lists (row x col format)
-  :param num_elements: number of elements to check
-  :param col: an optional integer that specifies the particular column to check
-  :return: None
-  """
-  rows, cols = h2o_data.dim()
-  for i in range(num_elements):
-    r = random.randint(0,np.minimum(99,rows-1))
-    c = random.randint(0,cols-1) if not col else col
-    h2o_val = as_list(h2o_data[r,c])
-    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
-    local_val = local_data[r][c]
-    assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
 
 def run_test(sys_args, test_to_run):
   import pkg_resources
