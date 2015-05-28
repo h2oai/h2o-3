@@ -6,7 +6,6 @@ By simply
 import os
 import os.path
 import re
-import pandas
 import urllib
 import csv
 import imp
@@ -662,6 +661,7 @@ def _as_data_frame(id, use_pandas):
   url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(id) + "&hex_string=false"
   response = urllib2.urlopen(url)
   if use_pandas:
+    import pandas
     return pandas.read_csv(response, low_memory=False)
   else:
     cr = csv.reader(response)
