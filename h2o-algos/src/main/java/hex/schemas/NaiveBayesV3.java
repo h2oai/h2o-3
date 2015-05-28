@@ -16,7 +16,7 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
       "max_confusion_matrix_size",
       "max_hit_ratio_k",
       "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob", "compute_metrics"};
-
+    
     // supervised Schema
 
     // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
@@ -61,7 +61,7 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
     public int max_hit_ratio_k;
 
     //
-
+    
     @API(help = "Laplace smoothing parameter")
     public double laplace;
 
