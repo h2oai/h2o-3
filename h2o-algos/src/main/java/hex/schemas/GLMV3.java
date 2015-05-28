@@ -119,11 +119,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="Maximum number of active predictors during computation. Use as a stopping criterium to prevent expensive model building with many predictors.", direction = Direction.INPUT, level = Level.expert)
     public int max_active_predictors = -1;
-
-
-    // dead unused args, formerly inherited from supervised model schema
-
-     /* Imbalanced Classes*/
+    
+    // dead unused args, formely inherited from supervised model schema
     /**
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
