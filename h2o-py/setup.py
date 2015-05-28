@@ -65,6 +65,6 @@ setup(
     install_requires=['requests', 'tabulate'],
 
 
-    data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../smalldata/iris/iris.csv',
-                                                                 '../smalldata/prostate/prostate.csv'])],
+    data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../h2o-r/h2o-package/inst/extdata/iris.csv',
+                                                                 '../h2o-r/h2o-package/inst/extdata/prostate.csv'])],
 )
