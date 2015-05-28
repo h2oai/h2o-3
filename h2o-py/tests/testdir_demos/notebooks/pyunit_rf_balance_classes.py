@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(1, "../../")
+sys.path.insert(1, "../../../")
 import h2o
 
 def rf_balance_classes(ip,port):
