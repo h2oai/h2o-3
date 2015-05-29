@@ -176,6 +176,10 @@ The GLM suite includes:
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
+- **Offset_column**: Select a column to use as the offset. 
+
+- **Weights_column**: Select a column to use for the observation weights.
+
 - **Family**: Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
 - **Solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is IRLSM. 
@@ -196,9 +200,13 @@ The GLM suite includes:
 
 - **Max_iterations**: Specify the number of training iterations. The default is 50.  
 
+- **Link**: Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
+
+- **Objective_epsilon**: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
+
 - **Beta_epsilon**: Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
-- **Link**: Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
+- **Gradient_epsilon**: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
 - **Prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0. 
 
@@ -380,6 +388,8 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Nbins**: Specify the number of bins for the histogram. The default value is 20. 
 
+- **r2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.  
+
 - **Mtries**: Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
 - **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
@@ -488,6 +498,8 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 - **Min\_prob**: Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
 
 - **Eps\_prob**: Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 1e-10. 
+
+- **Compute_metrics**: To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
 - **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -764,7 +776,10 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 - **Max\_depth**: Specify the maximum tree depth.  The default value is 5. 
 
 - **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R). The default value is 10. 
+
 - **Nbins**: Specify the number of bins for the histogram. The default value is 20. 
+
+- **r2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. 
 
 - **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
