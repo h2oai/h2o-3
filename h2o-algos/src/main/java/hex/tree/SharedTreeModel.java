@@ -18,7 +18,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _min_rows = 10; // Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values
 
-    public int _nbins = 20; // Build a histogram of this many bins, then split at the best point
+    public int _nbins = 20; // Numerical (real/int) cols: Build a histogram of this many bins, then split at the best point
+
+    public int _nbins_cats = 100; // Categorical (enum) cols: Build a histogram of this many bins, then split at the best point
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
@@ -27,6 +29,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
+
+    public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
