@@ -15,7 +15,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"model_id\":\"gbm-model\",\"training_frame\":\"kdd_train.hex\",\"validation_frame\":\"kdd_valid.hex\",\"ignore_const_cols\":true,\"score_each_iteration\":false,\"response_column\":\"churn\",\"ntrees\":50,\"max_depth\":\"3\",\"min_rows\":10,\"nbins\":\"4\",\"r2_stopping\":0.999999,\"learn_rate\":\"0.12\",\"distribution\":\"bernoulli\",\"balance_classes\":false,\"seed\":-1941834077389261000}"
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-model\",\"training_frame\":\"kdd_train.hex\",\"validation_frame\":\"kdd_valid.hex\",\"ignore_const_cols\":true,\"score_each_iteration\":false,\"response_column\":\"churn\",\"ntrees\":50,\"max_depth\":\"3\",\"min_rows\":10,\"nbins\":\"4\",\"nbins_cats\":\"20\",\"r2_stopping\":0.999999,\"learn_rate\":\"0.12\",\"distribution\":\"bernoulli\",\"balance_classes\":false,\"seed\":-1941834077389261000}"
     },
     {
       "type": "cs",
