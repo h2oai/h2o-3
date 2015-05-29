@@ -44,6 +44,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override public double[] perRow(double ds[], float[] yact, double w, double o, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+      if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
       if( iact != 0 && iact != 1 ) return ds; // The actual is effectively a NaN
       _wsum += w;

@@ -655,6 +655,117 @@ public class GLMBasicTestBinomial extends TestUtil {
 //      if(fTest != null)fTest.delete();
     }
   }
+  
+  @Test
+  public void testNonNegative() {
+    GLM job = null;
+    GLMModel model = null;
+//   glmnet result
+//    (Intercept)         AGE      RACER1      RACER2      RACER3      DPROSb
+//    -7.85142421  0.00000000  0.76094020  0.87641840  0.00000000  0.93030614
+//    DPROSc      DPROSd      DCAPSb         PSA         VOL     GLEASON
+//    1.31814009  0.82918839  0.63285077  0.02949062  0.00000000  0.83011321
+    String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
+    double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._response_column = "CAPSULE";
+    params._ignored_columns = new String[]{"ID",};
+    params._train = _prostateTrain._key;
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._standardize = false;
+    params._non_negative = true;
+    params._intercept = true;
+    params._objective_epsilon = 1e-6;
+    params._gradient_epsilon = 1e-5;
+    params._max_iterations = 10000; // not expected to reach max iterations here
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
+      Frame scoreTrain = null, scoreTest = null;
+      try {
+        params._solver = s;
+        System.out.println("SOLVER = " + s);
+        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+        model = job.trainModel().get();
+        HashMap<String, Double> coefs = model.coefficients();
+        System.out.println("coefs = " + coefs.toString());
+        System.out.println("metrics = " + model._output._training_metrics);
+        for (int i = 0; i < cfs1.length; ++i)
+          assertEquals(vals[i], coefs.get(cfs1[i]), Math.abs(1e-1 * vals[i]));
+        assertEquals(390.3468,   GLMTest.nullDeviance(model), 1e-1);
+        assertEquals(300.7231, GLMTest.residualDeviance(model), 1);
+        System.out.println("VAL METRICS: " + model._output._validation_metrics);
+        model.delete();
+        // test scoring
+        scoreTrain = model.score(_prostateTrain);
+        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostateTrain);
+        hex.AUC2 adata = mm._auc;
+        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+        assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+      } finally {
+        if (model != null) model.delete();
+        if (scoreTrain != null) scoreTrain.delete();
+        if(scoreTest != null) scoreTest.delete();
+        if (job != null) job.remove();
+      }
+    }
+  }
+
+  @Test
+  public void testNonNegativeNoIntercept() {
+    GLM job = null;
+    GLMModel model = null;
+//   glmnet result
+//    (Intercept)         AGE      RACER1      RACER2      RACER3      DPROSb
+//    0.000000000 0.000000000 0.240953925 0.000000000 0.000000000 0.000000000
+//    DPROSc      DPROSd      DCAPSb         PSA         VOL     GLEASON
+//    0.000000000 0.000000000 0.680406869 0.007137494 0.000000000 0.000000000
+    String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",   "PSA",      "VOL", "GLEASON", "RACE.R1"};
+    double [] vals = new double [] { 0.0,         0.0,   0.0,          0,             0.0,        0.680406869, 0.007137494, 0.0,  0.0,       0.240953925};
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._response_column = "CAPSULE";
+    params._ignored_columns = new String[]{"ID",};
+    params._train = _prostateTrain._key;
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._standardize = false;
+    params._non_negative = true;
+    params._intercept = false;
+    params._objective_epsilon = 1e-6;
+    params._gradient_epsilon = 1e-5;
+    params._max_iterations = 10000; // not expected to reach max iterations here
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
+      Frame scoreTrain = null, scoreTest = null;
+      try {
+        params._solver = s;
+        System.out.println("SOLVER = " + s);
+        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
+        model = job.trainModel().get();
+        HashMap<String, Double> coefs = model.coefficients();
+        System.out.println("coefs = " + coefs.toString());
+        System.out.println("metrics = " + model._output._training_metrics);
+        double relTol = s == Solver.IRLSM?1e-1:1;
+        for (int i = 0; i < cfs1.length; ++i)
+          assertEquals(vals[i], coefs.get(cfs1[i]), relTol * (vals[i] + 1e-1));
+        assertEquals(402.0254,   GLMTest.nullDeviance(model), 1e-1);
+        assertEquals(394.3998, GLMTest.residualDeviance(model), 1);
+        System.out.println("VAL METRICS: " + model._output._validation_metrics);
+        model.delete();
+        // test scoring
+        scoreTrain = model.score(_prostateTrain);
+        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostateTrain);
+        hex.AUC2 adata = mm._auc;
+        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
+        assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+      } finally {
+        if (model != null) model.delete();
+        if (scoreTrain != null) scoreTrain.delete();
+        if(scoreTest != null) scoreTest.delete();
+        if (job != null) job.remove();
+      }
+    }
+  }
 
   @Test
   public void testNoInterceptWithOffsetAndWeights() {

@@ -15,7 +15,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
       "max_after_balance_size",
       "max_confusion_matrix_size",
       "max_hit_ratio_k",
-      "ntrees", "max_depth", "min_rows", "nbins", "r2_stopping", "seed"
+      "ntrees", "max_depth", "min_rows", "nbins", "nbins_cats", "r2_stopping", "seed"
     };
 
     // supervised Schema
@@ -73,13 +73,16 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Fewest allowed observations in a leaf (in R called 'nodesize').", gridable = true)
     public int min_rows;
 
-    @API(help="Build a histogram of this many bins, then split at the best point", gridable = true)
+    @API(help="For numerical columns (real/int), build a histogram of this many bins, then split at the best point", gridable = true)
     public int nbins;
 
-    @API(help="Stop making trees when the r^2 metric equals or exceeds this")
+    @API(help="For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
+    public int nbins_cats;
+
+    @API(help="Stop making trees when the R^2 metric equals or exceeds this", level = API.Level.secondary)
     public double r2_stopping;
 
-    @API(help = "Seed for pseudo random number generator (if applicable)", level = API.Level.expert)
+    @API(help = "Seed for pseudo random number generator (if applicable)")
     public long seed;
   }
 }

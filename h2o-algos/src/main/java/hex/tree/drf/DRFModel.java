@@ -13,6 +13,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     int _mtries = -1;
     float _sample_rate = 0.632f;
     public boolean _build_tree_one_node = false;
+    public boolean _binomial_double_trees = false;
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
@@ -27,6 +28,8 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   }
 
   public DRFModel(Key selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey,parms,output); }
+
+  @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
@@ -47,7 +50,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       return preds;
     }
     else { // classification
-      if (_output.nclasses() == 2) {
+      if (_output.nclasses() == 2 && !_parms._binomial_double_trees) {
         preds[1] /= N; //average probability
         preds[2] = 1. - preds[1];
       } else {
@@ -65,7 +68,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
-      if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
+      if( _output.nclasses()==2 && !_parms._binomial_double_trees) { // Kept the initial prediction for binomial
         body.ip("preds[1] /= " + _output._ntrees + ";").nl();
         body.ip("preds[2] = 1.0 - preds[1];").nl();
       } else {
