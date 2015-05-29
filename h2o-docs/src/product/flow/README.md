@@ -375,6 +375,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Nbins**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of bins for the histogram. The default value is 20. 
 
+- **r2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. 
+
 - **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
 - **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
@@ -395,11 +397,19 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA),[GLM)](#GLM) Specify the number of training iterations. For K-Means and PCA, the default is 1000. For GLM, the default is -1. 
  
+- **Objective_epsilon**: [(GLM)](#GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
+
 - **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
+
+- **Gradient_epsilon**: [(GLM)](#GLM) (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
 - **Init**: [(K-Means](#Kmeans), [PCA)](#PCA) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
 
   **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+
+- **Offset_column**: [(GLM)](#GLM) Select a column to use as the offset. 
+
+- **Weights_column**: [(GLM)](#GLM) Select a column to use for the observation weights. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -420,6 +430,8 @@ The available options vary depending on the selected model. If an option is only
 - **Min\_prob**: [(Naïve Bayes)](#NB) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
 
 - **Eps\_prob**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+
+- **Compute_metrics**: [(Naïve Bayes)](#NB) To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction. 
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
@@ -481,11 +493,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Hidden\_dropout\_ratios**: [(DL)](#DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer, each value between 0 and 1 (exclusive). There is no default value. This option is applicable only if *TanhwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list. 
 
-
-
 **Expert Options**
-
-- **Keep_cross_validation_splits**: [(DL)](#DL) Check this checkbox to keep the cross-validation frames. This option is not selected by default.
 
 - **Overwrite\_with\_best\_model**: [(DL)](#DL) Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 

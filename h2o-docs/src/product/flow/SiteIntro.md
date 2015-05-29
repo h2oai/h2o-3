@@ -193,6 +193,14 @@ For Java developers, the following resources will help you create your own custo
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-algos/javadoc/index.html" target="_blank">H2O Algos Java Developer Documentation</a>: The definitive Java API guide for the algorithms used by H2O. 
 
+###SDK Information
+
+The Java API is generated and accessible from the [download page](http://h2o.ai/download). 
+
+- [Central repository](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)
+- [View code on Github](https://github.com/h2oai/h2o-3/tree/{{last_commit_hash}})
+- [Apache License](https://github.com/h2oai/h2o-3/blob/master/LICENSE)
+
 ---
 
 <a name="Dev"></a>
