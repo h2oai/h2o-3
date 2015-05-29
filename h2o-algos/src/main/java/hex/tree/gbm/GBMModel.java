@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.VarImp;
 import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
