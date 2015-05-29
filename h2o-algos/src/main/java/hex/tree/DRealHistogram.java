@@ -6,8 +6,6 @@ import water.util.AtomicUtils;
 import water.util.IcedBitSet;
 import water.util.MathUtils;
 
-import java.util.Comparator;
-
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>Sums and sums-of-squares of floats
@@ -17,8 +15,8 @@ import java.util.Comparator;
 public class DRealHistogram extends DHistogram<DRealHistogram> {
   private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
-  public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
-    super(name,nbins,isInt,min,maxEx,nelems);
+  public DRealHistogram(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx, long nelems) {
+    super(name,nbins, nbins_cats, isInt, min, maxEx, nelems);
   }
   @Override boolean isBinom() { return false; }
 

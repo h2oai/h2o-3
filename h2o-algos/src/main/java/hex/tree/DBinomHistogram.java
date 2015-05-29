@@ -4,8 +4,6 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.IcedBitSet;
 
-import java.util.Comparator;
-
 /**
    A Histogram, computed in parallel over a Vec.
    <p>
@@ -16,8 +14,8 @@ import java.util.Comparator;
 public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   public int _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
 
-  public DBinomHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
-    super(name,nbins,isInt,min,maxEx,nelems);
+  public DBinomHistogram(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx, long nelems) {
+    super(name,nbins, nbins_cats, isInt, min, maxEx, nelems);
   }
   @Override boolean isBinom() { return true; }
 

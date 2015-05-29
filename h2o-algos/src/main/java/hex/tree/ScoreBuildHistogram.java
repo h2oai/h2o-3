@@ -32,18 +32,20 @@ import water.util.AtomicUtils;
 public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final int   _k;    // Which tree
   final int   _ncols;// Active feature columns
-  final int   _nbins;// Number of bins in each histogram
+  final int   _nbins;// Numerical columns: Number of bins in each histogram
+  final int   _nbins_cats;// Categorical columns: Number of bins in each histogram
   final DTree _tree; // Read-only, shared (except at the histograms in the Nodes)
   final int   _leaf; // Number of active leaves (per tree)
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
   final boolean _subset;      // True if working a subset of cols
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram hcs[][], boolean subset) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset) {
     super(cc);
     _k    = k;
     _ncols= ncols;
     _nbins= nbins;
+    _nbins_cats= nbins_cats;
     _tree = tree;
     _leaf = leaf;
     _hcs  = hcs;
@@ -197,9 +199,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final DHistogram hcs[][] = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
-    int    bins[] = new int   [_nbins];
-    double sums[] = new double[_nbins];
-    double ssqs[] = new double[_nbins];
+    int    bins[] = new int   [Math.max(_nbins, _nbins_cats)];
+    double sums[] = new double[Math.max(_nbins, _nbins_cats)];
+    double ssqs[] = new double[Math.max(_nbins, _nbins_cats)];
     // For All Columns
     for( int c=0; c<_ncols; c++) { // for all columns
       Chunk chk = chks[c];
