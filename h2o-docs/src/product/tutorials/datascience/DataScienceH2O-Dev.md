@@ -31,8 +31,6 @@ K-Means falls in the general category of clustering algorithms.
 
 - **Ignore\_const\_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
-
 - **K**: Specify the number of clusters. The default is 1. 
 
 - **User_points**: Specify a vector of initial cluster centers.
@@ -40,6 +38,8 @@ K-Means falls in the general category of clustering algorithms.
 - **Max_iterations**: Specify the maximum number of training iterations. The default is 1000.
 
 - **Init**: Select the initialization mode. The options are Random, Furthest, PlusPlus, or User. **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+
+- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Standardize**: To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
@@ -192,15 +192,19 @@ The GLM suite includes:
 
 - **Standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
+- **Non-negative**: To force coefficients to be non-negative, check this checkbox. 
+
 - **Beta constraints**: To use beta constraints, select a dataset from the drop-down menu. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. 
 
-- **Max\_confusion\_matrix\_size**: Specify the maximum size (number of classes) for the confusion matrices printed in the logs. 
-
-- **Max\_hits\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
+- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Max_iterations**: Specify the number of training iterations. The default is 50.  
 
 - **Link**: Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
+
+- **Max\_confusion\_matrix\_size**: Specify the maximum size (number of classes) for the confusion matrices printed in the logs. 
+
+- **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
 
 - **Objective_epsilon**: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
@@ -376,8 +380,6 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
-
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Ntrees**: Specify the number of trees. The default value is 50. 
@@ -390,13 +392,13 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
 
-- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
+- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **Mtries**: Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
 - **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
 
-- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
+- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the Max\_after\_balance\_size parameter.
 
@@ -404,9 +406,15 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
+- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
+
+- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
+
+- **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy. 
+
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 
 ###Interpreting a DRF Model
@@ -502,6 +510,8 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 - **Eps\_prob**: Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 1e-10. 
 
 - **Compute_metrics**: To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
+
+- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -770,7 +780,6 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Ntrees**: Specify the number of trees. The default value is 50. 
@@ -783,11 +792,13 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
 
-- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
+- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
 - **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.  
+
+- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the Max\_after\_balance\_size parameter.
 
@@ -795,9 +806,12 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
+- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
+
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
+
 
 ###Interpreting a GBM Model
 
@@ -948,7 +962,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Loss**:  Select the loss function. The options are automatic, mean square, cross-entropy, Huber, or Absolute and the default value is automatic. 
 
-- **Score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring. The default value is 5.0. 
+- **Score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring. The default value is 5. 
 
 - **Score\_training\_samples**: Specify the number of training set samples for scoring. To use all training samples, enter 0. The default value is 10000. 
 
@@ -957,6 +971,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
+
+- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 - **Overwrite\_with\_best\_model**: Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
@@ -978,8 +994,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Fast_mode**: Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default. 
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
-
 - **Force\_load\_balance**: Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
 - **Single\_node\_mode**: Check this checkbox to force H2O to run on a single node for fine-tuning of model parameters. This option is not selected by default. 
@@ -993,6 +1007,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Sparse**: Check this checkbox to use sparse data handling. This option is not selected by default. 
 
 - **Col_major**: Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
+
 - **Average_activation**: Specify the average activation for the sparse autoencoder. The default value is 0.0. 
 
 - **Sparsity_beta**: Specify the sparsity regularization. The default value is 0.0. 
