@@ -424,7 +424,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._model_summary = createModelSummaryTable(out);
         out._scoring_history = createScoringHistoryTable(out);
-        out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar, out._names));
+        out._varimp = new hex.VarImp(_improvPerVar, out._names);
+        out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
         Log.info(out._model_summary.toString());
         // For Debugging:
 //        Log.info(out._scoring_history.toString());
