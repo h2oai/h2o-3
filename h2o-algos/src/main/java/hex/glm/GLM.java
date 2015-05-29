@@ -823,9 +823,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             ArrayUtils.mult(g,100);
             double [] rho = MemoryManager.malloc8d(beta.length);
             // compute rhos
-            for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
+            for(int i = 0; i < rho.length - 1; ++i)
               rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[i], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[i]);
-
+            int ii = rho.length - 1;
+            rho[ii] = ADMM.L1Solver.estimateRho(-g[ii], 0, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[ii], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[ii]);
+            for(int i = 0; i < rho.length-1; ++i)
+              rho[i] = Math.min(1000,rho[i]);
             final double [] objvals = new double[2];
             objvals[1] = Double.POSITIVE_INFINITY;
             L_BFGS.ProgressMonitor pm = new L_BFGS.ProgressMonitor(){
@@ -1126,8 +1129,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // l1pen or upper/lower bounds require ADMM solver
         if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
           // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
-          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
-          new ADMM.L1Solver(1e-4, 1000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
+          new ADMM.L1Solver(1e-4, 5000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
         } else {
           glmt._gram.addDiag(l2pen);
           new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
@@ -1400,7 +1403,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public double[] gradient(double [] beta) {
       double [] grad = _gram.mul(beta);
-      for(int i = 0; i < grad.length; ++i)
+      for(int i = 0; i < _xy.length; ++i)
         grad[i] -= _xy[i];
       return grad;
     }
