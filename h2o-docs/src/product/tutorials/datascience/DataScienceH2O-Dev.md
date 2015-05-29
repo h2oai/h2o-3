@@ -386,9 +386,11 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R). The default value is 10. 
 
-- **Nbins**: Specify the number of bins for the histogram. The default value is 20. 
+- **Nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. The default value is 20. 
 
-- **r2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.  
+- **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
+
+- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
 
 - **Mtries**: Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
@@ -777,9 +779,11 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R). The default value is 10. 
 
-- **Nbins**: Specify the number of bins for the histogram. The default value is 20. 
+- **Nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. The default value is 20. 
 
-- **r2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. 
+- **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
+
+- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
 
 - **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 

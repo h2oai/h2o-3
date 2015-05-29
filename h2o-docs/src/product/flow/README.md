@@ -373,9 +373,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10.
 
-- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of bins for the histogram. The default value is 20. 
+- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. The default value is 20. 
 
-- **r2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. 
+- **Nbins_cats**: [(GBM](#GBM), [DRF)](#DRF) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
+
+- **R2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
 
 - **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
 
