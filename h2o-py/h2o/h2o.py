@@ -162,6 +162,39 @@ def split_frame(data, ratios=[0.75], destination_frames=None):
   removeFrameShallow(fr)
   return splits
 
+def get_model(model_id):
+  """
+  Return the specified model
+
+  :param model_id: The model identification in h2o
+  """
+  model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
+  model_type = model_json["output"]["model_category"]
+  if model_type=="Binomial":
+    from model.binomial import H2OBinomialModel
+    model = H2OBinomialModel(model_id, model_json)
+
+  elif model_type=="Clustering":
+    from model.clustering import H2OClusteringModel
+    model = H2OClusteringModel(model_id, model_json)
+
+  elif model_type=="Regression":
+    from model.regression import H2ORegressionModel
+    model = H2ORegressionModel(model_id, model_json)
+
+  elif model_type=="Multinomial":
+    from model.multinomial import H2OMultinomialModel
+    model = H2OMultinomialModel(model_id, model_json)
+
+  elif model_type=="AutoEncoder":
+    from model.autoencoder import H2OAutoEncoderModel
+    model = H2OAutoEncoderModel(model_id, model_json)
+
+  else:
+    print model_type
+    raise NotImplementedError
+
+  return model
 
 def get_frame(frame_id):
   if frame_id is None:
