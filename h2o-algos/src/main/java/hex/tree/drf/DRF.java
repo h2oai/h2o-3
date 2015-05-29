@@ -72,6 +72,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
+    if (_nclass != 2 && _parms._binomial_double_trees)
+      warn("_binomial_double_trees", "Binomial double tree is ignored for non-binomial response.");
   }
 
   // A standard DTree with a few more bits.  Support for sampling during
@@ -231,7 +233,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // The Boolean Optimization
           // This optimization assumes the 2nd tree of a 2-class system is the
           // inverse of the first (and that the same columns were picked)
-          if( k==1 && _nclass==2 ) continue;
+          if( k==1 && _nclass==2 && !_parms._binomial_double_trees) continue;
           ktrees[k] = new DRFTree(fr, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, mtrys, rseed);
           boolean isBinom = isClassifier();
           new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0], isBinom)); // The "root" node
@@ -490,11 +492,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
     double sum = 0;
-    if (_nclass > 2) { //multinomial
+    if (_nclass > 2 || (_nclass == 2 && _parms._binomial_double_trees) ) { //multinomial or binomial with 1 tree per class
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = chk_tree(chks, k).atd(row));
     }
-    else if (_nclass==2) { //binomial optimization
+    else if (_nclass==2 && !_parms._binomial_double_trees) { //binomial optimization
       fs[1] = chk_tree(chks, 0).atd(row);
       assert(fs[1] >= 0 && fs[1] <= 1);
       fs[2] = 1. - fs[1];
