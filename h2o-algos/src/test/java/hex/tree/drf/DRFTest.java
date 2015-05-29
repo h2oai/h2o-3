@@ -544,6 +544,7 @@ public class DRFTest extends TestUtil {
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
+        parms._nbins_cats = 500;
         parms._ntrees = 7;
         parms._max_depth = 10;
         parms._mtries = -1;
@@ -569,7 +570,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2093151515479678, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2089909437916578, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
