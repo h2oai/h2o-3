@@ -604,6 +604,7 @@ public class GBMTest extends TestUtil {
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
+        parms._nbins_cats = 500;
         parms._ntrees = 7;
         parms._max_depth = 5;
         parms._min_rows = 10;
