@@ -73,10 +73,10 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Fewest allowed observations in a leaf (in R called 'nodesize').", gridable = true)
     public int min_rows;
 
-    @API(help="Numerical columns (real/int): Build a histogram of this many bins, then split at the best point", gridable = true)
+    @API(help="For numerical columns (real/int), build a histogram of this many bins, then split at the best point", gridable = true)
     public int nbins;
 
-    @API(help="Categorical columns (enum): Build a histogram of this many bins, then split at the best point", gridable = true)
+    @API(help="For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
     public int nbins_cats;
 
     @API(help="Stop making trees when the R^2 metric equals or exceeds this")
