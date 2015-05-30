@@ -643,7 +643,7 @@ def as_list(data, use_pandas=True):
   all be str).
 
   :param data: An H2O data object.
-  :paran use_pandas: Try to use pandas for reading in the data.
+  :param use_pandas: Try to use pandas for reading in the data.
   :return: List of list (Rows x Columns).
   """
 
