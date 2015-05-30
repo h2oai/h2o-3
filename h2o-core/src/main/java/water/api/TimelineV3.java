@@ -12,7 +12,7 @@ import java.util.Date;
 /** Display of a Timeline
  *  Created by tomasnykodym on 6/5/14.
  */
-public class TimelineV3 extends Schema<Timeline,TimelineV3> {
+public class TimelineV3 extends RequestSchema<Timeline,TimelineV3> {
   // This schema has no input params
   @API(help="Current time in millis.", direction=API.Direction.OUTPUT)
   private long now;

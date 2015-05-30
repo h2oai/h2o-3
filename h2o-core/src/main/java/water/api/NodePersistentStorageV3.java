@@ -5,7 +5,7 @@ import water.Iced;
 /**
 * Created by rpeck on 11/30/14.
 */
-public class NodePersistentStorageV3 extends Schema<Iced, NodePersistentStorageV3> {
+public class NodePersistentStorageV3 extends RequestSchema<Iced, NodePersistentStorageV3> {
   public static class NodePersistentStorageEntryV3 extends Schema<Iced, NodePersistentStorageEntryV3> {
     @API(help="Category name", required=true, direction=API.Direction.OUTPUT)
     String category;

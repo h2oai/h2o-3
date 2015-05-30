@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Imputer
 
-def getModelKmeans(ip,port):
+def get_modelKmeans(ip,port):
     # Connect to a pre-existing cluster
     h2o.init(ip,port)  # connect to localhost:54321
 
@@ -23,8 +23,7 @@ def getModelKmeans(ip,port):
         # Log.info("H2O K-Means")
         km_h2o = h2o.kmeans(x=benign_h2o, k=i)
         km_h2o.show()
-        #TODO: impement h2o.getModel()
-        model = h2o.getModel(km_h2o._key)
+        model = h2o.get_model(km_h2o._key)
         model.show()
 
         km_sci = KMeans(n_clusters=i, init='k-means++', n_init=1)
@@ -33,5 +32,5 @@ def getModelKmeans(ip,port):
         print km_sci.cluster_centers_
 
 if __name__ == "__main__":
-   h2o.run_test(sys.argv, getModelKmeans)
+   h2o.run_test(sys.argv, get_modelKmeans)
 
