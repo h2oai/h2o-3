@@ -11,5 +11,10 @@ def frame_as_list(ip,port):
   print (prostate % 10).show()
   print (prostate[4] % 10).show()
 
+
+  airlines = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
+
+  print (airlines["CRSArrTime"] % 100).show()
+
 if __name__ == "__main__":
   h2o.run_test(sys.argv, frame_as_list)
