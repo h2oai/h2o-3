@@ -800,7 +800,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
     toJavaInit(sb, fileContext).nl();
-    toJavaNAMES(sb);
+    toJavaNAMES(sb, fileContext);
     toJavaNCLASSES(sb);
     toJavaDOMAINS(sb, fileContext);
     toJavaPROB(sb);
@@ -825,8 +825,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected SB toJavaSuper( String modelName, SB sb ) {
     return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
   }
-  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names, _output.nfeatures()), "Names of columns used by model."); }
-  protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
+  private SB toJavaNAMES(SB sb, SB fileContextSB) {
+    String modelName = JCodeGen.toJavaId(_key.toString());
+    String namesHolderClassName = "NamesHolder_"+modelName;
+    sb.i().p("// ").p("Names of columns used by model.").nl();
+    sb.i().p("public static final String[] NAMES = "+namesHolderClassName+".VALUES;").nl();
+    // Generate class which fills the names into array
+    fileContextSB.i().p("// The class representing training column names").nl();
+    JCodeGen.toClassWithArray(fileContextSB, null, namesHolderClassName, Arrays.copyOf(_output._names, _output.nfeatures()));
+    return sb;
+  }
+  protected SB toJavaNCLASSES( SB sb ) {
+    return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb;
+  }
 
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     String modelName = JCodeGen.toJavaId(_key.toString());
@@ -837,11 +848,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String[] dom = _output._domains[i];
       String colInfoClazz = modelName+"_ColInfo_"+i;
       sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
-      sb.p(colInfoClazz).p(".VALUES");
+      if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
       if (i!=_output._domains.length-1) sb.p(',');
       sb.nl();
-      fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
-      JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
+      // Right now do not generate the class representing column
+      // since it does not hold any interesting information except String array holding domain
+      if (dom != null) {
+        fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
+        JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
+      }
     }
     return sb.ip("};").nl();
   }
@@ -916,7 +931,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);
         genmodel = (GenModel)clz.newInstance();
-      } catch( Exception e ) { throw H2O.fail("Internal POJO compilation failed",e); }
+      } catch (Exception e) {
+        throw H2O.fail("Internal POJO compilation failed",e);
+      }
 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
