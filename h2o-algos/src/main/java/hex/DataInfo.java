@@ -4,7 +4,6 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 
 import java.util.Arrays;
 
@@ -23,7 +22,6 @@ public class DataInfo extends Keyed {
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
 
-
   public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE }
   public TransformType _predictor_transform;
   public TransformType _response_transform;
@@ -39,14 +37,18 @@ public class DataInfo extends Keyed {
   public double [] _normRespMul;
   public double [] _normRespSub;
   public boolean _intercept = true;
-  public boolean _offset = false;
+  public final boolean _offset;
+  public final boolean _weights;
+  public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
+  public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
+  public int weightChunkId(){return _cats + _nums;}
   public final boolean _skipMissing;
   public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
   final int [][] _catLvls;
 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
-  private DataInfo() {super(null);_catLvls = null; _skipMissing = true; _valid = false;}
+  private DataInfo() {super(null);_catLvls = null; _skipMissing = true; _valid = false; _offset = false; _weights = false; }
 
   public DataInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
@@ -60,6 +62,8 @@ public class DataInfo extends Keyed {
   }
 
   private DataInfo(int nums) {
+    _offset = false;
+    _weights = false;
     _nums = nums;
     _catOffsets = new int[]{0};
     _predictor_transform = TransformType.NONE;
@@ -70,11 +74,13 @@ public class DataInfo extends Keyed {
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket) {
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset) {
     super(selfKey);
     _valid = false;
     assert predictor_transform != null;
     assert  response_transform != null;
+    _offset = offset;
+    _weights = weight;
     _skipMissing = skipMissing;
     _predictor_transform = predictor_transform;
     _response_transform = response_transform;
@@ -86,7 +92,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses;
+    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0);
     assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
@@ -124,7 +130,7 @@ public class DataInfo extends Keyed {
       tvecs2[i+_cats] = train.vec(nums[i]);
       _permutation[i+_cats] = nums[i];
     }
-    for(int i = names.length-nResponses; i < names.length; ++i) {
+    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }
@@ -139,7 +145,7 @@ public class DataInfo extends Keyed {
   }
 
   public DataInfo validDinfo(Frame valid) {
-    DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false);
+    DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false, _weights,_offset);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
@@ -163,8 +169,10 @@ public class DataInfo extends Keyed {
   }
 
   // private constructor called by filterExpandedColumns
-  private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing){
+  private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean weight, boolean offset){
     super(selfKey);
+    _offset = offset;
+    _weights = weight;
     _valid = false;
     assert predictor_transform != null;
     assert  response_transform != null;
@@ -232,7 +240,7 @@ public class DataInfo extends Keyed {
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
     assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
-    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing);
+    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _weights, _offset);
     // do not put activeData into K/V - active data is recreated on each node based on active columns
     dinfo._activeCols = cols;
     return dinfo;
@@ -344,6 +352,8 @@ public class DataInfo extends Keyed {
     public long      rid;
     public int       nBins;
     public int       nNums;
+    public double    offset = 0;
+    public double    weight = 1;
     public final double etaOffset;
 
     public final boolean isSparse(){return numIds != null;}
@@ -442,7 +452,7 @@ public class DataInfo extends Keyed {
       row.numVals[i] = d;
     }
     for (int i = 0; i < _responses; ++i) {
-      row.response[i] = chunks[chunks.length - _responses + i].atd(rid);
+      row.response[i] = chunks[responseChunkId()].atd(rid);
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
       if (Double.isNaN(row.response[i])) {
@@ -450,6 +460,10 @@ public class DataInfo extends Keyed {
         return row;
       }
     }
+    if(_offset)
+      row.offset = chunks[offsetChunkId()].atd(rid);
+    if(_weights)
+      row.weight = chunks[weightChunkId()].atd(rid);
     return row;
   }
   public Row newDenseRow(){
@@ -469,17 +483,25 @@ public class DataInfo extends Keyed {
       for(int i = 0; i < _nums; ++i)
         etaOffset -= beta[i+numStart()] * _normSub[i] * _normMul[i];
     for (int i = 0; i < rows.length; ++i) {
-        rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
-        rows[i].rid = chunks[0].start() + i;
+      rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
+      rows[i].rid = chunks[0].start() + i;
+      if(_offset)  {
+        rows[i].offset = chunks[offsetChunkId()].atd(i);
+        if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
+      }
+      if(_weights) {
+        rows[i].weight = chunks[weightChunkId()].atd(i);
+        if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
+      }
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
+        if(row.bad)continue;
         if (chunks[i].isNA(r)) {
           if (_skipMissing) {
             row.bad = true;
-            continue;
           } else
             row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
         } else {
@@ -496,9 +518,9 @@ public class DataInfo extends Keyed {
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
         if(!c.isSparse() && c.atd(r) == 0)continue;
         Row row = rows[r];
+        if (row.bad) continue;
         if (c.isNA(r))
           row.bad = _skipMissing;
-        if (row.bad) continue;
         row.addBinId(cid + numStart);
       }
     }
@@ -511,8 +533,8 @@ public class DataInfo extends Keyed {
         assert r > oldRow;
         oldRow = r;
         Row row = rows[r];
-        if (c.isNA(r)) row.bad = _skipMissing;
         if (row.bad) continue;
+        if (c.isNA(r)) row.bad = _skipMissing;
         double d = c.atd(r);
         if(_normMul != null)
           d *= _normMul[cid]; // no centering here, we already have etaOffset
@@ -521,10 +543,10 @@ public class DataInfo extends Keyed {
     }
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
-      Chunk rChunk = chunks[chunks.length-i];
+      Chunk rChunk = chunks[responseChunkId()];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        double d = rChunk.atd(r);
+        if(row.bad) continue;
         row.response[row.response.length - i] = rChunk.atd(r);
         if (_normRespMul != null) {
           assert false;

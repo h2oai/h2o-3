@@ -46,6 +46,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
 
+    // Expanded column names of adapted training frame
+    public String[] _names_expanded;
+
     public SVDOutput(SVD b) { super(b); }
 
     @Override public ModelCategory getModelCategory() { return ModelCategory.DimReduction; }
@@ -103,7 +106,6 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return f;
   }
 
-  // TODO: Need permutation matrix to index into cols correctly
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     int numStart = _output._catOffsets[_output._catOffsets.length-1];
     assert data.length == _output._permutation.length;
@@ -112,6 +114,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
       preds[i] = 0;
       for (int j = 0; j < _output._ncats; j++) {
         int level = (int)data[_output._permutation[j]];
+        if (_output._catOffsets[j]+level >= _output._catOffsets[j+1]) continue;   // Skip categorical levels not in training frame
         preds[i] += _output._v[_output._catOffsets[j]+level][i];
       }
 
@@ -127,7 +130,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
   @Override public Frame score(Frame fr, String destination_key) {
     Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true);   // Adapt
+    adaptTestForTrain(adaptFr, true, false);   // Adapt
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;

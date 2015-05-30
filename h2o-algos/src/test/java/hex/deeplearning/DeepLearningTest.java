@@ -34,9 +34,9 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(0, 50, 0),
-                    a(0, 8, 42),
-                    a(0, 1, 49)),
+            ard(ard(0, 50, 0),
+                    ard(0, 8, 42),
+                    ard(0, 1, 49)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
 
@@ -53,9 +53,9 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             5,
-            a(a(50, 0, 0),
-                    a(0, 24, 26),
-                    a(0, 2, 48)),
+            ard(ard(50, 0, 0),
+                    ard(0, 24, 26),
+                    ard(0, 2, 48)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -72,11 +72,11 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(0, 3, 0, 1, 0),
-                    a(0, 191, 3, 13, 0),
-                    a(0, 2, 1, 0, 0),
-                    a(0, 57, 0, 27, 0),
-                    a(0, 4, 0, 23, 81)),
+            ard(ard(0, 3, 0, 1, 0),
+                    ard(0, 191, 3, 13, 0),
+                    ard(0, 2, 1, 0, 0),
+                    ard(0, 57, 0, 27, 0),
+                    ard(0, 4, 0, 23, 81)),
             s("3", "4", "5", "6", "8"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -92,11 +92,11 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             5,
-            a(a(0, 4, 0, 0, 0),
-                    a(0, 205, 0, 2, 0),
-                    a(0, 2, 0, 1, 0),
-                    a(0, 14, 0, 69, 1),
-                    a(0, 0, 0, 5, 103)),
+            ard(ard(0, 4, 0, 0, 0),
+                    ard(0, 205, 0, 2, 0),
+                    ard(0, 2, 0, 1, 0),
+                    ard(0, 14, 0, 69, 1),
+                    ard(0, 0, 0, 5, 103)),
             s("3", "4", "5", "6", "8"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -134,8 +134,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(6, 0),
-                    a(9, 1)),
+            ard(ard(6, 0),
+                    ard(9, 1)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -152,8 +152,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(46294, 202),
-                    a(3187, 107)),
+            ard(ard(46294, 202),
+                    ard(3187, 107)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
 
@@ -170,8 +170,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(51, 176),
-              a(13, 140)),
+            ard(ard(51, 176),
+              ard(13, 140)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -187,8 +187,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(6, 221),
-              a(0, 153)),
+            ard(ard(6, 221),
+              ard(0, 153)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout);
 
@@ -205,8 +205,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(147,  80),
-              a( 32, 121)),
+            ard(ard(147,  80),
+              ard( 32, 121)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Tanh);
   }
@@ -222,8 +222,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(58, 169),
-              a(12, 141)),
+            ard(ard(58, 169),
+              ard(12, 141)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout);
   }
@@ -239,8 +239,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(57, 170),
-              a( 8, 145)),
+            ard(ard(57, 170),
+              ard( 8, 145)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Maxout);
   }
@@ -256,8 +256,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(58, 169),
-              a(13, 140)),
+            ard(ard(58, 169),
+              ard(13, 140)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout);
   }
@@ -351,8 +351,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            a(a(2080, 0),
-                    a(0, 2080)),
+            ard(ard(2080, 0),
+                    ard(0, 2080)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -389,8 +389,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             7,
-            a(a(4051, 15612), //for 5-node
-                    a(1397, 20322)),
+            ard(ard(4051, 15612), //for 5-node
+                    ard(1397, 20322)),
 //            a(a(4396, 15269), //for 1-node
 //              a(1740, 19993)),
             s("NO", "YES"),
@@ -411,8 +411,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(1, 44999),
-              a(0, 45000)),
+            ard(ard(1, 44999),
+              ard(0, 45000)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -437,10 +437,10 @@ public class DeepLearningTest extends TestUtil {
     return ret;
   }
 
-  public void basicDLTest_Classification(String fnametrain, String hexnametrain, PrepData prep, int epochs, long[][] expCM, String[] expRespDom, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, expCM, expRespDom, -1, new int[]{10,10}, 1e-5, true, activation); }
+  public void basicDLTest_Classification(String fnametrain, String hexnametrain, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, expCM, expRespDom, -1, new int[]{10,10}, 1e-5, true, activation); }
   public void basicDLTest_Regression(String fnametrain, String hexnametrain, PrepData prep, int epochs, double expMSE, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, null, null, expMSE, new int[]{10,10}, 1e-5, false, activation); }
 
-  public void basicDL(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int epochs, long[][] expCM, String[] expRespDom, double expMSE, int[] hidden, double l1, boolean classification, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable {
+  public void basicDL(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, double expMSE, int[] hidden, double l1, boolean classification, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable {
     Scope.enter();
     DeepLearningModel.DeepLearningParameters dl = new DeepLearningModel.DeepLearningParameters();
     Frame frTest = null, pred = null;

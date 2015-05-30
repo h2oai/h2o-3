@@ -29,9 +29,9 @@ import static java.lang.Double.isNaN;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
+public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
-  public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
+  public static class DeepLearningParameters extends Model.Parameters {
 
     @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
 
@@ -437,7 +437,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     void validate( DeepLearning dl, boolean expensive ) {
       dl.hide("_score_each_iteration", "Not used by Deep Learning.");
-      boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
+      boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
       for( int h : _hidden ) if( h<=0 ) dl.error("_hidden", "Hidden layer size must be positive.");
@@ -509,7 +509,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.error("_n_folds", "n_folds is not yet implemented.");
 
       if (_loss == null) {
-        if (expensive || dl._nclass != 0) {
+        if (expensive || dl.nclasses() != 0) {
           dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
         }
         //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
@@ -558,13 +558,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
-  public static class DeepLearningModelOutput extends SupervisedModel.SupervisedOutput {
+  public static class DeepLearningModelOutput extends Model.Output {
+
     @Override public int nfeatures() {
       return _names.length - (autoencoder ? 0 : 1);
     }
-    public DeepLearningModelOutput() { super(); }
-    public DeepLearningModelOutput(DeepLearning b) { super(b); }
-    boolean autoencoder;
+    public DeepLearningModelOutput() { super(); autoencoder = false;}
+    public DeepLearningModelOutput(DeepLearning b) {
+      super(b);
+      autoencoder = b._parms._autoencoder;
+      assert b.isSupervised() == !autoencoder;
+    }
+    final boolean autoencoder;
+
     DeepLearningScoring errors;
     Key[] weights;
     Key[] biases;
@@ -574,7 +580,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
 
-    @Override public boolean isSupervised() { return !autoencoder; }
+    @Override public boolean isSupervised() {
+      return !autoencoder;
+    }
   }
 
   // Default publicly visible Schema is V2
@@ -1641,7 +1649,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                       &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
         if (progressKey != null) {
           new Job.ProgressUpdate("Scoring on " + ftrain.numRows() + " training samples" +
-                  (ftest != null ? (", " + ftest.numRows() + " validation samples)") : ")")
+                  (ftest != null ? (", " + ftest.numRows() + " validation samples") : "")
           ).fork(progressKey);
         }
         final boolean printme = !get_params()._quiet_mode;
@@ -1915,7 +1923,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Frame adaptFrm = new Frame(frame);
     Vec v0 = adaptFrm.anyVec().makeZero();
     Scope.enter();
-    adaptTestForTrain(adaptFrm,true);
+    adaptTestForTrain(adaptFrm,true, false);
     adaptFrm.add("Reconstruction.MSE", v0);
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
@@ -1943,7 +1951,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return super.score(fr, destination_key);
     else {
       Frame adaptFr = new Frame(fr);
-      adaptTestForTrain(adaptFr, true);   // Adapt
+      adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
       Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
       cleanup_adapt( adaptFr, fr );
       return output;
@@ -1975,7 +1983,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(_output._names, null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

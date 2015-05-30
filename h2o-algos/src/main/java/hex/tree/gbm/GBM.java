@@ -9,7 +9,6 @@ import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -38,8 +37,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override public Job<GBMModel> trainModel() {
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
-
-  @Override public Vec vresponse() { return super.vresponse() == null ? response() : super.vresponse(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -249,9 +246,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
 
-      // Adjust nbins for the top-levels
-      final int top_level_extra_bins = 1<<10;
-      int nbins = Math.max(top_level_extra_bins,_parms._nbins);
+      // Adjust real bins for the top-levels
+      int adj_nbins = Math.max(_parms._nbins_top_level,_parms._nbins);
 
       for( int k=0; k<_nclass; k++ ) {
         // Initially setup as-if an empty-split had just happened
@@ -261,8 +257,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // inverse of the first.  This is false for DRF (and true for GBM) -
           // DRF picks a random different set of columns for the 2nd tree.
           if( k==1 && _nclass==2 ) continue;
-          ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_nclass,_parms._min_rows);
-          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,nbins,hcs[k][0],false) ); // The "root" node
+          ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_parms._nbins_cats, (char)_nclass,_parms._min_rows);
+          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,adj_nbins,_parms._nbins_cats,hcs[k][0], false) ); // The "root" node
         }
       }
       int[] leafs = new int[_nclass]; // Define a "working set" of leaf splits, from here to tree._len
@@ -274,9 +270,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
         if( !isRunning() ) return;
-
-        hcs = buildLayer(_train, nbins, ktrees, leafs, hcs, false, false);
-
+        hcs = buildLayer(_train, adj_nbins, _parms._nbins_cats, ktrees, leafs, hcs, false, false);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }

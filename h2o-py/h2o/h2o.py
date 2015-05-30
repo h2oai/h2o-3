@@ -7,11 +7,13 @@ import os
 import os.path
 import re
 import urllib
+import csv
+import imp
 import urllib2
 import json
+import imp
 import random
 import tabulate
-import numpy as np
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -215,8 +217,8 @@ def is_running_internal_to_h2o():
 def dim_check(data1, data2):
   """
   Check that the dimensions of the data1 and data2 are the same
-  :param data1: an H2OFrame, H2OVec or Expr
-  :param data2: an H2OFrame, H2OVec or Expr
+  :param data1: an H2OFrame or H2OVec
+  :param data2: an H2OFrame or H2OVec
   :return: None
   """
   data1_rows, data1_cols = data1.dim()
@@ -227,11 +229,18 @@ def dim_check(data1, data2):
 def np_comparison_check(h2o_data, np_data, num_elements):
   """
   Check values achieved by h2o against values achieved by numpy
-  :param h2o_data: an H2OFrame, H2OVec or Expr
+  :param h2o_data: an H2OFrame or H2OVec
   :param np_data: a numpy array
   :param num_elements: number of elements to compare
   :return: None
   """
+  # Check for numpy
+  try:
+    imp.find_module('numpy')
+  except ImportError:
+    assert False, "failed comparison check because unable to import numpy"
+
+  import numpy as np
   rows, cols = h2o_data.dim()
   for i in range(num_elements):
     r = random.randint(0,rows-1)
@@ -240,26 +249,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
     assert np.absolute(h2o_val - np_val) < 1e-6, \
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
-
-def value_check(h2o_data, local_data, num_elements, col=None):
-  """
-  Check that the values of h2o_data and local_data are the same. In a testing context, this could be used to check
-  that an operation did not alter the original h2o_data.
-
-  :param h2o_data: an H2OFrame, H2OVec or Expr
-  :param local_data: a list of lists (row x col format)
-  :param num_elements: number of elements to check
-  :param col: an optional integer that specifies the particular column to check
-  :return: None
-  """
-  rows, cols = h2o_data.dim()
-  for i in range(num_elements):
-    r = random.randint(0,np.minimum(99,rows-1))
-    c = random.randint(0,cols-1) if not col else col
-    h2o_val = as_list(h2o_data[r,c])
-    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
-    local_val = local_data[r][c]
-    assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
 
 def run_test(sys_args, test_to_run):
   import pkg_resources
@@ -340,6 +329,8 @@ def remove(object):
     raise ValueError("remove with no object is not supported, for your protection")
 
   if isinstance(object, H2OFrame):
+    fr = H2OFrame.send_frame(object)
+    remove(fr)
     object._vecs=[]
 
   elif isinstance(object, H2OVec):
@@ -608,39 +599,62 @@ def keys_leaked(num_keys):
   """
   return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
 
-def as_list(data):
+def as_list(data, use_pandas=True):
   """
-  If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
-  environment an H2O Frame is represented as a list of lists (each element in the broader list represents a row).
-  Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
-  100 rows. This function is only intended to be used within the testing framework. More robust functionality must
-  be constructed for production conversion between H2O and python data types.
+  Convert an H2O data object into a python-specific object.
 
+  WARNING: This will pull all data local!
+
+  If Pandas is available (and use_pandas is True), then pandas will be used to parse the data frame.
+  Otherwise, a list-of-lists populated by character data will be returned (so the types of data will
+  all be str).
+
+  :param data: An H2O data object.
+  :paran use_pandas: Try to use pandas for reading in the data.
   :return: List of list (Rows x Columns).
   """
+
+  # check to see if we can use pandas
+  found_pandas=False
+  try:
+    imp.find_module('pandas')  # if have pandas, use this to eat a frame
+    found_pandas = True
+  except ImportError:
+    found_pandas = False
+
+  # if frame, download the frame and jam into lol or pandas df
+  if isinstance(data, H2OFrame):
+    fr = H2OFrame.send_frame(data)
+    res = _as_data_frame(fr, use_pandas and found_pandas)
+    removeFrameShallow(fr)
+    return res
+
   if isinstance(data, Expr):
     if data.is_local(): return data._data
     if data.is_pending():
       data.eager()
       if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
-    j = frame(data._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+    return _as_data_frame(data._data, use_pandas and found_pandas)
+
   if isinstance(data, H2OVec):
     if data._expr.is_local(): return data._expr._data
     if data._expr.is_pending():
       data._expr.eager()
       if data._expr.is_local(): return [[data._expr._data]]
-    j = frame(data._expr._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
-  if isinstance(data, H2OFrame):
-    vec_as_list = [as_list(v) for v in data._vecs]
-    frm = []
-    for row in range(len(vec_as_list[0])):
-      tmp = []
-      for col in range(len(vec_as_list)):
-        tmp.append(vec_as_list[col][row][0])
-      frm.append(tmp)
-    return frm
+
+    return as_list(H2OFrame(vecs=[data]), use_pandas)
+
+def _as_data_frame(id, use_pandas):
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(id) + "&hex_string=false"
+  response = urllib2.urlopen(url)
+  if use_pandas:
+    import pandas
+    return pandas.read_csv(response, low_memory=False)
+  else:
+    cr = csv.reader(response)
+    rows = []
+    for row in cr: rows.append(row)
+    return rows
 
 def logical_negation(data) : return data.logical_negation()
 
@@ -715,6 +729,8 @@ class H2ODisplay:
     # if holding onto a display object, then may have odd printing behavior
     # the __repr__ and _repr_html_ methods will try to save you from many prints,
     # but just be WARNED that your mileage may vary!
+    #
+    # In other words, it's better to just new one of these when you're ready to print out.
 
     if self.table_header is not None:
       print

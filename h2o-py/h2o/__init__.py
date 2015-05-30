@@ -406,6 +406,7 @@ Here is a brief example of H2O on Hadoop:
 __version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
 from model import *
+from demo import *
 from frame import H2OFrame
 from frame import H2OVec
 from two_dim_table import H2OTwoDimTable

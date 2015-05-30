@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public class ConfusionMatrix extends Iced {
   private TwoDimTable _table;
-  public final long[][] _cm; // [actual][predicted]
+  public final double[][] _cm; // [actual][predicted], typed as double because of observation weights (which can be doubles)
   public final String[] _domain;
 
   /**
@@ -20,7 +20,7 @@ public class ConfusionMatrix extends Iced {
    * @param value 2D square matrix with co-occurrence counts for actual vs predicted class membership
    * @param domain class labels (unified domain between actual and predicted class labels)
    */
-  public ConfusionMatrix(long[][] value, String[] domain) { _cm = value; _domain = domain; }
+  public ConfusionMatrix(double[][] value, String[] domain) { _cm = value; _domain = domain; }
 
   /** Build the CM data from the actuals and predictions, using the default
    *  threshold.  Print to Log.info if the number of classes is below the
@@ -43,13 +43,13 @@ public class ConfusionMatrix extends Iced {
 
   private static class CMBuilder extends MRTask<CMBuilder> {
     final int _len;
-    long _arr[/*actuals*/][/*predicted*/];
+    double _arr[/*actuals*/][/*predicted*/];
     CMBuilder(int len) { _len = len; }
     @Override public void map( Chunk ca, Chunk cp ) {
       // After adapting frames, the Actuals have all the levels in the
       // prediction results, plus any extras the model was never trained on.
       // i.e., Actual levels are at least as big as the predicted levels.
-      _arr = new long[_len][_len];
+      _arr = new double[_len][_len];
       for( int i=0; i < ca._len; i++ )
         if( !ca.isNA(i) )
           _arr[(int)ca.at8(i)][(int)cp.at8(i)]++;
@@ -63,13 +63,13 @@ public class ConfusionMatrix extends Iced {
   public final int size() { return _cm.length; }
 
   public final double classErr(int c) {
-    long s = ArrayUtils.sum(_cm[c]);
+    double s = ArrayUtils.sum(_cm[c]);
     if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer
-    return (double) (s - _cm[c][c]) / s;
+    return (s - _cm[c][c]) / s;
   }
   public long totalRows() {
     long n = 0;
-    for (long[] a_arr : _cm)
+    for (double[] a_arr : _cm)
       n += ArrayUtils.sum(a_arr);
     return n;
   }
@@ -190,15 +190,15 @@ public class ConfusionMatrix extends Iced {
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    for( long[] r : _cm)
+    for( double[] r : _cm)
       sb.append(Arrays.toString(r)).append('\n');
     return sb.toString();
   }
 
-  private static String[] createConfusionMatrixHeader( long xs[], String ds[] ) {
+  private static String[] createConfusionMatrixHeader( double xs[], String ds[] ) {
     String ss[] = new String[xs.length]; // the same length
     for( int i=0; i<ds.length; i++ )
-      if( xs[i] >= 0 || (ds[i] != null && ds[i].length() > 0) && !Integer.toString(i).equals(ds[i]) )
+      if( xs[i] >= 0 || (ds[i] != null && ds[i].length() > 0) && !Double.toString(i).equals(ds[i]) )
         ss[i] = ds[i];
     if( ds.length == xs.length-1 && xs[xs.length-1] > 0 )
       ss[xs.length-1] = "NA";
@@ -214,10 +214,10 @@ public class ConfusionMatrix extends Iced {
   // Do the work making a TwoDimTable
   private TwoDimTable toTable() {
     if (_cm == null || _domain == null) return null;
-    for( long cm[] : _cm ) assert(_cm.length == cm.length);
+    for( double cm[] : _cm ) assert(_cm.length == cm.length);
     // Sum up predicted & actuals
-    long acts [] = new long[_cm.length];
-    long preds[] = new long[_cm[0].length];
+    double acts [] = new double[_cm.length];
+    double preds[] = new double[_cm[0].length];
     for( int a=0; a< _cm.length; a++ ) {
       long sum=0;
       for( int p=0; p< _cm[a].length; p++ ) {
@@ -240,31 +240,31 @@ public class ConfusionMatrix extends Iced {
     String[] colType = new String[colHeader.length];
     String[] colFormat = new String[colHeader.length];
     for (int i=0; i<colFormat.length-1; ++i) {
-      colType[i]   = "int";
-      colFormat[i] = "%d";
+      colType[i]   = "double";
+      colFormat[i] = "%.2f";
     }
     colType[colFormat.length-2]   = "double";
     colFormat[colFormat.length-2] = "%.4f";
     colType[colFormat.length-1]   = "string";
 
     // pass 1: compute width of last column
-    long terr = 0;
+    double terr = 0;
     int width = 0;
     for (int a = 0; a < _cm.length; a++) {
       if (adomain[a] == null) continue;
-      long correct = 0;
+      double correct = 0;
       for (int p = 0; p < pdomain.length; p++) {
         if (pdomain[p] == null) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
         if (onDiag) correct = _cm[a][p];
       }
-      long err = acts[a] - correct;
+      double err = acts[a] - correct;
       terr += err;
-      width = Math.max(width, String.format("%,d / %,d", err, acts[a]).length());
+      width = Math.max(width, String.format("%.2f ", err, acts[a]).length());
     }
-    long nrows = 0;
-    for (long n : acts) nrows += n;
-    width = Math.max(width, String.format("%,d / %,d", terr, nrows).length());
+    double nrows = 0;
+    for (double n : acts) nrows += n;
+    width = Math.max(width, String.format("%.2f", terr, nrows).length());
 
     // set format width
     colFormat[colFormat.length-1] = "= %" + width + "s";
@@ -274,16 +274,16 @@ public class ConfusionMatrix extends Iced {
     // Main CM Body
     for (int a = 0; a < _cm.length; a++) {
       if (adomain[a] == null) continue;
-      long correct = 0;
+      double correct = 0;
       for (int p = 0; p < pdomain.length; p++) {
         if (pdomain[p] == null) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
         if (onDiag) correct = _cm[a][p];
         table.set(a, p, _cm[a][p]);
       }
-      long err = acts[a] - correct;
-      table.set(a, pdomain.length, (double) err / acts[a]);
-      table.set(a, pdomain.length + 1, String.format("%,d / %,d", err, acts[a]));
+      double err = acts[a] - correct;
+      table.set(a, pdomain.length, err / acts[a]);
+      table.set(a, pdomain.length + 1, String.format("%.2f / %.2f", err, acts[a]));
     }
 
     // Last row of CM
@@ -292,7 +292,7 @@ public class ConfusionMatrix extends Iced {
       table.set(adomain.length, p, preds[p]);
     }
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
-    table.set(adomain.length, pdomain.length + 1, String.format("%,d / %,d", terr, nrows));
+    table.set(adomain.length, pdomain.length + 1, String.format("%.2f / %.2f", terr, nrows));
     return table;
   }
 }

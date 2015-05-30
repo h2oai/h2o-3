@@ -1,6 +1,7 @@
-apply plugin: 'fatjar'
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
 
-description = 'H2O HDFS client fatjar for Hadoop ' + hadoopVersion
+description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -27,7 +28,7 @@ dependencies {
 }
 
 
-def hadoopFatJarExcludes = ['META-INF/*.DSA',
+def hadoopShadowJarExcludes = ['META-INF/*.DSA',
                             'META-INF/*.SF',
                             'synchronize.properties',
                             'uploader.properties',
@@ -35,15 +36,20 @@ def hadoopFatJarExcludes = ['META-INF/*.DSA',
                             'cockpitlite.properties',
                             'devpay_products.properties']
 
-fatJarPrepareFiles {
-  exclude hadoopFatJarExcludes
-}
-
-fatJar {
+shadowJar {
+  mergeServiceFiles()
+  // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
+  relocate 'org.joda.time', 'ai.h2o.org.joda.time'
+  exclude hadoopShadowJarExcludes
   baseName = 'h2odriver'
+  classifier = ''
   manifest {
     attributes 'Main-Class': 'water.hadoop.h2odriver'
   }
 }
 
-jar.finalizedBy fatJar
+artifacts {
+  archives shadowJar
+}
+
+jar.finalizedBy shadowJar

@@ -1,8 +1,8 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;
@@ -38,9 +38,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Generalized linear model implementation.
  */
-public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   static final double LINE_SEARCH_STEP = .5;
   static final int NUM_LINE_SEARCH_STEPS = 16;
+
+  public boolean isSupervised(){return true;}
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
@@ -168,7 +170,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ?6000:100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, hasWeights(), hasOffset());
       DKV.put(_dinfo._key, _dinfo);
       if(_valid != null) {
         _validDinfo = _dinfo.validDinfo(_valid);
@@ -299,6 +301,17 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho);
       }
+      if(_parms._non_negative) {
+        if(_bc._betaLB != null) {
+          for (int i = 0; i < _bc._betaLB.length - 1; ++i)
+            _bc._betaLB[i] = Math.max(0, _bc._betaLB[i]);
+        } else {
+          _bc._betaLB = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+          _bc._betaLB[_dinfo.fullN()] = Double.NEGATIVE_INFINITY;
+          _bc._betaUB = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+          Arrays.fill(_bc._betaUB,Double.POSITIVE_INFINITY);
+        }
+      }
       _tInfos = new GLMTaskInfo[_parms._n_folds + 1];
       InitTsk itsk = new InitTsk(0, _parms._intercept, null);
       H2O.submitTask(itsk).join();
@@ -363,8 +376,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         } else
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
-      _model = new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs);
-      String [] warns = _model.adaptTestForTrain(_valid, true);
+      _model = new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeights(), hasOffset());
+      String [] warns = _model.adaptTestForTrain(_valid, true, true);
       for(String s:warns) warn("_validation_frame",s);
       final Submodel nullSm = new Submodel(_parms._lambda[0], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
       _model.setSubmodel(nullSm);
@@ -810,9 +823,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             ArrayUtils.mult(g,100);
             double [] rho = MemoryManager.malloc8d(beta.length);
             // compute rhos
-            for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
+            for(int i = 0; i < rho.length - 1; ++i)
               rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[i], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[i]);
-
+            int ii = rho.length - 1;
+            rho[ii] = ADMM.L1Solver.estimateRho(-g[ii], 0, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[ii], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[ii]);
+            for(int i = 0; i < rho.length-1; ++i)
+              rho[i] = Math.min(1000,rho[i]);
             final double [] objvals = new double[2];
             objvals[1] = Double.POSITIVE_INFINITY;
             L_BFGS.ProgressMonitor pm = new L_BFGS.ProgressMonitor(){
@@ -843,9 +859,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             double abstol = L1Solver.DEFAULT_ABSTOL;
             double ADMM_gradEps = 1e-2;
             if(_bc != null)
-              new ADMM.L1Solver(ADMM_gradEps, 100, reltol, abstol).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(ADMM_gradEps, 100, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen);
+              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen);
           } else {
             Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new L_BFGS.ProgressMonitor() {
               @Override
@@ -1113,8 +1129,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         // l1pen or upper/lower bounds require ADMM solver
         if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
           // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
-          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
-          new ADMM.L1Solver(1e-4, 1000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
+          new ADMM.L1Solver(1e-4, 5000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
         } else {
           glmt._gram.addDiag(l2pen);
           new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
@@ -1173,7 +1189,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             } else {
               final boolean validate = false; // too much overhead! (_taskInfo._iter % 5) == 0;
               getCompleter().addToPendingCount(1);
-              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
+              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._params, validate, newBeta, _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
             }
           }
         }
@@ -1387,7 +1403,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     public double[] gradient(double [] beta) {
       double [] grad = _gram.mul(beta);
-      for(int i = 0; i < grad.length; ++i)
+      for(int i = 0; i < _xy.length; ++i)
         grad[i] -= _xy[i];
       return grad;
     }

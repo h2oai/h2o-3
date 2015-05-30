@@ -34,9 +34,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return (ModelMetricsMultinomial) mm;
   }
 
-  public static void updateHits(int iact, double[] ds, long[] hits) {
+  public static void updateHits(double w, int iact, double[] ds, double[] hits) {
     if (iact == ds[0]) { hits[0]++; return; }
-    long before = ArrayUtils.sum(hits);
+    double before = ArrayUtils.sum(hits);
     // Use getPrediction logic to see which top K labels we would have predicted
     // Pick largest prob, assign label, then set prob to 0, find next-best label, etc.
     double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
@@ -45,14 +45,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       final int pred_labels = GenModel.getPrediction(ds_copy, ds, 0.5 /*ignored*/); //use tie-breaking of getPrediction
       ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
       if (pred_labels==iact) {
-        hits[k]++;
+        hits[k]+=w;
         break;
       }
     }
     // must find at least one hit if K == n_classes
     if (hits.length == ds.length-1) {
-      long after = ArrayUtils.sum(hits);
-      if (after == before) hits[hits.length-1]++; //assume worst case
+      double after = ArrayUtils.sum(hits);
+      if (after == before) hits[hits.length-1]+=w; //assume worst case
     }
   }
 
@@ -73,16 +73,16 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
 
   public static class MetricBuilderMultinomial<T extends MetricBuilderMultinomial<T>> extends MetricBuilderSupervised<T> {
-    long[/*nclasses*/][/*nclasses*/] _cm;
-    long[/*K*/] _hits;            // the number of hits for hitratio, length: K
+    double[/*nclasses*/][/*nclasses*/] _cm;
+    double[/*K*/] _hits;            // the number of hits for hitratio, length: K
     int _K;               // TODO: Let user set K
     double _logloss;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
-      _cm = new long[domain.length][domain.length];
+      _cm = new double[domain.length][domain.length];
       _K = Math.min(10,_nclasses);
-      _hits = new long[_K];
+      _hits = new double[_K];
     }
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
@@ -102,7 +102,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _count++;
 
       // Compute hit ratio
-      if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
+      if( _K > 0 && iact < ds.length-1) updateHits(1,iact,ds,_hits);
 
       // Compute log loss
       final double eps = 1e-15;

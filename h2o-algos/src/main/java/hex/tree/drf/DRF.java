@@ -1,6 +1,5 @@
 package hex.tree.drf;
 
-import hex.Model;
 import hex.ModelCategory;
 import hex.schemas.DRFV3;
 import hex.tree.DHistogram;
@@ -16,7 +15,6 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.Timer;
 
@@ -54,7 +52,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     return start(new DRFDriver(), _parms._ntrees/*work for progress bar*/);
   }
 
-  @Override public Vec vresponse() { return super.vresponse() == null ? response() : super.vresponse(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -75,6 +72,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
+    if (_nclass != 2 && _parms._binomial_double_trees)
+      warn("_binomial_double_trees", "Binomial double tree is ignored for non-binomial response.");
   }
 
   // A standard DTree with a few more bits.  Support for sampling during
@@ -84,8 +83,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     final int _mtrys;           // Number of columns to choose amongst in splits
     final long _seeds[];        // One seed for each chunk, for sampling
     final transient Random _rand; // RNG for split decisions & sampling
-    DRFTree( Frame fr, int ncols, char nbins, char nclass, int min_rows, int mtrys, long seed ) {
-      super(fr._names, ncols, nbins, nclass, min_rows, seed);
+    DRFTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, int min_rows, int mtrys, long seed ) {
+      super(fr._names, ncols, nbins, nbins_cats, nclass, min_rows, seed);
       _mtrys = mtrys;
       _rand = createRNG(seed);
       _seeds = new long[fr.vecs()[0].nChunks()];
@@ -221,8 +220,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
 
-      // Adjust nbins for the top-levels
-      int adj_nbins = Math.max((1<<(10-0)),_parms._nbins);
+      // Adjust real bins for the top-levels
+      int adj_nbins = Math.max(_parms._nbins_top_level,_parms._nbins);
 
       // Use for all k-trees the same seed. NOTE: this is only to make a fair
       // view for all k-trees
@@ -234,10 +233,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // The Boolean Optimization
           // This optimization assumes the 2nd tree of a 2-class system is the
           // inverse of the first (and that the same columns were picked)
-          if( k==1 && _nclass==2 ) continue;
-          ktrees[k] = new DRFTree(fr, _ncols, (char) _parms._nbins, (char) _nclass, _parms._min_rows, mtrys, rseed);
+          if( k==1 && _nclass==2 && !_parms._binomial_double_trees) continue;
+          ktrees[k] = new DRFTree(fr, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, mtrys, rseed);
           boolean isBinom = isClassifier();
-          new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, hcs[k][0], isBinom)); // The "root" node
+          new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0], isBinom)); // The "root" node
         }
       }
 
@@ -259,7 +258,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
         if( !isRunning() ) return;
-        hcs = buildLayer(fr, _parms._nbins, ktrees, leafs, hcs, true, _parms._build_tree_one_node);
+        hcs = buildLayer(fr, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, true, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
@@ -493,11 +492,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
     double sum = 0;
-    if (_nclass > 2) { //multinomial
+    if (_nclass > 2 || (_nclass == 2 && _parms._binomial_double_trees) ) { //multinomial or binomial with 1 tree per class
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = chk_tree(chks, k).atd(row));
     }
-    else if (_nclass==2) { //binomial optimization
+    else if (_nclass==2 && !_parms._binomial_double_trees) { //binomial optimization
       fs[1] = chk_tree(chks, 0).atd(row);
       assert(fs[1] >= 0 && fs[1] <= 1);
       fs[2] = 1. - fs[1];

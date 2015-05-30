@@ -46,11 +46,7 @@ public class ASTMerge extends ASTOp {
     res._asts = new AST[]{left,rite};
     return res;
   }
-
-  @Override void exec(Env e, AST[] args) {
-    throw H2O.fail();
-  }
-
+  @Override void exec(Env e, AST[] args) {throw H2O.fail();}
   @Override void apply(Env env) {
     Frame l = env.popAry();
     Frame r = env.popAry();
@@ -115,8 +111,7 @@ public class ASTMerge extends ASTOp {
     String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small._names.length-ncols+1);
     Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
     Frame res2 = large.add(res);
-    env.addRef(res.anyVec());     // !!HACK!!
-    System.out.println(res2);
+    env.addRef(res); // hack
     env.push(new ValFrame(res2));
   }
 

@@ -10,8 +10,8 @@ import water.util.JCodeGen;
 import water.util.SB;
 import water.util.TwoDimTable;
 
-public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
-  public static class NaiveBayesParameters extends SupervisedModel.SupervisedParameters {
+public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
+  public static class NaiveBayesParameters extends Model.Parameters {
     public double _laplace = 0;         // Laplace smoothing parameter
     public double _eps_sdev = 0;   // Cutoff below which standard deviation is replaced with _min_sdev
     public double _min_sdev = 0.001;   // Minimum standard deviation to use for observations without enough data
@@ -20,7 +20,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
   }
 
-  public static class NaiveBayesOutput extends SupervisedModel.SupervisedOutput {
+  public static class NaiveBayesOutput extends Model.Output {
     // Class distribution of the response
     public TwoDimTable _apriori;
     public double[/*res level*/] _apriori_raw;

@@ -28,6 +28,9 @@ import java.util.Arrays;
 
 /**
  * Generalized Low Rank Models
+ * This is an algorithm for dimensionality reduction of a dataset. It is a general, parallelized
+ * optimization algorithm that applies to a variety of loss and regularization functions.
+ * Categorical columns are handled by expansion into 0/1 indicator columns for each level.
  * <a href = "http://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Models</a>
  * @author anqi_fu
  */
@@ -57,7 +60,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
 
   public enum Initialization {
-    SVD, PlusPlus, User
+    Random, SVD, PlusPlus, User
   }
 
   // Called from an http request
@@ -85,6 +88,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     int k_min = (int) Math.min(_train.numCols(), _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
+      if (_parms._init != GLRM.Initialization.User)
+        error("init", "init must be 'User' if providing user-specified points");
+
       if (_parms._user_points.get().numCols() != _train.numCols())
         error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       else if (_parms._user_points.get().numRows() != _parms._k)
@@ -185,6 +191,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Permute cluster columns to align with dinfo and expand out categoricals
         centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
         centers_exp = expandCats(centers, dinfo);
+
+      } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
+        return ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
@@ -365,7 +374,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
         for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeRand(_parms._seed);
         fr = new Frame(null, vecs);
-        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset*/ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save standardization vectors for use in scoring later
@@ -379,7 +388,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false);
+        tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, false);
         DKV.put(tinfo._key, tinfo);
         double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
@@ -431,7 +440,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Vec[] xvecs = new Vec[_ncolX];
         for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
         x = new Frame(_parms._loading_key, null, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false);
+        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;

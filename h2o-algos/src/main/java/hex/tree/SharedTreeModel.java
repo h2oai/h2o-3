@@ -6,9 +6,9 @@ import water.util.*;
 
 import java.util.Arrays;
 
-public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
+public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
-  public abstract static class SharedTreeParameters extends SupervisedModel.SupervisedParameters {
+  public abstract static class SharedTreeParameters extends Model.Parameters {
     /** Maximal number of supported levels in response. */
     static final int MAX_SUPPORTED_LEVELS = 1000;
 
@@ -18,7 +18,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _min_rows = 10; // Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values
 
-    public int _nbins = 20; // Build a histogram of this many bins, then split at the best point
+    public int _nbins = 20; // Numerical (real/int) cols: Build a histogram of this many bins, then split at the best point
+
+    public int _nbins_cats = 100; // Categorical (enum) cols: Build a histogram of this many bins, then split at the best point
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
@@ -27,7 +29,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
+
+    public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
   }
+
+  final public VarImp varImp() { return _output._varimp; }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
@@ -38,7 +44,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
   }
 
-  public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
+  public abstract static class SharedTreeOutput extends Model.Output {
     /** InitF value (for zero trees)
      *  f0 = mean(yi) for gaussian
      *  f0 = log(yi/1-yi) for bernoulli
@@ -71,6 +77,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      * Variable importances computed during training
      */
     public TwoDimTable _variable_importances;
+    public VarImp _varimp;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);
@@ -79,6 +86,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeStats = new TreeStats();
       _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
       _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
+      _modelClassDist = _priorClassDist;
     }
 
     // Append next set of K trees
