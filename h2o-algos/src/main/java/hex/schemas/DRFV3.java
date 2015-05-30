@@ -24,7 +24,7 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.secondary)
     public boolean build_tree_one_node;
 
-    @API(help="For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy", level = API.Level.secondary)
+    @API(help="For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.", level = API.Level.secondary)
     public boolean binomial_double_trees;
   }
 }

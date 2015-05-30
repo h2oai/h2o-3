@@ -21,10 +21,11 @@
 #'        grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
-#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the
-#'        model.
+#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+#'        Higher values can lead to more overfitting.
+#' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
+#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
@@ -45,7 +46,8 @@ h2o.randomForest <- function( x, y, training_frame,
                              max_depth = 20,
                              min_rows = 1,
                              nbins = 20,
-                             nbins_cats = 100,
+                             nbins_cats = 1024,
+                             binomial_double_trees = TRUE,
                              balance_classes = FALSE,
                              max_after_balance_size = 5,
                              seed,
