@@ -386,11 +386,11 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Max\_depth**: Specify the maximum tree depth. The default value is 5. 
 
-- **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R). The default value is 10. 
+- **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R). The default value is 1. 
 
 - **Nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. The default value is 20. 
 
-- **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
+- **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 1024. 
 
 - **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
@@ -410,7 +410,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
-- **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy. 
+- **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
