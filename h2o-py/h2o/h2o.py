@@ -420,6 +420,10 @@ def download_pojo(model,path=""):
     with open(file_path, 'w') as f:
       f.write(java.text)
 
+def get_frame_data(frame_id):
+  fd = H2OConnection.get( "DownloadDataset?frame_id="+frame_id )
+  return fd.text
+
 # Non-Mutating cbind
 def cbind(left,right):
   """
