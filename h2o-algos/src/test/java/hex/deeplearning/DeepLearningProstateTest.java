@@ -23,7 +23,7 @@ import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
 
   @Test public void run() throws Exception { runFraction(0.000025f); }
 
@@ -133,11 +133,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                         Frame valid = null; //no validation
                                         if (vf == 1) valid = frame; //use the same frame for validation
                                         else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
+                                        long myseed = rng.nextLong();
 
                                         // build the model, with all kinds of shuffling/rebalancing/sampling
                                         DeepLearningParameters p = new DeepLearningParameters();
                                         {
-                                          Log.info("Using seed: " + seed);
+                                          Log.info("Using seed: " + myseed);
                                           p._model_id = Key.make(Key.make().toString() + "first");
                                           p._train = frame._key;
                                           p._response_column = frame._names[resp];
@@ -156,7 +157,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             // p._n_folds = n_folds;
                                           }
                                           p._keep_cross_validation_splits = keep_cv_splits;
-                                          p._seed = seed;
+                                          p._seed = myseed;
                                           p._train_samples_per_iteration = train_samples_per_iteration;
                                           p._force_load_balance = load_balance;
                                           p._replicate_training_data = replicate;
@@ -216,7 +217,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                           p2._response_column = frame._names[resp];
                                           p2._overwrite_with_best_model = overwrite_with_best_model;
                                           p2._epochs = epochs;
-                                          p2._seed = seed;
+                                          p2._replicate_training_data = rng.nextBoolean();
+                                          p2._seed = myseed;
                                           p2._train_samples_per_iteration = train_samples_per_iteration;
                                           p2._balance_classes = classification && balance_classes;
                                           DeepLearning dl = new DeepLearning(p2);

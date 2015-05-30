@@ -46,15 +46,18 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 //    Log.info("DT: setupLocal()");
     super.setupLocal();
     if (consensusADMM) {
-//      Log.info("Loading my local model checkpoint.");
+      //Load my local model from DKV, to continue training
       _localmodel = DKV.getGet(_sharedmodel.localModelInfoKey(H2O.SELF));
-      // only get model coefficients, allow to change the parameters (as given by _sharedmodel)
       if (_localmodel != null) {
-        _localmodel.parameters = (DeepLearningModel.DeepLearningParameters)_sharedmodel.get_params().clone();
+        //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
+        _localmodel.set_params(_sharedmodel.get_params());
+
+        //Set the number of trained samples according to global model
         _localmodel.set_processed_global(_sharedmodel.get_processed_global()); //TODO
         _localmodel.set_processed_local(0); //TODO
       }
     }
+    // The first time around (or no ADMM): There's no local model yet, just use the input model
     if (_localmodel == null) _localmodel = _sharedmodel;
   }
 
@@ -77,17 +80,12 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   @Override protected void chunkDone(long n) {
-    if (_training) {
-//      Log.info("Chunk done. Updating local model.");
-      _localmodel.add_processed_local(n);
-    }
+    if (_training) _localmodel.add_processed_local(n);
   }
 
   @Override
   protected void postLocal() {
-//    Log.info("DLT: postLocal()");
     if (consensusADMM) {
-//      Log.info("Storing my local model checkpoint.");
       // store local model, as it will be reduced in the following, and hence corrupted
       DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel);
       _sharedmodel = null; //don't want to accidentally ship & reduce the consensus model
@@ -97,7 +95,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   // average the per-node models (already wrote them to DKV in postLocal())
   @Override public void reduce(DeepLearningTask other){
-//    Log.info("DLT: reduce()");
     if (_localmodel != null && other._localmodel != null && other._localmodel.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
             && other._localmodel != _localmodel) //other NNTask worked on a different model_info
     {
@@ -107,7 +104,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _localmodel = other._localmodel;
         _chunk_node_count = other._chunk_node_count;
       } else {
-//        Log.info("Reducing shared model.");
         _localmodel.add(other._localmodel);
         _chunk_node_count += other._chunk_node_count;
       }
@@ -118,7 +114,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   static long _lastWarn;
   static long _warnCount;
   @Override protected void postGlobal(){
-//    Log.info("DLT: postGlobal()");
+    Log.info("DLT: postGlobal");
     if (H2O.CLOUD.size() > 1 && !_localmodel.get_params()._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
@@ -131,27 +127,20 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     }
     _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
     _localmodel.set_processed_local(0l);
-    // Average models here if data is not replicated - otherwise DLTask2 will kick in
-    // (Don't do the same work twice)
-    if (_localmodel!=null && (!_localmodel.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) ) {
-      if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
-      _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
-      _localmodel.set_processed_local(0l);
+    if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
 
-      if (consensusADMM && _localmodel != _sharedmodel) {
-        _localmodel.set_processed_local(0l); //CHECK if really needed
-//        Log.info("DLT: Adding per-node model averages to consensus model.");
+    if (consensusADMM) {
 //        assert(_localmodel.get_processed_global() > _sharedmodel.get_processed_global());
 //        _sharedmodel.div(1.f/0.9f); //multiply by 0.9 - time average
 //        _localmodel.div(10f); //add 1/10 of the averaged per-node models
 //        _sharedmodel.add(_localmodel);
 //        _localmodel = null; //each node needs to pull its local model again from DKV
-        _sharedmodel = (DeepLearningModel.DeepLearningModelInfo)_localmodel.clone(); //FIXME: consensus is just the average model for now
-        DKV.put(_sharedmodel.data_info);
-      }
+      _sharedmodel = (DeepLearningModel.DeepLearningModelInfo)_localmodel.clone(); //FIXME: consensus is just the average model for now
+      DKV.put(_sharedmodel.data_info());
     }
-    if (!consensusADMM) _sharedmodel = _localmodel;
-    assert(_sharedmodel != null);
+    else {
+      _sharedmodel = _localmodel;
+    }
   }
 
   public static Neurons[] makeNeuronsForTraining(final DeepLearningModel.DeepLearningModelInfo minfo) {

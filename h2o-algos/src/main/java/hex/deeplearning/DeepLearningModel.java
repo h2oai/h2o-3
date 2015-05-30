@@ -863,11 +863,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public static class DeepLearningModelInfo extends Iced {
     public Key localModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); }
     public TwoDimTable summaryTable;
-    public DataInfo data_info;
-    public DataInfo data_info() {
-      assert(DKV.get(data_info._key) != null);
-      return data_info;
-    }
+    private DataInfo data_info;
+    public DataInfo data_info() { return data_info; }
 
     // model is described by parameters and the following arrays
     private Neurons.DenseRowMatrix[] dense_row_weights; //one 2D weight matrix per layer (stored as a 1D array each)
@@ -911,6 +908,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     public DeepLearningParameters parameters;
     public final DeepLearningParameters get_params() { return parameters; }
+    public final void set_params(DeepLearningParameters p) { parameters = (DeepLearningParameters) p.clone(); }
 
     private float[] mean_rate;
 
