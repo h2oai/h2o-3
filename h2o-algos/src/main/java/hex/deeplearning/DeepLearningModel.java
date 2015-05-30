@@ -863,8 +863,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public static class DeepLearningModelInfo extends Iced {
     public Key localModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); }
     public TwoDimTable summaryTable;
-    private DataInfo data_info;
-    public DataInfo data_info() { return data_info; }
+    public DataInfo data_info;
+    public DataInfo data_info() {
+      assert(DKV.get(data_info._key) != null);
+      return data_info;
+    }
 
     // model is described by parameters and the following arrays
     private Neurons.DenseRowMatrix[] dense_row_weights; //one 2D weight matrix per layer (stored as a 1D array each)
@@ -1450,6 +1453,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
 //      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
+    DKV.put(dataInfo);
     assert(model_info().get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
@@ -2097,6 +2101,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
       }
     }
+    DKV.remove(model_info().data_info()._key);
     super.delete();
     for (H2ONode node : H2O.CLOUD._memary) {
       DKV.remove(model_info().localModelInfoKey(node));

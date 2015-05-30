@@ -147,6 +147,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 //        _sharedmodel.add(_localmodel);
 //        _localmodel = null; //each node needs to pull its local model again from DKV
         _sharedmodel = (DeepLearningModel.DeepLearningModelInfo)_localmodel.clone(); //FIXME: consensus is just the average model for now
+        DKV.put(_sharedmodel.data_info);
       }
     }
     if (!consensusADMM) _sharedmodel = _localmodel;
