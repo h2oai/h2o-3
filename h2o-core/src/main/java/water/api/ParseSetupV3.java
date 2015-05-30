@@ -9,7 +9,7 @@ import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 
-public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
+public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
 
   // Input fields
   @API(help="Source frames", required=true, direction=API.Direction.INOUT)

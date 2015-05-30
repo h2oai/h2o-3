@@ -6,7 +6,7 @@ import water.util.PrettyPrint;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CloudV3 extends Schema<Iced, CloudV3> {
+public class CloudV3 extends RequestSchema<Iced, CloudV3> {
   /**
    * Data structure to store last tick counts from a given node.
    */

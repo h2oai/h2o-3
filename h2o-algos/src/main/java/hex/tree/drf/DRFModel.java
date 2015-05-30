@@ -13,13 +13,13 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     int _mtries = -1;
     float _sample_rate = 0.632f;
     public boolean _build_tree_one_node = false;
-    public boolean _binomial_double_trees = false;
+    public boolean _binomial_double_trees = true;
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
       _ntrees = 50;
       _max_depth = 20;
-      _min_rows = 10;
+      _min_rows = 1;
     }
   }
 
