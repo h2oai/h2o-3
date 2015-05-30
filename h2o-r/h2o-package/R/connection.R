@@ -97,6 +97,10 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     min_mem_size <- Xmx
   }
 
+  if (nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
+    strict_version_check = FALSE
+  }
+
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port)
   if (!h2o.clusterIsUp(tmpConn)) {
