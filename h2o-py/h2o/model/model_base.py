@@ -53,7 +53,7 @@ class ModelBase(object):
     # toast the cbound frame
     h2o.removeFrameShallow(test_data_key)
     # retrieve the prediction frame
-    prediction_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
+    prediction_frame_key = j["predictions_frame"]["name"]
     # get the actual frame meta dta
     pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
     # toast the prediction frame
