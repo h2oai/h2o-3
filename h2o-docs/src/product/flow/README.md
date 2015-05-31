@@ -371,11 +371,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth. For GBM, the default value is 5. For DRF, the default value is 20. 
 
-- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10.
+- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 1.
 
 - **Nbins**: [(GBM](#GBM), [DRF)](#DRF) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. The default value is 20. 
 
-- **Nbins_cats**: [(GBM](#GBM), [DRF)](#DRF) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 100. 
+- **Nbins_cats**: [(GBM](#GBM), [DRF)](#DRF) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 1024. 
 
 - **R2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
 
@@ -385,7 +385,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
-- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy. 
+- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 

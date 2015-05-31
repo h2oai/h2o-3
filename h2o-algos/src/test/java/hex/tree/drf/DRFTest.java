@@ -547,13 +547,13 @@ public class DRFTest extends TestUtil {
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
-        parms._nbins_cats = 500;
+        parms._nbins_cats = 1024;
         parms._ntrees = 7;
         parms._max_depth = 10;
         parms._binomial_double_trees = true;
         parms._mtries = -1;
         parms._min_rows = 1;
-        parms._sample_rate = 0.66667f;   // Simulated sampling with replacement
+        parms._sample_rate = 0.632f;   // Simulated sampling with replacement
         parms._balance_classes = true;
         parms._seed = (1L<<32)|2;
 
@@ -574,7 +574,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20959813397541932, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2087, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
