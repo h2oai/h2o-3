@@ -17,7 +17,8 @@ locate_source <- function(s) {
 # it into 8 columns: "Day", "Month", "Year", "WeekNum", "WeekDay", "Weekend",
 # "Season", "HourOfDay"
 ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
-  if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
+  # BUG: Setting time zone causes an NPE. See PUBDEV-1234.
+  # if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
   d <- as.Date(col, format = datePattern)
   ds <- c(Day = h2o.day(d), Month = h2o.month(d), Year = h2o.year(d), WeekNum = h2o.week(d),
     WeekDay = h2o.dayOfWeek(d), HourOfDay = h2o.hour(d))
@@ -57,8 +58,16 @@ test.chicago.demo <- function(conn) {
   
   Log.info("Import and parse data...")
   weather <- h2o.importFile(conn, path=weather_path, destination_frame="weather.hex")
-  census <- h2o.importFile(conn, path=census_path, destination_frame="census.hex")
   crimes <- h2o.importFile(conn, path=crimes_path, destination_frame="crimes.hex")
+  # census <- h2o.importFile(conn, path=census_path, destination_frame="census.hex")
+  
+  # TODO: Get rid of this once merging with string cols is supported. See PUBDEV-1188.
+  census_raw <- h2o.importFile(conn, census_path, parse = FALSE)
+  census_setup <- h2o.parseSetup(census_raw)
+  census_setup$column_types[2] <- "Enum"   # Change community area name col from string to enum
+  census <- h2o.parseRaw(census_raw, col.types = census_setup$column_types)
+  
+  Log.info("Set columns names to be syntactically valid in R")
   names(census) <- make.names(names(census))
   names(crimes) <- make.names(names(crimes))
   
@@ -74,10 +83,14 @@ test.chicago.demo <- function(conn) {
   names(weather)[match(c("month", "day", "year"), names(weather))] <- c("Month", "Day", "Year")
   crimeMerge <- h2o.merge(crimeMerge, weather)
 
-  Log.info("Split final dataset into test/train")
-  frs <- h2o.splitFrame(crimeMerge, ratios = c(0.8,0.2))
-  train <- frs[1]
-  test <- frs[2]
+  Log.info("Split final dataset into test/train (ratio = 20/80)")
+  # BUG: h2o.splitFrame call causes an NPE. See PUBDEV-1235.
+  # frs <- h2o.splitFrame(crimeMerge, ratios = c(0.8,0.2))
+  # train <- frs[1]
+  # test <- frs[2]
+  split <- h2o.runif(crimeMerge)      # Useful when number of rows too large for R to handle
+  train <- crimeMerge[split <= 0.8,]
+  test <- crimeMerge[split > 0.8,]
   
   Log.info("Build a GBM model and score")
   myY <- "Arrest"
@@ -91,13 +104,21 @@ test.chicago.demo <- function(conn) {
   cat("\n\tGBM:\n\t\ttrain AUC = ", gbmModel@model$training_metric@metrics$AUC)
   cat("\n\t\ttest AUC = ", gbmModel@model$validation_metric@metrics$AUC)
   cat("\n\tDL:\n\t\ttrain AUC = ", dlModel@model$training_metric@metrics$AUC)
-  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC)
+  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n)
   
   Log.info("Predict on new crime data")
-  crimeExamples.r <- data.frame(rbind(c("02/08/2015 11:43:58 PM", 1811, "NARCOTICS", "STREET", "false", 422, 4, 7, 46, 18),
-                                    c("02/08/2015 11:00:39 PM", 1150, "DECEPTIVE PRACTICE", "RESIDENCE", "false", 923, 9, 14, 63, 11)))
-  colnames(crimeExamples.r) <- c("Date", "IUCR", "Primary.Type", "Location.Description", "Domestic", "Beat", "District", "Ward", "Community.Area", "FBI.Code")
+  crimeExamples.r <- data.frame(Date = c("02/08/2015 11:43:58 PM", "02/08/2015 11:00:39 PM"),
+                                IUCR = c(1811, 1150),
+                                Primary.Type = c("NARCOTICS", "DECEPTIVE PRACTICE"),
+                                Location.Description = c("STREET", "RESIDENCE"),
+                                Domestic = c("false", "false"),
+                                Beat = c(422, 923),
+                                District = c(4, 9),
+                                Ward = c(7, 14),
+                                Community.Area = c(46, 63),
+                                FBI.Code = c(18, 11))
   crimeExamples <- as.h2o(crimeExamples.r, conn)
+  names(crimeExamples) <- make.names(names(crimeExamples))
   crimeExamples <- RefineDateColumn(crimeExamples, which(colnames(crimeExamples) == "Date"), datePattern = "%m/%d/%Y %I:%M:%S %p")
   crimeExamples$Date <- NULL   # Remove redundant date columns
   crimeExamplesMerge <- h2o.merge(crimeExamples, census)

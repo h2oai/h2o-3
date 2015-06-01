@@ -107,8 +107,8 @@ public class ASTMerge extends ASTOp {
 
     // run a global parallel work: lookup non-hashed rows in hashSet; find
     // matching row; append matching column data
-    String[]   names  = Arrays.copyOfRange(small._names   ,ncols,small._names.length-ncols+1);
-    String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small._names.length-ncols+1);
+    String[]   names  = Arrays.copyOfRange(small._names,   ncols,small._names   .length);
+    String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small.domains().length);
     Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
     Frame res2 = large.add(res);
     env.addRef(res); // hack
