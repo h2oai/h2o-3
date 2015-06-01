@@ -19,7 +19,7 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 
 ##H2O Options
 
-- `h` or `-help`: Display this information in the command line output. 
+- `-h` or `-help`: Display this information in the command line output. 
 - `-name <H2OCloudName>`: Assign a name to the H2O instance in the cloud (where `<H2OCloudName>` is the name of the cloud. Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster). 
 - `-flatfile <FileName>`: Specify a flatfile of IP address for faster cloud formation (where `<FileName>` is the name of the flatfile. 
 - `-ip <IPnodeAddress>`: Specify an IP address other than the default `localhost` for the node to use (where `<IPnodeAddress>` is the IP address). 
@@ -27,7 +27,7 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 - `-network <IPv4NetworkSpecification1>[,<IPv4NetworkSpecification2> ...]`: Specify a range (where applicable) of IP addresses (where `<IPv4NetworkSpecification1>` represents the first interface, `<IPv4NetworkSpecification2>` represents the second, and so on). The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list. For example, `10.1.2.0/24` supports 256 possibilities. 
 - `-ice_root <fileSystemPath>`: Specify a directory for H2O to spill temporary data to disk (where `<fileSystemPath>` is the file path). 
 - `-flow_dir <server-side or HDFS directory>`: Specify a directory for saved flows. The default is `/Users/h2o-<H2OUserName>/h2oflows` (where `<H2OUserName>` is your user name). 
-- `nthreads <#ofThreads>`: Specify the maximum number of threads in the low-priority batch work queue (where `<#ofThreads>` is the number of threads). The default is 99. 
+- `-nthreads <#ofThreads>`: Specify the maximum number of threads in the low-priority batch work queue (where `<#ofThreads>` is the number of threads). The default is 99. 
 - `-client`: Launch H2O node in client mode. This is used mostly for running Sparkling Water. 
 
 

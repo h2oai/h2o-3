@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 import random
 
-def covtype_getModel(ip,port):
+def covtype_get_model(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
@@ -23,21 +23,21 @@ def covtype_getModel(ip,port):
     # L2: alpha = 0, lambda = 0
     covtype_mod1 = h2o.glm(y=covtype[Y], x=covtype[X], family="binomial", alpha=[0], Lambda=[0])
     covtype_mod1.show()
-    covtype_mod1 = h2o.getModel(covtype_mod1._key)
+    covtype_mod1 = h2o.get_model(covtype_mod1._key)
     covtype_mod1.show()
 
     # Elastic: alpha = 0.5, lambda = 1e-4
     covtype_mod2 = h2o.glm(y=covtype[Y], x=covtype[X], family="binomial", alpha=[0.5], Lambda=[1e-4])
     covtype_mod2.show()
-    covtype_mod2 = h2o.getModel(covtype_mod2._key)
+    covtype_mod2 = h2o.get_model(covtype_mod2._key)
     covtype_mod2.show()
 
     # L1: alpha = 1, lambda = 1e-4
     covtype_mod3 = h2o.glm(y=covtype[Y], x=covtype[X], family="binomial", alpha=[1], Lambda=[1e-4])
     covtype_mod3.show()
-    covtype_mod3 = h2o.getModel(covtype_mod3._key)
+    covtype_mod3 = h2o.get_model(covtype_mod3._key)
     covtype_mod3.show()
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, covtype_getModel)
+  h2o.run_test(sys.argv, covtype_get_model)
 

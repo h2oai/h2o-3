@@ -6,10 +6,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.util.GetLogsFromNode;
-import water.util.HttpResponseStatus;
-import water.util.Log;
-import water.util.RString;
+import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -611,6 +608,7 @@ public class RequestServer extends NanoHTTPD {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         Schema s = handle(type, route, version, parms);
+        PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
         Response r = wrap(s, type);
         return r;
       }
