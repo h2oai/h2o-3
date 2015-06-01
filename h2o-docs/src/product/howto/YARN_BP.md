@@ -66,11 +66,12 @@ To verify the values were changed, check the values for the following properties
 
 ##Limiting CPU Usage 
 
-To limit the number of CPUs used by H2O, use the `-nthreads` option and specify the maximum number of CPUs for a single container to use. The following example limits the number of CPUs to two:  
+To limit the number of CPUs used by H2O, use the `-nthreads` option and specify the maximum number of CPUs for a single container to use. The following example limits the number of CPUs to four:  
 
-`java -jar h2o.jar -nthreads 2`
+`hadoop jar h2odriver.jar -nthreads 4 -nodes 1 -mapperXmx 1g -output hdfsOutputDirName`
  
-The default is 4*the number of CPUs. 
+**Note**: The default is 4*the number of CPUs. You must specify at least four CPUs; otherwise, the following error message displays: 
+`ERROR: nthreads invalid (must be >= 4)` 
 
 ##Specifying Queues
 
@@ -82,7 +83,7 @@ To specify a queue with Hadoop, enter `-Dmapreduce.job.queuename=<queue name>`
 
 For example, 
 
-`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=default -nodes 1 -mapperXmx 1g -output hdfsOutputDirName`. 
+`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=default -nodes 1 -mapperXmx 1g -output hdfsOutputDirName` 
 
 
 
