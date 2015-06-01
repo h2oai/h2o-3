@@ -38,7 +38,7 @@ function(node) {
 #' Key points to a bonified object in the H2O cluster
 .get <- function(H2OFrame) {
   if( H2OFrame@mutable$computed )
-    paste0('%', H2OFrame@frame_id)
+    paste0('%', H2OFrame@id)
   else
     H2OFrame@mutable$ast
 }
@@ -48,7 +48,7 @@ function(node) {
 #'
 .is.eval <- function(H2OFrame) {
   browser()
-  key <- H2OFrame@frame_id
+  key <- H2OFrame@id
   res <- .h2o.__remoteSend(H2OFrame@conn, paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
   res$evaluated
 }
@@ -96,27 +96,26 @@ function(x, envir, sub_one = TRUE) {
 .ast.walker<-
 function(expr, envir, neg = FALSE, sub_one = TRUE) {
   sub <- as.integer(sub_one)
+  # Single column forms
   if (length(expr) == 1L) {
     if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
     if (is.numeric(expr[[1L]])) return(paste0('#', eval(expr[[1L]], envir=envir) - sub))
     if (is.character(expr[[1L]])) return(deparse(expr[[1L]]))
     if (is.character(expr)) return(deparse(expr))
   }
+
+  # Actual evaluation of the column selections has to happen, i.e., it's not bare syntactic elements
   if (isGeneric(deparse(expr[[1L]]))) {
     # Have a vector => make a list
     if ((expr[[1L]]) == quote(`c`)) {
       children <- lapply(expr[-1L], .ast.walker, envir, neg, sub_one)
-      if( length(children)==1 ) {
-        if( is(children[[1]], "ASTNode") ) return(children)
-      }
-      op <- new("ASTApply", op="llist")
-      if( is(children[[1]], "ASTNode") ) { return(new("ASTNode", root=op, children=children)) }
-      if( !(substr(children[[1]],1,1) == "#") ) { op <- new("ASTApply", op="slist") }
-      return(new("ASTNode", root=op, children=children))
+      if( is(children[[1]], "ASTNode") ) stop("No expressions, all must evaluate to constants here")
+      return(paste0('[',paste0(children,collapse=" "),']'))
 
     # handle the negative indexing cases
     } else if (expr[[1L]] == quote(`-`)) {
       # got some negative indexing!
+      browser() # CNC - not tested yet
 
       # disallow binary ops here
       if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
@@ -162,14 +161,14 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
       neg <- TRUE
       if( eval(expr[[3L]],envir) >= 0) stop("Index range must not include positive and negative values.")
     }
-    if (neg)
+    if (neg) {
+      browser() # CNC not tested yet
       return(new("ASTNode", root = new("ASTApply", op = ":"),
                  children = list(paste0('#', eval(expr[[2L]], envir = envir)+1L),
                                  paste0('#', eval(expr[[3L]], envir = envir)+1L))))
-    else
-      return(new("ASTNode", root = new("ASTApply", op = ":"),
-                 children = list(paste0('#', eval(expr[[2L]], envir = envir) - 1L),
-                                 paste0('#', eval(expr[[3L]], envir = envir) - 1L))))
+    } else
+      return(paste0('[',eval(expr[[2L]], envir = envir) - 1L,':',
+                        eval(expr[[3L]], envir = envir) - 1L,']'))
   }
 
   if (is.vector(expr) && is.numeric(expr)) {

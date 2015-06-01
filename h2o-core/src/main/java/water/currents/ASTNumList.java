@@ -22,6 +22,7 @@ class ASTNumList extends AST {
     while( true ) {
       char c = e.skipWS();
       if( c==']' ) break;
+      if( c=='#' ) { e._x++; c = e.peek(); }
       double base = e.number(), cnt=1, stride=1;
       c = e.skipWS();
       if( c==':' ) {

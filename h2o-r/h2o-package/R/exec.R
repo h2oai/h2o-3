@@ -47,13 +47,10 @@ function(op, x) {
 
 .h2o.unary_frame_op<-
 function(op, x, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-  if (is(x, "H2OFrame")) finalizers <- x@finalizers
-  else                   finalizers <- list()
-
   ast <- .h2o.unary_op_ast(op, x)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
   .newH2OFrame("H2OFrame", conn = x@conn, frame_id = .key.make(x@conn, "unary_op"),
-                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+                mutable = mutable)
 }
 
 .h2o.unary_row_op<-
@@ -117,15 +114,10 @@ function(op, e1, e2) {
 
 .h2o.binary_frame_op<-
 function(op, e1, e2, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-  if (is(e1, "H2OFrame") && is(e2, "H2OFrame")) finalizers <- c(e1@finalizers, e2@finalizers)
-  else if (is(e1, "H2OFrame"))                  finalizers <- e1@finalizers
-  else                                          finalizers <- e2@finalizers
-
   conn <- .h2o.binary_op_conn(e1, e2)
   ast  <- .h2o.binary_op_ast(op, e1, e2)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", conn = conn, frame_id= .key.make(conn, "binary_op"),
-                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+  .newH2OFrame("H2OFrame", conn = conn, frame_id= .key.make(conn, "binary_op"), mutable = mutable)
 }
 
 .h2o.binary_row_op<-
@@ -153,14 +145,12 @@ function(op, ..., .args = list(...)) {
 }
 
 .h2o.nary_frame_op<-
-function(op, ..., .args = list(...), key = .key.make(h2o.getConnection(), "nary_op"), linkToGC = TRUE,
+function(op, ..., .args = list(...), key = .key.make(h2o.getConnection(), "nary_op"),
          nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-  finalizers <- do.call(c, lapply(.args, function(x) if (is(x, "H2OFrame")) x@finalizers else list()))
 
   ast <- .h2o.nary_op_ast(op, .args = .args)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", conn = h2o.getConnection(), frame_id = key,
-                finalizers = finalizers, linkToGC = linkToGC, mutable = mutable)
+  .newH2OFrame("H2OFrame", conn = h2o.getConnection(), frame_id = key, mutable = mutable)
 }
 
 .h2o.nary_row_op<-
@@ -170,9 +160,9 @@ function(op, ..., .args = list(...)) {
 }
 
 .h2o.raw_expr_op<-
-function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_expr_op"), linkToGC = TRUE) {
+function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_expr_op")) {
   res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=expr, method = "POST")
-  h2o.getFrame(key, h2o.getConnection(), linkToGC=linkToGC)
+  h2o.getFrame(key, h2o.getConnection())
 }
 
 #'
@@ -183,7 +173,6 @@ function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_e
 #' @param conn an H2OConnection object
 #' @param ast an ASTNode object
 #' @param key the name of the key in h2o (hopefully matches top-most level user-defined variable)
-#' @param finalizers a list of environment that trigger the removal of keys at R gc()
 #' @param new.assign a logical flag
 #' @param deparsedExpr the deparsed expression in the calling frame
 #' @param env the environment back to which we assign
@@ -215,7 +204,7 @@ function(conn, ast) {
 }
 
 .h2o.eval.frame<-
-function(conn, ast, frame_id=.key.make(conn, "rapids"), linkToGC=FALSE) {
+function(conn, ast, frame_id=.key.make(conn, "rapids")) {
   # Prepare the AST
   ast <- .visitor(ast)
 
@@ -223,11 +212,11 @@ function(conn, ast, frame_id=.key.make(conn, "rapids"), linkToGC=FALSE) {
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, id=frame_id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
-  h2o.getFrame(frame_id, conn, linkToGC=linkToGC)
+  h2o.getFrame(frame_id, conn)
 }
 
 .h2o.replace.frame<-
-function(conn, ast, frame_id, finalizers) {
+function(conn, ast, frame_id) {
   # Prepare the AST
   ast <- .visitor(ast)
 
@@ -235,23 +224,22 @@ function(conn, ast, frame_id, finalizers) {
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
-  res <- h2o.getFrame(frame_id, conn, linkToGC=FALSE)
-  res@finalizers <- finalizers
+  res <- h2o.getFrame(frame_id, conn)
   gc()
   res
 }
 
 .byref.update.frame<-
 function(x, scalarAsFrame = TRUE) {
-  if (is.na(x@frame_id)) {
+  if (is.na(x@id)) {
     # Nothing to do
   } else if (!is.null(x@mutable$ast) && !x@mutable$computed) {
-    temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, frame_id = x@frame_id, linkToGC = FALSE)
+    temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, frame_id = x@id)
     x@mutable$computed <- T
     x@mutable$nrows    <- temp@mutable$nrows
     x@mutable$ncols    <- temp@mutable$ncols
   } else if (is.na(x@mutable$nrows) || is.na(x@mutable$ncols) ) {
-    temp <- h2o.getFrame(x@frame_id, x@conn, linkToGC = FALSE)
+    temp <- h2o.getFrame(x@id, x@conn)
     x@mutable$nrows    <- temp@mutable$nrows
     x@mutable$ncols    <- temp@mutable$ncols
   }

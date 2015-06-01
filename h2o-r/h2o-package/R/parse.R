@@ -42,7 +42,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
             blocking = blocking
             )
 
-  linkToGC <- !nzchar(destination_frame)
+  if( nzchar(destination_frame) ) stop("Expected destination_frame to have non-zero length")
 
   # Perform the parse
   res <- .h2o.__remoteSend(data@conn, .h2o.__PARSE, method = "POST", .params = parse.params)
@@ -52,7 +52,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   .h2o.__waitOnJob(data@conn, res$job$key$name)
 
   # Return a new H2OFrame object
-  h2o.getFrame(data@conn,frame_id=hex, linkToGC=linkToGC)
+  h2o.getFrame(data@conn,frame_id=hex)
 }
 
 #'
@@ -72,7 +72,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup.params <- list()
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
-  parseSetup.params$source_frames = .collapse.char(data@frame_id)
+  parseSetup.params$source_frames = .collapse.char(data@id)
 
   # set field sep
   # if( nchar(sep) > 0 ) parseSetup.params$separator <- .asc(sep)
@@ -98,9 +98,8 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   # pass through ParseSetup
   parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
 
-  # link it to GC only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
-  linkToGC <- !nzchar(destination_frame)
-  if( linkToGC ) destination_frame <- .key.make(data@conn, parseSetup$destination_frame)
+  # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
+  if( !nzchar(destination_frame) ) destination_frame <- .key.make(data@conn, parseSetup$destination_frame)
 
   # return the parse setup as a list of setup :D
   parse.params <- list(
@@ -136,9 +135,9 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(conn = h2o.getConnection(), destination_frame, nrows, ncols, col_names, linkToGC = TRUE) {
+.h2o.parsedData <- function(conn = h2o.getConnection(), destination_frame, nrows, ncols, col_names) {
   mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
-  .newH2OFrame("H2OFrame", conn=conn, frame_id=destination_frame, mutable=mutable, linkToGC=linkToGC)
+  .newH2OFrame("H2OFrame", conn=conn, frame_id=destination_frame, mutable=mutable)
 }
 
 

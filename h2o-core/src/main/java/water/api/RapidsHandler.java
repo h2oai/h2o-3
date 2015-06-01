@@ -2,48 +2,42 @@ package water.api;
 
 import water.DKV;
 import water.H2O;
-import water.exceptions.H2OIllegalArgumentException;
+import water.Key;
 import water.fvec.Frame;
 import water.currents.Val;
 import water.util.Log;
 
 class RapidsHandler extends Handler {
-  public RapidsV3 exec(int version, RapidsV3 rapids) {
+  public RapidsSchema exec(int version, RapidsSchema rapids) {
     if( rapids == null ) return null;
-    if (rapids.ast == null || rapids.ast.equals("")) return rapids;
-    Throwable e = null;
+    if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
+    Val val;
     try {
-    // No locking, no synchronization - since any local locking is NOT a
-    // cluster-wide lock locking, which just provides the illusion of safety but not
-    // the actuality.
-//private static final Object _lock = new Object();
-//    synchronized( _lock ) {
-//    }
-    
-      Val val = water.currents.Exec.exec(rapids.ast);
-      switch( val.type() ) {
-      case Val.NUM:  rapids.scalar = val.getNum(); break;
-      case Val.STR:  rapids.string = val.getStr(); break;
-      case Val.FUN:  rapids.funstr = val.getFun().toString(); break;
-      case Val.FRM:
-        Frame fr = val.getFrame();
-        if( fr._key == null ) DKV.put(fr = new Frame(fr)); // Add a random key, if none there
-        rapids.key = new KeyV3.FrameKeyV3(fr._key); // Return the Frame key, not the entire frame
-        break;
-      default:  throw H2O.fail();
-      }
+      // No locking, no synchronization - since any local locking is NOT a
+      // cluster-wide lock locking, which just provides the illusion of safety
+      // but not the actuality.
+      val = water.currents.Exec.exec(rapids.ast);
+    } catch( IllegalArgumentException e ) {
+      throw e;
+    } catch( Throwable e ) {
+      Log.err(e);
+      throw e;
+    }
 
-    } catch( IllegalArgumentException pe ) {
-      e = pe;
-    } catch (Throwable e2) {
-      Log.err(e = e2);
-    } finally {
-      if( e != null ) {
-        e.printStackTrace();
-        rapids.error = (e.getMessage() == null||e instanceof ArrayIndexOutOfBoundsException) ? e.toString() : e.getMessage();
-        throw new H2OIllegalArgumentException(rapids.error);
+    switch( val.type() ) {
+    case Val.NUM:  return new RapidsScalarV3(val.getNum());
+    case Val.STR:  return new RapidsStringV3(val.getStr());
+    case Val.FUN:  return new RapidsFunctionV3(val.getFun().toString());
+    case Val.FRM:
+      Frame fr = val.getFrame();
+      if( rapids.id==null ) {
+        fr.delete();
+        throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
       }
-      return rapids;
+      Key k = Key.make(rapids.id);
+      DKV.put(fr=new Frame(k,fr._names,fr.vecs()));
+      return new RapidsFrameV3(fr); // Return the Frame key, not the entire frame
+    default:  throw H2O.fail();
     }
   }
 }

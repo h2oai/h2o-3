@@ -44,9 +44,9 @@ h2o.ls <- function(conn = h2o.getConnection()) {
   gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "ls"), mutable = mutable)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@frame_id, fr@conn)
+  h2o.rm(fr@id, fr@conn)
   ret
 }
 
@@ -95,7 +95,7 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
-  if( is(ids, "H2OFrame") ) ids <- ids@frame_id
+  if( is(ids, "H2OFrame") ) ids <- ids@id
   if(!is.character(ids)) stop("`ids` must be of class character")
 
   for(i in seq_len(length(ids)))
@@ -118,7 +118,7 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
-      if(is(o, "H2OFrame")) o@frame_id else if(is(o, "H2OModel")) o@model_id
+      if(is(o, "H2OFrame")) o@id else if(is(o, "H2OModel")) o@model_id
     })
     Filter(Negate(is.null), l)
   }
@@ -148,20 +148,20 @@ h2o.assign <- function(data, key, deepCopy=FALSE) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   t <- !.is.eval(data)
   if( t ) {
-    tk <- data@frame_id
+    tk <- data@id
     .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = tk)
   }
 
   .key.validate(key)
-  if(key == data@frame_id) stop("Destination key must differ from input frame ", data@frame_id)
+  if(key == data@id) stop("Destination key must differ from input frame ", data@id)
   expr <- NULL
   if( deepCopy ) {
-    expr <- paste0("(= !", key, " %", data@frame_id, ")")   # this does a deepcopy!!
-    res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
+    expr <- paste0("(= !", key, " %", data@id, ")")   # this does a deepcopy!!
+    res <- .h2o.raw_expr_op(expr, data, key=key)
     .byref.update.frame(res)
   } else {
-    expr <- paste0("(, (gput '", key, "' %", data@frame_id, ") (removeframe %",data@frame_id,"))")   # removes the original frame!
-    res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
+    expr <- paste0("(, (gput '", key, "' %", data@id, ") (removeframe %",data@id,"))")   # removes the original frame!
+    res <- .h2o.raw_expr_op(expr, data, key=key)
     .byref.update.frame(res)
   }
 }
@@ -174,10 +174,8 @@ h2o.assign <- function(data, key, deepCopy=FALSE) {
 #' @param frame_id A string indicating the unique frame of the dataset to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param linkToGC a logical value indicating whether to remove the underlying frame
-#'        from the H2O cluster when the R proxy object is garbage collected.
 #' @export
-h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE) {
+h2o.getFrame <- function(frame_id, conn = h2o.getConnection()) {
   if (is(frame_id, "H2OConnection")) {
     temp <- frame_id
     frame_id <- conn
@@ -186,7 +184,7 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
   if( is.null(frame_id) ) return(NULL)
   res <- .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
   cnames <- unlist(lapply(res$columns, function(c) c$label))
-  .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames, linkToGC = linkToGC)
+  .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames )
 }
 
 #' Get an R reference to an H2O model
@@ -196,8 +194,6 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' @param model_id A string indicating the unique model_id of the model to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param linkToGC a logical value indicating whether to remove the underlying model
-#'        from the H2O cluster when the R proxy object is garbage collected.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)
@@ -207,7 +203,7 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
 #' model.retrieved <- h2o.getModel(model_id, localH2O)
 #' @export
-h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE) {
+h2o.getModel <- function(model_id, conn = h2o.getConnection()) {
   if (is(model_id, "H2OConnection")) {
     temp <- model_id
     model_id <- conn
@@ -282,8 +278,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
                 algorithm     = json$algo,
                 parameters    = parameters,
                 allparameters = allparams,
-                model         = model,
-                linkToGC      = linkToGC)
+                model         = model)
 }
 
 
