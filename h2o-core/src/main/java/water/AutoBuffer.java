@@ -1442,7 +1442,7 @@ public final class AutoBuffer {
       if( b[i] == '\r' ) { putA1(b,off,i); put1('\\'); put1('r'); off=i+1; continue;}
       if( b[i] == '\t' ) { putA1(b,off,i); put1('\\'); put1('t'); off=i+1; continue;}
       // ASCII Control characters
-      if( b[i] == 127 ) { putA1(b,off,i); put1('\\'); put1('u'); put1('0'); put1('0'); put1('0'); put1(b[i]); off=i+1; continue;}
+      if( b[i] == 127 ) { putA1(b,off,i); put1('\\'); put1('u'); put1('0'); put1('0'); put1('7'); put1('f'); off=i+1; continue;}
       if( b[i] >= 0 && b[i] < 32 ) {
         String hexStr = Integer.toHexString(b[i]);
         putA1(b, off, i); put1('\\'); put1('u');
