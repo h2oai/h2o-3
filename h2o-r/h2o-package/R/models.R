@@ -899,7 +899,7 @@ h2o.betweenss <- function(object, valid=FALSE, ...) {
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.totss <- function(object,valid=FALSE, ...) {
-  model.parts <- .model.parts(objects)
+  model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
     else                          return( model.parts$vm@metrics$totss )
@@ -940,7 +940,7 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
 h2o.null_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_deviance )
@@ -957,7 +957,7 @@ h2o.null_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_deviance )
@@ -975,7 +975,7 @@ h2o.residual_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_degrees_of_freedom )
@@ -992,7 +992,7 @@ h2o.residual_dof <- function(object, valid=FALSE, ...) {
 h2o.null_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_degrees_of_freedom )
