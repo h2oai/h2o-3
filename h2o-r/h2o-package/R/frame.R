@@ -773,11 +773,10 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   missingI <- missing(i)
   missingJ <- missing(j)
 
-  if (missingJ) {
-    if (missingI)
-      return(x)
+  if( missingJ ) {
+    if( missingI ) return(x)
 
-    if (((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L)) {
+    if( ((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L) ) {
       j <- i
       missingI <- TRUE
       missingJ <- FALSE
@@ -818,9 +817,13 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   }
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
-  mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", conn = x@conn,  frame_id = .key.make(x@conn, "subset"),
-                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+  if( !missingI && !missingJ && length(i) == 1L && length(j) == 1L && i > 0L && j > 0) {
+    .h2o.eval.scalar(h2o.getConnection(), ast)
+  } else {
+    mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+    .newH2OFrame("H2OFrame", conn = x@conn,  frame_id = .key.make(x@conn, "subset"),
+                  finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+  }
 })
 
 #' @rdname H2OFrame-Extract
