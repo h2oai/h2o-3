@@ -72,7 +72,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
-    if (_nclass != 2 && _parms._binomial_double_trees)
+    if (_train != null && _parms._response_column != null && _nclass != 2 && _parms._binomial_double_trees)
       warn("_binomial_double_trees", "Binomial double tree is ignored for non-binomial response.");
   }
 
