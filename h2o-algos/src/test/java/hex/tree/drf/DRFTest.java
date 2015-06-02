@@ -11,6 +11,7 @@ import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class DRFTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -38,8 +39,8 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(25, 0, 0),
-              ard(0, 17, 1),
-              ard(2, 1, 15)),
+                    ard(0, 17, 1),
+                    ard(2, 1, 15)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -59,8 +60,8 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(41, 0, 0),
-              ard(1, 39, 2),
-              ard(1, 3, 41)),
+                    ard(1, 39, 2),
+                    ard(1, 3, 41)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -80,10 +81,10 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(0, 0, 0, 0, 0),
-              ard(3,64, 0, 2, 0),
-              ard(0, 1, 0, 0, 0),
-              ard(0, 0, 1,30, 0),
-              ard(0, 0, 0, 1,39)),
+                    ard(3, 64, 0, 2, 0),
+                    ard(0, 1, 0, 0, 0),
+                    ard(0, 0, 1, 30, 0),
+                    ard(0, 0, 0, 1, 39)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -101,11 +102,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(3,   0, 0,  0,  0),
-              ard(2, 178, 1,  3,  0),
-              ard(0,   1, 1,  0,  0),
-              ard(0,   3, 2, 68,  1),
-              ard(0,   0, 0,  3, 87)),
+            ard(ard(3, 0, 0, 0, 0),
+                    ard(2, 178, 1, 3, 0),
+                    ard(0, 1, 1, 0, 0),
+                    ard(0, 3, 2, 68, 1),
+                    ard(0, 0, 0, 3, 87)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -143,7 +144,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(6, 0),
-              ard(9, 1)),
+                    ard(9, 1)),
             s("0", "1"));
   }
 
@@ -163,7 +164,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(46294, 202),
-              ard( 3187, 107)),
+                    ard(3187, 107)),
             s("0", "1"));
 
   }
@@ -183,7 +184,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(0, 81),
-              ard(0, 53)),
+                    ard(0, 53)),
             s("0", "1"));
 
   }
@@ -304,7 +305,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(664, 0),
-              ard(0, 702)),
+                    ard(0, 702)),
             s("0", "1"));
   }
   @Test public void testAlphabetRegression() throws Throwable {
@@ -396,7 +397,9 @@ public class DRFTest extends TestUtil {
       drf._ntrees = ntree;
       drf._max_depth = max_depth;
       drf._min_rows = min_rows;
+      drf._binomial_double_trees = new Random().nextBoolean();
       drf._nbins = nbins;
+      drf._nbins_cats = nbins;
       drf._mtries = -1;
       drf._sample_rate = 0.66667f;   // Simulated sampling with replacement
       drf._seed = (1L<<32)|2;
@@ -544,12 +547,13 @@ public class DRFTest extends TestUtil {
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
-        parms._nbins_cats = 500;
+        parms._nbins_cats = 1024;
         parms._ntrees = 7;
         parms._max_depth = 10;
+        parms._binomial_double_trees = true;
         parms._mtries = -1;
         parms._min_rows = 1;
-        parms._sample_rate = 0.66667f;   // Simulated sampling with replacement
+        parms._sample_rate = 0.632f;   // Simulated sampling with replacement
         parms._balance_classes = true;
         parms._seed = (1L<<32)|2;
 
@@ -570,7 +574,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2089909437916578, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2087, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -598,6 +602,8 @@ public class DRFTest extends TestUtil {
 //      parms._ignored_columns = new String[]{"Month","DayofMonth","DayOfWeek","DepTime","UniqueCarrier","Origin","Distance"};
       parms._response_column = "dep_delayed_15min";
       parms._nbins = 20;
+      parms._nbins_cats = 20;
+      parms._binomial_double_trees = true;
       parms._ntrees = 100;
       parms._max_depth = 20;
       parms._mtries = -1;

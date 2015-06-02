@@ -1,5 +1,7 @@
 #FAQ
 
+##General
+
 **How do I score using an exported JSON model?**
 
 Since JSON is just a representation format, it cannot be directly executed, so a JSON export can't be used for scoring. However, you can score by: 
@@ -21,7 +23,7 @@ Currently, H2O does not support multiple response variables. To predict differen
 
 **How do I kill any running instances of H2O?**
 
-In Terminal, enter `ps -efww | grep h2o`, then kill any running PIDs. 
+In Terminal, enter `ps -efww | grep h2o`, then kill any running PIDs. You can also find the running instance in Terminal and press **Ctrl + C** on your keyboard. 
 
 ---
 
@@ -117,6 +119,29 @@ The H2O launch failed because more memory was requested than was available. Make
 
 ---
 
+##Algorithms
+
+**What does it mean if the r2 value in my model is negative?**
+
+The coefficient of determination (also known as r^2) can be negative if: 
+
+- linear regression is used without an intercept (constant)
+- non-linear functions are fitted to the data
+- predictions compared to the corresponding outcomes are not based on the model-fitting procedure using those data
+- it is early in the build process (may self-correct as more trees are added)
+
+If your r2 value is negative after your model is complete, your model is likely incorrect. Make sure your data is suitable for the type of model, then try adding an intercept. 
+
+---
+
+**How do I find the standard errors of the parameter estimates (p-values)?**
+
+P-values are currently not supported. They are on our road map and will be added, depending on the current customer demand/priorities. Generally, adding p-values involves significant engineering effort because p-values for regularized GLM are not straightforward and have been defined only recently (with no standard implementation available that we know of). P-values for a restricted set of GLM problems (no regularization, low number of predictors) are easier to do and may be added sooner, if there is a sufficient demand.
+
+For now, we recommend using a non-zero l1 penalty (alpha  > 0) and considering all non-zero coefficients in the model as significant. The recommended use case is running GLM with lambda search enabled and alpha > 0 and picking the best lambda value based on cross-validation or hold-out set validation.
+
+---
+
 ##Clusters
 
 
@@ -149,7 +174,7 @@ Because the default cloud name is the user name of the node, if the nodes are on
 
 ---
 
-**One of the nodes in my cluster is unavailable - what do I do?**
+**One of the nodes in my cluster is unavailable — what do I do?**
 
 H2O does not support high availability (HA). If a node in the cluster is unavailable, bring the cluster down and create a new healthy cluster. 
 
@@ -229,6 +254,43 @@ There are two ways to do this:
   or 
 
 - Pass `--conf` via spark-submit when you launch your droplet (e.g., `$SPARK_HOME/bin/spark-submit --conf spark.executor.memory=4g --master $MASTER --class org.my.Droplet $TOPDIR/assembly/build/libs/droplet.jar`
+
+---
+
+##R
+
+**How can I install the H2O R package if I am having permissions problems?**
+
+This issue typically occurs for Linux users when the R software was installed by a root user. For more information, refer to the following [link](https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html). 
+
+To specify the installation location for the R packages, create a file that contains the `R_LIBS_USER` environment variable:
+
+`echo R_LIBS_USER=\"~/.Rlibrary\" > ~/.Renviron`
+
+Confirm the file was created successfully using `cat`: 
+
+`$ cat ~/.Renviron`
+
+You should see the following output:
+ 
+`R_LIBS_USER="~/.Rlibrary"`
+
+Create a new directory for the environment variable:
+
+`$ mkdir ~/.Rlibrary`
+
+Start R and enter the following: 
+
+`.libPaths()`
+
+Look for the following output to confirm the changes: 
+
+```
+[1] "<Your home directory>/.Rlibrary"                                         
+[2] "/Library/Frameworks/R.framework/Versions/3.1/Resources/library"
+```
+
+
 
 ---
 

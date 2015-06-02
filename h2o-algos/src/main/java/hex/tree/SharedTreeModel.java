@@ -20,7 +20,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins = 20; // Numerical (real/int) cols: Build a histogram of this many bins, then split at the best point
 
-    public int _nbins_cats = 100; // Categorical (enum) cols: Build a histogram of this many bins, then split at the best point
+    public int _nbins_cats = 1024; // Categorical (enum) cols: Build a histogram of this many bins, then split at the best point
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
@@ -32,6 +32,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
   }
+
+  final public VarImp varImp() { return _output._varimp; }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
@@ -75,6 +77,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      * Variable importances computed during training
      */
     public TwoDimTable _variable_importances;
+    public VarImp _varimp;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);

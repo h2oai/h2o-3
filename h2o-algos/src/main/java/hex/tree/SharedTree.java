@@ -387,6 +387,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
     boolean updated = false;
+    new ProgressUpdate("Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").").fork(_progressKey);
     // Now model already contains tid-trees in serialized form
     if( _parms._score_each_iteration ||
         finalScoring ||
@@ -406,12 +407,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       SharedTreeModel.SharedTreeOutput out = _model._output;
       _timeLastScoreStart = now;
       // Score on training data
+      new ProgressUpdate("Scoring the model.").fork(_progressKey);
       Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
       if (out._ntrees > 0) Log.info("Training " + out._scored_train[out._ntrees].toString());
+
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,false,false,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
@@ -424,7 +427,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._model_summary = createModelSummaryTable(out);
         out._scoring_history = createScoringHistoryTable(out);
-        out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar, out._names));
+        out._varimp = new hex.VarImp(_improvPerVar, out._names);
+        out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
         Log.info(out._model_summary.toString());
         // For Debugging:
 //        Log.info(out._scoring_history.toString());

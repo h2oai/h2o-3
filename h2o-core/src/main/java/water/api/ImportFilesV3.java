@@ -3,7 +3,7 @@ package water.api;
 import water.Iced;
 import water.util.DocGen.HTML;
 
-class ImportFilesV3 extends Schema<Iced,ImportFilesV3> {
+class ImportFilesV3 extends RequestSchema<Iced,ImportFilesV3> {
 
   // Input fields
   @API(help="path", required=true)

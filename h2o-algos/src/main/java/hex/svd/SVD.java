@@ -281,6 +281,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       double sum = 0;
       for (int j = 0; j < dinfo._cats; j++) {
         int level = (int)cs[j].atd(row);
+        if (Double.isNaN(level)) continue;    // Skip training entries that are NaN
         if (dinfo._catOffsets[j]+level >= dinfo._catOffsets[j+1]) continue;   // Skip additional factor when useAllFactorLevels = false
         sum += vec[dinfo._catOffsets[j]+level];
       }
@@ -290,7 +291,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       int vidx = dinfo.numStart();
       for (int j = 0; j < dinfo._nums; j++) {
         double a = cs[cidx].atd(row);
-        sum += (a - normSub[j]) * normMul[j] * vec[vidx];
+        if (!Double.isNaN(a))   // Skip training entries that are NaN
+          sum += (a - normSub[j]) * normMul[j] * vec[vidx];
         cidx++; vidx++;
       }
       assert cidx == ncols && vidx == vec.length;

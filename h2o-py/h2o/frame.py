@@ -1389,17 +1389,41 @@ class H2OVec:
     """
     return H2OVec("", Expr("is.na", self._expr, None))
 
+  def year(self):
+    """
+    :return: Returns a new year column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("year", self._expr, None))
+
   def month(self):
     """
     :return: Returns a new month column from a msec-since-Epoch column
     """
     return H2OVec(self._name, Expr("month", self._expr, None))
 
+  def week(self):
+    """
+    :return: Returns a new week column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("week", self._expr, None))
+
+  def day(self):
+    """
+    :return: Returns a new day column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("day", self._expr, None))
+
   def dayOfWeek(self):
     """
     :return: Returns a new Day-of-Week column from a msec-since-Epoch column
     """
     return H2OVec(self._name, Expr("dayOfWeek", self._expr, None))
+
+  def hour(self):
+    """
+    :return: Returns a new Hour-of-Day column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("hour", self._expr, None))
 
   def runif(self, seed=None):
     """

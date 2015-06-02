@@ -79,10 +79,10 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
     public int nbins_cats;
 
-    @API(help="Stop making trees when the R^2 metric equals or exceeds this")
+    @API(help="Stop making trees when the R^2 metric equals or exceeds this", level = API.Level.secondary)
     public double r2_stopping;
 
-    @API(help = "Seed for pseudo random number generator (if applicable)", level = API.Level.expert)
+    @API(help = "Seed for pseudo random number generator (if applicable)")
     public long seed;
   }
 }
