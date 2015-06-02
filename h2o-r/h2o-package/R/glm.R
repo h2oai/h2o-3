@@ -41,7 +41,7 @@
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
-#' @paran offset_column Specify the offset column.
+#' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
