@@ -102,6 +102,8 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_min_ratio = -1.0,
                     nfolds,
                     beta_constraints = NULL,
+                    offset_column = NULL,
+                    weights_column = NULL,
                     ...
                     )
 {
@@ -128,38 +130,24 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(validation_frame))
-    parms$validation_frame <- validation_frame
-  if(!missing(model_id))
-    parms$model_id <- model_id
-  if(!missing(max_iterations))
-    parms$max_iterations <- max_iterations
-  if(!missing(beta_epsilon))
-    parms$beta_epsilon <- beta_epsilon
-  if(!missing(solver))
-    parms$solver <- solver
-  if(!missing(standardize))
-    parms$standardize <- standardize
-  if(!missing(family))
-    parms$family <- family
-  if(!missing(link))
-    parms$link <- link
-  if(!missing(tweedie_variance_power))
-    parms$tweedie_variance_power <- tweedie_variance_power
-  if(!missing(tweedie_link_power))
-    parms$tweedie_link_power <- tweedie_link_power
-  if(!missing(alpha))
-    parms$alpha <- alpha
-  if(!missing(prior))
-    parms$prior <- prior
-  if(!missing(lambda))
-    parms$lambda <- lambda
-  if(!missing(lambda_search))
-    parms$lambda_search <- lambda_search
-  if(!missing(nlambdas))
-    parms$nlambdas <- nlambdas
-  if(!missing(lambda_min_ratio))
-    parms$lambda_min_ratio <- lambda_min_ratio
+  if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
+  if( !missing(model_id) )                  parms$model_id               <- model_id
+  if( !missing(max_iterations) )            parms$max_iterations         <- max_iterations
+  if( !missing(beta_epsilon) )              parms$beta_epsilon           <- beta_epsilon
+  if( !missing(solver) )                    parms$solver                 <- solver
+  if( !missing(standardize) )               parms$standardize            <- standardize
+  if( !missing(family) )                    parms$family                 <- family
+  if( !missing(link) )                      parms$link                   <- link
+  if( !missing(tweedie_variance_power) )    parms$tweedie_variance_power <- tweedie_variance_power
+  if( !missing(tweedie_link_power) )        parms$tweedie_link_power     <- tweedie_link_power
+  if( !missing(alpha) )                     parms$alpha                  <- alpha
+  if( !missing(prior) )                     parms$prior                  <- prior
+  if( !missing(lambda) )                    parms$lambda                 <- lambda
+  if( !missing(lambda_search) )             parms$lambda_search          <- lambda_search
+  if( !missing(nlambdas) )                  parms$nlambdas               <- nlambdas
+  if( !missing(lambda_min_ratio) )          parms$lambda_min_ratio       <- lambda_min_ratio
+  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+  if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
