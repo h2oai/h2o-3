@@ -20,13 +20,13 @@ test.pub.767 <- function(conn) {
 
   Log.info("Number of rows in the confusion matrix for AUC:")
   p <- h2o.performance(m)
-  print(h2o.confusionMatrices(p, 0.1))
+  print(h2o.confusionMatrix(p))
 
   print("Number of rows in the prostate dataset:")
   print(nrow(prostate))
 
 
-  expect_equal(sum(m@model$confusion[3,1:2]), nrow(prostate))
+  expect_equal(sum(h2o.confusionMatrix(m)[3,1:2]), nrow(prostate))
   testEnd()
 }
 

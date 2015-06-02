@@ -218,11 +218,13 @@ public class ConfusionMatrix extends Iced {
     // Sum up predicted & actuals
     double acts [] = new double[_cm.length];
     double preds[] = new double[_cm[0].length];
+    boolean isInt = true;
     for( int a=0; a< _cm.length; a++ ) {
       long sum=0;
       for( int p=0; p< _cm[a].length; p++ ) {
         sum += _cm[a][p];
         preds[p] += _cm[a][p];
+        isInt &= (_cm[a][p] == (int)_cm[a][p]);
       }
       acts[a] = sum;
     }
@@ -240,8 +242,8 @@ public class ConfusionMatrix extends Iced {
     String[] colType = new String[colHeader.length];
     String[] colFormat = new String[colHeader.length];
     for (int i=0; i<colFormat.length-1; ++i) {
-      colType[i]   = "double";
-      colFormat[i] = "%.2f";
+      colType[i] = isInt ? "int":"double";
+      colFormat[i] = isInt ? "%d":"%.2f";
     }
     colType[colFormat.length-2]   = "double";
     colFormat[colFormat.length-2] = "%.4f";
@@ -260,11 +262,15 @@ public class ConfusionMatrix extends Iced {
       }
       double err = acts[a] - correct;
       terr += err;
-      width = Math.max(width, String.format("%.2f ", err, acts[a]).length());
+      width = isInt ?
+              Math.max(width, String.format("%,d / %,d", (int)err, (int)acts[a]).length()):
+              Math.max(width, String.format("%.2f / %.2f",    err,      acts[a]).length());
     }
     double nrows = 0;
     for (double n : acts) nrows += n;
-    width = Math.max(width, String.format("%.2f", terr, nrows).length());
+    width = isInt?
+            Math.max(width, String.format("%,d / %,d", (int)terr, (int)nrows).length()):
+            Math.max(width, String.format("%.2f / %.2f",    terr,      nrows).length());
 
     // set format width
     colFormat[colFormat.length-1] = "= %" + width + "s";
@@ -279,20 +285,32 @@ public class ConfusionMatrix extends Iced {
         if (pdomain[p] == null) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
         if (onDiag) correct = _cm[a][p];
-        table.set(a, p, _cm[a][p]);
+        if (isInt)
+          table.set(a, p, (int)_cm[a][p]);
+        else
+          table.set(a, p, _cm[a][p]);
       }
       double err = acts[a] - correct;
       table.set(a, pdomain.length, err / acts[a]);
-      table.set(a, pdomain.length + 1, String.format("%.2f / %.2f", err, acts[a]));
+      table.set(a, pdomain.length + 1,
+              isInt ? String.format("%,d / %,d", (int)err, (int)acts[a]):
+                      String.format("%.2f / %.2f",    err,      acts[a])
+      );
     }
 
     // Last row of CM
     for (int p = 0; p < pdomain.length; p++) {
       if (pdomain[p] == null) continue;
-      table.set(adomain.length, p, preds[p]);
+      if (isInt)
+        table.set(adomain.length, p, (int)preds[p]);
+      else
+        table.set(adomain.length, p, preds[p]);
     }
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
-    table.set(adomain.length, pdomain.length + 1, String.format("%.2f / %.2f", terr, nrows));
+    table.set(adomain.length, pdomain.length + 1,
+            isInt ? String.format("%,d / %,d", (int)terr, (int)nrows):
+                    String.format("%.2f / %.2f",    terr,      nrows));
+
     return table;
   }
 }

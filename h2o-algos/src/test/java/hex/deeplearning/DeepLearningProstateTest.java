@@ -182,6 +182,20 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert( ((p._train_samples_per_iteration <= 0 || p._train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
                                                   || Math.abs(model1.epoch_counter - epochs)/epochs < 0.20 );
 
+                                          // check that iteration is of the expected length - check via when first scoring happens
+                                          if (p._train_samples_per_iteration == 0) {
+                                            // no sampling - every node does its share of the full data
+                                            if (!replicate) assert((double)model1._output._scoring_history.get(1,3) == 1);
+                                            // sampling on each node
+                                            else assert((double)model1._output._scoring_history.get(1,3) > 0.8 && (double)model1._output._scoring_history.get(1,3) < 1.2);
+                                          }
+                                          else if (p._train_samples_per_iteration == -1) {
+                                            // no sampling - every node does its share of the full data
+                                            if (!replicate) assert ((double) model1._output._scoring_history.get(1, 3) == 1);
+                                            // every node passes over the full dataset
+                                            else assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
+                                          }
+
                                           if (n_folds != 0)
                                           // test HTML of cv models
                                           {

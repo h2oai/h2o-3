@@ -50,7 +50,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Map the algo name (e.g., "deeplearning") to the Model class (e.g., DeepLearningModel.class):
   private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
 
+  /** Train response vector. */
   public Vec response(){return _response;}
+  /** Validation response vector. */
   public Vec vresponse(){return _vresponse;}
 
 
