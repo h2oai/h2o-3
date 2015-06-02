@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.parse.mismatching.col.length <- function(conn){
 
-  df <- h2o.importFile(locate("bigdata/jira/hexdev_325.csv"))
+  df <- h2o.importFile(locate("bigdata/laptop/jira/hexdev_325.csv"), header = TRUE)
   print(head(df, 2))
 
   testEnd()

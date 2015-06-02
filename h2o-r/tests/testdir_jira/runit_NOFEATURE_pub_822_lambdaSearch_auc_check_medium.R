@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 
 test.pub.822 <- function(conn) {
 print("Parse header file")
-spect_header <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header") 
+spect_header <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header")
 print("Parse train and test files")
 spect_train <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_train.txt")),destination_frame = "spect_train",col.names=spect_header)
 spect_test <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_test.txt")),destination_frame = "spect_test", col.names=spect_header)
@@ -25,19 +25,19 @@ for(i in 1:length(colnames(spect_train))){
 print(summary(spect_train))
 print(summary(spect_test))
 
-print("Build GLM model")   
+print("Build GLM model")
 myX <- 2:length(colnames(spect_train))
 myY <- 1
-my.glm <- h2o.glm(x=myX, y=myY, training_frame=spect_train, family="binomial", standardize=T, use_all_factor_levels=TRUE, lambda_search=T)
+my.glm <- h2o.glm(x=myX, y=myY, training_frame=spect_train, family="binomial", standardize=T, lambda_search=T)
 print(my.glm)
 
-print("Predict models on test set and print AUC")  
+print("Predict models on test set and print AUC")
 print("Also Check if auc from H2O is correct by checking it against ROCR's auc")
 
 for(i in 1:100){
-	
-	pred <- predict(my.glm@models[[i]],spect_test) 
-	perf <- h2o.performance(pred$'1',spect_test$OVERALL_DIAGNOSIS ) 
+
+	pred <- predict(my.glm@models[[i]],spect_test)
+	perf <- h2o.performance(pred$'1',spect_test$OVERALL_DIAGNOSIS )
 	auc_h <- perf@model$auc
 
 	predic = prediction(as.data.frame(pred$'1'),as.data.frame(spect_test$OVERALL_DIAGNOSIS))
@@ -48,7 +48,7 @@ for(i in 1:100){
 	expect_equal(auc_h,auc_R)
 }
 
-   
+
   testEnd()
 }
 
