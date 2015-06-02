@@ -4335,7 +4335,6 @@ class ASTSetTimeZone extends ASTOp {
     new MRTask() {
       @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
     }.doAllNodes();
-    e.pushAry(null);
   }
 }
 

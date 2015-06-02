@@ -654,9 +654,7 @@ as.Date.H2OFrame <- function(x, format, ...) {
 #' @export
 h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
   expr <- paste0("(setTimeZone \"", tz, "\"")
-  ret <- .h2o.raw_expr_op(expr,  key = .key.make(conn, "setTimeZone"))
-  h2o.rm(ret@frame_id, ret@conn)
-  ret
+  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=expr, method = "POST")
 }
 
 #' Get the Time Zone on the H2O Cloud
