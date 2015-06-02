@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 test.GLM.offset <- function(conn) {
 
   compare_res_deviance <- function(h2o_model, r_model){
-    diff <- h2o_model@model$deviance - r_model$deviance
+    diff <- h2o.ressidual_deviance(h2o_model) - r_model$deviance
     if (diff > 0.1) stop('residual deviance is not comparable')
   }
   compare_scores <- function(h2o_model, r_model) {

@@ -62,7 +62,9 @@ test.Priors.BetaConstraints <- function(conn) {
     library(AUC)
 
     h2o_pred <- as.data.frame(pred)
-    h2o_roc  <- roc(h2o_pred$X1, factor(test.df[, depVars]))
+    # print(h2o_pred)
+    # colnames(h2o_pred)
+    h2o_roc  <- roc(h2o_pred$p1, factor(test.df[, depVars]))
     h2o_auc <- auc(h2o_roc)
 
     # Find auc for both the testing and training set...
@@ -106,8 +108,8 @@ test.Priors.BetaConstraints <- function(conn) {
                         alpha = alpha, beta_constraint = beta_nointercept.hex[c("names","lower_bounds","upper_bounds")])
     y <- as.matrix(train.df[,depVars])
     x <- xMatrix
-    beta1 <- glm.h2o1@model$coefficients_table$Coefficients
-    beta2 <- glm.h2o2@model$coefficients_table$Coefficients
+    beta1 <- glm.h2o1@model$coefficients_table$coefficients
+    beta2 <- glm.h2o2@model$coefficients_table$coefficients
     beta_given <- as.data.frame(betaConstraints.hex$beta_given)
     rho <- as.data.frame(betaConstraints.hex$rho)
     logistic_gradient(x,y,beta1)

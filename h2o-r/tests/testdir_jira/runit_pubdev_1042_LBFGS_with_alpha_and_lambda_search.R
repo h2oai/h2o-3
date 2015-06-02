@@ -17,7 +17,8 @@ test.pubdev1042 <- function(conn){
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  h2o.glm(x = 3:9, y = 2, training_frame = pros.train, family = "binomial", solver = "L_BFGS", alpha = 0.5, lambda_search = TRUE)
+  h2o.glm(x = 3:9, y = 2, training_frame = pros.train, family = "binomial", solver = "L_BFGS",
+    max_iterations = 25, alpha = 0.5, lambda_search = TRUE)
 
   testEnd()
 }
