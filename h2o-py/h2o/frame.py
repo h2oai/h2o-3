@@ -1154,6 +1154,7 @@ class H2OVec:
     if not isinstance(format, str):
       raise ValueError("format must be a string")
 
+    if self.key() == "": self._expr.eager()
     expr = "(as.Date '" + self.key() + '\' "{}"'.format(format) + ")"
     res = h2o.rapids(expr)
     return H2OVec(self._name, Expr(op=res["vec_ids"][0]["name"], length=res["num_rows"]))
@@ -1386,11 +1387,9 @@ class H2OVec:
 
   def asfactor(self):
     """
-    :return:
+    :return: A lazy Expr representing this vec converted to a factor
     """
-    expr = "(as.factor '" + self.key() + "')"
-    res = h2o.rapids(expr)
-    return H2OVec(self._name, Expr(op=res["vec_ids"][0]["name"], length=res["num_rows"]))
+    return H2OVec(self._name, Expr("as.factor", self._expr, None))
 
   def isfactor(self):
     """
