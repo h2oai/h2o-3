@@ -29,7 +29,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   transient Random _dropout_rng;
 
   int _chunk_node_count = 1;
-  boolean consensusADMM = true;
+  boolean consensusADMM = false;
 
   public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo inputModel, float fraction){this(jobKey, inputModel,fraction,null);}
   private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo inputModel, float fraction, H2OCountedCompleter cmp){
@@ -43,7 +43,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   // transfer ownership from input to output (which will be worked on)
   @Override protected void setupLocal(){
-//    Log.info("DT: setupLocal()");
     super.setupLocal();
     if (consensusADMM) {
       //Load my local model from DKV, to continue training
@@ -114,7 +113,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   static long _lastWarn;
   static long _warnCount;
   @Override protected void postGlobal(){
-    Log.info("DLT: postGlobal");
     if (H2O.CLOUD.size() > 1 && !_localmodel.get_params()._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
@@ -125,9 +123,11 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _warnCount++;
       }
     }
-    _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
-    _localmodel.set_processed_local(0l);
-    if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
+    if (!_localmodel.get_params()._replicate_training_data && H2O.CLOUD.size() == 1) {
+      _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
+      _localmodel.set_processed_local(0l);
+      if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
+    }
 
     if (consensusADMM) {
 //        assert(_localmodel.get_processed_global() > _sharedmodel.get_processed_global());

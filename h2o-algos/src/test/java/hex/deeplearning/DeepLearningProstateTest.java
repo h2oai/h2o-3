@@ -63,7 +63,7 @@ public class DeepLearningProstateTest extends TestUtil {
             if ( !classification && loss == DeepLearningParameters.Loss.CrossEntropy ) continue;
 
             for (boolean replicate : new boolean[]{
-//                    true,
+                    true,
                     false,
             }) {
               for (DeepLearningParameters.Activation activation : new DeepLearningParameters.Activation[]{

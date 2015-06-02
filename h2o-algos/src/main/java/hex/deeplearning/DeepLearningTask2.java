@@ -81,6 +81,9 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
   protected void postGlobal() {
     super.postGlobal();
     // time- and node-average of the weights
+    _res.model_info().div(_res._chunk_node_count); //model averaging
+    _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
+    _res.model_info().set_processed_local(0l);
     if (_res.consensusADMM) {
 //      DeepLearningModel.DeepLearningModelInfo moving_avg = (DeepLearningModel.DeepLearningModelInfo)_res.model_info().clone();//FIXME //HACK
 //      moving_avg.set_processed_local(0); //to prevent adding samples to _res.model_info() in add() below
