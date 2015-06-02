@@ -218,7 +218,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         SVDModel svd = null;
         SVD job = null;
         try {
-          job = new SVD(parms);
+          job = new EmbeddedSVD(parms, _progressKey);
           svd = job.trainModel().get();
         } finally {
           if (job != null) job.remove();
@@ -253,5 +253,25 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     Key self() {
       return _key;
     }
+  }
+}
+
+class EmbeddedSVD extends SVD {
+
+  final private Key sharedProgressKey;
+
+  public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
+    super(parms);
+    this.sharedProgressKey = sharedProgressKey;
+  }
+
+  @Override
+  protected Key createProgressKey() {
+    return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
+  }
+
+  @Override
+  protected boolean deleteProgressKey() {
+    return false;
   }
 }
