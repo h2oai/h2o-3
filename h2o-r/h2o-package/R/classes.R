@@ -88,7 +88,6 @@ setClass("H2OObject",
          contains="VIRTUAL")
 
 .keyFinalizer <- function(envir) {
-  browser()
   if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
   if( !is.null(envir$id)       ) h2o.rm(envir$id, envir$conn)
   if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id,envir$conn)
@@ -99,17 +98,16 @@ setClass("H2OObject",
 #' @param .Object an \code{H2OObject}
 #' @param \dots additional parameters to pass on to functions
 #' @export
-setMethod("initialize", "H2OObject", function(.Object, conn, id, ...) {
-  if( is.null(conn) ) stop("Missing CON in h2oobject")
+setMethod("initialize", "H2OObject", function(.Object, id, ...) {
+  if( is.na(id) ) stop("Missing ID in new H2OObject")
   .Object <- callNextMethod()
   .Object@conn <- conn
   .Object@id <- id
-  if (!is.na(id) && is(conn, "H2OConnection")) {
-    envir <- new.env()
-    assign("id", id, envir)
-    assign("conn", conn, envir)
-    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-  }
+  envir <- new.env()
+  assign("id", id, envir)
+  assign("conn", conn, envir)
+  .Object@finalizer <- envir
+  reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
   .Object       
 })
 
@@ -223,23 +221,22 @@ setClass("H2OFrame",
          contains="H2OObject"
          )
 
-setMethod("initialize", "H2OFrame", function(.Object, conn, id, mutable, ...) {
-  .Object <- callNextMethod(.Object, conn, id)
+setMethod("initialize", "H2OFrame", function(.Object, id, mutable, ...) {
+  .Object <- callNextMethod(.Object, id)
   .Object@mutable <- mutable
   .Object
 })
 
 # TODO: make a more frame-specific constructor
-.newH2OFrame <- function(Class, conn, frame_id = NA_character_, mutable=NULL) {
-  if( is.null(conn) ) stop("missing CON in frame")
-  new(Class, conn=conn, id=frame_id, mutable=mutable)
+.newH2OFrame <- function(Class, frame_id = NA_character_, mutable=NULL) {
+  new(Class, id=frame_id, mutable=mutable)
 }
 
 #' @rdname H2OFrame-class
 #' @param object An \code{H2OConnection} object.
 #' @export
 setMethod("show", "H2OFrame", function(object) {
-  .byref.update.frame(object)
+  .h2o.eval.frame(object)
 
   nr <- nrow(object)
   nc <- ncol(object)
@@ -271,13 +268,12 @@ setMethod("show", "H2OFrame", function(object) {
 #' @export
 setClass("H2ORawData", contains="H2OFrame")
 
-setMethod("initialize", "H2ORawData", function(.Object, conn, id, ...) {
-  callNextMethod(.Object, conn, id, mutable=NULL)
+setMethod("initialize", "H2ORawData", function(.Object, id, ...) {
+  callNextMethod(.Object, id, mutable=NULL)
 })
 
-.newH2ORawData <- function(Class, conn, frame_id = NA_character_) {
-  if( is.null(conn) ) stop("missing CON in rawdata")
-  new(Class, conn=conn, id=frame_id)
+.newH2ORawData <- function(Class, frame_id = NA_character_) {
+  new(Class, id=frame_id)
 }
 
 #' @rdname H2ORawData-class

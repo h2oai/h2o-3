@@ -47,7 +47,7 @@ h2o.svd <- function(training_frame, x, nv,
              })
   
   ## -- Force evaluate temporary ASTs -- ##
-  if( !.is.eval(training_frame) ) .h2o.eval.frame(ast = training_frame@mutable$ast, frame_id = training_frame@id)
+  .h2o.eval.frame(training_frame)
   
   # Gather user input
   parms <- list()

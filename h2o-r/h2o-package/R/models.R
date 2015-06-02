@@ -188,11 +188,11 @@
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
  params$training_frame <- get("training_frame", parent.frame())
- if( !.is.eval(params$training_frame) ) .h2o.eval.frame(ast = params$training_frame@mutable$ast, frame_id =  params$training_frame@id)
+ .h2o.eval.frame(params$training_frame)
 
  if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
-    if( !.is.eval(params$validation_frame) ) .h2o.eval.frame(ast = params$validation_frame@mutable$ast, frame_id = params$validation_frame@id)
+    .h2o.eval.frame(params$validation_frame)
   }
 
   h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
@@ -226,7 +226,7 @@ predict.H2OModel <- function(object, newdata, ...) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
 
-  if( !.is.eval(newdata) ) .h2o.eval.frame(ast=newdata@mutable$ast, frame_id=newdata@id)
+  .h2o.eval.frame(newdata)
 
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@id)
@@ -321,7 +321,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
   }
   else if( !missingData ) {
-    if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
+    .h2o.eval.frame(data)
 
     parms <- list()
     parms[["model"]] <- model@model_id
@@ -1040,7 +1040,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  if( !.is.eval(newdata) ) .h2o.eval.frame(ast = newdata@mutable$ast, frame_id = newdata@id)
+  .h2o.eval.frame(newdata)
 
   url <- paste0("Predictions/models/",object@model_id, "/frames/", newdata@id)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")

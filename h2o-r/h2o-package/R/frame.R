@@ -272,7 +272,7 @@ h2o.qpfpc <- function(data, class.col, probs=NULL) {
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   ## -- Force evaluate temporary ASTs -- ##
-  if (!.is.eval(data)) .h2o.eval.frame(ast = data@mutable$ast, frame_id = data@id)
+  .h2o.eval.frame(data)
 
   parms = list()
 
@@ -312,7 +312,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   ## -- Force evaluate temporary ASTs -- ##
-  if( !.is.eval(data) ) .h2o.eval.frame(ast = data@mutable$ast, frame_id = data@id)
+  .h2o.eval.frame(data)
 
   params <- list()
   params$dataset <- data@id
@@ -656,7 +656,7 @@ h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
 h2o.getTimezone <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "getTimeZone"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "getTimeZone"), mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@id, fr@conn)
   ret
@@ -669,7 +669,7 @@ h2o.getTimezone <- function(conn=h2o.getConnection()) {
 h2o.listTimezones <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "listTimeZones"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "listTimeZones"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "listTimeZones"), mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@id, fr@conn)
   ret
@@ -681,7 +681,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
 #
 #  expr <- paste("diff(", paste(x@id, lag, differences, sep = ","), ")", sep = "")
 #  res <- .h2o.__exec2(x@conn, expr)
-#  .newH2OFrame("H2OFrame", conn=x@conn, frame_id=res$dest_key, logic=FALSE)
+#  .newH2OFrame("H2OFrame", frame_id=res$dest_key, logic=FALSE)
 #}
 
 #' Produe a Vector of Random Uniform Numbers
@@ -807,7 +807,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   }
 
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", conn = x@conn,  frame_id = .key.make(x@conn, "subset"), mutable = mutable)
+  .newH2OFrame("H2OFrame",  frame_id = .key.make(x@conn, "subset"), mutable = mutable)
 })
 
 #' @rdname H2OFrame-Extract
@@ -908,7 +908,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), "()", j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-      sub <-  .newH2OFrame("H2OFrame", conn = x@conn, frame_id = .key.make(x@conn, "subset"), mutable = mutable)
+      sub <-  .newH2OFrame("H2OFrame", frame_id = .key.make(x@conn, "subset"), mutable = mutable)
     } else {
       sub <- x[,j]
     }
@@ -928,7 +928,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i,parent.frame()), j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-      sub <-  .newH2OFrame("H2OFrame", conn = x@conn, frame_id = .key.make(x@conn, "subset"), mutable = mutable)
+      sub <-  .newH2OFrame("H2OFrame", frame_id = .key.make(x@conn, "subset"), mutable = mutable)
     } else {
       sub <- x[i, j]
     }
@@ -1115,7 +1115,7 @@ NULL
 #' @rdname h2o.nrow
 #' @export
 setMethod("nrow", "H2OFrame", function(x) {
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
   x@mutable$nrows
 })
 
@@ -1123,7 +1123,7 @@ setMethod("nrow", "H2OFrame", function(x) {
 #' @rdname h2o.nrow
 #' @export
 setMethod("ncol", "H2OFrame", function(x) {
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
   if( x@mutable$nrows==0L ) 0L
   else x@mutable$ncols
 })
@@ -1149,7 +1149,7 @@ NULL
 #' @rdname h2o.colnames
 #' @export
 setMethod("colnames", "H2OFrame", function(x) {
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
   x@mutable$col_names
 })
 
@@ -1157,7 +1157,7 @@ setMethod("colnames", "H2OFrame", function(x) {
 #' @rdname h2o.colnames
 #' @export
 setMethod("names", "H2OFrame", function(x) {
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
   x@mutable$col_names
 })
 
@@ -1179,7 +1179,7 @@ NULL
 #' @rdname h2o.length
 #' @export
 setMethod("length", "H2OFrame", function(x) {
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
   nc <- ncol(x)
   if (!is.na(nc) && nc == 1L)
     nrow(x)
@@ -1267,7 +1267,7 @@ NULL
 #' @export
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
 
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
@@ -1289,7 +1289,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 #' @export
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  .byref.update.frame(x)
+  .h2o.eval.frame(x)
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if(n == 0L)
@@ -1688,7 +1688,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
 #' as.data.frame(prostate.hex)
 #' @export
 as.data.frame.H2OFrame <- function(x, ...) {
-  .byref.update.frame(x, scalarAsFrame = FALSE)
+  .h2o.eval.frame(x)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
@@ -1911,7 +1911,7 @@ h2o.cbind <- function(...) {
 h2o.setLevel <- function(x, level) {
   if( missing(level) ) stop("`level` is missing")
   if( !is.character(level) ) stop("`level` must be a character")
-  if( !.is.eval(x) )  .h2o.eval.frame(ast=x@mutable$ast, frame_id=x@id)
+  .h2o.eval.frame(x)
   .h2o.nary_frame_op("setLevel", x, level)
 }
 
@@ -2003,7 +2003,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
       stop("`data` must be of type H2OFrame")
 
   # handle the data
-  if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
+  .h2o.eval.frame(data)
 
   # handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
@@ -2138,7 +2138,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
   conn <- h2o.getConnection()
-  .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "group_by"), mutable = mutable)
+  .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "group_by"), mutable = mutable)
 }
 
 # old version of h2o.groupBy -- not user friendly.
@@ -2147,7 +2147,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #    stop("`data` must be of type H2OFrame")
 #
 #  # handle the data
-#  if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
+#  .h2o.eval.frame(data)
 #
 #  # handle the columns
 #  # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
@@ -2205,7 +2205,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #
 #  mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
 #  conn <- h2o.getConnection()
-#  .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "group_by"), mutable = mutable)
+#  .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "group_by"), mutable = mutable)
 #}
 
 #'
@@ -2276,7 +2276,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
     stop("Column is categorical, method must not be mean or median.")
 
   # handle the data
-  if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
+  .h2o.eval.frame(data)
   gb.cols <- NULL
   if( !is.null(by) ) {
     if(is.character(by)) {
@@ -2303,7 +2303,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   } else {
     mutable <- new("H2OFrameMutableState", ast=IMPUTE, nrows=NA_integer_, ncols=NA_integer_, col_names=NA_character_)
     conn <- h2o.getConnection()
-    .newH2OFrame("H2OFrame", conn=conn, frame_id=.key.make(conn, "impute"), mutable=mutable)
+    .newH2OFrame("H2OFrame", frame_id=.key.make(conn, "impute"), mutable=mutable)
   }
 }
 
@@ -2481,7 +2481,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #' summary(apply(iris.hex, 1, sum))
 #' @export
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
-  if( !.is.eval(X) ) .h2o.eval.frame(ast=X@mutable$ast, frame_id=X@id)
+  .h2o.eval.frame(X)
   if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
   if( missing(FUN) ) stop("FUN must be an R function")
@@ -2533,7 +2533,7 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if(length(l) == 0L)  res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast)
   else                 res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 
-  if( !.is.eval(res) ) .h2o.eval.frame(ast=res@mutable$ast, frame_id=res@id)
+  .h2o.eval.frame(res)
   res
 })
 
@@ -2610,7 +2610,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #' @export
 h2o.hist <- function(x, breaks="Sturges") {
   if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
-  if( !.is.eval(x) ) .h2o.eval.frame(ast=x@mutable$ast, frame_id=x@id)
+  .h2o.eval.frame(x)
 
   if( is.character(breaks) ) {
     if( breaks=="Sturges" ) breaks <- "sturges"
@@ -2703,7 +2703,7 @@ h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
 #  myVec <- paste0("c(", .seq_to_string(vec), ")")
 #  expr <- paste0("findInterval(", x@id, ",", myVec, ",", as.numeric(rightmost.closed), ")")
 #  res <- .h2o.__exec2(x@conn, expr)
-#  .newH2OFrame('H2OFrame', conn=x@conn, frame_id=res$dest_key)
+#  .newH2OFrame('H2OFrame', frame_id=res$dest_key)
 #})
 #
 ## setGeneric("histograms", function(object) { standardGeneric("histograms") })

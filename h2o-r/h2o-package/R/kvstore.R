@@ -44,7 +44,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
   gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "ls"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "ls"), mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@id, fr@conn)
   ret
@@ -146,7 +146,7 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
 #' @export
 h2o.assign <- function(data, key, deepCopy=FALSE) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
-  if( !.is.eval(data) ) .h2o.eval.frame(ast = data@mutable$ast, frame_id = data@id)
+  .h2o.eval.frame(data)
 
   .key.validate(key)
   if(key == data@id) stop("Destination key must differ from input frame ", data@id)
@@ -154,11 +154,11 @@ h2o.assign <- function(data, key, deepCopy=FALSE) {
   if( deepCopy ) {
     expr <- paste0("(= !", key, " %", data@id, ")")   # this does a deepcopy!!
     res <- .h2o.raw_expr_op(expr, data, key=key)
-    .byref.update.frame(res)
+    .h2o.eval.frame(res)
   } else {
     expr <- paste0("(, (gput '", key, "' %", data@id, ") (removeframe %",data@id,"))")   # removes the original frame!
     res <- .h2o.raw_expr_op(expr, data, key=key)
-    .byref.update.frame(res)
+    .h2o.eval.frame(res)
   }
 }
 
@@ -171,16 +171,13 @@ h2o.assign <- function(data, key, deepCopy=FALSE) {
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
 #' @export
-h2o.getFrame <- function(frame_id, conn = h2o.getConnection()) {
-  if (is(frame_id, "H2OConnection")) {
-    temp <- frame_id
-    frame_id <- conn
-    conn <- temp
-  }
-  if( is.null(frame_id) ) return(NULL)
-  res <- .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
+h2o.getFrame <- function(frame_id) {
+  if( is.null(frame_id) ) stop("Expected frame id")
+  res <- .h2o.__remoteSend(h2o.getConnection(), paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
   cnames <- unlist(lapply(res$columns, function(c) c$label))
-  .h2o.parsedData(conn, frame_id, res$rows, length(res$columns), cnames )
+
+  mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
+  .newH2OFrame("H2OFrame", frame_id=frame_id, mutable=mutable)
 }
 
 #' Get an R reference to an H2O model
@@ -252,7 +249,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection()) {
   })
 
   # Convert ignored_columns/response_column to valid R x/y
-  cols <- colnames(h2o.getFrame(conn, parameters$training_frame))
+  cols <- colnames(h2o.getFrame(parameters$training_frame))
 
   parameters$x <- setdiff(cols, parameters$ignored_columns)
   allparams$x <- setdiff(cols, allparams$ignored_columns)
