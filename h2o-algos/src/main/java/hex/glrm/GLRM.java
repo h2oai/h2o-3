@@ -50,7 +50,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   @Override public Job<GLRMModel> trainModel() {
-    return start(new GLRMDriver(), 0);
+    return start(new GLRMDriver(), _parms._max_iterations);
   }
 
   @Override public ModelCategory[] can_build() {

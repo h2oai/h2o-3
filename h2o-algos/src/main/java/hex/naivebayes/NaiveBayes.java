@@ -36,7 +36,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
 
   @Override
   public Job<NaiveBayesModel> trainModel() {
-    return start(new NaiveBayesDriver(), 0);
+    return start(new NaiveBayesDriver(), 1);
   }
 
   @Override
@@ -200,6 +200,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
         model.update(_key);
+        update(1);
+
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);

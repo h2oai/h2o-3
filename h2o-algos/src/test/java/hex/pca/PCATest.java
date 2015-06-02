@@ -71,7 +71,7 @@ public class PCATest extends TestUtil {
         } finally {
           if( model != null ) {
             if (model._parms._keep_loading)
-              model._parms._loading_key.get().delete();
+              model._output._loading_key.get().delete();
             model.delete();
           }
         }
@@ -126,7 +126,7 @@ public class PCATest extends TestUtil {
       if (scoreR != null) scoreR.delete();
       if (model != null) {
         if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -181,7 +181,7 @@ public class PCATest extends TestUtil {
       if (scoreR != null) scoreR.delete();
       if (model != null) {
         if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -232,7 +232,7 @@ public class PCATest extends TestUtil {
       if( te  != null ) te .delete();
       if (model != null) {
         if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }

@@ -15,7 +15,8 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
     public boolean _keep_u = true;    // Should left singular vectors be saved in memory? (Only applies if _only_v = false)
-    public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
+    // public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
+    public String _u_name;
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
     public boolean _useAllFactorLevels = true;   // When expanding categoricals, should last level be dropped?
   }

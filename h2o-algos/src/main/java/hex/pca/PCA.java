@@ -36,7 +36,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public Job<PCAModel> trainModel() {
-    return start(new PCADriver(), 0);
+    return start(new PCADriver(), 1);
   }
 
   @Override
@@ -74,7 +74,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
+    // if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
+    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
+      _parms._loading_name = "PCALoading_" + Key.rand();
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
@@ -210,7 +212,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Calculate standard deviation and projection as well
         parms._only_v = false;
-        parms._u_key = _parms._loading_key;
+        parms._u_name = _parms._loading_name;
         parms._keep_u = _parms._keep_loading;
 
         SVDModel svd = null;

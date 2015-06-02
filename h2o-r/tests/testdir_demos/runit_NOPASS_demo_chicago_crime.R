@@ -104,7 +104,7 @@ test.chicago.demo <- function(conn) {
   cat("\n\tGBM:\n\t\ttrain AUC = ", gbmModel@model$training_metric@metrics$AUC)
   cat("\n\t\ttest AUC = ", gbmModel@model$validation_metric@metrics$AUC)
   cat("\n\tDL:\n\t\ttrain AUC = ", dlModel@model$training_metric@metrics$AUC)
-  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n)
+  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n")
   
   Log.info("Predict on new crime data")
   crimeExamples.r <- data.frame(Date = c("02/08/2015 11:43:58 PM", "02/08/2015 11:00:39 PM"),

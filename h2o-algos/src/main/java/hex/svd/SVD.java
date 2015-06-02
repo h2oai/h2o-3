@@ -37,7 +37,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   @Override public Job<SVDModel> trainModel() {
-    return start(new SVDDriver(), 0);
+    return start(new SVDDriver(), _parms._nv+1);
   }
 
   @Override public ModelCategory[] can_build() {
@@ -54,7 +54,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
+    // if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
+    if (_parms._u_name == null || _parms._u_name.length() == 0)
+      _parms._u_name = "SVDUMatrix_" + Key.rand();
     if (_parms._max_iterations < 1)
       error("_max_iterations", "max_iterations must be at least 1");
 
@@ -168,6 +170,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
         if(!_parms._only_v) {
+          model._output._d = new double[_parms._nv];
+          model._output._u_key = Key.make(_parms._u_name);
+
           // Append vecs for storing left singular vectors (U) if requested
           Vec[] vecs = new Vec[_train.numCols() + _parms._nv];
           Vec[] uvecs = new Vec[_parms._nv];
@@ -180,14 +185,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           assert c == uvecs.length;
 
           fr = new Frame(null, vecs);
-          u = new Frame(_parms._u_key, null, uvecs);
+          u = new Frame(model._output._u_key, null, uvecs);
           uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */ false);
           DKV.put(uinfo._key, uinfo);
           DKV.put(u._key, u);
 
           // Compute first singular value \sigma_1
-          model._output._d = new double[_parms._nv];
-          model._output._u_key = _parms._u_key;
           double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[0]);
           model._output._d[0] = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
         }
@@ -238,7 +241,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
         }
         model.update(self());
-        update(1);
         done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);

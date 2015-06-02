@@ -10,7 +10,7 @@ import water.api.ModelParametersSchema;
 public class SVDV3 extends ModelBuilderSchema<SVD,SVDV3,SVDV3.SVDParametersV3> {
 
   public static final class SVDParametersV3 extends ModelParametersSchema<SVDModel.SVDParameters, SVDParametersV3> {
-    static public String[] own_fields = new String[] { "transform", "nv", "max_iterations", "seed",  "keep_u", "u_key" };
+    static public String[] own_fields = new String[] { "transform", "nv", "max_iterations", "seed",  "keep_u", "u_name" };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
@@ -28,6 +28,6 @@ public class SVDV3 extends ModelBuilderSchema<SVD,SVDV3,SVDV3.SVDParametersV3> {
     public boolean keep_u;
 
     @API(help = "Frame key to save left singular vectors")
-    public KeyV3.FrameKeyV3 u_key;
+    public String u_name;
   }
 }
