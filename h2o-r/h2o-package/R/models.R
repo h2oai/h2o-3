@@ -188,19 +188,11 @@
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
  params$training_frame <- get("training_frame", parent.frame())
- tmp_train <- !.is.eval(params$training_frame)
- if( tmp_train ) {
-    temp_train_key <- params$training_frame@id
-    .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, frame_id = temp_train_key)
- }
+ if( !.is.eval(params$training_frame) ) .h2o.eval.frame(ast = params$training_frame@mutable$ast, frame_id =  params$training_frame@id)
 
  if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
-    tmp_valid <- !.is.eval(params$validation_frame)
-    if( tmp_valid ) {
-      temp_valid_key <- params$validation_frame@id
-      .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, frame_id = temp_valid_key)
-    }
+    if( !.is.eval(params$validation_frame) ) .h2o.eval.frame(ast = params$validation_frame@mutable$ast, frame_id = params$validation_frame@id)
   }
 
   h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
@@ -234,11 +226,7 @@ predict.H2OModel <- function(object, newdata, ...) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
 
-  tmp_data <- !.is.eval(newdata)
-  if( tmp_data ) {
-    key  <- newdata@id
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=newdata@mutable$ast, frame_id=key)
-  }
+  if( !.is.eval(newdata) ) .h2o.eval.frame(ast=newdata@mutable$ast, frame_id=newdata@id)
 
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@id)
@@ -333,8 +321,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
   }
   else if( !missingData ) {
-    mktmp <- !.is.eval(data)
-    if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@id)
+    if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
 
     parms <- list()
     parms[["model"]] <- model@model_id
@@ -1053,11 +1040,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  tmp <- !.is.eval(newdata)
-  if( tmp ) {
-    temp_key <- newdata@id
-    .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, frame_id = temp_key)
-  }
+  if( !.is.eval(newdata) ) .h2o.eval.frame(ast = newdata@mutable$ast, frame_id = newdata@id)
 
   url <- paste0("Predictions/models/",object@model_id, "/frames/", newdata@id)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")

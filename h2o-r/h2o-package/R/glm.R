@@ -168,11 +168,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
     if (nfolds > 1) stop("nfolds >1 not supported")
   #   parms$nfolds <- nfolds
   if(!missing(beta_constraints)){
-    delete <- !.is.eval(beta_constraints)
-    if (delete) {
-        temp_key <- beta_constraints@id
-        .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, frame_id = temp_key)
-    }
+    if (!.is.eval(beta_constraints)) .h2o.eval.frame(ast = beta_constraints@mutable$ast, frame_id = beta_constraints@id)
     parms$beta_constraints <- beta_constraints
   }
   m <- .h2o.createModel(training_frame@conn, 'glm', parms)

@@ -146,11 +146,7 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
 #' @export
 h2o.assign <- function(data, key, deepCopy=FALSE) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
-  t <- !.is.eval(data)
-  if( t ) {
-    tk <- data@id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = tk)
-  }
+  if( !.is.eval(data) ) .h2o.eval.frame(ast = data@mutable$ast, frame_id = data@id)
 
   .key.validate(key)
   if(key == data@id) stop("Destination key must differ from input frame ", data@id)

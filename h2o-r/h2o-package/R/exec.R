@@ -203,10 +203,21 @@ function(conn, ast) {
   ret
 }
 
+#'
+#' Check if key points to bonified object in H2O cluster.
+#'
+.is.eval <- function(H2OFrame) {
+  browser()
+  key <- H2OFrame@id
+  res <- .h2o.__remoteSend(H2OFrame@conn, paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
+  res$evaluated
+}
+
 .h2o.eval.frame<-
-function(conn, ast, frame_id=.key.make(conn, "rapids")) {
+function(ast, frame_id=.key.make(conn, "rapids")) {
   # Prepare the AST
   ast <- .visitor(ast)
+  conn <- h2o.getConnection()
 
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, id=frame_id, method = "POST")
@@ -234,7 +245,7 @@ function(x, scalarAsFrame = TRUE) {
   if (is.na(x@id)) {
     # Nothing to do
   } else if (!is.null(x@mutable$ast) && !x@mutable$computed) {
-    temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, frame_id = x@id)
+    temp <- .h2o.eval.frame(ast = x@mutable$ast, frame_id = x@id)
     x@mutable$computed <- T
     x@mutable$nrows    <- temp@mutable$nrows
     x@mutable$ncols    <- temp@mutable$ncols

@@ -272,11 +272,7 @@ h2o.qpfpc <- function(data, class.col, probs=NULL) {
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if (delete) {
-    temp_key <- data@id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
-  }
+  if (!.is.eval(data)) .h2o.eval.frame(ast = data@mutable$ast, frame_id = data@id)
 
   parms = list()
 
@@ -316,11 +312,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if( delete ) {
-    temp_key <- data@id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
-  }
+  if( !.is.eval(data) ) .h2o.eval.frame(ast = data@mutable$ast, frame_id = data@id)
 
   params <- list()
   params$dataset <- data@id
@@ -1919,10 +1911,7 @@ h2o.cbind <- function(...) {
 h2o.setLevel <- function(x, level) {
   if( missing(level) ) stop("`level` is missing")
   if( !is.character(level) ) stop("`level` must be a character")
-  mktmp <- !.is.eval(x)
-  if( mktmp ) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@id)
-  }
+  if( !.is.eval(x) )  .h2o.eval.frame(ast=x@mutable$ast, frame_id=x@id)
   .h2o.nary_frame_op("setLevel", x, level)
 }
 
@@ -2014,10 +2003,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
       stop("`data` must be of type H2OFrame")
 
   # handle the data
-  mktmp <- !.is.eval(data)
-  if( mktmp ) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@id)
-  }
+  if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
 
   # handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
@@ -2161,10 +2147,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #    stop("`data` must be of type H2OFrame")
 #
 #  # handle the data
-#  mktmp <- !.is.eval(data)
-#  if( mktmp ) {
-#    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@id)
-#  }
+#  if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
 #
 #  # handle the columns
 #  # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
@@ -2293,10 +2276,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
     stop("Column is categorical, method must not be mean or median.")
 
   # handle the data
-  mktmp <- !.is.eval(data)
-  if( mktmp ) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@id)
-  }
+  if( !.is.eval(data) ) .h2o.eval.frame(ast=data@mutable$ast, frame_id=data@id)
   gb.cols <- NULL
   if( !is.null(by) ) {
     if(is.character(by)) {
@@ -2501,8 +2481,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #' summary(apply(iris.hex, 1, sum))
 #' @export
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
-  mktmp <- !.is.eval(X)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=X@mutable$ast, frame_id=X@id)
+  if( !.is.eval(X) ) .h2o.eval.frame(ast=X@mutable$ast, frame_id=X@id)
   if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
   if( missing(FUN) ) stop("FUN must be an R function")
@@ -2554,8 +2533,7 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if(length(l) == 0L)  res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast)
   else                 res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 
-  mktmp <- !.is.eval(res)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=res@mutable$ast, frame_id=res@id)
+  if( !.is.eval(res) ) .h2o.eval.frame(ast=res@mutable$ast, frame_id=res@id)
   res
 })
 
@@ -2632,8 +2610,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #' @export
 h2o.hist <- function(x, breaks="Sturges") {
   if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
-  mktmp <- !.is.eval(x)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@id)
+  if( !.is.eval(x) ) .h2o.eval.frame(ast=x@mutable$ast, frame_id=x@id)
 
   if( is.character(breaks) ) {
     if( breaks=="Sturges" ) breaks <- "sturges"
