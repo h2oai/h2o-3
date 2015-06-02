@@ -236,7 +236,7 @@ public final class ParseDataset extends Job<Frame> {
         emaps[nodeId] = new EnumMapping(emap);
       }
       job.update(0,"Compressing data.");
-      fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(setup._number_columns),AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(avs.length),AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
@@ -539,7 +539,7 @@ public final class ParseDataset extends Job<Frame> {
       for(int i = 0; i < avs.length; ++i)
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._parse_type == ParserType.SVMLight
-        ?new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._number_columns), _parseSetup._chunk_size, avs)
+        ?new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs)
         :new FVecParseWriter(_vg, chunkOff, enums(_eKey,localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
     }
 
@@ -680,20 +680,20 @@ public final class ParseDataset extends Job<Frame> {
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
-        Categorical [] enums = enums(_eKey,_setup._number_columns);
         // Break out the input & output vectors before the parse loop
         FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout;
         Parser p;
         switch(_setup._parse_type) {
-        case ARFF:
-        case CSV:
-          p = new CsvParser(_setup);
-          dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), enums, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of enums
+          case ARFF:
+          case CSV:
+            Categorical [] enums = enums(_eKey,_setup._number_columns);
+            p = new CsvParser(_setup);
+            dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), enums, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of enums
           break;
         case SVMLight:
           p = new SVMLightParser(_setup);
-          dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, enums, _setup._chunk_size, avs);
+          dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
           break;
         default:
           throw H2O.unimpl();

@@ -12,8 +12,8 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   protected final Vec.VectorGroup _vg;
   int _vecIdStart;
 
-  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, Categorical[] enums, int chunkSize, AppendableVec[] avs){
-    super(vg, cidx, enums, null, chunkSize, avs);
+  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec[] avs){
+    super(vg, cidx, null, null, chunkSize, avs);
     _vg = vg;
     _vecIdStart = vecIdStart;
     _nvs = new NewChunk[avs.length];
@@ -53,7 +53,9 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
       for(int i = oldColCnt; i < newColCnt; ++i) {
         _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._espc,_vecs[0]._chunkOff);
         _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
+        _ctypes[i] = Vec.T_NUM;
       }
+      _nCols = newColCnt;
     }
   }
 }
