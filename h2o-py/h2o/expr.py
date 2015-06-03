@@ -547,6 +547,10 @@ class Expr(object):
         elif self._op == "trigamma": self._data = eval("[scipy.special.polygamma(1,x) for x in left._data]")
       else:                 pass
 
+    elif self._op == "year":
+      if left.is_local(): raise NotImplementedError
+      else:               pass
+
     elif self._op == "month":
       if left.is_local():   raise NotImplementedError
       else:                 pass

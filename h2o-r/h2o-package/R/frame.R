@@ -641,10 +641,6 @@ as.Date.H2OFrame <- function(x, format, ...) {
 
   expr = paste("as.Date(", paste(x@frame_id, deparse(eval(format, envir = parent.frame())), sep = ","), ")", sep = "")
   .h2o.nary_frame_op("as.Date", x, format, ...)
-  #res = .h2o.__exec2(x@h2o, expr)
-  #res <- .h2o.exec2(res$dest_key, h2o = x@h2o, res$dest_key)
-  #res@logic <- FALSE
-  #return(res)
 }
 
 #' Set the Time Zone on the H2O Cloud
