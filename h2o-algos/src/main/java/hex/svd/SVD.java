@@ -37,7 +37,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   @Override public Job<SVDModel> trainModel() {
-    return start(new SVDDriver(), 0);
+    return start(new SVDDriver(), _parms._nv+1);
   }
 
   @Override public ModelCategory[] can_build() {
@@ -54,12 +54,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
+    // if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
+    if (_parms._u_name == null || _parms._u_name.length() == 0)
+      _parms._u_name = "SVDUMatrix_" + Key.rand();
     if (_parms._max_iterations < 1)
       error("_max_iterations", "max_iterations must be at least 1");
 
     if(_train == null) return;
-    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
+    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
     if (_ncolExp > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
 
@@ -133,7 +135,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
+        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -153,13 +155,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         double[][] gram = tsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
-        double[] sigma = new double[_parms._nv];
-        double[][] rsvec = new double[_parms._nv][gram.length];
         assert gram.length == _ncolExp;
+        model._output._v = new double[_parms._nv][gram.length];
+        model.update(self());
+        update(1);
 
         // 1) Run one iteration of power method
         // 1a) Initialize right singular vector v_1
-        rsvec[0] = powerLoop(gram, _parms._seed);
+        model._output._v[0] = powerLoop(gram, _parms._seed);
 
         // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
         double[][] ivv_sum = new double[gram.length][gram.length];
@@ -167,6 +170,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
         if(!_parms._only_v) {
+          model._output._d = new double[_parms._nv];
+          model._output._u_key = Key.make(_parms._u_name);
+
           // Append vecs for storing left singular vectors (U) if requested
           Vec[] vecs = new Vec[_train.numCols() + _parms._nv];
           Vec[] uvecs = new Vec[_parms._nv];
@@ -179,36 +185,38 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           assert c == uvecs.length;
 
           fr = new Frame(null, vecs);
-          u = new Frame(_parms._u_key, null, uvecs);
+          u = new Frame(model._output._u_key, null, uvecs);
           uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */ false);
           DKV.put(uinfo._key, uinfo);
           DKV.put(u._key, u);
 
           // Compute first singular value \sigma_1
-          double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, rsvec[0]);
-          sigma[0] = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
+          double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[0]);
+          model._output._d[0] = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
         }
+        model.update(self()); // Update model in K/V store
+        update(1);            // One unit of work
 
         // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
-        double[][] vv = ArrayUtils.outerProduct(rsvec[0], rsvec[0]);
+        double[][] vv = ArrayUtils.outerProduct(model._output._v[0], model._output._v[0]);
         ivv_sum = sub_symm(ivv_sum, vv);
         double[][] gram_update = ArrayUtils.multArrArr(ArrayUtils.multArrArr(ivv_sum, gram), ivv_sum);
 
         for(int k = 1; k < _parms._nv; k++) {
           // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
-          rsvec[k] = powerLoop(gram_update, _parms._seed);
+          model._output._v[k] = powerLoop(gram_update, _parms._seed);
 
           // 3) Residual data A_k = A - \sum_{i=1}^k \sigma_i u_iv_i' = A - \sum_{i=1}^k Av_iv_i' = A(I - \sum_{i=1}^k v_iv_i')
           // 3a) Compute \sigma_k = ||A_{k-1}v_k|| and u_k = A_{k-1}v_k/\sigma_k
           if(!_parms._only_v) {
-            double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, rsvec[k]);
-            // sigma[k] = new CalcSigma(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
-            sigma[k] = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, sigma[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
+            double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
+            // model._output._d[k] = new CalcSigma(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
+            model._output._d[k] = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, model._output._d[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
           // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
-          vv = ArrayUtils.outerProduct(rsvec[k], rsvec[k]);
+          vv = ArrayUtils.outerProduct(model._output._v[k], model._output._v[k]);
           ivv_sum = sub_symm(ivv_sum, vv);
           double[][] lmat = ArrayUtils.multArrArr(ivv_sum, gram);
           gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
@@ -217,23 +225,19 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           update(1);            // One unit of work
         }
 
-        // 4) Save solution to model output
-        model._output._v = ArrayUtils.transpose(rsvec);
+        // 4) Normalize last left singular vector
+        model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
         if(!_parms._only_v) {
-          model._output._d = sigma;
-
           if(_parms._keep_u) {
             final int idx = _parms._nv - 1;
             final int ncols = _train.numCols();
-            final double sigma_last = sigma[_parms._nv - 1];
+            final double sigma_last = model._output._d[_parms._nv - 1];
 
-            // Normalize last left singular vector
             new MRTask() {
               @Override public void map(Chunk cs[]) {
                 div(chk_u(cs, idx, ncols), sigma_last);
               }
             }.doAll(uinfo._adaptedFrame);
-            model._output._u_key = _parms._u_key;
           }
         }
         model.update(self());
@@ -282,8 +286,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       for (int j = 0; j < dinfo._cats; j++) {
         int level = (int)cs[j].atd(row);
         if (Double.isNaN(level)) continue;    // Skip training entries that are NaN
-        if (dinfo._catOffsets[j]+level >= dinfo._catOffsets[j+1]) continue;   // Skip additional factor when useAllFactorLevels = false
-        sum += vec[dinfo._catOffsets[j]+level];
+        int c = dinfo.getCategoricalId(j, level);
+        if (c < 0) continue;    // Skip factor levels out of range
+        sum += vec[c];
       }
 
       // Numeric cols normalized before multiplying through
@@ -320,7 +325,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     double _sval;           // Output: Singular value (\sigma_1)
 
     CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
-      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
+      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
       _dinfo = dinfo;
       _parms = parms;
       _svec = svec;
@@ -356,7 +361,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     double _sval;     // Output: Singular value (\sigma_k)
 
     CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
-      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
+      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
       assert k >= 1 : "Index of singular vector k must be at least 1";
       _dinfo = dinfo;
       _parms = parms;

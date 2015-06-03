@@ -1145,6 +1145,20 @@ class H2OVec:
     self._expr.data().append(__x__)
     self._expr.set_len(self._expr.get_len() + 1)
 
+  def as_date(self,format):
+    """
+    Inplace update the column to millis since the epoch.
+    :param format: The date time format string
+    :return: None
+    """
+    if not isinstance(format, str):
+      raise ValueError("format must be a string")
+
+    if self.key() == "": self._expr.eager()
+    expr = "(as.Date '" + self.key() + '\' "{}"'.format(format) + ")"
+    res = h2o.rapids(expr)
+    return H2OVec(self._name, Expr(op=res["vec_ids"][0]["name"], length=res["num_rows"]))
+
   # H2OVec non-mutating cbind
   def cbind(self,data):
     """

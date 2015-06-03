@@ -493,7 +493,7 @@ class ASTasDate extends ASTUniPrefixOp {
     final String[] dom  = fr.anyVec().domain();
     final boolean isStr = dom==null && fr.anyVec().isString();
     if( !isStr )
-      assert dom!=null : "toDate error: domain is null, but vec is not String";
+      assert dom!=null : "as.Date error: domain is null, but vec is not String";
 
     Frame fr2 = new MRTask() {
       private transient DateTimeFormatter _fmt;
@@ -4335,7 +4335,6 @@ class ASTSetTimeZone extends ASTOp {
     new MRTask() {
       @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
     }.doAllNodes();
-    e.pushAry(null);
   }
 }
 

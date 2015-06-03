@@ -12,7 +12,7 @@ Copy and email the logs to support@h2o.ai or submit them to h2ostream@googlegrou
 - If you are using Hadoop and the job is not running, view the logs by using the `yarn logs -applicationId` command. When you start an H2O instance, the complete command displays in the output: 
 
 ```
-	jessica@mr-0x8:~/h2o-3.1.0.3008-cdh5.2$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName
+	jessica@mr-0x8:~/h2o-3.1.0.3008-cdh5.2$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 5g -output hdfsOutputDirName
 Determining driver host interface for mapper->driver callback...
     [Possible callback IP address: 172.16.2.178]
     [Possible callback IP address: 127.0.0.1]

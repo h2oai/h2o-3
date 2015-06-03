@@ -11,7 +11,6 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -61,7 +60,7 @@ public class SVDTest extends TestUtil {
       if (train != null) train.delete();
       if (model != null) {
         if (model._parms._keep_u)
-          model._parms._u_key.get().delete();
+          model._output._u_key.get().delete();
         model.delete();
       }
     }
@@ -192,7 +191,7 @@ public class SVDTest extends TestUtil {
       } finally {
         if (train != null) train.delete();
         if (model != null) {
-          model._parms._u_key.get().delete();
+          model._output._u_key.get().delete();
           model.delete();
         }
       }
@@ -216,7 +215,7 @@ public class SVDTest extends TestUtil {
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 7;
-      parms._useAllFactorLevels = true;
+      parms._use_all_factor_levels = true;
       parms._only_v = false;
 
       SVD job = new SVD(parms);
@@ -239,7 +238,7 @@ public class SVDTest extends TestUtil {
       if (score != null) score.delete();
       if (model != null) {
         if (model._parms._keep_u)
-          model._parms._u_key.get().delete();
+          model._output._u_key.get().delete();
         model.delete();
       }
     }

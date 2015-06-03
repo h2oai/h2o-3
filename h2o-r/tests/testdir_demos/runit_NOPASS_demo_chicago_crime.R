@@ -17,8 +17,7 @@ locate_source <- function(s) {
 # it into 8 columns: "Day", "Month", "Year", "WeekNum", "WeekDay", "Weekend",
 # "Season", "HourOfDay"
 ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
-  # BUG: Setting time zone causes an NPE. See PUBDEV-1234.
-  # if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
+  if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
   d <- as.Date(col, format = datePattern)
   ds <- c(Day = h2o.day(d), Month = h2o.month(d), Year = h2o.year(d), WeekNum = h2o.week(d),
     WeekDay = h2o.dayOfWeek(d), HourOfDay = h2o.hour(d))
@@ -104,7 +103,7 @@ test.chicago.demo <- function(conn) {
   cat("\n\tGBM:\n\t\ttrain AUC = ", gbmModel@model$training_metric@metrics$AUC)
   cat("\n\t\ttest AUC = ", gbmModel@model$validation_metric@metrics$AUC)
   cat("\n\tDL:\n\t\ttrain AUC = ", dlModel@model$training_metric@metrics$AUC)
-  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n)
+  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n")
   
   Log.info("Predict on new crime data")
   crimeExamples.r <- data.frame(Date = c("02/08/2015 11:43:58 PM", "02/08/2015 11:00:39 PM"),
