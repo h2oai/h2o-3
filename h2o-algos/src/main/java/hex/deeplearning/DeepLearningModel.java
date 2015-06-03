@@ -407,6 +407,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     public boolean _export_weights_and_biases = false;
 
+    public boolean _elastic_averaging = true;
+    public double _elastic_averaging_moving_rate = 0.999;
+
     public enum MissingValuesHandling {
       Skip, MeanImputation
     }
@@ -910,6 +913,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public final DeepLearningParameters get_params() { return parameters; }
     public final void set_params(DeepLearningParameters p) { parameters = (DeepLearningParameters) p.clone(); }
 
+    double mean_rate() { return MathUtils.sum(mean_rate)/mean_rate.length; }
+
     private float[] mean_rate;
 
     private float[] rms_rate;
@@ -1218,6 +1223,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
       add_processed_local(other.get_processed_local());
     }
+    protected void mult(float N) { div(1f/N); }
     protected void div(float N) {
       for (int i=0; i<dense_row_weights.length; ++i)
         ArrayUtils.div(get_weights(i).raw(), N);
@@ -1405,8 +1411,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       cs *= (long)(9234.1343*ArrayUtils.sum(rms_bias));
       cs ^= (long)(9723.9734*ArrayUtils.sum(mean_weight));
       cs *= (long)(9234.1783*ArrayUtils.sum(rms_weight));
-      cs ^= (long)(4273.2344*ArrayUtils.sum(mean_rate));
-      cs *= (long)(3378.1999*ArrayUtils.sum(rms_rate));
+      cs ^= (long)(4273.2344*(Math.E+ArrayUtils.sum(mean_rate)));
+      cs *= (long)(3378.1999*(Math.PI+ArrayUtils.sum(rms_rate)));
       return cs;
     }
   }
