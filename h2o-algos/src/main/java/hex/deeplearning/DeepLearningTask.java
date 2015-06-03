@@ -19,6 +19,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _localmodel; //per-node state (to be reduced)
 
   private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _sharedmodel; //input/output
+  final private Key _sharedmodelkey = Key.make(H2O.SELF);
+
   // OUTPUT
   final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() {
     assert(_sharedmodel != null);
@@ -29,7 +31,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   transient Random _dropout_rng;
 
   int _chunk_node_count = 1;
-  boolean consensusADMM = false;
 
   public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo inputModel, float fraction){this(jobKey, inputModel,fraction,null);}
   private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo inputModel, float fraction, H2OCountedCompleter cmp){
@@ -37,6 +38,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
+    if (model_info().get_params()._elastic_averaging) DKV.put(_sharedmodelkey, _sharedmodel);
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
   }
@@ -44,20 +46,21 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   // transfer ownership from input to output (which will be worked on)
   @Override protected void setupLocal(){
     super.setupLocal();
-    if (consensusADMM) {
+    if (model_info().get_params()._elastic_averaging) {
       //Load my local model from DKV, to continue training
       _localmodel = DKV.getGet(_sharedmodel.localModelInfoKey(H2O.SELF));
       if (_localmodel != null) {
         //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
         _localmodel.set_params(_sharedmodel.get_params());
-
-        //Set the number of trained samples according to global model
         _localmodel.set_processed_global(_sharedmodel.get_processed_global()); //TODO
-        _localmodel.set_processed_local(0); //TODO
       }
+      else {
+        _localmodel = (DeepLearningModel.DeepLearningModelInfo)_sharedmodel.clone();
+      }
+    } else {
+      _localmodel = _sharedmodel;
     }
-    // The first time around (or no ADMM): There's no local model yet, just use the input model
-    if (_localmodel == null) _localmodel = _sharedmodel;
+    _localmodel.set_processed_local(0); //TODO: CHECK
   }
 
   // create local workspace (neurons)
@@ -84,7 +87,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   @Override
   protected void postLocal() {
-    if (consensusADMM) {
+    if (model_info().get_params()._elastic_averaging) {
       // store local model, as it will be reduced in the following, and hence corrupted
       DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel);
       _sharedmodel = null; //don't want to accidentally ship & reduce the consensus model
@@ -113,7 +116,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   static long _lastWarn;
   static long _warnCount;
   @Override protected void postGlobal(){
-    if (H2O.CLOUD.size() > 1 && !_localmodel.get_params()._replicate_training_data) {
+    DeepLearningModel.DeepLearningParameters dlp = _localmodel.get_params();
+    if (H2O.CLOUD.size() > 1 && !dlp._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
 //        Log.info("Synchronizing across " + _chunk_node_count + " H2O node(s).");
@@ -123,20 +127,31 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _warnCount++;
       }
     }
-    if (!_localmodel.get_params()._replicate_training_data && H2O.CLOUD.size() == 1) {
+    if (!dlp._replicate_training_data || H2O.CLOUD.size() == 1) {
       _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
       _localmodel.set_processed_local(0l);
       if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
     }
 
-    if (consensusADMM) {
-//        assert(_localmodel.get_processed_global() > _sharedmodel.get_processed_global());
-//        _sharedmodel.div(1.f/0.9f); //multiply by 0.9 - time average
-//        _localmodel.div(10f); //add 1/10 of the averaged per-node models
-//        _sharedmodel.add(_localmodel);
-//        _localmodel = null; //each node needs to pull its local model again from DKV
-      _sharedmodel = (DeepLearningModel.DeepLearningModelInfo)_localmodel.clone(); //FIXME: consensus is just the average model for now
+    if (dlp._elastic_averaging) {
+      //double alpha = _localmodel.mean_rate() * _localmodel.get_params()._elastic_averaging_moving_rate;
+      final double alpha = _localmodel.get_params()._elastic_averaging_moving_rate;
+      final double p = H2O.CLOUD.size();
+      final float pa = (float)(p*alpha);
+
+      // Update equation (6) of arXiv:1412.6651v5
+      DeepLearningModel.DeepLearningModelInfo avg = _localmodel; //this just got averaged across nodes
+      avg.mult(pa);
+
+      // get consensus time average model
+      _sharedmodel = DKV.getGet(_sharedmodelkey);
+      _sharedmodel.mult(1 - pa);
+      _sharedmodel.add(avg);
+      _sharedmodel.set_processed_global(_localmodel.get_processed_global());
+      _sharedmodel.set_processed_local(0);
+      DKV.put(_sharedmodelkey, _sharedmodel);
       DKV.put(_sharedmodel.data_info());
+      _localmodel = null;
     }
     else {
       _sharedmodel = _localmodel;
@@ -218,8 +233,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       } else {
         if (consensus_minfo != null) {
           for (int i = 1; i < neurons.length; i++) {
-            neurons[i]._wConsensus = consensus_minfo.get_weights(i - 1);
-            neurons[i]._bConsensus = consensus_minfo.get_biases(i - 1);
+            neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
+            neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
           }
         }
         if (minfo._classification) {

@@ -535,5 +535,11 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     @API(help = "Whether to export Neural Network weights and biases to H2O Frames", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean export_weights_and_biases;
+
+    @API(help = "Enable elastic averaging - can improve model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
+    public boolean elastic_averaging;
+
+    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+    public double elastic_averaging_moving_rate;
   }
 }

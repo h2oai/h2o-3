@@ -864,7 +864,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   // This describes the model, together with the parameters
   // This will be shared: one per node
   public static class DeepLearningModelInfo extends Iced {
-    public Key localModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); }
+    public Key localModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); } //FIXME: make node-local
     public TwoDimTable summaryTable;
     private DataInfo data_info;
     public DataInfo data_info() { return data_info; }

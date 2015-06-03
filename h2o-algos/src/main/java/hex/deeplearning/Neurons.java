@@ -11,7 +11,6 @@ import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.RandomUtils;
 
-import java.awt.geom.RoundRectangle2D;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -64,9 +63,9 @@ public abstract class Neurons {
   public Neurons _input;
   DeepLearningModel.DeepLearningModelInfo _minfo; //reference to shared model info
   public Matrix _w;
-  public Matrix _wConsensus;
+  public Matrix _wEA; //weights for elastic averaging
   public DenseVector _b;
-  public DenseVector _bConsensus;
+  public DenseVector _bEA; //bias for elastic averaging
 
   /**
    * References for momentum training
@@ -272,7 +271,8 @@ public abstract class Neurons {
       //this is the actual gradient dE/dw
       final int w = idx + col;
       float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
-      if (_wConsensus!=null) grad -= 0.001f*(_wConsensus.raw()[w] -_w.raw()[w]); //FIXME: Make regularization strength a parameter, also use _bConsensus
+      if (_wEA !=null) grad += _minfo.get_params()._elastic_averaging_moving_rate/1e-2 *(_wEA.raw()[w] -_w.raw()[w]);
+      //FIXME: compute rate
 
       if (have_ada) {
         final float grad2 = grad*grad;
@@ -341,7 +341,8 @@ public abstract class Neurons {
       if (_shortcut && partial_grad == 0f) continue;
 
       //this is the actual gradient dE/dw
-      final float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
+      float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
+      if (_wEA !=null) throw H2O.unimpl("elastic averaging is not implemented for sparse input handling with column-major matrix format.");
       if (have_ada) {
         assert(!have_momenta);
         float brate = computeAdaDeltaRateForWeight(grad, row, col, adaxg, rho, eps);
@@ -414,7 +415,8 @@ public abstract class Neurons {
       assert (previous_a != 0); //only iterate over non-zeros!
 
       //this is the actual gradient dE/dw
-      final float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
+      float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
+      if (_wEA !=null) throw H2O.unimpl("elastic averaging is not implemented for sparse input handling.");
       final int w = idx + col;
 
       if (have_ada) {
