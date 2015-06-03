@@ -11,10 +11,7 @@ When you launch H2O on Hadoop using the `hadoop jar` command, YARN allocates the
 
 Occasionally, YARN may reject a job request. This usually occurs because either there is not enough memory to launch the job or because of an incorrect configuration. 
 
-If YARN rejects the job request, try launching the job with less memory to see if that is the cause of the failure. Specify smaller values (we recommend `2`) for `-mapperXmx` and `-nodes` to confirm that H2O can launch successfully:
-
-`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 2g -output hdfsOutputDirName`
-
+If YARN rejects the job request, try launching the job with less memory to see if that is the cause of the failure. Specify smaller values for `-mapperXmx` (we recommend a minimum of `2g`) and `-nodes` (start with `1`) to confirm that H2O can launch successfully.
 
 To resolve configuration issues, adjust the maximum memory that YARN will allow when launching each mapper. If the cluster manager settings are configured for the default maximum memory size but the memory required for the request exceeds that amount, YARN will not launch and H2O will time out. If you are using the default configuration, change the configuration settings in your cluster manager to specify memory allocation when launching mapper tasks. To calculate the amount of memory required for a successful launch, use the following formula: 
 
