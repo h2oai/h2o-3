@@ -257,6 +257,26 @@ There are two ways to do this:
 
 ---
 
+**I received the following error while running Sparkling Water using multiple nodes, but not when using a single node - what should I do?**
+
+```
+onExCompletion for water.parser.ParseDataset$MultiFileParseTask@31cd4150
+water.DException$DistributedException: from /10.23.36.177:54321; by class water.parser.ParseDataset$MultiFileParseTask; class water.DException$DistributedException: from /10.23.36.177:54325; by class water.parser.ParseDataset$MultiFileParseTask; class water.DException$DistributedException: from /10.23.36.178:54325; by class water.parser.ParseDataset$MultiFileParseTask$DistributedParse; class java.lang.NullPointerException: null
+	at water.persist.PersistManager.load(PersistManager.java:141)
+	at water.Value.loadPersist(Value.java:226)
+	at water.Value.memOrLoad(Value.java:123)
+	at water.Value.get(Value.java:137)
+	at water.fvec.Vec.chunkForChunkIdx(Vec.java:794)
+	at water.fvec.ByteVec.chunkForChunkIdx(ByteVec.java:18)
+	at water.fvec.ByteVec.chunkForChunkIdx(ByteVec.java:14)
+	at water.MRTask.compute2(MRTask.java:426)
+	at water.MRTask.compute2(MRTask.java:398)
+```
+
+This error output displays if the input file is not present on all nodes. Because of the way that Sparkling Water distributes data, the input file is required on all nodes (including remote), not just the primary node. Make sure there is a copy of the input file on all the nodes, then try again. 
+
+---
+
 ##R
 
 **How can I install the H2O R package if I am having permissions problems?**
