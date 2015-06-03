@@ -226,7 +226,7 @@ public class Job<T extends Keyed> extends Keyed {
     assert resultingState != JobState.RUNNING;
     if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
     if( _state == resultingState ) return; // No change if already done
-    _finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
+    final float finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
     final long done = System.currentTimeMillis();
     // Atomically flag the job as canceled
     new TAtomic<Job>() {
@@ -238,6 +238,7 @@ public class Job<T extends Keyed> extends Keyed {
         old._exception = msg;
         old._state = resultingState;
         old._end_time = done;
+        old._finalProgress = finalProgress;
         return old;
       }
       // Run the onCancelled code synchronously, right now
@@ -249,6 +250,7 @@ public class Job<T extends Keyed> extends Keyed {
       _exception = msg;
       _state = resultingState;
       _end_time = done;
+      _finalProgress = finalProgress;
     }
     // Remove on cancel/fail/done, only used whilst Job is Running
     if (deleteProgressKey())
