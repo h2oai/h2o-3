@@ -17,8 +17,7 @@ locate_source <- function(s) {
 # it into 8 columns: "Day", "Month", "Year", "WeekNum", "WeekDay", "Weekend",
 # "Season", "HourOfDay"
 ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
-  # BUG: Setting time zone causes an NPE. See PUBDEV-1234.
-  # if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
+  if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
   d <- as.Date(col, format = datePattern)
   ds <- c(Day = h2o.day(d), Month = h2o.month(d), Year = h2o.year(d), WeekNum = h2o.week(d),
     WeekDay = h2o.dayOfWeek(d), HourOfDay = h2o.hour(d))
