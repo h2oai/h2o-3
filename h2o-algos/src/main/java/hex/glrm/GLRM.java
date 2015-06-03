@@ -201,7 +201,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
-        parms._useAllFactorLevels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
+        parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;

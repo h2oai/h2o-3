@@ -21,7 +21,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // public Key<Frame> _loading_key;
     public String _loading_name;
     public boolean _keep_loading = true;
-    public boolean _useAllFactorLevels = false;   // When expanding categoricals, should last level be kept or dropped?
+    public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
   }
 
   public static class PCAOutput extends Model.Output {

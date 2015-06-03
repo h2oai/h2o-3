@@ -11,7 +11,6 @@ import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -82,7 +81,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
-    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
+    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
 
     // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
     int k_min = (int)Math.min(_ncolExp, _train.numRows());
@@ -156,7 +155,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       double totVar = 0;
       double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
       for (int i = 0; i < sdev.length; i++) {
-        sdev[i] = dfcorr * svd._output._d[i];
+        // sdev[i] = dfcorr * svd._output._d[i];
+        sdev[i] = svd._output._d[i] / Math.sqrt((double)_train.numRows() - 1.0);
         vars[i] = sdev[i] * sdev[i];
         totVar += vars[i];
       }
@@ -204,7 +204,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
-        parms._useAllFactorLevels = _parms._useAllFactorLevels;
+        parms._use_all_factor_levels = _parms._use_all_factor_levels;
         parms._transform = _parms._transform;
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
@@ -227,7 +227,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Recover PCA results from SVD model
         computeStatsFillModel(model, svd);
-        model.update(_key);
+        model.update(self());
         update(1);
 
         done();

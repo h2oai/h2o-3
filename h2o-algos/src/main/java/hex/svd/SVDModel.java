@@ -18,7 +18,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
     public String _u_name;
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
-    public boolean _useAllFactorLevels = true;   // When expanding categoricals, should last level be dropped?
+    public boolean _use_all_factor_levels = true;   // When expanding categoricals, should first level be dropped?
   }
 
   public static class SVDOutput extends Model.Output {

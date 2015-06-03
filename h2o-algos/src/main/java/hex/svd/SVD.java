@@ -61,7 +61,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_max_iterations", "max_iterations must be at least 1");
 
     if(_train == null) return;
-    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
+    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
     if (_ncolExp > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
 
@@ -135,7 +135,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._useAllFactorLevels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
+        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -286,8 +286,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       for (int j = 0; j < dinfo._cats; j++) {
         int level = (int)cs[j].atd(row);
         if (Double.isNaN(level)) continue;    // Skip training entries that are NaN
-        if (dinfo._catOffsets[j]+level >= dinfo._catOffsets[j+1]) continue;   // Skip additional factor when useAllFactorLevels = false
-        sum += vec[dinfo._catOffsets[j]+level];
+        int c = dinfo.getCategoricalId(j, level);
+        if (c < 0) continue;    // Skip factor levels out of range
+        sum += vec[c];
       }
 
       // Numeric cols normalized before multiplying through
@@ -324,7 +325,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     double _sval;           // Output: Singular value (\sigma_1)
 
     CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
-      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
+      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
       _dinfo = dinfo;
       _parms = parms;
       _svec = svec;
@@ -360,7 +361,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     double _sval;     // Output: Singular value (\sigma_k)
 
     CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
-      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._useAllFactorLevels, false);
+      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
       assert k >= 1 : "Index of singular vector k must be at least 1";
       _dinfo = dinfo;
       _parms = parms;

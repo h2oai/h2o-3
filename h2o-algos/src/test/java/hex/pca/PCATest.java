@@ -9,7 +9,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.concurrent.ExecutionException;
 
@@ -152,7 +151,7 @@ public class PCATest extends TestUtil {
       parms._train = train._key;
       parms._k = 7;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._useAllFactorLevels = true;
+      parms._use_all_factor_levels = true;
 
       try {
         job = new PCA(parms);
