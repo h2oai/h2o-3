@@ -640,20 +640,16 @@ as.Date.H2OFrame <- function(x, format, ...) {
 #' Set the Time Zone on the H2O Cloud
 #'
 #' @param tz The desired timezone.
-#' @param conn An H2OConnection object.
 #' @export
-h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
+h2o.setTimezone <- function(tz) {
   expr <- paste0("(setTimeZone \"", tz, "\"")
-  ret <- .h2o.raw_expr_op(expr,  key = .key.make("setTimeZone"))
-  h2o.rm(ret@id)
-  ret
+  invisible(.h2o.raw_expr_op(expr))
 }
 
 #' Get the Time Zone on the H2O Cloud
 #'
-#' @param conn An H2OConnection object.
 #' @export
-h2o.getTimezone <- function(conn=h2o.getConnection()) {
+h2o.getTimezone <- function() {
   ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OFrame("H2OFrame", frame_id = .key.make("getTimeZone"), mutable = mutable)

@@ -52,9 +52,9 @@ public class Env {
     // in this opcode will get deleted as the opcode exits - even if they are
     // shared in the returning output Frame.
     private Frame _ret_fr;      // Optionally return a Frame on stack scope exit
-    public ValFrame returning( ValFrame fr ) {
-      assert _ret_fr == null;
-      _ret_fr = fr._fr;
+    public <V extends Val> V returning( V fr ) {
+      if( fr instanceof ValFrame )
+        _ret_fr = ((ValFrame)fr)._fr;
       return fr;
     }
 

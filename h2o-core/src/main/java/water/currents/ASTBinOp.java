@@ -14,7 +14,7 @@ abstract class ASTBinOp extends ASTPrim {
     try (Env.StackHelp stk = env.stk()) {
         Val left = stk.track(asts[1].exec(env));
         Val rite = stk.track(asts[2].exec(env));
-        return prim_apply(left,rite);
+        return stk.returning(prim_apply(left,rite));
       }
   }
 

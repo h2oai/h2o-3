@@ -69,6 +69,9 @@ abstract public class AST {
     init(new ASTColSlice());
     init(new ASTRowSlice());
 
+    // Cluster management
+    init(new ASTLs());
+
     // Model Calls
     init(new ASTQtile());
   }

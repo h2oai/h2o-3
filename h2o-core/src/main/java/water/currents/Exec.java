@@ -13,6 +13,7 @@ import water.fvec.Vec;
  *     '('   a nested function application expression ')
  *     '{'   a nested function definition  expression '}'
  *     '#'   a double: attached_token
+ *     '['   a numeric list expression, till ']'
  *     '%'   an ID: attached_token
  *     '"'   a String (double quote): attached_token
  *     "'"   a String (single quote): attached_token
@@ -21,11 +22,12 @@ import water.fvec.Vec;
  *
  * In the above, attached_token signals that the special char has extra chars
  * that must be parsed separately.  These are variable names (in the case of
- * %), doubles (in the case of #), or Strings (in the case of ' and ").
+ * %), doubles (in the case of #), Strings (in the case of ' and "), or number
+ * lists (in the case of '[' till ']')
  * 
  * Variables are lexically scoped inside 'let' expressions or at the top-level
  * looked-up in the DKV directly (and must refer to a known type that is valid
- * on the execution stack: Vecs)
+ * on the execution stack)
  */
 public class Exec {
   final String _str;            // Statement to parse and execute
@@ -81,7 +83,7 @@ public class Exec {
     }    
   }
 
-  char peek() { return _str.charAt(_x); } // peek ahead
+  char peek() { return _x < _str.length() ? _str.charAt(_x) : ' '; } // peek ahead
   // Peek, and throw if not found an expected character
   void xpeek(char c) {
     if( peek() != c )

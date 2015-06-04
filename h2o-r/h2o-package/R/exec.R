@@ -137,8 +137,7 @@ function(op, ..., .args = list(...)) {
 
 .h2o.raw_expr_op<-
 function(expr, ..., .args=list(...), key = .key.make("raw_expr_op")) {
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=expr, method = "POST")
-  h2o.getFrame(key)
+  invisible(.h2o.__remoteSend(.h2o.__RAPIDS, ast=expr, id=key, method = "POST"))
 }
 
 #'
@@ -206,10 +205,8 @@ function(ast, frame_id) {
   # Process the results
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-
-  res <- h2o.getFrame(frame_id)
   gc()
-  res
+  h2o.getFrame(frame_id)
 }
 
 #'

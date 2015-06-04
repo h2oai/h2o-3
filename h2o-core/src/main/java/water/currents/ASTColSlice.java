@@ -8,8 +8,7 @@ class ASTColSlice extends ASTPrim {
   @Override String str() { return "cols" ; }
   @Override Val apply( Env env, AST asts[] ) {
     try (Env.StackHelp stk = env.stk()) {
-        Val vfr  = stk.track(asts[1].exec(env));
-        Frame fr = vfr.getFrame();
+        Frame fr = stk.track(asts[1].exec(env)).getFrame();
         Frame fr2 = new Frame();
         if( asts[2] instanceof ASTNumList ) {
           // Work down the list of columns, picking out the keepers
@@ -35,8 +34,7 @@ class ASTRowSlice extends ASTPrim {
   @Override String str() { return "rows" ; }
   @Override Val apply( Env env, AST asts[] ) {
     try (Env.StackHelp stk = env.stk()) {
-        Val vfr  = stk.track(asts[1].exec(env));
-        Frame fr = vfr.getFrame();
+        Frame fr = stk.track(asts[1].exec(env)).getFrame();
         long[] rows = null;
         if( asts[2] instanceof ASTNumList ) {
           double[] drows = ((ASTNumList)asts[2]).expand();

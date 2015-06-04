@@ -1,8 +1,6 @@
 package water.api;
 
-import water.DKV;
-import water.H2O;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
 import water.currents.Val;
 import water.util.Log;
@@ -35,6 +33,12 @@ class RapidsHandler extends Handler {
         throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
       }
       Key k = Key.make(rapids.id);
+      // Smart delete any prior top-level result
+      Iced i = DKV.getGet(k);
+      if( i instanceof Lockable) ((Lockable)i).delete();
+      else if( i instanceof Keyed ) ((Keyed)i).remove();
+      else if( i != null ) throw new IllegalArgumentException("Attempting to overright an unexpected key");
+      // Install new top-level result
       DKV.put(fr=new Frame(k,fr._names,fr.vecs()));
       return new RapidsFrameV3(fr); // Return the Frame key, not the entire frame
     default:  throw H2O.fail();

@@ -45,9 +45,7 @@ h2o.ls <- function() {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OFrame("H2OFrame", frame_id = .key.make("ls"), mutable = mutable)
-  ret <- as.data.frame(fr)
-  h2o.rm(fr@id)
-  ret
+  as.data.frame(fr)
 }
 
 #'
@@ -135,22 +133,14 @@ h2o.rm <- function(ids) {
 #' @param deepCopy Should it do a deepCopy of the frame. Default is FALSE.
 #'
 #' @export
-h2o.assign <- function(data, key, deepCopy=FALSE) {
+h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   .h2o.eval.frame(data)
 
   .key.validate(key)
   if(key == data@id) stop("Destination key must differ from input frame ", data@id)
-  expr <- NULL
-  if( deepCopy ) {
-    expr <- paste0("(= !", key, " %", data@id, ")")   # this does a deepcopy!!
-    res <- .h2o.raw_expr_op(expr, data, key=key)
-    .h2o.eval.frame(res)
-  } else {
-    expr <- paste0("(, (gput '", key, "' %", data@id, ") (removeframe %",data@id,"))")   # removes the original frame!
-    res <- .h2o.raw_expr_op(expr, data, key=key)
-    .h2o.eval.frame(res)
-  }
+  .h2o.raw_expr_op(data@id, key=key)
+  h2o.getFrame(key)
 }
 
 #'
