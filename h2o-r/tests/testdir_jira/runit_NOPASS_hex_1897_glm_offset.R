@@ -8,14 +8,10 @@ source('../h2o-runit.R')
 
 test.GLM.offset <- function(conn) {
 
-  compare_res_deviance <- function(h2o_model, r_model){
-    diff <- h2o.ressidual_deviance(h2o_model) - r_model$deviance
-    if (diff > 0.1) stop('residual deviance is not comparable')
-  }
-  compare_scores <- function(h2o_model, r_model) {
+  compare_scores <- function(h2o_model, r_model, data) {
     pred.r <- r_model$fitted.values
-    pred.h2o <- h2o.predict(h2o_model)
-    if (h2o_model@model$params$family$family == "binomial") {
+    pred.h2o <- h2o.predict(h2o_model, newdata = data)
+    if (inherits(h2o_model, "H2OBinomialModel")) {
       pred.h2o.r <- as.matrix(pred.h2o[,3])[,1]
     } else{
       pred.h2o.r <- as.matrix(pred.h2o)[,1]
@@ -37,15 +33,15 @@ test.GLM.offset <- function(conn) {
     Log.info (paste ("Checking", family_type, "models without offset..."))
     prostate.glm.r <- glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv)
     prostate.glm.h2o <- h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = F)
-    compare_res_deviance(prostate.glm.h2o, prostate.glm.r)
-    compare_scores(prostate.glm.h2o, prostate.glm.r)
+    expect_equal(h2o.residual_deviance(prostate.glm.h2o), prostate.glm.r$deviance, tolerance = 0.1)
+    compare_scores(prostate.glm.h2o, prostate.glm.r, prostate.hex)
 
     Log.info (paste ("Checking", family_type, "models with offset..."))
     options(warn=-1)
     prostate.glm.r <- glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv, offset = prostate.csv$AGE)
     prostate.glm.h2o <- h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, offset = "AGE", standardize = F)
-    compare_res_deviance(prostate.glm.h2o, prostate.glm.r)
-    compare_scores(prostate.glm.h2o, prostate.glm.r)
+    expect_equal(h2o.residual_deviance(prostate.glm.h2o), prostate.glm.r$deviance, tolerance = 0.1)
+    compare_scores(prostate.glm.h2o, prostate.glm.r, prostate.hex)
     print("PASSED")
   }
 
