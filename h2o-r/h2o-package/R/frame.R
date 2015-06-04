@@ -2686,9 +2686,9 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
   mids <- na.omit(h[,4])
   histo <- list()
   histo$breaks <- h$breaks
-  histo$counts <- counts
-  histo$density <- histo$counts / sum(histo$counts) * 1 / diff(histo$breaks)
-  histo$mids   <- mids
+  histo$counts <- as.numeric(counts)
+  histo$density <- as.numeric(histo$counts / sum(histo$counts) * 1 / diff(histo$breaks))
+  histo$mids   <- as.numeric(mids)
   histo$xname  <- deparse(substitute(x))
   oldClass(histo) <- "histogram"
   if( plot ) {
