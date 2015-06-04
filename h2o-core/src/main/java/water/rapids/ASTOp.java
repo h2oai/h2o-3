@@ -1091,7 +1091,7 @@ class ASTHour   extends ASTTimeOp { @Override String opStr(){ return "hour" ; } 
 class ASTMinute extends ASTTimeOp { @Override String opStr(){ return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
 class ASTSecond extends ASTTimeOp { @Override String opStr(){ return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
 class ASTMillis extends ASTTimeOp { @Override String opStr(){ return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
-class ASTMonth  extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
+class ASTMonth  extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear();}}
 class ASTWeek   extends ASTTimeOp { @Override String opStr(){ return "week";  } @Override ASTOp make() {return new ASTWeek  ();} @Override long op(MutableDateTime dt) { return dt.getWeekOfWeekyear();}}
 
 class ASTDayOfWeek extends ASTTimeOp {

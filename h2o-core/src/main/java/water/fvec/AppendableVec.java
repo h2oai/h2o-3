@@ -34,6 +34,18 @@ public class AppendableVec extends Vec {
     _chunkTypes = ts;
   }
 
+  /**
+   * This is a hack to fix SVMLight parsing. AppendableVec.close() checks the
+   * types of each chunk.  This sets the chunk type for uncreated chunks of
+   * all 0, are counted as numeric and not NA.
+   * @param cidx
+   */
+  public void setPrecedingChunkTypes(int cidx, byte type) {
+    if (_chunkTypes.length < cidx)
+      _chunkTypes = Arrays.copyOf(_chunkTypes,cidx<<1);
+    for (int i =0; i < cidx; i++) _chunkTypes[i] = type;
+  }
+
   long _naCnt;
   long _enumCnt;
   long _strCnt;
