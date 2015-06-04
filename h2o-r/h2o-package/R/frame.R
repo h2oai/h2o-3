@@ -645,7 +645,7 @@ as.Date.H2OFrame <- function(x, format, ...) {
 h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
   expr <- paste0("(setTimeZone \"", tz, "\"")
   ret <- .h2o.raw_expr_op(expr,  key = .key.make(conn, "setTimeZone"))
-  h2o.rm(ret@id, ret@conn)
+  h2o.rm(ret@id)
   ret
 }
 
@@ -658,7 +658,7 @@ h2o.getTimezone <- function(conn=h2o.getConnection()) {
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "getTimeZone"), mutable = mutable)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@id, fr@conn)
+  h2o.rm(fr@id)
   ret
 }
 
@@ -671,7 +671,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "listTimeZones"), mutable = mutable)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@id, fr@conn)
+  h2o.rm(fr@id)
   ret
 }
 #
@@ -1279,7 +1279,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
     tmp_head <- x[1:n,]  # seq_len unimpl
     x.slice <- as.data.frame(tmp_head)
 #    x.slice <- tmp_head
-    h2o.rm(tmp_head@id, tmp_head@conn)
+    h2o.rm(tmp_head@id)
     x.slice
   }
 })
@@ -1299,7 +1299,7 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     idx <- startidx:endidx
     tmp_tail <- x[startidx:endidx,]
     x.slice <- as.data.frame(tmp_tail)
-    h2o.rm(tmp_tail@id, tmp_tail@conn)
+    h2o.rm(tmp_tail@id)
     rownames(x.slice) <- idx
     x.slice
   }

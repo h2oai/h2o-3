@@ -46,7 +46,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "ls"), mutable = mutable)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@id, fr@conn)
+  h2o.rm(fr@id)
   ret
 }
 
@@ -88,16 +88,11 @@ h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
-h2o.rm <- function(ids, conn = h2o.getConnection()) {
-  if (is(ids, "H2OConnection")) {
-    temp <- ids
-    ids <- conn
-    conn <- temp
-  }
-  if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
+h2o.rm <- function(ids) {
   if( is(ids, "H2OFrame") ) ids <- ids@id
   if(!is.character(ids)) stop("`ids` must be of class character")
 
+  conn = h2o.getConnection()
   for(i in seq_len(length(ids)))
     .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
 }
