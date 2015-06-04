@@ -176,7 +176,6 @@ function(stmnt) {
       args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
-#      browser()
       op_args <- (stmnt_list[-1L])[-1L]         # these are any additional args passed to this op
       l <- NULL
       if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
@@ -187,6 +186,7 @@ function(stmnt) {
         }
       }
       if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
+      if( as.character(op) == "log" ) l <- NULL
       l <- lapply(l, function(i)
       if (length(i) != 0L) {
         if(i == "") NULL else i
