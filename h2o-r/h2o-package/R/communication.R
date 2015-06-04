@@ -25,19 +25,19 @@
   FALSE
 }
 
-.h2o.calcBaseURL <- function(h2oRestApiVersion, urlSuffix) {
+.h2o.calcBaseURL <- function(conn,h2oRestApiVersion, urlSuffix) {
+  if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   stopifnot(is.character(urlSuffix))
-  conn = h2o.getConnection()
   if (missing(h2oRestApiVersion))
     sprintf("http://%s:%s/%s", conn@ip, as.character(conn@port), urlSuffix)
   else
     sprintf("http://%s:%s/%s/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
-  timeout_secs <- 0
-  conn = h2o.getConnection()
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
+  if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   stopifnot(is.character(urlSuffix))
+  timeout_secs <- 0
   if (missing(parms))
     parms = list()
   else {
@@ -56,7 +56,7 @@
     print(timeout_secs)
   }
 
-  url = .h2o.calcBaseURL(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
+  url = .h2o.calcBaseURL(conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
 
   queryString = ""
   i = 1L
@@ -218,7 +218,7 @@
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
 .h2o.doRawGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
-  .h2o.doRawREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+  .h2o.doRawREST(conn=h2o.getConnection(), h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = "GET", ...)
 }
 
@@ -243,7 +243,7 @@
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return A list object as described above
 .h2o.doRawPOST <- function(h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
-  .h2o.doRawREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+  .h2o.doRawREST(conn=h2o.getConnection(), h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
 }
 
@@ -255,7 +255,7 @@
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
 
-  .h2o.doRawREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+  .h2o.doRawREST(conn=h2o.getConnection(), h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = method, fileUploadInfo, ...)
 }
 
@@ -515,8 +515,8 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #' Determine if an H2O cluster is up or not
 #'
 #' @return TRUE if the cluster is up; FALSE otherwise
-h2o.clusterIsUp <- function() {
-  rv <- .h2o.doRawGET(urlSuffix = "")
+h2o.clusterIsUp <- function(conn) {
+  rv <- .h2o.doRawREST(conn, urlSuffix = "", method="GET")
   !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
 }
 
@@ -533,11 +533,11 @@ h2o.killMinus3 <- function() {
 #' Print H2O cluster info
 #'
 h2o.clusterInfo <- function() {
-  if(! h2o.clusterIsUp()) {
-    conn = h2o.getConnection()
+  conn = h2o.getConnection()
+  if(! h2o.clusterIsUp(conn)) {
     ip = conn@ip
     port = conn@port
-    stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL()))
+    stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
   res <- .h2o.fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD))
@@ -592,7 +592,7 @@ h2o.clusterInfo <- function() {
     conn = h2o.getConnection()
     ip = conn@ip
     port = conn@port
-    stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL()),
+    stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
          sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
   }
 
@@ -609,7 +609,7 @@ h2o.clusterInfo <- function() {
     }
   }
   if (! overallHealthy) {
-    url <- .h2o.calcBaseURL( h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
+    url <- .h2o.calcBaseURL( conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
     warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
   }
 
@@ -698,8 +698,8 @@ h2o.clusterInfo <- function() {
 }
 
 #------------------------------------ Utilities ------------------------------------#
-h2o.getBaseURL <- function() {
-  .h2o.calcBaseURL( urlSuffix = "")
+h2o.getBaseURL <- function(conn) {
+  .h2o.calcBaseURL( conn, urlSuffix = "")
 }
 
 h2o.getVersion <- function() {

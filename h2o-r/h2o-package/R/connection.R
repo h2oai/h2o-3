@@ -207,8 +207,7 @@ h2o.getConnection <- function() {
 #' h2o.shutdown(localH2O)
 #' }
 #' @export
-h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
-  if( !is(conn, "H2OConnection") ) stop("`conn` must be an H2OConnection object")
+h2o.shutdown <- function(conn, prompt = TRUE) {
   if( !h2o.clusterIsUp(conn) )     stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
   if(!is.logical(prompt) || length(prompt) != 1L || is.na(prompt)) stop("`prompt` must be TRUE or FALSE")
@@ -243,11 +242,11 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 #' localH2O <- h2o.init()
 #' h2o.clusterStatus(localH2O)
 #' @export
-h2o.clusterStatus <- function(conn = h2o.getConnection()) {
-  if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
+h2o.clusterStatus <- function() {
+  conn = h2o.getConnection()
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD))
 
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
@@ -271,8 +270,8 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 
 #
 # Get a session ID at init
-.init.session_id <- function(conn) {
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID"))
+.init.session_id <- function() {
+  res <- .h2o.fromJSON(.h2o.doSafeGET(urlSuffix = "InitID"))
   res$session_key
 }
 
@@ -321,10 +320,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     ip_    <- "127.0.0.1"
     port_  <- 54321
     myURL <- paste0("http://", ip_, ":", port_)
-    if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
-    else {
-      conn <- get("SERVER", .pkg.env)
-    }
+    if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(conn=new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
 
@@ -596,13 +592,12 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 #' @param conn an \linkS4class{H2OConnection} object.
 #' @return Returns a table listing the network speed for 1B, 10KB, and 10MB.
 #' @export
-h2o.networkTest <- function(conn = h2o.getConnection()) {
-  res <- .h2o.__remoteSend(conn = conn, "NetworkTest", method = "GET")
-
+h2o.networkTest <- function() {
+  res <- .h2o.__remoteSend("NetworkTest", method = "GET")
   res$table
 }
 
 # Trigger an explicit garbage collection across all nodes in the H2O cluster.
-.h2o.garbageCollect <- function(conn = h2o.getConnection()) {
-  res <- .h2o.__remoteSend(conn = conn, "GarbageCollect", method = "POST")
+.h2o.garbageCollect <- function() {
+  res <- .h2o.__remoteSend("GarbageCollect", method = "POST")
 }
