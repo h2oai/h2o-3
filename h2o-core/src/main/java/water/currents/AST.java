@@ -36,6 +36,10 @@ abstract public class AST {
   static final HashMap<String,AST> PRIMS = new HashMap<>();
   static void init(AST ast) { PRIMS.put(ast.str(),ast); }
   static {
+    // Constants
+    init(new ASTNum(0) {public String str() { return "FALSE"; } } );
+    init(new ASTNum(1) {public String str() { return "TRUE" ; } } );
+
     // Math ops
     init(new ASTAnd ());
     init(new ASTDiv ());
@@ -56,6 +60,11 @@ abstract public class AST {
     init(new ASTLAnd());
     init(new ASTLOr());
 
+    // Reducers
+    init(new ASTSum());
+    init(new ASTMin());
+    init(new ASTMax());
+
     // Generic data mungers
     init(new ASTColSlice());
     init(new ASTRowSlice());
@@ -69,6 +78,7 @@ abstract public class AST {
 class ASTNum extends AST {
   final ValNum _d;
   ASTNum( Exec e ) { _d = new ValNum(Double.valueOf(e.token())); }
+  ASTNum( double d ) { _d = new ValNum(d); }
   @Override public String str() { return _d.toString(); }
   @Override Val exec( Env env ) { return _d; }
   @Override int nargs() { return 1; }

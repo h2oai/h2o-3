@@ -116,7 +116,8 @@ public class Env {
 
     // Now the built-ins
     AST ast = AST.PRIMS.get(id);
-    if( ast != null ) return new ValFun(ast);
+    if( ast != null )
+      return ast instanceof ASTNum ? ast.exec(this) : new ValFun(ast);
 
     throw new IllegalArgumentException("Name lookup of "+id+" failed");
   }

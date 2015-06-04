@@ -156,8 +156,6 @@ function(expr, ..., .args=list(...), key = .key.make("raw_expr_op")) {
 #'
 .h2o.eval.scalar<-
 function(ast) {
-  key <- .key.make("rapids")
-  ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
   ast <- .visitor(ast)
 
   # Process the results
