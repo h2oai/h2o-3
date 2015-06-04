@@ -21,7 +21,7 @@ def continuous_or_categorical(ip, port):
   df_hex = h2o.H2OFrame(python_obj = aa)
 
   df_hex.show()
-  df_hex.describe()
+  df_hex.summary()
 
   assert (not df_hex['h1'].isfactor())
   assert (df_hex['h2'].isfactor())
@@ -32,7 +32,7 @@ def continuous_or_categorical(ip, port):
   df_hex['h3'] = df_hex['h3'].asfactor()
 
   df_hex.show()
-  df_hex.describe()
+  df_hex.summary()
 
   assert (df_hex['h1'].isfactor())
   assert (df_hex['h2'].isfactor())
@@ -43,7 +43,7 @@ def continuous_or_categorical(ip, port):
   df_hex['h3'] = df_hex['h3'].asnumeric()
 
   df_hex.show()
-  df_hex.describe()
+  df_hex.summary()
 
   assert (not df_hex['h1'].isfactor())
   assert (not df_hex['h2'].isfactor())

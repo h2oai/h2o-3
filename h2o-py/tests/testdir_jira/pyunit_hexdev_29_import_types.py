@@ -8,8 +8,15 @@ sys.path.insert(1, "../../")
 import h2o
 
 def continuous_or_categorical(ip, port):
-  df_hex = h2o.import_frame(h2o.locate("smalldata/jira/hexdev_29.csv"),
-    )# TODO: SOME FORMAT HERE
+  fraw = h2o.import_file(h2o.locate("smalldata/jira/hexdev_29.csv"))
+  fsetup = h2o.parse_setup(fraw)
+  fsetup["column_types"][0] = "ENUM"
+  fsetup["column_types"][1] = "ENUM"
+  fsetup["column_types"][2] = "ENUM"
+
+  df_hex = h2o.parse_raw(fsetup)
+
+  df_hex.summary()
 
   assert (df_hex['h1'].isfactor())
   assert (df_hex['h2'].isfactor())
