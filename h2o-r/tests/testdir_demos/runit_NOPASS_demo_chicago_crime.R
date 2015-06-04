@@ -27,12 +27,12 @@ ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
   # ds$Weekend <- as.factor(ds$Weekend)
   
   # Categorical column of season: Spring = 0, Summer = 1, Autumn = 2, Winter = 3
-  # TODO: Replace this with an apply method when implemented
-  ds$Season <- ifelse(ds$Month >= 2 & ds$Month <= 4, 0,
-               ifelse(ds$Month >= 5 & ds$Month <= 7, 1,
-               ifelse(ds$Month >= 8 & ds$Month <= 9, 2, 3)))
+  ds$Season <- ifelse(ds$Month >= 2 & ds$Month <= 4, 0,        # Spring = Mar, Apr, May
+               ifelse(ds$Month >= 5 & ds$Month <= 7, 1,        # Summer = Jun, Jul, Aug
+               ifelse(ds$Month >= 8 & ds$Month <= 9, 2, 3)))   # Autumn = Sep, Oct
   ds$Season <- as.factor(ds$Season)
   h2o.setLevels(ds$Season, c("Spring", "Summer", "Autumn", "Winter"))
+  # ds$Season <- cut(ds$Month, breaks = c(-1, 1, 4, 6, 9, 11), labels = c("Winter", "Spring", "Summer", "Autumn", "Winter"))
   return(ds)
 }
 
