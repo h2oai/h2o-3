@@ -156,6 +156,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         double[][] gram = tsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
         assert gram.length == _ncolExp;
+        model._output._nobs = tsk._nobs;
         model._output._v = new double[_parms._nv][gram.length];
         model.update(self());
         update(1);
@@ -286,8 +287,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Categorical cols expanded into 0/1 indicator cols
       double sum = 0;
       for (int j = 0; j < dinfo._cats; j++) {
+        if (dinfo._skipMissing && cs[j].isNA(row)) continue OUTER;   // Skip training rows that include any NaN entry
         int level = (int)cs[j].atd(row);
-        if (Double.isNaN(level)) continue OUTER;   // Skip training rows that include any NaN entry
         int c = dinfo.getCategoricalId(j, level);
         if (c < 0) continue;    // Skip factor levels out of range
         sum += vec[c];
@@ -297,8 +298,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       int cidx = dinfo._cats;
       int vidx = dinfo.numStart();
       for (int j = 0; j < dinfo._nums; j++) {
+        if (dinfo._skipMissing && cs[j].isNA(row)) continue OUTER;   // Skip training rows that include any NaN entry
         double a = cs[cidx].atd(row);
-        if (Double.isNaN(a)) continue OUTER;   // Skip training rows that include any NaN entry
         sum += (a - normSub[j]) * normMul[j] * vec[vidx];
         cidx++; vidx++;
       }
