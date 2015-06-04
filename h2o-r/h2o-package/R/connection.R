@@ -138,11 +138,12 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   conn <- new("H2OConnection", ip = ip, port = port)
+  assign("SERVER", conn, .pkg.env)
   cat("Successfully connected to", h2o.getBaseURL(conn), "\n\n")
-  h2o.clusterInfo(conn)
+  h2o.clusterInfo()
   cat("\n")
 
-  verH2O <- h2o.getVersion(conn)
+  verH2O <- h2o.getVersion()
   verPkg <- packageVersion("h2o")
   if (verH2O != verPkg) {
     message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
@@ -159,8 +160,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("           > localH2O = h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-  conn@mutable$session_id <- .init.session_id(conn)
-  assign("SERVER", conn, .pkg.env)
+  conn@mutable$session_id <- .init.session_id()
   conn
 }
 

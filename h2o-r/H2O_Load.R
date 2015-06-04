@@ -18,7 +18,6 @@ src()
 
 
 h <- h2o.init()
-conn <- h
 #hex <- as.h2o(iris, h)
 #
 #hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))
