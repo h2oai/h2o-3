@@ -37,19 +37,20 @@ class ASTRowSlice extends ASTPrim {
     try (Env.StackHelp stk = env.stk()) {
         Val vfr  = stk.track(asts[1].exec(env));
         Frame fr = vfr.getFrame();
-        if( !(asts[2] instanceof ASTNumList) ) 
+        long[] rows = null;
+        if( asts[2] instanceof ASTNumList ) {
+          double[] drows = ((ASTNumList)asts[2]).expand();
+          rows = new long[drows.length];
+          for( int i=0; i<drows.length; i++ ) {
+            long row = (long)drows[i];
+            if( row!=drows[i] || row < 0 || row >= fr.numRows() ) 
+              throw new IllegalArgumentException("Row must be an integer from 0 to "+(fr.numRows()-1));
+            rows[i] = row;
+          }
+        } else if( (asts[2] instanceof ASTNum) ) {
+          rows = new long[]{(long)(((ASTNum)asts[2])._d.getNum())};
+        } else 
           throw new IllegalArgumentException("Row slicing requires a number-list as the last argument, but found a "+asts[2].getClass());
-        ASTNumList rowlist = (ASTNumList)asts[2];
-
-        double[] drows = rowlist.expand();
-        long[] rows = new long[drows.length];
-        for( int i=0; i<drows.length; i++ ) {
-          long row = (long)drows[i];
-          if( row!=drows[i] || row < 0 || row >= fr.numRows() ) 
-            throw new IllegalArgumentException("Row must be an integer from 0 to "+(fr.numRows()-1));
-          rows[i] = row;
-        }
-
         return stk.returning(new ValFrame(fr.deepSlice(rows,null)));
       }
   }

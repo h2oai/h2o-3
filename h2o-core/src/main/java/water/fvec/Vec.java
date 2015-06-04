@@ -964,7 +964,6 @@ public class Vec extends Keyed<Vec> {
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
   static void bulk_remove( Key vkey, int ncs ) {
-    System.out.println("Vec BulkRemove "+vkey);
     for( int i=0; i<ncs; i++ ) {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);

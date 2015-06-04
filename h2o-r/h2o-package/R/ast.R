@@ -157,8 +157,9 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
                  children = list(paste0('#', eval(expr[[2L]], envir = envir)+1L),
                                  paste0('#', eval(expr[[3L]], envir = envir)+1L))))
     } else
-      return(paste0('[',eval(expr[[2L]], envir = envir) - 1L,':',
-                        eval(expr[[3L]], envir = envir) - 1L,']'))
+      lb = eval(expr[[2L]], envir = envir) - 1L
+      ub = eval(expr[[3L]], envir = envir) - 1L
+      return(paste0('[',lb,':',(ub-lb+1),']'))
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
