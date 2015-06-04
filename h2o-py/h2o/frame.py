@@ -1145,6 +1145,19 @@ class H2OVec:
     self._expr.data().append(__x__)
     self._expr.set_len(self._expr.get_len() + 1)
 
+
+  def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
+    breaks_list = "(dlist #"+" #".join([str(b) for b in breaks])+")"
+    labels_list = "()"
+    if labels is not None:
+      labels_list = "(slist \"" + '" "'.join(labels) +"\")"
+
+    if self.key() == "": self._expr.eager()
+
+    expr = "(cut '{}' {} {} {} {} #{}".format(self.key(), breaks_list, labels_list, "%TRUE" if include_lowest else "%FALSE", "%TRUE" if right else "%FALSE", dig_lab)
+    res = h2o.rapids(expr)
+    return H2OVec(self._name, Expr(op=res["vec_ids"][0]["name"], length=res["num_rows"]))
+
   def as_date(self,format):
     """
     Inplace update the column to millis since the epoch.
