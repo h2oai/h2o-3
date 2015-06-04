@@ -31,7 +31,7 @@ public class Env {
    * just counts refs by unary stack-slot counting.
    */
   private final ArrayList<Frame> _refcnt = new ArrayList<>();
-  private final HashSet<Frame> _globals = new HashSet<>();
+  private final HashSet<Vec> _globals = new HashSet<>();
   public int sp() { return _refcnt.size(); }
   public Frame peek(int x) { return _refcnt.get(sp()+x);  }
 
@@ -67,9 +67,8 @@ public class Env {
       int i, sp = sp();
       while( sp > _sp ) {
         Frame fr = _refcnt.remove(--sp);
-        if( _globals.contains(fr) ) continue;
-        assert fr._key==null;   // Not in the DKV
         for( Vec vec : fr.vecs() ) {
+          if( _globals.contains(vec) ) continue;
           for( i=0; i<_sp; i++ )
             if( _refcnt.get(i).find(vec) != -1 )
               break;
@@ -87,8 +86,7 @@ public class Env {
   // true data copy is made of every top-level Vec return.  See if this Vec
   // exists in some pre-existing global.
   boolean isPreExistingGlobal( Vec vec ) {
-    for( Frame fr : _globals ) if( fr.find(vec) != -1 ) return true;
-    return false;
+    return _globals.contains(vec);
   }
 
 
@@ -109,7 +107,7 @@ public class Env {
       if( value.isFrame() ) {
         Frame fr = value.get();
         assert fr._key.toString().equals(id);
-        _globals.add(fr);
+        for( Vec vec : fr.vecs() ) _globals.add(vec);
         return new ValFrame(fr);
       }
       // Only understand Frames right now

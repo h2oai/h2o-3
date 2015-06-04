@@ -581,6 +581,7 @@ h2o.clusterInfo <- function() {
 .h2o.__checkConnectionHealth <- function() {
   rv <- .h2o.doGET(urlSuffix = .h2o.__CLOUD)
 
+  conn = h2o.getConnection()
   if (rv$curlError) {
     ip = conn@ip
     port = conn@port
@@ -589,7 +590,6 @@ h2o.clusterInfo <- function() {
   }
 
   if (rv$httpStatusCode != 200L) {
-    conn = h2o.getConnection()
     ip = conn@ip
     port = conn@port
     stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
