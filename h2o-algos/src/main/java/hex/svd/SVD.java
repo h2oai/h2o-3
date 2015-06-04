@@ -275,17 +275,19 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   // Save inner product of each row with vec to col k of chunk array
   // Returns sum over l2 norms of each row with vec
+  // Note: Training rows that include any NaN entry are skipped, since this is same behavior when computing Gram matrix
   private static double l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, double[] normSub, double[] normMul) {
     double sumsqr = 0;
     int ncols = dinfo._adaptedFrame.numCols();
 
     // Calculate inner product of current row with vec
+    OUTER:
     for (int row = 0; row < cs[0]._len; row++) {
       // Categorical cols expanded into 0/1 indicator cols
       double sum = 0;
       for (int j = 0; j < dinfo._cats; j++) {
         int level = (int)cs[j].atd(row);
-        if (Double.isNaN(level)) continue;    // Skip training entries that are NaN
+        if (Double.isNaN(level)) continue OUTER;   // Skip training rows that include any NaN entry
         int c = dinfo.getCategoricalId(j, level);
         if (c < 0) continue;    // Skip factor levels out of range
         sum += vec[c];
@@ -296,8 +298,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       int vidx = dinfo.numStart();
       for (int j = 0; j < dinfo._nums; j++) {
         double a = cs[cidx].atd(row);
-        if (!Double.isNaN(a))   // Skip training entries that are NaN
-          sum += (a - normSub[j]) * normMul[j] * vec[vidx];
+        if (Double.isNaN(a)) continue OUTER;   // Skip training rows that include any NaN entry
+        sum += (a - normSub[j]) * normMul[j] * vec[vidx];
         cidx++; vidx++;
       }
       assert cidx == ncols && vidx == vec.length;
