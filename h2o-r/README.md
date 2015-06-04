@@ -1,27 +1,26 @@
-# Using h2o-dev from R
+# Using H2O from R
 
 
 ## Downloading
 
-We don't yet have a downloadable R artifact for h2o-dev.
-You have to build it yourself.
+We don't yet have a downloadable R artifact for the latest version of H2O. You will need to build it yourself.
 
 
 ## Building it yourself
 
 The R package is built as part of the normal build process.
-In the top-level h2o-dev directory use `$ ./gradlew build`.
+In the top-level h2o-3 directory, use `$ ./gradlew build`.
 
 To build the R component by itself, first type `$ cd h2o-r` and then type `$ ../gradlew build`.
 
-The output of the build is an CRAN-like layout in the R directory.
+The output of the build is a CRAN-like layout in the R directory.
 
 
 ## Installation
 
 ### 1.  Installation from the command line
 
-\# Make sure your current directory is the h2o-dev top directory.
+\# Make sure your current directory is the h2o-3 top directory.
 `$ R CMD INSTALL h2o-r/R/src/contrib/h2o_0.1.23.99999.tar.gz`
 
 ```
@@ -74,7 +73,7 @@ Creating a generic function for 'sapply' from package 'base' in package 'h2o'
 ```
 
 \# Install the H2O R package from your build directory.  
-`install.packages("h2o", repos=c("file:///.../h2o-dev/h2o-R/R", getOption("repos")))`
+`install.packages("h2o", repos=c("file:///.../h2o-3/h2o-R/R", getOption("repos")))`
 
 ```
 Installing package into ‘/Users/tomk/.Rlibrary’
@@ -89,7 +88,7 @@ The downloaded binary packages are in
 
 ### 1.  Start H2O from the command line
 
-\# Make sure your current directory is the h2o-dev top directory.
+\# Make sure your current directory is the h2o-3 top directory.
 `$ java -jar h2o-app/build/libs/h2o-app.jar`  
 
 ```
@@ -138,7 +137,7 @@ For H2O package documentation, ask for help:
     > ??h2o
 
 After starting H2O, you can use the Web UI at http://localhost:54321
-For more information visit http://docs.0xdata.com
+For more information visit http://docs.h2o.ai
 
 ----------------------------------------------------------------------
 
