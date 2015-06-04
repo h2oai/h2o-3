@@ -404,7 +404,7 @@ public final class ParseDataset extends Job<Frame> {
               Key k = vec.chunkKey(fi);
               Value val = H2O.get(k);   // Local-get only
               if( val == null )         // Missing?  Fill in w/zero chunk
-                H2O.putIfMatch(k, new Value(k, new C0DChunk(0, fnlines)), null);
+                H2O.putIfMatch(k, new Value(k, new C0LChunk(0, fnlines)), null);
             }
           }
         });
