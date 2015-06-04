@@ -26,10 +26,8 @@ function(op, x) {
   op <- new("ASTApply", op = op)
 
   if (is(x, "H2OFrame")) {
-    conn <- x@conn
     x <- .get(x)
   } else {
-    conn <- h2o.getConnection()
     if (is(x, "ASTNode"))       x <- x
     else if (is.numeric(x))     x <- paste0('#', x)
     else if (is.character(x))   x <- deparse(eval(x))
@@ -42,39 +40,19 @@ function(op, x) {
 .h2o.unary_scalar_op<-
 function(op, x) {
   ast <- .h2o.unary_op_ast(op, x)
-  .h2o.eval.scalar(x@conn, ast)
+  .h2o.eval.scalar(ast)
 }
 
 .h2o.unary_frame_op<-
 function(op, x, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
   ast <- .h2o.unary_op_ast(op, x)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", frame_id = .key.make(x@conn, "unary_op"),
-                mutable = mutable)
+  .newH2OFrame("H2OFrame", frame_id = .key.make("unary_op"), mutable = mutable)
 }
 
 .h2o.unary_row_op<-
 function(op, x) {
   .h2o.unary_frame_op(op, x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names)
-}
-
-#'
-#' Binary Operation
-#'
-#' Operation between H2OFrame objects and/or base R objects.
-.h2o.binary_op_conn <-
-function(e1, e2) {
-  if (is(e1, "H2OFrame")) lhsconn <- e1@conn
-  else                    lhsconn <- NULL
-
-  if (is(e2, "H2OFrame")) rhsconn <- e2@conn
-  else                    rhsconn <- NULL
-
-  if (is.null(lhsconn))   lhsconn <- rhsconn
-  else if (!is.null(rhsconn) && (lhsconn@ip != rhsconn@ip || lhsconn@port != rhsconn@port))
-    stop("LHS and RHS are using different H2O connections")
-
-  lhsconn
 }
 
 .h2o.binary_op_ast<-
@@ -107,17 +85,15 @@ function(op, e1, e2) {
 
 .h2o.binary_scalar_op<-
 function(op, e1, e2) {
-  conn <- .h2o.binary_op_conn(e1, e2)
   ast  <- .h2o.binary_op_ast(op, e1, e2)
-  .h2o.eval.scalar(conn, ast)
+  .h2o.eval.scalar(ast)
 }
 
 .h2o.binary_frame_op<-
 function(op, e1, e2, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-  conn <- .h2o.binary_op_conn(e1, e2)
   ast  <- .h2o.binary_op_ast(op, e1, e2)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", frame_id= .key.make(conn, "binary_op"), mutable = mutable)
+  .newH2OFrame("H2OFrame", frame_id= .key.make("binary_op"), mutable = mutable)
 }
 
 .h2o.binary_row_op<-
@@ -141,11 +117,11 @@ function(op, ..., .args = list(...)) {
 function(op, ..., .args = list(...)) {
   x <- .args[[1L]]
   ast <- .h2o.nary_op_ast(op, .args = .args)
-  .h2o.eval.scalar(x@conn, ast)
+  .h2o.eval.scalar(ast)
 }
 
 .h2o.nary_frame_op<-
-function(op, ..., .args = list(...), key = .key.make(h2o.getConnection(), "nary_op"),
+function(op, ..., .args = list(...), key = .key.make("nary_op"),
          nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
 
   ast <- .h2o.nary_op_ast(op, .args = .args)
@@ -160,8 +136,8 @@ function(op, ..., .args = list(...)) {
 }
 
 .h2o.raw_expr_op<-
-function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_expr_op")) {
-  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=expr, method = "POST")
+function(expr, ..., .args=list(...), key = .key.make("raw_expr_op")) {
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=expr, method = "POST")
   h2o.getFrame(key)
 }
 
@@ -170,7 +146,6 @@ function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_e
 #'
 #' Force the evaluation of the AST.
 #'
-#' @param conn an H2OConnection object
 #' @param ast an ASTNode object
 #' @param key the name of the key in h2o (hopefully matches top-most level user-defined variable)
 #' @param new.assign a logical flag
@@ -180,13 +155,13 @@ function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_e
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .h2o.eval.scalar<-
-function(conn, ast) {
-  key <- .key.make(conn, "rapids")
+function(ast) {
+  key <- .key.make("rapids")
   ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   if (!is.null(res$string)) {
@@ -211,10 +186,10 @@ function(fr) {
   ast <- .visitor(fr@mutable$ast)
 
   # Execute the AST on H2O
-  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=ast, id=fr@id, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, id=fr@id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   # Get rows, cols, col_names
-  res <- .h2o.__remoteSend(h2o.getConnection(), paste0(.h2o.__FRAMES, "/", fr@id))$frames[[1]]
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", fr@id))$frames[[1]]
   fr@mutable$nrows = res$rows
   fr@mutable$ncols = length(res$columns)
   fr@mutable$col_names = unlist(lapply(res$columns, function(c) c$label))
@@ -226,15 +201,15 @@ function(fr) {
 }
 
 .h2o.replace.frame<-
-function(conn, ast, frame_id) {
+function(ast, frame_id) {
   # Prepare the AST
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
-  res <- h2o.getFrame(frame_id, conn)
+  res <- h2o.getFrame(frame_id)
   gc()
   res
 }
@@ -247,5 +222,5 @@ function(conn, ast, frame_id) {
 function(fun.ast) {
   gc()
   expr <- .fun.visitor(fun.ast)
-  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, fun=expr$ast, method = "POST")
+  .h2o.__remoteSend(.h2o.__RAPIDS, fun=expr$ast, method = "POST")
 }

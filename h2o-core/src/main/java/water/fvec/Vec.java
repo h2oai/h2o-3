@@ -355,17 +355,13 @@ public class Vec extends Keyed<Vec> {
    *  one, and initialized to zero, with the given enum domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
-  /**
-   * A new vector which is a copy of {@code this} one.
-   * @return a copy of the vector.
-   */
-  public Vec makeCopy(String[] domain){
-    Vec v = doCopy();
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
-    return v;
-  }
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy() { return makeCopy(domain()); }
+
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy(String[] domain){ return makeCopy(domain,_type); }
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
@@ -968,6 +964,7 @@ public class Vec extends Keyed<Vec> {
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
   static void bulk_remove( Key vkey, int ncs ) {
+    System.out.println("Vec BulkRemove "+vkey);
     for( int i=0; i<ncs; i++ ) {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);

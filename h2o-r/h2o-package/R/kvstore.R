@@ -16,7 +16,8 @@
   invisible(TRUE)
 }
 
-.key.make <- function(conn, prefix = "rapids") {
+.key.make <- function(prefix = "rapids") {
+  conn <- h2o.getConnection()
   if (conn@mutable$key_count == .Machine$integer.max) {
     conn@mutable$session_id <- .init.session_id(conn)
     conn@mutable$key_count  <- 0L
@@ -31,7 +32,6 @@
 #'
 #' Accesses a list of object keys in the running instance of H2O.
 #'
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
 #' library(h2o)
@@ -40,11 +40,11 @@
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' h2o.ls(localH2O)
 #' @export
-h2o.ls <- function(conn = h2o.getConnection()) {
+h2o.ls <- function() {
   gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make(conn, "ls"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make("ls"), mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@id)
   ret
@@ -55,7 +55,6 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
 #'
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
@@ -68,13 +67,13 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
 #' @export
-h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
+h2o.removeAll <- function(timeout_secs=0) {
   tryCatch(
-    invisible(.h2o.__remoteSend(conn, .h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
     error = function(e) {
       print("Timeout on DELETE /DKV from R")
       print("Attempt thread dump...")
-      h2o.killMinus3(conn)
+      h2o.killMinus3()
       stop(e)
     })
 }
@@ -85,25 +84,22 @@ h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
 #' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
 #' @param ids The hex key associated with the object to be removed.
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
 h2o.rm <- function(ids) {
   if( is(ids, "H2OFrame") ) ids <- ids@id
   if(!is.character(ids)) stop("`ids` must be of class character")
 
-  conn = h2o.getConnection()
   for(i in seq_len(length(ids)))
-    .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
 }
 
 #'
 #' Garbage Collection of Temporary Frames
 #'
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 
 # TODO: This is an older version; need to go back through git and find the "good" one...
-.h2o.gc <- function(conn = h2o.getConnection()) {
+.h2o.gc <- function() {
   frame_keys <- as.vector(h2o.ls()[,1L])
   frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@mutable$session_id), frame_keys)]
   # no reference? then destroy!
@@ -163,12 +159,10 @@ h2o.assign <- function(data, key, deepCopy=FALSE) {
 #' Get the reference to a frame with the given frame_id in the H2O instance.
 #'
 #' @param frame_id A string indicating the unique frame of the dataset to retrieve.
-#' @param conn \linkS4class{H2OConnection} object containing the IP address and port
-#'             of the server running H2O.
 #' @export
 h2o.getFrame <- function(frame_id) {
   if( is.null(frame_id) ) stop("Expected frame id")
-  res <- .h2o.__remoteSend(h2o.getConnection(), paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
@@ -180,8 +174,6 @@ h2o.getFrame <- function(frame_id) {
 #' Returns a reference to an existing model in the H2O instance.
 #'
 #' @param model_id A string indicating the unique model_id of the model to retrieve.
-#' @param conn \linkS4class{H2OConnection} object containing the IP address and port
-#'             of the server running H2O.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)
@@ -191,13 +183,8 @@ h2o.getFrame <- function(frame_id) {
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
 #' model.retrieved <- h2o.getModel(model_id, localH2O)
 #' @export
-h2o.getModel <- function(model_id, conn = h2o.getConnection()) {
-  if (is(model_id, "H2OConnection")) {
-    temp <- model_id
-    model_id <- conn
-    conn <- temp
-  }
-  json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
+h2o.getModel <- function(model_id) {
+  json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
@@ -261,7 +248,6 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection()) {
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
   .newH2OModel(Class          = Class,
-                conn          = conn,
                 model_id      = json$model_id$name,
                 algorithm     = json$algo,
                 parameters    = parameters,
@@ -276,7 +262,6 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection()) {
 #' @param model An H2OModel
 #' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to console.
 #'             The file name will be a compilable java file name.
-#' @param conn An H2OClient object.
 #' @return If path is "", then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory.
 #' @examples
@@ -288,9 +273,9 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection()) {
 #' h2o.download_pojo(my_model)  # print the model to screen
 #' # h2o.download_pojo(my_model, getwd())  # save to the current working directory, NOT RUN
 #' @export
-h2o.download_pojo <- function(model, path="", conn=h2o.getConnection()) {
+h2o.download_pojo <- function(model, path="") {
   model_id <- model@model_id
-  java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
+  java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
   file.path <- paste0(path, "/", model_id, ".java")
   if( path == "" ) cat(java)
   else write(java, file=file.path)

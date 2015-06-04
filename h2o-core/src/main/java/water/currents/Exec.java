@@ -1,6 +1,8 @@
 package water.currents;
 
 import water.MRTask;
+import water.fvec.Frame;
+import water.fvec.Vec;
 
 /**
  * Exec is an interpreter of abstract syntax trees.
@@ -36,8 +38,17 @@ public class Exec {
     // Parse
     AST ast = new Exec(str).parse();
     // Execute
-    Val val = ast.exec(new Env());
-    // Results
+    Env env = new Env();
+    Val val = ast.exec(env);
+    // Results.  Deep copy returned Vecs.
+    if( val.isFrame() ) {
+      Frame fr = val.getFrame();
+      Vec vecs[] = fr.vecs();
+      for( int i=0; i<vecs.length; i++ )
+        if( env.isPreExistingGlobal(vecs[i]) )
+          fr.replace(i,vecs[i].makeCopy());
+    }
+
     return val;
   }
 

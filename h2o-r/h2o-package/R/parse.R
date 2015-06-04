@@ -45,11 +45,11 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   if( nzchar(destination_frame) ) stop("Expected destination_frame to have non-zero length")
 
   # Perform the parse
-  res <- .h2o.__remoteSend(data@conn, .h2o.__PARSE, method = "POST", .params = parse.params)
+  res <- .h2o.__remoteSend(.h2o.__PARSE, method = "POST", .params = parse.params)
   hex <- res$job$dest$name
 
   # Poll on job
-  .h2o.__waitOnJob(data@conn, res$job$key$name)
+  .h2o.__waitOnJob(res$job$key$name)
 
   # Return a new H2OFrame object
   h2o.getFrame(frame_id=hex)
@@ -96,10 +96,10 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
 
   # pass through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
+  parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
 
   # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
-  if( !nzchar(destination_frame) ) destination_frame <- .key.make(data@conn, parseSetup$destination_frame)
+  if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)
 
   # return the parse setup as a list of setup :D
   parse.params <- list(
@@ -129,13 +129,13 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   else "[]"
 }
 
-.h2o.fetchNRows <- function(conn = h2o.getConnection(), frame_id) {
-  .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]$rows
+.h2o.fetchNRows <- function(frame_id) {
+  .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]$rows
 }
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(conn = h2o.getConnection(), destination_frame, nrows, ncols, col_names) {
+.h2o.parsedData <- function(destination_frame, nrows, ncols, col_names) {
   mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
   .newH2OFrame("H2OFrame", frame_id=destination_frame, mutable=mutable)
 }

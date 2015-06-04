@@ -83,6 +83,15 @@ public class Env {
     }
   }
 
+  // Produce "value" semantics for all top-level Frame returns - which means a
+  // true data copy is made of every top-level Vec return.  See if this Vec
+  // exists in some pre-existing global.
+  boolean isPreExistingGlobal( Vec vec ) {
+    for( Frame fr : _globals ) if( fr.find(vec) != -1 ) return true;
+    return false;
+  }
+
+
   // ----
   // Variable lookup
 

@@ -119,15 +119,9 @@ h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", desti
 
 #' @rdname h2o.importFile
 #' @export
-h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame = "",
+h2o.uploadFile <- function(path, destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
                            col.types = NULL, na.strings = NULL, progressBar = FALSE) {
-  if (is(path, "H2OConnection")) {
-    temp <- path
-    path <- conn
-    conn <- temp
-  }
-  if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   .key.validate(destination_frame)
@@ -137,10 +131,10 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
     stop("`progressBar` must be TRUE or FALSE")
 
   path <- normalizePath(path, winslash = "/")
-  srcKey <- .key.make(conn, path)
+  srcKey <- .key.make(path)
   urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
   fileUploadInfo <- fileUpload(path)
-  .h2o.doSafePOST(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
+  .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)
 
   rawData <- .newH2ORawData("H2ORawData", frame_id=srcKey)

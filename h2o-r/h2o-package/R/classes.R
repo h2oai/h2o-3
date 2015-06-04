@@ -98,7 +98,6 @@ setClass("H2OObject",
 #' @param \dots additional parameters to pass on to functions
 #' @export
 setMethod("initialize", "H2OObject", function(.Object, ..., id) {
-  print("OBJECT1")
   envir <- new.env()
   assign("id", id, envir)
   reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
@@ -215,9 +214,7 @@ setClass("H2OFrame",
          )
 
 setMethod("initialize", "H2OFrame", function(.Object, ..., id, mutable) {
-  print("FRAME1")
   .Object@mutable <- mutable
-  print("FRAME2")
   callNextMethod(.Object, ..., id=id)
 })
 
