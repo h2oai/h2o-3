@@ -186,7 +186,7 @@ function(stmnt) {
         }
       }
       if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
-      if( as.character(op) == "log" ) l <- NULL
+      if( as.character(op) == "log" ) l <- NULL   # special case for plain olde log
       l <- lapply(l, function(i)
       if (length(i) != 0L) {
         if(i == "") NULL else i
