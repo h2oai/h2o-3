@@ -25,7 +25,6 @@
 #'
 #' @param path The complete URL or normalized file path of the file to be
 #'        imported. Each row of data appears as one line of the file.
-#' @param conn an \linkS4class{H2OConnection} class object.
 #' @param pattern (Optional) Character string containing a regular expression to match file(s) in
 #'        the folder.
 #' @param destination_frame (Optional) The unique hex key assigned to the imported file. If
@@ -56,14 +55,10 @@
 #' summary(prostate.hex)
 #' @name h2o.importFile
 #' @export
-h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
+h2o.importFolder <- function(path, pattern = "",
                              destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, na.strings=NULL) {
-  if (is(path, "H2OConnection")) {
-    temp <- path
-    path <- conn
-    conn <- temp
-  }
+  conn <- h2o.getConnection()
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
@@ -72,7 +67,7 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
-  res <- .h2o.__remoteSend(conn, .h2o.__IMPORT, path=path)
+  res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path)
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
@@ -81,10 +76,10 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
   if(length(res$files) > 0L) {
     if(parse) {
       srcKey <- res$destination_frames
-      rawData <- .newH2ORawData("H2ORawData", frame_id=srcKey)  # do not gc, H2O handles these nfs:// vecs
+      rawData <- .newH2ORawData("H2ORawData", id=srcKey)  # do not gc, H2O handles these nfs:// vecs
       ret <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, na.strings=na.strings)
     } else {
-      myData <- lapply(res$destination_frames, function(x) .newH2ORawData("H2ORawData", frame_id=x))  # do not gc, H2O handles these nfs:// vecs
+      myData <- lapply(res$destination_frames, function(x) .newH2ORawData("H2ORawData", id=x))  # do not gc, H2O handles these nfs:// vecs
       if(length(res$destination_frames) == 1L)
         ret <- myData[[1L]]
       else
@@ -96,24 +91,24 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
 
 
 #' @export
-h2o.importFile <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL, na.strings=NULL) {
-  h2o.importFolder(path, conn, pattern = "", destination_frame, parse, header, sep, col.names, na.strings=na.strings)
+h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL, na.strings=NULL) {
+  h2o.importFolder(path, pattern = "", destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.importURL <- function(path, conn = h2o.getConnection(), destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
+h2o.importURL <- function(path, destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFile(path, conn, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
+  h2o.importFile(path, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
-h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
+h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFolder(path, conn, pattern, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
+  h2o.importFolder(path, pattern, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
@@ -137,7 +132,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
   .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)
 
-  rawData <- .newH2ORawData("H2ORawData", frame_id=srcKey)
+  rawData <- .newH2ORawData("H2ORawData", id=srcKey)
   if (parse) {
     h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar)
   } else {
@@ -150,7 +145,6 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #'
 #' Load a saved H2O model from disk. Currnetly not implemented.
 #' @param path The path of the H2O Model to be imported.
-#' @param conn an \linkS4class{H2OConnection} object contianing the IP address
 #'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
 #'         built.
@@ -167,12 +161,8 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' # glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
 #' }
 #' @export
-h2o.loadModel <- function(path, conn = h2o.getConnection()) {
-  if (is(path, "H2OConnection")) {
-    temp <- path
-    path <- conn
-    conn <- temp
-  }
+h2o.loadModel <- function(path) {
+  conn <- h2o.getConnection()
   if(!is(conn, 'H2OConnection')) stop('`conn` must be of class H2OConnection')
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")

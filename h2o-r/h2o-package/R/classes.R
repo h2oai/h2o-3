@@ -86,10 +86,22 @@ setClass("H2OObject",
          prototype(id=NA_character_),
          contains="VIRTUAL")
 
+#
+# Dangling Pointers:
+#
+#  Keep a list of versioned active keys in .pkg.env$key.map
+#  Only delete if envir$version >= .pkg.env$key.map[[envir$id]]
+#  Can probably assert that >= is actually only ever ==
+#  < implies there's a more recent living version therefore, do not perform remove.
 .keyFinalizer <- function(envir) {
-  if( !is.null(envir$model_id) ) h2o.rm(envir$model_id)
-  if( !is.null(envir$id)       ) h2o.rm(envir$id)
-  if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id)
+  if( !is.null(envir$id) ) {
+    this.ver <- envir$version
+    that.ver <- .pkg.env$key.map[[envir$id]]
+    if( !is.null(this.ver) && !is.null(that.ver) && (this.ver == that.ver) ) {
+      h2o.rm(envir$id)
+      .pkg.env$key.map[[envir$id]] <- NULL  # wipe out the reference to the id as well
+    }
+  }
   invisible(NULL)
 }
 
@@ -100,6 +112,9 @@ setClass("H2OObject",
 setMethod("initialize", "H2OObject", function(.Object, ..., id) {
   envir <- new.env()
   assign("id", id, envir)
+  if( is.null(.pkg.env$key.map[[id]]) ) .pkg.env$key.map[[id]] <- 0L
+  .pkg.env$key.map[[id]] <- .pkg.env$key.map[[id]] + 1L  # bump the version of the id
+  assign("version", .pkg.env$key.map[[id]], envir)
   reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
   callNextMethod(.Object, id=id, finalizer=envir)
 })
@@ -219,8 +234,8 @@ setMethod("initialize", "H2OFrame", function(.Object, ..., id, mutable) {
 })
 
 # TODO: make a more frame-specific constructor
-.newH2OFrame <- function(Class, frame_id, mutable=NULL) {
-  new(Class, id=frame_id, mutable=mutable)
+.newH2OFrame <- function(Class, id, mutable=NULL) {
+  new(Class, id=id, mutable=mutable)
 }
 
 #' @rdname H2OFrame-class
@@ -261,8 +276,8 @@ setMethod("initialize", "H2ORawData", function(.Object, ..., id) {
   callNextMethod(.Object, id=id)
 })
 
-.newH2ORawData <- function(Class, frame_id = NA_character_) {
-  new(Class, id=frame_id)
+.newH2ORawData <- function(Class, id = NA_character_) {
+  new(Class, id=id)
 }
 
 #' @rdname H2ORawData-class
@@ -296,7 +311,7 @@ setMethod("initialize", "H2OW2V", function(.Object, ..., id ) {
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
 #' the data used to build the model (an object of class H2OFrame).
 #'
-#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
@@ -304,13 +319,13 @@ setMethod("initialize", "H2OW2V", function(.Object, ..., id ) {
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
-                        prototype(model_id=NA_character_),
+         representation(id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
+                        prototype(id=NA_character_),
                         contains=c("VIRTUAL"))
 
 # TODO: make a mode model-specific constructor
-.newH2OModel <- function(Class, ..., model_id = NA_character_) {
-  .newH2OObject(Class, ...,id=model_id)
+.newH2OModel <- function(Class, ..., id = NA_character_) {
+  .newH2OObject(Class, ...,id=id)
 }
 
 #' @rdname H2OModel-class
@@ -323,7 +338,7 @@ setMethod("show", "H2OModel", function(object) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model ID: ", o@model_id, "\n")
+  cat("Model ID: ", o@id, "\n")
 
   # summary
   print(m$model_summary)
@@ -352,7 +367,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@model_id, "\n")
+  cat("Model Key: ", o@id, "\n")
 
   # summary
   print(m$model_summary)
@@ -423,7 +438,7 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
 #' the data used to build the model (an object of class H2OFrame).
 #'
-#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containing all parameters used to fit the model.
@@ -636,10 +651,10 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #'
 #' A class to contain the information for background model jobs.
 #' @slot job_key a character key representing the identification of the job process.
-#' @slot model_id the final identifier for the model
+#' @slot id the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
+setClass("H2OModelFuture", representation(job_key="character", id="character"))
 
 #'
 #' Describe an H2OFrame object

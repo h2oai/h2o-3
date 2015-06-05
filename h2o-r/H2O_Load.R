@@ -1,7 +1,8 @@
 # Change this global variable to match your own system's path
-CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/"
-ROOT.PATH <- CLIFF.ROOT.PATH
-DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
+CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/h2o-3/"
+SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/h2o-dev/"
+ROOT.PATH <- SPENCER.ROOT.PATH
+DEV.PATH  <- "h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
 src <-
@@ -18,6 +19,7 @@ src()
 
 
 h <- h2o.init()
+conn <- h2o.init()   # convenient for copy-pasting from tests using "conn" rather than h
 #hex <- as.h2o(iris, h)
 #
 #hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))

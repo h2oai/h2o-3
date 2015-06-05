@@ -44,7 +44,7 @@ h2o.ls <- function() {
   gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make("ls"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", id = .key.make("ls"), mutable = mutable)
   as.data.frame(fr)
 }
 
@@ -107,7 +107,7 @@ h2o.rm <- function(ids) {
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
-      if(is(o, "H2OFrame")) o@id else if(is(o, "H2OModel")) o@model_id
+      if(is(o, "H2OFrame")) o@id else if(is(o, "H2OModel")) o@id
     })
     Filter(Negate(is.null), l)
   }
@@ -146,35 +146,35 @@ h2o.assign <- function(data, key) {
 #'
 #' Get an R Reference to an H2O Dataset
 #'
-#' Get the reference to a frame with the given frame_id in the H2O instance.
+#' Get the reference to a frame with the given id in the H2O instance.
 #'
-#' @param frame_id A string indicating the unique frame of the dataset to retrieve.
+#' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(frame_id) {
-  if( is.null(frame_id) ) stop("Expected frame id")
-  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]
+h2o.getFrame <- function(id) {
+  if( is.null(id) ) stop("Expected frame id")
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", id))$frames[[1]]
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  .newH2OFrame("H2OFrame", frame_id=frame_id, mutable=mutable)
+  .newH2OFrame("H2OFrame", id=id, mutable=mutable)
 }
 
 #' Get an R reference to an H2O model
 #'
 #' Returns a reference to an existing model in the H2O instance.
 #'
-#' @param model_id A string indicating the unique model_id of the model to retrieve.
+#' @param id A string indicating the unique id of the model to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
 #'
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
-#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
-#' model.retrieved <- h2o.getModel(model_id, localH2O)
+#' id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@id
+#' model.retrieved <- h2o.getModel(id, localH2O)
 #' @export
-h2o.getModel <- function(model_id) {
-  json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
+h2o.getModel <- function(id) {
+  json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", id))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
@@ -238,7 +238,7 @@ h2o.getModel <- function(model_id) {
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
   .newH2OModel(Class          = Class,
-                model_id      = json$model_id$name,
+                id      = json$id$name,
                 algorithm     = json$algo,
                 parameters    = parameters,
                 allparameters = allparams,
@@ -264,9 +264,9 @@ h2o.getModel <- function(model_id) {
 #' # h2o.download_pojo(my_model, getwd())  # save to the current working directory, NOT RUN
 #' @export
 h2o.download_pojo <- function(model, path="") {
-  model_id <- model@model_id
-  java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
-  file.path <- paste0(path, "/", model_id, ".java")
+  id <- model@id
+  java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", id), raw=TRUE)
+  file.path <- paste0(path, "/", id, ".java")
   if( path == "" ) cat(java)
   else write(java, file=file.path)
 

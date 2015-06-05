@@ -652,7 +652,7 @@ h2o.setTimezone <- function(tz) {
 h2o.getTimezone <- function() {
   ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make("getTimeZone"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", id = .key.make("getTimeZone"), mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@id)
   ret
@@ -665,7 +665,7 @@ h2o.getTimezone <- function() {
 h2o.listTimezones <- function(conn=h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "listTimeZones"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", frame_id = .key.make("listTimeZones"), mutable = mutable)
+  fr <- .newH2OFrame("H2OFrame", id = .key.make("listTimeZones"), mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@id)
   ret
@@ -677,7 +677,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
 #
 #  expr <- paste("diff(", paste(x@id, lag, differences, sep = ","), ")", sep = "")
 #  res <- .h2o.__exec2(x@conn, expr)
-#  .newH2OFrame("H2OFrame", frame_id=res$dest_key, logic=FALSE)
+#  .newH2OFrame("H2OFrame", id=res$dest_key, logic=FALSE)
 #}
 
 #' Produe a Vector of Random Uniform Numbers
@@ -803,7 +803,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   }
 
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame",  frame_id = .key.make("subset"), mutable = mutable)
+  .newH2OFrame("H2OFrame",  id = .key.make("subset"), mutable = mutable)
 })
 
 #' @rdname H2OFrame-Extract
@@ -904,7 +904,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), "()", j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-      sub <-  .newH2OFrame("H2OFrame", frame_id = .key.make("subset"), mutable = mutable)
+      sub <-  .newH2OFrame("H2OFrame", id = .key.make("subset"), mutable = mutable)
     } else {
       sub <- x[,j]
     }
@@ -924,7 +924,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i,parent.frame()), j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-      sub <-  .newH2OFrame("H2OFrame", frame_id = .key.make("subset"), mutable = mutable)
+      sub <-  .newH2OFrame("H2OFrame", id = .key.make("subset"), mutable = mutable)
     } else {
       sub <- x[i, j]
     }
@@ -940,7 +940,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op  <- new("ASTApply", op = "=")
   ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  res <- .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@id)
+  res <- .h2o.replace.frame(conn = x@conn, ast = ast, id = x@id)
 
   if( updateColName ) { colnames(res)[idx] <- name }
   res
@@ -971,7 +971,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
       stop("`value` can only be an H2OFrame object, numeric or NULL")
 
     ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
-    res <- .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@id)
+    res <- .h2o.replace.frame(conn = x@conn, ast = ast, id = x@id)
     colnames(res)[idx] <- name
   }
   res
@@ -1003,7 +1003,7 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
     idxs <- 0L:(ncol(x) - 1L)
     ast <- .h2o.nary_op_ast("colnames=", x, idxs, value)
-    .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@id)
+    .h2o.replace.frame(conn = x@conn, ast = ast, id = x@id)
 })
 
 #' @rdname h2o.colnames
@@ -2128,7 +2128,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG,vars2))
 
   mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-  .newH2OFrame("H2OFrame", frame_id = .key.make("group_by"), mutable = mutable)
+  .newH2OFrame("H2OFrame", id = .key.make("group_by"), mutable = mutable)
 }
 
 # old version of h2o.groupBy -- not user friendly.
@@ -2194,7 +2194,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #  GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG))
 #
 #  mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-#  .newH2OFrame("H2OFrame", frame_id = .key.make("group_by"), mutable = mutable)
+#  .newH2OFrame("H2OFrame", id = .key.make("group_by"), mutable = mutable)
 #}
 
 #'
@@ -2291,7 +2291,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
     .h2o.raw_expr_op(expr=.visitor(IMPUTE), key=data@id)
   } else {
     mutable <- new("H2OFrameMutableState", ast=IMPUTE, nrows=NA_integer_, ncols=NA_integer_, col_names=NA_character_)
-    .newH2OFrame("H2OFrame", frame_id=.key.make("impute"), mutable=mutable)
+    .newH2OFrame("H2OFrame", id=.key.make("impute"), mutable=mutable)
   }
 }
 
@@ -2691,7 +2691,7 @@ h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
 #  myVec <- paste0("c(", .seq_to_string(vec), ")")
 #  expr <- paste0("findInterval(", x@id, ",", myVec, ",", as.numeric(rightmost.closed), ")")
 #  res <- .h2o.__exec2(expr)
-#  .newH2OFrame('H2OFrame', frame_id=res$dest_key)
+#  .newH2OFrame('H2OFrame', id=res$dest_key)
 #})
 #
 ## setGeneric("histograms", function(object) { standardGeneric("histograms") })

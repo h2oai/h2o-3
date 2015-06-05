@@ -12,6 +12,7 @@
 #' The H2O Package Environment
 #'
 .pkg.env <- new.env()
+.pkg.env$key.map <- list()   # global list of versioned keys
 assign("SERVER",        NULL,  .pkg.env)
 assign("IS_LOGGING",    FALSE, .pkg.env)
 assign("LOG_FILE_NAME", NULL,  .pkg.env)

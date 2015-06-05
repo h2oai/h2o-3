@@ -183,7 +183,7 @@
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
+  new("H2OModelFuture",conn=conn, job_key=job_key, id=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
@@ -200,7 +200,7 @@
 
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@model_id, object@conn)
+  h2o.getModel(object@id, object@conn)
 }
 
 #' Predict on an H2O Model
@@ -229,7 +229,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   .h2o.eval.frame(newdata)
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@id)
+  url <- paste0('Predictions/models/', object@id, '/frames/', newdata@id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
   res <- res$predictions_frame
   h2o.getFrame(res$name)
@@ -253,7 +253,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
     model <- do.call(model.type, c(params))
   }
   output[1, "fold_num"] <- -1
-  output[1, "model_key"] <- model@model_id
+  output[1, "model_key"] <- model@id
   # output[1, "model"] <- model@model$mse_valid
 
   data <- params$training_frame
@@ -271,7 +271,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
       params$validation_frame <- data[fnum_id$object != i, ]
       fold <- do.call(model.type, c(params))
       output[(i+1), "fold_num"] <<- i - 1
-      output[(i+1), "model_key"] <<- fold@model_id
+      output[(i+1), "model_key"] <<- fold@id
       # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
       fold
     })
@@ -310,8 +310,8 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.frame_id <- if( missingData ) trainingFrame else data@id
-  if( !missingData && data.frame_id == trainingFrame ) {
+  data.id <- if( missingData ) trainingFrame else data@id
+  if( !missingData && data.id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
   }
@@ -324,20 +324,20 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     .h2o.eval.frame(data)
 
     parms <- list()
-    parms[["model"]] <- model@model_id
-    parms[["frame"]] <- data.frame_id
-    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@model_id,data.frame_id), .params = parms)
+    parms[["model"]] <- model@id
+    parms[["frame"]] <- data.id
+    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@id,data.id), .params = parms)
 
     ####
     # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
-    model_metrics <- Filter(function(mm) { mm$frame$name==data.frame_id}, res$model_metrics)[[1]]   # filter on data.frame_id, R's builtin Filter function
+    model_metrics <- Filter(function(mm) { mm$frame$name==data.id}, res$model_metrics)[[1]]   # filter on data.id, R's builtin Filter function
     #
     ####
     metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
     model_category <- model_metrics$model_category
     Class <- paste0("H2O", model_category, "Metrics")
     metrics$frame <- list()
-    metrics$frame$name <- data.frame_id
+    metrics$frame$name <- data.id
     new(Class     = Class,
         algorithm = model@algorithm,
         on_train  = missingData,
@@ -1042,7 +1042,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   # ok need to score on the newdata
   .h2o.eval.frame(newdata)
 
-  url <- paste0("Predictions/models/",object@model_id, "/frames/", newdata@id)
+  url <- paste0("Predictions/models/",object@id, "/frames/", newdata@id)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")
 
   # Make the correct class of metrics object

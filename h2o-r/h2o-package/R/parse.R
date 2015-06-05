@@ -52,7 +52,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   .h2o.__waitOnJob(res$job$key$name)
 
   # Return a new H2OFrame object
-  h2o.getFrame(frame_id=hex)
+  h2o.getFrame(id=hex)
 }
 
 #'
@@ -129,15 +129,15 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   else "[]"
 }
 
-.h2o.fetchNRows <- function(frame_id) {
-  .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", frame_id))$frames[[1]]$rows
+.h2o.fetchNRows <- function(id) {
+  .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", id))$frames[[1]]$rows
 }
 
 #'
 #' The H2OFrame Constructor
 .h2o.parsedData <- function(destination_frame, nrows, ncols, col_names) {
   mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
-  .newH2OFrame("H2OFrame", frame_id=destination_frame, mutable=mutable)
+  .newH2OFrame("H2OFrame", id=destination_frame, mutable=mutable)
 }
 
 

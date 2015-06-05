@@ -138,7 +138,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   if(!is.character(name) || length(name) != 1L || is.na(name))
     stop("`name` must be a character string")
   else if(!nzchar(name))
-    name <- object@model_id
+    name <- object@id
 
   if(!is.character(filename) || length(filename) != 1L || is.na(filename))
     stop("`filename` must be a character string")
@@ -153,7 +153,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
     path <- file.path(dir, name)
 
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
+  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@id, path=path, force=force)
 
 # path
 }

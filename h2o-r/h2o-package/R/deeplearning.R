@@ -6,7 +6,7 @@
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
 #' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
-#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#' @param id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
 #' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -104,7 +104,7 @@
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
-                             model_id = "",
+                             id = "",
                              overwrite_with_best_model,
                              n_folds = 0,
                              validation_frame,
@@ -186,8 +186,8 @@ h2o.deeplearning <- function(x, y, training_frame,
   colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
   parms$response_column <- colargs$y
   parms$ignored_columns <- colargs$x_ignore
-  if(!missing(model_id))
-    parms$model_id <- model_id
+  if(!missing(id))
+    parms$id <- id
   if(!missing(overwrite_with_best_model))
     parms$overwrite_with_best_model <- overwrite_with_best_model
   if(!missing(n_folds))
@@ -328,9 +328,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' head(prostate.anon)
 #' @export
 h2o.anomaly <- function(object, data) {
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@id)
+  url <- paste0('Predictions/models/', object@id, '/frames/', data@id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
-  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  key <- res$model_metrics[[1L]]$predictions$id$name
 
   h2o.getFrame(key)
 }
@@ -361,7 +361,7 @@ h2o.anomaly <- function(object, data) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
   .h2o.eval.frame(data)
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@id)
+  url <- paste0('Predictions/models/', object@id, '/frames/', data@id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 
