@@ -243,6 +243,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(!o.isNumeric())
           error("_offset_column","Invalid offset column '" + _parms._offset_column  + "', offset must be numeric");
         _offset = o;
+        if(_weights == _offset)
+          error("_offset_column", "Offset must be different from weights");
         _train.add(_parms._offset_column, o);
         ++res;
       }
