@@ -13,7 +13,7 @@ test <- function(h) {
 # Parse data into H2O
 print("Parsing data into H2O")
 # From an h2o git workspace.
-data.hex <- h2o.importFile(h, locate("smalldata/bank-additional-full.csv"), destination_frame="data")
+data.hex <- h2o.importFile(h, locate("smalldata/demos/bank-additional-full.csv"), destination_frame="data")
 # Or directly from github.
 # data.hex = h2o.importFile(h, path = "https://raw.github.com/0xdata/h2o/master/smalldata/bank-additional-full.csv", destination_frame="data.hex")
 
@@ -30,11 +30,11 @@ myX <- 1:20
 myY <- "y"
 
 # Run GBM with variable importance
-my.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = data.hex, ntrees =100,
-                  max_depth = 2, learn_rate = 0.01, variable_importance = T) 
+my.gbm <- h2o.gbm(x = myX, y = myY, distribution = "bernoulli", training_frame = data.hex,
+                  ntrees =100, max_depth = 2, learn_rate = 0.01)
 
 # Access Variable Importance from the built model
-gbm.VI <- my.gbm@model$varimp
+gbm.VI <- h2o.varimp(my.gbm)
 print("Variable importance from GBM")
 print(gbm.VI)
 
@@ -44,10 +44,10 @@ barplot(t(gbm.VI[1]),las=2,main="VI from GBM")
 
 #--------------------------------------------------
 # Run random Forest with variable importance
-my.rf <- h2o.randomForest(x=myX,y=myY,data=data.hex,classification=T,ntree=100,importance=T)
+my.rf <- h2o.randomForest(x=myX,y=myY,training_frame=data.hex,ntrees=100)
 
 # Access Variable Importance from the built model
-rf.VI <- my.rf@model$varimp
+rf.VI <- h2o.varimp(my.rf)
 print("Variable importance from Random Forest")
 print(rf.VI)
 
@@ -55,9 +55,10 @@ rf.VI <- rf.VI[order(rf.VI[1,],decreasing=T)]
 # RF variable importance Without normalization, i.e scale =T
 print("Variable importance from Random Forest without normalization")
 print(t(rf.VI[1,]))
+print(h2o.varimp(my.rf)[1,])
 
 # RF variable importance With normalization, i.e scale =T (divide mean decrease accuracy by standard deviation)
-norm_rf.VI <- my.rf@model$varimp[1,]/my.rf@model$varimp[2,]
+norm_rf.VI <- h2o.varimp(my.rf)[1,]/h2o.varimp(my.rf)[2,]
 # Sort in decreasing order
 nrf.VI <- norm_rf.VI[order(norm_rf.VI[1,],decreasing=T)]
 print("Variable importance from Random Forest with normalization")
@@ -68,23 +69,24 @@ barplot(t(nrf.VI[1,]),beside=T,names.arg=row.names(t(nrf.VI[1,])),las=2,main="VI
 
 #--------------------------------------------------
 # Run GLM with variable importance, lambda search and using all factor levels
-my.glm <- h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial",standardize=T,use_all_factor_levels=T,lambda_search=T)
+my.glm <- h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial",standardize=T,
+  lambda_search=T)
 
 # Select the best model picked by glm
 best_model <- my.glm@best_model
 
-# Get the normalized coefficients of the best model 
-n_coeff <- abs(my.glm@models[[best_model]]@model$normalized_coefficients)  
+# Get the normalized coefficients of the best model
+n_coeff <- abs(my.glm@models[[best_model]]@model$normalized_coefficients)
 
 # Access Variable Importance by removing the intercept term
-VI <- abs(n_coeff[-length(n_coeff)])                                     
+VI <- abs(n_coeff[-length(n_coeff)])
 
 glm.VI <- VI[order(VI,decreasing=T)]
 print("Variable importance from GLM")
 print(glm.VI)
 
 # Plot variable importance from glm
-barplot(glm.VI[1:20],las=2,main="VI from GLM") 
+barplot(glm.VI[1:20],las=2,main="VI from GLM")
 
 #--------------------------------------------------
 # Run deeplearning with variable importance
