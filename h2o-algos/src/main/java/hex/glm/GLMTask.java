@@ -66,7 +66,7 @@ public abstract class GLMTask  {
          continue;
        }
        _wsum += w;
-       double d = w*(Math.log(response.atd(r)));
+       double d = w*response.atd(r);
        assert !Double.isNaN(d);
        assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
        _ymu += d;

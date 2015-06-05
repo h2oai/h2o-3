@@ -451,7 +451,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         public void callback(final YMUTask ymut) {
           _rowFilter = ymut._fVec;
           _ymu = _parms._intercept ? ymut._ymu : 0;
-          _ymuLink = _parms.link(_ymu);
+          _ymuLink = _parms._intercept ? _parms.link(_ymu):0;
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
           _nobs = ymut._nobs;

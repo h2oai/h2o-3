@@ -8,6 +8,7 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -38,6 +39,7 @@ public class GLMBasicTestRegression extends TestUtil {
     _canCarTrain = ParseDataset.parse(outputKey, nfs._key);
     _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toEnum());
     _canCarTrain.add("Class",(_class = _canCarTrain.remove("Class")).toEnum());
+    DKV.put(_canCarTrain._key, _canCarTrain);
   }
 
   @Test
