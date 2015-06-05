@@ -304,7 +304,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' library(h2o)
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' iris.hex = h2o.importFile(path = irisPath)
 #' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
 #' head(iris.split[[1]])
 #' summary(iris.split[[1]])
@@ -692,7 +692,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' s = h2o.runif(prostate.hex)
 #' summary(s)
 #'
@@ -720,7 +720,7 @@ h2o.runif <- function(x, seed = -1) {
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.importFile(localH2O, path = irisPath)
+#' iris.hex <- h2o.importFile(path = irisPath)
 #' h2o.anyFactor(iris.hex)
 #' @export
 h2o.anyFactor <- function(x) {
@@ -1389,7 +1389,7 @@ quantile.H2OFrame <- function(x,
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' prostate.hex = h2o.importFile(path = prosPath)
 #' summary(prostate.hex)
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
@@ -1838,7 +1838,7 @@ setMethod("as.numeric", "H2OFrame", function(x)
 #' @examples
 #' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' australia.hex = h2o.importFile(path = ausPath)
 #' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
 #' summary(australia.hex)
 NULL
@@ -2465,7 +2465,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #' @examples
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath, destination_frame = "iris.hex")
+#' iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 #' summary(apply(iris.hex, 1, sum))
 #' @export
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {

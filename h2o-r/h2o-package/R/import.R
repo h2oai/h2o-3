@@ -58,8 +58,6 @@
 h2o.importFolder <- function(path, pattern = "",
                              destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, na.strings=NULL) {
-  conn <- h2o.getConnection()
-  if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
@@ -92,7 +90,7 @@ h2o.importFolder <- function(path, pattern = "",
 
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL, na.strings=NULL) {
-  h2o.importFolder(path, pattern = "", destination_frame, parse, header, sep, col.names, na.strings=na.strings)
+  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
@@ -154,7 +152,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' # library(h2o)
 #' # localH2O = h2o.init()
 #' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' # prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' # prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 #' # glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
@@ -162,11 +160,9 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' }
 #' @export
 h2o.loadModel <- function(path) {
-  conn <- h2o.getConnection()
-  if(!is(conn, 'H2OConnection')) stop('`conn` must be of class H2OConnection')
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(conn, .h2o.__PAGE_LoadModel, path = path)
-  # h2o.getModel(res$model$'_key', conn)
+  # res <- .h2o.__remoteSend(.h2o.__PAGE_LoadModel, path = path)
+  # h2o.getModel(res$model$'_key')
 }

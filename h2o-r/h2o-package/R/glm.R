@@ -62,7 +62,7 @@
 #'
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
 #' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prostatePath, destination_frame = "prostate.hex")
+#' prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
 #' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
 #'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #'
@@ -76,7 +76,6 @@
 #'  # Also see:
 #'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
 #'  data.hex = h2o.importFile(
-#'    localH2O,
 #'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
 #'    destination_frame = "data.hex")
 #'  myX = 1:20

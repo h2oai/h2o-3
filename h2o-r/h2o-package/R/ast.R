@@ -75,7 +75,8 @@ function(x, envir, sub_one = TRUE) {
   }
   if (anyH2OFrame)
     x <- eval(x, envir)
-  .ast.walker(x, envir, FALSE, sub_one)
+  return(paste0('[',paste0(.ast.walker(x, envir, FALSE, sub_one),collapse=" "),']'))
+
 }
 
 #'
@@ -89,7 +90,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   # Single column forms
   if (length(expr) == 1L) {
     if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
-    if (is.numeric(expr[[1L]])) return(paste0('#', eval(expr[[1L]], envir=envir) - sub))
+    if (is.numeric(expr[[1L]])) return(eval(expr[[1L]], envir=envir) - sub)
     if (is.character(expr[[1L]])) return(deparse(expr[[1L]]))
     if (is.character(expr)) return(deparse(expr))
   }
@@ -100,7 +101,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
     if ((expr[[1L]]) == quote(`c`)) {
       children <- lapply(expr[-1L], .ast.walker, envir, neg, sub_one)
       if( is(children[[1]], "ASTNode") ) stop("No expressions, all must evaluate to constants here")
-      return(paste0('[',paste0(children,collapse=" "),']'))
+      return(children)
 
     # handle the negative indexing cases
     } else if (expr[[1L]] == quote(`-`)) {
@@ -159,7 +160,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
     } else
       lb = eval(expr[[2L]], envir = envir) - 1L
       ub = eval(expr[[3L]], envir = envir) - 1L
-      return(paste0('[',lb,':',(ub-lb+1),']'))
+      return(paste0(lb,':',(ub-lb+1)))
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
