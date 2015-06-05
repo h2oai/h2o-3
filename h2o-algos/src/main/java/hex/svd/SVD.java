@@ -3,6 +3,7 @@ package hex.svd;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.ModelMetrics;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV3;
@@ -105,16 +106,39 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return v;
   }
 
-  // Subtract two symmetric matrices
-  public double[][] sub_symm(double[][] lmat, double[][] rmat) {
-    for(int i = 0; i < rmat.length; i++) {
+
+  // Compute ivv_sum - vec * vec' for symmetric array ivv_sum
+  public static double[][] updateIVVSum(double[][] ivv_sum, double[] vec) {
+    double diff;
+    for(int i = 0; i < vec.length; i++) {
       for(int j = 0; j < i; j++) {
-        double diff = lmat[i][j] - rmat[i][j];
-        lmat[i][j] = lmat[j][i] = diff;
+        diff = ivv_sum[i][j] - vec[i] * vec[j];
+        ivv_sum[i][j] = ivv_sum[j][i] = diff;
       }
-      lmat[i][i] -= rmat[i][i];
+      ivv_sum[i][i] -= vec[i] * vec[i];
     }
-    return lmat;
+    return ivv_sum;
+  }
+
+  // Compute ivv_sum * gram * ivv_sum' for symmetric arrays ivv_sum and gram
+  public static double[][] updateGram(double[][] ivv_sum, double[][] gram) {
+    double[][] res = new double[ivv_sum.length][ivv_sum.length];
+
+    for(int i = 0; i < ivv_sum.length; i++) {
+      for(int j = 0; j < i; j++) {
+        for(int k = 0; k < gram.length; k++) {
+          for(int l = 0; l < gram[0].length; l++)
+            res[i][j] += ivv_sum[i][k] * gram[k][l] * ivv_sum[j][l];
+        }
+        res[j][i] = res[i][j];
+      }
+
+      for(int k = 0; k < gram.length; k++) {
+        for (int l = 0; l < gram[0].length; l++)
+          res[i][i] += ivv_sum[i][k] * gram[k][l] * ivv_sum[i][l];
+      }
+    }
+    return res;
   }
 
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
@@ -125,14 +149,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       Frame fr = null, u = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(SVD.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
         model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
         model.delete_and_lock(self());
-        //_train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
         dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
@@ -201,8 +224,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1);            // One unit of work
 
         // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
-        double[][] vv = ArrayUtils.outerProduct(model._output._v[0], model._output._v[0]);
-        ivv_sum = sub_symm(ivv_sum, vv);
+        updateIVVSum(ivv_sum, model._output._v[0]);
         double[][] gram_update = ArrayUtils.multArrArr(ArrayUtils.multArrArr(ivv_sum, gram), ivv_sum);
 
         for(int k = 1; k < _parms._nv; k++) {
@@ -220,17 +242,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
-          // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
-          vv = ArrayUtils.outerProduct(model._output._v[k], model._output._v[k]);
-          ivv_sum = sub_symm(ivv_sum, vv);
-          double[][] lmat = ArrayUtils.multArrArr(ivv_sum, gram);
-          gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
-
+          updateIVVSum(ivv_sum, model._output._v[k]);   // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
+          gram_update = ArrayUtils.multArrArr(ivv_sum, ArrayUtils.multArrArr(gram, ivv_sum));
+          // gram_update = updateGram(ivv_sum, gram);   // Too slow on big arrays
           model.update(self()); // Update model in K/V store
           update(1);            // One unit of work
         }
 
-        // 4) Normalize last left singular vector
+        // 4) Normalize last left singular vector and save parameters
         model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
         if(!_parms._only_v) {
           if(_parms._keep_u) {

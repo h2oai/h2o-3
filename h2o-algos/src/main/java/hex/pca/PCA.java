@@ -190,8 +190,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Frame x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
