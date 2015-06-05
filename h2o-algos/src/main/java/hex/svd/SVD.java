@@ -153,9 +153,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
-        GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
-        double[][] gram = tsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
+        GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
+        double[][] gram = gtsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
         assert gram.length == _ncolExp;
+        model._output._nobs = gtsk._nobs;
         model._output._v = new double[_parms._nv][gram.length];
         model.update(self());
         update(1);
@@ -192,7 +193,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Compute first singular value \sigma_1
           double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[0]);
-          model._output._d[0] = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
+          CalcSigmaU ctsk = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame);
+          model._output._d[0] = ctsk._sval;
+          assert _train.numRows() - ctsk._skipped == model._output._nobs;    // Check same number of skipped rows as Gram
         }
         model.update(self()); // Update model in K/V store
         update(1);            // One unit of work
@@ -211,7 +214,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           if(!_parms._only_v) {
             double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
             // model._output._d[k] = new CalcSigma(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
-            model._output._d[k] = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, model._output._d[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame)._sval;
+            CalcSigmaUNorm ctsk = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, model._output._d[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame);
+            model._output._d[k] = ctsk._sval;
+            assert _train.numRows() - ctsk._skipped == model._output._nobs;
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
@@ -273,19 +278,29 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // protected static int idx_u(int c) { return _ncols+c; }
   protected static Chunk chk_u(Chunk chks[], int c, int ncols) { return chks[ncols+c]; }
 
+  // A pair result: square distance and number of rows skipped
+  private static final class L2Norm { double _sumsqr; long _skipped;  }
+
   // Save inner product of each row with vec to col k of chunk array
   // Returns sum over l2 norms of each row with vec
-  private static double l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, double[] normSub, double[] normMul) {
+  // Note: Training rows that include any NaN entry are skipped, since this is same behavior when computing Gram matrix
+  private static L2Norm l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, double[] normSub, double[] normMul, L2Norm result) {
     double sumsqr = 0;
+    long skipped = 0;
     int ncols = dinfo._adaptedFrame.numCols();
 
+    // TODO: Keep track of number of good rows and compare with Gram
     // Calculate inner product of current row with vec
+    OUTER:
     for (int row = 0; row < cs[0]._len; row++) {
       // Categorical cols expanded into 0/1 indicator cols
       double sum = 0;
       for (int j = 0; j < dinfo._cats; j++) {
+        if (dinfo._skipMissing && cs[j].isNA(row)) {
+          skipped++;
+          continue OUTER;   // Skip training rows that include any NaN entry
+        }
         int level = (int)cs[j].atd(row);
-        if (Double.isNaN(level)) continue;    // Skip training entries that are NaN
         int c = dinfo.getCategoricalId(j, level);
         if (c < 0) continue;    // Skip factor levels out of range
         sum += vec[c];
@@ -295,16 +310,22 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       int cidx = dinfo._cats;
       int vidx = dinfo.numStart();
       for (int j = 0; j < dinfo._nums; j++) {
+        if (dinfo._skipMissing && cs[j].isNA(row)) {
+          skipped++;
+          continue OUTER;   // Skip training rows that include any NaN entry
+        }
         double a = cs[cidx].atd(row);
-        if (!Double.isNaN(a))   // Skip training entries that are NaN
-          sum += (a - normSub[j]) * normMul[j] * vec[vidx];
+        sum += (a - normSub[j]) * normMul[j] * vec[vidx];
         cidx++; vidx++;
       }
       assert cidx == ncols && vidx == vec.length;
       sumsqr += sum * sum;
       chk_u(cs,k,ncols).set(row,sum);   // Update u_k <- A_{k-1}v_k
     }
-    return sumsqr;
+
+    result._sumsqr = sumsqr;
+    result._skipped = skipped;
+    return result;
   }
 
   // Divide each row of a chunk by a constant
@@ -322,7 +343,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final double[] _normMul;
     final int _ncols;
     final double[] _svec;   // Input: Right singular vector (v_1)
+
     double _sval;           // Output: Singular value (\sigma_1)
+    long _skipped;          // Output: Number of skipped rows
 
     CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
@@ -337,11 +360,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
-      _sval = l2norm2(cs, _svec, 0, _dinfo, _normSub, _normMul);    // Update \sigma_1 and u_1 <- Av_1
+      L2Norm result = new L2Norm();
+      l2norm2(cs, _svec, 0, _dinfo, _normSub, _normMul, result);    // Update \sigma_1 and u_1 <- Av_1
+      _sval = result._sumsqr;
+      _skipped = result._skipped;
     }
 
     @Override public void reduce(CalcSigmaU other) {
       _sval += other._sval;
+      _skipped += other._skipped;
     }
 
     @Override protected void postGlobal() {
@@ -358,7 +385,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final double[] _normSub;
     final double[] _normMul;
     final int _ncols;
+
     double _sval;     // Output: Singular value (\sigma_k)
+    long _skipped;    // Output: Number of skipped rows
 
     CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
@@ -376,12 +405,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
-      _sval = l2norm2(cs, _svec, _k, _dinfo, _normSub, _normMul);   // Update \sigma_k and save u_k <- A_{k-1}v_k
+      L2Norm result = new L2Norm();
+      l2norm2(cs, _svec, _k, _dinfo, _normSub, _normMul, result);   // Update \sigma_k and save u_k <- A_{k-1}v_k
+      _sval = result._sumsqr;
+      _skipped = result._skipped;
       div(chk_u(cs,_k-1,_ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
     }
 
     @Override public void reduce(CalcSigmaUNorm other) {
       _sval += other._sval;
+      _skipped += other._skipped;
     }
 
     @Override protected void postGlobal() {
