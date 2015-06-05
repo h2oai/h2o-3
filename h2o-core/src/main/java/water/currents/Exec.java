@@ -42,9 +42,10 @@ public class Exec {
     // Execute
     Env env = new Env();
     Val val = ast.exec(env);
-    // Results.  Deep copy returned Vecs.
+    // Results.  Deep copy returned Vecs.  Always return a key-less Frame
     if( val.isFrame() ) {
       Frame fr = val.getFrame();
+      if( fr._key != null ) val=new ValFrame(fr = new Frame(null,fr.names(),fr.vecs()));
       Vec vecs[] = fr.vecs();
       for( int i=0; i<vecs.length; i++ )
         if( env.isPreExistingGlobal(vecs[i]) )

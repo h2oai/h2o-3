@@ -99,7 +99,10 @@ setClass("H2OObject",
     that.ver <- .pkg.env$key.map[[envir$id]]
     if( !is.null(this.ver) && !is.null(that.ver) && (this.ver == that.ver) ) {
       h2o.rm(envir$id)
-      .pkg.env$key.map[[envir$id]] <- NULL  # wipe out the reference to the id as well
+# CNC - Do not wipe out the reference, because need to ensure counts
+# monotonically increase.  If we reset the counts we can get confused when the
+# same number comes around again.
+#      .pkg.env$key.map[[envir$id]] <- NULL  # wipe out the reference to the id as well
     }
   }
   invisible(NULL)

@@ -217,7 +217,7 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
     temp <- substr(ans, 1L, 1L)
   } else { temp <- "y" }
 
-  if(temp == "Y" || temp == "y") .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
+  if(temp == "Y" || temp == "y") .h2o.doRawREST(conn = conn, method="POST", urlSuffix = .h2o.__SHUTDOWN, h2oRestApiVersion = .h2o.__REST_API_VERSION)
 
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
     pid_file <- .h2o.getTmpFile("pid")

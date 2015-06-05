@@ -28,6 +28,7 @@ class RapidsHandler extends Handler {
     case Val.FUN:  return new RapidsFunctionV3(val.getFun().toString());
     case Val.FRM:
       Frame fr = val.getFrame();
+      assert fr._key==null;     // Rapids always returns a key-less Frame
       if( rapids.id==null ) {
         fr.delete();
         throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
