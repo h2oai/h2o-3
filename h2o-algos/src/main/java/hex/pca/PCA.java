@@ -153,10 +153,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       double[] sdev = new double[svd._output._d.length];
       double[] vars = new double[svd._output._d.length];
       double totVar = 0;
-      double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
+      double dfcorr = 1.0 / Math.sqrt(svd._output._nobs - 1.0);
       for (int i = 0; i < sdev.length; i++) {
-        // sdev[i] = dfcorr * svd._output._d[i];
-        sdev[i] = svd._output._d[i] / Math.sqrt((double)_train.numRows() - 1.0);
+        sdev[i] = dfcorr * svd._output._d[i];
         vars[i] = sdev[i] * sdev[i];
         totVar += vars[i];
       }
