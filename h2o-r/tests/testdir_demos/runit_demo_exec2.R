@@ -20,7 +20,7 @@ test.exec2.demo <- function(conn) {
   Log.info("Convert CAPSULE column from numeric to factor variable")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
   print(prostate.hex)
-  expect_true(is.factor(prostate.hex$RACE))
+  expect_true(is.factor(prostate.hex$CAPSULE))
   print(summary(prostate.hex))
 
 
@@ -83,7 +83,8 @@ test.exec2.demo <- function(conn) {
 
   myY <- "CAPSULE"; myX = setdiff(colnames(prostate.train), c(myY, "ID"))
   Log.info(paste("Run GBM with y = CAPSULE, x =", paste(myX, collapse = ",")))
-  prostate.gbm <- h2o.gbm(x = myX, y = myY, training_frame = prostate.train, validation_frame = prostate.test, loss = "bernoulli")
+  prostate.gbm <- h2o.gbm(x = myX, y = myY, training_frame = prostate.train,
+    validation_frame = prostate.test, distribution = "bernoulli")
   print(prostate.gbm)
 
   Log.info("Generate GBM predictions on test set")
