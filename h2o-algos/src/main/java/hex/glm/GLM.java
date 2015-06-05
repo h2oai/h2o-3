@@ -421,6 +421,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     GLMGradientTask _gtNullTest;
     GLMGradientTask _gtBetaStart;
 
+    private transient double _likelihood = Double.POSITIVE_INFINITY;
+    private transient int _iter;
     private class NullModelIteration extends H2OCallback<GLMIterationTask> {
       final DataInfo _nullDinfo;
 
@@ -430,14 +432,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       @Override
       public void callback(GLMIterationTask glmIterationTask) {
+        if(glmIterationTask._likelihood > _likelihood){ // line search
+          InitTsk.this.addToPendingCount(1);
+          new GLMTask.GLMIterationTask(GLM.this._key,_nullDinfo,0,_parms,false,new double[]{.5*(_ymu + glmIterationTask._beta[0])},0,_rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          return;
+        }
+        _likelihood = glmIterationTask._likelihood;
+        _ymu = glmIterationTask._beta[0];
         double ymu = glmIterationTask._xy[0]/glmIterationTask._gram.get(0,0);
-        if(Math.abs(ymu - glmIterationTask._beta[0]) > _parms._beta_epsilon) {
+        if(++_iter < 50 && Math.abs(ymu - glmIterationTask._beta[0]) > _parms._beta_epsilon) {
           InitTsk.this.addToPendingCount(1);
           new GLMTask.GLMIterationTask(GLM.this._key,_nullDinfo,0,_parms,false,new double[]{ymu},0,_rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
         } else {
-          _ymuLink = ymu;
+          System.out.println("computed null intercept in " + _iter + " iterations, intercept = " + _ymu);
+          _ymuLink = _ymu;
           _ymu = _parms.linkInv(_ymuLink);
-          System.out.println("Null model intercept = " + ymu);
           computeGradients();
         }
       }
