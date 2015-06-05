@@ -191,7 +191,7 @@ public class DataInfo extends Keyed {
     _catOffsets[_catOffsets.length-1] = s;
     _responses = responses;
     _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - responses;
+    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0);
     _useAllFactorLevels = true;
     setPredictorTransform(predictor_transform);
     setResponseTransform(response_transform);

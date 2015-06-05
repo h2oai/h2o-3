@@ -37,12 +37,14 @@ public abstract class GLMTask  {
    final int _responseId;
 
    final int _weightId;
+   final int _offsetId;
 
    public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
      super(cmp);
      _fVec = mVec;
      _responseId = dinfo.responseChunkId();
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
+     _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
    }
 
    @Override public void setupLocal(){
@@ -64,7 +66,7 @@ public abstract class GLMTask  {
          continue;
        }
        _wsum += w;
-       double d = w*response.atd(r);
+       double d = w*(Math.log(response.atd(r)));
        assert !Double.isNaN(d);
        assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
        _ymu += d;
