@@ -344,7 +344,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       l2pen += _bc.proxPen(gtBetastart._beta);
       objval += l2pen;
       double objStart = objVal(gtBetastart._likelihood,gtBetastart._beta, lmax, gtBetastart._nobs,_parms._intercept);
-      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._nobs, _parms._prior > 0?_parms._prior:itsk._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(gtBetastart._likelihood,objval, gtBetastart._gradient),objStart);
+      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._nobs, itsk._wsum, _parms._prior > 0?_parms._prior:itsk._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(gtBetastart._likelihood,objval, gtBetastart._gradient),objStart);
       _tInfos[0]._nullGradNorm = ArrayUtils.linfnorm(itsk._gtNull._gradient, false);
       _tInfos[0]._nullDevTrain = itsk._gtNull._val.nullDeviance();
       _sc.addIterationScore(0, gtBetastart._likelihood, objStart);
@@ -414,6 +414,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public InitTsk(int foldId, boolean intercept, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId; _intercept = intercept; }
     long _nobs;
     double _ymu;
+    double _wsum;
     double _ymuLink;
     double _yMin;
     double _yMax;
@@ -460,6 +461,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         public void callback(final YMUTask ymut) {
           _rowFilter = ymut._fVec;
           _ymu = _parms._intercept ? ymut._ymu : 0;
+          _wsum = ymut._wsum;
           _ymuLink = _parms._intercept ? _parms.link(_ymu):0;
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
@@ -579,6 +581,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public static final class GLMTaskInfo extends Iced {
     final int       _foldId;
     final long      _nobs;       // number of observations in our dataset
+    final double    _wsum;
     final double    _ymu;        // actual mean of the response
     final double    _lambdaMax;  // lambda max of the current dataset
     double []       _beta;       // full - solution at previous lambda (or null)
@@ -609,10 +612,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public boolean _lineSearch;
     public int _lsCnt;
 
-    public GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, int fullN, GLMGradientInfo ginfo, double objVal){
+    public GLMTaskInfo(Key dstKey, int foldId, long nobs, double wsum, double ymu, double lmax, double[] beta, int fullN, GLMGradientInfo ginfo, double objVal){
       _dstKey = dstKey;
       _foldId = foldId;
       _nobs = nobs;
+      _wsum = wsum;
       _ymu = ymu;
       _lambdaMax = lmax;
       _beta = beta;
@@ -851,7 +855,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case L_BFGS: {
           double[] beta = _taskInfo._beta;
           assert beta.length == _activeData.fullN()+1;
-          GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._nobs, _rowFilter);
+          GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._wsum, _rowFilter);
           if(_bc._betaGiven != null && _bc._rho != null)
             solver = new ProximalGradientSolver(solver,_bc._betaGiven,_bc._rho);
           if (beta == null) {
@@ -1147,7 +1151,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs + ", got row filter?" + (glmt._rowFilter != null);
         assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
         assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
-        double reg = 1.0 / _taskInfo._nobs;
+        double reg = 1.0 / _taskInfo._wsum;
         glmt._gram.mul(reg);
         ArrayUtils.mult(glmt._xy, reg);
         if (_countIteration) ++_taskInfo._iter;
@@ -1599,23 +1603,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final DataInfo _dinfo;
     final double _ymu;
     final double _lambda;
-//    final long _nobs;
     final double _reg;
     Vec _rowFilter;
     double [] _beta;
 
-    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs) {
-      this(glmp, dinfo, lambda, ymu, nobs, null);
+    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, double wsum) {
+      this(glmp, dinfo, lambda, ymu, wsum,  null);
     }
 
-    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs, Vec rowFilter) {
+    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, double wsum, Vec rowFilter) {
       _glmp = glmp;
       _dinfo = dinfo;
       _ymu = ymu;
 //      _nobs = nobs;
       _lambda = lambda;
       _rowFilter = rowFilter;
-      _reg = 1.0/nobs;
+      _reg = 1.0/wsum;
     }
 
     public GLMGradientSolver setBetaStart(double [] beta) {
