@@ -226,11 +226,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(_parms._weights_column != null) {
       Vec w = _train.remove(_parms._weights_column);
       if(w == null)
-        error("_weights_column","Offset column '" + _parms._offset_column  + "' not found in the training frame");
+        error("_weights_column","Offset column '" + _parms._weights_column  + "' not found in the training frame");
       else {
         if(!w.isNumeric())
-          error("_weights_column","Invalid offset column '" + _parms._weights_column  + "', weights must be numeric");
+          error("_weights_column","Invalid weights column '" + _parms._weights_column  + "', weights must be numeric");
         _weights = w;
+        if(w.min() < 0)
+          error("_weights_columns","Weights must be >= 0");
         _train.add(_parms._weights_column, w);
         ++res;
       }

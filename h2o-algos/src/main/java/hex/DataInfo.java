@@ -93,7 +93,6 @@ public class DataInfo extends Keyed {
 
     // Count categorical-vs-numerical
     final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0);
-    assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
