@@ -21,7 +21,7 @@ abstract public class AST {
   // Default action after the initial execution of a function.  Typically the
   // action is "execute all arguments, then apply a primitive action to the
   // arguments", but short-circuit evaluation may not execute all args.
-  Val apply( Env env, AST asts[] ) { throw water.H2O.fail(); }
+  Val apply( Env env, Env.StackHelp stk, AST asts[] ) { throw water.H2O.fail(); }
 
   // Short name (there's lots of the simple math primtives, and we want them to
   // fit on one line)

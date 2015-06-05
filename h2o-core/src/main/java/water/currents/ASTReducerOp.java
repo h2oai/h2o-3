@@ -11,13 +11,11 @@ import water.currents.Val.*;
  */
 abstract class ASTReducerOp extends ASTPrim {
   @Override int nargs() { return 1+2; }
-  @Override Val apply( Env env, AST asts[] ) {
-    try (Env.StackHelp stk = env.stk()) {
-        Frame fr = stk.track(asts[1].exec(env)).getFrame();
-        double d = stk.track(asts[2].exec(env)).getNum();
-        if( d !=0 && d != 1 ) throw new IllegalArgumentException("Expected a 0/NAs propagate or 1/NAs ignored");
-        return new ValNum(d==0 ? new RedOp(this).doAll(fr)._d : new NaRmRedOp(this).doAll(fr)._d);
-      }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    double d = stk.track(asts[2].exec(env)).getNum();
+    if( d !=0 && d != 1 ) throw new IllegalArgumentException("Expected a 0/NAs propagate or 1/NAs ignored");
+    return new ValNum(d==0 ? new RedOp(this).doAll(fr)._d : new NaRmRedOp(this).doAll(fr)._d);
   }
   /** Override to express a basic math primitive */
   abstract double op( double l, double r );

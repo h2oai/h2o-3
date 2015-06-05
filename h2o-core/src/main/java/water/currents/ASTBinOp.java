@@ -10,12 +10,10 @@ import water.parser.ValueString;
  */
 abstract class ASTBinOp extends ASTPrim {
   @Override int nargs() { return 1+2; }
-  @Override Val apply( Env env, AST asts[] ) {
-    try (Env.StackHelp stk = env.stk()) {
-        Val left = stk.track(asts[1].exec(env));
-        Val rite = stk.track(asts[2].exec(env));
-        return stk.returning(prim_apply(left,rite));
-      }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val left = stk.track(asts[1].exec(env));
+    Val rite = stk.track(asts[2].exec(env));
+    return prim_apply(left,rite);
   }
 
   Val prim_apply( Val left, Val rite ) {
@@ -156,17 +154,15 @@ class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.
 class ASTLAnd extends ASTBinOp { 
   String str() { return "&&"; } 
-  @Override Val apply( Env env, AST asts[] ) {
-    try (Env.StackHelp stk = env.stk()) {
-        Val left = stk.track(asts[1].exec(env));
-        // If the left is zero or NA, do not evaluate the right, just return the left
-        if( left.isNum() ) {
-          double d = ((ValNum)left)._d;
-          if( d==0 || Double.isNaN(d) ) return left;
-        }
-        Val rite = stk.track(asts[2].exec(env));
-        return prim_apply(left,rite);
-      }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val left = stk.track(asts[1].exec(env));
+    // If the left is zero or NA, do not evaluate the right, just return the left
+    if( left.isNum() ) {
+      double d = ((ValNum)left)._d;
+      if( d==0 || Double.isNaN(d) ) return left;
+    }
+    Val rite = stk.track(asts[2].exec(env));
+    return prim_apply(left,rite);
   }
   // Weird R semantics, zero trumps NA
   double op( double l, double r ) { return and_op(l,r); }
@@ -178,17 +174,15 @@ class ASTLAnd extends ASTBinOp {
 // Logical-OR.  If the first arg is true, do not execute the 2nd arg.
 class ASTLOr extends ASTBinOp { 
   String str() { return "||"; } 
-  @Override Val apply( Env env, AST asts[] ) {
-    try (Env.StackHelp stk = env.stk()) {
-        Val left = stk.track(asts[1].exec(env));
-        // If the left is zero or NA, do not evaluate the right, just return the left
-        if( left.isNum() ) {
-          double d = ((ValNum)left)._d;
-          if( d!=0 || Double.isNaN(d) ) return left;
-        }
-        Val rite = stk.track(asts[2].exec(env));
-        return prim_apply(left,rite);
-      }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val left = stk.track(asts[1].exec(env));
+    // If the left is non-zero or NA, do not evaluate the right, just return the left
+    if( left.isNum() ) {
+      double d = ((ValNum)left)._d;
+      if( d!=0 || Double.isNaN(d) ) return left;
+    }
+    Val rite = stk.track(asts[2].exec(env));
+    return prim_apply(left,rite);
   }
   // Weird R semantics, zero trumps NA
   double op( double l, double r ) { return or_op(l,r); }

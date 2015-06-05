@@ -38,7 +38,9 @@ class ASTExec extends AST {
     int nargs = ast.nargs();
     if( nargs != -1 && nargs != _asts.length )
       throw new IllegalArgumentException("Incorrect number of arguments; "+ast+" expects "+nargs+" but was passed "+_asts.length);
-    return ast.apply(env,_asts);
+    try (Env.StackHelp stk = env.stk()) {
+        return stk.returning(ast.apply(env,stk,_asts));
+      }
   }
 
   // No expected argument count
