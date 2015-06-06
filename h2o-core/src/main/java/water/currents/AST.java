@@ -1,5 +1,7 @@
 package water.currents;
 
+import water.Iced;
+
 import java.util.HashMap;
 
 /**
@@ -7,7 +9,7 @@ import java.util.HashMap;
  *
  * Subclasses define the program semantics
  */
-abstract public class AST {
+abstract public class AST extends Iced {
   // Subclasses define their execution.  Constants like Numbers & Strings just
   // return a ValXXX.  Constant functions also just return a ValFun.
 

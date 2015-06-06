@@ -92,4 +92,37 @@ class ASTNumList extends AST {
         vals[r++] = d;
     return vals;
   }
+
+  double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1] - 1; } // largest inclusive value
+  double min() { return _bases[0]; }
+
+  // check if n is in this list of numbers
+  // NB: all contiguous ranges have already been checked to have stride 1
+  boolean in(long v) {
+    if( min() <= v && v <= max() ) {
+      // binary search _bases for range to check, return true for exact match
+      // if no exact base matches, check the ranges of the two "bounding" bases
+      int[][] res = new int[2][]; // entry 0 is exact; entry 1 is [lb,ub]
+      bsearch(v, res);
+      if( res[0] != null /* exact base match */ ) return true;
+      else {
+        int lb = res[1][0], ub = res[1][1];
+        if( _bases[lb] <= v && v < _bases[lb] + _cnts[lb] ) return true;
+        if( _bases[ub] <= v && v < _bases[ub] + _cnts[ub] ) return true;
+      }
+    }
+    return false;
+  }
+
+  private void bsearch(long v, int[][] res) {
+    int lb=0,ub=_bases.length;
+    int m=(ub+lb)>>1; // [lb,m) U [m,ub)
+    do {
+      if( v==_bases[m] ) { res[0]=new int[]{m}; return; } // exact base match
+      else if( v<_bases[m] ) ub=m;
+      else lb = m;
+      m = (ub+lb)>>1;
+    } while( m!=lb );
+    res[1]=new int[]{lb,ub}; // return 2 closest bases
+  }
 }
