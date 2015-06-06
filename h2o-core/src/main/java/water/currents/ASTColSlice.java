@@ -51,7 +51,7 @@ class ASTRowSlice extends ASTPrim {
           if( !(max<start || min>end) ) {   // not situation 1 or 2 above
             int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
             for(int i=startOffset;i<cs[0]._len;++i) {
-              if( nums.in(start+i) ) { // in
+              if( nums.has(start+i) ) { // in
                 for(int c=0;c<cs.length;++c) {
                   if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
                   else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);

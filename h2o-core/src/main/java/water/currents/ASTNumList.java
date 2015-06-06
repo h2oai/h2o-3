@@ -98,7 +98,7 @@ class ASTNumList extends AST {
 
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
-  boolean in(long v) {
+  boolean has(long v) {
     if( min() <= v && v <= max() ) {
       // binary search _bases for range to check, return true for exact match
       // if no exact base matches, check the ranges of the two "bounding" bases
