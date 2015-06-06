@@ -93,13 +93,13 @@ class ASTNumList extends AST {
     return vals;
   }
 
-  double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1] - 1; } // largest inclusive value
+  double max1() { return _bases[_bases.length-1] + _cnts[_cnts.length-1] - 1; } // largest inclusive value, when _stride is 1
   double min() { return _bases[0]; }
 
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
   boolean has(long v) {
-    if( min() <= v && v <= max() ) {
+    if( min() <= v && v <= max1() ) {
       // binary search _bases for range to check, return true for exact match
       // if no exact base matches, check the ranges of the two "bounding" bases
       int[][] res = new int[2][]; // entry 0 is exact; entry 1 is [lb,ub]

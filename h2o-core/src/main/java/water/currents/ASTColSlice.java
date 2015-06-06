@@ -41,7 +41,7 @@ class ASTRowSlice extends ASTPrim {
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
           long start = cs[0].start();
           long end   = start + cs[0]._len;
-          double min = nums.min(), max = nums.max();
+          double min = nums.min(), max = nums.max1();
           //     [ start, ...,  end ]     the chunk
           //1 []                          nums out left:  nums.max() < start
           //2                         []  nums out rite:  nums.min() > end
