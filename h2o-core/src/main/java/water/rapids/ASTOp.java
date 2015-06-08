@@ -212,6 +212,7 @@ public abstract class ASTOp extends AST {
 //Time extractions, to and from msec since the Unix Epoch
     putPrefix(new ASTYear  ());
     putPrefix(new ASTMonth ());
+    putPrefix(new ASTWeek  ());
     putPrefix(new ASTDay   ());
     putPrefix(new ASTDayOfWeek());
     putPrefix(new ASTHour  ());
@@ -243,6 +244,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTTrim());
 
     putPrefix(new ASTFilterNACols());
+    putPrefix(new ASTSetDomain());
+    putPrefix(new ASTRemoveVecs());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -490,7 +493,7 @@ class ASTasDate extends ASTUniPrefixOp {
     final String[] dom  = fr.anyVec().domain();
     final boolean isStr = dom==null && fr.anyVec().isString();
     if( !isStr )
-      assert dom!=null : "toDate error: domain is null, but vec is not String";
+      assert dom!=null : "as.Date error: domain is null, but vec is not String";
 
     Frame fr2 = new MRTask() {
       private transient DateTimeFormatter _fmt;
@@ -1082,13 +1085,14 @@ abstract class ASTTimeOp extends ASTUniPrefixOp {
   }
 }
 //
-class ASTYear  extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
-class ASTDay   extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
-class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
-class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
-class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
-class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
-class ASTMonth extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
+class ASTYear   extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
+class ASTDay    extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
+class ASTHour   extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
+class ASTMinute extends ASTTimeOp { @Override String opStr(){ return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
+class ASTSecond extends ASTTimeOp { @Override String opStr(){ return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
+class ASTMillis extends ASTTimeOp { @Override String opStr(){ return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
+class ASTMonth  extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear();}}
+class ASTWeek   extends ASTTimeOp { @Override String opStr(){ return "week";  } @Override ASTOp make() {return new ASTWeek  ();} @Override long op(MutableDateTime dt) { return dt.getWeekOfWeekyear();}}
 
 class ASTDayOfWeek extends ASTTimeOp {
   static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
@@ -2346,6 +2350,8 @@ class ASTMad extends ASTReducerOp {
   }
 
   static double mad(Frame f, QuantileModel.CombineMethod cm, double constant) {
+    Key tk=null;
+    if( f._key == null ) { DKV.put(tk=Key.make(), f=new Frame(tk, f.names(),f.vecs())); }
     final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
@@ -2353,7 +2359,10 @@ class ASTMad extends ASTReducerOp {
           nc.addNum(Math.abs(c.at8(i)-median));
       }
     }.doAll(1, f).outputFrame();
+    if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
+    DKV.remove(f._key); // drp mapping, keep vec
+    DKV.remove(abs_dev._key);
     return constant*mad;
   }
 }
@@ -2730,6 +2739,37 @@ class ASTSeq extends ASTUniPrefixOp {
   }
 }
 
+class ASTSetDomain extends ASTUniPrefixOp {
+  String[] _domains;
+  @Override String opStr() { return "setDomain"; }
+  public ASTSetDomain() { super(new String[]{"setDomain", "x", "slist"}); }
+  @Override ASTOp make() { return new ASTSetDomain(); }
+  ASTSetDomain parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTStringList ) _domains = ((ASTStringList)a)._s;
+    else if( a instanceof ASTNull  ) _domains = null;
+    else throw new IllegalArgumentException("domains expected to an array of strings. Got :" + a.getClass());
+    ASTSetDomain res = (ASTSetDomain)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    // pop frame, should be a single ENUM Vec
+    // push in new domain
+    // DKV put the updated vec
+    // no stack pop or push
+    Frame f = env.peekAry();
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
+    Vec v = f.anyVec();
+    if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
+    if( _domains!=null && _domains.length != v.domain().length)
+      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + _domains.length);
+    v.setDomain(_domains);
+    DKV.put(v);
+  }
+}
+
 class ASTRepLen extends ASTUniPrefixOp {
   double _length;
   @Override String opStr() { return "rep_len"; }
@@ -2883,9 +2923,9 @@ class ASTHist extends ASTUniPrefixOp {
   private static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
   private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
   private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
-  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / scotts_h(v)); }
-  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / fds_h(v)); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
-  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826); }
+  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / h); }
+  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
+  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.length(),-1./3.); }
   private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVar.getVar(v,true)) / (Math.pow(v.length(),1./3.)); }
   private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
   private static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
@@ -2958,15 +2998,14 @@ class ASTHist extends ASTUniPrefixOp {
     }
     @Override public void map(Chunk c) {
       // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
-      int x;
-      int xx=1;
       for( int i = 0; i < c._len; ++i ) {
+        int x=1;
         if( c.isNA(i) ) continue;
         double r = c.atd(i);
         if( _h==-1 ) {
-          for(; xx < _counts.length; xx++)
-            if( r <= _breaks[xx] ) break;
-          x=xx-1;
+          for(; x < _counts.length; x++)
+            if( r <= _breaks[x] ) break;
+          x--; // back into the bin where count should go
         } else
           x = Math.min( _counts.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops!
         bumpCount(x);
@@ -3147,6 +3186,35 @@ class ASTRemoveFrame extends ASTUniPrefixOp {
       fr.remove();
     }
     e.push(new ValNull());
+  }
+}
+
+//remove vecs by index&frame lookup. push subset frame onto stack
+class ASTRemoveVecs extends ASTUniPrefixOp {
+  long[] _rmVecs;
+  @Override String opStr() { return "removeVecs"; }
+  ASTRemoveVecs() { super(new String[] {"", "ary", "llist"}); }
+  @Override ASTOp make() { return new ASTRemoveVecs(); }
+  ASTRemoveVecs parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTLongList ) _rmVecs = ((ASTLongList)a)._l;
+    else if( a instanceof ASTNum ) _rmVecs = new long[]{(long)((ASTNum)a)._d};
+    else throw new IllegalArgumentException("Expected to get an `llist` or `num`. Got: " + a.getClass());
+    E.eatEnd(); // eat the ending ')'
+    ASTRemoveVecs res = (ASTRemoveVecs) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env e) {
+    int[] idxs = new int[_rmVecs.length];
+    int i=0;
+    for(long l:_rmVecs) idxs[i++]=(int)l;
+    Frame fr = e.popAry();
+    for(Vec v:fr.remove(idxs)) v.remove(); // a little inefficeint... each vec blocks 'til it's gone.
+    DKV.put(fr._key, fr);
+    e.pushAry(fr);
   }
 }
 
@@ -4267,7 +4335,6 @@ class ASTSetTimeZone extends ASTOp {
     new MRTask() {
       @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
     }.doAllNodes();
-    e.pushAry(null);
   }
 }
 

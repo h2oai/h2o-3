@@ -1,8 +1,8 @@
 package hex.example;
 
+import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
-import hex.SupervisedModel;
 import hex.quantile.QuantileModel;
 import hex.quantile.Quantile;
 import hex.glm.GLM;
@@ -182,7 +182,7 @@ public class WorkFlowTest extends TestUtil {
     }
   }
 
-  private double r2( SupervisedModel model, Frame fr ) {
+  private double r2( Model model, Frame fr ) {
     return ((ModelMetricsSupervised)ModelMetrics.getFromDKV(model, fr)).r2();    
   }
 

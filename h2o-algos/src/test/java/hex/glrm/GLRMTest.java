@@ -96,6 +96,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 0.5;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._init = GLRM.Initialization.User;
       parms._recover_pca = false;
       parms._user_points = yinit._key;
       parms._seed = seed;
@@ -183,6 +184,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 0;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       // parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GLRM.Initialization.User;
       parms._user_points = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
@@ -391,7 +393,7 @@ public class GLRMTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
-      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false);
+      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
 
       Log.info("Original matrix:\n" + colFormat(iris_cols, "%8.7s") + ArrayUtils.pprint(iris));
       double[][] iris_perm = ArrayUtils.permuteCols(iris, dinfo._permutation);
@@ -430,7 +432,7 @@ public class GLRMTest extends TestUtil {
         Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toEnum())._key);
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
-      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false);
+      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
 
       Log.info("Original matrix:\n" + colFormat(pros_cols, "%8.7s") + ArrayUtils.pprint(prostate));
       double[][] pros_perm = ArrayUtils.permuteCols(prostate, dinfo._permutation);

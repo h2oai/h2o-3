@@ -899,7 +899,7 @@ h2o.betweenss <- function(object, valid=FALSE, ...) {
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.totss <- function(object,valid=FALSE, ...) {
-  model.parts <- .model.parts(objects)
+  model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
     else                          return( model.parts$vm@metrics$totss )
@@ -940,7 +940,7 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
 h2o.null_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_deviance )
@@ -957,7 +957,7 @@ h2o.null_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_deviance )
@@ -975,7 +975,7 @@ h2o.residual_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_degrees_of_freedom )
@@ -992,7 +992,7 @@ h2o.residual_dof <- function(object, valid=FALSE, ...) {
 h2o.null_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_degrees_of_freedom )
@@ -1163,38 +1163,21 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
 
 #' @export
 screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...) {
-  # if(x@algorithm != "pca") stop("x must be a H2O PCA model")
-  if(x@algorithm == "pca") {
+    if(x@algorithm != "pca") stop("x must be a H2O PCA model")
     if(missing(npcs))
       npcs = min(10, x@model$parameters$k)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
       stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
 
-
+    sdevH2O <- as.numeric(x@model$pc_importance[1,])
     if(missing(main))
       main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
     if(type == "barplot")
-      barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+      barplot(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else if(type == "lines")
-      lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+      lines(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else
       stop("type must be either 'barplot' or 'lines'")
-  } else if(x@algorithm == "svd") {
-    if(is.null(x@model$std_deviation))
-      stop("PCA results not found in SVD model!")
-    if(missing(npcs))
-      npcs = min(10, x@model$parameters$nv)
-    else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$nv)
-      stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$nv, "inclusive"))
-    if(missing(main))
-      main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
-    if(type == "barplot")
-      barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
-    else if(type == "lines")
-      lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
-    else
-      stop("type must be either 'barplot' or 'lines'")
-  }
 }
 
 # Handles ellipses

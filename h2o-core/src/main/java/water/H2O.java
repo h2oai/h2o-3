@@ -17,6 +17,8 @@ import water.util.OSUtils;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Field;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -215,6 +217,33 @@ final public class H2O {
 
     /** -beta, -experimental */
     public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
+
+    @Override public String toString() {
+      StringBuilder result = new StringBuilder();
+
+      //determine fields declared in this class only (no fields of superclass)
+      Field[] fields = this.getClass().getDeclaredFields();
+
+      //print field names paired with their values
+      result.append("[ ");
+      for (Field field : fields) {
+        try {
+          result.append(field.getName());
+          result.append(": ");
+          //requires access to private field:
+          result.append(field.get(this));
+          result.append(", ");
+        }
+        catch (IllegalAccessException ex) {
+          Log.err(ex);
+        }
+      }
+      result.deleteCharAt(result.length() - 2);
+      result.deleteCharAt(result.length() - 1);
+      result.append(" ]");
+
+      return result.toString();
+    }
   }
 
   private static void parseFailed(String message) {
@@ -818,6 +847,8 @@ final public class H2O {
     Log.info("Java heap totalMemory: " + PrettyPrint.bytes(runtime.totalMemory()));
     Log.info("Java heap maxMemory: " + PrettyPrint.bytes(runtime.maxMemory()));
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
+    List<String> launchStrings = ManagementFactory.getRuntimeMXBean().getInputArguments();
+    Log.info("JVM launch parameters: "+launchStrings);
     Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
@@ -1081,6 +1112,7 @@ final public class H2O {
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
+  public static void raw_clear() { STORE.clear(); }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
@@ -1114,6 +1146,32 @@ final public class H2O {
   // Node persistent storage
   private static NodePersistentStorage NPS;
   public static NodePersistentStorage getNPS() { return NPS; }
+
+  /**
+   * Run System.gc() on every node in the H2O cluster.
+   *
+   * Having to call this manually from user code is a sign that something is wrong and a better
+   * heuristic is needed internally.
+   */
+  public static void gc() {
+    class GCTask extends DTask<GCTask> {
+      public GCTask() {}
+
+      @Override public void compute2() {
+        Log.info("Calling System.gc() now...");
+        System.gc();
+        Log.info("System.gc() finished");
+        tryComplete();
+      }
+
+      @Override public byte priority() { return H2O.MIN_HI_PRIORITY; }
+    }
+
+    for (H2ONode node : H2O.CLOUD._memary) {
+      GCTask t = new GCTask();
+      new RPC<>(node, t).call().get();
+    }
+  }
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
@@ -1190,6 +1248,13 @@ final public class H2O {
       e.printStackTrace();
       H2O.exit(1);
     }
+
+    //Print extra debug info now that logs are setup
+    RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
+    Log.debug("H2O launch parameters: "+ARGS.toString());
+    Log.debug("Boot class path: "+ rtBean.getBootClassPath());
+    Log.debug("Java class path: "+ rtBean.getClassPath());
+    Log.debug("Java library path: "+ rtBean.getLibraryPath());
 
     // Load up from disk and initialize the persistence layer
     initializePersistence();

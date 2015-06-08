@@ -45,9 +45,9 @@
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.
 #' @param na.strings (Optional) H2O will interpret these strings as missing.
-#' @param blocking (Optional) Tell H2O parse call to block synchronously instead
-#'        of polling.  This can be faster for small datasets but loses the
-#'        progress bar.
+#' @param progressBar (Optional) When FALSE, tell H2O parse call to block 
+#'        synchronously instead of polling.  This can be faster for small
+#'        datasets but loses the progress bar.
 #' @examples
 #' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
@@ -65,14 +65,27 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
-  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
+  if(!is.character(path) || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
-  res <- .h2o.__remoteSend(conn, .h2o.__IMPORT, path=path)
+  if(length(path) > 1L) {
+    destFrames <- c()
+    fails <- c()
+    for(path2 in path){
+      res <-.h2o.__remoteSend(conn, .h2o.__IMPORT, path=path2)
+      destFrames <- c(destFrames, res$destination_frames)
+      fails <- c(fails, res$fails)
+    }
+    res$destination_frames <- destFrames
+    res$fails <- fails
+  } else {
+    res <- .h2o.__remoteSend(conn, .h2o.__IMPORT, path=path)
+  }
+  
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
@@ -121,7 +134,7 @@ h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", desti
 #' @export
 h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
-                           col.types = NULL, na.strings = NULL, blocking = FALSE) {
+                           col.types = NULL, na.strings = NULL, progressBar = FALSE) {
   if (is(path, "H2OConnection")) {
     temp <- path
     path <- conn
@@ -133,8 +146,8 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
-  if(!is.logical(blocking) || length(blocking) != 1L || is.na(blocking))
-    stop("`blocking` must be TRUE or FALSE")
+  if(!is.logical(progressBar) || length(progressBar) != 1L || is.na(progressBar))
+    stop("`progressBar` must be TRUE or FALSE")
 
   path <- normalizePath(path, winslash = "/")
   srcKey <- .key.make(conn, path)
@@ -145,7 +158,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 
   rawData <- .newH2ORawData("H2ORawData", conn=conn, frame_id=srcKey, linkToGC=FALSE)
   if (parse) {
-    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=blocking)
+    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar)
   } else {
     rawData
   }

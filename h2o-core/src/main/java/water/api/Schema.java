@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.schemas.ModelBuilderSchema;
 import org.reflections.Reflections;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -15,7 +16,7 @@ import java.util.regex.Pattern;
 
 
 /**
- * Base Schema Class.  All REST API Schemas inherit from here.
+ * Base Schema class.  All REST API Schemas inherit from here.
  * <p>
  * The purpose of Schemas is to provide a stable, versioned interface to
  * the functionality in H2O, which allows the back end implementation to
@@ -87,6 +88,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
   private static final int EXPERIMENTAL_VERSION = 99;
+  public static final String EXCLUDE_FIELDS = "__exclude_fields";
+  public static final String INCLUDE_FIELDS = "__include_fields";
 
   public static final class Meta extends Iced {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -263,7 +266,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
           String name = field_meta.name;
 
-          if ("__meta".equals(name) || "__http_status".equals(name))
+          if ("__meta".equals(name) || "__http_status".equals(name) || "_exclude_fields".equals(name) || "_include_fields".equals(name))
             continue;
           if ("Gini".equals(name)) // proper name
             continue;
@@ -653,7 +656,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     String[] packages = new String[] { "water", "hex", /* Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: "" */};
 
     // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
-    Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
+    Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelBuilderSchema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
 
     for (String pkg :  packages) {
       Reflections reflections = new Reflections(pkg);

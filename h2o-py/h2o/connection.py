@@ -33,7 +33,7 @@ class H2OConnection(object):
   """
 
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
+               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -47,6 +47,10 @@ class H2OConnection(object):
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
     :return: None
     """
+
+    if "H2O_DISABLE_STRICT_VERSION_CHECK" in os.environ:
+       strict_version_check = False
+
     port = as_int(port)
     if not (isinstance(port, int) and 0 <= port <= sys.maxint):
        raise ValueError("Port out of range, "+port)
@@ -270,8 +274,8 @@ class H2OConnection(object):
 
   @staticmethod
   def _tmp_file(type):
-    if sys.platform == "windows":
-      usr = re.sub("[^A-Za-z0-9]", "_", os.getenv("USERNMAME"))
+    if sys.platform == "win32":
+      usr = re.sub("[^A-Za-z0-9]", "_", os.getenv("USERNAME"))
     else:
       usr = re.sub("[^A-Za-z0-9]", "_", os.getenv("USER"))
 

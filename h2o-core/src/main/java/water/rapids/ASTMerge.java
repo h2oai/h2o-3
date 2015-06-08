@@ -46,11 +46,7 @@ public class ASTMerge extends ASTOp {
     res._asts = new AST[]{left,rite};
     return res;
   }
-
-  @Override void exec(Env e, AST[] args) {
-    throw H2O.fail();
-  }
-
+  @Override void exec(Env e, AST[] args) {throw H2O.fail();}
   @Override void apply(Env env) {
     Frame l = env.popAry();
     Frame r = env.popAry();
@@ -111,12 +107,11 @@ public class ASTMerge extends ASTOp {
 
     // run a global parallel work: lookup non-hashed rows in hashSet; find
     // matching row; append matching column data
-    String[]   names  = Arrays.copyOfRange(small._names   ,ncols,small._names.length-ncols+1);
-    String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small._names.length-ncols+1);
+    String[]   names  = Arrays.copyOfRange(small._names,   ncols,small._names   .length);
+    String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small.domains().length);
     Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
     Frame res2 = large.add(res);
-    env.addRef(res.anyVec());     // !!HACK!!
-    System.out.println(res2);
+    env.addRef(res); // hack
     env.push(new ValFrame(res2));
   }
 

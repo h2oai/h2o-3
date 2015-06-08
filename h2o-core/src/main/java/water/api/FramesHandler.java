@@ -104,7 +104,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         if (frame_column_names.containsAll(model_cols)) {
           // See if adapt throws an exception or not.
           try {
-            if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
+            if( model.adaptTestForTrain(new Frame(frame), false, false).length == 0 )
               compatible_models.add(model);
           } catch( IllegalArgumentException e ) {
             // skip
@@ -288,11 +288,15 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 summary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
 
-    for (Vec vec : frame.vecs()) {
-      // Compute second pass of rollups: the histograms.
-      if (!vec.isString()) {
-        vec.bins();
+    if (null != frame) {
+      Futures fs = new Futures();
+      Vec[] vecArr = frame.vecs();
+      for (Vec v : vecArr) {
+        if (! v.isString()) {
+          v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
+        }
       }
+      fs.blockForPending();
     }
 
     return doFetch(version, s, FrameV3.ColV3.FORCE_SUMMARY);

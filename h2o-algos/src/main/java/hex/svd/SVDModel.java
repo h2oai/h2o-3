@@ -15,9 +15,10 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
     public boolean _keep_u = true;    // Should left singular vectors be saved in memory? (Only applies if _only_v = false)
-    public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
+    // public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
+    public String _u_name;
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
-    public boolean _useAllFactorLevels = true;   // When expanding categoricals, should last level be dropped?
+    public boolean _use_all_factor_levels = true;   // When expanding categoricals, should first level be dropped?
   }
 
   public static class SVDOutput extends Model.Output {
@@ -34,6 +35,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public int _ncats;
     public int _nnums;
 
+    // Number of good rows in training frame (not skipped)
+    public long _nobs;
+
     // Categorical offset vector
     public int[] _catOffsets;
 
@@ -45,6 +49,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
+
+    // Expanded column names of adapted training frame
+    public String[] _names_expanded;
 
     public SVDOutput(SVD b) { super(b); }
 
@@ -103,7 +110,6 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return f;
   }
 
-  // TODO: Need permutation matrix to index into cols correctly
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     int numStart = _output._catOffsets[_output._catOffsets.length-1];
     assert data.length == _output._permutation.length;
@@ -112,6 +118,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
       preds[i] = 0;
       for (int j = 0; j < _output._ncats; j++) {
         int level = (int)data[_output._permutation[j]];
+        if (_output._catOffsets[j]+level >= _output._catOffsets[j+1]) continue;   // Skip categorical levels not in training frame
         preds[i] += _output._v[_output._catOffsets[j]+level][i];
       }
 
@@ -127,7 +134,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
   @Override public Frame score(Frame fr, String destination_key) {
     Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true);   // Adapt
+    adaptTestForTrain(adaptFr, true, false);   // Adapt
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;

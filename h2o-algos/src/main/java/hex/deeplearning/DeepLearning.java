@@ -1,10 +1,10 @@
 package hex.deeplearning;
 
-
 import hex.DataInfo;
-import hex.Model;
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SupervisedModelBuilder;
+import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -28,7 +28,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
+public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> {
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
@@ -56,7 +56,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     // We look at _train before init(true) is called, so step around that here:
     long work = 1;
     if (null != _train)
-      work = (long)_parms._epochs * _train.numRows();
+      work = (long)(_parms._epochs * _train.numRows());
     return start(new DeepLearningDriver(), work);
   }
 
@@ -90,7 +90,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
             parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
-            true); //always add a bucket for missing values
+            true,  // always add a bucket for missing values
+            false, // no weights
+            false  // no offset
+      );
   }
 
   @Override
@@ -402,7 +405,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
           model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
         }
-        model._output.autoencoder = _parms._autoencoder;
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
 
@@ -451,7 +453,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         do {
           DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
           final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
-          final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
+          final String etl = model.run_time == 0 || progress() == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
           model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode

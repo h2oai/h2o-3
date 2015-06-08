@@ -14,16 +14,18 @@
 #'        none is given, an id will automatically be generated.
 #' @param mtries Columns to randomly select at each level, or -1 for
 #'        sqrt(#cols).
-#' @param sample_rate Sample rate, from 0. to 1.0.
+#' @param sample_rate Sample rate, from 0 to 1.0.
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param ntrees A nonnegative integer that determines the number of trees to
 #'        grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param nbins Number of bins to use in building histogram.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the
-#'        model.
+#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+#'        Higher values can lead to more overfitting.
+#' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
+#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
@@ -38,12 +40,14 @@ h2o.randomForest <- function( x, y, training_frame,
                              model_id,
                              validation_frame,
                              mtries = -1,
-                             sample_rate = 2/3,
+                             sample_rate = 0.632,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
                              max_depth = 20,
                              min_rows = 1,
                              nbins = 20,
+                             nbins_cats = 1024,
+                             binomial_double_trees = TRUE,
                              balance_classes = FALSE,
                              max_after_balance_size = 5,
                              seed,
@@ -91,6 +95,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$min_rows <- min_rows
   if(!missing(nbins))
     parms$nbins <- nbins
+  if(!missing(nbins_cats))
+    parms$nbins_cats <- nbins_cats
   if(!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if(!missing(max_after_balance_size))

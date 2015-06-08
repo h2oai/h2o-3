@@ -1,6 +1,7 @@
 # ... On Hadoop
 
 Currently supported versions: 
+
 - CDH 5.2
 - CDH 5.3
 - HDP 2.1
@@ -10,6 +11,8 @@ Currently supported versions:
 
 **Important Points to Remember**: 
 
+- The command used to launch H2O differs from previous versions (refer to the [Tutorial](#Tutorial) section)
+- Launching H2O on Hadoop requires at least 5 GB of memory 
 - Each H2O node runs as a mapper
 - Run only one mapper per host
 - There are no combiners or reducers 
@@ -34,6 +37,7 @@ Optionally specify this port using the `-baseport` option in the `hadoop jar` co
 The mapper port is adaptive: if 54321 and 54322 are not available, H2O will try 54323 and 54324 and so on. The mapper port is designed to be adaptive because sometimes if the YARN cluster is low on resources, YARN will place two H2O mappers for the same H2O cluster request on the same physical host. For this reason, we recommend opening a range of more than two ports (20 ports should be sufficient). 
 
 ----
+<a name="Tutorial"></a>
 
 Tutorial
 ---------
@@ -45,27 +49,27 @@ The following tutorial will walk the user through the download or build of H2O a
 
 0. Download the latest H2O release for your version of Hadoop:
 
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-cdh5.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-cdh5.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-hdp2.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-hdp2.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-mapr3.1.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/1110/h2o-0.3.0.1110-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
 		
 	**Note**: Enter only one of the above commands.
 
 0. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
-		unzip h2o-0.3.0.1110-*.zip
-		cd h2o-0.3.0.1110-*
+		unzip h2o-{{project_version}}-*.zip
+		cd h2o-{{project_version}}-*
 
 0. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
-		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName
+		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
-	- The above command launches a 1g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
+	- The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
 
-	- *mapperXmx* is the mapper size or the amount of memory allocated to each node.
+	- *mapperXmx* is the mapper size or the amount of memory allocated to each node. Specify at least 6 GB. 
 
 	- *nodes* is the number of nodes requested to form the cluster.
 
@@ -99,7 +103,7 @@ Hadoop Launch Parameters
 - `-timeout <seconds>`: Specify the timeout duration (in seconds) to wait for the cluster to form before failing. 
 - `-disown`: Exit the driver after the cluster forms.
 - `notify <notification file name>`: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up". 
-- `mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O. 
+- `mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O (at least 6g). 
 - `extramempercent <0-20>`: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of `mapperXmx`. 
 - `-n | -nodes <number of H2O nodes>`: Specify the number of nodes. 
 - `-nthreads <maximum number of CPUs>`: Specify the number of CPUs to use. Enter `-1` to use all CPUs on the host, or enter a positive integer. 

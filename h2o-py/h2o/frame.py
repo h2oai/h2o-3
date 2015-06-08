@@ -1,12 +1,34 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys
 import h2o
 from connection import H2OConnection
 from expr import Expr
+from job  import H2OJob
 
 
 class H2OFrame:
+
+  def __del__(self):
+    """
+    :return: None
+    """
+
+    # this is essentially a hack to short-circuit the Expr.__del__ method when doing /DKV/<frame> remove
+    vecs=[]
+    for v in self._vecs:
+      cnt = sys.getrefcount(v)
+      # magical count of 4 for each vec if it will NOT be deleted
+      # 1 for __del__ call, 1 for __del__ local dict
+      # 1 for _vecs
+      # 1 for parent
+      if v._expr.is_pending() or cnt>=4: continue  # leave vec alone!
+      else:                                        # collect the vecs to be deleted in bulk.
+        v._expr._removed_by_frame_del=True
+        vecs+=[v]
+
+    if len(vecs)==0: return
+    h2o.remove(H2OFrame(vecs=vecs))
 
   def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
     """
@@ -118,11 +140,11 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()            # write the header
-    csv_writer.writerows(data_to_write) # write the data
-    tmp_file.close()                    # close the streams
-    self._upload_raw_data(tmp_path, header) # actually upload the data to H2O
-    os.remove(tmp_path)                     # delete the tmp file
+    csv_writer.writeheader()                 # write the header
+    csv_writer.writerows(data_to_write)      # write the data
+    tmp_file.close()                         # close the streams
+    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
+    os.remove(tmp_path)                      # delete the tmp file
 
   def _handle_text_key(self, text_key, column_names):
     """
@@ -161,7 +183,11 @@ class H2OFrame:
 
     :return: An iterator over the H2OFrame
     """
+    import traceback
     if self._vecs is None or self._vecs == []:
+      for line in traceback.format_stack():
+        print line.strip()
+      print "PADASDAS"
       raise ValueError("Frame Removed")
     return (vec for vec in self._vecs.__iter__() if vec is not None)
 
@@ -283,11 +309,12 @@ class H2OFrame:
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
-
     fr = H2OFrame.py_tmp_key()
-    cbind = "(, (gput " + fr + " (cbind %FALSE %"
-    cbind += " %".join([vec._expr.eager() for vec in self]) + ")))"
-    res = h2o.rapids(cbind)
+    rapids_call = "(, "  # fold into a single rapids call
+    cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+    rapids_call += cbind
+    res = h2o.rapids(rapids_call)
     h2o.removeFrameShallow(fr)
     head_rows = [range(1, nrows + 1, 1)]
     head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
@@ -315,9 +342,11 @@ class H2OFrame:
     print "Last", str(nrows), "rows and first", str(ncols), "columns: "
     if nrows != 1:
       fr = H2OFrame.py_tmp_key()
-      cbind = "(, (gput " + fr + " (cbind %FALSE %"
-      cbind += " %".join([vec._expr.eager() for vec in vecs]) + ")))"
-      res = h2o.rapids(cbind)
+      rapids_call = "(, "  # fold into a single rapids call
+      cbind = "(gput " + fr + " (cbind %FALSE '"  # false flag means no deep copy!
+      cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+      rapids_call += cbind
+      res = h2o.rapids(rapids_call)
       h2o.removeFrameShallow(fr)
       tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
       tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
@@ -360,6 +389,34 @@ class H2OFrame:
     for name, vec in zip(names,self._vecs):
       vec._name = name
 
+  def summary(self):
+    """
+    Generate summary of the frame on a per-Vec basis.
+    :return: None
+    """
+    frtmp=self.send_frame()
+    fr_sum = h2o.frame_summary(frtmp)["frames"][0]  # only ONE frame summary at a time, the first one...
+    h2o.removeFrameShallow(frtmp)  # wipe the frame binding the vecs immediately
+    type = ["type"]
+    mins = ["mins"]
+    mean = ["mean"]
+    maxs = ["maxs"]
+    sigma= ["sigma"]
+    zeros= ["zero_count"]
+    miss = ["missing_count"]
+    for v in fr_sum["columns"]:
+      type.append(v["type"])
+      mins.append(v["mins"][0] if v is not None else v["mins"])
+      mean.append(v["mean"])
+      maxs.append(v["maxs"][0] if v is not None else v["maxs"])
+      sigma.append(v["sigma"])
+      zeros.append(v["zero_count"])
+      miss.append(v["missing_count"])
+
+    table = [type,mins,maxs,sigma,zeros,miss]
+    headers = [vec._name for vec in self._vecs]
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -373,16 +430,6 @@ class H2OFrame:
       raise ValueError("Frame Removed")
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Rows:", thousands_sep.format(len(self._vecs[0])), "Cols:", thousands_sep.format(len(self))
-    headers = [vec._name for vec in self._vecs]
-    table = [
-      self._row('type', None),
-      self._row('mins', 0),
-      self._row('mean', None),
-      self._row('maxs', 0),
-      self._row('sigma', None),
-      self._row('zero_count', None),
-      self._row('missing_count', None)
-    ]
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
     chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
     dist_summary = chunk_dist_sum["distribution_summary"]
@@ -390,13 +437,15 @@ class H2OFrame:
     h2o.removeFrameShallow(chunk_summary_tmp_key)
     chunk_summary.show()
     dist_summary.show()
-    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+    self.summary()
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
   #     raise ValueError("Frame Removed")
   #   self.show()
   #   return ""
+
+
 
   # Find a named H2OVec and return it.  Error is name is missing
   def _find(self,name):
@@ -559,6 +608,7 @@ class H2OFrame:
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
+  def __mod__(self, i): return self._simple_frames_bin_op(i, "mod")
   def __and__(self, i): return self._simple_frames_bin_op(i, "&")
   def __gt__ (self, i): return self._simple_frames_bin_op(i, "g")
   def __sub__(self, i): return self._simple_frames_bin_op(i,"-" )
@@ -573,6 +623,7 @@ class H2OFrame:
   def __lt__ (self, i): return self._simple_frames_bin_op(i,"l" )
 
   # rops
+  def __rmod__(self, i): return self._simple_frames_bin_rop(i,"mod")
   def __radd__(self, i): return self.__add__(i)
   def __rsub__(self, i): return self._simple_frames_bin_rop(i,"-")
   def __rand__(self, i): return self.__and__(i)
@@ -959,6 +1010,30 @@ class H2OFrame:
     h2o.removeFrameShallow(tmp_key)
     return H2OFrame(vecs=vecs)
 
+  def insert_missing_values(self, fraction = 0.1, seed=None):
+    """
+    Inserting Missing Values to an H2OFrame
+    *This is primarily used for testing*. Randomly replaces a user-specified fraction of entries in a H2O dataset with
+    missing values.
+    WARNING: This will modify the original dataset. Unless this is intended, this function should only be called on a
+    subset of the original.
+
+    :param fraction: A number between 0 and 1 indicating the fraction of entries to replace with missing.
+    :param seed: A random number used to select which entries to replace with missing values. Default of seed = -1 will
+    automatically generate a seed in H2O.
+    :return: H2OFrame with missing values inserted
+    """
+    kwargs = {}
+    data_key = self.send_frame()
+    kwargs['dataset'] = data_key
+    kwargs['fraction'] = fraction
+    if seed is not None: kwargs['seed'] = seed
+
+    job = {}
+    job['job'] = H2OConnection.post_json("MissingInserter", **kwargs)
+    H2OJob(job, job_type=("Insert Missing Values")).poll()
+    return self
+
   # generic reducers (min, max, sum, var)
   def min(self):
     """
@@ -1069,6 +1144,33 @@ class H2OVec:
       pass
     self._expr.data().append(__x__)
     self._expr.set_len(self._expr.get_len() + 1)
+
+
+  def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
+    breaks_list = "(dlist #"+" #".join([str(b) for b in breaks])+")"
+    labels_list = "()"
+    if labels is not None:
+      labels_list = "(slist \"" + '" "'.join(labels) +"\")"
+
+    if self.key() == "": self._expr.eager()
+
+    expr = "(cut '{}' {} {} {} {} #{}".format(self.key(), breaks_list, labels_list, "%TRUE" if include_lowest else "%FALSE", "%TRUE" if right else "%FALSE", dig_lab)
+    res = h2o.rapids(expr)
+    return H2OVec(self._name, Expr(op=res["vec_ids"][0]["name"], length=res["num_rows"]))
+
+  def as_date(self,format):
+    """
+    Inplace update the column to millis since the epoch.
+    :param format: The date time format string
+    :return: None
+    """
+    if not isinstance(format, str):
+      raise ValueError("format must be a string")
+
+    if self.key() == "": self._expr.eager()
+    expr = "(as.Date '" + self.key() + '\' "{}"'.format(format) + ")"
+    res = h2o.rapids(expr)
+    return H2OVec(self._name, Expr(op=res["vec_ids"][0]["name"], length=res["num_rows"]))
 
   # H2OVec non-mutating cbind
   def cbind(self,data):
@@ -1202,6 +1304,7 @@ class H2OVec:
 
   def logical_negation(self):  return H2OVec(self._name, Expr("not", self))
 
+  def __mod__(self, i):  return self._simple_vec_bin_op(i, "mod")
   def __add__(self, i):  return self._simple_vec_bin_op(i,"+" )
   def __sub__(self, i):  return self._simple_vec_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_vec_bin_op(i,"&" )
@@ -1216,6 +1319,7 @@ class H2OVec:
   def __le__ (self, i):  return self._simple_vec_bin_op(i,"L")
   def __lt__ (self, i):  return self._simple_vec_bin_op(i,"l" )
 
+  def __rmod__(self, i): return self._simple_vec_bin_rop(i,"mod")
   def __radd__(self, i): return self.__add__(i)  # commutativity
   def __rsub__(self, i): return self._simple_vec_bin_rop(i,"-")  # not commutative
   def __rand__(self, i): return self.__and__(i)  # commutativity (no short circuiting)
@@ -1312,17 +1416,41 @@ class H2OVec:
     """
     return H2OVec("", Expr("is.na", self._expr, None))
 
+  def year(self):
+    """
+    :return: Returns a new year column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("year", self._expr, None))
+
   def month(self):
     """
     :return: Returns a new month column from a msec-since-Epoch column
     """
     return H2OVec(self._name, Expr("month", self._expr, None))
 
+  def week(self):
+    """
+    :return: Returns a new week column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("week", self._expr, None))
+
+  def day(self):
+    """
+    :return: Returns a new day column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("day", self._expr, None))
+
   def dayOfWeek(self):
     """
     :return: Returns a new Day-of-Week column from a msec-since-Epoch column
     """
     return H2OVec(self._name, Expr("dayOfWeek", self._expr, None))
+
+  def hour(self):
+    """
+    :return: Returns a new Hour-of-Day column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("hour", self._expr, None))
 
   def runif(self, seed=None):
     """

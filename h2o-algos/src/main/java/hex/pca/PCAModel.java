@@ -18,9 +18,10 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public int _k = 1;                // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
-    public Key<Frame> _loading_key;
+    // public Key<Frame> _loading_key;
+    public String _loading_name;
     public boolean _keep_loading = true;
-    public boolean _useAllFactorLevels = false;   // When expanding categoricals, should last level be dropped?
+    public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
   }
 
   public static class PCAOutput extends Model.Output {
@@ -51,7 +52,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
 
-    // Frame key for projection into principal component space
+    // Frame key for right singular vectors from SVD
     public Key<Frame> _loading_key;
 
     public PCAOutput(PCA b) { super(b); }
@@ -129,7 +130,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   @Override
   public Frame score(Frame fr, String destination_key) {
     Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true);   // Adapt
+    adaptTestForTrain(adaptFr, true, false);   // Adapt
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;

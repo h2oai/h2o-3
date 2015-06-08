@@ -4,7 +4,7 @@ import water.api.FramesHandler.Frames;
 import water.api.KeyV3.FrameKeyV3;
 import water.fvec.Frame;
 
-class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I, FramesBase<I, S>> {
+class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends RequestSchema<I, FramesBase<I, S>> {
   // Input fields
   @API(help="Name of Frame of interest", json=false)
   public FrameKeyV3 frame_id;
@@ -24,7 +24,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
   @API(help="File output path",json=false)
   public String path;
 
-  @API(help="Overwrite existing fil",json=false)
+  @API(help="Overwrite existing file",json=false)
   public boolean force;
 
   // Output fields

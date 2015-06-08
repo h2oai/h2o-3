@@ -14,8 +14,8 @@ import water.util.IcedBitSet;
 public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   public int _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
 
-  public DBinomHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
-    super(name,nbins,isInt,min,maxEx,nelems);
+  public DBinomHistogram(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx, long nelems) {
+    super(name,nbins, nbins_cats, isInt, min, maxEx, nelems);
   }
   @Override boolean isBinom() { return true; }
 
@@ -73,12 +73,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
       for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : (double)_sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
-      ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
-        @Override
-        public int compare(int x, int y) {
-          return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
-        }
-      });
+      ArrayUtils.sort(idxs, avgs);
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
       sums = MemoryManager.malloc4(nbins);

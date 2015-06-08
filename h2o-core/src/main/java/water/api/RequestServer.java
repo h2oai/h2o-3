@@ -6,10 +6,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.util.GetLogsFromNode;
-import water.util.HttpResponseStatus;
-import water.util.Log;
-import water.util.RString;
+import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -254,6 +251,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/3/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
+    register("/3/GarbageCollect"                                   ,"POST"  ,GarbageCollectHandler.class, "gc", "Explicitly call System.gc().");
 
     register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
   }
@@ -610,6 +608,7 @@ public class RequestServer extends NanoHTTPD {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         Schema s = handle(type, route, version, parms);
+        PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
         Response r = wrap(s, type);
         return r;
       }

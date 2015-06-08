@@ -50,6 +50,7 @@ class Expr(object):
     self._len     = None
     self._vecname = ""     # the name of the Vec, if any
     self._isslice = False  # if a slice, then return a new H2OVec from show
+    self._removed_by_frame_del = False  # True if H2OFrame.__del__ is called over this expr (i.e., expr is rep of some vec that got deleted in a H2OFrame.__del__)
 
     if isinstance(op, str):
       self._op, self._data = (op, None)
@@ -103,6 +104,8 @@ class Expr(object):
   def is_remote(self): return isinstance(self._data, unicode)
 
   def is_pending(self): return self._data is None
+
+  def removed_by_frame_del(self): return self._removed_by_frame_del
 
   def is_computed(self): return not self.is_pending()
 
@@ -249,6 +252,7 @@ class Expr(object):
   def logical_negation(self):  return Expr("not", self)
 
   def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
+  def __mod__(self, i):  return self._simple_expr_bin_op(i, "mod")
   def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_expr_bin_op(i,"&" )
   def __or__ (self, i):  return self._simple_expr_bin_op(i,"|" )
@@ -263,6 +267,7 @@ class Expr(object):
   def __lt__ (self, i):  return self._simple_expr_bin_op(i,"l" )
 
   def __radd__(self, i): return self.__add__(i)
+  def __rmod__(self, i): return self._simple_expr_bin_rop(i,"mod")
   def __rsub__(self, i): return self._simple_expr_bin_rop(i,"-")
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
@@ -316,6 +321,7 @@ class Expr(object):
     return Expr("median", self).eager()
 
   def __del__(self):
+    if self.removed_by_frame_del(): return   # see H2OFrame.__del__
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return
     assert self.is_remote(), "Data wasn't remote. Hrm..."
@@ -366,7 +372,10 @@ class Expr(object):
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
     elif j['result_type'] in [1,2,3,4]:
-      if isinstance(j['string'], (unicode, str)): self._data = str(j['string'])
+      if isinstance(j['string'], str):
+        self._data = j['string']
+      if isinstance(j['string'], unicode):
+        self._data = j['string'].encode('utf-8')
       else:
         if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
 
@@ -476,9 +485,9 @@ class Expr(object):
     # Do not try/catch NotImplementedError - it blows the original stack trace
     # so then you can't see what's not implemented
 
-    if self._op in ["+", "&", "|", "-", "*", "/", "^", "n", "N", "g", "G", "l", "L"]:   # in self.BINARY_INFIX_OPS:
+    if self._op in ["+", "&", "|", "-", "*", "/", "^", "n", "N", "g", "G", "l", "L", "mod"]:   # in self.BINARY_INFIX_OPS:
       rapids_dict = {"+":"+", "&":"&", "|":"|", "-":"-", "*":"*", "/":"/", "^":"**", "n":"==", "N":"!=", "g":">", "G":">=", "l":"<",
-                     "L":"<="}
+                     "L":"<=", "mod":"mod"}
       #   num op num
       #   num op []
       if isinstance(left._data, (int, float,str)):
@@ -540,6 +549,10 @@ class Expr(object):
         elif self._op == "digamma" : self._data = eval("[scipy.special.polygamma(0,x) for x in left._data]")
         elif self._op == "trigamma": self._data = eval("[scipy.special.polygamma(1,x) for x in left._data]")
       else:                 pass
+
+    elif self._op == "year":
+      if left.is_local(): raise NotImplementedError
+      else:               pass
 
     elif self._op == "month":
       if left.is_local():   raise NotImplementedError

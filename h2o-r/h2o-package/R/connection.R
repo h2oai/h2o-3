@@ -48,7 +48,7 @@
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = FALSE) {
+                     ice_root = tempdir(), strict_version_check = TRUE) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -95,6 +95,10 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     warning("Xmx is a deprecated parameter. Use `max_mem_size` and `min_mem_size` to set the memory boundaries. Using `Xmx` to set these.")
     max_mem_size <- Xmx
     min_mem_size <- Xmx
+  }
+
+  if (nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
+    strict_version_check = FALSE
   }
 
   warnNthreads <- FALSE
@@ -311,7 +315,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "    > ??h2o\n",
     "\n",
     "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit http://docs.0xdata.com\n",
+    "For more information visit http://docs.h2o.ai\n",
     "\n",
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
@@ -345,7 +349,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
             "Could not shut down the H2O Java Process!\n",
             "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
             "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
-            "For more information visit http://docs.0xdata.com\n",
+            "For more information visit http://docs.h2o.ai\n",
             "\n",
             "----------------------------------------------------------------------\n",
             sep = "")
@@ -499,7 +503,13 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
          "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
-.h2o.downloadJar <- function(branch, version, overwrite = FALSE) {
+# This function returns a string to the valid path on the local filesystem of the h2o.jar file,
+# or it calls stop() and does not return.
+#
+# It will download a jar file if it needs to.
+.h2o.downloadJar <- function(overwrite = FALSE) {
+  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+
   if (is.null(.h2o.pkg.path)) {
     pkg_path = dirname(system.file(".", package = "h2o"))
   } else {
@@ -512,24 +522,37 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     }
   }
 
-  if (missing(branch)) {
-    branchFile <- file.path(pkg_path, "branch.txt")
-    branch <- readLines(branchFile)
+  # Check for jar file in 'java' directory.
+  if (! overwrite) {
+    possible_file <- file.path(pkg_path, "java", "h2o.jar")
+    if (file.exists(possible_file)) {
+      return(possible_file)
+    }
   }
 
-  if (missing(version)) {
-    buildnumFile <- file.path(pkg_path, "buildnum.txt")
-    version <- readLines(buildnumFile)
+  # Check for jar file in 'inst/java' directory.
+  if (! overwrite) {
+    possible_file <- file.path(pkg_path, "inst", "java", "h2o.jar")
+    if (file.exists(possible_file)) {
+      return(possible_file)
+    }
   }
 
-  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+  branchFile <- file.path(pkg_path, "branch.txt")
+  branch <- readLines(branchFile)
+
+  buildnumFile <- file.path(pkg_path, "buildnum.txt")
+  version <- readLines(buildnumFile)
 
   dest_folder <- file.path(pkg_path, "java")
-  if(!file.exists(dest_folder)) dir.create(dest_folder)
+  if (!file.exists(dest_folder)) {
+    dir.create(dest_folder)
+  }
+
   dest_file <- file.path(dest_folder, "h2o.jar")
 
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
-  if(overwrite || !file.exists(dest_file)) {
+  if (TRUE) {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
 
@@ -567,7 +590,8 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     # Move good file into final position
     file.rename(temp_file, dest_file)
   }
-  dest_file
+
+  return(dest_file)
 }
 
 #' View Network Traffic Speed
@@ -580,4 +604,9 @@ h2o.networkTest <- function(conn = h2o.getConnection()) {
   res <- .h2o.__remoteSend(conn = conn, "NetworkTest", method = "GET")
 
   res$table
+}
+
+# Trigger an explicit garbage collection across all nodes in the H2O cluster.
+.h2o.garbageCollect <- function(conn = h2o.getConnection()) {
+  res <- .h2o.__remoteSend(conn = conn, "GarbageCollect", method = "POST")
 }

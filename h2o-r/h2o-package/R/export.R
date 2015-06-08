@@ -120,7 +120,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' # library(h2o)
 #' # localH2O <- h2o.init()
 #' # prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
-#' #   "0xdata/h2o/master/smalldata/logreg/prostate.csv", sep = "/"),
+#' #   "h2oai/h2o/master/smalldata/logreg/prostate.csv", sep = "/"),
 #' #   destination_frame = "prostate.hex")
 #' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training+frame = prostate.hex, family = "binomial", alpha = 0.5)

@@ -71,7 +71,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
         if (frame_cols.containsAll(model_column_names)) {
           // See if adapt throws an exception or not.
           try {
-            if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
+            if( model.adaptTestForTrain(new Frame(frame), false, false).length == 0 )
               compatible_frames.add(frame);
           } catch( IllegalArgumentException e ) {
             // skip

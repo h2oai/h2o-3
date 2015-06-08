@@ -26,15 +26,17 @@ import java.util.List;
  * @author anqi_fu
  *
  */
-public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
+public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
     return new NaiveBayesV3();
   }
 
+  public boolean isSupervised(){return true;}
+
   @Override
   public Job<NaiveBayesModel> trainModel() {
-    return start(new NaiveBayesDriver(), 0);
+    return start(new NaiveBayesDriver(), 1);
   }
 
   @Override
@@ -188,7 +190,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         init(true);
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
-        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesModel.NaiveBayesOutput(NaiveBayes.this));
@@ -198,6 +200,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
         model.update(_key);
+        update(1);
+
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);

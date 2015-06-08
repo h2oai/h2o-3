@@ -3,7 +3,7 @@ package water.api;
 import water.util.JStack;
 import water.util.JStackCollectorTask.DStackTrace;
 
-public class JStackV3 extends Schema<JStack, JStackV3> {
+public class JStackV3 extends RequestSchema<JStack, JStackV3> {
   @API(help="Stacktraces", direction=API.Direction.OUTPUT)
   public DStackTraceV3[] traces;
 
