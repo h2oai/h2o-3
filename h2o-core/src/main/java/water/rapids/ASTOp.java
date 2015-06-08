@@ -1084,7 +1084,7 @@ abstract class ASTTimeOp extends ASTUniPrefixOp {
     env.poppush(1, new ValFrame(fr2));
   }
 }
-//
+// As a policy we return what JODA returns, it is left to the client wrappers to convert the answer to a language consistent answer
 class ASTYear   extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
 class ASTDay    extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
 class ASTHour   extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
