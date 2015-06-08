@@ -15,11 +15,8 @@ import java.util.Random;
 public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final private boolean _training;
 
-  //for consensusADMM only: per-node model, never sent to anyone else
   private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _localmodel; //per-node state (to be reduced)
-
   private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _sharedmodel; //input/output
-  final private Key _sharedmodelkey = Key.make(H2O.SELF);
 
   // OUTPUT
   final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() {
@@ -38,9 +35,11 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
-    if (model_info().get_params()._elastic_averaging) DKV.put(_sharedmodelkey, _sharedmodel);
+    if (model_info().get_params()._elastic_averaging)
+      DKV.put(_sharedmodel.sharedModelInfoKey(), _sharedmodel);
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
+    _localmodel = null;
   }
 
   // transfer ownership from input to output (which will be worked on)
@@ -50,17 +49,27 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       //Load my local model from DKV, to continue training
       _localmodel = DKV.getGet(_sharedmodel.localModelInfoKey(H2O.SELF));
       if (_localmodel != null) {
+        // FIXME: remove
+        {
+          _localmodel.computeStats();
+          assert (!_localmodel.unstable());
+        }
         //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
         _localmodel.set_params(_sharedmodel.get_params());
-        _localmodel.set_processed_global(_sharedmodel.get_processed_global()); //TODO
+        _localmodel.set_processed_global(_sharedmodel.get_processed_global()); //TODO: CHECK
       }
       else {
-        _localmodel = (DeepLearningModel.DeepLearningModelInfo)_sharedmodel.clone();
+        _localmodel = _sharedmodel.deep_clone();
       }
     } else {
       _localmodel = _sharedmodel;
     }
     _localmodel.set_processed_local(0); //TODO: CHECK
+    // FIXME: remove
+    {
+      _localmodel.computeStats();
+      assert (!_localmodel.unstable());
+    }
   }
 
   // create local workspace (neurons)
@@ -85,16 +94,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     if (_training) _localmodel.add_processed_local(n);
   }
 
-  @Override
-  protected void postLocal() {
-    if (model_info().get_params()._elastic_averaging) {
-      // store local model, as it will be reduced in the following, and hence corrupted
-      DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel);
-      _sharedmodel = null; //don't want to accidentally ship & reduce the consensus model
-    }
-    super.postLocal();
-  }
-
   // average the per-node models (already wrote them to DKV in postLocal())
   @Override public void reduce(DeepLearningTask other){
     if (_localmodel != null && other._localmodel != null && other._localmodel.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
@@ -110,7 +109,27 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _chunk_node_count += other._chunk_node_count;
       }
       if (other._localmodel.unstable()) _localmodel.set_unstable();
+      // FIXME: remove
+      {
+        _localmodel.computeStats();
+        assert (!_localmodel.unstable());
+      }
     }
+  }
+
+  @Override
+  protected void postLocal() {
+    if (model_info().get_params()._elastic_averaging) {
+      // FIXME: remove
+      {
+        _localmodel.computeStats();
+        assert (!_localmodel.unstable());
+      }
+      // store local model, as it will be reduced in the following, and hence corrupted
+      DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel); //don't store under _localmodel._key - can be the same as _sharedmodel._key...
+//      _sharedmodel = null; //don't want to accidentally ship & reduce the consensus model
+    }
+    super.postLocal();
   }
 
   static long _lastWarn;
@@ -131,30 +150,39 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
       _localmodel.set_processed_local(0l);
       if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
-    }
 
-    if (dlp._elastic_averaging) {
-      //double alpha = _localmodel.mean_rate() * _localmodel.get_params()._elastic_averaging_moving_rate;
-      final double alpha = _localmodel.get_params()._elastic_averaging_moving_rate;
-      final double p = H2O.CLOUD.size();
-      final float pa = (float)(p*alpha);
+      if (dlp._elastic_averaging) {
+        // FIXME: remove
+        {
+          _localmodel.computeStats();
+          assert (!_localmodel.unstable());
+        }
+        // Cf. equation 6 of arXiv:1412.6651v5
+        final float pa = (float)_localmodel.get_params()._elastic_averaging_moving_rate;
 
-      // Update equation (6) of arXiv:1412.6651v5
-      DeepLearningModel.DeepLearningModelInfo avg = _localmodel; //this just got averaged across nodes
-      avg.mult(pa);
+        // _localmodel : current average of per-node models
+        // _sharedmodel: time-average of node-averages (consensus model, "the" model)
 
-      // get consensus time average model
-      _sharedmodel = DKV.getGet(_sharedmodelkey);
-      _sharedmodel.mult(1 - pa);
-      _sharedmodel.add(avg);
-      _sharedmodel.set_processed_global(_localmodel.get_processed_global());
-      _sharedmodel.set_processed_local(0);
-      DKV.put(_sharedmodelkey, _sharedmodel);
-      DKV.put(_sharedmodel.data_info());
-      _localmodel = null;
-    }
-    else {
-      _sharedmodel = _localmodel;
+        _sharedmodel = DKV.getGet(_sharedmodel.sharedModelInfoKey()); //get latest version from DKV
+        _localmodel.mult(pa);
+        _sharedmodel.mult(1 - pa);
+        _sharedmodel.add(_localmodel); //ignore processed local value set here
+        _sharedmodel.set_processed_global(_localmodel.get_processed_global());
+        _sharedmodel.set_processed_local(0);
+
+        // FIXME: remove
+        {
+          _sharedmodel.computeStats();
+          assert (!_sharedmodel.unstable());
+        }
+
+        DKV.put(_sharedmodel.sharedModelInfoKey(), _sharedmodel);
+//      DKV.put(_sharedmodel.data_info()); //FIXME: Needed for Elastic Averaging?
+        _localmodel = null;
+      }
+      else {
+        _sharedmodel = _localmodel;
+      }
     }
   }
 
@@ -272,10 +300,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         }
       }
     }
-    catch(RuntimeException ex) {
+    catch(Throwable ex) {
       Log.warn(ex.getMessage());
       minfo.set_unstable();
-      throw new RuntimeException("Canceling job due to numerical instability.");
+      throw ex;
     }
   }
 

@@ -25,7 +25,7 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
 
-  @Test public void run() throws Exception { runFraction(0.000025f); }
+  @Test public void run() throws Exception { runFraction(0.0001f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -63,12 +63,12 @@ public class DeepLearningProstateTest extends TestUtil {
             if ( !classification && loss == DeepLearningParameters.Loss.CrossEntropy ) continue;
 
             for (boolean elastic_averaging : new boolean[]{
-                    true,
+//                    true,
                     false,
             }) {
               for (boolean replicate : new boolean[]{
                       true,
-                      false,
+//                      false,
               }) {
                 for (DeepLearningParameters.Activation activation : new DeepLearningParameters.Activation[]{
                         DeepLearningParameters.Activation.Tanh,
@@ -236,7 +236,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._response_column = frame._names[resp];
                                             p2._overwrite_with_best_model = overwrite_with_best_model;
                                             p2._epochs = epochs;
-                                            p2._replicate_training_data = rng.nextBoolean();
+                                            //p2._replicate_training_data = rng.nextBoolean();
+                                            p2._replicate_training_data = replicate;
                                             p2._seed = myseed;
                                             p2._train_samples_per_iteration = train_samples_per_iteration;
                                             p2._balance_classes = classification && balance_classes;

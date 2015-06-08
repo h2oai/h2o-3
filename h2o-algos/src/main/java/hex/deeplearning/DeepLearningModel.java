@@ -408,7 +408,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public boolean _export_weights_and_biases = false;
 
     public boolean _elastic_averaging = true;
-    public double _elastic_averaging_moving_rate = 0.999;
+    public double _elastic_averaging_moving_rate = 0.9;
 
     public enum MissingValuesHandling {
       Skip, MeanImputation
@@ -615,6 +615,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   private float _bestError = Float.POSITIVE_INFINITY;
 
   public Key actual_best_model_key;
+  public Key model_info_key;
 
   // return the most up-to-date model metrics
   DeepLearningScoring last_scored() { return errors == null ? null : errors[errors.length-1]; }
@@ -860,11 +861,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     return table;
   }
 
-
   // This describes the model, together with the parameters
   // This will be shared: one per node
   public static class DeepLearningModelInfo extends Iced {
-    public Key localModelInfoKey(H2ONode node) { return Key.make(get_params()._model_id + ".node." + node._key); } //FIXME: make node-local
+    public Key localModelInfoKey(H2ONode node) {
+      return Key.make(get_params()._model_id + ".node" + node.index(), (byte)1 /*replica factor*/, (byte)31 /*hidden user-key*/, true, node);
+    }
+    public Key sharedModelInfoKey() {
+      return Key.make(get_params()._model_id + ".shared", (byte)1 /*replica factor*/, (byte)31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
+    }
     public TwoDimTable summaryTable;
     private DataInfo data_info;
     public DataInfo data_info() { return data_info; }
@@ -913,20 +918,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public final DeepLearningParameters get_params() { return parameters; }
     public final void set_params(DeepLearningParameters p) { parameters = (DeepLearningParameters) p.clone(); }
 
-    double mean_rate() { return MathUtils.sum(mean_rate)/mean_rate.length; }
-
     private float[] mean_rate;
-
     private float[] rms_rate;
-
     private float[] mean_bias;
-
     private float[] rms_bias;
-
     private float[] mean_weight;
-
     public float[] rms_weight;
-
     public float[] mean_a;
 
     private volatile boolean unstable = false;
@@ -953,6 +950,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final Frame _valid;         // Prepared validation frame
 
     public DeepLearningModelInfo() {
+      super(); // key is null
       _classification = false;
       _train = _valid = null;
     }
@@ -1501,8 +1499,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
-    DKV.put(dinfo._key,dinfo);
+    DKV.put(dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
+    model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms.getNumFolds() != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -2107,6 +2106,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     DKV.remove(model_info().data_info()._key);
     super.delete();
+    DKV.remove(model_info().sharedModelInfoKey());
     for (H2ONode node : H2O.CLOUD._memary) {
       DKV.remove(model_info().localModelInfoKey(node));
     }

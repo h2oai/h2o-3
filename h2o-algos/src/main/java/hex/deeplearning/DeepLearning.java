@@ -198,7 +198,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             "_overwrite_with_best_model",
             "_missing_values_handling",
             "_reproducible",
-            "_export_weights_and_biases"
+            "_export_weights_and_biases",
+            "_elastic_averaging"
     };
     // the following parameters must not be modified when restarting from a checkpoint
     transient final String [] cp_not_modifiable = new String[] {
@@ -450,15 +451,16 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         do {
           DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
           assert(mi.get_processed_local() == 0);
+          assert(mi.get_params()._replicate_training_data == mp._replicate_training_data);
           final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 || progress() == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
-          assert(mi.get_params()._replicate_training_data == mp._replicate_training_data);
+          final float frac = rowFraction(train, mp, model);
           model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
-                  new DeepLearningTask2(self(), train, mi, rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
-                  new DeepLearningTask(self(), mi, rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
-          update(model.actual_train_samples_per_iteration); //update progress
+                  new DeepLearningTask2(self(), train, mi, frac).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
+                  new DeepLearningTask2(self(), train, mi, frac).doAllNodes(             ).model_info()): //replicated data + multi-node mode
+                  new DeepLearningTask (self(),        mi, frac).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+          update(model.actual_train_samples_per_iteration);
         }
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
 

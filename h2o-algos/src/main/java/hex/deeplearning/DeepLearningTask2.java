@@ -81,7 +81,13 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
     _res.model_info().set_processed_local(0l);
     if (_res.model_info().get_params()._elastic_averaging) {
-      _model_info_global = (DeepLearningModel.DeepLearningModelInfo)_res.model_info().clone(); //FIXME: This is the average
+      _model_info_global = _res.model_info().deep_clone(); //FIXME: This is the average
+
+      // FIXME: remove
+      {
+        _model_info_global.computeStats();
+        assert (!_model_info_global.unstable());
+      }
     } else {
       _model_info_global = _res.model_info();
     }
