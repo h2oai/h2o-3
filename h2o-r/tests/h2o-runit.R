@@ -137,8 +137,8 @@ is.running.internal.to.h2o <- function() {
 
 root.path  <- locate("h2o-package/R/", "h2o-r")
 utils.path <- locate("tests/Utils/", "h2o-r")
-src.utils(utils.path)
 src(root.path)   # uncomment to source R code directly  (overrides package load)
+src.utils(utils.path)
 
 
 #The master seed is set by the runnerSetup.R script.
@@ -154,13 +154,12 @@ setupRandomSeed(seed, suppress = FALSE)
 sandbox()
 h2o.logIt("[SEED] :", SEED, "Command")
 
-
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort), timeout_secs=600)
+h2o.logAndEcho("------------------------------------------------------------")
+h2o.logAndEcho("")
+h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+h2o.logAndEcho("")
+h2o.logAndEcho("------------------------------------------------------------")
+h2o.removeAll( timeout_secs=600)
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {

@@ -329,7 +329,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' @export
 h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions/models/', object@id, '/frames/', data@id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE)
   key <- res$model_metrics[[1L]]$predictions$id$name
 
   h2o.getFrame(key)
@@ -362,7 +362,7 @@ h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
   .h2o.eval.frame(data)
   url <- paste0('Predictions/models/', object@id, '/frames/', data@id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
+  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 
   h2o.getFrame(key)

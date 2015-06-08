@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 test.eq2.h2o.assign<-
-function(conn) {
+function() {
     iris.hex <- h2o.importFile(locate("smalldata/iris/iris.csv"), "iris.hex")
     dim(iris.hex)
     Log.info("Slicing out some columns and rows from iris.hex")
@@ -17,7 +17,7 @@ function(conn) {
     print(h2o.ls())
     keys <- as.vector(h2o.ls()[,1])
     expect_true(any(grepl("slicedIris.hex", keys)))
-    expect_true(grepl("slicedIris.hex", irisSlice@frame_id))
+    expect_true(grepl("slicedIris.hex", irisSlice@id))
     h2o.removeAll()
 
     iris.hex <- h2o.importFile(locate("smalldata/iris/iris.csv"), "iris.hex")
@@ -31,12 +31,12 @@ function(conn) {
     Log.info("Check that the byte sizes of the temporary last.value and the new re-assigned iris.hex are the same")
     Log.info("Note that this check is OK since we cleared all keys and these should be the only two in the user store.")
 
-    expect_that(dim(keyList)[1], equals(2))
+    expect_that(dim(keyList)[1], equals(1))
     Log.info("Check that the dimension of this subsetted iris.hex is 50x4")
     print(dim(iris.hex))
     expect_that(dim(iris.hex), equals(c(50,4)))
     testEnd()
 }
 
-doTest("Test h2o.assign(data,frame_id)", test.eq2.h2o.assign)
+doTest("Test h2o.assign(data,id)", test.eq2.h2o.assign)
 

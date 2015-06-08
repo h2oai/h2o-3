@@ -41,7 +41,7 @@ h2o.exportFile <- function(data, path, force = FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force))
     stop("`force` must be TRUE or FALSE")
 
-  .h2o.__remoteSend(data@conn, .h2o.__EXPORT_FILES(data,path,force))
+  .h2o.__remoteSend(.h2o.__EXPORT_FILES(data,path,force))
 }
 
 #'
@@ -153,7 +153,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
     path <- file.path(dir, name)
 
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@id, path=path, force=force)
+  # res <- .h2o.__remoteSend(.h2o.__PAGE_SaveModel, model=object@id, path=path, force=force)
 
 # path
 }

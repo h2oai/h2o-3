@@ -19,7 +19,7 @@
 .key.make <- function(prefix = "rapids") {
   conn <- h2o.getConnection()
   if (conn@mutable$key_count == .Machine$integer.max) {
-    conn@mutable$session_id <- .init.session_id(conn)
+    conn@mutable$session_id <- .init.session_id()
     conn@mutable$key_count  <- 0L
   }
   conn@mutable$key_count <- conn@mutable$key_count + 1L
@@ -130,7 +130,6 @@ h2o.rm <- function(ids) {
 #'
 #' @param data An \linkS4class{H2OFrame} object
 #' @param key The hex key to be associated with the H2O parsed data object
-#' @param deepCopy Should it do a deepCopy of the frame. Default is FALSE.
 #'
 #' @export
 h2o.assign <- function(data, key) {
@@ -144,7 +143,7 @@ h2o.assign <- function(data, key) {
 }
 
 #'
-#' Get an R Reference to an H2O Dataset
+#' Get an R Reference to an H2O Dataset, that will NOT be GC'd by default
 #'
 #' Get the reference to a frame with the given id in the H2O instance.
 #'
@@ -156,7 +155,26 @@ h2o.getFrame <- function(id) {
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  .newH2OFrame("H2OFrame", id=id, mutable=mutable)
+  fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable)
+  fr.protectFromGC()
+  fr
+}
+
+#'
+#' Get an R Reference to an H2O Dataset, that WILL be GC'd by default
+#'
+#' Get the reference to a frame with the given id in the H2O instance.
+#'
+#' @param id A string indicating the unique frame of the dataset to retrieve.
+.h2o.getGCFrame <- function(id) {
+  if( is.null(id) ) stop("Expected frame id")
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", id))$frames[[1]]
+  cnames <- unlist(lapply(res$columns, function(c) c$label))
+
+  mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
+  fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable, GC=TRUE)
+  fr.allowGC()
+  fr
 }
 
 #' Get an R reference to an H2O model

@@ -94,7 +94,7 @@ setClass("H2OObject",
 #  Can probably assert that >= is actually only ever ==
 #  < implies there's a more recent living version therefore, do not perform remove.
 .keyFinalizer <- function(envir) {
-  if( !is.null(envir$id) ) {
+  if( !is.null(envir$id) && envir$deleteOnGC ) {
     this.ver <- envir$version
     that.ver <- .pkg.env$key.map[[envir$id]]
     if( !is.null(this.ver) && !is.null(that.ver) && (this.ver == that.ver) ) {
@@ -115,12 +115,17 @@ setClass("H2OObject",
 setMethod("initialize", "H2OObject", function(.Object, ..., id) {
   envir <- new.env()
   assign("id", id, envir)
+  assign("deleteOnGC", TRUE, envir)
   if( is.null(.pkg.env$key.map[[id]]) ) .pkg.env$key.map[[id]] <- 0L
   .pkg.env$key.map[[id]] <- .pkg.env$key.map[[id]] + 1L  # bump the version of the id
   assign("version", .pkg.env$key.map[[id]], envir)
   reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
   callNextMethod(.Object, id=id, finalizer=envir)
 })
+
+.h2o.protectFromGC <- function(.Object) { assign("deleteOnGC", FALSE, .Object@finalizer) }
+.h2o.allowGC       <- function(.Object) { assign("deleteOnGC",  TRUE, .Object@finalizer) }
+
 
 #'
 #' The Node class.
