@@ -65,11 +65,11 @@ The following tutorial will walk the user through the download or build of H2O a
 
 0. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
-		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 5g -output hdfsOutputDirName
+		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
-	- The above command launches a 5g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
+	- The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
 
-	- *mapperXmx* is the mapper size or the amount of memory allocated to each node. Specify at least 5 GB. 
+	- *mapperXmx* is the mapper size or the amount of memory allocated to each node. Specify at least 6 GB. 
 
 	- *nodes* is the number of nodes requested to form the cluster.
 
@@ -103,7 +103,7 @@ Hadoop Launch Parameters
 - `-timeout <seconds>`: Specify the timeout duration (in seconds) to wait for the cluster to form before failing. 
 - `-disown`: Exit the driver after the cluster forms.
 - `notify <notification file name>`: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up". 
-- `mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O (at least 5g). 
+- `mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O (at least 6g). 
 - `extramempercent <0-20>`: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of `mapperXmx`. 
 - `-n | -nodes <number of H2O nodes>`: Specify the number of nodes. 
 - `-nthreads <maximum number of CPUs>`: Specify the number of CPUs to use. Enter `-1` to use all CPUs on the host, or enter a positive integer. 

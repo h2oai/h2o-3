@@ -372,7 +372,10 @@ class Expr(object):
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
     elif j['result_type'] in [1,2,3,4]:
-      if isinstance(j['string'], (unicode, str)): self._data = str(j['string'])
+      if isinstance(j['string'], str):
+        self._data = j['string']
+      if isinstance(j['string'], unicode):
+        self._data = j['string'].encode('utf-8')
       else:
         if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
 

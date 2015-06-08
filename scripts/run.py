@@ -913,7 +913,7 @@ class TestRunner:
             print("")
             sys.exit(1)
 
-    def build_test_list(self, test_group, run_small, run_medium, run_large, nopass):
+    def build_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass):
         """
         Recursively find the list of tests to run and store them in the object.
         Fills in self.tests and self.tests_not_started.
@@ -938,44 +938,39 @@ class TestRunner:
                 if (not is_test):
                     continue
 
-                is_small = False
-                is_medium = False
-                is_large = False
-                is_nopass = False
+                is_small     = False
+                is_medium    = False
+                is_large     = False
+                is_xlarge    = False
+                is_nopass    = False
                 is_nofeature = False
 
-                if (re.match(".*large.*", f)):
-                    is_large = True
-                elif (re.match(".*medium.*", f)):
-                    is_large = True
-                else:
-                    is_small = True
+                if  "large"   in f: is_large  = True
+                elif "medium" in f: is_large  = True
+                elif "xlarge" in f: is_xlarge = True
+                else:               is_small  = True
 
-                if (re.match(".*NOPASS.*", f)):
-                    is_nopass = True
+                if "NOPASS"    in f: is_nopass    = True
+                if "NOFEATURE" in f: is_nofeature = True
 
-                if (re.match(".*NOFEATURE.*", f)):
-                    is_nofeature = True
+                if is_small and not run_small:   continue
+                if is_medium and not run_medium: continue
+                if is_large and not run_large:   continue
+                if is_xlarge and not run_xlarge: continue
 
-                if (is_small and not run_small):
-                    continue
-                if (is_medium and not run_medium):
-                    continue
-                if (is_large and not run_large):
-                    continue
-                if (is_nopass and not nopass):
+                if is_nopass and not nopass:
                     # skip all NOPASS tests for regular runs but still count the number of NOPASS tests
                     self.nopass_counter += 1
                     continue
-                if (is_nofeature and not nopass):
+                if is_nofeature and not nopass:
                     # skip all NOFEATURE tests for regular runs but still count the number of NOFEATURE tests
                     self.nofeature_counter += 1
                     continue
-                if (nopass and not is_nopass and not is_nofeature):
+                if nopass and not is_nopass and not is_nofeature:
                     # if g_nopass flag is set, then ONLY run the NOPASS and NOFEATURE tests (skip all other tests)
                     continue
 
-                if (test_group is not None):
+                if test_group is not None:
                     test_short_dir = self._calc_test_short_dir(os.path.join(root, f))
                     if (test_group.lower() not in test_short_dir) and test_group.lower() not in f:
                         continue
@@ -1492,6 +1487,7 @@ g_test_group = None
 g_run_small = True
 g_run_medium = True
 g_run_large = True
+g_run_xlarge = True
 g_use_cloud = False
 g_use_cloud2 = False
 g_use_client = False
@@ -1569,7 +1565,7 @@ def usage():
     print("                  pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
     print("")
     print("    --testsize    Sizes (and by extension length) of tests to run:")
-    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer)")
+    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big tests)")
     print("                  (Default is to run all tests.)")
     print("")
     print("    --usecloud    ip:port of cloud to send tests to instead of starting clouds.")
@@ -1659,6 +1655,7 @@ def parse_args(argv):
     global g_run_small
     global g_run_medium
     global g_run_large
+    global g_run_xlarge
     global g_use_cloud
     global g_use_cloud2
     global g_use_client
@@ -1717,12 +1714,10 @@ def parse_args(argv):
                 usage()
             v = argv[i]
             if (re.match(r'(s)?(m)?(l)?', v)):
-                if ('s' not in v):
-                    g_run_small = False
-                if ('m' not in v):
-                    g_run_medium = False
-                if ('l' not in v):
-                    g_run_large = False
+                if 's' not in v: g_run_small  = False
+                if 'm' not in v: g_run_medium = False
+                if 'l' not in v: g_run_large  = False
+                if 'x' not in v: g_run_xlarge = False
             else:
                 bad_arg(s)
         elif (s == "--usecloud"):
@@ -1898,7 +1893,7 @@ def main(argv):
         g_runner.read_test_list_file(g_test_list_file)
     else:
         # Test group can be None or not.
-        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_nopass)
+        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge,  g_nopass)
 
     # If no run is specified, then do an early exit here.
     if (g_no_run):

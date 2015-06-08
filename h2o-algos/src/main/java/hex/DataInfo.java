@@ -93,7 +93,6 @@ public class DataInfo extends Keyed {
 
     // Count categorical-vs-numerical
     final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0);
-    assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
@@ -191,7 +190,7 @@ public class DataInfo extends Keyed {
     _catOffsets[_catOffsets.length-1] = s;
     _responses = responses;
     _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - responses;
+    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0);
     _useAllFactorLevels = true;
     setPredictorTransform(predictor_transform);
     setResponseTransform(response_transform);
