@@ -206,7 +206,7 @@ function(ast, id) {
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
-  h2o.getFrame(id)
+  .h2o.getGCFrame(id)
 }
 
 #'

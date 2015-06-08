@@ -332,7 +332,7 @@ h2o.anomaly <- function(object, data) {
   res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE)
   key <- res$model_metrics[[1L]]$predictions$id$name
 
-  h2o.getFrame(key)
+  .h2o.getGCFrame(key)
 }
 
 #' Feature Generation via H2O Deep Learning Model
@@ -365,6 +365,6 @@ h2o.deepfeatures <- function(object, data, layer = 1) {
   res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 
-  h2o.getFrame(key)
+  .h2o.getGCFrame(key)
 }
 

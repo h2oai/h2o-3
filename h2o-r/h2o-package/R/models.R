@@ -232,7 +232,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   url <- paste0('Predictions/models/', object@id, '/frames/', newdata@id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
   res <- res$predictions_frame
-  h2o.getFrame(res$name)
+  .h2o.getGCFrame(res$name)
 }
 #' @rdname predict.H2OModel
 #' @export

@@ -139,7 +139,7 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   if(key == data@id) stop("Destination key must differ from input frame ", data@id)
   .h2o.raw_expr_op(data@id, key=key)
-  h2o.getFrame(key)
+  .h2o.getGCFrame(key)
 }
 
 #'
@@ -172,8 +172,8 @@ h2o.getFrame <- function(id) {
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable, GC=TRUE)
-  fr.allowGC()
+  fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable)
+  .h2o.allowGC(fr)
   fr
 }
 

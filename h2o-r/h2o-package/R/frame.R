@@ -122,7 +122,7 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
   job_key  <- res$key$name
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
-  h2o.getFrame(dest_key)
+  .h2o.getGCFrame(dest_key)
 }
 
 #' Categorical Interaction Feature Creation in H2O
@@ -219,7 +219,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   job_key  <- res$key$name
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
-  h2o.getFrame(dest_key)
+  .h2o.getGCFrame(dest_key)
 }
 
 #' Replicate Elements of Vectors or Lists into H2O
@@ -284,7 +284,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 
   ## No gc because insertMissingValues modifies the frame in spot
 
-  h2o.getFrame(res)
+  .h2o.getGCFrame(res)
 }
 
 #' Split an H2O Data Set
@@ -320,7 +320,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   job_key <- res$key$name
   .h2o.__waitOnJob(job_key)
 
-  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
+  splits <- lapply(res$destination_frames, function(s) .h2o.getGCFrame(s$name))
 }
 
 #'
