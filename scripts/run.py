@@ -945,17 +945,14 @@ class TestRunner:
                 is_nopass    = False
                 is_nofeature = False
 
-                if  "large"   in f: is_large  = True
-                elif "medium" in f: is_large  = True
-                elif "xlarge" in f: is_xlarge = True
+                if   "xlarge" in f: is_xlarge = True
+                elif "medium" in f: is_medium = True
+                elif "large"  in f: is_large  = True
                 else:               is_small  = True
 
-                if "NOPASS"    in f: is_nopass    = True
-                if "NOFEATURE" in f: is_nofeature = True
-
-                if is_small and not run_small:   continue
+                if is_small  and not run_small:  continue
                 if is_medium and not run_medium: continue
-                if is_large and not run_large:   continue
+                if is_large  and not run_large:  continue
                 if is_xlarge and not run_xlarge: continue
 
                 if is_nopass and not nopass:
