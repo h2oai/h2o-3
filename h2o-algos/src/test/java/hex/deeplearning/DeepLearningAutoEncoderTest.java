@@ -55,6 +55,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute;
         p._epochs = 13.3;
         p._force_load_balance = true;
+        p._elastic_averaging = false;
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = null;
         try {
