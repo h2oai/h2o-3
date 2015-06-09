@@ -158,7 +158,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model.delete_and_lock(self());
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */false);
+        dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
+                            /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -210,7 +211,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           fr = new Frame(null, vecs);
           u = new Frame(model._output._u_key, null, uvecs);
-          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, false, /* weights */ false, /* offset */ false);
+          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE,
+                              /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false);
           DKV.put(uinfo._key, uinfo);
           DKV.put(u._key, u);
 
@@ -302,7 +304,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   // Save inner product of each row with vec to col k of chunk array
   // Returns sum over l2 norms of each row with vec
-  // Note: Training rows that include any NaN entry are skipped, since this is same behavior when computing Gram matrix
+  // Note: Handling of row skipping should match that of GramTask
   private static L2Norm l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, L2Norm result) {
     double sumsqr = 0;
     long nobs = 0;
@@ -350,7 +352,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final double[] _svec;   // Input: Right singular vector (v_1)
 
     double _sval;           // Output: Singular value (\sigma_1)
-    long _nobs;          // Output: Number of skipped rows
+    long _nobs;             // Output: Number of processed rows
 
     CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
@@ -392,7 +394,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final int _ncols;
 
     double _sval;     // Output: Singular value (\sigma_k)
-    long _nobs;    // Output: Number of skipped rows
+    long _nobs;       // Output: Number of processed rows
 
     CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
