@@ -409,6 +409,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     public boolean _elastic_averaging = true;
     public double _elastic_averaging_moving_rate = 0.9;
+    public double _elastic_averaging_regularization = 1e-3;
 
     public enum MissingValuesHandling {
       Skip, MeanImputation
@@ -560,6 +561,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (_replicate_training_data && null != train() && train().byteSize() > 1e10) {
           dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
         }
+      }
+      if (!_elastic_averaging) {
+        dl.hide("_elastic_averaging_moving_rate", "Elastic averaging is required for this parameter.");
+        dl.hide("_elastic_averaging_regularization", "Elastic averaging is required for this parameter.");
       }
     }
   }

@@ -271,7 +271,7 @@ public abstract class Neurons {
       //this is the actual gradient dE/dw
       final int w = idx + col;
       float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
-      if (_wEA !=null) grad += 1e-2 *(_wEA.raw()[w] -_w.raw()[w]); //FIXME
+      if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
 
       if (have_ada) {
         final float grad2 = grad*grad;
