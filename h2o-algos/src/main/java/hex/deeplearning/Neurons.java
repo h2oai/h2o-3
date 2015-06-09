@@ -210,8 +210,8 @@ public abstract class Neurons {
 
     if (_w instanceof DenseRowMatrix && _previous._a instanceof DenseVector)
       bprop_dense_row_dense(
-              (DenseRowMatrix) _w, (DenseRowMatrix) _wm, (DenseRowMatrix) _ada_dx_g,
-              (DenseVector) _previous._a, _previous._e, _b, _bm, row, partial_grad, rate, momentum);
+              (DenseRowMatrix) _w, (DenseRowMatrix) _wEA, (DenseRowMatrix) _wm, (DenseRowMatrix) _ada_dx_g,
+              (DenseVector) _previous._a, _previous._e, _b, _bEA, _bm, row, partial_grad, rate, momentum);
     else if (_w instanceof DenseRowMatrix && _previous._a instanceof SparseVector)
       bprop_dense_row_sparse(
               (DenseRowMatrix)_w, (DenseRowMatrix)_wm, (DenseRowMatrix)_ada_dx_g,
@@ -232,6 +232,7 @@ public abstract class Neurons {
   /**
    * Specialization of backpropagation for DenseRowMatrices and DenseVectors
    * @param _w weight matrix
+   * @param _w elastic average weight matrix
    * @param _wm weight momentum matrix
    * @param adaxg ADADELTA matrix (2 floats per weight)
    * @param prev_a activation of previous layer
@@ -244,8 +245,8 @@ public abstract class Neurons {
    * @param momentum momentum factor (needed only if ADADELTA isn't used)
    */
   private void bprop_dense_row_dense(
-          final DenseRowMatrix _w, final DenseRowMatrix _wm, final DenseRowMatrix adaxg,
-          final DenseVector prev_a, final DenseVector prev_e, final DenseVector _b, final DenseVector _bm,
+          final DenseRowMatrix _w, final DenseRowMatrix _wEA, final DenseRowMatrix _wm, final DenseRowMatrix adaxg,
+          final DenseVector prev_a, final DenseVector prev_e, final DenseVector _b, final DenseVector _bEA, final DenseVector _bm,
           final int row, final float partial_grad, float rate, final float momentum)
   {
     final float rho = (float)params._rho;
@@ -300,7 +301,7 @@ public abstract class Neurons {
     if (max_w2 != Float.POSITIVE_INFINITY)
       rescale_weights(_w, row, max_w2);
     if (have_ada) avg_grad2 /= cols;
-    update_bias(_b, _bm, row, partial_grad, avg_grad2, rate, momentum);
+    update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum);
   }
 
   /**
@@ -368,7 +369,8 @@ public abstract class Neurons {
         }
       }
       //this is called cols times, so we divide the (repeated) contribution by 1/cols
-      update_bias(b, bm, row, partial_grad/cols, grad*grad/cols, rate, momentum);
+      assert(_bEA == null); //not yet implemented
+      update_bias(b, _bEA, bm, row, partial_grad/cols, grad*grad/cols, rate, momentum);
     }
   }
 
@@ -446,7 +448,8 @@ public abstract class Neurons {
     if (max_w2 != Float.POSITIVE_INFINITY)
       rescale_weights(_w, row, max_w2);
     if (have_ada) avg_grad2 /= prev_a.nnz();
-    update_bias(_b, _bm, row, partial_grad, avg_grad2, rate, momentum);
+    assert(_bEA == null); //not yet implemented
+    update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum);
   }
 
   /**
@@ -581,6 +584,7 @@ public abstract class Neurons {
   /**
    * Helper to update the bias values
    * @param _b bias vector
+   * @param _bEA elastic average bias vector
    * @param _bm bias momentum vector
    * @param row index of the neuron for which we back-propagate
    * @param partial_grad partial derivative dE/dnet = dE/dy * dy/net
@@ -588,15 +592,16 @@ public abstract class Neurons {
    * @param rate learning rate
    * @param momentum momentum factor (needed only if ADADELTA isn't used)
    */
-  void update_bias(final DenseVector _b, final DenseVector _bm, final int row,
+  void update_bias(final DenseVector _b, final DenseVector _bEA, final DenseVector _bm, final int row,
                    float partial_grad, final float avg_grad2, float rate, final float momentum) {
     final boolean have_momenta = _minfo.has_momenta();
     final boolean have_ada = _minfo.adaDelta();
     final float l1 = (float)params._l1;
     final float l2 = (float)params._l2;
     final float bias = _b.get(row);
-    //FIXME: use _bEA
+
     partial_grad -= Math.signum(bias) * l1 + bias * l2;
+    if (_bEA != null) partial_grad -= (bias - _bEA.get(row)) * params._elastic_averaging_regularization;
 
     if (have_ada) {
       final float rho = (float)params._rho;
