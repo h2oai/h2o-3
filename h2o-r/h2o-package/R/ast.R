@@ -75,104 +75,68 @@ function(x, envir, sub_one = TRUE) {
   }
   if (anyH2OFrame)
     x <- eval(x, envir)
-  return(paste0('[',paste0(.ast.walker(x, envir, FALSE, sub_one),collapse=" "),']'))
-
+  return(paste0('[',.ast.walker(x, envir, FALSE),']',collapse=" "))
 }
 
 #'
-#' Walk the R AST directly
+#' Walk the R AST directly and flatten it
 #'
-#' Handles all of the 1 -> 0 indexing issues.
-#' TODO: this method needs to be cleaned up and re-written
+#' Flattens "c" expressions.  
+#' Symbols are looked up, and recursively converted to numbers or strings.
+#' Minus is distributed through "c" lists, and only applies to numbers.
+#' 
+#' Input is:
+#'   expr := 17
+#'        := a_symbol, and the symbol's looked up value is itself an expr
+#'        := "baz"
+#'        := (: expr expr)
+#'        := (c expr...)
+#'        := (- expr)
+#'
+#' Returns:
+#'   a flattened string of numbers, spans and strings surrounded by square brackets.
+#    Spans are input as (: lo hi) and output as lo:cnt
+#'   Example: (c 1 "baz" (c (: 3 7) 17))  ==>
+#'            "[1 baz 3:4 17]"
 .ast.walker<-
-function(expr, envir, neg = FALSE, sub_one = TRUE) {
-  sub <- as.integer(sub_one)
-  # Single column forms
-  if (length(expr) == 1L) {
-    if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
-    if (is.numeric(expr[[1L]])) return(eval(expr[[1L]], envir=envir) - sub)
-    if (is.character(expr[[1L]])) return(deparse(expr[[1L]]))
-    if (is.character(expr)) return(deparse(expr))
+function(expr, envir, neg) {
+  sexpr <- deparse(expr) # Stringified expr
+
+  # expr := a_symbol
+  if( is.symbol(expr)) return(.ast.walker(get(sexpr, envir), envir, neg))
+
+  # expr := 17
+  expr1 <- expr[[1L]]    # First token of lists
+  if( length(expr) == 1L && is.numeric(expr1) ) return(as.character(ifelse(neg,-expr1,expr1-1)))
+
+  # expr := "baz"
+  if( length(expr) == 1L && is.character(expr ) ) {
+    if( neg ) stop("Trying to negate a column name")
+    return(sexpr)
   }
 
-  # Actual evaluation of the column selections has to happen, i.e., it's not bare syntactic elements
-  if (isGeneric(deparse(expr[[1L]]))) {
-    # Have a vector => make a list
-    if ((expr[[1L]]) == quote(`c`)) {
-      children <- lapply(expr[-1L], .ast.walker, envir, neg, sub_one)
-      if( is(children[[1]], "ASTNode") ) stop("No expressions, all must evaluate to constants here")
-      return(children)
+  # expr := (c expr...)
+  if( expr1 == quote(`c`)) return(paste0(lapply(expr[-1L], .ast.walker, envir, neg),collapse=" "))
 
-    # handle the negative indexing cases
-    } else if (expr[[1L]] == quote(`-`)) {
-      # got some negative indexing!
-      browser() # CNC - not tested yet
-
-      # disallow binary ops here
-      if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
-        return(.eval(eval(expr,envir)))
-      }
-
-      new_expr <- as.list(expr[-1L])[[1L]]
-      if (length(new_expr) == 1L) {
-        if (is.symbol(new_expr)) new_expr <- get(deparse(new_expr), envir)
-        if (is.numeric(new_expr[[1L]])) return(paste0('#-', eval(new_expr[[1L]], envir=envir)))  # do not do the +1
-      }
-
-      if (isGeneric(deparse(new_expr[[1L]]))) {
-        if ((new_expr[[1L]]) == quote(`c`)) {
-          if (!identical(new_expr[[2L]][[1L]], quote(`:`))) {
-            children <- lapply(new_expr[-1L], .ast.walker, envir, neg, sub_one)
-            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', paste0('-', x)) else -x) # scrape off the '#', put in the - and continue...
-            children <- lapply(children, function(x) paste0('#', as.numeric(as.character(x)) - sub))
-            op <- new("ASTApply", op="llist")
-            return(new("ASTNode", root=op, children=children))
-          } else {
-            if (length(as.list(new_expr[-1L])) < 2L) new_expr <- as.list(new_expr[-1L])
-            else return(.ast.walker(substitute(new_expr), envir, neg=TRUE, sub_one))
-          }
-        }
-      }
-
-      # otherwise `:` with negative indexing
-      if (identical(new_expr[[1L]][[1L]], quote(`:`))) {
-        return(new("ASTNode", root = new("ASTApply", op = ":"),
-               children = list(paste0('#-', eval(new_expr[[1L]][[2L]], envir = envir)),
-                               paste0('#-', eval(new_expr[[1L]][[3L]], envir = envir)))))
-      }
-    } else if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
-      return(.eval(eval(expr,envir),envir))
-    }
-    # end negative expression cases
+  # expr := (: lo hi)
+  if( expr1 == quote(`:`)) {
+    if( length(expr) != 3L ) stop("Spans need exactly a lower bound and an upper bound")
+    lb = .ast.walker(expr[[2L]],envir,neg)
+    ub = .ast.walker(expr[[3L]],envir,neg)
+    cnt = as.numeric(ub)-as.numeric(lb)+1
+    if( length(lb) != 1L ) stop("Bounds must be 1 value")
+    if( length(ub) != 1L ) stop("Bounds must be 1 value")
+    return(paste0(lb,':',cnt))
+  }
+  
+  # expr := - expr
+  if( expr1 == quote(`-`)) {
+    if( length(expr) != 2L ) stop("Spans can negate exactly 1 expr")
+    return(.ast.walker(expr[[2L]],envir,!neg))
   }
 
-  # Create a new ASTSpan
-  if (identical(expr[[1L]], quote(`:`))) {
-    if( eval(expr[[2L]],envir) < 0 ) {
-      neg <- TRUE
-      if( eval(expr[[3L]],envir) >= 0) stop("Index range must not include positive and negative values.")
-    }
-    if (neg) {
-      browser() # CNC not tested yet
-      return(new("ASTNode", root = new("ASTApply", op = ":"),
-                 children = list(paste0('#', eval(expr[[2L]], envir = envir)+1L),
-                                 paste0('#', eval(expr[[3L]], envir = envir)+1L))))
-    } else
-      lb = eval(expr[[2L]], envir = envir) - 1L
-      ub = eval(expr[[3L]], envir = envir) - 1L
-      return(paste0(lb,':',(ub-lb+1)))
-  }
-
-  if (is.vector(expr) && is.numeric(expr)) {
-    neg <- expr[1] < 0
-    sub_one <- !neg
-    if( neg ) { expr <- expr + 1 }
-    children <- lapply(expr, .ast.walker, envir, neg, sub_one)
-    op <- new("ASTApply", op="llist")
-    if( !(substr(children[[1]],1,1) == "#") ) { op <- new("ASTApply", op="slist") }
-    return(new("ASTNode", root=op, children=children))
-  }
-  stop("No suitable AST could be formed from the expression.")
+  # Generic unknown evaluation
+  .ast.walker(eval(expr,envir),envir,neg)
 }
 
 #'

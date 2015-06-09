@@ -70,6 +70,7 @@ abstract public class AST extends Iced {
     // Generic data mungers
     init(new ASTColSlice());
     init(new ASTRowSlice());
+    init(new ASTRowSliceAssign());
 
     // Cluster management
     init(new ASTLs());

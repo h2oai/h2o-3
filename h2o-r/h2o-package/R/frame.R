@@ -885,7 +885,6 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     sub <- x
   } else if (missingI) {
     name <- j
-    colnames(x)
     j <- match(j, colnames(x))
 
     if( any(is.na(j)) ) {
@@ -896,8 +895,8 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
         idx <- ncol(x)+1
       }
       j <- .eval(idx,parent.frame())
-      op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), "()", j))
+      op  <- new("ASTApply", op = "cols")
+      ast <- new("ASTNode", root = op, children = list(.get(x), j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
       sub <-  .newH2OFrame("H2OFrame", id = .key.make("subset"), mutable = mutable)
     } else {
@@ -916,8 +915,8 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
         idx <- ncol(x)+1
       }
       j <- .eval(idx,parent.frame())
-      op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i,parent.frame()), j))
+      op  <- new("ASTApply", op = "cols")
+      ast <- new("ASTNode", root = op, children = list(.get(x), j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
       sub <-  .newH2OFrame("H2OFrame", id = .key.make("subset"), mutable = mutable)
     } else {
@@ -933,8 +932,8 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   } else
     rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
-  op  <- new("ASTApply", op = "=")
-  ast <- new("ASTNode", root = op, children = list(lhs, rhs))
+  op  <- new("ASTApply", op = "rows=")
+  ast <- new("ASTNode", root = op, children = list(lhs, rhs, .eval(i,parent.frame())))
   res <- .h2o.replace.frame(ast = ast, id = x@id)
 
   if( updateColName ) { colnames(res)[idx] <- name }

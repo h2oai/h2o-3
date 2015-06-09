@@ -31,7 +31,8 @@ class RapidsHandler extends Handler {
       assert fr._key==null;     // Rapids always returns a key-less Frame
       if( rapids.id==null ) {
         fr.delete();
-        throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
+        //throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
+        return new RapidsScalarV3(Double.NaN);
       }
       Key k = Key.make(rapids.id);
       // Smart delete any prior top-level result

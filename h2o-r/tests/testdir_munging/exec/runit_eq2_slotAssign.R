@@ -52,16 +52,11 @@ test.column.assignment <- function() {
 
   hex[rowsToReplace,col] <- replacement
 
-  head(hex)
-
   hexReplaced <- data.frame(col = as.data.frame(hex)[rowsToReplace,col]) 
-
-
-  print(hex)
 
   print(hexReplaced)
 
-  #expect_false(hexReplaced, equals(hexOriginal))
+  expect_false(all(hexReplaced==hexOriginal))
 
   testEnd()
 
