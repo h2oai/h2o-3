@@ -21,7 +21,8 @@ invisible(lapply(packages, usePackage))
 library(R.utils)
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
-if(Sys.getenv()["USER"] == "jenkins") {
+user <- Sys.getenv()["USER"]
+if( !is.na(user) && user == "jenkins") {
   print("JENKINS R_LIBS_USER PATH SET TO: ")
   print( Sys.getenv()["R_LIBS_USER"] )
   print("R .libPaths(): ")
