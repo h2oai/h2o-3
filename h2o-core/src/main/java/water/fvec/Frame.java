@@ -926,8 +926,6 @@ public class Frame extends Lockable<Frame> {
       return fr2;
     }
     Frame frows = (Frame)orows;
-    Vec vrows = makeCompatible(new Frame(frows.anyVec())).anyVec();
-    DKV.put(vrows);
     // It's a compatible Vec; use it as boolean selector.
     // Build column names for the result.
     Vec [] vecs = new Vec[c2.length+1];
@@ -936,7 +934,7 @@ public class Frame extends Lockable<Frame> {
       vecs[i] = _vecs[c2[i]];
       names[i] = _names[c2[i]];
     }
-    vecs[c2.length] = vrows;
+    vecs[c2.length] = frows.anyVec();
     names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
     return new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
