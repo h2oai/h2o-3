@@ -65,9 +65,21 @@ public final class ParseDataset extends Job<Frame> {
       throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
-  static String [] genericColumnNames(int ncols){
-    String [] res = new String[ncols];
-    for(int i = 0; i < res.length; ++i) res[i] = "C" + String.valueOf(i+1);
+  static String [] getColumnNames(int ncols, String[] colNames) {
+    String[] res = null;
+    int i = 0;
+    if (colNames != null) {
+      if (colNames.length == ncols)
+        return colNames;
+      else { // col names < cols, so start w/ names finish with generic
+        i = colNames.length;
+        res = Arrays.copyOf(colNames, ncols);
+      }
+    }
+    //fill in any empty columns with a generic column name
+    if (res == null) res = new String[ncols];
+    for (; i < res.length; ++i) res[i] = "C" + String.valueOf(i + 1);
+
     return res;
   }
 
@@ -185,6 +197,7 @@ public final class ParseDataset extends Job<Frame> {
       throw new RuntimeException(mfpt._errors[0]);
     }*/
     final AppendableVec [] avs = mfpt.vecs();
+    setup._column_names = getColumnNames(avs.length, setup._column_names);
 
     Frame fr = null;
     // Calculate enum domain
@@ -236,7 +249,7 @@ public final class ParseDataset extends Job<Frame> {
         emaps[nodeId] = new EnumMapping(emap);
       }
       job.update(0,"Compressing data.");
-      fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(avs.length),AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
