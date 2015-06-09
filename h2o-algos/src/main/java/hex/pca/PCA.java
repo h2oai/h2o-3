@@ -253,24 +253,24 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       return _key;
     }
   }
-}
 
-class EmbeddedSVD extends SVD {
+  public class EmbeddedSVD extends SVD {
 
-  final private Key sharedProgressKey;
+    final private Key sharedProgressKey;
 
-  public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
-    super(parms);
-    this.sharedProgressKey = sharedProgressKey;
-  }
+    public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
+      super(parms);
+      this.sharedProgressKey = sharedProgressKey;
+    }
 
-  @Override
-  protected Key createProgressKey() {
-    return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-  }
+    @Override
+    protected Key createProgressKey() {
+      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
+    }
 
-  @Override
-  protected boolean deleteProgressKey() {
-    return false;
+    @Override
+    protected boolean deleteProgressKey() {
+      return false;
+    }
   }
 }
