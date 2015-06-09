@@ -29,7 +29,7 @@ class ASTColSlice extends ASTPrim {
 }
 
 class ASTRowSlice extends ASTPrim {
-  @Override int nargs() { return 1+2; }
+  @Override int nargs() { return 1/*for the $$*/ + 2/*for the show*/; }
   @Override String str() { return "rows" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -41,7 +41,7 @@ class ASTRowSlice extends ASTPrim {
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
           long start = cs[0].start();
           long end   = start + cs[0]._len;
-          double min = nums.min(), max = nums.max1();
+          double min = nums.min(), max = nums.max()-1; // exclusive max to inclusive max when stride == 1
           //     [ start, ...,  end ]     the chunk
           //1 []                          nums out left:  nums.max() < start
           //2                         []  nums out rite:  nums.min() > end
