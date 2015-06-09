@@ -81,22 +81,9 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
     _res.model_info().set_processed_local(0l);
     DeepLearningModel.DeepLearningModelInfo localmodel = _res.model_info();
-
-    if (localmodel.get_params()._elastic_averaging) {
-      // Cf. equation 6 of arXiv:1412.6651v5
-      final float pa = (float) _sharedmodel.get_params()._elastic_averaging_moving_rate;
-
-      // localmodel : current average of per-node models
-      // _sharedmodel: time-average of node-averages (consensus model, "the" model)
-      _sharedmodel = DKV.getGet(localmodel.sharedModelInfoKey()); //get latest version from DKV
-      localmodel.mult(pa);
-      _sharedmodel.mult(1 - pa);
-      _sharedmodel.add(localmodel); //ignore processed local value set here
-      _sharedmodel.set_processed_global(localmodel.get_processed_global());
-      _sharedmodel.set_processed_local(0);
-      DKV.put(_sharedmodel.sharedModelInfoKey(), _sharedmodel);
-    } else {
+    if (localmodel.get_params()._elastic_averaging)
+      _sharedmodel = DeepLearningModel.elasticAverage(localmodel);
+    else
       _sharedmodel = localmodel;
-    }
   }
 }

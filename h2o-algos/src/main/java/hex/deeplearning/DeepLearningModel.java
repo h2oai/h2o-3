@@ -867,8 +867,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public Key localModelInfoKey(H2ONode node) {
       return Key.make(get_params()._model_id + ".node" + node.index(), (byte)1 /*replica factor*/, (byte)31 /*hidden user-key*/, true, node);
     }
-    public Key sharedModelInfoKey() {
-      return Key.make(get_params()._model_id + ".shared", (byte)1 /*replica factor*/, (byte)31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
+    public Key elasticAverageModelInfoKey() {
+      return Key.make(get_params()._model_id + ".elasticaverage", (byte)1 /*replica factor*/, (byte)31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
     }
     public TwoDimTable summaryTable;
     private DataInfo data_info;
@@ -1094,7 +1094,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
                           (get_params()._autoencoder ? "auto-encoder" :
                                   _classification ? (units[units.length-1] + "-class classification") : "regression" )
                           + ", " + get_params()._loss.toString() + " loss, "
-                          + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size),
+                          + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size) + ", "
+                          + String.format("%,d", get_processed_global()) + " training samples",
               new String[neurons.length],
               new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                       "Mean Rate", "Rate RMS", "Momentum",
@@ -1413,6 +1414,27 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       cs *= (long)(3378.1999*(Math.PI+ArrayUtils.sum(rms_rate)));
       return cs;
     }
+  }
+
+  /**
+   * Elastic Averaging
+   * Cf. equation 6 of arXiv:1412.6651v5
+   * @param localmodel current average of per-node models
+   * @return Time-average of node-averages (consensus model, "the" model)
+   */
+  public static DeepLearningModelInfo elasticAverage(DeepLearningModelInfo localmodel) {
+    final float pa = (float) localmodel.get_params()._elastic_averaging_moving_rate;
+    assert(pa > 0 && pa <= 1);
+    DeepLearningModelInfo elasticaverage = DKV.getGet(localmodel.elasticAverageModelInfoKey()); //get latest version from DKV
+    localmodel.mult(pa);
+    elasticaverage.mult(1 - pa);
+    elasticaverage.add(localmodel); //ignore processed local value set here
+    elasticaverage.set_processed_global(localmodel.get_processed_global());
+    elasticaverage.set_processed_local(0);
+    DKV.put(elasticaverage.elasticAverageModelInfoKey(), elasticaverage);
+//    Log.info("Local Model    :\n" + localmodel.toString());
+//    Log.info("Elastic Average:\n" + elasticaverage.toString());
+    return elasticaverage;
   }
 
   /**
@@ -2091,6 +2113,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
+    if (model_info().get_params()._elastic_averaging)
+      DKV.put(model_info().elasticAverageModelInfoKey(), bestModel.model_info); //just to be safe, in case the model_info is queried for directly
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
   }
@@ -2106,7 +2130,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     DKV.remove(model_info().data_info()._key);
     super.delete();
-    DKV.remove(model_info().sharedModelInfoKey());
+    DKV.remove(model_info().elasticAverageModelInfoKey());
     for (H2ONode node : H2O.CLOUD._memary) {
       DKV.remove(model_info().localModelInfoKey(node));
     }

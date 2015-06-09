@@ -43,7 +43,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _training=true;
     _sharedmodel = inputModel;
     if (model_info().get_params()._elastic_averaging)
-      DKV.put(_sharedmodel.sharedModelInfoKey(), _sharedmodel);
+      DKV.put(_sharedmodel.elasticAverageModelInfoKey(), _sharedmodel);
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
   }
@@ -167,21 +167,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       _localmodel.set_processed_local(0l);
       // model averaging
       if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
-
-      if (dlp._elastic_averaging) {
-        // Cf. equation 6 of arXiv:1412.6651v5
-        final float pa = (float)_localmodel.get_params()._elastic_averaging_moving_rate;
-
-        // _localmodel : current average of per-node models
-        // _sharedmodel: time-average of node-averages (consensus model, "the" model)
-        _sharedmodel = DKV.getGet(_localmodel.sharedModelInfoKey()); //get latest version from DKV
-        _localmodel.mult(pa);
-        _sharedmodel.mult(1 - pa);
-        _sharedmodel.add(_localmodel); //ignore processed local value set here
-        _sharedmodel.set_processed_global(_localmodel.get_processed_global());
-        _sharedmodel.set_processed_local(0);
-        DKV.put(_sharedmodel.sharedModelInfoKey(), _sharedmodel);
-      }
+      if (_localmodel.get_params()._elastic_averaging) _sharedmodel = DeepLearningModel.elasticAverage(_localmodel);
     } else {
       //Get ready for reduction in DeepLearningTask2
       //Just swap the local and global models
