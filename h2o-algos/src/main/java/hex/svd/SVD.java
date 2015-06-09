@@ -25,7 +25,7 @@ import java.util.Arrays;
  */
 public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of singular value \sigma_i
+  private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of right singular vector
 
   // Maximum number of columns when categoricals expanded
   private final int MAX_COLS_EXPANDED = 5000;
