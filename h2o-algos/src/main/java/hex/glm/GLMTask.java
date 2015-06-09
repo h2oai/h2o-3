@@ -37,12 +37,14 @@ public abstract class GLMTask  {
    final int _responseId;
 
    final int _weightId;
+   final int _offsetId;
 
    public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
      super(cmp);
      _fVec = mVec;
      _responseId = dinfo.responseChunkId();
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
+     _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
    }
 
    @Override public void setupLocal(){

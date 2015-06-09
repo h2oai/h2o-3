@@ -88,6 +88,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void validate(GLM glm) {
       if(_n_folds < 0) glm.error("n_folds","must be >= 0");
       if(_n_folds == 1)_n_folds = 0; // 0 or 1 means no n_folds
+      if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
+        glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
         if(_nlambdas == -1)
           _nlambdas = 100;
@@ -382,7 +384,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log,inverse,/* tweedie*/}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT}
+    public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
 
     // helper function
     static final double y_log_y(double y, double mu) {

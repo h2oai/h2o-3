@@ -197,7 +197,7 @@ public class ConfusionMatrix extends Iced {
 
   private static String[] createConfusionMatrixHeader( double xs[], String ds[] ) {
     String ss[] = new String[xs.length]; // the same length
-    for( int i=0; i<ds.length; i++ )
+    for( int i=0; i<xs.length; i++ )
       if( xs[i] >= 0 || (ds[i] != null && ds[i].length() > 0) && !Double.toString(i).equals(ds[i]) )
         ss[i] = ds[i];
     if( ds.length == xs.length-1 && xs[xs.length-1] > 0 )

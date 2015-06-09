@@ -17,8 +17,7 @@ locate_source <- function(s) {
 # it into 8 columns: "Day", "Month", "Year", "WeekNum", "WeekDay", "Weekend",
 # "Season", "HourOfDay"
 ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
-  # BUG: Setting time zone causes an NPE. See PUBDEV-1234.
-  # if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
+  if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
   d <- as.Date(col, format = datePattern)
   ds <- c(Day = h2o.day(d), Month = h2o.month(d), Year = h2o.year(d), WeekNum = h2o.week(d),
     WeekDay = h2o.dayOfWeek(d), HourOfDay = h2o.hour(d))
@@ -28,12 +27,12 @@ ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
   # ds$Weekend <- as.factor(ds$Weekend)
   
   # Categorical column of season: Spring = 0, Summer = 1, Autumn = 2, Winter = 3
-  # TODO: Replace this with an apply method when implemented
-  ds$Season <- ifelse(ds$Month >= 2 & ds$Month <= 4, 0,
-               ifelse(ds$Month >= 5 & ds$Month <= 7, 1,
-               ifelse(ds$Month >= 8 & ds$Month <= 9, 2, 3)))
+  ds$Season <- ifelse(ds$Month >= 2 & ds$Month <= 4, 0,        # Spring = Mar, Apr, May
+               ifelse(ds$Month >= 5 & ds$Month <= 7, 1,        # Summer = Jun, Jul, Aug
+               ifelse(ds$Month >= 8 & ds$Month <= 9, 2, 3)))   # Autumn = Sep, Oct
   ds$Season <- as.factor(ds$Season)
   h2o.setLevels(ds$Season, c("Spring", "Summer", "Autumn", "Winter"))
+  # ds$Season <- cut(ds$Month, breaks = c(-1, 1, 4, 6, 9, 11), labels = c("Winter", "Spring", "Summer", "Autumn", "Winter"))
   return(ds)
 }
 
@@ -104,7 +103,7 @@ test.chicago.demo <- function(conn) {
   cat("\n\tGBM:\n\t\ttrain AUC = ", gbmModel@model$training_metric@metrics$AUC)
   cat("\n\t\ttest AUC = ", gbmModel@model$validation_metric@metrics$AUC)
   cat("\n\tDL:\n\t\ttrain AUC = ", dlModel@model$training_metric@metrics$AUC)
-  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n)
+  cat("\n\t\ttest AUC = ", dlModel@model$validation_metric@metrics$AUC, "\n")
   
   Log.info("Predict on new crime data")
   crimeExamples.r <- data.frame(Date = c("02/08/2015 11:43:58 PM", "02/08/2015 11:00:39 PM"),

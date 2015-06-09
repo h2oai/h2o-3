@@ -1,5 +1,117 @@
 #FAQ
 
+
+##Algorithms
+
+**What does it mean if the r2 value in my model is negative?**
+
+The coefficient of determination (also known as r^2) can be negative if: 
+
+- linear regression is used without an intercept (constant)
+- non-linear functions are fitted to the data
+- predictions compared to the corresponding outcomes are not based on the model-fitting procedure using those data
+- it is early in the build process (may self-correct as more trees are added)
+
+If your r2 value is negative after your model is complete, your model is likely incorrect. Make sure your data is suitable for the type of model, then try adding an intercept. 
+
+---
+
+**How do I find the standard errors of the parameter estimates (p-values)?**
+
+P-values are currently not supported. They are on our road map and will be added, depending on the current customer demand/priorities. Generally, adding p-values involves significant engineering effort because p-values for regularized GLM are not straightforward and have been defined only recently (with no standard implementation available that we know of). P-values for a restricted set of GLM problems (no regularization, low number of predictors) are easier to do and may be added sooner, if there is a sufficient demand.
+
+For now, we recommend using a non-zero l1 penalty (alpha  > 0) and considering all non-zero coefficients in the model as significant. The recommended use case is running GLM with lambda search enabled and alpha > 0 and picking the best lambda value based on cross-validation or hold-out set validation.
+
+---
+
+##Clusters
+
+
+**When trying to launch H2O, I received the following error message: `ERROR: Too many retries starting cloud.` What should I do?**
+
+If you are trying to start a multi-node cluster where the nodes use multiple network interfaces, by default H2O will resort to using the default host (127.0.0.1). 
+
+To specify an IP address, launch H2O using the following command: 
+
+`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`
+
+If this does not resolve the issue, try the following additional troubleshooting tips: 
+
+- Test connectivity using `curl`: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O. 
+- Confirm ports 54321 and 54322 are available for both TCP and UDP. 
+- Confirm your firewall is not preventing the nodes from locating each other. 
+- Check if you have SELINUX or IPTABLES enabled; if so, disable them.  
+- Check the configuration for the EC2 security group.
+- Confirm that the username is the same on all nodes; if not, define the cloud using `-name`. 
+- Check if the nodes are on different networks. 
+- Check if the nodes have different interfaces; if so, use the `-network` option to define the network (for example, `-network 127.0.0.1`). 
+- Force the bind address using `-ip`. 
+- Confirm the nodes are not using different versions of H2O. 
+
+---
+
+**What should I do if I tried to start a cluster but the nodes started independent clouds that are not connected?**
+
+Because the default cloud name is the user name of the node, if the nodes are on different operating systems (for example, one node is using Windows and the other uses OS X), the different user names on each machine will prevent the nodes from recognizing that they belong to the same cloud. To resolve this issue, use `-name` to configure the same name for all nodes. 
+
+---
+
+**One of the nodes in my cluster is unavailable — what do I do?**
+
+H2O does not support high availability (HA). If a node in the cluster is unavailable, bring the cluster down and create a new healthy cluster. 
+
+---
+
+**How do I add new nodes to an existing cluster?**
+
+New nodes can only be added if H2O has not started any jobs. Once H2O starts a task, it locks the cluster to prevent new nodes from joining. If H2O has started a job, you must create a new cluster to include additional nodes. 
+
+---
+
+**How do I check if all the nodes in the cluster are healthy and communicating?**
+
+In the Flow web UI, click the **Admin** menu and select **Cluster Status**. 
+
+---
+
+**How do I create a cluster behind a firewall?**
+
+H2O uses two ports: 
+
+- The `REST_API` port (54321): Specify when launching H2O using `-port`; uses TCP only. 
+- The `INTERNAL_COMMUNICATION` port (54322): Implied based on the port specified as the `REST_API` port, +1; requires TCP and UDP. 
+
+You can start the cluster behind the firewall, but to reach it, you must make a tunnel to reach the `REST_API` port. To use the cluster, the `REST_API` port of at least one node must be reachable. 
+
+---
+
+
+**I launched H2O instances on my nodes - why won't they form a cloud?**
+
+If you launch without specifying the IP address by adding argument -ip:
+
+`$ java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321`
+
+and multiple local IP addresses are detected, H2O uses the default localhost (127.0.0.1) as shown below:
+
+  ```
+  10:26:32.266 main      WARN WATER: Multiple local IPs detected:
+  +                                    /198.168.1.161  /198.168.58.102
+  +                                  Attempting to determine correct address...
+  10:26:32.284 main      WARN WATER: Failed to determine IP, falling back to localhost.
+  10:26:32.325 main      INFO WATER: Internal communication uses port: 54322
+  +                                  Listening for HTTP and REST traffic
+  +                                  on http://127.0.0.1:54321/
+  10:26:32.378 main      WARN WATER: Flatfile configuration does not include self:
+  /127.0.0.1:54321 but contains [/192.168.1.161:54321, /192.168.1.162:54321]
+  ```
+
+To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the command with the -ip argument to force H2O to launch at the specified IP:
+
+`$ java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -ip 192.168.1.161 -port 54321`
+
+---
+
 ##General
 
 **How do I score using an exported JSON model?**
@@ -118,120 +230,31 @@ Killed.
 The H2O launch failed because more memory was requested than was available. Make sure you are not trying to specify more memory in the launch parameters than you have available. 
 
 ---
+##Hadoop
 
-##Algorithms
+<!---
+>commenting out as in progress per Michal
+**Why did I get an error in R when I tried to save my model to my home directory in Hadoop?**
 
-**What does it mean if the r2 value in my model is negative?**
+To save the model in HDFS, prepend the save directory with `hdfs://`:
 
-The coefficient of determination (also known as r^2) can be negative if: 
+```
+# build model
+model = h2o.glm(model params)
 
-- linear regression is used without an intercept (constant)
-- non-linear functions are fitted to the data
-- predictions compared to the corresponding outcomes are not based on the model-fitting procedure using those data
-- it is early in the build process (may self-correct as more trees are added)
-
-If your r2 value is negative after your model is complete, your model is likely incorrect. Make sure your data is suitable for the type of model, then try adding an intercept. 
-
----
-
-**How do I find the standard errors of the parameter estimates (p-values)?**
-
-P-values are currently not supported. They are on our road map and will be added, depending on the current customer demand/priorities. Generally, adding p-values involves significant engineering effort because p-values for regularized GLM are not straightforward and have been defined only recently (with no standard implementation available that we know of). P-values for a restricted set of GLM problems (no regularization, low number of predictors) are easier to do and may be added sooner, if there is a sufficient demand.
-
-For now, we recommend using a non-zero l1 penalty (alpha  > 0) and considering all non-zero coefficients in the model as significant. The recommended use case is running GLM with lambda search enabled and alpha > 0 and picking the best lambda value based on cross-validation or hold-out set validation.
+# save model
+hdfs_name_node <- "mr-0x6"
+hdfs_tmp_dir <- "/tmp/runit”
+model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
+h2o.saveModel(model, dir = model_path, name = “mymodel")
+```
 
 ---
-
-##Clusters
-
-
-**When trying to launch H2O, I received the following error message: `ERROR: Too many retries starting cloud.` What should I do?**
-
-If you are trying to start a multi-node cluster where the nodes use multiple network interfaces, by default H2O will resort to using the default host (127.0.0.1). 
-
-To specify an IP address, launch H2O using the following command: 
-
-`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`
-
-If this does not resolve the issue, try the following additional troubleshooting tips: 
-
-- Test connectivity using `curl`: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O. 
-- Confirm ports 54321 and 54322 are available for both TCP and UDP. 
-- Confirm your firewall is not preventing the nodes from locating each other. 
-- Check if you have SELINUX or IPTABLES enabled; if so, disable them.  
-- Check the configuration for the EC2 security group.
-- Confirm that the username is the same on all nodes; if not, define the cloud using `-name`. 
-- Check if the nodes are on different networks. 
-- Check if the nodes have different interfaces; if so, use the `-network` option to define the network (for example, `-network 127.0.0.1`). 
-- Force the bind address using `-ip`. 
-- Confirm the nodes are not using different versions of H2O. 
-
----
-
-**What should I do if I tried to start a cluster but the nodes started independent clouds that are not connected?**
-
-Because the default cloud name is the user name of the node, if the nodes are on different operating systems (for example, one node is using Windows and the other uses OS X), the different user names on each machine will prevent the nodes from recognizing that they belong to the same cloud. To resolve this issue, use `-name` to configure the same name for all nodes. 
-
----
-
-**One of the nodes in my cluster is unavailable — what do I do?**
-
-H2O does not support high availability (HA). If a node in the cluster is unavailable, bring the cluster down and create a new healthy cluster. 
-
----
-
-**How do I add new nodes to an existing cluster?**
-
-New nodes can only be added if H2O has not started any jobs. Once H2O starts a task, it locks the cluster to prevent new nodes from joining. If H2O has started a job, you must create a new cluster to include additional nodes. 
-
----
-
-**How do I check if all the nodes in the cluster are healthy and communicating?**
-
-In the Flow web UI, click the **Admin** menu and select **Cluster Status**. 
-
----
-
-**How do I create a cluster behind a firewall?**
-
-H2O uses two ports: 
-
-- The `REST_API` port (54321): Specify when launching H2O using `-port`; uses TCP only. 
-- The `INTERNAL_COMMUNICATION` port (54322): Implied based on the port specified as the `REST_API` port, +1; requires TCP and UDP. 
-
-You can start the cluster behind the firewall, but to reach it, you must make a tunnel to reach the `REST_API` port. To use the cluster, the `REST_API` port of at least one node must be reachable. 
-
----
+-->
 
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
 Currently, this is not yet supported. To provide resource isolation (for example, to isolate H2O to the worker nodes, rather than the master nodes), use YARN Nodemanagers to specify the nodes to use. 
-
----
-
-**I launched H2O instances on my nodes - why won't they form a cloud?**
-
-If you launch without specifying the IP address by adding argument -ip:
-
-`$ java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321`
-
-and multiple local IP addresses are detected, H2O uses the default localhost (127.0.0.1) as shown below:
-
-  ```
-  10:26:32.266 main      WARN WATER: Multiple local IPs detected:
-  +                                    /198.168.1.161  /198.168.58.102
-  +                                  Attempting to determine correct address...
-  10:26:32.284 main      WARN WATER: Failed to determine IP, falling back to localhost.
-  10:26:32.325 main      INFO WATER: Internal communication uses port: 54322
-  +                                  Listening for HTTP and REST traffic
-  +                                  on http://127.0.0.1:54321/
-  10:26:32.378 main      WARN WATER: Flatfile configuration does not include self:
-  /127.0.0.1:54321 but contains [/192.168.1.161:54321, /192.168.1.162:54321]
-  ```
-
-To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the command with the -ip argument to force H2O to launch at the specified IP:
-
-`$ java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -ip 192.168.1.161 -port 54321`
 
 ---
 
@@ -254,6 +277,26 @@ There are two ways to do this:
   or 
 
 - Pass `--conf` via spark-submit when you launch your droplet (e.g., `$SPARK_HOME/bin/spark-submit --conf spark.executor.memory=4g --master $MASTER --class org.my.Droplet $TOPDIR/assembly/build/libs/droplet.jar`
+
+---
+
+**I received the following error while running Sparkling Water using multiple nodes, but not when using a single node - what should I do?**
+
+```
+onExCompletion for water.parser.ParseDataset$MultiFileParseTask@31cd4150
+water.DException$DistributedException: from /10.23.36.177:54321; by class water.parser.ParseDataset$MultiFileParseTask; class water.DException$DistributedException: from /10.23.36.177:54325; by class water.parser.ParseDataset$MultiFileParseTask; class water.DException$DistributedException: from /10.23.36.178:54325; by class water.parser.ParseDataset$MultiFileParseTask$DistributedParse; class java.lang.NullPointerException: null
+	at water.persist.PersistManager.load(PersistManager.java:141)
+	at water.Value.loadPersist(Value.java:226)
+	at water.Value.memOrLoad(Value.java:123)
+	at water.Value.get(Value.java:137)
+	at water.fvec.Vec.chunkForChunkIdx(Vec.java:794)
+	at water.fvec.ByteVec.chunkForChunkIdx(ByteVec.java:18)
+	at water.fvec.ByteVec.chunkForChunkIdx(ByteVec.java:14)
+	at water.MRTask.compute2(MRTask.java:426)
+	at water.MRTask.compute2(MRTask.java:398)
+```
+
+This error output displays if the input file is not present on all nodes. Because of the way that Sparkling Water distributes data, the input file is required on all nodes (including remote), not just the primary node. Make sure there is a copy of the input file on all the nodes, then try again. 
 
 ---
 

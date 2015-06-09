@@ -11,7 +11,6 @@ import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -36,7 +35,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public Job<PCAModel> trainModel() {
-    return start(new PCADriver(), 0);
+    return start(new PCADriver(), 1);
   }
 
   @Override
@@ -74,13 +73,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
+    // if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
+    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
+      _parms._loading_name = "PCALoading_" + Key.rand();
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
-    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
+    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
 
     // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
     int k_min = (int)Math.min(_ncolExp, _train.numRows());
@@ -152,7 +153,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       double[] sdev = new double[svd._output._d.length];
       double[] vars = new double[svd._output._d.length];
       double totVar = 0;
-      double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
+      double dfcorr = 1.0 / Math.sqrt(svd._output._nobs - 1.0);
       for (int i = 0; i < sdev.length; i++) {
         sdev[i] = dfcorr * svd._output._d[i];
         vars[i] = sdev[i] * sdev[i];
@@ -202,7 +203,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
-        parms._useAllFactorLevels = _parms._useAllFactorLevels;
+        parms._use_all_factor_levels = _parms._use_all_factor_levels;
         parms._transform = _parms._transform;
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
@@ -210,13 +211,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Calculate standard deviation and projection as well
         parms._only_v = false;
-        parms._u_key = _parms._loading_key;
+        parms._u_name = _parms._loading_name;
         parms._keep_u = _parms._keep_loading;
 
         SVDModel svd = null;
         SVD job = null;
         try {
-          job = new SVD(parms);
+          job = new EmbeddedSVD(parms, _progressKey);
           svd = job.trainModel().get();
         } finally {
           if (job != null) job.remove();
@@ -225,7 +226,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Recover PCA results from SVD model
         computeStatsFillModel(model, svd);
-        model.update(_key);
+        model.update(self());
         update(1);
 
         done();
@@ -251,5 +252,25 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     Key self() {
       return _key;
     }
+  }
+}
+
+class EmbeddedSVD extends SVD {
+
+  final private Key sharedProgressKey;
+
+  public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
+    super(parms);
+    this.sharedProgressKey = sharedProgressKey;
+  }
+
+  @Override
+  protected Key createProgressKey() {
+    return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
+  }
+
+  @Override
+  protected boolean deleteProgressKey() {
+    return false;
   }
 }

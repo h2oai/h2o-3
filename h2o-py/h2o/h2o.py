@@ -122,6 +122,21 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
+def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
+  """
+  Used in conjunction with import_file and parse_setup in order to make alterations before parsing.
+  :param setup: Result of h2o.parse_setup
+  :param id: An optional id for the frame.
+  :param first_line_is_header: -1,0,1 if the first line is to be used as the header
+  :return: An H2OFrame object
+  """
+  if id is None: id = H2OFrame.py_tmp_key()
+  parsed = parse(setup, id, first_line_is_header)
+  veckeys = parsed['vec_ids']
+  rows = parsed['rows']
+  cols = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
+  vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+  return H2OFrame(vecs=vecs)
 
 def impute(data, column, method=["mean","median","mode"], # TODO: add "bfill","ffill"
            combine_method=["interpolate", "average", "low", "high"], by=None, inplace=True):

@@ -133,7 +133,8 @@ public class Job<T extends Keyed> extends Keyed {
    *  @see H2OCountedCompleter
    */
   public Job<T> start(final H2OCountedCompleter fjtask, long work) {
-    DKV.put(_progressKey = Key.make(), new Progress(work));
+    // FIXME: Do not override shared progress key
+    DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
@@ -174,6 +175,10 @@ public class Job<T extends Keyed> extends Keyed {
     H2O.submitTask(fjtask);
     return this;
   }
+
+  protected Key createProgressKey() { return Key.make(); }
+
+  protected boolean deleteProgressKey() { return true; }
 
   /** Blocks and get result of this job.
    * <p>
@@ -221,7 +226,7 @@ public class Job<T extends Keyed> extends Keyed {
     assert resultingState != JobState.RUNNING;
     if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
     if( _state == resultingState ) return; // No change if already done
-    _finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
+    final float finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
     final long done = System.currentTimeMillis();
     // Atomically flag the job as canceled
     new TAtomic<Job>() {
@@ -233,6 +238,7 @@ public class Job<T extends Keyed> extends Keyed {
         old._exception = msg;
         old._state = resultingState;
         old._end_time = done;
+        old._finalProgress = finalProgress;
         return old;
       }
       // Run the onCancelled code synchronously, right now
@@ -244,9 +250,11 @@ public class Job<T extends Keyed> extends Keyed {
       _exception = msg;
       _state = resultingState;
       _end_time = done;
+      _finalProgress = finalProgress;
     }
     // Remove on cancel/fail/done, only used whilst Job is Running
-    DKV.remove(_progressKey);
+    if (deleteProgressKey())
+      DKV.remove(_progressKey);
   }
 
   /**
@@ -335,7 +343,7 @@ public class Job<T extends Keyed> extends Keyed {
   public static class JobCancelledException extends RuntimeException{}
 
   @Override protected Futures remove_impl(Futures fs) {
-    if (null != _progressKey) DKV.remove(_progressKey, fs);
+    if (null != _progressKey && deleteProgressKey()) DKV.remove(_progressKey, fs);
     return fs;
   }
 

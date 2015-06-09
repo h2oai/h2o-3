@@ -6,24 +6,48 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
+print_diff <- function(r, h2o) {
+  if (!isTRUE(all.equal(r,h2o))) {
+    Log.info (paste("R :", r))
+    Log.info (paste("H2O :" , h2o))
+  }
+}
 
 
+#
+# This contains two tests.  
+# The first reads a file into H2O with 10 columns 
+# each with date format.  Some columns automatically parse, others need to
+# use the as.Date method with a format string.  Both months and years
+# are extracted into their own columns.  The same file is read in
+# by R and the results are compared.  This tests that both R and H2O
+# agree on dates, and that month and year methods work.
+#
+# The second test creates its own dataset. It tests all the parse options
+# available to the format strings.  It also test corner cases in the time
+# conversion/interpretation.
+#
+# hdf - dataframe on H2O server
+# ldf - dataframe copied from H2O server
+# rdf - dataframe created using only R native methods
+#
 datetest <- function(conn){
+  Log.info('Test 1')
   Log.info('uploading date testing dataset')
+  # Data file is 10 columns of dates, each column in a different format
   hdf <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/v-11.csv')))
-  # df should be 5 columns: ds1:5
 
   Log.info('data as loaded into h2o:')
   Log.info(head(hdf))
 
-  # NB: columns 1,5 are currently unsupported as date types
-  # that is, h2o cannot understand:
-  # 1 integer days since epoch (or since any other date);
-  # 2 dates formatted as %d/%m/%y (in strptime format strings)
+  # Columns 1,5-10 are not automatically interpreted by H2O as dates
+  # column 1 is integer days since epoch (or since any other date);
+  # column 5-10 are dates formatted as %d/%m/%y (in strptime format strings)
   summary(hdf)
 
-  Log.info('adding date columns')
-  # NB: h2o automagically recognizes and if it doesn't recognize, you're out of luck
+  Log.info('Converting columns 5-10 to date columns')
+  # h2o automagically recognizes and if it doesn't recognize,
+  # you need to call as.Date to convert the values to dates
   hdf$ds5 <- as.Date(hdf$ds5, "%d/%m/%y %H:%M")
   hdf$ds6 <- as.Date(hdf$ds6, "%d/%m/%Y %H:%M:%S")
   hdf$ds7 <- as.Date(hdf$ds7, "%m/%d/%y")
@@ -32,134 +56,99 @@ datetest <- function(conn){
   hdf$ds10 <- as.Date(hdf$ds10, "%Y_%m_%d")
 
   Log.info('extracting year and month from posix date objects')
-  hdf$year2 <- year(hdf$ds2)
-  hdf$year3 <- year(hdf$ds3)
-  hdf$year4 <- year(hdf$ds4)
-  hdf$year5 <- year(hdf$ds5)
-  hdf$year6 <- year(hdf$ds6)
-  hdf$year7 <- year(hdf$ds7)
-  hdf$year8 <- year(hdf$ds8)
-  hdf$year9 <- year(hdf$ds9)
-  hdf$year10 <- year(hdf$ds10)
-  hdf$mon2 <- month(hdf$ds2)
-  hdf$mon3 <- month(hdf$ds3)
-  hdf$mon4 <- month(hdf$ds4)
-  hdf$mon5 <- month(hdf$ds5)
-  hdf$mon6 <- month(hdf$ds6)
-  hdf$mon7 <- month(hdf$ds7)
-  hdf$mon8 <- month(hdf$ds8)
-  hdf$mon9 <- month(hdf$ds9)
-  hdf$mon10 <- month(hdf$ds10)
-  hdf$idx2 <- year(hdf$ds2) * 12 + month(hdf$ds2)
-  hdf$idx3 <- year(hdf$ds3) * 12 + month(hdf$ds3)
-  hdf$idx4 <- year(hdf$ds4) * 12 + month(hdf$ds4)
-  hdf$idx5 <- year(hdf$ds5) * 12 + month(hdf$ds5)
-  hdf$idx6 <- year(hdf$ds6) * 12 + month(hdf$ds6)
-  hdf$idx7 <- year(hdf$ds7) * 12 + month(hdf$ds7)
-  hdf$idx8 <- year(hdf$ds8) * 12 + month(hdf$ds8)
-  hdf$idx9 <- year(hdf$ds9) * 12 + month(hdf$ds9)
-  hdf$idx10 <- year(hdf$ds10) * 12 + month(hdf$ds10)
+  # extract year from each date and put in its own column (on server)
+  for( i in 2:10) {
+    hdf[[paste("year",i,sep="")]] <- year(hdf[[paste("ds",i,sep="")]])
+  }
 
+  # extract month from each date and put in its own column (on server)
+  for( i in 2:10) {
+    hdf[[paste("month",i,sep="")]] <- month(hdf[[paste("ds",i,sep="")]])
+  }
+  
+  # extract year & month from each date and put total month count in its own column (on server)
+  for( i in 2:10) {
+    hdf[[paste("idx",i,sep="")]] <- year(hdf[[paste("ds",i,sep="")]]) * 12 + month(hdf[[paste("ds",i,sep="")]])
+  }
+  #server dataframe is now 37 columns, 10 dates, 9 years, 9 months, 9 totalmonths
+  
+  # set the column names for the new columns
   cc <- colnames(hdf)
   nn <- c( paste('year', 2:10, sep=''), paste('month', 2:10, sep=''), paste('idx', 2:10, sep='') )
   cc[ (length(cc) - length(nn) + 1):length(cc) ] <- nn
   colnames(hdf) <- cc
 
-  Log.info('pulling year/month indices local')
+  Log.info('Creating a local dataframe from H2O frame')
   ldf <- as.data.frame( hdf )
 
   # build the truth using R internal date fns
   rdf <- read.csv(locate('smalldata/jira/v-11.csv'))
-  rdf$days1 <- as.Date(rdf$ds1, origin='1970-01-01')
-  rdf$days2 <- as.Date(rdf$ds2, format='%Y-%m-%d')
-  rdf$days3 <- as.Date(rdf$ds3, format='%d-%b-%y')
-  rdf$days4 <- as.Date(rdf$ds4, format='%d-%B-%Y')
-  rdf$days5 <- as.Date(rdf$ds5, format='%d/%m/%y %H:%M')
-  rdf$days6 <- as.Date(rdf$ds6, format='%d/%m/%Y %H:%M:%S')
-  rdf$days7 <- as.Date(rdf$ds7, format='%m/%d/%y')
-  rdf$days8 <- as.Date(rdf$ds8, format='%m/%d/%Y')
-  rdf$days9 <- as.Date(as.factor(rdf$ds9), format='%Y%m%d')
-  rdf$days10 <- as.Date(rdf$ds10, format='%Y_%m_%d')
+  rdf$ds1 <- as.Date(rdf$ds1, origin='1970-01-01')
+  rdf$ds2 <- as.Date(rdf$ds2, format='%Y-%m-%d')
+  rdf$ds3 <- as.Date(rdf$ds3, format='%d-%b-%y')
+  rdf$ds4 <- as.Date(rdf$ds4, format='%d-%B-%Y')
+  rdf$ds5 <- as.Date(rdf$ds5, format='%d/%m/%y %H:%M')
+  rdf$ds6 <- as.Date(rdf$ds6, format='%d/%m/%Y %H:%M:%S')
+  rdf$ds7 <- as.Date(rdf$ds7, format='%m/%d/%y')
+  rdf$ds8 <- as.Date(rdf$ds8, format='%m/%d/%Y')
+  rdf$ds9 <- as.Date(as.factor(rdf$ds9), format='%Y%m%d')
+  rdf$ds10 <- as.Date(rdf$ds10, format='%Y_%m_%d')
 
-  months <- data.frame(lapply(rdf[,11:20], function(x) as.POSIXlt(x)$mon))
-  years <- data.frame(lapply(rdf[,11:20], function(x) as.POSIXlt(x)$year))
-  idx <- 12*years + months
+  # create year, month, and totalmonth columns for R's version of the data
+  years <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$year))
+  colnames(years) <- paste(rep("year",10),c(1:10),sep="")
 
-  Log.info('testing correctness')
-  expect_that( ldf$year2, equals(years[,2]) )
-  expect_that( ldf$year3, equals(years[,3]) )
-  expect_that( ldf$year4, equals(years[,4]) )
-  expect_that( ldf$year5, equals(years[,5]) )
-  expect_that( ldf$year6, equals(years[,6]) )
-  expect_that( ldf$year7, equals(years[,7]) )
-  expect_that( ldf$year8, equals(years[,8]) )
-  expect_that( ldf$year9, equals(years[,9]) )
-  expect_that( ldf$year10, equals(years[,10]) )
-
-  expect_that( ldf$month2, equals(months[,2]) )
-  expect_that( ldf$month3, equals(months[,3]) )
-  expect_that( ldf$month4, equals(months[,4]) )
-  expect_that( ldf$month5, equals(months[,5]) )
-  expect_that( ldf$month6, equals(months[,6]) )
-  expect_that( ldf$month7, equals(months[,7]) )
-  expect_that( ldf$month8, equals(months[,8]) )
-  expect_that( ldf$month9, equals(months[,9]) )
-  expect_that( ldf$month10, equals(months[,10]) )
-
-  expect_that( ldf$idx2, equals(idx[,2]) )
-  expect_that( ldf$idx3, equals(idx[,3]) )
-  expect_that( ldf$idx4, equals(idx[,4]) )
-  expect_that( ldf$idx5, equals(idx[,5]) )
-  expect_that( ldf$idx6, equals(idx[,6]) )
-  expect_that( ldf$idx7, equals(idx[,7]) )
-  expect_that( ldf$idx8, equals(idx[,8]) )
-  expect_that( ldf$idx9, equals(idx[,9]) )
-  expect_that( ldf$idx10, equals(idx[,10]) )
-
+  # as.POSIX.lt(x).mon returns a 0-11 range, but the R/H2O month(x) method returns 1-12
+  months <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$mon + 1))
+  colnames(months) <- paste(rep("month",10),c(1:10),sep="")
   
+  idx <- 12*years + months
+  colnames(idx) <- paste(rep("idx",10),c(1:10),sep="")
+  
+  rdf <- cbind(rdf, years, months, idx)
+
+  #Compare the results imported from H2O (ldf) to R's results (rdf)
+  Log.info('testing correctness')
+  for (i in 2:10) {
+    print_diff(rdf[[paste("year",i,sep="")]], ldf[[paste("year",i,sep="")]])
+    expect_that(ldf[[paste("year",i,sep="")]], equals(rdf[[paste("year",i,sep="")]]))
+    print_diff(rdf[[paste("month",i,sep="")]], ldf[[paste("month",i,sep="")]])
+    expect_that(ldf[[paste("month",i,sep="")]], equals(rdf[[paste("month",i,sep="")]]))
+    print_diff(rdf[[paste("idx",i,sep="")]], ldf[[paste("idx",i,sep="")]])    
+    expect_that(ldf[[paste("idx",i,sep="")]], equals(rdf[[paste("idx",i,sep="")]]))
+  }
+  
+  
+  Log.info('Test 2')
   ## Col 1-10 test all different parse options, rows test some corner cases
-  ## Row 1/2 test 1969/2068 inference
+  ## Rows 1,2 test 1969/2068 inference
   formats = c("%c %z", "%a %d %m %y %H:%M:%S %z", "%A %m %d %Y %k", "%b %d %C %y %I %p", "%e %B, %Y %l %p", "%h-%e, %y %r", "%D %H_%M", "%F %H", "%H:%M %j %Y", "%d_%m_%y %T", "%d%m%y %R")
   c1 = c("Fri Jan 10 00:00:00 1969 -0800", "Tue Jan 10 04:00:00 2068 -0800", "Mon Dec 30 01:00:00 2002 -0800", "Wed Jan 1 12:00:00 2003 -0800")
-  c1dt = strptime(c1, formats[1], tz="America/Los_Angeles")
-  c2 = strftime(c1dt, formats[2], tz="America/Los_Angeles")
-  c3 = strftime(c1dt, formats[3], tz="America/Los_Angeles")
-  c4 = strftime(c1dt, formats[4], tz="America/Los_Angeles")
-  c5 = strftime(c1dt, formats[5], tz="America/Los_Angeles")
-  c6 = strftime(c1dt, formats[6], tz="America/Los_Angeles")
-  c7 = strftime(c1dt, formats[7], tz="America/Los_Angeles")
-  c8 = strftime(c1dt, formats[8], tz="America/Los_Angeles")
-  c9 = strftime(c1dt, formats[9], tz="America/Los_Angeles")
-  c10 = strftime(c1dt, formats[10], tz="America/Los_Angeles")
-  c11 = strftime(c1dt, formats[11], tz="America/Los_Angeles")
+  # create local data frame
+  c1dates = strptime(c1, formats[1], tz="America/Los_Angeles")
+  # reprint dates into different formats
+  ldf = data.frame(c1)
+  for (i in 2:11) {
+    ldf[[paste("c",i,sep="")]] <- strftime(c1dates, formats[[i]], tz="America/Los_Angeles")
+  }
   
-  ldf = data.frame(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)
+  #load data frame into H2O
   hdf = as.h2o(conn, ldf, "hdf")
-  hdf$c1 = as.Date(hdf$c1, formats[1])
-  hdf$c2 = as.Date(hdf$c2, formats[2])
-  hdf$c3 = as.Date(hdf$c3, formats[3])
-  hdf$c4 = as.Date(hdf$c4, formats[4])
-  hdf$c5 = as.Date(hdf$c5, formats[5])
-  hdf$c6 = as.Date(hdf$c6, formats[6])
-  hdf$c7 = as.Date(hdf$c7, formats[7])
-  hdf$c8 = as.Date(hdf$c8, formats[8])
-  hdf$c9 = as.Date(hdf$c9, formats[9])
-  hdf$c10 = as.Date(hdf$c10, formats[10])
-  hdf$c11 = as.Date(hdf$c11, formats[11])
-                   
-  lmillis = data.frame(as.vector(unclass(as.POSIXct(c1dt, formats[1], tz="America/Los_Angeles")) * 1000))
-  res = as.data.frame(hdf)
-  expect_that(lmillis[,1], equals(res[,1]))
-  expect_that(lmillis[,1], equals(res[,2]))
-  expect_that(lmillis[,1], equals(res[,3]))
-  expect_that(lmillis[,1], equals(res[,4]))
-  expect_that(lmillis[,1], equals(res[,5]))
-  expect_that(lmillis[,1], equals(res[,6]))
-  expect_that(lmillis[,1], equals(res[,7]))
-  expect_that(lmillis[,1], equals(res[,8]))
-  expect_that(lmillis[,1], equals(res[,9]))
-  expect_that(lmillis[,1], equals(res[,10]))
-  expect_that(lmillis[,1], equals(res[,11]))
+  #parse strings and enums into dates on H2O
+  for (i in 1:11) {
+    hdf[[paste("c",i,sep="")]] <- as.Date(hdf[[paste("c",i,sep="")]], formats[[i]])
+  }
+  
+  # convert dates in R into milliseconds
+  lmillis <- data.frame(as.vector(unclass(as.POSIXct(c1dates, formats[1], tz="America/Los_Angeles")) * 1000))
+  
+  #pull results back from H2O
+  ldf <- as.data.frame(hdf)
+  # compare milliseconds from R with those from H2O
+  for (i in 1:11) {
+    print_diff(lmillis[,1], ldf[[i]])
+    expect_that(lmillis[,1], equals(ldf[[i]]))
+  }
   
   testEnd()
 }

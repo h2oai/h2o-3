@@ -361,45 +361,45 @@ The available options vary depending on the selected model. If an option is only
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 **Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
-- **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
+- **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale.  
 
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [Naïve Bayes](#NB)) Select the column to use as the independent variable.
 
-- **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is IRLSM. 
+- **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
 
-- **Ntrees**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of trees. The default value is 50. 
+- **Ntrees**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of trees.  
 
-- **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth. For GBM, the default value is 5. For DRF, the default value is 20. 
+- **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth.  
 
-- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 1.
+- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). 
 
-- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. The default value is 20. 
+- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.   
 
-- **Nbins_cats**: [(GBM](#GBM), [DRF)](#DRF) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The default is 1024. 
+- **Nbins_cats**: [(GBM](#GBM), [DRF)](#DRF) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
 
-- **R2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. The default value is 0.999999. 
+- **R2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
-- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
+- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.     
 
-- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
+- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0. 
 
 - **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
 - **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
 
-- **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
+- **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
+- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
 - **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM), [GLM](#GLM)) To score during each iteration of the model training, check this checkbox. 
 
-- **K**: [(K-Means)](#Kmeans), [(PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
+- **K**: [(K-Means)](#Kmeans), [(PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
 
-- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. The default is 0. 
+- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. 
 
-- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA),[GLM)](#GLM) Specify the number of training iterations. For K-Means and PCA, the default is 1000. For GLM, the default is -1. 
+- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA),[GLM)](#GLM) Specify the number of training iterations. 
  
 - **Objective_epsilon**: [(GLM)](#GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
@@ -421,19 +421,19 @@ The available options vary depending on the selected model. If an option is only
 
 - **Hidden**: [(DL)](#DL) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. The specified value(s) must be positive. 
 
-- **Epochs**: ([DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0. 
+- **Epochs**: ([DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction.  
 
 - **Variable_importances**: ([DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **Laplace**: [(Naïve Bayes)](#NB) Specify the Laplace smoothing parameter. The default value is 0. 
+- **Laplace**: [(Naïve Bayes)](#NB) Specify the Laplace smoothing parameter. 
 
-- **Min\_sdev**: [(Naïve Bayes)](#NB) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
+- **Min\_sdev**: [(Naïve Bayes)](#NB) Specify the minimum standard deviation to use for observations without enough data.  
 
-- **Eps\_sdev**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_sdev**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.  
 
-- **Min\_prob**: [(Naïve Bayes)](#NB) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
+- **Min\_prob**: [(Naïve Bayes)](#NB) Specify the minimum probability to use for observations without enough data.  
 
-- **Eps\_prob**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_prob**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. 
 
 - **Compute_metrics**: [(Naïve Bayes)](#NB) To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction. 
 
@@ -446,27 +446,27 @@ The available options vary depending on the selected model. If an option is only
 **Advanced Options**
 
 
-- **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model (e.g., by a grid search).
+- **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
 
 - **Use\_all\_factor\_levels**: ([DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
-- **Train\_samples\_per\_iteration**: [(DL)](#DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2. The default is -2. 
+- **Train\_samples\_per\_iteration**: [(DL)](#DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2. 
 
 - **Adaptive_rate**: [(DL)](#DL) Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. If this option is enabled, the following parameters are ignored: `rate`, `rate_decay`, `rate_annealing`, `momentum_start`, `momentum_ramp`, `momentum_stable`, and `nesterov_accelerated_gradient`. 
 
-- **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1 and the default value is 0. 
+- **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1. 
 
-- **L1**: [(DL)](#DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. The default value is 0. 
+- **L1**: [(DL)](#DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. 
 
-- **L2**: [(DL)](#DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. The default value is 0.
+- **L2**: [(DL)](#DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
 
-- **Score_interval**: [(DL)](#DL) Specify the shortest time interval (in seconds) to wait between model scoring. The default value is 5. 
+- **Score_interval**: [(DL)](#DL) Specify the shortest time interval (in seconds) to wait between model scoring.  
 
-- **Score\_training\_samples**: [(DL)](#DL) Specify the number of training set samples for scoring. To use all training samples, enter 0. The default value is 10000. 
+- **Score\_training\_samples**: [(DL)](#DL) Specify the number of training set samples for scoring. To use all training samples, enter 0.  
 
-- **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) Specify the number of validation set samples for scoring. To use all validation set samples, enter 0. The default value is 0. This option is applicable to classification only. 
+- **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.  
 
-- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The default value is 0.1.
+- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring.
 
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
    **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
@@ -479,19 +479,19 @@ The available options vary depending on the selected model. If an option is only
 
 - **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
 
-- **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2. The default value is 0.5. 
+- **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2.  
 
-- **Lambda**: [(GLM)](#GLM) Specify the regularization strength. There is no default value.  
+- **Lambda**: [(GLM)](#GLM) Specify the regularization strength.  
 
 - **Lambda_search**: [(GLM)](#GLM) Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
 
-- **Rate**: [(DL)](#DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. The default value is 0.005. Not applicable if **adaptive_rate** is enabled. 
+- **Rate**: [(DL)](#DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. Not applicable if **adaptive_rate** is enabled. 
 
-- **Rate_annealing**: [(DL)](#DL) Specify the learning rate annealing. The formula is rate/(1+rate\_annealing value \* samples). The default value is 10.000001. Not applicable if **adaptive_rate** is enabled.
+- **Rate_annealing**: [(DL)](#DL) Specify the learning rate annealing. The formula is rate/(1+rate\_annealing value \* samples). Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_start**: [(DL)](#DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. The default value is 0. Not applicable if **adaptive_rate** is enabled.
+- **Momentum_start**: [(DL)](#DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. The default value is 1000000. Not applicable if **adaptive_rate** is enabled.
+- **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. Not applicable if **adaptive_rate** is enabled.
 
 - **Momentum_stable**: [DL](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
 
@@ -503,23 +503,23 @@ The available options vary depending on the selected model. If an option is only
 
 - **Overwrite\_with\_best\_model**: [(DL)](#DL) Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
-- **Target\_ratio\_comm\_to\_comp**: [(DL)](#DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). The default value is 0.02. 
+- **Target\_ratio\_comm\_to\_comp**: [(DL)](#DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning).  
 
-- **Rho**: [(DL)](#DL) Specify the adaptive learning rate time decay factor. The default value is 0.99. This option is only applicable if **adaptive_rate** is enabled. 
+- **Rho**: [(DL)](#DL) Specify the adaptive learning rate time decay factor. This option is only applicable if **adaptive_rate** is enabled. 
 
-- **Epsilon**: [(DL)](#DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. The default value is 1.0E-8. This option is only applicable if **adaptive_rate** is enabled. 
+- **Epsilon**: [(DL)](#DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option is only applicable if **adaptive_rate** is enabled. 
 
-- **Max_W2**: [(DL)](#DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). The default value is infinity. 
+- **Max_W2**: [(DL)](#DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). 
 
-- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). The default is Uniform Adaptive. If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
+- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
  
-- **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. The default value is 1.0. If Uniform Adaptive is selected as the **initial\_weight\_distribution**, the **initial\_weight\_scale** parameter is not applicable.
+- **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. If Uniform Adaptive is selected as the **initial\_weight\_distribution**, the **initial\_weight\_scale** parameter is not applicable.
 
-- **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1. The default value is 0.0. 
+- **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1.  
 
-- **Max\_hit\_ratio\_k**: [(DL,)](#DL)[GLM](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0. The default value is 10. 
+- **Max\_hit\_ratio\_k**: [(DL,)](#DL)[GLM](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0.  
 
-- **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1. The default value is 0.000001. 
+- **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.  
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -535,7 +535,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Shuffle\_training\_data**: [(DL)](#DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip or MeanImputation). The default value is MeanImputation. 
+- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip or MeanImputation). 
 
 - **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
@@ -543,23 +543,23 @@ The available options vary depending on the selected model. If an option is only
 
 - **Col_major**: [(DL)](#DL) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
-- **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. The default value is 0. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
+- **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
-- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. The default value is 0. 
+- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. 
 
-- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. The default is unlimited.
+- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. 
 
 - **Reproducible**: [(DL)](#DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
 
 - **Export\_weights\_and\_biases**: [(DL)](#DL) To export the neural network weights and biases as H2O frames, check this checkbox. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
 
 - **Max\_after\_balance\_size**: [DRF](#DRF), [GBM](#GBM), [DL](#DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is -1. 
+- **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  
 
 - **Max\_active\_predictors**: [(GLM)](#GLM) Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
@@ -792,7 +792,7 @@ where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified locatio
 
 **Note**: If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
 
-`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
+`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
 
 The location specified in `flow_dir` may be either an hdfs or regular filesystem directory.  If the directory does not exist, it will be created the first time you save a flow.
 

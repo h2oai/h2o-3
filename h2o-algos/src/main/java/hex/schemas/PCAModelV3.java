@@ -6,6 +6,10 @@ import water.api.*;
 public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAParameters, PCAV3.PCAParametersV3, PCAModel.PCAOutput, PCAModelV3.PCAModelOutputV3> {
   public static final class PCAModelOutputV3 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV3> {
     // Output fields; input fields are in the parameters list
+    // TODO: This field is redundant. Remove in next API change.
+    @API(help = "Standard deviations")
+    public double[] std_deviation;
+
     @API(help = "Importance of each principal component")
     public TwoDimTableBase pc_importance;
 

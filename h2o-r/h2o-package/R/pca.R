@@ -22,6 +22,10 @@
 #'        for demeaning and dividing each column by its range (max - min).
 #' @param seed (Optional) Random seed used to initialize the right singular vectors
 #'        at the beginning of each power method iteration.
+#' @param use_all_factor_levels (Optional) A logical value indicating whether all
+#'        factor levels should be included in each categorical column expansion.
+#'        If FALSE, the indicator column corresponding to the first factor level
+#'        of every categorical variable will be dropped. Defaults to FALSE.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @examples
 #' library(h2o)
@@ -35,7 +39,8 @@ h2o.prcomp <- function(training_frame, x, k,
                       model_id,                          # h2o generates its own default parameters
                       max_iterations = 1000,
                       transform = "NONE",
-                      seed)
+                      seed,
+                      use_all_factor_levels)
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
@@ -69,6 +74,8 @@ h2o.prcomp <- function(training_frame, x, k,
     parms$transform <- transform
   if(!missing(seed))
     parms$seed <- seed
+  if(!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
 
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'pca', parms)
