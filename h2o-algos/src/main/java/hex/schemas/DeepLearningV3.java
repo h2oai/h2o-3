@@ -73,7 +73,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "reproducible",
         "export_weights_and_biases",
         "elastic_averaging",
-        "elastic_averaging_moving_rate"
+        "elastic_averaging_moving_rate",
+        "elastic_averaging_regularization"
     };
 
     /// Supervised params
@@ -545,6 +546,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public double elastic_averaging_moving_rate;
 
     @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
-    public double elastic_averaging_regularization = 1e-3;
+    public double elastic_averaging_regularization;
   }
 }
