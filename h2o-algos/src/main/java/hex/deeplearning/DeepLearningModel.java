@@ -547,6 +547,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       if (!_sparse && _col_major) {
         dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
       }
+      if (_sparse && _elastic_averaging) {
+        dl.error("_elastic_averaging", "Cannot use elastic averaging for sparse data handling.");
+      }
       if (expensive) {
         if (!classification && _balance_classes) {
           dl.error("_balance_classes", "balance_classes requires classification.");
@@ -1426,10 +1429,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final float pa = (float) localmodel.get_params()._elastic_averaging_moving_rate;
     assert(pa > 0 && pa <= 1);
     DeepLearningModelInfo elasticaverage = DKV.getGet(localmodel.elasticAverageModelInfoKey()); //get latest version from DKV
-    localmodel.mult(pa);
-    elasticaverage.mult(1 - pa);
-    elasticaverage.add(localmodel); //ignore processed local value set here
-    elasticaverage.set_processed_global(localmodel.get_processed_global());
+    if (pa == 1) {
+      elasticaverage = localmodel.deep_clone();
+    } else {
+      localmodel.mult(pa);
+      elasticaverage.mult(1 - pa);
+      elasticaverage.add(localmodel); //ignore processed local value set here
+      elasticaverage.set_processed_global(localmodel.get_processed_global());
+    }
     elasticaverage.set_processed_local(0);
     DKV.put(elasticaverage.elasticAverageModelInfoKey(), elasticaverage);
 //    Log.info("Local Model    :\n" + localmodel.toString());

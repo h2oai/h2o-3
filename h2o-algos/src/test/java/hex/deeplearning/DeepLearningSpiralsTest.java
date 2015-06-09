@@ -38,6 +38,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._hidden = new int[]{100};
           p._sparse = sparse;
           p._col_major = col_major;
+          p._elastic_averaging = false;
           p._activation = DeepLearningParameters.Activation.Tanh;
           p._max_w2 = Float.POSITIVE_INFINITY;
           p._l1 = 0;

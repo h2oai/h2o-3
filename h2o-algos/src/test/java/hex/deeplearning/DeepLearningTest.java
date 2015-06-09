@@ -463,6 +463,7 @@ public class DeepLearningTest extends TestUtil {
       dl._export_weights_and_biases = true;
       dl._hidden = hidden;
       dl._l1 = l1;
+      dl._elastic_averaging = false;
 
       // Invoke DL and block till the end
       DeepLearning job = null;
@@ -541,6 +542,7 @@ public class DeepLearningTest extends TestUtil {
         dl._epochs = 0.0001;
         dl._export_weights_and_biases = true;
         dl._hidden = new int[]{188, 191};
+        dl._elastic_averaging = false;
 
         // Invoke DL and block till the end
         DeepLearning job = null;

@@ -84,6 +84,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._model_id = Key.make();
           p._reproducible = true;
           p._seed = seed;
+          p._elastic_averaging = false;
 
           // Convert response to categorical
           int ri = train.numCols()-1;

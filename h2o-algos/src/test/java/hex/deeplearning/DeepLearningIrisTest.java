@@ -172,6 +172,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._sparse = sparse;
                                 p._col_major = col_major;
                                 p._epochs = 0;
+                                p._elastic_averaging = false;
                                 DeepLearning dl = new DeepLearning(p);
                                 try {
                                   mymodel = dl.trainModel().get();
