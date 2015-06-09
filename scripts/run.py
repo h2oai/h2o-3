@@ -33,7 +33,7 @@ def is_python_file(file_name):
     """
     Return True if file_name matches a regexp for a python program in general.  False otherwise.
 
-    This is a separate function because it's useful to have the scan-for-test operation in 
+    This is a separate function because it's useful to have the scan-for-test operation in
     build_test_list() be separated from running the test.
 
     That allows us to run things explictly named using the --test option.  Such as:
@@ -212,7 +212,7 @@ class H2OCloudNode:
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        if "JAVA_HOME" in os.environ: 
+        if "JAVA_HOME" in os.environ:
             java = os.environ["JAVA_HOME"] + "/bin/java"
         else:
             java = "java"
@@ -826,7 +826,7 @@ class TestRunner:
         self.regression_passed = False
         self._create_output_dir()
         self._create_failed_output_dir()
-        if produce_unit_reports: 
+        if produce_unit_reports:
             self._create_testreport_dir()
         self.nopass_counter = 0
         self.nofeature_counter = 0
@@ -949,6 +949,9 @@ class TestRunner:
                 elif "medium" in f: is_medium = True
                 elif "large"  in f: is_large  = True
                 else:               is_small  = True
+
+                if "NOPASS"    in f: is_nopass    = True
+                if "NOFEATURE" in f: is_nofeature = True
 
                 if is_small  and not run_small:  continue
                 if is_medium and not run_medium: continue
@@ -1411,14 +1414,14 @@ class TestRunner:
         failures = 1 if failureType else 0
         skip = 1 if skipped else 0
         failure = "" if not failureType else """"<failure type="{}" message="{}">{}</failure>""".format(failureType, failureMessage, failureDescription)
-        
+
 	xmlReport= """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
   <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
   {failure}
   </testcase>
 </testsuite>
-""".format(testsuiteName=testsuiteName, testcaseClassName=testcaseName, testcaseName=testcaseName, 
+""".format(testsuiteName=testsuiteName, testcaseClassName=testcaseName, testcaseName=testcaseName,
         testcaseRuntime=testcaseRuntime, failure=failure,
         errors=errors, failures=failures, skip=skip)
         self._save_xunit_report(testsuiteName, testcaseName, xmlReport)
