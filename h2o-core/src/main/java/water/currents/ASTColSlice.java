@@ -34,7 +34,6 @@ class ASTRowSlice extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
-    long[] rows;
     if( asts[2] instanceof ASTNumList ) {
       final ASTNumList nums = (ASTNumList)asts[2];
       returningFrame = new MRTask(){
@@ -51,7 +50,7 @@ class ASTRowSlice extends ASTPrim {
           if( !(max<start || min>end) ) {   // not situation 1 or 2 above
             int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
             for(int i=startOffset;i<cs[0]._len;++i) {
-              if( nums.has(start+i) ) { // in
+              if( nums.has(start+i) ) {
                 for(int c=0;c<cs.length;++c) {
                   if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
                   else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);
@@ -64,8 +63,12 @@ class ASTRowSlice extends ASTPrim {
         }
       }.doAll(fr.numCols(), fr).outputFrame(fr.names(),fr.domains());
     } else if( (asts[2] instanceof ASTNum) ) {
-      rows = new long[]{(long)(((ASTNum)asts[2])._d.getNum())};
-      returningFrame = fr.deepSlice(rows,null);
+      long[] rows = new long[]{(long) (((ASTNum) asts[2])._d.getNum())};
+      returningFrame = fr.deepSlice(rows, null);
+    } else if( (asts[2] instanceof ASTExec) ) {
+      Frame predVec = stk.track(asts[2].exec(env)).getFrame();
+      if( predVec.numCols() != 1 ) throw new IllegalArgumentException("Conditional Row Slicing Expression evaluated to " + predVec.numCols() + " columns. Must be a boolean Vec.");
+      returningFrame = fr.deepSlice(predVec,null);
     } else  throw new IllegalArgumentException("Row slicing requires a number-list as the last argument, but found a "+asts[2].getClass());
     return new ValFrame(returningFrame);
   }

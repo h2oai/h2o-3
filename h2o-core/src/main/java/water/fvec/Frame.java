@@ -898,19 +898,32 @@ public class Frame extends Lockable<Frame> {
       ff.delete();
       return fr2;
     }
-    Frame frows = (Frame)orows;
-    Vec vrows = makeCompatible(new Frame(frows.anyVec())).anyVec();
-    DKV.put(vrows);
-    // It's a compatible Vec; use it as boolean selector.
-    // Build column names for the result.
-    Vec [] vecs = new Vec[c2.length+1];
-    String [] names = new String[c2.length+1];
-    for(int i = 0; i < c2.length; ++i){
-      vecs[i] = _vecs[c2[i]];
-      names[i] = _names[c2[i]];
+    Frame predVec = (Frame)orows;
+    Vec vrows = predVec.anyVec();
+    if( !isCompatible(predVec) ) {
+      vrows = makeCompatible(new Frame(predVec.anyVec())).anyVec();
+      DKV.put(vrows);
     }
-    vecs[c2.length] = vrows;
-    names[c2.length] = "predicate";
+
+    // create a dummy cbound frame
+    Vec[] vecs;
+    String[] names;
+
+    if( ocols==null ) {
+      vecs = Arrays.copyOf(vecs(), numCols()+1);
+      vecs[vecs.length-1] = vrows;
+      names = Arrays.copyOf(names(),numCols()+1);
+      names[names.length-1] = "predicate"+Key.rand().substring(0,5);
+    } else {
+      vecs = new Vec[c2.length + 1];
+      names = new String[c2.length + 1];
+      for (int i = 0; i < c2.length; ++i) {
+        vecs[i] = _vecs[c2[i]];
+        names[i] = _names[c2[i]];
+      }
+      vecs[c2.length] = vrows;
+      names[c2.length] = "predicate";
+    }
     Frame ff = new Frame(names, vecs);
     return new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
   }
