@@ -156,7 +156,7 @@ h2o.getFrame <- function(id) {
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
   fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable)
-  fr.protectFromGC()
+  .h2o.protectFromGC(fr)
   fr
 }
 
