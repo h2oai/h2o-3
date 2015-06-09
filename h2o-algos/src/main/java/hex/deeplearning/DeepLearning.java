@@ -286,7 +286,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         try {
           final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
-          DKV.put(dinfo._key,dinfo);
+          DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(self());
 
@@ -345,6 +345,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       // clean up, but don't delete the model and the (last) model metrics
       List<Key> keep = new ArrayList<>();
       keep.add(dest());
+      keep.add(cp.model_info().data_info()._key);
       if (cp._output._model_metrics.length != 0) keep.add(cp._output._model_metrics[cp._output._model_metrics.length-1]);
       if (cp._output.weights != null && cp._output.biases != null) {
         for (Key k : Arrays.asList(cp._output.weights)) {

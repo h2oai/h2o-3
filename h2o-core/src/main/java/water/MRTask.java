@@ -38,7 +38,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private int _vid;
   private int _noutputs;
   // If TRUE, run entirely local - which will pull all the data locally.
-  private boolean _run_local;
+  protected boolean _run_local;
 
   private byte _priority;
   @Override public byte priority() { return _priority; }

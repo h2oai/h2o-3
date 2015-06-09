@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import water.DKV;
 import water.Key;
 import water.MRTask;
 import water.fvec.Frame;
@@ -20,7 +21,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     assert(sync_fraction > 0);
     _jobKey = jobKey;
     _fr = train;
-    _model_info_local = model_info;
+    _sharedmodel = model_info;
     _sync_fraction = sync_fraction;
   }
 
@@ -28,12 +29,11 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    * Returns the aggregated DeepLearning model that was trained by all nodes (over all the training data)
    * @return model_info object
    */
-  public DeepLearningModel.DeepLearningModelInfo model_info() { return _model_info_global; }
+  public DeepLearningModel.DeepLearningModelInfo model_info() { return _sharedmodel; }
 
   final private Key _jobKey;
   final private Frame _fr;
-  final private DeepLearningModel.DeepLearningModelInfo _model_info_local; //INPUT
-  private DeepLearningModel.DeepLearningModelInfo _model_info_global; //OUTPUT
+  private DeepLearningModel.DeepLearningModelInfo _sharedmodel;
   final private float _sync_fraction;
   private DeepLearningTask _res;
 
@@ -45,13 +45,10 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    */
   @Override
   public void setupLocal() {
-    assert(_model_info_local.get_params()._replicate_training_data);
     super.setupLocal();
-    _res = new DeepLearningTask(_jobKey, _model_info_local, _sync_fraction);
-    assert(_res.model_info().get_params()._replicate_training_data);
-    _res.setCompleter(this);
-    assert(_model_info_local == _res.model_info());
+    _res = new DeepLearningTask(_jobKey, _sharedmodel, _sync_fraction);
     addToPendingCount(1);
+    _res.setCompleter(this);
     _res.asyncExec(0, _fr, true /*run_local*/);
   }
 
@@ -67,6 +64,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
       _res._chunk_node_count += drt._res._chunk_node_count;
       _res.model_info().add(drt._res.model_info()); //add models, but don't average yet
     }
+    assert(_res.model_info().get_params()._replicate_training_data);
   }
 
   /**
@@ -76,20 +74,29 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    */
   @Override
   protected void postGlobal() {
+    assert(_res.model_info().get_params()._replicate_training_data);
     super.postGlobal();
-    _res.model_info().div(_res._chunk_node_count); //model averaging
+    // model averaging (DeepLearningTask only computed the per-node models, each on all the data)
+    _res.model_info().div(_res._chunk_node_count);
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
     _res.model_info().set_processed_local(0l);
-    if (_res.model_info().get_params()._elastic_averaging) {
-      _model_info_global = _res.model_info().deep_clone(); //FIXME: This is the average
+    DeepLearningModel.DeepLearningModelInfo localmodel = _res.model_info();
 
-      // FIXME: remove
-      {
-        _model_info_global.computeStats();
-        assert (!_model_info_global.unstable());
-      }
+    if (localmodel.get_params()._elastic_averaging) {
+      // Cf. equation 6 of arXiv:1412.6651v5
+      final float pa = (float) _sharedmodel.get_params()._elastic_averaging_moving_rate;
+
+      // localmodel : current average of per-node models
+      // _sharedmodel: time-average of node-averages (consensus model, "the" model)
+      _sharedmodel = DKV.getGet(localmodel.sharedModelInfoKey()); //get latest version from DKV
+      localmodel.mult(pa);
+      _sharedmodel.mult(1 - pa);
+      _sharedmodel.add(localmodel); //ignore processed local value set here
+      _sharedmodel.set_processed_global(localmodel.get_processed_global());
+      _sharedmodel.set_processed_local(0);
+      DKV.put(_sharedmodel.sharedModelInfoKey(), _sharedmodel);
     } else {
-      _model_info_global = _res.model_info();
+      _sharedmodel = localmodel;
     }
   }
 }
