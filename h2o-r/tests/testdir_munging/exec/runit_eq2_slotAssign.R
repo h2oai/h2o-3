@@ -10,9 +10,9 @@ source('../../h2o-runit.R')
 
 #setupRandomSeed(1689636624)
 
-test.column.assignment <- function(conn) {
+test.column.assignment <- function() {
   set.seed(1841604082)
-  hex <- as.h2o(conn, iris)
+  hex <- as.h2o(iris)
 
   colsToSelect <- 1 #sample(ncol(hex), 1)
 
@@ -37,7 +37,7 @@ test.column.assignment <- function(conn) {
   replacement <- rnorm(numToReplace)
   Log.info("Replacing rows for column selected")
 
-  replacement <- as.h2o(conn, replacement)
+  replacement <- as.h2o(replacement)
 
   print("Wuz replacement one? ")
   print("")
