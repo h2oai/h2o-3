@@ -1,18 +1,13 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-get.eval.result <- function(conn, expr) {
-    res =  .h2o.__exec2(conn, expr)
-    return(new("H2OFrame", h2o=conn, key=res$dest_key))
-}
-
-test.op.precedence <- function(conn) {
+test.op.precedence <- function() {
     a = sample(10)
     b = sample(10)
     c = sample(10)
-    A = as.h2o(conn, a, "A")
-    B = as.h2o(conn, b, "B")
-    C = as.h2o(conn, c, "C")
+    A = as.h2o(a, "A")
+    B = as.h2o(b, "B")
+    C = as.h2o(c, "C")
     s1 = a + b * c
     s2 = a - b - c
     s3 = a ^ 2 ^ 3

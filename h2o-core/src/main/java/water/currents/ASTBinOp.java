@@ -139,6 +139,7 @@ class ASTDiv  extends ASTBinOp { String str() { return "/" ; } double op( double
 class ASTMul  extends ASTBinOp { String str() { return "*" ; } double op( double l, double r ) { return l* r; } }
 class ASTOr   extends ASTBinOp { String str() { return "|" ; } double op( double l, double r ) { return ASTLOr . or_op(l,r); } }
 class ASTPlus extends ASTBinOp { String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
+class ASTPow  extends ASTBinOp { String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
 class ASTSub  extends ASTBinOp { String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
 
 class ASTGE   extends ASTBinOp { String str() { return ">="; } double op( double l, double r ) { return l>=r?1:0; } }

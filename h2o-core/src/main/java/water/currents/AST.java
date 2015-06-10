@@ -48,6 +48,7 @@ abstract public class AST extends Iced {
     init(new ASTMul ());
     init(new ASTOr  ());
     init(new ASTPlus());
+    init(new ASTPow ());
     init(new ASTSub ());
 
     // Relational
