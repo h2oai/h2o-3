@@ -19,7 +19,7 @@ public class GBMBasic extends TestNGUtil {
     public static Object[][] glmData() {
         Object[][] data = null;
         try {
-            List<String> lines = Files.readAllLines(Paths.get("/Users/ece/0xdata/h2o-dev/h2o-testng/src/test/" +
+            List<String> lines = Files.readAllLines(Paths.get("h2o-testng/src/test/" +
                     "resources/glmData.csv"), Charset.defaultCharset());
             data = new Object[lines.size()][5];
             int r = 0;
@@ -46,7 +46,7 @@ public class GBMBasic extends TestNGUtil {
         GBMModel gbm = null;
         Frame fr = null, fr2 = null;
         try {
-            fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            fr = parse_test_file("smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
             parms._distribution = Family.gaussian;

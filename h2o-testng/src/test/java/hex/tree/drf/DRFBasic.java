@@ -22,7 +22,7 @@ public class DRFBasic extends TestNGUtil {
     public static Object[][] glmCases() {
         Object[][] data = null;
         try {
-            List<String> lines = Files.readAllLines(Paths.get("/Users/ece/0xdata/h2o-dev/h2o-testng/src/test/" +
+            List<String> lines = Files.readAllLines(Paths.get("h2o-testng/src/test/" +
                     "resources/drfCases.csv"), Charset.defaultCharset());
             data = new Object[lines.size()][17];
             int r = 0;
