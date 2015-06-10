@@ -1110,7 +1110,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _sc.addIterationScore(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal); // it's in here for the gaussian family score :(
           _taskInfo._beta = fullBeta;
         }
-      }).setValidate(_parms._intercept?_taskInfo._ymu : 0.5, score).asyncExec(_dinfo._adaptedFrame);
+      }).setValidate(_parms._intercept?_taskInfo._ymu : _parms._family == Family.binomial?0.5:0, score).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
     protected void compute2() {
