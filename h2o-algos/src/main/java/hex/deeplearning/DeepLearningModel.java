@@ -455,84 +455,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       throw new IllegalArgumentException("Model is too large: PUBDEV-941");
   }
 
-  /**
-   * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
-   * @param fromParms raw user-given parameters from the REST API
-   * @param toParms modified set of parameters, with defaults filled in
-   * @param classification
-   */
-  public static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, boolean classification) {
-    if (fromParms._hidden_dropout_ratios == null) {
-      if (fromParms._activation == DeepLearningParameters.Activation.TanhWithDropout
-              || fromParms._activation == DeepLearningParameters.Activation.MaxoutWithDropout
-              || fromParms._activation == DeepLearningParameters.Activation.RectifierWithDropout) {
-        toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
-        if (!fromParms._quiet_mode)
-          Log.info("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
-        Arrays.fill(toParms._hidden_dropout_ratios, 0.5);
-      }
-    } else {
-      toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
-    }
-    if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
-      Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
-      toParms._replicate_training_data = false;
-    }
-    if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
-      Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
-      toParms._single_node_mode = false;
-    }
-    if (!fromParms._use_all_factor_levels && fromParms._autoencoder ) {
-      Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
-      toParms._use_all_factor_levels = true;
-    }
-    if(fromParms._overwrite_with_best_model && fromParms.getNumFolds() != 0) {
-      Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
-      toParms._overwrite_with_best_model = false;
-    }
-    if (fromParms._adaptive_rate) {
-      Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-              + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
-      toParms._rate = 0;
-      toParms._rate_decay = 0;
-      toParms._rate_annealing = 0;
-      toParms._momentum_start = 0;
-      toParms._momentum_ramp = 0;
-      toParms._momentum_stable = 0;
-      toParms._nesterov_accelerated_gradient = false;
-    } else {
-      Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
-              + "rho, epsilon.");
-      toParms._rho = 0;
-      toParms._epsilon = 0;
-    }
-    if (fromParms.getNumFolds() != 0) {
-      if (fromParms._overwrite_with_best_model) {
-        Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
-        toParms._overwrite_with_best_model = false;
-      }
-    }
-    if (fromParms._loss == DeepLearningParameters.Loss.Automatic) {
-        toParms._loss = (classification && !fromParms._autoencoder) ? DeepLearningParameters.Loss.CrossEntropy : DeepLearningParameters.Loss.MeanSquare;
-        Log.info("_loss: Automatically setting loss function to " + toParms._loss);
-    }
-    if (fromParms._reproducible) {
-      Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                      +"and setting train_samples_per_iteration to -1 to enforce reproducibility.");
-      toParms._force_load_balance = true;
-      toParms._single_node_mode = false;
-      toParms._train_samples_per_iteration = -1;
-      toParms._replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
-      //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
-    }
-  }
-
   public long _timeLastScoreEnter; //not transient: needed for HTML display page
   transient private long _timeLastScoreStart;
   transient private long _timeLastScoreEnd;
   transient private long _timeLastPrintStart;
+
   /**
-   *
+   * Score this DeepLearning model
    * @param ftrain potentially downsampled training data for scoring
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job

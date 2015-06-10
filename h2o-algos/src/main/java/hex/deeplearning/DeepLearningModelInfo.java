@@ -153,8 +153,8 @@ public class DeepLearningModelInfo extends Iced {
     _train = train;
     _valid = valid;
     data_info = dinfo;
-    parameters = (DeepLearningParameters) params.clone();
-    DeepLearningModel.modifyParms(parameters, parameters, _classification);
+    parameters = (DeepLearningParameters) params.clone(); //make a copy, don't change model's parameters
+    DeepLearningParameters.Sanity.modifyParms(parameters, parameters, _classification); //sanitize the model_info's parameters
 
     final int num_input = dinfo.fullN();
     final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);

@@ -4,7 +4,11 @@ import hex.Model;
 import water.H2O;
 import water.Key;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.RandomUtils;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * Deep Learning Parameters
@@ -422,6 +426,11 @@ public class DeepLearningParameters extends Model.Parameters {
     Automatic, MeanSquare, CrossEntropy, Huber, Absolute
   }
 
+  /**
+   * Validate model parameters
+   * @param dl DL Model Builder (Driver)
+   * @param expensive (whether or not this is the "final" check)
+   */
   void validate(DeepLearning dl, boolean expensive) {
     dl.hide("_score_each_iteration", "Not used by Deep Learning.");
     boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
@@ -556,65 +565,231 @@ public class DeepLearningParameters extends Model.Parameters {
     }
   }
 
-  // the following parameters can be modified when restarting from a checkpoint
-  static public final String [] cp_modifiable = new String[] {
-          "_seed",
-          "_epochs",
-          "_score_interval",
-          "_train_samples_per_iteration",
-          "_target_ratio_comm_to_comp",
-          "_score_duty_cycle",
-          "_score_training_samples",
-          "_classification_stop",
-          "_regression_stop",
-          "_quiet_mode",
-          "_max_confusion_matrix_size",
-          "_max_hit_ratio_k",
-          "_diagnostics",
-          "_variable_importances",
-          "_force_load_balance",
-          "_replicate_training_data",
-          "_shuffle_training_data",
-          "_single_node_mode",
-          "_fast_mode",
-          // Allow modification of the regularization parameters after a checkpoint restart
-          "_l1",
-          "_l2",
-          "_max_w2",
-          "_input_dropout_ratio",
-          "_hidden_dropout_ratios",
-          "_loss",
-          "_overwrite_with_best_model",
-          "_missing_values_handling",
-          "_reproducible",
-          "_export_weights_and_biases",
-          "_elastic_averaging",
-          "_elastic_averaging_moving_rate",
-          "_elastic_averaging_regularization"
-  };
+  static class Sanity {
+    // the following parameters can be modified when restarting from a checkpoint
+    transient static private final String[] cp_modifiable = new String[]{
+            "_seed",
+            "_checkpoint",
+            "_epochs",
+            "_score_interval",
+            "_train_samples_per_iteration",
+            "_target_ratio_comm_to_comp",
+            "_score_duty_cycle",
+            "_score_training_samples",
+            "_score_validation_samples",
+            "_score_validation_sampling",
+            "_classification_stop",
+            "_regression_stop",
+            "_quiet_mode",
+            "_max_confusion_matrix_size",
+            "_max_hit_ratio_k",
+            "_diagnostics",
+            "_variable_importances",
+            "_initial_weight_distribution", //will be ignored anyway
+            "_initial_weight_scale", //will be ignored anyway
+            "_force_load_balance",
+            "_replicate_training_data",
+            "_shuffle_training_data",
+            "_single_node_mode",
+            "_fast_mode",
+            // Allow modification of the regularization parameters after a checkpoint restart
+            "_l1",
+            "_l2",
+            "_max_w2",
+            "_input_dropout_ratio",
+            "_hidden_dropout_ratios",
+            "_loss",
+            "_overwrite_with_best_model",
+            "_missing_values_handling",
+            "_average_activation",
+            "_reproducible",
+            "_export_weights_and_biases",
+            "_elastic_averaging",
+            "_elastic_averaging_moving_rate",
+            "_elastic_averaging_regularization"
+    };
 
-  // the following parameters must not be modified when restarting from a checkpoint
-  static public final String [] cp_not_modifiable = new String[] {
-          "_drop_na20_cols",
-          "_response_column",
-          "_activation",
-//            "_hidden", //this must be checked via Arrays.equals(a,b), not via String.equals()
-//            "_ignored_columns", //this must be checked via Arrays.equals(a,b), not via String.equals()
-          "_use_all_factor_levels",
-          "_adaptive_rate",
-          "_autoencoder",
-          "_rho",
-          "_epsilon",
-          "_sparse",
-          "_sparsity_beta",
-          "_col_major",
-          "_rate",
-          "_momentum_start",
-          "_momentum_ramp",
-          "_momentum_stable",
-          "_nesterov_accelerated_gradient",
-          "_ignore_const_cols",
-          "_max_categorical_features"
-  };
+    // the following parameters must not be modified when restarting from a checkpoint
+    transient static private final String[] cp_not_modifiable = new String[]{
+            "_drop_na20_cols",
+            "_response_column",
+            "_activation",
+            "_use_all_factor_levels",
+            "_adaptive_rate",
+            "_autoencoder",
+            "_rho",
+            "_epsilon",
+            "_sparse",
+            "_sparsity_beta",
+            "_col_major",
+            "_rate",
+            "_rate_annealing",
+            "_rate_decay",
+            "_momentum_start",
+            "_momentum_ramp",
+            "_momentum_stable",
+            "_nesterov_accelerated_gradient",
+            "_ignore_const_cols",
+            "_keep_cross_validation_splits",
+            "_max_categorical_features"
+    };
+
+    static void checkCompleteness() {
+      for (Field f : DeepLearningParameters.class.getDeclaredFields())
+        if (!ArrayUtils.contains(cp_not_modifiable, f.getName())
+                &&
+                !ArrayUtils.contains(cp_modifiable, f.getName())
+                ) {
+          if (f.getName().equals("_hidden")) continue;
+          if (f.getName().equals("_ignored_columns")) continue;
+          throw H2O.unimpl("Please add " + f.getName() + " to either cp_modifiable or cp_not_modifiable");
+        }
+    }
+
+    /**
+     * Check that checkpoint continuation is possible
+     *
+     * @param oldP old DL parameters (from checkpoint)
+     * @param newP new DL parmaeters (user-given, to restart from checkpoint)
+     */
+    static void checkpoint(final DeepLearningParameters oldP, final DeepLearningParameters newP) {
+      checkCompleteness();
+      if (newP.getNumFolds() != 0)
+        throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
+      if ((newP._valid == null) != (oldP._valid == null)
+              || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
+        throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
+      }
+      if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
+        throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+      }
+      if (!Arrays.equals(newP._hidden, oldP._hidden)) {
+        throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
+      }
+      if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
+        throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+      }
+
+      //compare the user-given parameters before and after and check that they are not changed
+      for (Field fBefore : oldP.getClass().getDeclaredFields()) {
+        if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
+          for (Field fAfter : newP.getClass().getDeclaredFields()) {
+            if (fBefore.equals(fAfter)) {
+              try {
+                if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
+                  if (fBefore.get(oldP) == null && fAfter.get(newP) == null)
+                    continue; //if both parameters are null, we don't need to do anything
+                  throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
+                }
+              } catch (IllegalAccessException e) {
+                e.printStackTrace();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     * Update the parameters from checkpoint to user-specified
+     *
+     * @param actualNewP parameters in the model (that will be trained from a checkpoint restart)
+     * @param newP       user-specified parameters
+     */
+    static void update(DeepLearningParameters actualNewP, DeepLearningParameters newP, boolean classification) {
+      for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
+        if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
+          for (Field fAfter : newP.getClass().getDeclaredFields()) {
+            if (fBefore.equals(fAfter)) {
+              try {
+                if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
+                  if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null)
+                    continue; //if both parameters are null, we don't need to do anything
+                  Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
+                  fBefore.set(actualNewP, fAfter.get(newP));
+                }
+              } catch (IllegalAccessException e) {
+                e.printStackTrace();
+              }
+            }
+          }
+        }
+      }
+      // update parameters in place to set defaults etc.
+      modifyParms(actualNewP, actualNewP, classification);
+    }
+
+    /**
+     * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
+     *
+     * @param fromParms      raw user-given parameters from the REST API
+     * @param toParms        modified set of parameters, with defaults filled in
+     * @param classification
+     */
+    static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, boolean classification) {
+      if (fromParms._hidden_dropout_ratios == null) {
+        if (fromParms._activation == Activation.TanhWithDropout
+                || fromParms._activation == Activation.MaxoutWithDropout
+                || fromParms._activation == Activation.RectifierWithDropout) {
+          toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
+          if (!fromParms._quiet_mode)
+            Log.info("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
+          Arrays.fill(toParms._hidden_dropout_ratios, 0.5);
+        }
+      } else {
+        toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
+      }
+      if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
+        Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
+        toParms._replicate_training_data = false;
+      }
+      if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
+        Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
+        toParms._single_node_mode = false;
+      }
+      if (!fromParms._use_all_factor_levels && fromParms._autoencoder) {
+        Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
+        toParms._use_all_factor_levels = true;
+      }
+      if (fromParms._overwrite_with_best_model && fromParms.getNumFolds() != 0) {
+        Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
+        toParms._overwrite_with_best_model = false;
+      }
+      if (fromParms._adaptive_rate) {
+        Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
+                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+        toParms._rate = 0;
+        toParms._rate_decay = 0;
+        toParms._rate_annealing = 0;
+        toParms._momentum_start = 0;
+        toParms._momentum_ramp = 0;
+        toParms._momentum_stable = 0;
+        toParms._nesterov_accelerated_gradient = false;
+      } else {
+        Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
+                + "rho, epsilon.");
+        toParms._rho = 0;
+        toParms._epsilon = 0;
+      }
+      if (fromParms.getNumFolds() != 0) {
+        if (fromParms._overwrite_with_best_model) {
+          Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+          toParms._overwrite_with_best_model = false;
+        }
+      }
+      if (fromParms._loss == Loss.Automatic) {
+        toParms._loss = (classification && !fromParms._autoencoder) ? Loss.CrossEntropy : Loss.MeanSquare;
+        Log.info("_loss: Automatically setting loss function to " + toParms._loss);
+      }
+      if (fromParms._reproducible) {
+        Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+                + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+        toParms._force_load_balance = true;
+        toParms._single_node_mode = false;
+        toParms._train_samples_per_iteration = -1;
+        toParms._replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+      }
+    }
+  }
 
 }

@@ -15,7 +15,6 @@ import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.*;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -181,6 +180,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
+        new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
 
         if( isClassifier() != previous._output.isClassifier() )
           throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
@@ -190,53 +190,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         // check the user-given arguments for consistency
         DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
         DeepLearningParameters newP = _parms; //user-given parameters for restart
-
-        new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
-        if (newP.getNumFolds() != 0)
-          throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
-        if ((_parms._valid == null) != (previous._parms._valid == null)
-                || (_parms._valid != null  && !_parms._valid.equals(previous._parms._valid))) {
-          throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
-        }
-        if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
-          throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
-        }
-        if (!Arrays.equals(newP._hidden, oldP._hidden)) {
-          throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
-        }
-        if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
-          throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
-        }
-
-        //compare the user-given parameters before and after and check that they are not changed
-        for (Field fBefore : oldP.getClass().getDeclaredFields()) {
-          if (ArrayUtils.contains(DeepLearningParameters.cp_not_modifiable, fBefore.getName())) {
-            for (Field fAfter : newP.getClass().getDeclaredFields()) {
-              if (fBefore.equals(fAfter)) {
-                try {
-                  if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
-                    if (fBefore.get(oldP) == null && fAfter.get(newP) == null) continue; //if both parameters are null, we don't need to do anything
-                    throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
-                  }
-                } catch (IllegalAccessException e) {
-                  e.printStackTrace();
-                }
-              }
-            }
-          }
-        }
+        DeepLearningParameters.Sanity.checkpoint(oldP, newP);
 
         try {
           final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(self());
-
-          // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
-          final DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
-          assert(actualNewP != previous.model_info().get_params());
-          assert(actualNewP != newP);
-          assert(actualNewP != oldP);
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
             throw new IllegalArgumentException("Predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns.");
@@ -248,25 +208,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             throw new IllegalArgumentException("Total number of predictors is different than for the checkpointed model.");
           }
 
-          for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
-            if (ArrayUtils.contains(DeepLearningParameters.cp_modifiable, fBefore.getName())) {
-              for (Field fAfter : newP.getClass().getDeclaredFields()) {
-                if (fBefore.equals(fAfter)) {
-                  try {
-                    if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
-                      if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null) continue; //if both parameters are null, we don't need to do anything
-                      Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
-                      fBefore.set(actualNewP, fAfter.get(newP));
-                    }
-                  } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                  }
-                }
-              }
-            }
-          }
-          // update parameters in place to set defaults etc.
-          DeepLearningModel.modifyParms(actualNewP, actualNewP, isClassifier());
+          // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
+          final DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          assert (actualNewP != previous.model_info().get_params());
+          assert (actualNewP != newP);
+          assert (actualNewP != oldP);
+          DeepLearningParameters.Sanity.update(actualNewP, newP, isClassifier());
 
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
