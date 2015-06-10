@@ -262,18 +262,34 @@ def is_running_internal_to_h2o():
     internal = False
   return internal
 
-def dim_check(data1, data2):
+def check_dims_values(python_obj, h2o_frame, rows, cols):
   """
-  Check that the dimensions of the data1 and data2 are the same
-  :param data1: an H2OFrame or H2OVec
-  :param data2: an H2OFrame or H2OVec
+  Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
+  conforms to the rules specified in the h2o frame documentation.
+  :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
+  :param h2o_frame: an H2OFrame
+  :param rows: number of rows
+  :param cols: number of columns
   :return: None
   """
-  data1_rows, data1_cols = data1.dim()
-  data2_rows, data2_cols = data2.dim()
-  assert data1_rows == data2_rows and data1_cols == data2_cols, \
-    "failed dim check! data1_rows:{0} data2_rows:{1} data1_cols:{2} data2_cols:{3}".format(data1_rows, data2_rows,
-                                                                                           data1_cols, data2_cols)
+  h2o_rows, h2o_cols = h2o_frame.dim()
+  assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
+                                                "".format(h2o_rows, rows, h2o_cols, cols)
+  if isinstance(python_obj, (list, tuple)):
+    for r in range(rows):
+      for c in range(cols):
+        pval = python_obj[r][c] if rows > 1 else python_obj[c]
+        hval = h2o_frame[r,c]
+        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
+                             "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
+  elif isinstance(python_obj, dict):
+    for r in range(rows):
+      for k in python_obj.keys():
+        pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
+        hval = h2o_frame[r,k]
+        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
+                             "{1}, but h2o got {2} and python got {3}.".format(r, k, hval, pval)
+
 def np_comparison_check(h2o_data, np_data, num_elements):
   """
   Check values achieved by h2o against values achieved by numpy

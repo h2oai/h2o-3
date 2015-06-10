@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib, sys, imp
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -113,6 +113,24 @@ class H2OFrame:
     :param python_obj: A tuple, list, dict, collections.OrderedDict
     :return: None
     """
+    # attempt to import numpy
+    have_numpy = False
+    try:
+      imp.find_module('numpy')
+      import numpy
+      have_numpy = True
+    except ImportError:
+      pass
+
+    # attempt to import pandas
+    have_pandas = False
+    try:
+      imp.find_module('pandas')
+      import pandas
+      have_pandas = True
+    except ImportError:
+      pass
+
     # [] and () cases -- folded together since H2OFrame is mutable
     if isinstance(python_obj, (list, tuple)):
       header, data_to_write = H2OFrame._handle_python_lists(python_obj)
@@ -121,12 +139,17 @@ class H2OFrame:
     elif isinstance(python_obj, (dict, collections.OrderedDict)):
       header, data_to_write = H2OFrame._handle_python_dicts(python_obj)
 
-    # handle a numpy.ndarray
-    # elif isinstance(python_obj, numpy.ndarray):
-    #
-    #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
+    # try to handle a numpy.ndarray
+    elif have_numpy and isinstance(python_obj, numpy.ndarray):
+        header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
+
+    # try to handle a pandas.DataFrame
+    elif have_pandas and isinstance(python_obj, pandas.DataFrame):
+      header, data_to_write = H2OFrame._handle_pandas_data_frame(python_obj)
+
     else:
-      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
+      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                       "pandas.DataFrame. Got: " + str(type(python_obj)))
 
     if header is None or data_to_write is None:
       raise ValueError("No data to write")
@@ -714,11 +737,6 @@ class H2OFrame:
 
   @staticmethod
   def _handle_python_dicts(python_obj):
-    header = python_obj.keys()
-    # is this a valid header?
-    is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
-    if not is_valid:
-      raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
     # check that each value entry is a flat list/tuple
     for k in python_obj:
       v = python_obj[k]
@@ -727,20 +745,25 @@ class H2OFrame:
         if H2OFrame._is_list_of_lists(v):
           raise ValueError("Values in the dictionary must be flattened!")
 
+    python_obj = {k:(v if hasattr(v,'__iter__') else [v]) for (k, v) in python_obj.iteritems()}
+    header = python_obj.keys()
+    # is this a valid header?
+    is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
+    if not is_valid:
+      raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
+
     rows = map(list, itertools.izip_longest(*python_obj.values()))
     data_to_write = [dict(zip(header, row)) for row in rows]
     return header, data_to_write
 
-# @staticmethod
-  # def _handle_numpy_array(python_obj):
-  #     header = H2OFrame._gen_header(python_obj.shape[1])
-  #
-  #     as_list = python_obj.tolist()
-  #     lol = H2OFrame._is_list_of_lists(as_list)
-  #     data_to_write = [dict(zip(header, row)) for row in as_list] \
-  #         if lol else [dict(zip(header, as_list))]
-  #
-  #     return header, data_to_write
+  @staticmethod
+  def _handle_numpy_array(python_obj):
+    return H2OFrame._handle_python_lists(python_obj=python_obj.tolist())
+
+  @staticmethod
+  def _handle_pandas_data_frame(python_obj):
+    return H2OFrame._handle_numpy_array(python_obj=python_obj.as_matrix())
+
   def _len_check(self,x):
     if len(self) == 0: return
     return self._vecs[0]._len_check(x)
