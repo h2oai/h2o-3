@@ -82,88 +82,86 @@ class ASTRowSliceAssign extends ASTPrim {
   @Override String str() { return "rows=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] dvecs = dst.vecs();
 
     // Sanity check rows vs dst.  To simplify logic, jam the 1 row case in as a ASTNumList
-    ASTNumList nlist;
+    ASTNumList rows;
     if( asts[3] instanceof ASTNumList ) {
-      nlist = (ASTNumList)asts[3];
+      rows = (ASTNumList)asts[3];
     } else if( (asts[3] instanceof ASTNum) ) {
-      nlist = new ASTNumList(asts[2].exec(env).getNum());
+      rows = new ASTNumList(asts[2].exec(env).getNum());
     } else throw new IllegalArgumentException("Requires a number-list as the last argument, but found a "+asts[3].getClass());
-    if( !(0 <= nlist.min() && nlist.max() <= dst.numRows()) )
+    if( !(0 <= rows.min() && rows.max() <= dst.numRows()) )
       throw new IllegalArgumentException("Row must be an integer from 0 to "+(dst.numRows()-1));
-    long nrows = nlist.cnt();
 
-    // Sanity check src vs dst.
+    // Sanity check src vs dst; then assign into dst.
     Val vsrc = stk.track(asts[2].exec(env));
-    if( vsrc.isFrame() ) {      // Frame vs Frame 
-      Frame src = vsrc.getFrame();
-      if( dst.numCols() != src.numCols() )
-        throw new IllegalArgumentException("Source and destination frames must have the same count and type of columns");
-      Vec[] svecs = src.vecs();
-      for( int col=0; col<dvecs.length; col++ )
-        if( dvecs[col].get_type() != svecs[col].get_type() )
-          throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
-      if( src.numRows() != nrows )
-        throw new IllegalArgumentException("Requires same count of rows in the number-list ("+nrows+") as in the source ("+src.numRows()+")");
+    switch( vsrc.type() ) {
+    case Val.NUM:  assign_frame_scalar(dst,rows,vsrc.getNum()  );  break;
+    case Val.FRM:  assign_frame_frame (dst,rows,vsrc.getFrame());  break;
+    default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+    }
+    return new ValFrame(dst);
+  }
 
-      // Frame fill
-      // Handle fast small case
-      if( nrows==1 ) {
-        replace_row(dvecs,(long)nlist.expand()[0],svecs,0);
-        return new ValFrame(dst);
-      }
-      // Handle large case
-      throw water.H2O.unimpl();
+
+  private void assign_frame_frame(Frame dst, ASTNumList rows, Frame src) {
+    if( dst.numCols() != src.numCols() )
+      throw new IllegalArgumentException("Source and destination frames must have the same count and type of columns");
+    Vec[] dvecs = dst.vecs();
+    Vec[] svecs = src.vecs();
+    for( int col=0; col<dvecs.length; col++ )
+      if( dvecs[col].get_type() != svecs[col].get_type() )
+        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
+    long nrows = rows.cnt();
+    if( src.numRows() != nrows )
+      throw new IllegalArgumentException("Requires same count of rows in the number-list ("+nrows+") as in the source ("+src.numRows()+")");
     
-    } else if( vsrc.isNum() ) { // Frame vs Bare number
-      final double d = vsrc.getNum();
-      // Number fill
-      // Handle fast small case
-      if( nrows==1 ) {
-        replace_row(dvecs,(long)nlist.expand()[0],d);
-        return new ValFrame(dst);
-      }
-
-      // Handle large case
-      final ASTNumList nums = nlist;
-      new MRTask(){
-        @Override public void map(Chunk[] cs) {
-          long start = cs[0].start();
-          long end   = start + cs[0]._len;
-          double min = nums.min(), max = nums.max()-1; // exclusive max to inclusive max when stride == 1
-          //     [ start, ...,  end ]     the chunk
-          //1 []                          nums out left:  nums.max() < start
-          //2                         []  nums out rite:  nums.min() > end
-          //3 [ nums ]                    nums run left:  nums.min() < start && nums.max() <= end
-          //4          [ nums ]           nums run in  :  start <= nums.min() && nums.max() <= end
-          //5                   [ nums ]  nums run rite:  start <= nums.min() && end < nums.max()
-          if( !(max<start || min>end) ) {   // not situation 1 or 2 above
-            int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-            for(int i=startOffset;i<cs[0]._len;++i)
-              if( nums.has(start+i) )
-                for(int c=0;c<cs.length;++c)
-                  cs[c].set(i,d);
-          }
-        }
-      }.doAll(dst);
-      return new ValFrame(dst);
+    // Frame fill
+    // Handle fast small case
+    if( nrows==1 ) {
+      long drow = (long)rows.expand()[0];
+      for( int col=0; col<dvecs.length; col++ )
+        dvecs[col].set(drow, svecs[col].at(0));
+      return;
     }
 
-    throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+    // Handle large case
+    throw water.H2O.unimpl();
   }
 
-  // Replace 1 row in the dest from the src.  All things are known compatible.
-  private static void replace_row( Vec[] dvecs, long drow, Vec[] svecs, int srow ) {
-    for( int col=0; col<dvecs.length; col++ )
-      dvecs[col].set(drow, svecs[col].at(srow));
-  }
 
-  // Replace 1 row in the dest from the src.  All things are known compatible.
-  private static void replace_row( Vec[] dvecs, long drow, double d ) {
-    for( int col=0; col<dvecs.length; col++ )
-      dvecs[col].set(drow, d);
-  }
+  private void assign_frame_scalar(Frame dst, final ASTNumList rows, final double src) {
+    Vec[] dvecs = dst.vecs();
+    long nrows = rows.cnt();
+    // Number fill
+    // Handle fast small case
+    if( nrows==1 ) {
+      long drow = (long)rows.expand()[0];
+      for( int col=0; col<dvecs.length; col++ )
+        dvecs[col].set(drow, src);
+      return;
+    }
 
+    // Handle large case
+    new MRTask(){
+      @Override public void map(Chunk[] cs) {
+        long start = cs[0].start();
+        long end   = start + cs[0]._len;
+        double min = rows.min(), max = rows.max()-1; // exclusive max to inclusive max when stride == 1
+        //     [ start, ...,  end ]     the chunk
+        //1 []                          rows out left:  rows.max() < start
+        //2                         []  rows out rite:  rows.min() > end
+        //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
+        //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
+        //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
+        if( !(max<start || min>end) ) {   // not situation 1 or 2 above
+          int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
+          for(int i=startOffset;i<cs[0]._len;++i)
+            if( rows.has(start+i) )
+              for(int c=0;c<cs.length;++c)
+                cs[c].set(i,src);
+        }
+      }
+    }.doAll(dst);
+  }
 }

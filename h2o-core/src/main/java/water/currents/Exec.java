@@ -13,7 +13,7 @@ import water.fvec.Vec;
  *     '('   a nested function application expression ')
  *     '{'   a nested function definition  expression '}'
  *     '#'   a double: attached_token
- *     '['   a numeric list expression, till ']'
+ *     '['   a numeric or string list expression, till ']'
  *     '%'   an ID: attached_token
  *     '"'   a String (double quote): attached_token
  *     "'"   a String (single quote): attached_token
@@ -77,7 +77,7 @@ public class Exec {
       return new ASTNum(this);
     case '\"': return new ASTStr(this,'\"');
     case '\'': return new ASTStr(this,'\'');
-    case '[':  return new ASTNumList(this);
+    case '[':  return isQuote(xpeek('[').skipWS()) ? new ASTStrList(this) : new ASTNumList(this);
     case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
     case '%':  _x++;             // Skip before ID, FALL THRU
     default:  return new ASTId(this);
@@ -86,10 +86,11 @@ public class Exec {
 
   char peek() { return _x < _str.length() ? _str.charAt(_x) : ' '; } // peek ahead
   // Peek, and throw if not found an expected character
-  void xpeek(char c) {
+  Exec xpeek(char c) {
     if( peek() != c )
       throw new IllegalASTException("Expected '"+c+"'. Got: '"+peek()+"'.  unparsed: "+ unparsed() + " ; _x = "+_x);
     _x++;
+    return this;                // Flow coding
   }
   // Skip white space, return the 1st non-whitespace char or ' ' if out of text
   char skipWS() {
@@ -126,6 +127,7 @@ public class Exec {
   String unparsed() { return _str.substring(_x,_str.length()); }
 
   static boolean isWS(char c) { return c==' '; }
+  static boolean isQuote(char c) { return c=='\'' || c=='\"'; }
 
 
   AST throwErr( String msg ) {

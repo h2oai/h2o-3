@@ -965,11 +965,12 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
     if (is(value, "H2OFrame")) {
       rhs <- .get(value)
     } else if (is.numeric(value))
-      rhs <- .eval(substitute(value), parent.frame(), FALSE)
+      rhs <- eval(substitute(value), parent.frame())
     else
       stop("`value` can only be an H2OFrame object, numeric or NULL")
 
-    ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
+    rows <- paste0("[0:",nrow(x),"]")  # All rows
+    ast <- new("ASTNode", root = new("ASTApply", op = "rows="), children = list(lhs, rhs, rows))
     res <- .h2o.replace.frame(ast = ast, id = x@id)
     colnames(res)[idx] <- name
   }

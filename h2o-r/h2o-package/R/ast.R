@@ -166,20 +166,15 @@ function(a, name=NULL) {
     } else if (is.vector(res)) {
       if (length(res) > 1L) {
         if (is.numeric(res)) res <- as.numeric(res)
-        if( is.numeric(res) && all(res%%1==0)) {
-          tt <- paste0('#', res, collapse=" ")
-          paste0("(llist ", tt, ")")
-        } else if( is.numeric(res) ) {
-          tt <- paste0('#', res, collapse=" ")
-          paste0("(dlist ", tt, ")")
+        if( is.numeric(res) ) {
+          paste0("[", paste0(res, collapse=" "), "]")
         } else {
-          tt <- paste0(unlist(lapply(res, deparse)), collapse= " ")
-          paste0("(slist ", tt, ")")
+          paste0("[", paste0(unlist(lapply(res, deparse)), collapse= " "), "]")
         }
       } else if (is.numeric(res)) {
-        paste0('#', res)
+        res
       } else if (is.logical(res)) {
-        paste0('%', res)
+        res
       } else {
         deparse(eval(a))
       }

@@ -15,7 +15,6 @@ class ASTNumList extends AST {
     ArrayList<Double> bases  = new ArrayList<>();
     ArrayList<Double> strides= new ArrayList<>();
     ArrayList<Long>   cnts   = new ArrayList<>();
-    e.xpeek('[');
     double last = -Double.MAX_VALUE;
 
     // Parse a number list
@@ -60,10 +59,11 @@ class ASTNumList extends AST {
     }
   }
 
+  // A simple ASTNumList of 1 number
   ASTNumList( double d ) {
-    _bases = new double[]{d};
-    _strides = new double[]{0};
-    _cnts = new long[]{1};
+    _bases  = new double[]{d};
+    _strides= new double[]{0};
+    _cnts   = new long  []{1};
   }
 
 
@@ -90,8 +90,7 @@ class ASTNumList extends AST {
   // Expand the compressed form into an array of doubles
   double[] expand() {
     // Count total values
-    int nrows=0, r=0;
-    for( int i=0; i<_bases.length; i++ ) nrows += _cnts[i];
+    int nrows=(int)cnt(), r=0;
     // Fill in values
     double[] vals = new double[nrows];
     for( int i=0; i<_bases.length; i++ )
