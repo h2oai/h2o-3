@@ -1512,15 +1512,15 @@ g_no_run = False
 g_jvm_xmx = "1g"
 g_nopass = False
 g_convenient = False
+g_path_to_h2o_jar = None
+g_path_to_tar = None
+g_path_to_whl = None
+g_produce_unit_reports = True
 
 # Global variables that are set internally.
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
-g_path_to_tar = None
-g_path_to_whl = None
-g_produce_unit_reports = True
-g_testreport_dir = None
 
 
 def use(x):
@@ -1598,6 +1598,8 @@ def usage():
     print("    --nopass      Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
     print("    --c           Start the JVMs in a convenient location.")
+    print("")
+    print("    --h2ojar      Supply a path to the H2O jar file.")
     print("")
     print("    --tar         Supply a path to the R TAR.")
     print("")
@@ -1681,6 +1683,7 @@ def parse_args(argv):
     global g_jvm_xmx
     global g_nopass
     global g_convenient
+    global g_path_to_h2o_jar
     global g_path_to_tar
     global g_path_to_whl
     global g_produce_unit_reports
@@ -1767,6 +1770,9 @@ def parse_args(argv):
             g_nopass = True
         elif s == "--c":
             g_convenient = True
+        elif s == "--h2ojar":
+            i += 1
+            g_path_to_h2o_jar = os.path.abspath(argv[i])
         elif s == "--tar":
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])
@@ -1856,7 +1862,6 @@ def main(argv):
     global g_nopass
     global g_path_to_tar
     global g_path_to_whl
-    global g_testreport_dir
 
     g_script_name = os.path.basename(argv[0])
 
@@ -1866,11 +1871,14 @@ def main(argv):
     # Calculate global variables.
     g_output_dir = os.path.join(test_root_dir, str("results"))
     g_failed_output_dir = os.path.join(g_output_dir, str("failed"))
-    g_testreport_dir = os.path.join(test_root_dir, str("../build/test-results"))
+    testreport_dir = os.path.join(test_root_dir, str("../build/test-results"))
+
+    # Override any defaults with the user's choices.
+    parse_args(argv)
 
     # Look for h2o jar file.
-    h2o_jar = None
-    if (True):
+    h2o_jar = g_path_to_h2o_jar
+    if (h2o_jar is None):
         possible_h2o_jar_parent_dir = test_root_dir
         while (True):
             possible_h2o_jar_dir = os.path.join(possible_h2o_jar_parent_dir, "build")
@@ -1884,9 +1892,6 @@ def main(argv):
                 break
 
             possible_h2o_jar_parent_dir = next_possible_h2o_jar_parent_dir
-
-    # Override any defaults with the user's choices.
-    parse_args(argv)
 
     # Wipe output directory if requested.
     if (g_wipe_output_dir):
@@ -1905,7 +1910,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          g_testreport_dir)
+                          testreport_dir)
 
     # Build test list.
     if (g_test_to_run is not None):
