@@ -588,7 +588,9 @@ public class DeepLearningParameters extends Model.Parameters {
           "_missing_values_handling",
           "_reproducible",
           "_export_weights_and_biases",
-          "_elastic_averaging"
+          "_elastic_averaging",
+          "_elastic_averaging_moving_rate",
+          "_elastic_averaging_regularization"
   };
 
   // the following parameters must not be modified when restarting from a checkpoint
