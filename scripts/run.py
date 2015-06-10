@@ -36,7 +36,7 @@ def is_python_file(file_name):
     This is a separate function because it's useful to have the scan-for-test operation in
     build_test_list() be separated from running the test.
 
-    That allows us to run things explictly named using the --test option.  Such as:
+    That allows us to run things explicitly named using the --test option.  Such as:
         run.py --wipeall --numclouds 1 --test generate_rest_api_docs.py
     """
 
@@ -205,7 +205,7 @@ class H2OCloudNode:
         # there is no hdfs currently in ec2, except s3n/hdfs
         # the core-site.xml provides s3n info
         # it's possible that we can just always hardware the hdfs version
-        # to match the cdh3 cluster we're hardwiring tests to
+        # to match the cdh3 cluster we're hard-wiring tests to
         # i.e. it won't make s3n/s3 break on ec2
 
         if (self.is_client):
@@ -744,7 +744,7 @@ class Test:
 
     def _scrape_output_for_seed(self):
         """
-        @return: The seed scraped from the outpul file.
+        @return: The seed scraped from the output file.
         """
         res = ""
         with open(self.get_output_dir_file_name(), "r") as f:
@@ -1330,7 +1330,7 @@ class TestRunner:
 
     def _have_some_py_tests(self):
         """
-        dumbass check for pyuntis
+        dumb check for pyunits
         """
         for test in self.tests:
             test_name = test.get_test_name()
@@ -1597,7 +1597,7 @@ def usage():
     print("")
     print("    --nopass      Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
-    print("    --c           Start the JVMs in a _c_onvenient location h2o-dev.")
+    print("    --c           Start the JVMs in a convenient location.")
     print("")
     print("    --tar         Supply a path to the R TAR.")
     print("")
