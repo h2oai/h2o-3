@@ -246,16 +246,17 @@ This group includes:
 - **Compare**, for comparing values
 - **Logic**, for logical operations
 
-| **Ops** | | | |
-|-----|-----|
-|  **Arith**|
-|`+`  |`-` | `*`|`/`
-|`^`  | `%%`| `%/%` | 
-|  **Compare**||
-| `==`| `!=` | `<`
-|`<=` | `>=`| `>`| 
-|  **Logic**||
-|`&`| `∣`
+| **Ops** |&nbsp; |&nbsp; |&nbsp; |
+|-----|-----|----|-----|
+|  **Arith**|&nbsp; |&nbsp; | &nbsp;|
+|`+`  |`-` | `*`|`/`|
+|`^`  | `%%`| `%/%` | &nbsp;|
+|  **Compare**| &nbsp;|&nbsp; |&nbsp; |
+| `==`| `!=` | `<`|&nbsp;|
+|`<=` | `>=`| `>`|&nbsp; |
+|  **Logic**|&nbsp; | &nbsp;| &nbsp;|
+|`&`| `∣`|&nbsp;|&nbsp;|
+
 
 ####Math Group
 
@@ -271,11 +272,11 @@ This group includes:
 - **Cumulative**, which returns the cumulative sums, products, minima, or maxima
 
 
-| **Math** | | | |
-|-----|-----|
-|**Miscellaneous** ||
-| `abs` | `sqrt`||
-|**Rounding**||
+| **Math** |&nbsp; |&nbsp; | 
+|-----|-----|-----|
+|**Miscellaneous** |&nbsp;|
+| `abs` | `sqrt`|&nbsp;|
+|**Rounding**|&nbsp;|
 | `floor`|`ceiling`| `trunc`|
 |**Log/Exp**|
 |`exp`|`expm1`|`log1p`|
@@ -289,8 +290,9 @@ This group includes:
 |`sign`|`round`|`signif`|
 |**Special**|
 |`lgamma`|`gamma`|`digamma`|`trigamma`|
-|**Cumulative**||
+|**Cumulative**|&nbsp;|
 |`cumsum`|`cumprod`|`cummax`|`cummin`|
+
 
 
 ####Summary Group
