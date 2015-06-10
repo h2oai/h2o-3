@@ -1,7 +1,7 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
+import hex.deeplearning.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -20,7 +20,6 @@ import java.util.LinkedHashSet;
 import java.util.Random;
 
 import static hex.ConfusionMatrix.buildCM;
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }

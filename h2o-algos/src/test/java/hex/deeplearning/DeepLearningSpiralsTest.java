@@ -13,8 +13,6 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.Log;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-
 public class DeepLearningSpiralsTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 

@@ -47,7 +47,7 @@ public abstract class Neurons {
   /**
    * Parameters (deep-cloned() from the user input, can be modified here, e.g. learning rate decay)
    */
-  protected transient DeepLearningModel.DeepLearningParameters params;
+  protected transient DeepLearningParameters params;
   protected transient int _index; //which hidden layer it is
 
   /**
@@ -61,7 +61,7 @@ public abstract class Neurons {
    */
   public Neurons _previous;
   public Neurons _input;
-  DeepLearningModel.DeepLearningModelInfo _minfo; //reference to shared model info
+  DeepLearningModelInfo _minfo; //reference to shared model info
   public Matrix _w;
   public Matrix _wEA; //weights for elastic averaging
   public DenseVector _b;
@@ -131,9 +131,9 @@ public abstract class Neurons {
    * @param minfo Model information (weights/biases and their momenta)
    * @param training Whether training is done or just testing (no need for dropout)
    */
-  public final void init(Neurons[] neurons, int index, DeepLearningModel.DeepLearningParameters p, final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
+  public final void init(Neurons[] neurons, int index, DeepLearningParameters p, final DeepLearningModelInfo minfo, boolean training) {
     _index = index-1;
-    params = (DeepLearningModel.DeepLearningParameters)p.clone();
+    params = (DeepLearningParameters)p.clone();
     params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     _a = new DenseVector(units);
@@ -495,15 +495,15 @@ public abstract class Neurons {
     final float t = _input._a.get(row);
     final float y = _a.get(row);
     float g;
-    if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+    if (params._loss == DeepLearningParameters.Loss.MeanSquare) {
       g = t - y;
-    } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+    } else if (params._loss == DeepLearningParameters.Loss.Absolute) {
       g = y > t ? -1f : 1f;
     }
     // Huber:
     // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
     // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
-    else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+    else if (params._loss == DeepLearningParameters.Loss.Huber) {
       if (Math.abs(y-t) < 1) {
         g = t - y;
       } else {
@@ -1035,16 +1035,16 @@ public abstract class Neurons {
         final float t = (row == target ? 1f : 0f);
         final float y = _a.get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
-        if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy) {
+        if (params._loss == DeepLearningParameters.Loss.CrossEntropy) {
           //nothing else needed, -dCE/dy * dy/dnet = target - y
           //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
           g = t - y;
-        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+        } else if (params._loss == DeepLearningParameters.Loss.Absolute) {
           g = (2*t-1) * (1f - y) * y; //-dL/dy = 2*t-1
-        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+        } else if (params._loss == DeepLearningParameters.Loss.MeanSquare) {
           //-dMSE/dy = target-y
           g = (t - y) * (1f - y) * y;
-        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+        } else if (params._loss == DeepLearningParameters.Loss.Huber) {
           if (t==0) {
             if (y<0.5) {
               g = -4*y; //L=2*y^2 for y<0.5
@@ -1086,17 +1086,17 @@ public abstract class Neurons {
       final float y = _a.get(row);
       float g;
       // Computing partial derivative: dE/dnet = dE/dy * dy/dnet = dE/dy * 1
-      if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+      if (params._loss == DeepLearningParameters.Loss.MeanSquare) {
         g = t - y; //for MSE -dMSE/dy = target-y
       }
       // L = |y-t|, -dL/dy = -/+1
-      else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+      else if (params._loss == DeepLearningParameters.Loss.Absolute) {
         g = y > t ? -1f : 1f;
       }
       // Huber:
       // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
       // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
-      else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+      else if (params._loss == DeepLearningParameters.Loss.Huber) {
         if (Math.abs(y-t) < 1) {
           g = t - y;
         } else {

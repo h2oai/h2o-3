@@ -38,7 +38,7 @@ public class DeepLearningTest extends TestUtil {
                     ard(0, 8, 42),
                     ard(0, 1, 49)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -57,7 +57,7 @@ public class DeepLearningTest extends TestUtil {
                     ard(0, 24, 26),
                     ard(0, 2, 48)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testClassCars1() throws Throwable {
@@ -78,7 +78,7 @@ public class DeepLearningTest extends TestUtil {
                     ard(0, 57, 0, 27, 0),
                     ard(0, 4, 0, 23, 81)),
             s("3", "4", "5", "6", "8"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testClassCars5() throws Throwable {
@@ -98,7 +98,7 @@ public class DeepLearningTest extends TestUtil {
                     ard(0, 14, 0, 69, 1),
                     ard(0, 0, 0, 5, 103)),
             s("3", "4", "5", "6", "8"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testConstantCols() throws Throwable {
@@ -117,7 +117,7 @@ public class DeepLearningTest extends TestUtil {
               1,
               null,
               null,
-              DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+              DeepLearningParameters.Activation.Rectifier);
       Assert.fail();
     } catch( H2OModelBuilderIllegalArgumentException iae ) {
     /*pass*/
@@ -137,7 +137,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(6, 0),
                     ard(9, 1)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   //@Test
@@ -155,7 +155,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(46294, 202),
                     ard(3187, 107)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -173,7 +173,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(51, 176),
               ard(13, 140)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testCreditProstateReLUDropout() throws Throwable {
@@ -190,7 +190,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(6, 221),
               ard(0, 153)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout);
+            DeepLearningParameters.Activation.RectifierWithDropout);
 
   }
 
@@ -208,7 +208,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(147,  80),
               ard( 32, 121)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Tanh);
+            DeepLearningParameters.Activation.Tanh);
   }
 
   @Test public void testCreditProstateTanhDropout() throws Throwable {
@@ -225,7 +225,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(58, 169),
               ard(12, 141)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout);
+            DeepLearningParameters.Activation.TanhWithDropout);
   }
 
   @Test public void testCreditProstateMaxout() throws Throwable {
@@ -242,7 +242,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(57, 170),
               ard( 8, 145)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Maxout);
+            DeepLearningParameters.Activation.Maxout);
   }
 
   @Test public void testCreditProstateMaxoutDropout() throws Throwable {
@@ -259,7 +259,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(58, 169),
               ard(13, 140)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout);
+            DeepLearningParameters.Activation.MaxoutWithDropout);
   }
 
   @Test public void testCreditProstateRegression1() throws Throwable {
@@ -274,7 +274,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             50.644808115120775,
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -290,7 +290,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             43.23511220404915,
-            DeepLearningModel.DeepLearningParameters.Activation.Tanh);
+            DeepLearningParameters.Activation.Tanh);
 
   }
 
@@ -306,7 +306,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             42.894661346549356,
-            DeepLearningModel.DeepLearningParameters.Activation.Maxout);
+            DeepLearningParameters.Activation.Maxout);
 
   }
 
@@ -322,7 +322,7 @@ public class DeepLearningTest extends TestUtil {
             },
             5,
             43.187341679697695,
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -338,7 +338,7 @@ public class DeepLearningTest extends TestUtil {
             },
             50,
             39.28708964178392,
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
 
   }
   @Test public void testAlphabet() throws Throwable {
@@ -354,7 +354,7 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(2080, 0),
                     ard(0, 2080)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
   @Test public void testAlphabetRegression() throws Throwable {
     basicDLTest_Regression(
@@ -367,7 +367,7 @@ public class DeepLearningTest extends TestUtil {
             },
             10,
             0.012242754628809,
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
@@ -394,7 +394,7 @@ public class DeepLearningTest extends TestUtil {
 //            a(a(4396, 15269), //for 1-node
 //              a(1740, 19993)),
             s("NO", "YES"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Ignore //PUBDEV-1001
@@ -414,12 +414,12 @@ public class DeepLearningTest extends TestUtil {
             ard(ard(1, 44999),
               ard(0, 45000)),
             s("0", "1"),
-            DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Rectifier);
   }
 
 
   // Put response as the last vector in the frame and return possible frames to clean up later
-  static Vec unifyFrame(DeepLearningModel.DeepLearningParameters drf, Frame fr, PrepData prep, boolean classification) {
+  static Vec unifyFrame(DeepLearningParameters drf, Frame fr, PrepData prep, boolean classification) {
     int idx = prep.prep(fr);
     if( idx < 0 ) { idx = ~idx; }
     String rname = fr._names[idx];
@@ -437,12 +437,12 @@ public class DeepLearningTest extends TestUtil {
     return ret;
   }
 
-  public void basicDLTest_Classification(String fnametrain, String hexnametrain, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, expCM, expRespDom, -1, new int[]{10,10}, 1e-5, true, activation); }
-  public void basicDLTest_Regression(String fnametrain, String hexnametrain, PrepData prep, int epochs, double expMSE, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, null, null, expMSE, new int[]{10,10}, 1e-5, false, activation); }
+  public void basicDLTest_Classification(String fnametrain, String hexnametrain, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, expCM, expRespDom, -1, new int[]{10,10}, 1e-5, true, activation); }
+  public void basicDLTest_Regression(String fnametrain, String hexnametrain, PrepData prep, int epochs, double expMSE, DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, null, null, expMSE, new int[]{10,10}, 1e-5, false, activation); }
 
-  public void basicDL(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, double expMSE, int[] hidden, double l1, boolean classification, DeepLearningModel.DeepLearningParameters.Activation activation) throws Throwable {
+  public void basicDL(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, double expMSE, int[] hidden, double l1, boolean classification, DeepLearningParameters.Activation activation) throws Throwable {
     Scope.enter();
-    DeepLearningModel.DeepLearningParameters dl = new DeepLearningModel.DeepLearningParameters();
+    DeepLearningParameters dl = new DeepLearningParameters();
     Frame frTest = null, pred = null;
     Frame frTrain = null;
     Frame test = null, res = null;
@@ -523,11 +523,11 @@ public class DeepLearningTest extends TestUtil {
 
   @Ignore
   @Test public void testWhatever() {
-    DeepLearningModel.DeepLearningParameters dl;
+    DeepLearningParameters dl;
     Frame frTrain = null;
     DeepLearningModel model = null;
     while(true) {
-      dl = new DeepLearningModel.DeepLearningParameters();
+      dl = new DeepLearningParameters();
       Scope.enter();
       try {
         frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");

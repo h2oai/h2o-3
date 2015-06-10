@@ -4,7 +4,6 @@ import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -29,27 +28,30 @@ import static water.util.MRUtils.sampleFrameStratified;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> {
-  @Override
-  public ModelCategory[] can_build() {
+  /**
+   * Main constructor from Deep Learning parameters
+   * @param parms
+   */
+  public DeepLearning( DeepLearningParameters parms ) {
+    super("DeepLearning", parms);
+    init(false);
+  }
+
+  /**
+   * Types of models we can build with DeepLearning
+   * @return
+   */
+  @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
             ModelCategory.Regression,
             ModelCategory.Binomial,
             ModelCategory.Multinomial,
+            ModelCategory.AutoEncoder
     };
   }
-
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
-
-  @Override
-  public boolean isSupervised() {
-    return !_parms._autoencoder;
-  }
-
-  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
-    super("DeepLearning", parms); init(false);
-  }
-
   public ModelBuilderSchema schema() { return new DeepLearningV3(); }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
+  @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
@@ -80,7 +82,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
    * @param parms Model parameters
    * @return
    */
-  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningModel.DeepLearningParameters parms) {
+  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms) {
     return new DataInfo(
             Key.make(), //dest key
             train,
@@ -89,15 +91,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
-            parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
+            parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             true,  // always add a bucket for missing values
             false, // no weights
             false  // no offset
       );
   }
 
-  @Override
-  protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
     long p = _train.degreesOfFreedom() - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
     String[][] dom = _train.domains();
@@ -166,65 +167,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     }
 
     Key self() { return _key; }
-
-    // the following parameters can be modified when restarting from a checkpoint
-    transient final String [] cp_modifiable = new String[] {
-            "_seed",
-            "_epochs",
-            "_score_interval",
-            "_train_samples_per_iteration",
-            "_target_ratio_comm_to_comp",
-            "_score_duty_cycle",
-            "_score_training_samples",
-            "_classification_stop",
-            "_regression_stop",
-            "_quiet_mode",
-            "_max_confusion_matrix_size",
-            "_max_hit_ratio_k",
-            "_diagnostics",
-            "_variable_importances",
-            "_force_load_balance",
-            "_replicate_training_data",
-            "_shuffle_training_data",
-            "_single_node_mode",
-            "_fast_mode",
-            // Allow modification of the regularization parameters after a checkpoint restart
-            "_l1",
-            "_l2",
-            "_max_w2",
-            "_input_dropout_ratio",
-            "_hidden_dropout_ratios",
-            "_loss",
-            "_overwrite_with_best_model",
-            "_missing_values_handling",
-            "_reproducible",
-            "_export_weights_and_biases",
-            "_elastic_averaging"
-    };
-    // the following parameters must not be modified when restarting from a checkpoint
-    transient final String [] cp_not_modifiable = new String[] {
-            "_drop_na20_cols",
-            "_response_column",
-            "_activation",
-//            "_hidden", //this must be checked via Arrays.equals(a,b), not via String.equals()
-//            "_ignored_columns", //this must be checked via Arrays.equals(a,b), not via String.equals()
-            "_use_all_factor_levels",
-            "_adaptive_rate",
-            "_autoencoder",
-            "_rho",
-            "_epsilon",
-            "_sparse",
-            "_sparsity_beta",
-            "_col_major",
-            "_rate",
-            "_momentum_start",
-            "_momentum_ramp",
-            "_momentum_stable",
-            "_nesterov_accelerated_gradient",
-            "_ignore_const_cols",
-            "_max_categorical_features"
-    };
-
     /**
      * Train a Deep Learning model, assumes that all members are populated
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
@@ -246,8 +188,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw new IllegalArgumentException("Model type must be the same as for the checkpointed model.");
 
         // check the user-given arguments for consistency
-        DeepLearningModel.DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
-        DeepLearningModel.DeepLearningParameters newP = _parms; //user-given parameters for restart
+        DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
+        DeepLearningParameters newP = _parms; //user-given parameters for restart
 
         new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
         if (newP.getNumFolds() != 0)
@@ -268,7 +210,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         //compare the user-given parameters before and after and check that they are not changed
         for (Field fBefore : oldP.getClass().getDeclaredFields()) {
-          if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
+          if (ArrayUtils.contains(DeepLearningParameters.cp_not_modifiable, fBefore.getName())) {
             for (Field fAfter : newP.getClass().getDeclaredFields()) {
               if (fBefore.equals(fAfter)) {
                 try {
@@ -291,7 +233,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           cp.write_lock(self());
 
           // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
-          final DeepLearningModel.DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          final DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
           assert(actualNewP != previous.model_info().get_params());
           assert(actualNewP != newP);
           assert(actualNewP != oldP);
@@ -307,7 +249,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           }
 
           for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
-            if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
+            if (ArrayUtils.contains(DeepLearningParameters.cp_modifiable, fBefore.getName())) {
               for (Field fAfter : newP.getClass().getDeclaredFields()) {
                 if (fBefore.equals(fAfter)) {
                   try {
@@ -383,7 +325,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         model.write_lock(self());
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
-        final DeepLearningModel.DeepLearningParameters mp = model.model_info().get_params();
+        final DeepLearningParameters mp = model.model_info().get_params();
         Frame tra_fr = new Frame(Key.make(mp.train()._key.toString()), _train.names(), _train.vecs());
         Frame val_fr = _valid != null ? new Frame(Key.make(mp.valid()._key.toString()), _valid.names(), _valid.vecs()) : null;
 
@@ -411,7 +353,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (val_fr != null) {
           model.validation_rows = val_fr.numRows();
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
-          if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
+          if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
             new ProgressUpdate("Sampling validation data (stratified)...").fork(_progressKey);
             validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(), null,
                     mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
@@ -450,7 +392,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         //main loop
         do {
-          DeepLearningModel.DeepLearningModelInfo mi = model.model_info();
+          DeepLearningModelInfo mi = model.model_info();
           assert(mi.get_processed_local() == 0);
           assert(mi.get_params()._replicate_training_data == mp._replicate_training_data);
           final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
@@ -470,7 +412,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             Log.info("Setting the model to be the best model so far (based on scoring history).");
-            DeepLearningModel.DeepLearningModelInfo mi = best_model.model_info().deep_clone();
+            DeepLearningModelInfo mi = best_model.model_info().deep_clone();
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
             mi.set_processed_local(model.model_info().get_processed_local());
@@ -511,7 +453,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
      * @param local whether to only create enough chunks to max out all cores on one node only
      * @return Frame that has potentially more chunks
      */
-    private Frame reBalance(final Frame fr, boolean local, String name) {
+    private Frame reBalance(final Frame fr, boolean local, final String name) {
       int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
       if (fr.anyVec().nChunks() > chunks && !_parms._reproducible) {
         Log.info("Dataset already contains " + fr.anyVec().nChunks() + " chunks. No need to rebalance.");
@@ -537,7 +479,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
      * @param model DL model
      * @return The total number of training rows to be processed per iteration (summed over on all nodes)
      */
-    private long computeTrainSamplesPerIteration(final DeepLearningModel.DeepLearningParameters mp, final long numRows, DeepLearningModel model) {
+    private long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DeepLearningModel model) {
       long tspi = mp._train_samples_per_iteration;
       assert(tspi == 0 || tspi == -1 || tspi == -2 || tspi >= 1);
       if (tspi == 0 || (!mp._replicate_training_data && tspi == -1) ) {
@@ -572,9 +514,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
       // heuristics
       double flops_overhead_per_row = 30;
-      if (mp._activation == DeepLearningModel.DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout) {
+      if (mp._activation == DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningParameters.Activation.MaxoutWithDropout) {
         flops_overhead_per_row *= 8;
-      } else if (mp._activation == DeepLearningModel.DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout) {
+      } else if (mp._activation == DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningParameters.Activation.TanhWithDropout) {
         flops_overhead_per_row *= 5;
       }
 
@@ -626,7 +568,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       assert(rowUsageFraction > 0);
       return rowUsageFraction;
     }
-    private float rowFraction(Frame train, DeepLearningModel.DeepLearningParameters p, DeepLearningModel m) {
+    private float rowFraction(Frame train, DeepLearningParameters p, DeepLearningModel m) {
       return computeRowUsageFraction(train.numRows(), m.actual_train_samples_per_iteration, p._replicate_training_data);
     }
   }

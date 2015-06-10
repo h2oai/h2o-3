@@ -1,7 +1,7 @@
 package hex.schemas;
 
 import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningParameters;
 import water.api.API;
 import water.api.FrameV3.ColSpecifierV3;
 import water.api.KeyV3.ModelKeyV3;

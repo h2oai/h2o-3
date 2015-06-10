@@ -14,8 +14,8 @@ import java.util.Random;
 
 public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final private boolean _training;
-  private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _localmodel; //per-node state (to be reduced)
-  private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _sharedmodel; //input/output
+  private DeepLearningModelInfo _localmodel; //per-node state (to be reduced)
+  private DeepLearningModelInfo _sharedmodel; //input/output
   transient Neurons[] _neurons;
   transient Random _dropout_rng;
   int _chunk_node_count = 1;
@@ -25,7 +25,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * Should only be queried after calling this.doAll(Frame training)
    * @return "The" final model after one Map/Reduce iteration
    */
-  final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() {
+  final public DeepLearningModelInfo model_info() {
     assert(_sharedmodel != null);
     return _sharedmodel;
   }
@@ -36,8 +36,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param inputModel Initial model state
    * @param fraction Fraction of rows of the training to train with
    */
-  public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo inputModel, float fraction){this(jobKey, inputModel,fraction,null);}
-  private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo inputModel, float fraction, H2OCountedCompleter cmp){
+  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction){this(jobKey, inputModel,fraction,null);}
+  private DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, H2OCountedCompleter cmp){
     super(jobKey, inputModel.data_info(),cmp);
     assert(inputModel.get_processed_local() == 0);
     _training=true;
@@ -149,7 +149,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * So if replication is disabled, and every node works on partial data, then we have work to do here (model averaging).
    */
   @Override protected void postGlobal(){
-    DeepLearningModel.DeepLearningParameters dlp = _localmodel.get_params();
+    DeepLearningParameters dlp = _localmodel.get_params();
     if (H2O.CLOUD.size() > 1 && !dlp._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
@@ -167,7 +167,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       _localmodel.set_processed_local(0l);
       // model averaging
       if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
-      if (_localmodel.get_params()._elastic_averaging) _sharedmodel = DeepLearningModel.elasticAverage(_localmodel);
+      if (_localmodel.get_params()._elastic_averaging) _sharedmodel = DeepLearningModelInfo.elasticAverage(_localmodel);
     } else {
       //Get ready for reduction in DeepLearningTask2
       //Just swap the local and global models
@@ -178,17 +178,17 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _localmodel = null;
   }
 
-  public static Neurons[] makeNeuronsForTraining(final DeepLearningModel.DeepLearningModelInfo minfo) {
+  public static Neurons[] makeNeuronsForTraining(final DeepLearningModelInfo minfo) {
     return makeNeurons(minfo, true);
   }
-  public static Neurons[] makeNeuronsForTesting(final DeepLearningModel.DeepLearningModelInfo minfo) {
+  public static Neurons[] makeNeuronsForTesting(final DeepLearningModelInfo minfo) {
     return makeNeurons(minfo, false);
   }
 
   // Helper
-  private static Neurons[] makeNeurons(final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
+  private static Neurons[] makeNeurons(final DeepLearningModelInfo minfo, boolean training) {
     DataInfo dinfo = minfo.data_info();
-    final DeepLearningModel.DeepLearningParameters params = minfo.get_params();
+    final DeepLearningParameters params = minfo.get_params();
     final int[] h = params._hidden;
     Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
     // input
@@ -245,8 +245,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param training
    * @param responses
    */
-  public static void step(long seed, Neurons[] neurons, DeepLearningModel.DeepLearningModelInfo minfo,
-                          DeepLearningModel.DeepLearningModelInfo consensus_minfo, boolean training, double[] responses) {
+  public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
+                          DeepLearningModelInfo consensus_minfo, boolean training, double[] responses) {
     try {
       for (int i=1; i<neurons.length-1; ++i) {
         neurons[i].fprop(seed, training);

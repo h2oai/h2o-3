@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import water.DKV;
 import water.Key;
 import water.MRTask;
 import water.fvec.Frame;
@@ -17,7 +16,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    * @param model_info Initial DeepLearningModelInfo (weights + biases)
    * @param sync_fraction Fraction of the training data to use for one SGD iteration
    */
-  public DeepLearningTask2(Key jobKey, Frame train, DeepLearningModel.DeepLearningModelInfo model_info, float sync_fraction) {
+  public DeepLearningTask2(Key jobKey, Frame train, DeepLearningModelInfo model_info, float sync_fraction) {
     assert(sync_fraction > 0);
     _jobKey = jobKey;
     _fr = train;
@@ -29,11 +28,11 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    * Returns the aggregated DeepLearning model that was trained by all nodes (over all the training data)
    * @return model_info object
    */
-  public DeepLearningModel.DeepLearningModelInfo model_info() { return _sharedmodel; }
+  public DeepLearningModelInfo model_info() { return _sharedmodel; }
 
   final private Key _jobKey;
   final private Frame _fr;
-  private DeepLearningModel.DeepLearningModelInfo _sharedmodel;
+  private DeepLearningModelInfo _sharedmodel;
   final private float _sync_fraction;
   private DeepLearningTask _res;
 
@@ -80,9 +79,9 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     _res.model_info().div(_res._chunk_node_count);
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
     _res.model_info().set_processed_local(0l);
-    DeepLearningModel.DeepLearningModelInfo localmodel = _res.model_info();
+    DeepLearningModelInfo localmodel = _res.model_info();
     if (localmodel.get_params()._elastic_averaging)
-      _sharedmodel = DeepLearningModel.elasticAverage(localmodel);
+      _sharedmodel = DeepLearningModelInfo.elasticAverage(localmodel);
     else
       _sharedmodel = localmodel;
   }
