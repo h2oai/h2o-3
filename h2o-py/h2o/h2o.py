@@ -753,6 +753,7 @@ def gamma(data)   : return _simple_un_math_op("gamma", data)
 def lgamma(data)  : return _simple_un_math_op("lgamma", data)
 def digamma(data) : return _simple_un_math_op("digamma", data)
 def trigamma(data): return _simple_un_math_op("trigamma", data)
+def all(data) : return _simple_un_math_op("all", data)
 
 def _simple_un_math_op(op, data):
   """
