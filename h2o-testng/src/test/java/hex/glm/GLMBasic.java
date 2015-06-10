@@ -52,41 +52,39 @@ public class GLMBasic extends TestNGUtil {
                                 String standardize, String betaConstraints, String lowerBound, String upperBound,
                                 String useAllFactorLevels, String prior, String maxActivePredictors, String dataset) {
 
-        // Get GLM parameters
+        // Set GLM parameters
         Family f = null;
         if     (gaussian.equals("x")) { f = Family.gaussian; }
         else if(binomial.equals("x")) { f = Family.binomial; }
         else if(poissan.equals("x"))  { f = Family.poisson; }
         else if(gamma.equals("x"))    { f = Family.gamma; }
+        GLMParameters params = null != f ? new GLMParameters(f) : new GLMParameters();
+        if     (irlsm.equals("x")) { params._solver = Solver.IRLSM; }
+        else if(lbfgs.equals("x")) { params._solver = Solver.L_BFGS; }
+        params._lambda = lambda.equals("") ? null : new double[]{ Double.parseDouble(lambda)};
+        params._alpha = alpha.equals("") ? null : new double[]{ Double.parseDouble(alpha)};
+        params._standardize = standardize.equals("x");
+        params._lambda_search = lambdaSearch.equals("x");
+        params._use_all_factor_levels = useAllFactorLevels.equals("x");
+        //params._prior = prior.equals("") ? -1 : Double.parseDouble(prior);
+        //params._max_active_predictors = maxActivePredictors.equals("") ? -1 : Integer.parseInt(maxActivePredictors);
+        //boolean bc = betaConstraints.equals("x");
+        switch(dataset){
+            case "airquality.csv":
+                params._train = _airquality._key;
+                break;
+            case "insurance.csv":
+                params._train = _insurance._key;
+                break;
+        }
+        params._response_column = "Ozone";
 
-        Solver s = Solver.L_BFGS;
-        if     (irlsm.equals("x")) { s = Solver.IRLSM; }
-
-        double[] a = alpha.equals("") ? null : new double[]{ Double.parseDouble(alpha)};
-        double[] l = lambda.equals("") ? null : new double[]{ Double.parseDouble(lambda)};
-        boolean ls = lambdaSearch.equals("x");
-        boolean std = standardize.equals("x");
-        boolean bc = betaConstraints.equals("x");
-        boolean uafl = useAllFactorLevels.equals("x");
-        //double p = prior.equals("") ? -1 : Double.parseDouble(prior);
-        //int m = maxActivePredictors.equals("") ? -1 : Integer.parseInt(maxActivePredictors);
-
+        // Build the appropriate glm, given the above parameters
         GLM job = null;
         GLMModel model = null;
         Frame score = null;
         try {
             Scope.enter();
-            GLMParameters params = null != f ? new GLMParameters(f) : new GLMParameters();
-            params._response_column = "Ozone";
-            params._train = _airquality._key;
-            params._lambda = l;
-            params._alpha = a;
-            params._standardize = std;
-            params._lambda_search = ls;
-            params._use_all_factor_levels = uafl;
-            //params._prior = p;
-            //params._max_active_predictors = m;
-            params._solver = s;
 
             if(gaussian.equals("x") && dataset.equals("airquality.csv")) {
                 job = new GLM(Key.make("model"), "basic glm test", params);
@@ -98,14 +96,9 @@ public class GLMBasic extends TestNGUtil {
                 //GLMTest.nullDOF(model);
                 //GLMTest.resDOF(model);
                 //GLMTest.aic(model);
-                model.delete();
 
-                // test scoring
-                if (dataset.equals("airquality.csv")) {
-                    score = model.score(_airquality);
-                } else if (dataset.equals("insurance.csv")) {
-                    score = model.score(_insurance);
-                }
+                // Score the model
+                score = model.score(_airquality);
 
                 //hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _airquality);
                 hex.ModelMetricsRegression mm = hex.ModelMetricsRegression.getFromDKV(model, _airquality);
