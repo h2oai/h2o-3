@@ -1683,6 +1683,7 @@ def parse_args(argv):
     global g_convenient
     global g_path_to_tar
     global g_path_to_whl
+    global g_produce_unit_reports
 
     i = 1
     while (i < len(argv)):
