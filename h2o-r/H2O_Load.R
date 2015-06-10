@@ -2,7 +2,7 @@
 ANQIS.ROOT.PATH <- "/Users/anqi_fu/Documents/workspace/"
 ANQIS.WIN.PATH <- "C:/Users/Anqi/Documents/Work/"
 SPENCERS.ROOT.PATH <- "/Users/spencer/0xdata/"
-ROOT.PATH <- ANQIS.WIN.PATH
+ROOT.PATH <- ANQIS.ROOT.PATH
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
@@ -19,7 +19,7 @@ function() {
 src()
 
 
-h <- h2o.init("localhost", 54323)
+h <- h2o.init("localhost", 54321)
 conn <- h
 #hex <- as.h2o(iris, h)
 #

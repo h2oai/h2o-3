@@ -190,8 +190,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Frame x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -253,24 +253,24 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       return _key;
     }
   }
-}
 
-class EmbeddedSVD extends SVD {
+  public class EmbeddedSVD extends SVD {
 
-  final private Key sharedProgressKey;
+    final private Key sharedProgressKey;
 
-  public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
-    super(parms);
-    this.sharedProgressKey = sharedProgressKey;
-  }
+    public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
+      super(parms);
+      this.sharedProgressKey = sharedProgressKey;
+    }
 
-  @Override
-  protected Key createProgressKey() {
-    return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-  }
+    @Override
+    protected Key createProgressKey() {
+      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
+    }
 
-  @Override
-  protected boolean deleteProgressKey() {
-    return false;
+    @Override
+    protected boolean deleteProgressKey() {
+      return false;
+    }
   }
 }
