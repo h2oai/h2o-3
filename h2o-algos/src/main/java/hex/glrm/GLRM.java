@@ -359,8 +359,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Frame fr = null, x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built

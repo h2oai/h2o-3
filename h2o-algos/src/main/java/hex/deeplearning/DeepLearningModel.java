@@ -1753,8 +1753,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
             err.train_confusion_matrix = mm.cm();
           }
-          if (get_params()._score_training_samples != 0 && get_params()._score_training_samples < ftrain.numRows()) {
-            _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
+          if (ftrain.numRows() != training_rows) {
+            _output._training_metrics._description = "Metrics reported on temporary training frame with " + ftrain.numRows() + " samples";
+          } else if (ftrain._key != null && ftrain._key.toString().contains("chunks")){
+            _output._training_metrics._description = "Metrics reported on temporary (load-balanced) training frame";
+          } else {
+            _output._training_metrics._description = "Metrics reported on full training frame";
           }
 
           if (ftest != null) {
@@ -1774,11 +1778,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
                 ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mtest;
                 err.valid_confusion_matrix = mm.cm();
               }
-              if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {
-                _output._validation_metrics._description = "Metrics reported on " + ftest.numRows() + " validation set samples";
+              if (ftest.numRows() != validation_rows) {
+                _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + ftest.numRows() + " samples";
                 if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
                   _output._validation_metrics._description += " (stratified sampling)";
                 }
+              } else if (ftest._key != null && ftest._key.toString().contains("chunks")){
+                _output._validation_metrics._description = "Metrics reported on temporary (load-balanced) validation frame";
+              } else {
+                _output._validation_metrics._description = "Metrics reported on full validation frame";
               }
             }
           }

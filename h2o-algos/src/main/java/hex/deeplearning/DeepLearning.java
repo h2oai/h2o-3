@@ -384,13 +384,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         model.write_lock(self());
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         final DeepLearningModel.DeepLearningParameters mp = model.model_info().get_params();
-        Frame tra_fr = new Frame(Key.make(mp.train()._key.toString() + ".temporary"), _train.names(), _train.vecs());
-        Frame val_fr = _valid != null ? new Frame(Key.make(mp.valid()._key.toString() + ".temporary"), _valid.names(), _valid.vecs()) : null;
+        Frame tra_fr = new Frame(Key.make(mp.train()._key.toString()), _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(Key.make(mp.valid()._key.toString()), _valid.names(), _valid.vecs()) : null;
 
         train = tra_fr;
         if (mp._force_load_balance) {
           new ProgressUpdate("Load balancing training data...").fork(_progressKey);
-          train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".train");
+          train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".temporary.train");
         }
         if (model._output.isClassifier() && mp._balance_classes) {
           new ProgressUpdate("Balancing class distribution of training data...").fork(_progressKey);
@@ -421,7 +421,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           }
           if (mp._force_load_balance) {
             new ProgressUpdate("Balancing class distribution of validation data...").fork(_progressKey);
-            validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".valid");
+            validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".temporary.valid");
           }
           if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
         }

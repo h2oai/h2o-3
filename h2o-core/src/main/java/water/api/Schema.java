@@ -740,6 +740,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return schema(version, impl_class.getSimpleName());
   }
 
+  // FIXME: can be parameterized by type: public static <T extends Schema> T newInstance(Class<T> clz)
   public static Schema newInstance(Class<? extends Schema> clz) {
     Schema s = null;
     try {
