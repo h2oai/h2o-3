@@ -1411,7 +1411,8 @@ class TestRunner:
             # Report junit
             if self.produce_unit_reports:
                 if not test.get_nopass(nopass):
-                    self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed", "See {}".format(test.get_output_dir_file_name()))
+                    self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed",
+                                              "See {}".format(test.get_output_dir_file_name()))
                 else:
                     self._report_xunit_result("r_suite", test_name, duration, True)
             # Copy failed test output into directory failed
@@ -1419,22 +1420,25 @@ class TestRunner:
                 shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
 
     # XSD schema for xunit reports is here; http://windyroad.com.au/dl/Open%20Source/JUnit.xsd
-    def _report_xunit_result(self, testsuiteName, testcaseName, testcaseRuntime, skipped=False, failureType=None, failureMessage=None, failureDescription=None):
+    def _report_xunit_result(self, testsuite_name, testcase_name, testcase_runtime,
+                             skipped=False, failure_type=None, failure_message=None, failure_description=None):
         errors = 0
-        failures = 1 if failureType else 0
+        failures = 1 if failure_type else 0
         skip = 1 if skipped else 0
-        failure = "" if not failureType else """"<failure type="{}" message="{}">{}</failure>""".format(failureType, failureMessage, failureDescription)
+        failure = "" if not failure_type else """"<failure type="{}" message="{}">{}</failure>""" \
+            .format(failure_type, failure_message, failure_description)
 
-	xmlReport= """<?xml version="1.0" encoding="UTF-8"?>
+        xml_report = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
   <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
   {failure}
   </testcase>
 </testsuite>
-""".format(testsuiteName=testsuiteName, testcaseClassName=testcaseName, testcaseName=testcaseName,
-        testcaseRuntime=testcaseRuntime, failure=failure,
-        errors=errors, failures=failures, skip=skip)
-        self._save_xunit_report(testsuiteName, testcaseName, xmlReport)
+""".format(testsuiteName=testsuite_name, testcaseClassName=testcase_name, testcaseName=testcase_name,
+           testcaseRuntime=testcase_runtime, failure=failure,
+           errors=errors, failures=failures, skip=skip)
+
+        self._save_xunit_report(testsuite_name, testcase_name, xml_report)
 
     def _save_xunit_report(self, testsuite, testcase, report):
         f = self._get_testreport_filehandle(testsuite, testcase)
