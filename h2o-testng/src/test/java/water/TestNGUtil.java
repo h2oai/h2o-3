@@ -32,7 +32,7 @@ public class TestNGUtil extends Iced {
             if (H2O.getCloudSize() < x) {
                 // Leader node, where the tests execute from.
                 String cloudName = UUID.randomUUID().toString();
-                String[] args = new String[]{"-name",cloudName,"-ice_root","/Users/ece/0xdata/h2o-dev/h2o-testng/" +
+                String[] args = new String[]{"-name",cloudName,"-ice_root","h2o-testng/" +
                         "build/test-results"};
                 H2O.main(args);
 
