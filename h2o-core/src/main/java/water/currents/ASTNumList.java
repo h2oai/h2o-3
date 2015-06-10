@@ -60,6 +60,13 @@ class ASTNumList extends AST {
     }
   }
 
+  ASTNumList( double d ) {
+    _bases = new double[]{d};
+    _strides = new double[]{0};
+    _cnts = new long[]{1};
+  }
+
+
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack
   @Override Val exec( Env env ) { throw H2O.fail(); }
@@ -95,6 +102,7 @@ class ASTNumList extends AST {
 
   double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
   double min() { return _bases[0]; }
+  long cnt() { return water.util.ArrayUtils.sum(_cnts); }
 
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1

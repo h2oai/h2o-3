@@ -60,10 +60,10 @@ function(expr) {
 }
 
 #'
-#' Convert R expression to an AST.
+#' Convert R expression to a Rapids string
 #'
 .eval<-
-function(x, envir, sub_one = TRUE) {
+function(x, envir) {
   statements <- unlist(lapply(as.list(x), .as_list), recursive = TRUE)
   anyH2OFrame <- FALSE
   for (i in statements) {
