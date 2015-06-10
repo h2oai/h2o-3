@@ -14,11 +14,12 @@ test.pubdev.1383 <- function(conn) {
   fgl.mm[,isNum] <- scale(fgl.mm[,isNum], center = TRUE, scale = TRUE)   # Standardize numeric columns
   fgl.mm <- fgl.mm[,c(which(!isNum), which(isNum))]   # Move categorical column to front
   fgl.mm <- model.matrix(~ . -1, fgl.mm)
+  fgl.mm <- fgl.mm[,-1]
   print(summary(fgl.mm))
   
   Log.info("Building PCA model...")
   fitR <- prcomp(fgl.mm, center = FALSE, scale. = FALSE)
-  fitH2O <- h2o.prcomp(fgl.hex, k = k, transform = "STANDARDIZE", max_iterations = 5000, use_all_factor_levels = TRUE)
+  fitH2O <- h2o.prcomp(fgl.hex, k = k, transform = "STANDARDIZE", max_iterations = 5000, use_all_factor_levels = FALSE)
   
   Log.info("R Eigenvectors:"); print(fitR$rotation[,1:k])
   Log.info("H2O Eigenvectors:"); print(fitH2O@model$eigenvectors)
@@ -29,6 +30,7 @@ test.pubdev.1383 <- function(conn) {
   Log.info("R PC Importance:"); print(impR[,1:k])
   Log.info("H2O PC Importance:"); print(impH2O)
   expect_equal(as.numeric(impR[1,1:k]), as.numeric(impH2O[1,]), tolerance = 1e-6)
+  
   testEnd()
 }
 

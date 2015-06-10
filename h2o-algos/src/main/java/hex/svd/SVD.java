@@ -170,6 +170,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] ivv_sum = new double[gram.length][gram.length];
         for(int i = 0; i < gram.length; i++) ivv_sum[i][i] = 1;
 
+
         // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
         if(!_parms._only_v) {
           model._output._d = new double[_parms._nv];
@@ -286,7 +287,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Returns sum over l2 norms of each row with vec
   // Note: Handling of row skipping should match that of GramTask
   private static L2Norm l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, L2Norm result) {
-    double sumsqr = 0;
+    double sumsqr = 0, sum = 0;
     long nobs = 0;
     int ncols = dinfo._adaptedFrame.numCols();
 
@@ -294,17 +295,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     for (int r = 0; r < cs[0].len(); r++) {
       DataInfo.Row row = dinfo.newDenseRow();
       if(dinfo.extractDenseRow(cs, r, row).bad) continue;
-
-      // Categoricals expanded into 0/1 indicator cols (NA -> extra last factor)
-      double sum = 0;
-      for (int j = 0; j < dinfo._cats; j++)
-        sum += vec[row.binIds[j]];
-
-      // Numeric cols normalized before multiplying through
-      int vidx = dinfo.numStart();
-      for (int j = 0; j < dinfo._nums; j++)
-        sum += row.numVals[j] * vec[vidx++];
-      assert vidx == vec.length;
+      sum = row.innerProduct(vec);
       sumsqr += sum * sum;
       nobs++;
       chk_u(cs,k,ncols).set(r,sum);   // Update u_k <- A_{k-1}v_k
