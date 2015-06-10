@@ -137,8 +137,8 @@ class ASTRowSliceAssign extends ASTPrim {
     // Handle fast small case
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
-      for( int col=0; col<dvecs.length; col++ )
-        dvecs[col].set(drow, src);
+      for( Vec vec : dvecs )
+        vec.set(drow, src);
       return;
     }
 
@@ -158,8 +158,8 @@ class ASTRowSliceAssign extends ASTPrim {
           int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
           for(int i=startOffset;i<cs[0]._len;++i)
             if( rows.has(start+i) )
-              for(int c=0;c<cs.length;++c)
-                cs[c].set(i,src);
+              for( Chunk chk : cs )
+                chk.set(i,src);
         }
       }
     }.doAll(dst);
