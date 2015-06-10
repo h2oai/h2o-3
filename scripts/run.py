@@ -938,25 +938,35 @@ class TestRunner:
                 if (not is_test):
                     continue
 
-                is_small     = False
-                is_medium    = False
-                is_large     = False
-                is_xlarge    = False
-                is_nopass    = False
+                is_small = False
+                is_medium = False
+                is_large = False
+                is_xlarge = False
+                is_nopass = False
                 is_nofeature = False
 
-                if   "xlarge" in f: is_xlarge = True
-                elif "medium" in f: is_medium = True
-                elif "large"  in f: is_large  = True
-                else:               is_small  = True
+                if "xlarge" in f:
+                    is_xlarge = True
+                elif "medium" in f:
+                    is_medium = True
+                elif "large" in f:
+                    is_large = True
+                else:
+                    is_small = True
 
-                if "NOPASS"    in f: is_nopass    = True
-                if "NOFEATURE" in f: is_nofeature = True
+                if "NOPASS" in f:
+                    is_nopass = True
+                if "NOFEATURE" in f:
+                    is_nofeature = True
 
-                if is_small  and not run_small:  continue
-                if is_medium and not run_medium: continue
-                if is_large  and not run_large:  continue
-                if is_xlarge and not run_xlarge: continue
+                if is_small and not run_small:
+                    continue
+                if is_medium and not run_medium:
+                    continue
+                if is_large and not run_large:
+                    continue
+                if is_xlarge and not run_xlarge:
+                    continue
 
                 if is_nopass and not nopass:
                     # skip all NOPASS tests for regular runs but still count the number of NOPASS tests
@@ -1090,27 +1100,27 @@ class TestRunner:
                 sys.exit(1)
             out.close()
 
-        elif self._have_some_py_tests() and self.path_to_whl is not None:  # basically only do this if we have a whl to install
-          self._log("")
-          self._log("Setting up Python H2O package...")
-          out_file_name = os.path.join(self.output_dir, "pythonSetup.out.txt")
-          out = open(out_file_name, "w")
+        elif self._have_some_py_tests() and self.path_to_whl is not None:
+            # basically only do this if we have a whl to install
+            self._log("")
+            self._log("Setting up Python H2O package...")
+            out_file_name = os.path.join(self.output_dir, "pythonSetup.out.txt")
+            out = open(out_file_name, "w")
 
-          cmd = ["pip","install",self.path_to_whl, "--force-reinstall"]
-          child = subprocess.Popen(args=cmd,
-                                   stdout=out,
-                                   stderr=subprocess.STDOUT)
-          rv = child.wait()
-          if (self.terminated):
-            return
-          if (rv != 0):
-            print("")
-            print("ERROR: Python setup failed.")
-            print("       (See " + out_file_name + ")")
-            print("")
-            sys.exit(1)
-          out.close()
-
+            cmd = ["pip", "install", self.path_to_whl, "--force-reinstall"]
+            child = subprocess.Popen(args=cmd,
+                                     stdout=out,
+                                     stderr=subprocess.STDOUT)
+            rv = child.wait()
+            if (self.terminated):
+                return
+            if (rv != 0):
+                print("")
+                print("ERROR: Python setup failed.")
+                print("       (See " + out_file_name + ")")
+                print("")
+                sys.exit(1)
+            out.close()
 
         num_tests = len(self.tests)
         num_nodes = self.num_clouds * self.nodes_per_cloud
@@ -1319,15 +1329,15 @@ class TestRunner:
         return False
 
     def _have_some_py_tests(self):
-      """
-      dumbass check for pyuntis
-      """
-      for test in self.tests:
-        test_name = test.get_test_name()
-        if (is_python_test_file(test_name)):
-          return True
+        """
+        dumbass check for pyuntis
+        """
+        for test in self.tests:
+            test_name = test.get_test_name()
+            if (is_python_test_file(test_name)):
+                return True
 
-      return False
+        return False
 
     def _create_failed_output_dir(self):
         try:
@@ -1508,6 +1518,7 @@ g_path_to_whl = None
 g_produce_unit_reports = True
 g_testreport_dir = None
 
+
 def use(x):
     """ Hack to remove compiler warning. """
     if False:
@@ -1565,7 +1576,7 @@ def usage():
     print("                  pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
     print("")
     print("    --testsize    Sizes (and by extension length) of tests to run:")
-    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big tests)")
+    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big)")
     print("                  (Default is to run all tests.)")
     print("")
     print("    --usecloud    ip:port of cloud to send tests to instead of starting clouds.")
@@ -1714,10 +1725,14 @@ def parse_args(argv):
                 usage()
             v = argv[i]
             if (re.match(r'(s)?(m)?(l)?', v)):
-                if 's' not in v: g_run_small  = False
-                if 'm' not in v: g_run_medium = False
-                if 'l' not in v: g_run_large  = False
-                if 'x' not in v: g_run_xlarge = False
+                if 's' not in v:
+                    g_run_small = False
+                if 'm' not in v:
+                    g_run_medium = False
+                if 'l' not in v:
+                    g_run_large = False
+                if 'x' not in v:
+                    g_run_xlarge = False
             else:
                 bad_arg(s)
         elif (s == "--usecloud"):
@@ -1884,7 +1899,8 @@ def main(argv):
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
-                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports, g_testreport_dir)
+                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
+                          g_testreport_dir)
 
     # Build test list.
     if (g_test_to_run is not None):
