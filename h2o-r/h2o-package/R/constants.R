@@ -230,3 +230,9 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
     paste0("ModelMetrics/models/",model,"/frames/",data)
   }
 }
+
+# Export/Import Model Endpoints
+.h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
+.h2o.__LOAD_MODEL <- "Models.bin/"
+
+
