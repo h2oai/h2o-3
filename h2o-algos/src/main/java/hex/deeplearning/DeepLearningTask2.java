@@ -79,10 +79,10 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     _res.model_info().div(_res._chunk_node_count);
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
     _res.model_info().set_processed_local(0l);
-    DeepLearningModelInfo localmodel = _res.model_info();
-    if (localmodel.get_params()._elastic_averaging)
-      _sharedmodel = DeepLearningModelInfo.elasticAverage(localmodel);
+    DeepLearningModelInfo nodeAverageModel = _res.model_info();
+    if (nodeAverageModel.get_params()._elastic_averaging)
+      _sharedmodel = DeepLearningModelInfo.timeAverage(nodeAverageModel);
     else
-      _sharedmodel = localmodel;
+      _sharedmodel = nodeAverageModel;
   }
 }

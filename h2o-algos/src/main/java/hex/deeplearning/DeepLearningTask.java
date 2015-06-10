@@ -4,7 +4,6 @@ import hex.DataInfo;
 import hex.FrameTask;
 import water.DKV;
 import water.H2O;
-import water.H2O.H2OCountedCompleter;
 import water.Key;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -36,14 +35,13 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param inputModel Initial model state
    * @param fraction Fraction of rows of the training to train with
    */
-  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction){this(jobKey, inputModel,fraction,null);}
-  private DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, H2OCountedCompleter cmp){
-    super(jobKey, inputModel.data_info(),cmp);
+  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction){
+    super(jobKey, inputModel.data_info(),null);
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
-    if (model_info().get_params()._elastic_averaging)
-      DKV.put(_sharedmodel.elasticAverageModelInfoKey(), _sharedmodel);
+//    if (model_info().get_params()._elastic_averaging)
+//      DKV.put(_sharedmodel.elasticAverageModelInfoKey(), _sharedmodel);
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
   }
@@ -167,7 +165,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       _localmodel.set_processed_local(0l);
       // model averaging
       if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
-      if (_localmodel.get_params()._elastic_averaging) _sharedmodel = DeepLearningModelInfo.elasticAverage(_localmodel);
+      if (_localmodel.get_params()._elastic_averaging) _sharedmodel = DeepLearningModelInfo.timeAverage(_localmodel);
     } else {
       //Get ready for reduction in DeepLearningTask2
       //Just swap the local and global models

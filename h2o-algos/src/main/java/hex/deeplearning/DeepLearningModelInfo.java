@@ -654,28 +654,28 @@ public class DeepLearningModelInfo extends Iced {
   }
 
   /**
-   * Elastic Averaging
+   * TimeAveraging as part of Elastic Averaging Algorithm
    * Cf. equation 6 of arXiv:1412.6651v5
-   * @param localmodel current average of per-node models
+   * @param nodeAverageModel current average of per-node models
    * @return Time-average of node-averages (consensus model, "the" model)
    */
-  public static DeepLearningModelInfo elasticAverage(DeepLearningModelInfo localmodel) {
-    final float pa = (float) localmodel.get_params()._elastic_averaging_moving_rate;
+  public static DeepLearningModelInfo timeAverage(DeepLearningModelInfo nodeAverageModel) {
+    float pa = (float) nodeAverageModel.get_params()._elastic_averaging_moving_rate;
     assert(pa > 0 && pa <= 1);
-    DeepLearningModelInfo elasticaverage = DKV.getGet(localmodel.elasticAverageModelInfoKey()); //get latest version from DKV
-    if (pa == 1) {
-      elasticaverage = localmodel.deep_clone();
+    DeepLearningModelInfo elasticAverage = DKV.getGet(nodeAverageModel.elasticAverageModelInfoKey()); //get latest version from DKV
+    if (elasticAverage == null || pa == 1) {
+      elasticAverage = nodeAverageModel.deep_clone();
     } else {
-      localmodel.mult(pa);
-      elasticaverage.mult(1 - pa);
-      elasticaverage.add(localmodel); //ignore processed local value set here
-      elasticaverage.set_processed_global(localmodel.get_processed_global());
+      nodeAverageModel.mult(pa);
+      elasticAverage.mult(1 - pa);
+      elasticAverage.add(nodeAverageModel); //ignore processed local value set here
+      elasticAverage.set_processed_global(nodeAverageModel.get_processed_global());
     }
-    elasticaverage.set_processed_local(0);
-    DKV.put(elasticaverage.elasticAverageModelInfoKey(), elasticaverage);
-//    Log.info("Local Model    :\n" + localmodel.toString());
-//    Log.info("Elastic Average:\n" + elasticaverage.toString());
-    return elasticaverage;
+    elasticAverage.set_processed_local(0);
+    DKV.put(elasticAverage.elasticAverageModelInfoKey(), elasticAverage);
+//    Log.info("Local Model    :\n" + nodeAverageModel.toString());
+//    Log.info("Elastic Average:\n" + elasticAverage.toString());
+    return elasticAverage;
   }
 
   public Key localModelInfoKey(H2ONode node) {

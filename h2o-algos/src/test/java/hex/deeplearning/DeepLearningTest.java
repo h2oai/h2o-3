@@ -521,6 +521,48 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test public void elasticAveraging() {
+    DeepLearningParameters dl;
+    Frame frTrain = null;
+    DeepLearningModel model = null;
+    dl = new DeepLearningParameters();
+    Scope.enter();
+    try {
+      frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+      Vec resp = frTrain.lastVec().toEnum();
+      frTrain.remove(frTrain.vecs().length-1);
+      frTrain.add("Response", resp);
+      dl._train = frTrain._key;
+      dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
+      dl._seed = 1234;
+      dl._reproducible = true;
+      dl._epochs = 0.0001;
+      dl._export_weights_and_biases = true;
+      dl._hidden = new int[]{188, 191};
+
+      // no elastic averaging
+      dl._elastic_averaging = true;
+      dl._elastic_averaging_moving_rate = 1.0;
+      dl._elastic_averaging_regularization = 0.0;
+
+      // Invoke DL and block till the end
+      DeepLearning job = null;
+      try {
+        job = new DeepLearning(dl);
+        // Get the model
+        model = job.trainModel().get();
+        Log.info(model._output);
+      } finally {
+        if (job != null) job.remove();
+      }
+
+    } finally {
+      if (frTrain != null) frTrain.remove();
+      if (model != null) model.delete();
+      Scope.exit();
+    }
+  }
+
   @Ignore
   @Test public void testWhatever() {
     DeepLearningParameters dl;
