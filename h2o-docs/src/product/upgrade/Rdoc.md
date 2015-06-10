@@ -324,17 +324,17 @@ This group includes:
 - **Apply**, for returning the values resulting from a function
 
 
-| **Non-Group Generic** | | | |
-|-----|-----|
+| **Non-Group Generic** | &nbsp;|&nbsp; |&nbsp; |
+|-----|-----|-----|-----|
 |`!`|
 |**Extract/Replace**|||
 |`[`|`[[`|`[[<-`|`[<-`
 | `$<-`|
-|**Matrix Multiplication**||
+|**Matrix Multiplication**|&nbsp;|
 |`%/%`| `%*%`|
-|**Value Matching**||
+|**Value Matching**|&nbsp;|
 |`%in%`|
-|**Apply**||
+|**Apply**|&nbsp;|
 |`apply`|
 |`as.character`|`as.data.frame`|
 |`as.environment`|`as.factor`|`as.h2o`|`as.matrix`|
