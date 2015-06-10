@@ -698,6 +698,16 @@ public abstract class GLMTask  {
 
     @Override public boolean handlesSparseData(){return true;}
 
+    @Override public double sparseOffset(){
+      double etaOffset = 0;
+      if(_dinfo._normMul != null && _dinfo._normSub != null && _beta != null) {
+        int ns = _dinfo.numStart();
+        for (int i = 0; i < _dinfo._nums; ++i)
+          etaOffset -= _beta[i + ns] * _dinfo._normSub[i] * _dinfo._normMul[i];
+      }
+      return etaOffset;
+    }
+
     @Override
     public void chunkInit() {
       // initialize
