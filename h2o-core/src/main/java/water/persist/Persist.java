@@ -177,9 +177,15 @@ public abstract class Persist {
   // -------------------------------
 
   public static class PersistEntry {
-    public String _name;
-    public long _size;
-    public long _timestamp_millis;
+
+    public PersistEntry(String name, long size, long timestamp) {
+      _name = name;
+      _size = size;
+      _timestamp_millis = timestamp;
+    }
+    public final String _name;
+    public final long _size;
+    public final long _timestamp_millis;
   }
 
   public String getHomeDirectory() {

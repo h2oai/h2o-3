@@ -50,6 +50,14 @@ The `validation` slot has been merged with the `model` slot.
 
 Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
 
+###Saving and Loading Models
+
+Saving and loading a model from R is supported in version 3.0.0.18 and later. H2O 3.0 uses the same binary serialization method as previous versions of H2O, but saves the model and its dependencies into a directory, with each object as a separate file. The `save_CV` option for  available in previous versions of H2O has been deprecated, as `h2o.saveAll` and `h2o.loadAll` are not currently supported. The following commands are now supported: 
+
+- `h2o.saveModel`
+- `h2o.loadModel`
+
+
 
 **Table of Contents**
 

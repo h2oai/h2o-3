@@ -1,9 +1,7 @@
 package water.util;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.net.URI;
 
 /**
  * File utilities.
@@ -33,5 +31,26 @@ public class FileUtils {
     catch(Exception ex) {
       throw new RuntimeException(ex);
     }
+  }
+
+  public static URI getURI(String path) {
+    if (path.startsWith("/") || path.startsWith("./"))
+      path = "file://" + path;
+    return URI.create(path);
+  }
+
+  public static boolean delete(File file) {
+    if (file.isFile())
+      file.delete();
+    else if (file.isDirectory()) {
+      File[] files = file.listFiles();
+      for (File f: files) {
+        f.delete();
+      }
+      // Delete top-level directory
+      return file.delete();
+    }
+
+    return false;
   }
 }

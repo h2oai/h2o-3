@@ -23,7 +23,7 @@ import java.util.Random;
  *
  * @author <a href="mailto:cliffc@h2o.ai"></a>
  */
-public final class AutoBuffer {
+public /* final */ class AutoBuffer {
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;

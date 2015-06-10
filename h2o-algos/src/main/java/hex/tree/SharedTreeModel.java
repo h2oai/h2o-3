@@ -4,7 +4,9 @@ import hex.*;
 import water.*;
 import water.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
@@ -190,4 +192,18 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   protected SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
   protected SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
 
+  @Override
+  public List<Key> getPublishedKeys() {
+    assert _output._ntrees == _output._treeKeys.length :
+            "Tree model is inconsistent: number of trees do not match number of tree keys!";
+    List<Key> superP = super.getPublishedKeys();
+    List<Key> p = new ArrayList<Key>(_output._ntrees * _output.nclasses());
+    for (int i = 0; i < _output._treeKeys.length; i++) {
+      for (int j = 0; j < _output._treeKeys[i].length; j++) {
+        p.add(_output._treeKeys[i][j]);
+      }
+    }
+    p.addAll(superP);
+    return p;
+  }
 }
