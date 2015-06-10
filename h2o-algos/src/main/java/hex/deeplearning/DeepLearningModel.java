@@ -565,6 +565,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       if (!_elastic_averaging) {
         dl.hide("_elastic_averaging_moving_rate", "Elastic averaging is required for this parameter.");
         dl.hide("_elastic_averaging_regularization", "Elastic averaging is required for this parameter.");
+      } else {
+        if (_elastic_averaging_moving_rate > 1 || _elastic_averaging_moving_rate < 0)
+          dl.error("_elastic_averaging_moving_rate", "Elastic averaging moving rate must be between 0 and 1.");
+        if (_elastic_averaging_regularization < 0)
+          dl.error("_elastic_averaging_regularization", "Elastic averaging regularization strength must be >= 0.");
       }
     }
   }
@@ -2142,9 +2147,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     DKV.remove(model_info().data_info()._key);
     super.delete();
-    DKV.remove(model_info().elasticAverageModelInfoKey());
-    for (H2ONode node : H2O.CLOUD._memary) {
-      DKV.remove(model_info().localModelInfoKey(node));
+    if (model_info().get_params()._elastic_averaging) {
+      DKV.remove(model_info().elasticAverageModelInfoKey());
+      for (H2ONode node : H2O.CLOUD._memary) {
+        DKV.remove(model_info().localModelInfoKey(node));
+      }
     }
   }
 
