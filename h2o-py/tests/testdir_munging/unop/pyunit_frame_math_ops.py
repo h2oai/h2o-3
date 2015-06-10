@@ -25,6 +25,10 @@ def frame_math_ops(ip,port):
     np_data3 = np.array(acosh_data)
     np_data4 = np.array(abs_data)
 
+    h2o_transposed = h2o.transpose(h2o_data1[0:5])
+    r, c = h2o_transposed.dim()
+    assert r == 5 and c == 10, "Expected 5 rows and 10 columns, but got {0} rows and {1} columns".format(r,c)
+    h2o.np_comparison_check(h2o_transposed, np.transpose(np_data1[:,0:5]), 10)
     h2o.np_comparison_check(h2o.cos(h2o_data1), np.cos(np_data1), 10)
     h2o.np_comparison_check(h2o.sin(h2o_data1), np.sin(np_data1), 10)
     h2o.np_comparison_check(h2o.tan(h2o_data1), np.tan(np_data1), 10)
