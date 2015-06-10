@@ -1,0 +1,22 @@
+description = "H2O Test Integration - TestNG"
+
+dependencies {
+    testCompile 'org.testng:testng:6.8'
+    compile project(":h2o-core")
+    compile project(":h2o-algos")
+    testCompile project(path: ":h2o-core", configuration: "testArchives")
+    testCompile project(path: ":h2o-algos", configuration: "testArchives")
+}
+
+test {
+    def singleNode = rootProject.hasProperty("testNGSingleNode")
+    def multipleNode = rootProject.hasProperty("testNGMultiNode")
+    enabled = singleNode || multipleNode
+
+    if(multipleNode) { jvmArgs('-ea','-Xmx10g','-Xms10g') }
+
+    useTestNG{
+        if (singleNode) { suites("src/test/resources/singleNode.xml") }
+        else { suites("src/test/resources/multipleNode.xml") }
+    }
+}
