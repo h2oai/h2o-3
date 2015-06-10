@@ -30,8 +30,8 @@ public class GLMBasic extends TestNGUtil {
     public static Object[][] glmCases() {
         Object[][] data = null;
         try {
-            List<String> lines = Files.readAllLines(Paths.get("h2o-testng/src/test/" +
-                    "resources/glmCases.csv"), Charset.defaultCharset());
+            List<String> lines = Files.readAllLines(find_test_file_static("h2o-testng/src/test/resources/" +
+                    "glmCases.csv").toPath(), Charset.defaultCharset());
             data = new Object[lines.size()][18];
             int r = 0;
             for(String line : lines){
