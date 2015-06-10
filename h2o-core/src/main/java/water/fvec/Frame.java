@@ -594,7 +594,7 @@ public class Frame extends Lockable<Frame> {
    *  @param startIdx  index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns  */
-  public Frame subframe(int startIdx, int endIdx) {
+  private Frame subframe(int startIdx, int endIdx) {
     return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
 
