@@ -9,45 +9,16 @@ import water.util.*;
 import java.util.Arrays;
 import java.util.Random;
 
-// This describes the model, together with the parameters
-// This will be shared: one per node
+
+/**
+ * This class contains the state of the Deep Learning model
+ * This will be shared: one per node
+ */
 public class DeepLearningModelInfo extends Iced {
-  /**
-   * Elastic Averaging
-   * Cf. equation 6 of arXiv:1412.6651v5
-   * @param localmodel current average of per-node models
-   * @return Time-average of node-averages (consensus model, "the" model)
-   */
-  public static DeepLearningModelInfo elasticAverage(DeepLearningModelInfo localmodel) {
-    final float pa = (float) localmodel.get_params()._elastic_averaging_moving_rate;
-    assert(pa > 0 && pa <= 1);
-    DeepLearningModelInfo elasticaverage = DKV.getGet(localmodel.elasticAverageModelInfoKey()); //get latest version from DKV
-    if (pa == 1) {
-      elasticaverage = localmodel.deep_clone();
-    } else {
-      localmodel.mult(pa);
-      elasticaverage.mult(1 - pa);
-      elasticaverage.add(localmodel); //ignore processed local value set here
-      elasticaverage.set_processed_global(localmodel.get_processed_global());
-    }
-    elasticaverage.set_processed_local(0);
-    DKV.put(elasticaverage.elasticAverageModelInfoKey(), elasticaverage);
-//    Log.info("Local Model    :\n" + localmodel.toString());
-//    Log.info("Elastic Average:\n" + elasticaverage.toString());
-    return elasticaverage;
-  }
-
-  public Key localModelInfoKey(H2ONode node) {
-    return Key.make(get_params()._model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
-  }
-
-  public Key elasticAverageModelInfoKey() {
-    return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
-  }
 
   public TwoDimTable summaryTable;
-  public DataInfo data_info;
 
+  public DataInfo data_info;
   public DataInfo data_info() {
     return data_info;
   }
@@ -137,47 +108,21 @@ public class DeepLearningModelInfo extends Iced {
   public float[] mean_a;
 
   private volatile boolean unstable = false;
-
-  public boolean unstable() {
-    return unstable;
-  }
-
+  public boolean unstable() { return unstable; }
   public void set_unstable() {
     if (!unstable) computeStats();
     unstable = true;
   }
 
   private long processed_global;
-
-  public synchronized long get_processed_global() {
-    return processed_global;
-  }
-
-  public synchronized void set_processed_global(long p) {
-    processed_global = p;
-  }
-
-  public synchronized void add_processed_global(long p) {
-    processed_global += p;
-  }
-
+  public synchronized long get_processed_global() { return processed_global; }
+  public synchronized void set_processed_global(long p) { processed_global = p; }
+  public synchronized void add_processed_global(long p) { processed_global += p; }
   private long processed_local;
-
-  public synchronized long get_processed_local() {
-    return processed_local;
-  }
-
-  public synchronized void set_processed_local(long p) {
-    processed_local = p;
-  }
-
-  public synchronized void add_processed_local(long p) {
-    processed_local += p;
-  }
-
-  public synchronized long get_processed_total() {
-    return processed_global + processed_local;
-  }
+  public synchronized long get_processed_local() { return processed_local; }
+  public synchronized void set_processed_local(long p) { processed_local = p; }
+  public synchronized void add_processed_local(long p) { processed_local += p; }
+  public synchronized long get_processed_total() { return processed_global + processed_local; }
 
   // package local helpers
   int[] units; //number of neurons per layer, extracted from parameters and from datainfo
@@ -186,12 +131,23 @@ public class DeepLearningModelInfo extends Iced {
   final Frame _train;         // Prepared training frame
   final Frame _valid;         // Prepared validation frame
 
-  public DeepLearningModelInfo() {
+  /**
+   * Dummy constructor, only to be used for deserialization from autobuffer
+   */
+  private DeepLearningModelInfo() {
     super(); // key is null
     _classification = false;
     _train = _valid = null;
   }
 
+  /**
+   * Main constructor
+   * @param params Model parameters
+   * @param dinfo Data Info
+   * @param classification Whether we do classification or not
+   * @param train User-given training data frame, prepared by AdaptTestTrain
+   * @param valid User-specified validation data frame, prepared by AdaptTestTrain
+   */
   public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo, boolean classification, Frame train, Frame valid) {
     _classification = classification;
     _train = train;
@@ -273,7 +229,7 @@ public class DeepLearningModelInfo extends Iced {
       mean_a = new float[layers];
       for (int i = 0; i < layers; ++i) avg_activations[i] = new Neurons.DenseVector(units[i + 1]);
     }
-    fillHelpers();
+    allocateHelperArrays();
     // for diagnostics
     mean_rate = new float[units.length];
     rms_rate = new float[units.length];
@@ -291,7 +247,10 @@ public class DeepLearningModelInfo extends Iced {
     return (DeepLearningModelInfo) new DeepLearningModelInfo().read(ab);
   }
 
-  void fillHelpers() {
+  /**
+   * Allocate helper arrays for momentum/learning rate, etc.
+   */
+  void allocateHelperArrays() {
     if (has_momenta()) {
       dense_row_weights_momenta = new Neurons.DenseRowMatrix[dense_row_weights.length];
       dense_col_weights_momenta = new Neurons.DenseColMatrix[dense_col_weights.length];
@@ -323,7 +282,11 @@ public class DeepLearningModelInfo extends Iced {
     }
   }
 
-  public TwoDimTable createSummaryTable() {
+  /**
+   * Create a summary table
+   * @return
+   */
+  TwoDimTable createSummaryTable() {
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
@@ -378,8 +341,11 @@ public class DeepLearningModelInfo extends Iced {
     return summaryTable;
   }
 
-  @Override
-  public String toString() {
+  /**
+   * Print a summary table
+   * @return String containing ASCII version of summary table
+   */
+  @Override public String toString() {
     StringBuilder sb = new StringBuilder();
     if (get_params()._diagnostics && !get_params()._quiet_mode) {
       if (get_params()._sparsity_beta > 0) {
@@ -393,7 +359,10 @@ public class DeepLearningModelInfo extends Iced {
     return sb.toString();
   }
 
-  // DEBUGGING
+  /**
+   * Debugging printout
+   * @return String with useful info
+   */
   public String toStringAll() {
     StringBuilder sb = new StringBuilder();
     sb.append(toString());
@@ -420,6 +389,9 @@ public class DeepLearningModelInfo extends Iced {
     return sb.toString();
   }
 
+  /**
+   * Initialize weights/biases
+   */
   void initializeMembers() {
     randomizeWeights();
     //TODO: determine good/optimal/best initialization scheme for biases
@@ -439,6 +411,12 @@ public class DeepLearningModelInfo extends Iced {
     Arrays.fill(biases[biases.length - 1].raw(), 0f); //output layer
   }
 
+  /**
+   * Add another model info into this
+   * This will add the weights/biases/learning rate helpers, and the number of processed training samples
+   * Note: It will NOT add the elastic averaging helpers, which are always kept constant (they already are the result of a reduction)
+   * @param other
+   */
   public void add(DeepLearningModelInfo other) {
     for (int i = 0; i < dense_row_weights.length; ++i)
       ArrayUtils.add(get_weights(i).raw(), other.get_weights(i).raw());
@@ -462,10 +440,18 @@ public class DeepLearningModelInfo extends Iced {
     add_processed_local(other.get_processed_local());
   }
 
+  /**
+   * Multiply all weights/biases by a real-valued number
+   * @param N
+   */
   protected void mult(float N) {
     div(1f / N);
   }
 
+  /**
+   * Divide all weights/biases by a real-valued number
+   * @param N
+   */
   protected void div(float N) {
     for (int i = 0; i < dense_row_weights.length; ++i)
       ArrayUtils.div(get_weights(i).raw(), N);
@@ -489,7 +475,11 @@ public class DeepLearningModelInfo extends Iced {
     return min + rand.nextFloat() * (max - min);
   }
 
-  void randomizeWeights() {
+  /**
+   * Initialization of neural net weights
+   * cf. http://machinelearning.wustl.edu/mlpapers/paper_files/AISTATS2010_GlorotB10.pdf
+   */
+  private void randomizeWeights() {
     for (int w = 0; w < dense_row_weights.length; ++w) {
       final Random rng = water.util.RandomUtils.getRNG(get_params()._seed + 0xBAD5EED + w + 1); //to match NeuralNet behavior
       final double range = Math.sqrt(6. / (units[w] + units[w + 1]));
@@ -578,7 +568,9 @@ public class DeepLearningModelInfo extends Iced {
     return vi;
   }
 
-  // compute stats on all nodes
+  /**
+   * Compute statistics about this model on all nodes
+   */
   public void computeStats() {
     float[][] rate = get_params()._adaptive_rate ? new float[units.length - 1][] : null;
 
@@ -646,7 +638,9 @@ public class DeepLearningModelInfo extends Iced {
     }
   }
 
-  // unique identifier for this model's state
+  /**
+   * Unique identifier for this model's state, based on raw numbers
+   */
   protected long checksum_impl() {
     long cs = parameters._seed;
     cs ^= size() * get_processed_total();
@@ -658,4 +652,38 @@ public class DeepLearningModelInfo extends Iced {
     cs *= (long) (3378.1999 * (Math.PI + ArrayUtils.sum(rms_rate)));
     return cs;
   }
+
+  /**
+   * Elastic Averaging
+   * Cf. equation 6 of arXiv:1412.6651v5
+   * @param localmodel current average of per-node models
+   * @return Time-average of node-averages (consensus model, "the" model)
+   */
+  public static DeepLearningModelInfo elasticAverage(DeepLearningModelInfo localmodel) {
+    final float pa = (float) localmodel.get_params()._elastic_averaging_moving_rate;
+    assert(pa > 0 && pa <= 1);
+    DeepLearningModelInfo elasticaverage = DKV.getGet(localmodel.elasticAverageModelInfoKey()); //get latest version from DKV
+    if (pa == 1) {
+      elasticaverage = localmodel.deep_clone();
+    } else {
+      localmodel.mult(pa);
+      elasticaverage.mult(1 - pa);
+      elasticaverage.add(localmodel); //ignore processed local value set here
+      elasticaverage.set_processed_global(localmodel.get_processed_global());
+    }
+    elasticaverage.set_processed_local(0);
+    DKV.put(elasticaverage.elasticAverageModelInfoKey(), elasticaverage);
+//    Log.info("Local Model    :\n" + localmodel.toString());
+//    Log.info("Elastic Average:\n" + elasticaverage.toString());
+    return elasticaverage;
+  }
+
+  public Key localModelInfoKey(H2ONode node) {
+    return Key.make(get_params()._model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+  }
+
+  public Key elasticAverageModelInfoKey() {
+    return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
+  }
+
 }

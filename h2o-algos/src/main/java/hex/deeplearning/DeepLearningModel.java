@@ -29,8 +29,19 @@ import static hex.deeplearning.DeepLearning.makeDataInfo;
 
 public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
+  /**
+   * The Deep Learning model output contains a few extra fields in addition to the metrics in Model.Output
+   * 1) Scoring history (raw data)
+   * 2) weights/biases (raw data)
+   * 3) variable importances (TwoDimTable)
+   */
   public static class DeepLearningModelOutput extends Model.Output {
 
+    /**
+     * For autoencoder, there's no response.
+     * Otherwise, there's 1 response at the end, and no other reserved columns in the data
+     * @return Number of features (possible predictors)
+     */
     @Override public int nfeatures() {
       return _names.length - (autoencoder ? 0 : 1);
     }
