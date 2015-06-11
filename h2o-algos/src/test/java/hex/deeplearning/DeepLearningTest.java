@@ -14,7 +14,7 @@ import water.util.Log;
 import java.util.Arrays;
 
 public class DeepLearningTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -521,44 +521,123 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Test public void elasticAveraging() {
+  @Test public void elasticAveragingTrivial() {
     DeepLearningParameters dl;
     Frame frTrain = null;
-    DeepLearningModel model = null;
+    int N = 2;
+    DeepLearningModel [] models = new DeepLearningModel[N];
     dl = new DeepLearningParameters();
     Scope.enter();
     try {
-      frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
-      Vec resp = frTrain.lastVec().toEnum();
-      frTrain.remove(frTrain.vecs().length-1);
-      frTrain.add("Response", resp);
-      dl._train = frTrain._key;
-      dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
-      dl._seed = 1234;
-      dl._reproducible = true;
-      dl._epochs = 0.0001;
-      dl._export_weights_and_biases = true;
-      dl._hidden = new int[]{188, 191};
+      for (int i = 0; i < N; ++i) {
+        frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+        Vec resp = frTrain.lastVec().toEnum();
+        frTrain.remove(frTrain.vecs().length - 1).remove();
+        frTrain.add("Response", resp);
+        dl._train = frTrain._key;
+        dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
+        dl._export_weights_and_biases = true;
+        dl._hidden = new int[]{17, 11};
+        dl._quiet_mode = false;
+        dl._diagnostics = true;
 
-      // no elastic averaging
-      dl._elastic_averaging = true;
-      dl._elastic_averaging_moving_rate = 1.0;
-      dl._elastic_averaging_regularization = 0.0;
+        // make it reproducible
+        dl._seed = 1234;
+        dl._reproducible = true;
 
-      // Invoke DL and block till the end
-      DeepLearning job = null;
-      try {
-        job = new DeepLearning(dl);
-        // Get the model
-        model = job.trainModel().get();
-        Log.info(model._output);
-      } finally {
-        if (job != null) job.remove();
+        // only do one M/R iteration, and there's no elastic average yet - so the two paths below should be identical
+        dl._epochs = 1;
+        dl._train_samples_per_iteration = -1;
+
+        if (i == 0) {
+          // no elastic averaging
+          dl._elastic_averaging = false;
+          dl._elastic_averaging_moving_rate = 0.5; //ignored
+          dl._elastic_averaging_regularization = 0.9; //ignored
+        } else {
+          // no-op elastic averaging
+          dl._elastic_averaging = true; //go different path, but don't really do anything because of epochs=1 and train_samples_per_iteration=-1
+          dl._elastic_averaging_moving_rate = 0.5; //doesn't matter, it's not used since we only do one M/R iteration and there's no time average
+          dl._elastic_averaging_regularization = 0.1; //doesn't matter, since elastic average isn't yet available in first iteration
+        }
+
+        // Invoke DL and block till the end
+        DeepLearning job = null;
+        try {
+          job = new DeepLearning(dl);
+          // Get the model
+          models[i] = job.trainModel().get();
+        } finally {
+          if (job != null) job.remove();
+        }
+      }
+      for (int i = 0; i < N; ++i) {
+        Log.info(models[i]._output._training_metrics.cm().table().toString());
+        Assert.assertEquals(models[i]._output._training_metrics._MSE, models[0]._output._training_metrics._MSE, 1e-6);
       }
 
-    } finally {
+    }finally{
       if (frTrain != null) frTrain.remove();
-      if (model != null) model.delete();
+      for (int i=0; i<N; ++i)
+        if (models[i] != null)
+          models[i].delete();
+      Scope.exit();
+    }
+  }
+
+  @Test public void elasticAveraging() {
+    DeepLearningParameters dl;
+    Frame frTrain = null;
+    int N = 2;
+    DeepLearningModel [] models = new DeepLearningModel[N];
+    dl = new DeepLearningParameters();
+    Scope.enter();
+    frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+    Vec resp = frTrain.lastVec().toEnum();
+    frTrain.remove(frTrain.vecs().length - 1).remove();
+    frTrain.add("Response", resp);
+    DKV.put(frTrain);
+    try {
+      for (int i = 0; i < N; ++i) {
+        dl._train = frTrain._key;
+        dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
+        dl._export_weights_and_biases = true;
+        dl._hidden = new int[]{64, 64};
+        dl._quiet_mode = false;
+        dl._diagnostics = true;
+        dl._replicate_training_data = false; //every node only has a piece of the data
+        dl._force_load_balance = true; //use multi-node
+
+        // do multiple M/R iterations
+        dl._epochs = 5;
+        dl._train_samples_per_iteration = 1000;
+
+        dl._elastic_averaging = i==0;
+        dl._elastic_averaging_moving_rate = 0.999;
+        dl._elastic_averaging_regularization = 1e-3;
+
+        // Invoke DL and block till the end
+        DeepLearning job = null;
+        try {
+          job = new DeepLearning(dl);
+          // Get the model
+          models[i] = job.trainModel().get();
+        } finally {
+          if (job != null) job.remove();
+        }
+      }
+      for (int i = 0; i < N; ++i) {
+        Log.info(models[i]._output._training_metrics.cm().table().toString());
+      }
+      Log.info("Without elastic averaging: error=" + models[0]._output._training_metrics.cm().err());
+      Log.info("With elastic averaging:    error=" + models[1]._output._training_metrics.cm().err());
+      Assert.assertTrue(models[1]._output._training_metrics.cm().err() < models[0]._output._training_metrics.cm().err());
+
+    }finally{
+      if (frTrain != null) frTrain.remove();
+      for (int i=0; i<N; ++i)
+        if (models[i] != null)
+          models[i].delete();
       Scope.exit();
     }
   }
