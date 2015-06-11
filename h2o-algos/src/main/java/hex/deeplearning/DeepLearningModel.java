@@ -70,10 +70,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
-  private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { assert(mi != null); model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
   final public VarImp varImp() { return _output.errors.variable_importances; }
+
+  private volatile DeepLearningModelInfo model_info;
 
   public long run_time;
   private long start_time;
@@ -634,7 +635,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           for (int i = 0; i < _output.biases.length; ++i) {
             model_info.get_biases(i).toFrame(_output.biases[i]);
           }
-          Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
+          if (!_parms._quiet_mode)
+            Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         }
         _output._scoring_history = createScoringHistoryTable(errors);
         _output._variable_importances = calcVarImp(last_scored().variable_importances);
@@ -955,7 +957,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
     if (model_info().get_params()._elastic_averaging)
-      DKV.put(model_info().elasticAverageModelInfoKey(), bestModel.model_info); //just to be safe, in case the model_info is queried for directly
+      DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), DKV.getGet(model_info.elasticAverageModelInfoKey()));
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
   }

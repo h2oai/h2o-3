@@ -358,7 +358,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
-            Log.info("Setting the model to be the best model so far (based on scoring history).");
+            if (!_parms._quiet_mode) {
+              Log.info("Setting the model to be the best model so far (based on scoring history).");
+            }
             DeepLearningModelInfo mi = best_model.model_info().deep_clone();
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
@@ -370,10 +372,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           }
         }
 
-        Log.info("==============================================================================================================================================================================");
-        Log.info("Finished training the Deep Learning model.");
-        Log.info(model);
-        Log.info("==============================================================================================================================================================================");
+        if (!_parms._quiet_mode) {
+          Log.info("==============================================================================================================================================================================");
+          Log.info("Finished training the Deep Learning model.");
+          Log.info(model);
+          Log.info("==============================================================================================================================================================================");
+        }
       }
       catch(Throwable ex) {
         model = DKV.get(dest()).get();

@@ -291,6 +291,7 @@ public class DeepLearningModelInfo extends Iced {
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",
+            (get_params()._diagnostics ? "" : "diagnostics disabled, ") +
             (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
                     (get_params()._autoencoder ? "auto-encoder" :
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
@@ -572,6 +573,7 @@ public class DeepLearningModelInfo extends Iced {
    * Compute statistics about this model on all nodes
    */
   public void computeStats() {
+    if (!get_params()._diagnostics) return;
     float[][] rate = get_params()._adaptive_rate ? new float[units.length - 1][] : null;
 
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
@@ -673,6 +675,9 @@ public class DeepLearningModelInfo extends Iced {
     }
     elasticAverage.set_processed_local(0);
     DKV.put(elasticAverage.elasticAverageModelInfoKey(), elasticAverage);
+
+//    nodeAverageModel.computeStats();
+//    elasticAverage.computeStats();
 //    Log.info("Local Model    :\n" + nodeAverageModel.toString());
 //    Log.info("Elastic Average:\n" + elasticAverage.toString());
     return elasticAverage;

@@ -70,6 +70,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     } else {
       _localmodel = _sharedmodel;
     }
+    _sharedmodel = null;
     _localmodel.set_processed_local(0);
   }
 
@@ -86,13 +87,13 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   @Override public final void processRow(long seed, DataInfo.Row r){
     assert !r.isSparse():"Deep learning does not support sparse rows.";
-    if (model_info().get_params()._reproducible) {
-      seed += model_info().get_processed_global(); //avoid periodicity
+    if (_localmodel.get_params()._reproducible) {
+      seed += _localmodel.get_processed_global(); //avoid periodicity
     } else {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
-    step(seed, _neurons, _localmodel, model_info().get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response);
+    step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response);
   }
 
   /**
@@ -108,7 +109,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * Otherwise, do nothing.
    */
   @Override protected void postLocal() {
-    if (model_info().get_params()._elastic_averaging) {
+    if (_localmodel.get_params()._elastic_averaging) {
       // store local model, as it will be reduced in the following, and hence averaged with other models
       DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel);
     }
@@ -164,8 +165,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
       _localmodel.set_processed_local(0l);
       // model averaging
-      if (_chunk_node_count > 1) _localmodel.div(_chunk_node_count);
-      if (_localmodel.get_params()._elastic_averaging) _sharedmodel = DeepLearningModelInfo.timeAverage(_localmodel);
+      if (_chunk_node_count > 1)
+        _localmodel.div(_chunk_node_count);
+      if (_localmodel.get_params()._elastic_averaging)
+        _sharedmodel = DeepLearningModelInfo.timeAverage(_localmodel);
     } else {
       //Get ready for reduction in DeepLearningTask2
       //Just swap the local and global models
