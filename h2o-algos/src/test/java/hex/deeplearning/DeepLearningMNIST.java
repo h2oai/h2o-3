@@ -11,8 +11,6 @@ import water.util.Log;
 
 import java.io.File;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-
 /**
  * Simple Deep Neural Network on MNIST
  * Note: requires './gradlew syncBigDataLaptop'
