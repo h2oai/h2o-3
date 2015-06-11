@@ -151,10 +151,11 @@ Otherwise, download PuTTY and follow these instructions:
 ) (JDK 1.7 or later) if it is not already available on the instance. 
 0. To download H2O, run the `wget` command with the link to the zip file available on our [website](http://h2o.ai/download/) by copying the link associated with the **Download** button for the selected H2O build. 
 	
-		wget http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/1/index.html
-		unzip h2o-0.2.1.1.zip
-		cd h2o-0.2.1.1
+		wget http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html
+		unzip h2o-{{project_version}}.zip
+		cd h2o-{{project_version}}
 		java -Xmx4g -jar h2o.jar
+
 0. From your browser, navigate to `<Private_IP_Address>:54321` or `<Public_DNS>:54321` to use H2O's web interface. 
 
 

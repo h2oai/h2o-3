@@ -157,7 +157,7 @@ Now that you are familiar with the cell modes, let's import some data.
 <a name="ImportData"></a>
 # ... Importing Data
 
-If you don't have any of your own data to work with, you can find some example datasets here: 
+If you don't have any data of your own to work with, you can find some example datasets here: 
 
 - <a href="http://docs.h2o.ai/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/resources/publicdata.html </a>
 - <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
@@ -217,6 +217,8 @@ Select the parser type (if necessary) from the drop-down **Parser** list. For mo
 - XLSX
 - CSV
 - SVMLight
+
+   **Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order. 
 
 If a separator or delimiter is used, select it from the **Separator** list. 
 
@@ -371,7 +373,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth.  
 
-- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). 
+- **Min\_rows**: [(GBM](#GBM), [DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). 
 
 - **Nbins**: [(GBM](#GBM), [DRF)](#DRF) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.   
 
@@ -395,11 +397,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM), [GLM](#GLM)) To score during each iteration of the model training, check this checkbox. 
 
-- **K**: [(K-Means)](#Kmeans), [(PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
+- **K**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
 
 - **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. 
 
-- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA),[GLM)](#GLM) Specify the number of training iterations. 
+- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA), [GLM)](#GLM) Specify the number of training iterations. 
  
 - **Objective_epsilon**: [(GLM)](#GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
@@ -493,7 +495,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_stable**: [DL](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
+- **Momentum_stable**: [(DL)](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
 
 - **Nesterov\_accelerated\_gradient**: [(DL)](#DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. Not applicable is **adaptive_rate** is enabled. 
 
@@ -517,7 +519,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1.  
 
-- **Max\_hit\_ratio\_k**: [(DL,)](#DL)[GLM](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0.  
+- **Max\_hit\_ratio\_k**: [(DL](#DL),[GLM)](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0.  
 
 - **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.  
 
@@ -555,7 +557,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
 
-- **Max\_after\_balance\_size**: [DRF](#DRF), [GBM](#GBM), [DL](#DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
+- **Max\_after\_balance\_size**: [(DRF](#DRF), [GBM](#GBM), [DL)](#DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
@@ -586,7 +588,7 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
 To delete a model, click the **Delete** button. 
 
-To generate a POJO to be able to use the model outside of H2O, click the **Preview POJO** button. 
+To generate a POJO to be able to use the model outside of H2O, click the **Download POJO** button. 
 
 To learn how to make predictions, continue to the next section. 
 
@@ -596,7 +598,7 @@ To learn how to make predictions, continue to the next section.
 # ... Making Predictions
 
 After creating your model, click the key link for the model, then click the **Predict** button. 
-Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
+Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame:** menu, then click the **Predict** button. 
 
  ![Making Predictions](images/Flow_makePredict.png)
 
@@ -798,7 +800,7 @@ The location specified in `flow_dir` may be either an hdfs or regular filesystem
 
 ### Copying Flows
 
-To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
+To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to `Copy of <FlowName>` (where `<FlowName>` is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**, or [rename it](#SaveFlow) before saving. 
 
 
 ### Downloading Flows
@@ -830,7 +832,7 @@ To load an exported flow, click the **Flow** menu and select **Open...**. In the
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
-**NOTE**: To view the current version, click the **Help** menu, then click **About**. 
+**NOTE**: To view the current H2O Flow version, click the **Help** menu, then click **About**. 
 
 ## Viewing Cluster Status
 

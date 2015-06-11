@@ -47,7 +47,7 @@ set_beta_constraints <- function(standardize, cols, frame, ignored) {
   name <- list()
     lower_bound <- list()
     upper_bound <- list()
-    if (!missing(ignored) && !is.null(ignored))
+    if (!is.null(ignored) && any(colnames(frame)[cols] %in% ignored))
       cols <- cols[-which(colnames(frame)[cols] %in% ignored)]
     for (n in cols) {
       # If enum column => create Colname.Class
@@ -102,7 +102,7 @@ randomParams <- function(family, train, test, x, y) {
         if (is.vector(val))
           Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
         else if (inherits(val, "H2OFrame"))
-          Log.info(paste0(sub("_", " ", parm), ": ", deparse(substitute(val))))
+          Log.info(paste0(sub("_", " ", parm), ": ",val@frame_id))
         else if (inherits(val, "data.frame")) {
           Log.info(paste0(sub("_", " ", parm), ":"))
           print(val)
@@ -141,14 +141,14 @@ randomParams <- function(family, train, test, x, y) {
 
   h2o.rm(hh@model_id)
   print("#########################################################################################")
-    print("")
-    print(t)
-    print("")
+  print("")
+  print(t)
+  print("")
 }
 
 test.glm.rand_attk_forloop <- function(conn) {
   Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
