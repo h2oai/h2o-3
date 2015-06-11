@@ -42,9 +42,12 @@ New H2O nodes join to form a cloud during launch. After a job has started on the
   `java -Xmx6g -jar h2o.jar -name MyCloud`
 
 - To start an H2O cloud with three 2GB nodes using the default cloud names: 
-  `java -Xmx2g -jar h2o.jar &`
-  `java -Xmx2g -jar h2o.jar &`
-  `java -Xmx2g -jar h2o.jar &`
+
+  ```
+  java -Xmx2g -jar h2o.jar &
+  java -Xmx2g -jar h2o.jar &
+  java -Xmx2g -jar h2o.jar &
+  ```
 
 Wait for the `INFO: Registered: # schemas in: #mS` output before entering the above command again to add another node (the number for # will vary).
 
