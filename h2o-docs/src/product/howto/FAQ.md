@@ -112,6 +112,14 @@ To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the co
 
 ---
 
+##Data
+
+**How should I format my SVMLight data before importing?**
+
+The data must be formatted as a sorted list of unique integers, the column indices must be >= 1, and the columns must be in ascending order. 
+
+---
+
 ##General
 
 **How do I score using an exported JSON model?**
