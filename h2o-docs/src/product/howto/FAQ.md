@@ -120,7 +120,7 @@ Since JSON is just a representation format, it cannot be directly executed, so a
 
 - including the POJO in your execution stream and handing it observations one at a time 
 
-or
+  or
 
 - handing your data in bulk to an H2O cluster, which will score using high throughput parallel and distributed bulk scoring. 
 
@@ -155,7 +155,7 @@ In Terminal, enter `ps -efww | grep h2o`, then kill any running PIDs. You can al
     at java.lang.Class.initializeClass(libgcj.so.10)
     ...4 more
 
-The only prerequisite for running H2O is a compatible version of Java. We recommend `Oracle's Java 1.7 <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`_.
+The only prerequisite for running H2O is a compatible version of Java. We recommend Oracle's [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html).
 
   
 ---
