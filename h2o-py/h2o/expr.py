@@ -593,6 +593,10 @@ class Expr(object):
       if left.is_local():   self._data = map(str, left._data)
       else:                 pass
 
+    elif self._op == "as.numeric":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
     elif self._op == "quantile":
       if left.is_local():   raise NotImplementedError
       else:
