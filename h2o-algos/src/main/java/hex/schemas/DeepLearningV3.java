@@ -72,9 +72,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_categorical_features",
         "reproducible",
         "export_weights_and_biases",
-        "elastic_averaging",
-        "elastic_averaging_moving_rate",
-        "elastic_averaging_regularization"
+//        "elastic_averaging",
+//        "elastic_averaging_moving_rate",
+//        "elastic_averaging_regularization"
     };
 
     /// Supervised params
