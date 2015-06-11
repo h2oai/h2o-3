@@ -378,6 +378,8 @@ final public class H2O {
         ARGS.ga_hadoop_ver = args[i];
       }
       else if (s.matches("ga_opt_out")) {
+        // JUnits pass this as a system property, but it usually a flag without an arg
+        if (i+1 < args.length && args[i+1].equals("yes")) i++;
         ARGS.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
@@ -1188,7 +1190,8 @@ final public class H2O {
       String s = (String)p;
       if( s.startsWith("ai.h2o.") ) {
         args2.add("-" + s.substring(7));
-        args2.add(System.getProperty(s));
+        if (!s.substring(7).equals("ga_opt_out"))
+          args2.add(System.getProperty(s));
       }
     }
 
