@@ -776,7 +776,9 @@ def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
 
-def transpose(data): return data.transpose()
+def transpose(data)       : return data.transpose()
+def signif(data, digits=6): return data.signif(digits=digits)
+def round(data, digits=0) : return data.round(digits=digits)
 
 
 class H2ODisplay:
