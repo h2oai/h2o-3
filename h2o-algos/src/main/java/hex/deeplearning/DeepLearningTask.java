@@ -65,12 +65,13 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         }
       }
       else {
+        // first time around - use the randomized initial weights and don't spread the shared (random) model
         _localmodel = _sharedmodel.deep_clone();
+        _sharedmodel = null;
       }
     } else {
       _localmodel = _sharedmodel;
     }
-    _sharedmodel = null;
     _localmodel.set_processed_local(0);
   }
 

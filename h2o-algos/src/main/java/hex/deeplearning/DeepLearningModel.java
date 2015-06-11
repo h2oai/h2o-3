@@ -439,7 +439,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
-    deleteElasticAverageModels(); //only call this for non-checkpoint restart (where we want to restart using the per-node models)
     makeWeightsBiases(destKey);
     run_time = 0;
     start_time = System.currentTimeMillis();
@@ -976,7 +975,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     super.delete();
   }
 
-  private void deleteElasticAverageModels() {
+  void deleteElasticAverageModels() {
     if (model_info().get_params()._elastic_averaging) {
       DKV.remove(model_info().elasticAverageModelInfoKey());
       for (H2ONode node : H2O.CLOUD._memary) {
