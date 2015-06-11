@@ -400,12 +400,12 @@ class H2OBinomialModelMetrics(MetricsBase):
 
   def find_threshold_by_max_metric(self,metric):
     """
-    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
+    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "precision", "accuracy", "f0point5", "f2", "f1"}
     :return: the threshold at which the given metric is maximum.
     """
     crit2d = self._metric_json['max_criteria_and_metric_scores']
     for e in crit2d.cell_values:
-      if e[0]==metric:
+      if e[0]=="max_"+metric:
         return e[1]
     raise ValueError("No metric "+str(metric))
 
