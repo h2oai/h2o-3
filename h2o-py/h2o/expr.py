@@ -589,7 +589,7 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
-    elif self._op in ["as.factor", "h2o.runif", "is.na"]:
+    elif self._op in ["as.character", "as.factor", "h2o.runif", "is.na"]:
       if left.is_local():   self._data = map(str, left._data)
       else:                 pass
 

@@ -1499,6 +1499,12 @@ class H2OVec:
     """
     return Expr("is.factor", self._expr, None, length=1).eager()
 
+  def ascharacter(self):
+    """
+    :return: A lazy Expr representing this vec converted to characters
+    """
+    return H2OVec(self._name, Expr("as.character", self._expr, None))
+
   def isna(self):
     """
     :return: Returns a new boolean H2OVec.
