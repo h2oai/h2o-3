@@ -74,6 +74,8 @@ abstract public class AST extends Iced {
     init(new ASTRowSliceAssign());
     init(new ASTColNames());
 
+    init(new ASTApply());
+
     // Cluster management
     init(new ASTLs());
 
