@@ -11,6 +11,7 @@ import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
 import water.util.DocGen.HTML;
+import water.util.GAUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.OSUtils;
@@ -1223,7 +1224,7 @@ final public class H2O {
       Log.info("Opted out of sending usage metrics.");
     } else {
       try {
-        GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
+        GA = new GoogleAnalytics("UA-56665317-3", "H2O", ABV.projectVersion());
       } catch(Throwable t) {
         Log.POST(11, t.toString());
         StackTraceElement[] stes = t.getStackTrace();
@@ -1329,11 +1330,7 @@ final public class H2O {
         Thread.sleep (sleepMillis);
       }
       catch (Exception ignore) {};
-      if (H2O.SELF == H2O.CLOUD._memary[0]) {
-        if (ARGS.ga_hadoop_ver != null)
-          H2O.GA.postAsync(new EventHit("System startup info", "Hadoop version", ARGS.ga_hadoop_ver, 1));
-        H2O.GA.postAsync(new EventHit("System startup info", "Cloud", "Cloud size", CLOUD.size()));
-      }
+      GAUtils.logStartup();
     }
   }
 }
