@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 
 import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,7 +15,7 @@ import water.util.Log;
 import java.util.Arrays;
 
 public class DeepLearningTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -171,7 +172,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             ard(ard(51, 176),
-              ard(13, 140)),
+                    ard(13, 140)),
             s("0", "1"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -205,8 +206,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(147,  80),
-              ard( 32, 121)),
+            ard(ard(147, 80),
+                    ard(32, 121)),
             s("0", "1"),
             DeepLearningParameters.Activation.Tanh);
   }
@@ -223,7 +224,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             ard(ard(58, 169),
-              ard(12, 141)),
+                    ard(12, 141)),
             s("0", "1"),
             DeepLearningParameters.Activation.TanhWithDropout);
   }
@@ -240,7 +241,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             ard(ard(57, 170),
-              ard( 8, 145)),
+                    ard(8, 145)),
             s("0", "1"),
             DeepLearningParameters.Activation.Maxout);
   }
@@ -257,7 +258,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             ard(ard(58, 169),
-              ard(13, 140)),
+                    ard(13, 140)),
             s("0", "1"),
             DeepLearningParameters.Activation.MaxoutWithDropout);
   }
@@ -412,7 +413,7 @@ public class DeepLearningTest extends TestUtil {
             },
             1,
             ard(ard(1, 44999),
-              ard(0, 45000)),
+                    ard(0, 45000)),
             s("0", "1"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -437,8 +438,8 @@ public class DeepLearningTest extends TestUtil {
     return ret;
   }
 
-  public void basicDLTest_Classification(String fnametrain, String hexnametrain, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, expCM, expRespDom, -1, new int[]{10,10}, 1e-5, true, activation); }
-  public void basicDLTest_Regression(String fnametrain, String hexnametrain, PrepData prep, int epochs, double expMSE, DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, null, null, expMSE, new int[]{10,10}, 1e-5, false, activation); }
+  public void basicDLTest_Classification(String fnametrain, String hexnametrain, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, expCM, expRespDom, -1, new int[]{10, 10}, 1e-5, true, activation); }
+  public void basicDLTest_Regression(String fnametrain, String hexnametrain, PrepData prep, int epochs, double expMSE, DeepLearningParameters.Activation activation) throws Throwable { basicDL(fnametrain, hexnametrain, null, prep, epochs, null, null, expMSE, new int[]{10, 10}, 1e-5, false, activation); }
 
   public void basicDL(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int epochs, double[][] expCM, String[] expRespDom, double expMSE, int[] hidden, double l1, boolean classification, DeepLearningParameters.Activation activation) throws Throwable {
     Scope.enter();
@@ -703,6 +704,165 @@ public class DeepLearningTest extends TestUtil {
         Scope.exit();
       }
     }
+  }
+
+  @Test
+  public void testNoRowWeights() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._l1 = 0.1;
+      parms._epochs = 0.1;
+      parms._hidden = new int[]{1};
+      parms._classification_stop = -1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+//      assertEquals(0.21757859226445403, mse, 1e-6); //Note: better results than non-shuffled
+      assertEquals(0.31894419928669016, mse, 1e-6); //Note: better results than non-shuffled
+
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test
+  public void testNoRowWeightsShuffled() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._l1 = 0.1;
+      parms._epochs = 0.1;
+      parms._hidden = new int[]{1};
+      parms._classification_stop = -1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+      assertEquals(0.37203048338693356, mse, 1e-6); //Shuffling changes results!
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test
+  public void testRowWeightsOne() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._classification_stop = -1;
+      parms._l1 = 0.1;
+      parms._hidden = new int[]{1};
+      parms._epochs = 0.1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+//      assertEquals(0.21757859226445403, mse, 1e-6); //Note: better results than non-shuffled
+      assertEquals(0.31894419928669016, mse, 1e-6); //Note: better results than non-shuffled
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Ignore
+  @Test
+  public void testRowWeights() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._classification_stop = -1;
+      parms._l1 = 0.1;
+      parms._hidden = new int[]{1};
+      parms._epochs = 0.1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+//      assertEquals(0.21757859226445403, mse, 1e-6); //Note: better results than non-shuffled
+      assertEquals(0.31894419928669016, mse, 1e-6); //Note: better results than non-shuffled
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
   }
 
 }
