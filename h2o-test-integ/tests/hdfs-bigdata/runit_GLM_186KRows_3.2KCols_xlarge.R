@@ -25,7 +25,7 @@ h2o.removeAll()
 # Parameters for the test.
 #----------------------------------------------------------------------
 parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
-paste("Time it took to parse", parse_time[[1]])
+paste("Time it took to parse", parse_time)
 
 colNames = {}
 for(col in names(data.hex)) {
@@ -40,9 +40,9 @@ myY = colNames[1]
 myX = setdiff(names(data.hex), myY)
 
 # Start modeling
-#Deep Learning
-dl_time <- system.time(data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex, epochs=.1, hidden=c(5,5)))
-paste("Time it took to build DL ", dl_time[[1]])
-data1.dl 
+# GLM
+glm_time <- system.time(data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS")) 
+data1.glm
+paste("Time it took to build GLM ", glm_time)
 
 PASS_BANNER()

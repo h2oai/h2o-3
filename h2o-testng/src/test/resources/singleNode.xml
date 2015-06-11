@@ -1,0 +1,9 @@
+<suite name="Single Node" verbose="5">
+    <test name="Basic (S)">
+        <classes>
+            <parameter name="numNodes" value="1"/>
+            <class name="hex.tree.gbm.GBMBasic" />
+            <class name="hex.glm.GLMBasic" />
+        </classes>
+    </test>
+</suite>

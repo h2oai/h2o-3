@@ -28,7 +28,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it took to parse", parse_time[[1]])
+paste("Time it took to parse", parse_time)
 
 data1.hex <- data.hex
 
@@ -44,16 +44,13 @@ s <- h2o.runif(data.hex)    # Useful when number of rows too large for R to hand
 data.train <- data.hex[s <= 0.8,]
 data.valid <- data.hex[s > 0.8,]
 
-## Chose which col as response
-## Response = IsDepDelayed
-myY = "C31"
-myX = setdiff(names(data1.hex), myY)
-gbm_10tree_time <- system.time(data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "AUTO"))
-data1.gbm
-paste("Time it took to build GBM ", gbm_10tree_time[[1]])
+## Response = Distance 
 
-gbm_50tree_time <- system.time(data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 50, max_depth = 5, distribution = "AUTO"))
-data2.gbm
-paste("Time it took to build GBM ", gbm_50tree_time[[1]])
+myY = "C19"
+myX = setdiff(names(data.hex), myY)
+## Build GLM Model and compare AUC with h2o1
+glm_lbfgs_time <- system.time(data_lbfgs.glm <- h2o.glm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, family = "gaussian", solver = "L_BFGS"))
+data_lbfgs.glm
+paste("Time it took to build GLM LBFGS ", glm_lbfgs_time)
 
 PASS_BANNER()
