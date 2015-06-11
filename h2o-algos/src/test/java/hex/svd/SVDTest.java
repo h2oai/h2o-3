@@ -246,17 +246,12 @@ public class SVDTest extends TestUtil {
   }
 
   @Test public void testUpdateGram() {
-    double[][] x = ard(ard(1, 2, 3), ard(2, 5, 6), ard(3, 6, 9));
-    double[][] y = ard(ard(10, 11, 12), ard(11, 14, 15), ard(12, 15, 18));
     double[][] res = ard(ard(1, 2, 3), ard(2, 5, 6), ard(3, 6, 9));
     double[] v = new double[] {7, 8, 9};
 
-    double[][] xyxt = ard(ard(524, 1132, 1572), ard(1132, 2446, 3396), ard(1572, 3396, 4716));  // X'X
     double[][] xvv = ard(ard(-48, -54, -60), ard(-54, -59, -66), ard(-60, -66, -72));
 
     SVD.updateIVVSum(res, v);
-    double[][] xyxt_svd = SVD.updateGram(x, y);
     Assert.assertArrayEquals(xvv, res);
-    Assert.assertArrayEquals(xyxt, xyxt_svd);
   }
 }
