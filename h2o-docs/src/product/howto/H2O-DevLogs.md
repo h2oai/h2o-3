@@ -223,16 +223,16 @@ If you are not using Hadoop and the job is still running:
 
 - To view the REST API logs from R: 
 
-1. In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs: 
+  0. In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs: 
 
-	```		
-	> h2o.startLogging()
-	Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
-	```
+		```		
+		> h2o.startLogging()
+		Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
+		```
 		
-2. Copy the displayed file path. 
+  0. Copy the displayed file path. 
 	 Enter `less` and paste the file path. 
-3. Press Enter. A time-stamped log of all REST API transactions displays. 
+  0. Press Enter. A time-stamped log of all REST API transactions displays. 
 
 ```		
 		------------------------------------------------------------
