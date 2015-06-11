@@ -46,7 +46,6 @@ The following changes are to resolve incorrect software behavior:
 
 ####New Features
 
-The following changes represent features that have been added since the previous release:
 
 ##### Algorithms
 
@@ -69,7 +68,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
 
 
 #####Algorithms 
@@ -102,7 +100,6 @@ The following changes are improvements to existing features (which includes chan
 
 ####Bug Fixes
 
-The following changes are to resolve incorrect software behavior: 
 
 #####Algorithms
 

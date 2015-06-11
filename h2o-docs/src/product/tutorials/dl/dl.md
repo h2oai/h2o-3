@@ -67,7 +67,13 @@ Now, parse the imported data:
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Data Preview** section. The last column, `C785`, must be changed to an enum. 
+0. Scroll all the way to the right to view C785. 
+0. Click the drop-down column heading menu for C785 and select `Enum`.  
+   
+   ![Selecting Enum](../images/DL_SelectEnum.png) 
+
+0. Click the **Parse** button.  
 
   ![Parsing Data](../images/DL_Parse.png)
   
@@ -111,6 +117,6 @@ Now, parse the imported data:
  - Validation metrics
  - Validation metrics confusion matrix
 
-The training metrics confusion matrix is shown below. 
+The scoring history graph, training metrics confusion matrix, and validation metrics confusion matrix are shown below. 
 
    ![Training Metrics Confusion Matrix](../images/DL_Inspect_Conf.png)

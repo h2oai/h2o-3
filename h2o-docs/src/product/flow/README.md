@@ -218,6 +218,8 @@ Select the parser type (if necessary) from the drop-down **Parser** list. For mo
 - CSV
 - SVMLight
 
+   **Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order. 
+
 If a separator or delimiter is used, select it from the **Separator** list. 
 
 Select a column header option, if applicable: 
