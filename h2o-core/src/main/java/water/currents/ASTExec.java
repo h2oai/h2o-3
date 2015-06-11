@@ -20,6 +20,7 @@ class ASTExec extends AST {
     e.xpeek(')');
     _asts = asts.toArray(new AST[asts.size()]);
   }
+  ASTExec( AST... asts ) { _asts = asts; }
 
   @Override public String str() { 
     SB sb = new SB().p('(');

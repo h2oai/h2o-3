@@ -1,6 +1,7 @@
 package water.currents;
 
 import water.Iced;
+import water.fvec.Frame;
 
 import java.util.HashMap;
 
@@ -100,6 +101,15 @@ class ASTStr extends AST {
   ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
   @Override public String str() { return _str.toString(); }
   @Override Val exec(Env env) { return _str; }
+  @Override int nargs() { return 1; }
+}
+
+/** A Frame.  Execution is just to return the constant. */
+class ASTFrame extends AST {
+  final ValFrame _fr;
+  ASTFrame(Frame fr) { _fr = new ValFrame(fr); }
+  @Override public String str() { return _fr.toString(); }
+  @Override Val exec(Env env) { return _fr; }
   @Override int nargs() { return 1; }
 }
 
