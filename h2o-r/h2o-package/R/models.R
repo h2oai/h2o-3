@@ -816,7 +816,7 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  max_metrics[match(paste0("max_",metric),max_metrics$metric),"threshold"]
+  max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
 }
 
 #

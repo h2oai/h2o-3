@@ -405,7 +405,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     """
     crit2d = self._metric_json['max_criteria_and_metric_scores']
     for e in crit2d.cell_values:
-      if e[0]=="max_"+metric:
+      if e[0]=="max "+metric:
         return e[1]
     raise ValueError("No metric "+str(metric))
 
