@@ -684,7 +684,6 @@ public abstract class GLMTask  {
     int [] _ti;
     public double _likelihood;
     final double _lambda;
-    Vec _rowFilter;
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
@@ -693,7 +692,6 @@ public abstract class GLMTask  {
       _ymu = ymu;
       _validate = validate;
       _lambda = lambda;
-      _rowFilter = rowFilter;
     }
 
     @Override public boolean handlesSparseData(){return true;}
@@ -767,7 +765,6 @@ public abstract class GLMTask  {
         _xy[_xy.length-1] += wz;
       _gram.addRow(r, w);
     }
-
 
     @Override
     public void reduce(GLMIterationTask git){

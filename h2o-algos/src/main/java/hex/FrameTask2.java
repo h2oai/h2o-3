@@ -22,7 +22,7 @@ import water.util.FrameUtils;
 public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   protected boolean _sparse;
   final Key     _jobKey;
-  final Vec     _rowFilter;
+  public final Vec     _rowFilter;
   protected final DataInfo _dinfo;
 
   public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey){
@@ -68,10 +68,9 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
           processRow(r);
     } else {
       Row row = _dinfo.newDenseRow();
-      for(int r = 0 ; r < chks[0]._len; ++r) {
+      for(int r = 0 ; r < chks[0]._len; ++r)
         if(rowFilter == null || rowFilter.at8(r) == 0)
           processRow(_dinfo.extractDenseRow(chks, r, row));
-      }
     }
     chunkDone();
   }
