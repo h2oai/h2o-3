@@ -534,6 +534,7 @@ public class DeepLearningTest extends TestUtil {
         Vec resp = frTrain.lastVec().toEnum();
         frTrain.remove(frTrain.vecs().length - 1).remove();
         frTrain.add("Response", resp);
+        DKV.put(frTrain);
         dl._train = frTrain._key;
         dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
         dl._export_weights_and_biases = true;
