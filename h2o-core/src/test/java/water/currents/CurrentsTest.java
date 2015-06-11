@@ -112,6 +112,13 @@ public class CurrentsTest extends TestUtil {
   }
 
 
+  @Test public void testApply() {
+    // Sum 
+    String tree = "(apply a.hex 2 {x . (sum x FALSE)})";
+    checkTree(tree);
+
+  }
+
   private static void checkTree(String tree) { checkTree(tree,false); }
   private static void checkTree(String tree, boolean expectThrow) {
     Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});

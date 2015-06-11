@@ -50,7 +50,7 @@ class ASTApply extends ASTPrim {
       case Val.FRM:  throw water.H2O.unimpl();
       case Val.FUN:  throw water.H2O.unimpl();
       case Val.STR:  throw water.H2O.unimpl();
-      case Val.NUM:  throw water.H2O.unimpl();
+      case Val.NUM:  ds[i] = v.getNum();  break;
       default:       throw water.H2O.unimpl();
       }
     }
