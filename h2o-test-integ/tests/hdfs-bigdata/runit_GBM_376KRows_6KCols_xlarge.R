@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 # Purpose:  This test exercises building GLM/GBM/DL  model 
-#           for 186K rows and 3.2K columns 
+#           for 376K rows and 6.9K columns 
 #----------------------------------------------------------------------
     
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -15,34 +15,31 @@ print(hdfs_name_node)
 library(RCurl)
 library(h2o)
 
-running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
+running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c28")
 
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
+h2o.ls(conn)
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
-paste("Time it took to parse", parse_time[[1]])
+parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c28/mr_output.tsv.sorted.gz"))
+paste("Time it took to parse", parse_time)
 
-colNames = {}
-for(col in names(data.hex)) {
-    colName <- if(is.na(as.numeric(col))) col else paste0("C", as.character(col))
-    colNames = append(colNames, colName)
-}
+dim(data.hex)
 
-colNames[1] <- "C1"
-names(data.hex) <- colNames
+s = h2o.runif(data.hex)
+train = data.hex[s <= 0.8,]
+valid = data.hex[s > 0.8,]
 
-myY = colNames[1] 
-myX = setdiff(names(data.hex), myY)
+#GBM model
+gbm_time <- system.time(model.gbm <- h2o.gbm(x = 3:(ncol(train)), y = 2, training_frame = train, validation_frame=valid, ntrees=10, max_depth=5)) 
+paste("Time it took to build GBM ", gbm_time)
+model.gbm
 
-# Start modeling
-# GLM
-glm_time <- system.time(data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS")) 
-data1.glm
-paste("Time it took to build GLM ", glm_time[[1]])
+pred = predict(model.gbm, valid)
+perf <- h2o.performance(model.gbm, valid)
 
 PASS_BANNER()

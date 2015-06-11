@@ -28,7 +28,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it took to parse", parse_time[[1]])
+paste("Time it took to parse", parse_time)
 
 data1.hex <- data.hex
 
@@ -48,8 +48,12 @@ data.valid <- data.hex[s > 0.8,]
 ## Response = IsDepDelayed
 myY = "C31"
 myX = setdiff(names(data1.hex), myY)
-gbm_10tree_time <- system.time(data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "multinomial"))
+gbm_10tree_time <- system.time(data1.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5, distribution = "AUTO"))
 data1.gbm
-paste("Time it took to build GBM ", gbm_10tree_time[[1]])
+paste("Time it took to build GBM ", gbm_10tree_time)
+
+gbm_50tree_time <- system.time(data2.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 50, max_depth = 5, distribution = "AUTO"))
+data2.gbm
+paste("Time it took to build GBM ", gbm_50tree_time[[1]])
 
 PASS_BANNER()

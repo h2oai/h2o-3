@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 # Purpose:  This test exercises building GLM/GBM/DL  model 
-#           for 376K rows and 6.9K columns 
+#           for 186K rows and 3.2K columns 
 #----------------------------------------------------------------------
     
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -15,31 +15,34 @@ print(hdfs_name_node)
 library(RCurl)
 library(h2o)
 
-running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c28")
+running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
 
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
-h2o.ls(conn)
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c28/mr_output.tsv.sorted.gz"))
-paste("Time it took to parse", parse_time[[1]])
+parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
+paste("Time it took to parse", parse_time)
 
-dim(data.hex)
+colNames = {}
+for(col in names(data.hex)) {
+    colName <- if(is.na(as.numeric(col))) col else paste0("C", as.character(col))
+    colNames = append(colNames, colName)
+}
 
-s = h2o.runif(data.hex)
-train = data.hex[s <= 0.8,]
-valid = data.hex[s > 0.8,]
+colNames[1] <- "C1"
+names(data.hex) <- colNames
 
-#GLM Model
-glm_time <- system.time(model.glm <- h2o.glm(x = 3:(ncol(train)), y = 6, training_frame = train, validation_frame=valid, family = "binomial", solver = "L_BFGS"))
-paste("Time it took to build GLM ", glm_time[[1]])
-model.glm
+myY = colNames[1] 
+myX = setdiff(names(data.hex), myY)
 
-pred = predict(model.glm, valid)
-perf <- h2o.performance(model.glm, valid)
+# Start modeling
+#Random Forest
+rf_time <- system.time(data1.rf <- h2o.randomForest(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5))
+paste("Time it took to build RF ", rf_time)
+data1.rf
 
 PASS_BANNER()
