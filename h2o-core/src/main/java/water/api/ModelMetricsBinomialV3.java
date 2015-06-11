@@ -52,7 +52,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         thresholds[i] = Double.toString(auc._ths[i]);
       AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
       String[] colHeaders = new String[crits.length+2];
-      String[] colHeadersMax = new String[crits.length+2];
+      String[] colHeadersMax = new String[7];
       String[] types      = new String[crits.length+2];
       String[] formats    = new String[crits.length+2];
       colHeaders[0] = "Threshold";
@@ -60,7 +60,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       formats[0] = "%f";
       int i;
       for( i=0; i<crits.length; i++ ) {
-        colHeadersMax[i] = "max " + crits[i].toString();
+        if (colHeadersMax.length > i) colHeadersMax[i] = "max " + crits[i].toString();
         colHeaders[i+1] = crits[i].toString();
         types     [i+1] = crits[i]._isInt ? "long" : "double";
         formats   [i+1] = crits[i]._isInt ? "%d"   : "%f"    ;
@@ -84,7 +84,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
               new String[]{"double",   "double","long"},
               new String[]{"%f",       "%f",    "%d"},
               "Metric" );
-      for( i=0; i<crits.length; i++ ) {
+      for( i=0; i<colHeadersMax.length; i++ ) {
         int idx = crits[i].max_criterion_idx(auc);
         maxMetrics.set(i,0,idx==-1 ? Double.NaN : auc._ths[idx]);
         maxMetrics.set(i,1,idx==-1 ? Double.NaN : crits[i].exec(auc,idx));
