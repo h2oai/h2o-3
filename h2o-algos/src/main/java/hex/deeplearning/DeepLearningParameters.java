@@ -394,7 +394,7 @@ public class DeepLearningParameters extends Model.Parameters {
 
   public boolean _export_weights_and_biases = false;
 
-  public boolean _elastic_averaging = true;
+  public boolean _elastic_averaging = false;
   public double _elastic_averaging_moving_rate = 0.9;
   public double _elastic_averaging_regularization = 1e-3;
 
