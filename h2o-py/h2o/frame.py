@@ -1098,6 +1098,94 @@ class H2OFrame:
     h2o.removeFrameShallow(tmp_key)
     return H2OFrame(vecs=vecs)
 
+  def transpose(self):
+    """
+    :return: The transpose of the H2OFrame.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (t %{}))".format(tmp_key,key)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def signif(self, digits=6):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of significant digits.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (signif %{} #{}))".format(tmp_key,key,digits)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def round(self, digits=0):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of decimal digits.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (round %{} #{}))".format(tmp_key,key,digits)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def asnumeric(self):
+    """
+    :return: A lazy Expr representing this vec converted to numbers
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (as.numeric %{}))".format(tmp_key,key)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
 class H2OVec:
   """
   A single column of data that is uniformly typed and possibly lazily computed.
@@ -1432,6 +1520,12 @@ class H2OVec:
     :return: A lazy Expr representing the truth of whether or not this vec is a factor.
     """
     return Expr("is.factor", self._expr, None, length=1).eager()
+
+  def ascharacter(self):
+    """
+    :return: A lazy Expr representing this vec converted to characters
+    """
+    return H2OVec(self._name, Expr("as.character", self._expr, None))
 
   def isna(self):
     """

@@ -753,6 +753,7 @@ def gamma(data)   : return _simple_un_math_op("gamma", data)
 def lgamma(data)  : return _simple_un_math_op("lgamma", data)
 def digamma(data) : return _simple_un_math_op("digamma", data)
 def trigamma(data): return _simple_un_math_op("trigamma", data)
+def all(data)     : return _simple_un_math_op("all", data)
 
 def _simple_un_math_op(op, data):
   """
@@ -774,6 +775,11 @@ def sd(data)    : return data.sd()
 def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
+
+def asnumeric(data)       : return data.asnumeric()
+def transpose(data)       : return data.transpose()
+def signif(data, digits=6): return data.signif(digits=digits)
+def round(data, digits=0) : return data.round(digits=digits)
 
 
 class H2ODisplay:
