@@ -469,7 +469,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});
-            new GLMIterationTask(GLM.this._key,dinfo,0,_parms,false,new double[]{_response.mean() - _offset.mean()},0,_rowFilter, new NullModelIteration(dinfo)).asyncExec(dinfo._adaptedFrame);
+            new GLMIterationTask(GLM.this._key,dinfo,0,_parms,false,new double[]{_parms.link(_response.mean()) - _offset.mean()},0,_rowFilter, new NullModelIteration(dinfo)).asyncExec(dinfo._adaptedFrame);
           } else
             computeGradients();
         }
