@@ -382,10 +382,8 @@ class H2OBinomialModelMetrics(MetricsBase):
       tps = row[11]
       p = tps + fns
       n = tns + fps
-      c0  = float("nan") if isinstance(n, str) or isinstance(fps, str) else n - fps
-      c1  = float("nan") if isinstance(p, str) or isinstance(tps, str) else p - tps
-      fps = float("nan") if isinstance(fps,str) else fps
-      tps = float("nan") if isinstance(tps,str) else tps
+      c0  = n - fps
+      c1  = p - tps
       if t in metrics_thresholds:
         m = metrics_list[metrics_thresholds.index(t)]
         table_header = "Confusion Matrix (Act/Pred) for max " + m + " @ threshold = " + str(actual_thresholds[idx])

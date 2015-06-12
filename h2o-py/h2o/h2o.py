@@ -433,7 +433,7 @@ def rapids(expr):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
+  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
   if result['error'] is not None:
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
@@ -780,6 +780,7 @@ def asnumeric(data)       : return data.asnumeric()
 def transpose(data)       : return data.transpose()
 def signif(data, digits=6): return data.signif(digits=digits)
 def round(data, digits=0) : return data.round(digits=digits)
+def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
 
 
 class H2ODisplay:
