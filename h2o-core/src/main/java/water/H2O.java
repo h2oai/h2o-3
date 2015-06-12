@@ -1190,6 +1190,7 @@ final public class H2O {
       String s = (String)p;
       if( s.startsWith("ai.h2o.") ) {
         args2.add("-" + s.substring(7));
+        // hack: Junits expect properties, throw out dummy prop for ga_opt_out
         if (!s.substring(7).equals("ga_opt_out"))
           args2.add(System.getProperty(s));
       }
