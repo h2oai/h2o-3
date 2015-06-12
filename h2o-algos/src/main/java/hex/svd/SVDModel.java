@@ -40,6 +40,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // Number of good rows in training frame (not skipped)
     public long _nobs;
 
+    // Total column variance for expanded and transformed data
+    public double _total_variance;
+
     // Categorical offset vector
     public int[] _catOffsets;
 

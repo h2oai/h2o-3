@@ -118,6 +118,33 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return ivv_sum;
   }
 
+  // Compute sum of column variance with transformed numeric cols, expanded categorical indicator cols
+  public double totalVar(DataInfo dinfo) { return totalVar(dinfo, null, false); }
+  public double totalVar(DataInfo dinfo, double[][] gram, boolean includeCats) {
+    double total = 0;
+    double nrow = dinfo._adaptedFrame.numRows();
+
+    if(includeCats) {
+      for(int i = 0; i < dinfo._cats; i++) {
+        // Let n = number of rows, c = count of a categorical level
+        // The indicator column for that level will have variance
+        // ((1 - c/n)^2 * c + (0 - c/n)^2 * (n-c))/(n-1) = (c * (n-c))/(n * (n-1))
+        for(int j = 0; j < dinfo._catOffsets[i+1]; j++) {
+          double c = gram[j][j] * nrow;   // Since diagonal of gram is c/n
+          total += c * (nrow - c) / (nrow * (nrow - 1));
+        }
+      }
+    }
+
+    if(_parms._transform == DataInfo.TransformType.DESCALE || _parms._transform == DataInfo.TransformType.STANDARDIZE)
+      total += dinfo._nums;   // variance of every column is 1
+    else {
+      for(int i = dinfo.numStart(); i < gram.length; i++)
+        total += gram[i][i] * nrow / (nrow-1);    // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
+    }
+    return total;
+  }
+
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
 
     @Override protected void compute2() {
@@ -158,6 +185,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gram = gtsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
         assert gram.length == _ncolExp;
         model._output._nobs = gtsk._nobs;
+        model._output._total_variance = totalVar(dinfo, gram, true);
         model._output._v = new double[_parms._nv][gram.length];
         model.update(self());
         update(1);

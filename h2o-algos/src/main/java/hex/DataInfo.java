@@ -402,7 +402,6 @@ public class DataInfo extends Keyed {
       numVals[i] = val;
     }
 
-
     public final double innerProduct(double [] vec) {
       double res = 0;
       int numStart = numStart();
