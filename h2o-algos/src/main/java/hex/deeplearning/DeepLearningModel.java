@@ -481,7 +481,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     String msg = "Training at " + model_info().get_processed_total() * 1000 / run_time + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
-    new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
+    if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
 
     boolean keep_running;
     try {
