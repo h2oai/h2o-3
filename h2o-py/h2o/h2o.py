@@ -780,6 +780,7 @@ def asnumeric(data)       : return data.asnumeric()
 def transpose(data)       : return data.transpose()
 def signif(data, digits=6): return data.signif(digits=digits)
 def round(data, digits=0) : return data.round(digits=digits)
+def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
 
 
 class H2ODisplay:
