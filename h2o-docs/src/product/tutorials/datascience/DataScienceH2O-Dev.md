@@ -394,7 +394,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Mtries**: Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  
+- **Mtries**: Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).   
 
 - **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0. 
 
