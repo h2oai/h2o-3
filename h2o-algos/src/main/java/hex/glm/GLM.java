@@ -1264,7 +1264,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       @Override
       public void callback(final GLMLineSearchTask lst) {
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
-        assert Double.isNaN(_expectedLikelihood) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
+        assert (Double.isNaN(_expectedLikelihood) || Double.isInfinite(_expectedLikelihood)) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
