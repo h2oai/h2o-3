@@ -469,12 +469,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @return true if model building is ongoing
    */
   boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
+    final long now = System.currentTimeMillis();
+    epoch_counter = (float)model_info().get_processed_total()/training_rows;
+    final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
+    run_time += time_last_iter_millis;
+
+    // First update Job progress based on the number of trained samples for the last iteration
+    // and update the progress message
+    Job.Progress prog = DKV.getGet(progressKey);
+    float progress = prog == null ? 0 : prog.progress();
+    String msg = "Training at " + model_info().get_processed_total() * 1000 / run_time + " samples/s..."
+            + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
+    ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
+    if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
+
     boolean keep_running;
     try {
-      final long now = System.currentTimeMillis();
-      epoch_counter = (float)model_info().get_processed_total()/training_rows;
-      final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
-
       // Auto-tuning
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
       // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
@@ -491,7 +501,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
       }
 
-      run_time += time_last_iter_millis;
       _timeLastScoreEnter = now;
       keep_running = (epoch_counter < model_info().get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;

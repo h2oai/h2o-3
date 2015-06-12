@@ -571,6 +571,7 @@ public class DeepLearningTest extends TestUtil {
         } finally {
           if (job != null) job.remove();
         }
+        if (frTrain != null) frTrain.remove();
       }
       for (int i = 0; i < N; ++i) {
         Log.info(models[i]._output._training_metrics.cm().table().toString());
@@ -578,7 +579,6 @@ public class DeepLearningTest extends TestUtil {
       }
 
     }finally{
-      if (frTrain != null) frTrain.remove();
       for (int i=0; i<N; ++i)
         if (models[i] != null)
           models[i].delete();
