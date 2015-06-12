@@ -2,8 +2,7 @@ package water.api;
 
 import water.Iced;
 
-public class RapidsV3 extends Schema<Iced, RapidsV3> {
-
+public class RapidsV99 extends Schema<Iced, RapidsV99> {
   static final int ARY   =0;
   static final int NUM   =1;
   static final int STR   =2;
