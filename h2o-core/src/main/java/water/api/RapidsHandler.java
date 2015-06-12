@@ -13,7 +13,7 @@ import water.util.PrettyPrint;
 class RapidsHandler extends Handler {
   private static final Object _lock = new Object();
 
-  public RapidsV3 isEvaluated(int version, RapidsV3 rapids) {
+  public RapidsV99 isEvaluated(int version, RapidsV99 rapids) {
     if (rapids == null) return null;
     if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
     boolean isEval = false;
@@ -25,7 +25,7 @@ class RapidsHandler extends Handler {
   }
 
 
-  public RapidsV3 exec(int version, RapidsV3 rapids) {
+  public RapidsV99 exec(int version, RapidsV99 rapids) {
     synchronized( _lock ) {
       if( rapids == null ) return null;
       Throwable e = null;
@@ -61,25 +61,25 @@ class RapidsHandler extends Handler {
               if (vec.isEnum()) {
                 rapids.string = vec.domain()[(int) vec.at(0)];
                 sb.append(rapids.string);
-                rapids.result_type = RapidsV3.ARYSTR;
+                rapids.result_type = RapidsV99.ARYSTR;
               } else if (vec.isString()) {
                 rapids.string = vec.atStr(new ValueString(), 0).toString();
                 sb.append(rapids.string);
-                rapids.result_type = RapidsV3.ARYSTR;
+                rapids.result_type = RapidsV99.ARYSTR;
               } else if (vec.isUUID()) {
                 rapids.string = PrettyPrint.UUID(vec.at16l(0), vec.at16h(0));
                 sb.append(rapids.string);
-                rapids.result_type = RapidsV3.ARYSTR;
+                rapids.result_type = RapidsV99.ARYSTR;
               } else {
                 rapids.scalar = vec.at(0);
                 sb.append(Double.toString(rapids.scalar));
                 rapids.string = null;
-                rapids.result_type = RapidsV3.ARYNUM;
+                rapids.result_type = RapidsV99.ARYNUM;
               }
 //            fr.delete();        // Auto-demoted to scalar: source frame dies here    .... nope, up to the client to handle lifetimes
 
             } else {
-              rapids.result_type = RapidsV3.ARY;
+              rapids.result_type = RapidsV99.ARY;
               String[][] head = rapids.head = new String[Math.min(200, fr.numCols())][(int) Math.min(100, fr.numRows())];
               for (int r = 0; r < head[0].length; ++r) {
                 for (int c = 0; c < head.length; ++c) {
@@ -101,11 +101,11 @@ class RapidsHandler extends Handler {
             rapids.scalar = env.popDbl();
             sb.append(Double.toString(rapids.scalar));
             rapids.string = null;
-            rapids.result_type = RapidsV3.NUM;
+            rapids.result_type = RapidsV99.NUM;
           } else if (env.isStr()) {
             rapids.string = env.popStr();
             sb.append(rapids.string);
-            rapids.result_type = RapidsV3.STR;
+            rapids.result_type = RapidsV99.STR;
           }
         }
         rapids.result = sb.toString();

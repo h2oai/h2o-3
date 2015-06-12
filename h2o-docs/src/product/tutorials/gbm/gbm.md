@@ -75,11 +75,18 @@ Now, parse the imported data:
 
 The output for GBM includes the following: 
 
-- Output (model category, validation metrics if applicable, and initf)
+- Model parameters (hidden)
+- A graph of the scoring history (training MSE vs number of trees)
+- A graph of the variable importances
+- Output (model category, validation metrics, initf)
 - Model summary (number of trees, min. depth, max. depth, mean depth, min. leaves, max. leaves, mean leaves)
-- Scoring history (number of the trees with training MSE for each tree)
-- Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, and R2)
-- Variable importances (variables, relative importance, scaled importance, and percentage)
+- Scoring history in tabular format
+- Training metrics (model name, model checksum name, frame name, description, model category, duration in ms, scoring time, predictions, MSE, R2)
+- Variable importances in tabular format
+- POJO Preview
+
+  ![GBM Model Results](../images/GBM_ModelResults.png)
+
 
 For classification models, the MSE is based on the classification error within the tree. For regression models, MSE is calculated from the squared deviances, as it is in standard regressions.
 

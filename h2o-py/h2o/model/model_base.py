@@ -380,7 +380,7 @@ class ModelBase(object):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     if tm is None: return None
     tm = tm._metric_json
-    return tm.aic()
+    return tm["AIC"]
 
   def giniCoef(self, train=False, valid=False):
     """

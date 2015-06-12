@@ -1579,6 +1579,41 @@ class H2OVec:
       seed = random.randint(123456789, 999999999)  # generate a seed
     return H2OVec("", Expr("h2o.runif", self._expr, Expr(seed)))
 
+  def match(self, table, nomatch=0):
+    """
+    Makes a vector of the positions of (first) matches of its first argument in its second.
+    :return: bit H2OVec
+    """
+    # make table to pass to rapids
+    rtable = ""
+    if hasattr(table, '__iter__'): # make slist or list
+      if all([isinstance(t, (int,float)) for t in table]): # make list
+        rtable += "(list"
+        for t in table: rtable += " #"+str(t)
+        rtable += ")"
+      elif all([isinstance(t, str) for t in table]): # make slist
+        rtable += "(slist"
+        for t in table: rtable += " \""+str(t)+"\""
+        rtable += ")"
+    elif isinstance(table, (int, float)): # make #
+      rtable += "#"+str(table)
+    elif isinstance(table, str): # make str
+      rtable += "\""+table+"\""
+    else:
+      raise ValueError("`table` must be a scaler (str, int, float), or a iterable of scalers of the same type.")
+
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (match %{} {} #{} ()))".format(tmp_key,self.key(),rtable,nomatch)
+    h2o.rapids(expr)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+    return H2OFrame(vecs=vecs)
+
   # Error if lengths are not compatible.  Return self for flow-coding
   def _len_check(self,x):
     if not x: return self

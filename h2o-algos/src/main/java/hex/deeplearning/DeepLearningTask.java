@@ -71,6 +71,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
     } else {
       _localmodel = _sharedmodel;
+      _sharedmodel = null;
     }
     _localmodel.set_processed_local(0);
   }

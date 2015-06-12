@@ -22,7 +22,9 @@ To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resource
 Before creating a model, import data into H2O:
 
 0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
+  
   ![Assist Me button](../images/AssistButton.png)
+
 0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the drop. 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
   ![Importing Files](../images/KM_ImportFile.png)
@@ -83,9 +85,10 @@ The output for K-Means includes the following:
 - Model summary (number of clusters, number of categorical columns, number of iterations, avg. within sum of squares, avg. sum of squares, avg. between sum of squares)
 - Scoring history (number of iterations, avg. change of standardized centroids, avg. within cluster sum of squares)
 - Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, avg. within sum of squares, avg. sum of squares, avg. between sum of squares) 
+- Training metrics (centroid statistics)
 - Cluster means (centroids by column) 
+- Preview POJO
 
-![K-Means Model Results](../images/Kmeans_ModelResults)
 
 
 

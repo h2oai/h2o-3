@@ -1,0 +1,612 @@
+x,,,,x,,,,,,x,,,,,,,airquality.csv
+x,,,,,x,,,,,x,,,,,,,airquality.csv
+x,,,,,,x,,,,x,,,,,,,airquality.csv
+x,,,,x,,,,,,,,,,,,,airquality.csv
+x,,,,,x,,,,,,,,,,,,airquality.csv
+x,,,,,,x,,,,,,,,,,,airquality.csv
+,,x,,x,,,,,,x,,,,,,,insurance.csv
+,,x,,,x,,,,,x,,,,,,,insurance.csv
+,,x,,,,x,,,,x,,,,,,,insurance.csv
+,,x,,x,,,,,,,,,,,,,insurance.csv
+,,x,,,x,,,,,,,,,,,,insurance.csv
+,,x,,,,x,,,,,,,,,,,insurance.csv
+,,,x,x,,,,,,x,,,,,,,
+,,,x,,x,,,,,x,,,,,,,
+,,,x,,,x,,,,x,,,,,,,
+,,,x,x,,,,,,,,,,,,,
+,,,x,,x,,,,,,,,,,,,
+,,,x,,,x,,,,,,,,,,,
+x,,,,x,,,,,,x,,,,,,,
+x,,,,,x,,,,,x,,,,,,,
+x,,,,,,x,,,,x,,,,,,,
+x,,,,x,,,,,,,,,,,,,
+x,,,,,x,,,,,,,,,,,,
+x,,,,,,x,,,,,,,,,,,
+,x,,,x,,,,,,x,,,,,,,
+,x,,,,x,,,,,x,,,,,,,
+,x,,,,,x,,,,x,,,,,,,
+,x,,,x,,,,,,,,,,,,,
+,x,,,,x,,,,,,,,,,,,
+,x,,,,,x,,,,,,,,,,,
+,,x,,x,,,,,,x,,,,,,,
+,,x,,,x,,,,,x,,,,,,,
+,,x,,,,x,,,,x,,,,,,,
+,,x,,x,,,,,,,,,,,,,
+,,x,,,x,,,,,,,,,,,,
+,,x,,,,x,,,,,,,,,,,
+,x,,,x,,,,,,x,,,,,,,iris.csv
+,x,,,,x,,,,,x,,,,,,,iris.csv
+,x,,,,,x,,,,x,,,,,,,iris.csv
+,x,,,x,,,,,,,,,,,,,iris.csv
+,x,,,,x,,,,,,,,,,,,iris.csv
+,x,,,,,x,,,,,,,,,,,iris.csv
+,x,,,x,,,,,,x,,,,,,,airquality.csv
+,x,,,,x,,,,,x,,,,,,,airquality.csv
+,x,,,,,x,,,,x,,,,,,,airquality.csv
+,x,,,x,,,,,,,,,,,,,airquality.csv
+,x,,,,x,,,,,,,,,,,,airquality.csv
+,x,,,,,x,,,,,,,,,,,airquality.csv
+,x,,,x,,,,,,x,,,,,,,newsgroup_balanced
+,x,,,,x,,,,,x,,,,,,,newsgroup_balanced
+,x,,,,,x,,,,x,,,,,,,newsgroup_balanced
+,x,,,x,,,,,,,,,,,,,newsgroup_balanced
+,x,,,,x,,,,,,,,,,,,newsgroup_balanced
+,x,,,,,x,,,,,,,,,,,newsgroup_balanced
+,x,,,x,,,,,,x,,,,,,,newsgroup_unbalanced
+,x,,,,x,,,,,x,,,,,,,newsgroup_unbalanced
+,x,,,,,x,,,,x,,,,,,,newsgroup_unbalanced
+,x,,,x,,,,,,,,,,,,,newsgroup_unbalanced
+,x,,,,x,,,,,,,,,,,,newsgroup_unbalanced
+,x,,,,,x,,,,,,,,,,,newsgroup_unbalanced
+x,,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
+x,,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
+x,,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
+x,,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
+x,,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
+x,,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
+,,x,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,insurance.csv
+,,x,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,insurance.csv
+,,x,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,insurance.csv
+,,x,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,insurance.csv
+,,x,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,insurance.csv
+,,x,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,insurance.csv
+,,,x,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,iris.csv
+,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,iris.csv
+,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,iris.csv
+,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,iris.csv
+,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,iris.csv
+,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,iris.csv
+,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
+,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
+,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
+,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
+,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
+,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
+,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,,,x,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,,,x,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,x,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,x,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
+,x,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
+,,,x,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
+,,,x,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
+,,,x,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
+x,,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
+x,,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
+x,,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
+x,,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
+x,,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
+x,,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
+,,x,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,insurance.csv
+,,x,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,insurance.csv
+,,x,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,insurance.csv
+,,x,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,insurance.csv
+,,x,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,insurance.csv
+,,x,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,insurance.csv
+,,,x,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
+,,,x,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
+,,,x,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,iris.csv
+,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,iris.csv
+,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,iris.csv
+,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,iris.csv
+,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,iris.csv
+,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,iris.csv
+,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
+,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
+,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
+,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
+,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
+,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
+,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,,,x,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,,,x,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,,,x,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,,,x,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,,,x,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
+,,,x,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
+,,,x,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
+x,,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
+x,,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
+,,x,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
+,,x,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
+,x,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
+x,,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
+x,,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
+x,,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
+x,,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
+x,,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
+x,,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,,x,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,insurance.csv
+,,x,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,insurance.csv
+,,x,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,insurance.csv
+,,x,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,insurance.csv
+,,x,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,insurance.csv
+,,x,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,insurance.csv
+,,,x,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+x,,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+x,,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+x,,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,iris.csv
+,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,iris.csv
+,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,iris.csv
+,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,iris.csv
+,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,iris.csv
+,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,iris.csv
+,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
+,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,,,x,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup
+x,,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup
+x,,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup
+x,,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup
+x,,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup
+x,,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup
+,x,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,,,x,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,,x,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,,x,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+x,,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+x,,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+x,,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+x,,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
+,,x,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,,x,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
+,x,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
+x,,,,x,,,0,,Y,x,Y,LB,UB,,,,airquality.csv
+x,,,,,x,,0,,Y,x,Y,LB,UB,,,,airquality.csv
+x,,,,,,x,0,,Y,x,Y,LB,UB,,,,airquality.csv
+x,,,,x,,,0,,Y,,Y,LB,UB,,,,airquality.csv
+x,,,,,x,,0,,Y,,Y,LB,UB,,,,airquality.csv
+x,,,,,,x,0,,Y,,Y,LB,UB,,,,airquality.csv
+,,x,,x,,,0,,Y,x,Y,LB,UB,,,,insurance.csv
+,,x,,,x,,0,,Y,x,Y,LB,UB,,,,insurance.csv
+,,x,,,,x,0,,Y,x,Y,LB,UB,,,,insurance.csv
+,,x,,x,,,0,,Y,,Y,LB,UB,,,,insurance.csv
+,,x,,,x,,0,,Y,,Y,LB,UB,,,,insurance.csv
+,,x,,,,x,0,,Y,,Y,LB,UB,,,,insurance.csv
+,,,x,x,,,0,,Y,x,Y,LB,UB,,,,
+,,,x,,x,,0,,Y,x,Y,LB,UB,,,,
+,,,x,,,x,0,,Y,x,Y,LB,UB,,,,
+,,,x,x,,,0,,Y,,Y,LB,UB,,,,
+,,,x,,x,,0,,Y,,Y,LB,UB,,,,
+,,,x,,,x,0,,Y,,Y,LB,UB,,,,
+x,,,,x,,,0,,Y,x,Y,LB,UB,,,,
+x,,,,,x,,0,,Y,x,Y,LB,UB,,,,
+x,,,,,,x,0,,Y,x,Y,LB,UB,,,,
+x,,,,x,,,0,,Y,,Y,LB,UB,,,,
+x,,,,,x,,0,,Y,,Y,LB,UB,,,,
+x,,,,,,x,0,,Y,,Y,LB,UB,,,,
+,x,,,x,,,0,,Y,x,Y,LB,UB,,,,
+,x,,,,x,,0,,Y,x,Y,LB,UB,,,,
+,x,,,,,x,0,,Y,x,Y,LB,UB,,,,
+,x,,,x,,,0,,Y,,Y,LB,UB,,,,
+,x,,,,x,,0,,Y,,Y,LB,UB,,,,
+,x,,,,,x,0,,Y,,Y,LB,UB,,,,
+,,x,,x,,,0,,Y,x,Y,LB,UB,,,,
+,,x,,,x,,0,,Y,x,Y,LB,UB,,,,
+,,x,,,,x,0,,Y,x,Y,LB,UB,,,,
+,,x,,x,,,0,,Y,,Y,LB,UB,,,,
+,,x,,,x,,0,,Y,,Y,LB,UB,,,,
+,,x,,,,x,0,,Y,,Y,LB,UB,,,,
+,x,,,x,,,0,,Y,x,Y,LB,UB,,,,iris.csv
+,x,,,,x,,0,,Y,x,Y,LB,UB,,,,iris.csv
+,x,,,,,x,0,,Y,x,Y,LB,UB,,,,iris.csv
+,x,,,x,,,0,,Y,,Y,LB,UB,,,,iris.csv
+,x,,,,x,,0,,Y,,Y,LB,UB,,,,iris.csv
+,x,,,,,x,0,,Y,,Y,LB,UB,,,,iris.csv
+,x,,,x,,,0,,Y,x,Y,LB,UB,,,,airquality.csv
+,x,,,,x,,0,,Y,x,Y,LB,UB,,,,airquality.csv
+,x,,,,,x,0,,Y,x,Y,LB,UB,,,,airquality.csv
+,x,,,x,,,0,,Y,,Y,LB,UB,,,,airquality.csv
+,x,,,,x,,0,,Y,,Y,LB,UB,,,,airquality.csv
+,x,,,,,x,0,,Y,,Y,LB,UB,,,,airquality.csv
+,x,,,x,,,0,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,x,,0,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,,x,0,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,x,,,0,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,x,,,0,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,x,,0,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,,x,0,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,,,x,x,,,0.5,,Y,x,Y,LB,UB,,,,
+,,,x,,x,,0.5,,Y,x,Y,LB,UB,,,,
+,,,x,,,x,0.5,,Y,x,Y,LB,UB,,,,
+,,,x,x,,,0.5,,Y,,Y,LB,UB,,,,
+,,,x,,x,,0.5,,Y,,Y,LB,UB,,,,
+,,,x,,,x,0.5,,Y,,Y,LB,UB,,,,
+x,,,,x,,,0.5,,Y,x,Y,LB,UB,,,,
+x,,,,,x,,0.5,,Y,x,Y,LB,UB,,,,
+x,,,,,,x,0.5,,Y,x,Y,LB,UB,,,,
+x,,,,x,,,0.5,,Y,,Y,LB,UB,,,,
+x,,,,,x,,0.5,,Y,,Y,LB,UB,,,,
+x,,,,,,x,0.5,,Y,,Y,LB,UB,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB,UB,,,,
+,x,,,,x,,0.5,,Y,x,Y,LB,UB,,,,
+,x,,,,,x,0.5,,Y,x,Y,LB,UB,,,,
+,x,,,x,,,0.5,,Y,,Y,LB,UB,,,,
+,x,,,,x,,0.5,,Y,,Y,LB,UB,,,,
+,x,,,,,x,0.5,,Y,,Y,LB,UB,,,,
+,,x,,x,,,0.5,,Y,x,Y,LB,UB,,,,
+,,x,,,x,,0.5,,Y,x,Y,LB,UB,,,,
+,,x,,,,x,0.5,,Y,x,Y,LB,UB,,,,
+,,x,,x,,,0.5,,Y,,Y,LB,UB,,,,
+,,x,,,x,,0.5,,Y,,Y,LB,UB,,,,
+,,x,,,,x,0.5,,Y,,Y,LB,UB,,,,
+,x,,,x,,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,x,,0.5,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,,x,0.5,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,x,,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,x,,,0.5,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,x,,0.5,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,,x,0.5,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,,,x,x,,,1,,Y,x,Y,LB,UB,,,,
+,,,x,,x,,1,,Y,x,Y,LB,UB,,,,
+,,,x,,,x,1,,Y,x,Y,LB,UB,,,,
+,,,x,x,,,1,,Y,,Y,LB,UB,,,,
+,,,x,,x,,1,,Y,,Y,LB,UB,,,,
+,,,x,,,x,1,,Y,,Y,LB,UB,,,,
+x,,,,x,,,1,,Y,x,Y,LB,UB,,,,
+x,,,,,x,,1,,Y,x,Y,LB,UB,,,,
+x,,,,,,x,1,,Y,x,Y,LB,UB,,,,
+x,,,,x,,,1,,Y,,Y,LB,UB,,,,
+x,,,,,x,,1,,Y,,Y,LB,UB,,,,
+x,,,,,,x,1,,Y,,Y,LB,UB,,,,
+,x,,,x,,,1,,Y,x,Y,LB,UB,,,,
+,x,,,,x,,1,,Y,x,Y,LB,UB,,,,
+,x,,,,,x,1,,Y,x,Y,LB,UB,,,,
+,x,,,x,,,1,,Y,,Y,LB,UB,,,,
+,x,,,,x,,1,,Y,,Y,LB,UB,,,,
+,x,,,,,x,1,,Y,,Y,LB,UB,,,,
+,,x,,x,,,1,,Y,x,Y,LB,UB,,,,
+,,x,,,x,,1,,Y,x,Y,LB,UB,,,,
+,,x,,,,x,1,,Y,x,Y,LB,UB,,,,
+,,x,,x,,,1,,Y,,Y,LB,UB,,,,
+,,x,,,x,,1,,Y,,Y,LB,UB,,,,
+,,x,,,,x,1,,Y,,Y,LB,UB,,,,
+,x,,,x,,,1,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,x,Y,LB,UB,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,x,,1,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,,,x,1,,Y,,Y,LB,UB,,,,newsgroup_balanced
+,x,,,x,,,1,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,x,,,1,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,x,,1,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,,,x,1,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
+,x,,,x,,,0,,Y,x,Y,,,,x,,newsgroup_set3
+,x,,,,x,,0,,Y,x,Y,,,,x,,newsgroup_set3
+,x,,,,,x,0,,Y,x,Y,,,,x,,newsgroup_set3
+,x,,,x,,,0,,Y,x,Y,,,,,x,newsgroup_set3
+,x,,,,x,,0,,Y,x,Y,,,,,x,newsgroup_set3
+,x,,,,,x,0,,Y,x,Y,,,,,x,newsgroup_balanced
