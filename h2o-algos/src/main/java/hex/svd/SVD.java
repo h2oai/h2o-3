@@ -170,7 +170,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] ivv_sum = new double[gram.length][gram.length];
         for(int i = 0; i < gram.length; i++) ivv_sum[i][i] = 1;
 
-
         // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
         if(!_parms._only_v) {
           model._output._d = new double[_parms._nv];
