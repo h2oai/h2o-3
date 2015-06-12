@@ -434,14 +434,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       @Override
       public void callback(GLMIterationTask glmIterationTask) {
         if(glmIterationTask._likelihood > _likelihood){ // line search
-          InitTsk.this.addToPendingCount(1);
-          new GLMTask.GLMIterationTask(GLM.this._key,_nullDinfo,0,_parms,false,new double[]{.5*(_ymu + glmIterationTask._beta[0])},0,_rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          if(++_iter  < 50) {
+            InitTsk.this.addToPendingCount(1);
+            new GLMTask.GLMIterationTask(GLM.this._key, _nullDinfo, 0, _parms, false, new double[]{.5 * (_ymu + glmIterationTask._beta[0])}, 0, _rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          } else {
+            _ymuLink = _ymu;
+            _ymu = _parms.linkInv(_ymuLink);
+            computeGradients();
+          }
           return;
         }
         _likelihood = glmIterationTask._likelihood;
         _ymu = glmIterationTask._beta[0];
         double ymu = glmIterationTask._xy[0]/glmIterationTask._gram.get(0,0);
-        if(++_iter < 100 && Math.abs(ymu - glmIterationTask._beta[0]) > _parms._beta_epsilon) {
+        if(++_iter < 50 && Math.abs(ymu - glmIterationTask._beta[0]) > _parms._beta_epsilon) {
           InitTsk.this.addToPendingCount(1);
           new GLMTask.GLMIterationTask(GLM.this._key,_nullDinfo,0,_parms,false,new double[]{ymu},0,_rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
         } else {
