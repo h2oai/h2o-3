@@ -25,7 +25,7 @@ public class MRUtils {
     if (fr == null) return null;
     final float fraction = rows > 0 ? (float)rows / fr.numRows() : 1.f;
     if (fraction >= 1.f) return fr;
-    Key newKey = fr._key != null ? Key.make(fr._key.toString() + ".sample." + PrettyPrint.formatPct(fraction).replace(" ","")) : null;
+    Key newKey = fr._key != null ? Key.make(fr._key.toString() + (fr._key.toString().contains("temporary") ? ".sample." : ".temporary.sample.") + PrettyPrint.formatPct(fraction).replace(" ","")) : null;
 
     Frame r = new MRTask() {
       @Override

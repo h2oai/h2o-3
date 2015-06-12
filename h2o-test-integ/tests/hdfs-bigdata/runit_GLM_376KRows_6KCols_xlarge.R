@@ -26,7 +26,7 @@ h2o.ls(conn)
 # Parameters for the test.
 #----------------------------------------------------------------------
 parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c28/mr_output.tsv.sorted.gz"))
-paste("Time it took to parse", parse_time[[1]])
+paste("Time it took to parse", parse_time)
 
 dim(data.hex)
 
@@ -34,12 +34,12 @@ s = h2o.runif(data.hex)
 train = data.hex[s <= 0.8,]
 valid = data.hex[s > 0.8,]
 
-#GBM model
-gbm_time <- system.time(model.gbm <- h2o.gbm(x = 3:(ncol(train)), y = 2, training_frame = train, validation_frame=valid, ntrees=10, max_depth=5)) 
-paste("Time it took to build GBM ", gbm_time[[1]])
-model.gbm
+#GLM Model
+glm_time <- system.time(model.glm <- h2o.glm(x = 3:(ncol(train)), y = 6, training_frame = train, validation_frame=valid, family = "binomial", solver = "L_BFGS"))
+paste("Time it took to build GLM ", glm_time)
+model.glm
 
-pred = predict(model.gbm, valid)
-perf <- h2o.performance(model.gbm, valid)
+pred = predict(model.glm, valid)
+perf <- h2o.performance(model.glm, valid)
 
 PASS_BANNER()
