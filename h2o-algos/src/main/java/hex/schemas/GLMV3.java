@@ -27,6 +27,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_search",
             "nlambdas",
             "standardize",
+            "intercept",
             "non_negative",
             "max_iterations",
             "objective_epsilon",
