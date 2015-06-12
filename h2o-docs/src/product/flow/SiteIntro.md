@@ -220,6 +220,8 @@ Use class path of module: h2o-app
 
 After starting multiple "worker" node processes in addition to the JUnit test process, they will cloud up and run the multi-node JUnit tests. 
 
+- <a href="https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start" target="_blank">Developer Documentation</a>: Detailed instructions on how to build and launch H2O, including how to clone the repository, how to pull from the repository, and how to install required dependencies. 
+
 - <a href="https://github.com/h2oai/h2o-3/blob/master/build.gradle" target="_blank">Maven install</a>: This page provides information on how to build a version of H2O that generates the correct IDE files.
  
 - <a href="http://apps.h2o.ai" target="_blank">apps.h2o.ai</a>: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights. 
