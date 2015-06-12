@@ -495,6 +495,8 @@ class H2O(object):
 
         if self.disable_h2o_log:
             args += ['-nolog']
+	
+	args += ['-ga_opt_out']
 
         # psutil psopen needs param/value in different arg elements
         # othetwise we'd need to pass as joined string, and run /bin/sh 
