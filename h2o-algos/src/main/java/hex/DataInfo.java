@@ -143,6 +143,11 @@ public class DataInfo extends Keyed {
       setResponseTransform(response_transform);
   }
 
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset, boolean intercept) {
+    this(selfKey, train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, missingBucket, weight, offset);
+    _intercept = intercept;
+  }
+
   public DataInfo validDinfo(Frame valid) {
     DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false, _weights,_offset);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
@@ -367,6 +372,18 @@ public class DataInfo extends Keyed {
       this.nNums = sparse?0:nNums;
     }
 
+    public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, double etaOffset) {
+      int nNums = numVals == null ? 0:numVals.length;
+      this.numVals = numVals;
+      if(sparse)
+        numIds = MemoryManager.malloc4(nNums);
+      this.etaOffset = etaOffset;
+      this.nNums = sparse ? 0:nNums;
+      this.nBins = binIds == null ? 0:binIds.length;
+      this.binIds = binIds;
+      this.response = response;
+    }
+
     public double response(int i) {return response[i];}
 
     public void addBinId(int id) {
@@ -467,6 +484,9 @@ public class DataInfo extends Keyed {
   }
   public Row newDenseRow(){
     return new Row(false,_nums,_cats,_responses,0);
+  }
+  public Row newDenseRow(double[] numVals) {
+    return new Row(false, numVals, null, null, 0);
   }
   /**
    * Extract (sparse) rows from given chunks.

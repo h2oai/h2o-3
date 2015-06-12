@@ -2,6 +2,8 @@
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O 3.0. When you launch from the command line, you can include additional instructions to H2O 3.0, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 
+For more detailed instructions on how to build and launch H2O, including how to clone the repository, how to pull from the repository, and how to install required dependencies, refer to the [developer documentation](https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start). 
+
 There are two different argument types:
 
 - JVM arguments
@@ -42,9 +44,12 @@ New H2O nodes join to form a cloud during launch. After a job has started on the
   `java -Xmx6g -jar h2o.jar -name MyCloud`
 
 - To start an H2O cloud with three 2GB nodes using the default cloud names: 
-  `java -Xmx2g -jar h2o.jar &`
-  `java -Xmx2g -jar h2o.jar &`
-  `java -Xmx2g -jar h2o.jar &`
+
+  ```
+  java -Xmx2g -jar h2o.jar &
+  java -Xmx2g -jar h2o.jar &
+  java -Xmx2g -jar h2o.jar &
+  ```
 
 Wait for the `INFO: Registered: # schemas in: #mS` output before entering the above command again to add another node (the number for # will vary).
 

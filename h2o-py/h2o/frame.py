@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys
+import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib, sys, imp
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -113,6 +113,24 @@ class H2OFrame:
     :param python_obj: A tuple, list, dict, collections.OrderedDict
     :return: None
     """
+    # attempt to import numpy
+    have_numpy = False
+    try:
+      imp.find_module('numpy')
+      import numpy
+      have_numpy = True
+    except ImportError:
+      pass
+
+    # attempt to import pandas
+    have_pandas = False
+    try:
+      imp.find_module('pandas')
+      import pandas
+      have_pandas = True
+    except ImportError:
+      pass
+
     # [] and () cases -- folded together since H2OFrame is mutable
     if isinstance(python_obj, (list, tuple)):
       header, data_to_write = H2OFrame._handle_python_lists(python_obj)
@@ -121,12 +139,17 @@ class H2OFrame:
     elif isinstance(python_obj, (dict, collections.OrderedDict)):
       header, data_to_write = H2OFrame._handle_python_dicts(python_obj)
 
-    # handle a numpy.ndarray
-    # elif isinstance(python_obj, numpy.ndarray):
-    #
-    #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
+    # try to handle a numpy.ndarray
+    elif have_numpy and isinstance(python_obj, numpy.ndarray):
+        header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
+
+    # try to handle a pandas.DataFrame
+    elif have_pandas and isinstance(python_obj, pandas.DataFrame):
+      header, data_to_write = H2OFrame._handle_pandas_data_frame(python_obj)
+
     else:
-      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
+      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                       "pandas.DataFrame. Got: " + str(type(python_obj)))
 
     if header is None or data_to_write is None:
       raise ValueError("No data to write")
@@ -714,11 +737,6 @@ class H2OFrame:
 
   @staticmethod
   def _handle_python_dicts(python_obj):
-    header = python_obj.keys()
-    # is this a valid header?
-    is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
-    if not is_valid:
-      raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
     # check that each value entry is a flat list/tuple
     for k in python_obj:
       v = python_obj[k]
@@ -727,20 +745,25 @@ class H2OFrame:
         if H2OFrame._is_list_of_lists(v):
           raise ValueError("Values in the dictionary must be flattened!")
 
+    python_obj = {k:(v if hasattr(v,'__iter__') else [v]) for (k, v) in python_obj.iteritems()}
+    header = python_obj.keys()
+    # is this a valid header?
+    is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
+    if not is_valid:
+      raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
+
     rows = map(list, itertools.izip_longest(*python_obj.values()))
     data_to_write = [dict(zip(header, row)) for row in rows]
     return header, data_to_write
 
-# @staticmethod
-  # def _handle_numpy_array(python_obj):
-  #     header = H2OFrame._gen_header(python_obj.shape[1])
-  #
-  #     as_list = python_obj.tolist()
-  #     lol = H2OFrame._is_list_of_lists(as_list)
-  #     data_to_write = [dict(zip(header, row)) for row in as_list] \
-  #         if lol else [dict(zip(header, as_list))]
-  #
-  #     return header, data_to_write
+  @staticmethod
+  def _handle_numpy_array(python_obj):
+    return H2OFrame._handle_python_lists(python_obj=python_obj.tolist())
+
+  @staticmethod
+  def _handle_pandas_data_frame(python_obj):
+    return H2OFrame._handle_numpy_array(python_obj=python_obj.as_matrix())
+
   def _len_check(self,x):
     if len(self) == 0: return
     return self._vecs[0]._len_check(x)
@@ -1062,6 +1085,94 @@ class H2OFrame:
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def transpose(self):
+    """
+    :return: The transpose of the H2OFrame.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (t %{}))".format(tmp_key,key)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def signif(self, digits=6):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of significant digits.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (signif %{} #{}))".format(tmp_key,key,digits)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def round(self, digits=0):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of decimal digits.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (round %{} #{}))".format(tmp_key,key,digits)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.removeFrameShallow(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+    h2o.removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+
+  def asnumeric(self):
+    """
+    :return: A lazy Expr representing this vec converted to numbers
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (as.numeric %{}))".format(tmp_key,key)
     h2o.rapids(expr)
     # Remove h2o temp frame after var
     h2o.removeFrameShallow(key)
@@ -1410,6 +1521,12 @@ class H2OVec:
     """
     return Expr("is.factor", self._expr, None, length=1).eager()
 
+  def ascharacter(self):
+    """
+    :return: A lazy Expr representing this vec converted to characters
+    """
+    return H2OVec(self._name, Expr("as.character", self._expr, None))
+
   def isna(self):
     """
     :return: Returns a new boolean H2OVec.
@@ -1461,6 +1578,41 @@ class H2OVec:
       import random
       seed = random.randint(123456789, 999999999)  # generate a seed
     return H2OVec("", Expr("h2o.runif", self._expr, Expr(seed)))
+
+  def match(self, table, nomatch=0):
+    """
+    Makes a vector of the positions of (first) matches of its first argument in its second.
+    :return: bit H2OVec
+    """
+    # make table to pass to rapids
+    rtable = ""
+    if hasattr(table, '__iter__'): # make slist or list
+      if all([isinstance(t, (int,float)) for t in table]): # make list
+        rtable += "(list"
+        for t in table: rtable += " #"+str(t)
+        rtable += ")"
+      elif all([isinstance(t, str) for t in table]): # make slist
+        rtable += "(slist"
+        for t in table: rtable += " \""+str(t)+"\""
+        rtable += ")"
+    elif isinstance(table, (int, float)): # make #
+      rtable += "#"+str(table)
+    elif isinstance(table, str): # make str
+      rtable += "\""+table+"\""
+    else:
+      raise ValueError("`table` must be a scaler (str, int, float), or a iterable of scalers of the same type.")
+
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (match %{} {} #{} ()))".format(tmp_key,self.key(),rtable,nomatch)
+    h2o.rapids(expr)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+    return H2OFrame(vecs=vecs)
 
   # Error if lengths are not compatible.  Return self for flow-coding
   def _len_check(self,x):

@@ -1,6 +1,6 @@
 # Data Science Algorithms
 
-This document describes how to define the models, interpret the model, the algorithm itself, and an FAQ. 
+This document describes how to define the models and how to interpret the model, as well the algorithm itself, and provides an FAQ. 
 
 ##Commonalities 
 
@@ -182,7 +182,7 @@ The GLM suite includes:
 
 - **Family**: Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
-- **Solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
+- **Solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
 
 - **Alpha**: Specify the regularization distribution between L2 and L2.  
 
@@ -192,7 +192,7 @@ The GLM suite includes:
 
 - **Standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
-- **Non-negative**: To force coefficients to be non-negative, check this checkbox. 
+- **Non-negative**: To force coefficients to have non-negative values, check this checkbox. 
 
 - **Beta constraints**: To use beta constraints, select a dataset from the drop-down menu. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. 
 
@@ -214,7 +214,7 @@ The GLM suite includes:
 
 - **Prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  
 
-- **Max\_active_\predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
+- **Max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
 
 ###Interpreting a GLM Model
@@ -406,7 +406,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees. 
+- **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees. 
 
 - **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
@@ -806,7 +806,7 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **R2_stopping**: Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.   
+- **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
@@ -958,19 +958,19 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **L1**: Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. 
 
-- **L2**: Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. The default value is 0.
+- **L2**: Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
 
 - **Loss**:  Select the loss function. The options are automatic, mean square, cross-entropy, Huber, or Absolute and the default value is automatic. 
 
-- **Score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring. The default value is 5. 
+- **Score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring.  
 
-- **Score\_training\_samples**: Specify the number of training set samples for scoring. To use all training samples, enter 0. The default value is 10000. 
+- **Score\_training\_samples**: Specify the number of training set samples for scoring. To use all training samples, enter 0.  
 
-- **Score\_duty\_cycle**: Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The default value is 0.1.
+- **Score\_duty\_cycle**: Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. 
 
 - **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
-- **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
+- **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
 - **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
@@ -984,9 +984,9 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Epsilon**: Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. 
 
-- **Max_W2**: Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). The default value is infinity. 
+- **Max_W2**: Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier).  
 
-- **Initial\_weight\_distribution**: Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). The default is Uniform Adaptive. 
+- **Initial\_weight\_distribution**: Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal).   
 
 - **Regression_stop**: Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.  
 
@@ -1000,7 +1000,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **Missing\_values\_handling**: Select how to handle missing values (skip or mean imputation). The default value is mean imputation. 
+- **Missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
 
 - **Quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
@@ -1010,7 +1010,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Average_activation**: Specify the average activation for the sparse autoencoder.  
 
-- **Sparsity_beta**: Specify the sparsity regularization. The default value is 0.0. 
+- **Sparsity_beta**: Specify the sparsity regularization.   
 
 - **Max\_categorical\_features**: Specify the maximum number of categorical features enforced via hashing.
 

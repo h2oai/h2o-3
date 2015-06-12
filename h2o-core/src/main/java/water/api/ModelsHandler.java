@@ -5,7 +5,13 @@ import water.*;
 import water.api.FramesHandler.Frames;
 import water.exceptions.*;
 import water.fvec.Frame;
+import water.serial.KeyedBinarySerializer;
+import water.serial.ObjectTreeBinarySerializer;
+import water.util.FileUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
@@ -173,5 +179,34 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     fs.blockForPending();
     if( missing.size() != 0 ) throw new H2OKeysNotFoundArgumentException("(none)", missing.toArray(new String[missing.size()]));
     return models;
+  }
+
+  public ModelsV3 importModel(int version, ModelImportV3 mimport) {
+    ModelsV3 s = (ModelsV3) Schema.newInstance(ModelsV3.class);
+
+    try {
+      List<Key> importedKeys = new ObjectTreeBinarySerializer().load(FileUtils.getURI(mimport.dir));
+      Model model = (Model) importedKeys.get(0).get();
+      s.models = new ModelSchema[1];
+      s.models[0] = (ModelSchema) Schema.schema(version, model).fillFromImpl(model);
+    } catch (IOException e) {
+      throw new H2OIllegalArgumentException("dir", "importModel", e);
+    }
+
+    return s;
+  }
+
+  public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
+    Model model = getFromDKV("model_id", mexport.model_id.key());
+    List<Key> keysToExport = new LinkedList<>();
+    keysToExport.add(model._key);
+    keysToExport.addAll(model.getPublishedKeys());
+
+    try {
+      new ObjectTreeBinarySerializer().save(keysToExport, FileUtils.getURI(mexport.dir));
+    } catch (IOException e) {
+      throw new H2OIllegalArgumentException("dir", "exportModel", e);
+    }
+    return mexport;
   }
 }

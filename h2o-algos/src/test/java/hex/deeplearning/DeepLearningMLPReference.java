@@ -1,8 +1,8 @@
 package hex.deeplearning;
 
 import org.junit.Ignore;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import hex.deeplearning.DeepLearningParameters.Activation;
+import hex.deeplearning.DeepLearningParameters.Loss;
 import java.text.DecimalFormat;
 import java.util.Random;
 
@@ -22,7 +22,7 @@ public class DeepLearningMLPReference {
   double[][] _testData;
   NeuralNetwork _nn;
 
-  public void init(DeepLearningModel.DeepLearningParameters.Activation activation, Random rand, double holdout_ratio, int numHidden) {
+  public void init(DeepLearningParameters.Activation activation, Random rand, double holdout_ratio, int numHidden) {
     double[][] ds = new double[150][];
     int r = 0;
     ds[r++] = new double[] { 5.1, 3.5, 1.4, 0.2, 0, 0, 1 };
@@ -312,7 +312,7 @@ public class DeepLearningMLPReference {
     float[][] hoPrevWeightsDelta;
     double[] oPrevBiasesDelta;
 
-    public NeuralNetwork(DeepLearningModel.DeepLearningParameters.Activation activationType, int numInput, int numHidden, int numOutput) {
+    public NeuralNetwork(DeepLearningParameters.Activation activationType, int numInput, int numHidden, int numOutput) {
       this.activation = activationType;
       this.numInput = numInput;
       this.numHidden = numHidden;

@@ -704,7 +704,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Gather/reduce remote work.
   // Block for other queued pending tasks.
   // Copy any final results into 'this', such that a return of 'this' has the results.
-  private void postLocal() {
+  protected void postLocal() {
     reduce3(_nleft);            // Reduce global results from neighbors.
     reduce3(_nrite);
     if(_doProfile)

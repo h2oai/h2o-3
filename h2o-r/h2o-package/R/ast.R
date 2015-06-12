@@ -48,7 +48,7 @@ function(node) {
 #'
 .is.eval <- function(H2OFrame) {
   key <- H2OFrame@frame_id
-  res <- .h2o.__remoteSend(H2OFrame@conn, paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
+  res <- .h2o.__remoteSend(H2OFrame@conn, h2oRestApiVersion = 99, paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
   res$evaluated
 }
 
