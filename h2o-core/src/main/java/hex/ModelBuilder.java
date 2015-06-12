@@ -396,6 +396,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       try {
         String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true);
         _vresponse = _valid.vec(_parms._response_column);
+        if (_vresponse == null && _parms._response_column != null)
+          error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
         if (expensive) {
           for (String s : msgs) {
             Log.info(s);

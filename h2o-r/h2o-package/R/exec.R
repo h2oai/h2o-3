@@ -171,7 +171,7 @@ function(op, ..., .args = list(...)) {
 
 .h2o.raw_expr_op<-
 function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_expr_op"), linkToGC = TRUE) {
-  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=expr, method = "POST")
+  res <- .h2o.__remoteSend(h2o.getConnection(), h2oRestApiVersion = 99, .h2o.__RAPIDS, ast=expr, method = "POST")
   h2o.getFrame(key, h2o.getConnection(), linkToGC=linkToGC)
 }
 
@@ -197,7 +197,7 @@ function(conn, ast) {
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(conn, h2oRestApiVersion = 99, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   if (!is.null(res$string)) {
@@ -221,7 +221,7 @@ function(conn, ast, frame_id=.key.make(conn, "rapids"), linkToGC=FALSE) {
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(conn, h2oRestApiVersion = 99, .h2o.__RAPIDS, ast=ast, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
   h2o.getFrame(frame_id, conn, linkToGC=linkToGC)
@@ -233,7 +233,7 @@ function(conn, ast, frame_id, finalizers) {
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(conn, h2oRestApiVersion = 99, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   res <- h2o.getFrame(frame_id, conn, linkToGC=FALSE)
@@ -281,5 +281,5 @@ function(x, scalarAsFrame = TRUE) {
 function(fun.ast) {
   gc()
   expr <- .fun.visitor(fun.ast)
-  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, fun=expr$ast, method = "POST")
+  .h2o.__remoteSend(h2o.getConnection(), h2oRestApiVersion = 99, .h2o.__RAPIDS, fun=expr$ast, method = "POST")
 }

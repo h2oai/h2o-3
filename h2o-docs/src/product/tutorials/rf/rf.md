@@ -84,7 +84,7 @@ To generate a prediction, click the **Predict** button in the model results and 
 
   ![Random Forest Prediction](../images/RF_Predict.png)
 
-To view the prediction, click the **View Prediction Frame** button. You can also click the **Inspect** button to access more information (for example, columns or data). 
+You can also click the **Inspect** button to access more information (for example, columns or data). 
 
   ![Random Forest Prediction Details](../images/RF_Predict2.png)
 

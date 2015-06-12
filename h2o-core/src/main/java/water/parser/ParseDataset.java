@@ -119,6 +119,9 @@ public final class ParseDataset extends Job<Frame> {
     if( totalParseSize > memsz*4 )
       throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(totalParseSize)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
+    if (H2O.GA != null)
+      GAUtils.logParse(totalParseSize, keys.length, setup._number_columns);
+
     // Fire off the parse
     ParseDataset job = new ParseDataset(dest);
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
