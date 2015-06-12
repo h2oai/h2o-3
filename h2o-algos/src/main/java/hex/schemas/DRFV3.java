@@ -15,7 +15,7 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
     };
 
     // Input fields
-    @API(help = "Number of columns to randomly select at each level, or -1 for sqrt(#cols)", gridable = true)
+    @API(help = "Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification and p/3 for regression (where p is the # of predictors", gridable = true)
     public int mtries;
 
     @API(help = "Sample rate, from 0. to 1.0", gridable = true)

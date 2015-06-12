@@ -160,6 +160,59 @@ def _quoted(key):
   return key
 
 
+def ifelse(test,yes,no):
+  """
+  Semantically equivalent to R's ifelse.
+  Based on the booleans in the test vector, the output has the values of the yes and no
+  vectors interleaved (or merged together).
+
+  :param test: A "test" H2OFrame
+  :param yes:  A "yes" H2OFrame
+  :param no:   A "no"  H2OFrame
+  :return: An H2OFrame
+  """
+  test_a=None
+  yes_a =None
+  no_a  =None
+
+  test_tmp = None
+  yes_tmp  = None
+  no_tmp   = None
+
+  if isinstance(test, bool): test_a = "%TRUE" if test else "%FALSE"
+  else:
+    if isinstance(test,H2OVec): test_tmp = test._expr.eager()
+    else:                       test_tmp = test.key()
+    test_a = "'"+test_tmp+"'"
+  if isinstance(yes, (int,float)): yes_a = "#{}".format(str(yes))
+  elif yes is None:                yes_a = "#NaN"
+  else:
+    if isinstance(yes,H2OVec): yes_tmp = yes._expr.eager()
+    else:                      yes_tmp = yes.key()
+    yes_a = "'"+yes_tmp+"'"
+  if isinstance(no, (int,float)): no_a = "#{}".format(str(no))
+  elif no is None:                no_a = "#NaN"
+  else:
+    if isinstance(no,H2OVec): no_tmp = no._expr.eager()
+    else:                     no_tmp = no.key()
+    no_a = "'"+no_tmp+"'"
+
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ifelse {} {} {}))".format(tmp_key,test_a,yes_a,no_a)
+  rapids(expr)
+  j = frame(tmp_key) # Fetch the frame as JSON
+  fr = j['frames'][0]    # Just the first (only) frame
+  rows = fr['rows']      # Row count
+  veckeys = fr['vec_ids']# List of h2o vec keys
+  cols = fr['columns']   # List of columns
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+  removeFrameShallow(tmp_key)
+  if yes_tmp is not  None: removeFrameShallow(str(yes_tmp))
+  if no_tmp is not   None: removeFrameShallow(str(no_tmp))
+  if test_tmp is not None: removeFrameShallow(str(test_tmp))
+  return H2OFrame(vecs=vecs)
+
 def split_frame(data, ratios=[0.75], destination_frames=None):
   """
   Split a frame into distinct subsets of size determined by the given ratios.

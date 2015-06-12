@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.DataInfo.Row;
 
+import hex.FrameTask2;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.gram.Gram;
@@ -670,9 +671,7 @@ public abstract class GLMTask  {
    *
    * @author tomasnykodym
    */
-  public static class GLMIterationTask extends MRTask<GLMIterationTask> {
-    final Key _jobKey;
-    final DataInfo _dinfo;
+  public static class GLMIterationTask extends FrameTask2<GLMIterationTask> {
     final GLMParameters _params;
     final double [] _beta;
     protected Gram  _gram;
@@ -685,34 +684,30 @@ public abstract class GLMTask  {
     int [] _ti;
     public double _likelihood;
     final double _lambda;
-    boolean _sparse;
-    Vec _rowFilter;
-
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
-      super(cmp);
-      _jobKey = jobKey;
-      _dinfo = dinfo;
+      super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
       _beta = beta;
       _ymu = ymu;
       _validate = validate;
       _lambda = lambda;
-      _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
-      _rowFilter = rowFilter;
     }
 
-    public GLMIterationTask setSparse(boolean b){
-      _sparse = b;
-      return this;
-    }
+    @Override public boolean handlesSparseData(){return true;}
 
+    @Override public double sparseOffset(){
+      double etaOffset = 0;
+      if(_dinfo._normMul != null && _dinfo._normSub != null && _beta != null) {
+        int ns = _dinfo.numStart();
+        for (int i = 0; i < _dinfo._nums; ++i)
+          etaOffset -= _beta[i + ns] * _dinfo._normSub[i] * _dinfo._normMul[i];
+      }
+      return etaOffset;
+    }
 
     @Override
-    public void map(Chunk [] chks) {
-      if(_jobKey != null && !Job.isRunning(_jobKey))
-        throw new Job.JobCancelledException();
-      Chunk rowFilter = _rowFilter == null?null:_rowFilter.chunkForChunkIdx(chks[0].cidx());
+    public void chunkInit() {
       // initialize
       _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
       // public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
@@ -728,24 +723,10 @@ public abstract class GLMTask  {
       if(_params._family == Family.binomial && _validate){
         _ti = new int[2];
       }
-      // compute
-      if(_sparse) {
-        for(Row r:_dinfo.extractSparseRows(chks, _beta))
-          if(rowFilter == null || rowFilter.at8((int)(r.rid - chks[0].start())) == 0)
-            processRow(r);
-      } else {
-        Row row = _dinfo.newDenseRow();
-        for(int r = 0 ; r < chks[0]._len; ++r) {
-          if(rowFilter == null || rowFilter.at8(r) == 0)
-            processRow(_dinfo.extractDenseRow(chks, r, row));
-        }
-      }
-      if(_validate && _params._family == Family.binomial) {
-        assert _val != null;
-      }
     }
 
-    protected final void processRow(Row r) {
+    @Override
+    protected void processRow(Row r) {
       if(r.bad || r.weight == 0) return;
       ++_nobs;
       final double y = r.response(0);
@@ -785,18 +766,15 @@ public abstract class GLMTask  {
       _gram.addRow(r, w);
     }
 
-
     @Override
     public void reduce(GLMIterationTask git){
-      if(_jobKey == null || Job.isRunning(_jobKey)) {
-        ArrayUtils.add(_xy, git._xy);
-        _gram.add(git._gram);
-        _yy += git._yy;
-        _nobs += git._nobs;
-        if (_validate) _val.reduce(git._val);
-        _likelihood += git._likelihood;
-        super.reduce(git);
-      }
+      ArrayUtils.add(_xy, git._xy);
+      _gram.add(git._gram);
+      _yy += git._yy;
+      _nobs += git._nobs;
+      if (_validate) _val.reduce(git._val);
+      _likelihood += git._likelihood;
+      super.reduce(git);
     }
 
     @Override protected void postGlobal(){

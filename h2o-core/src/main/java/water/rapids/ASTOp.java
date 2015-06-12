@@ -247,6 +247,10 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSetDomain());
     putPrefix(new ASTRemoveVecs());
 
+    putPrefix(new ASTKappa());
+    putPrefix(new ASTWhich());
+    putPrefix(new ASTMajorityVote());
+
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
 //    putPrefix(new ASTIsTRUE());
@@ -1838,6 +1842,64 @@ class ASTSum extends ASTReducerOp {
   }
 }
 
+class ASTKappa extends ASTUniPrefixOp {
+
+  int _nclass;
+  @Override String opStr() { return "kappa"; }
+  @Override ASTOp make() { return new ASTKappa(); }
+  public ASTKappa() { super(new String[]{"actual", "pred", "nclass"});}
+  ASTKappa parse_impl(Exec E) {
+    AST act = E.parse();
+    AST pre = E.parse();
+    _nclass = (int)E.nextDbl();
+    E.eatEnd();
+    ASTKappa res = (ASTKappa)clone();
+    res._asts = new AST[]{act,pre};
+    return res;
+  }
+
+  @Override public void apply(Env e) {
+    Frame act = e.popAry();
+    Frame pre = e.popAry();
+
+    OMatrixTask t = new OMatrixTask(_nclass).doAll((act.add(pre)));
+    final int[][] O = t._O;
+
+    double numerator=0;
+    double denominator=0;
+    for(int i=0;i<_nclass;++i)
+      for(int j=0;j<_nclass;++j) {
+        double w_ij = (double)((i-j)*(i-j)) / (double)((_nclass-1)*(_nclass-1));
+        double e_ij = (double)(t._aHist[i] * t._pHist[j]) / (double)act.numRows();
+        numerator+= w_ij*O[i][j];
+        denominator+=w_ij*e_ij;
+      }
+    e.push(new ValNum(1-numerator/denominator));
+  }
+
+  private static class OMatrixTask extends MRTask<OMatrixTask> {
+    final int _n;
+    int[][] _O;
+    int[] _aHist;
+    int[] _pHist;
+    OMatrixTask(int n) { _n=n; }
+
+    @Override public void map(Chunk[] cs) {
+      _O = new int[_n][_n];
+      _aHist = new int[_n];
+      _pHist = new int[_n];
+      for(int i=0;i<cs[0]._len;++i) {
+        int x = (int)cs[0].at8(i);
+        int y = (int)cs[1].at8(i);
+        _aHist[x]++;
+        _pHist[y]++;
+        _O[x][y]++;
+      }
+    }
+    @Override public void reduce(OMatrixTask t) { _O=ArrayUtils.add(_O, t._O); t._O=null; }
+  }
+}
+
 class ASTImpute extends ASTUniPrefixOp {
   ImputeMethod _method;
   long[] _by;
@@ -2116,7 +2178,7 @@ class ASTRbind extends ASTUniPrefixOp {
     }
   }
 
-  private static class ParallelRbinds extends H2O.H2OCountedCompleter{
+  public static class ParallelRbinds extends H2O.H2OCountedCompleter{
 
     private final Env _env;
     private final int _argcnt;
@@ -4504,6 +4566,89 @@ class ASTCat extends ASTUniPrefixOp {
     final long _start; // where to start; for _t=0, _start == _idx
     final long _stop;  // where to stop
     Marker(byte t, int idx, long start, long stop) { _t=t; _idx=idx; _start=start; _stop=stop; }
+  }
+}
+
+class ASTWhich extends ASTUniPrefixOp {  // 1-based index
+  ASTWhich() {super(null); }
+  @Override String opStr() { return "h2o.which"; }
+  @Override ASTWhich make() { return new ASTWhich(); }
+  @Override ASTWhich parse_impl(Exec E) {
+    AST condition = E.parse();
+    ASTWhich res = (ASTWhich)clone();
+    res._asts = new AST[]{condition};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Frame f=e.popAry();
+    if( f.numRows()==1 && f.numCols() > 1) {
+      double[] in = new double[f.numCols()];
+      for(int i=0;i<in.length;++i) in[i] = f.vecs()[i].at(0);
+      double[] out = map(null,in,null,null);
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for (double d : out) chunk.addNum(d);
+      chunk.close(0, fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(vec);
+      e.pushAry(fr2);
+      return;
+    }
+    Frame f2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        long start = c.start();
+        for(int i=0;i<c._len;++i)
+          if( c.at8(i)==1 ) nc.addNum(1+start+i);
+      }
+    }.doAll(1,f.anyVec()).outputFrame();
+    e.pushAry(f2);
+  }
+  @Override double[] map(Env env, double[] in, double[] out, AST[] args) {
+    ArrayList<Integer> w = new ArrayList<>();
+    for(int i=0; i < in.length;++i)
+      if( in[i]==1 ) w.add(i+1);
+    out=new double[w.size()];
+    for(int i=0;i<w.size();++i) out[i]=w.get(i);
+    return out;
+  }
+}
+
+class ASTMajorityVote extends ASTUniPrefixOp {  // 1-based index
+  int _n;
+  ASTMajorityVote() {super(null); }
+  @Override String opStr() { return "h2o.vote"; }
+  @Override ASTMajorityVote make() { return new ASTMajorityVote(); }
+  @Override ASTMajorityVote parse_impl(Exec E) {
+    AST condition = E.parse();
+    _n = (int)E.nextDbl();  // number of classes
+    ASTMajorityVote res = (ASTMajorityVote)clone();
+    res._asts = new AST[]{condition};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Frame f=e.popAry();
+    final int n=_n;
+    Frame f2 = new MRTask() {
+      @Override public void map(Chunk[] c, NewChunk nc) {
+        int[] votes = new int[n+1];
+        for(int row=0;row<c[0]._len;++row) {
+          for(int i=0;i<votes.length;++i)votes[i]=0; // rezero the array each time
+          for( int col=0;col<c.length;++col) { votes[(int)c[col].at8(row)]++; }
+          int i=0;
+          int max=votes[i];
+          int iter=0;
+          while(iter < votes.length) {
+            if (votes[iter] > max) { max = votes[i]; i = iter; }
+            iter++;
+          }
+          nc.addNum(i); // 1-based index
+        }
+      }
+    }.doAll(1,f).outputFrame();
+    e.pushAry(f2);
   }
 }
 
