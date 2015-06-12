@@ -1335,7 +1335,7 @@ class TestRunner:
         """
         for test in self.tests:
             test_name = test.get_test_name()
-            if (is_python_test_file(test_name)):
+            if is_python_test_file(test_name):
                 return True
 
         return False
