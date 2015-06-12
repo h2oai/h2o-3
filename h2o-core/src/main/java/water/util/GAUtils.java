@@ -38,7 +38,7 @@ public class GAUtils {
 
   public static void logParse(long totalParseSize, int fileCount, int colCount) {
     if (H2O.GA != null) {
-      int parseSize = (int) totalParseSize >> 20;
+      int parseSize = (int) (totalParseSize>>20);
       H2O.GA.postAsync(new EventHit("File I/O", "Read", "Total size (MB)", parseSize));
       postRange("File I/O", "Read", "Total size (MB)", new int[] {100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000}, parseSize);
 
@@ -70,10 +70,10 @@ public class GAUtils {
         if (null != members) {
           // Sum at MB level
           for (int i = 0; i < members.length; i++) {
-            totMem += members[i].get_max_mem()>>30;
+            totMem += (members[i].get_max_mem()>>20);
           }
         }
-        //Simplfy at GB level
+        //Simplfy to GB
         totMem = totMem>>10;
         H2O.GA.postAsync(new EventHit("System startup info", "Memory", "Total Cloud Memory (GB)", totMem));
         postRange("System startup info", "Memory", "Total Cloud Memory (GB)", new int[]{8,16,32,64,128,256,512,1024,2048,4096}, totMem);

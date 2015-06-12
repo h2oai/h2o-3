@@ -1227,7 +1227,7 @@ final public class H2O {
       Log.info("Opted out of sending usage metrics.");
     } else {
       try {
-        GA = new GoogleAnalytics("UA-56665317-3", "H2O", ABV.projectVersion());
+        GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
       } catch(Throwable t) {
         Log.POST(11, t.toString());
         StackTraceElement[] stes = t.getStackTrace();
