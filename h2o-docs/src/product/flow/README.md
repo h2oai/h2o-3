@@ -29,7 +29,7 @@ The following help window displays:
 
 To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. You can also access this list of shortcuts by clicking the **Help** menu and selecting **Keyboard Shortcuts**. 
 
-For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button. 
+For additional help, click the **Assist Me!** button in the row of buttons below the menus. 
 
 ![Assist Me](images/Flow_AssistMeButton.png) 
 
@@ -165,7 +165,7 @@ If you don't have any data of your own to work with, you can find some example d
 
 There are multiple ways to import data in H2O flow:
 
-- Click the **Assist Me!** button in the **Help** sidebar, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
+- Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
  
 - You can also drag and drop the file onto the **Search** field in the cell.
   
@@ -304,7 +304,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 
 To build a model: 
 
-- Click the **Assist Me!** button and select **buildModel**
+- Click the **Assist Me!** button in the row of buttons below the menus and select **buildModel**
 
   or 
 
@@ -319,7 +319,7 @@ To build a model:
 - Click the drop-down **Model** menu and select the model type from the list
 
 
-The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). 
+The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). The following image depicts the K-Means model type. Available options vary depending on model type. 
 
 
  ![Model Builder](images/Flow_ModelBuilder.png)
@@ -381,8 +381,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **R2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
-- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.     
-
+- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).   
+   
 - **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0. 
 
 - **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
@@ -584,8 +584,7 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
  A summary of the model's parameters displays. To display more details, click the **Show All Parameters** button. 
  
-   **NOTE**: The **Clone this model...** button will be supported in a future version. 
- 
+
 To delete a model, click the **Delete** button. 
 
 To generate a POJO to be able to use the model outside of H2O, click the **Download POJO** button. 
@@ -620,7 +619,7 @@ You can also view predictions by clicking the drop-down **Score** menu and selec
 <a name="ViewFrame"></a>
 ## Viewing Frames
 
-To view a specific frame, click the "Key" link for the specified frame, or enter `getFrameSummary "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
+To view a specific frame, click the "Key" link for the specified frame, or enter `getFrameSummary "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`).
 
  ![Viewing specified frame](images/Flow_getFrame.png) 
 
@@ -686,6 +685,8 @@ Datasets can be split within Flow for use in model training and testing.
 
 To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
+  ![Flow - Creating Frames](images/Flow_CreateFrame.png)
+
 ---
 
 ### Plotting Frames
@@ -707,6 +708,8 @@ Select the type of plot (point, path, or rect) from the drop-down **Type** menu,
 - cardinality
 
 Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
+
+ ![Flow - Plotting Frames](images/Flow_Plot.png)
 
 **Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
 
@@ -761,7 +764,7 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 <a name="SaveFlow"></a>
 ## Saving Flows
 
-You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
+You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save Flow." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
 
  ![Renaming Flows](images/Flow_rename.png)
@@ -800,12 +803,12 @@ The location specified in `flow_dir` may be either an hdfs or regular filesystem
 
 ### Copying Flows
 
-To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to `Copy of <FlowName>` (where `<FlowName>` is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**, or [rename it](#SaveFlow) before saving. 
+To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to `Copy of <FlowName>` (where `<FlowName>` is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save Flow**, or [rename it](#SaveFlow) before saving. 
 
 
 ### Downloading Flows
 
-After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
+After saving a flow as a notebook, click the **Flow** menu, then select **Download this Flow**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
 
 **Caution**: You must have an active internet connection to download flows. 
 
@@ -817,7 +820,7 @@ To load a saved flow, click the **Flows** tab in the sidebar at the right. In th
 
 After clicking **Load Notebook**, the saved flow is loaded. 
 
-To load an exported flow, click the **Flow** menu and select **Open...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button. 
+To load an exported flow, click the **Flow** menu and select **Open Flow...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button. 
 
  ![Open Flow](images/Flow_Open.png)
 

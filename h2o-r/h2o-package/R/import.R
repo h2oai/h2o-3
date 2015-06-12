@@ -12,7 +12,7 @@
 #' automatically.
 #'
 #' Other than \code{h2o.uploadFile}, if the given path is relative, then it will be relative to the
-#' start location of the H2O instance. Addtionally, the file must be on the same machine as the H2O
+#' start location of the H2O instance. Additionally, the file must be on the same machine as the H2O
 #' cloud. In the case of \code{h2o.uploadFile}, a relative path will resolve relative to the working
 #' directory of the current R session.
 #'
@@ -168,8 +168,9 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #' Load H2O Model from HDFS or Local Disk
 #'
 #' Load a saved H2O model from disk.
+#'
 #' @param path The path of the H2O Model to be imported.
-#' @param conn an \linkS4class{H2OConnection} object contianing the IP address
+#' @param conn an \linkS4class{H2OConnection} object containing the IP address
 #'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
 #'         built.
