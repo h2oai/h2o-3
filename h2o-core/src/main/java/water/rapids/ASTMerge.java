@@ -65,7 +65,7 @@ public class ASTMerge extends ASTOp {
         if( lv.get_type() != rv.get_type() )
           throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
-        if( lv.isString() )  
+        if( lv.isString() )
           throw new IllegalArgumentException("Cannot merge Strings; flip toEnum first");
         if( lv.isNumeric() && !lv.isInt())  
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");

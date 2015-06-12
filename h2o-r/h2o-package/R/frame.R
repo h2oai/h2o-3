@@ -131,6 +131,8 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
+h2o.kappa <- function(act,pred,nclass) { .h2o.nary_frame_op("kappa", act, pred, nclass) }
+
 #' Categorical Interaction Feature Creation in H2O
 #'
 #' Creates a data frame in H2O with n-th order interaction features between categorical columns, as specified by the user.
@@ -2365,6 +2367,9 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   }
 }
 
+
+h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x) }
+h2o.vote  <- function(x, nclasses) { .h2o.nary_frame_op("h2o.vote", x,nclasses) }
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
