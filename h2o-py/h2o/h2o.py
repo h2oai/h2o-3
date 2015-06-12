@@ -778,10 +778,14 @@ def median(data): return data.median()
 
 def asnumeric(data)       : return data.asnumeric()
 def transpose(data)       : return data.transpose()
+
+# munging ops with args
 def signif(data, digits=6): return data.signif(digits=digits)
 def round(data, digits=0) : return data.round(digits=digits)
 def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
-
+def table(data1,data2=None)  :
+  if not data2: return data1.table()
+  else: return data1.table(data2=data2)
 
 class H2ODisplay:
   """

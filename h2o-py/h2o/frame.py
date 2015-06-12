@@ -1082,21 +1082,11 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
+    frame_keys = [self.send_frame()]
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,frame_keys[0])
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
 
   def transpose(self):
     """
@@ -1104,21 +1094,22 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
+    frame_keys = [self.send_frame()]
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (t %{}))".format(tmp_key,key)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    expr = "(= !{} (t %{}))".format(tmp_key,frame_keys[0])
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def table(self, data2=None):
+    """
+    :return: a frame of the counts at each combination of factor levels
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    if data2: frame_keys.append(data2.send_frame())
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (table %{} {}))".format(tmp_key,frame_keys[0],"%"+frame_keys[1] if data2 else "()")
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
   def signif(self, digits=6):
     """
@@ -1126,21 +1117,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (signif %{} #{}))".format(tmp_key,key,digits)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    return H2OFrame(vecs=[vec.signif(digits=digits) for vec in self._vecs])
 
   def round(self, digits=0):
     """
@@ -1148,34 +1125,21 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (round %{} #{}))".format(tmp_key,key,digits)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    return H2OFrame(vecs=[vec.round(digits=digits) for vec in self._vecs])
 
   def asnumeric(self):
     """
-    :return: A lazy Expr representing this vec converted to numbers
+    :return: A frame with factor columns converted to numbers (numeric columns untouched).
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (as.numeric %{}))".format(tmp_key,key)
+    return H2OFrame(vecs=[vec.asnumeric() for vec in self._vecs])
+
+  @staticmethod
+  def _get_frame_from_rapids_string(expr, tmp_key, frame_keys):
     h2o.rapids(expr)
     # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
+    for key in frame_keys: h2o.removeFrameShallow(key)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
@@ -1604,6 +1568,33 @@ class H2OVec:
 
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (match %{} {} #{} ()))".format(tmp_key,self.key(),rtable,nomatch)
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def round(self, digits=0):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of decimal digits.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (round %{} #{}))".format(tmp_key,self.key(),digits)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def signif(self, digits=6):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of significant digits.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (signif %{} #{}))".format(tmp_key,self.key(),digits)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def asnumeric(self):
+    """
+    :return: A vec with factor columns converted to numbers.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (as.numeric %{}))".format(tmp_key,self.key())
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def _get_vec_from_rapids_string(self, expr, tmp_key):
     h2o.rapids(expr)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
@@ -1611,8 +1602,29 @@ class H2OVec:
     veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
-    return H2OFrame(vecs=vecs)
+    vec=H2OVec.new_vecs(zip(colnames, veckeys), rows)[0]
+    vec.setName(self._name)
+    h2o.removeFrameShallow(tmp_key)
+    return vec
+
+  def transpose(self):
+    """
+    :return: The transpose of the H2OVec (as an H20Frame).
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (t %{}))".format(tmp_key,self.key())
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def table(self, data2=None):
+    """
+    :return: a frame of the counts at each combination of factor levels
+    """
+    if data2 and not isinstance(data2, H2OVec): raise ValueError("`data2` must be a vec, but got {0}"
+                                                                 "".format(type(data2)))
+    tmp_key = H2OFrame.py_tmp_key()
+    data2_key = "%"+data2.key() if data2 else "()"
+    expr = "(= !{} (table %{} {}))".format(tmp_key,self.key(),data2_key)
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
 
   # Error if lengths are not compatible.  Return self for flow-coding
   def _len_check(self,x):
