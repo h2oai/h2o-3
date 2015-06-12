@@ -434,8 +434,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       @Override
       public void callback(GLMIterationTask glmIterationTask) {
         if(glmIterationTask._likelihood > _likelihood){ // line search
-          InitTsk.this.addToPendingCount(1);
-          new GLMTask.GLMIterationTask(GLM.this._key,_nullDinfo,0,_parms,false,new double[]{.5*(_ymu + glmIterationTask._beta[0])},0,_rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          if(++_iter  < 50) {
+            InitTsk.this.addToPendingCount(1);
+            new GLMTask.GLMIterationTask(GLM.this._key, _nullDinfo, 0, _parms, false, new double[]{.5 * (_ymu + glmIterationTask._beta[0])}, 0, _rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          } else {
+            _ymuLink = _ymu;
+            _ymu = _parms.linkInv(_ymuLink);
+            computeGradients();
+          }
           return;
         }
         _likelihood = glmIterationTask._likelihood;
@@ -469,7 +475,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});
-            new GLMIterationTask(GLM.this._key,dinfo,0,_parms,false,new double[]{0},0,_rowFilter, new NullModelIteration(dinfo)).asyncExec(dinfo._adaptedFrame);
+            new GLMIterationTask(GLM.this._key,dinfo,0,_parms,false,new double[]{_parms.link(_response.mean()) - _offset.mean()},0,_rowFilter, new NullModelIteration(dinfo)).asyncExec(dinfo._adaptedFrame);
           } else
             computeGradients();
         }
@@ -1110,7 +1116,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _sc.addIterationScore(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal); // it's in here for the gaussian family score :(
           _taskInfo._beta = fullBeta;
         }
-      }).setValidate(_parms._intercept?_taskInfo._ymu : 0.5, score).asyncExec(_dinfo._adaptedFrame);
+      }).setValidate(_parms._intercept?_taskInfo._ymu : _parms._family == Family.binomial?0.5:0, score).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
     protected void compute2() {
@@ -1258,7 +1264,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       @Override
       public void callback(final GLMLineSearchTask lst) {
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
-        assert Double.isNaN(_expectedLikelihood) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
+        assert (Double.isNaN(_expectedLikelihood) || Double.isInfinite(_expectedLikelihood)) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);

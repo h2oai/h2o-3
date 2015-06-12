@@ -106,6 +106,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     beta_constraints = NULL,
                     offset_column = NULL,
                     weights_column = NULL,
+                    intercept = TRUE,
                     ...
                     )
 {
@@ -152,6 +153,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if( !missing(lambda_min_ratio) )          parms$lambda_min_ratio       <- lambda_min_ratio
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
+  if( !missing(intercept) )                 parms$intercept              <- intercept
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.

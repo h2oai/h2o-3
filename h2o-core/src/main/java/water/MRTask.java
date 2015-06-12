@@ -367,7 +367,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
   // Support for fluid-programming with strong types
-  private T self() { return (T)this; }
+  protected T self() { return (T)this; }
 
   /** Invokes the map/reduce computation over the given Vecs.  This call is
    *  blocking. */
