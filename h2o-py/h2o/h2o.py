@@ -160,6 +160,51 @@ def _quoted(key):
   return key
 
 
+def ifelse(test,yes,no):
+  """
+  Semantically equivalent to R's ifelse.
+  Based on the booleans in the test vector, the output has the values of the yes and no
+  vectors interleaved (or merged together).
+
+  :param test: A "test" H2OFrame
+  :param yes:  A "yes" H2OFrame
+  :param no:   A "no"  H2OFrame
+  :return: An H2OFrame
+  """
+  test_a=None
+  yes_a =None
+  no_a  =None
+  if isinstance(test, bool): test_a = "%TRUE" if test else "%FALSE"
+  else:
+    if isinstance(test,H2OVec): test_a=test._expr.eager()
+    else:                       test_a = test.key()
+  if isinstance(yes, (int,float)):
+    yes_a = "#{}".format(str(yes))
+  else:
+    if isinstance(yes,H2OVec): yes_a = yes._expr.eager()
+    else:                      yes_a = yes.key()
+  if isinstance(no, (int,float)):
+    no_a = "#{}".format(str(no))
+  else:
+    if isinstance(no,H2OVec): no_a = no._expr.eager()
+    else:                     no_a = no.key()
+
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ifelse '{}' {} {}))".format(tmp_key,test_a,yes_a,no_a)
+  rapids(expr)
+  j = frame(tmp_key) # Fetch the frame as JSON
+  fr = j['frames'][0]    # Just the first (only) frame
+  rows = fr['rows']      # Row count
+  veckeys = fr['vec_ids']# List of h2o vec keys
+  cols = fr['columns']   # List of columns
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+  removeFrameShallow(tmp_key)
+  removeFrameShallow(str(yes_a))
+  removeFrameShallow(str(no_a))
+  removeFrameShallow(str(test_a))
+  return H2OFrame(vecs=vecs)
+
 def split_frame(data, ratios=[0.75], destination_frames=None):
   """
   Split a frame into distinct subsets of size determined by the given ratios.
