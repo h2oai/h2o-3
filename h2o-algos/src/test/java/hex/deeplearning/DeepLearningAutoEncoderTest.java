@@ -39,7 +39,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
       test = ParseDataset.parse(Key.make("test.hex"), nfs2._key);
 
       for (float sparsity_beta : new float[]{0, 0.1f}) {
-        DeepLearningModel.DeepLearningParameters p = new DeepLearningModel.DeepLearningParameters();
+        DeepLearningParameters p = new DeepLearningParameters();
         p._train = train._key;
         p._valid = test._key;
         p._autoencoder = true;
@@ -51,10 +51,11 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._sparsity_beta = sparsity_beta;
         p._average_activation = -0.7;
         p._l1 = 1e-4;
-        p._activation = DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout;
-        p._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute;
+        p._activation = DeepLearningParameters.Activation.TanhWithDropout;
+        p._loss = DeepLearningParameters.Loss.Absolute;
         p._epochs = 13.3;
         p._force_load_balance = true;
+        p._elastic_averaging = false;
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = null;
         try {

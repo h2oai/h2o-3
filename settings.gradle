@@ -32,4 +32,5 @@ if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HA
 }
 
 include 'h2o-test-integ'
+include 'h2o-testng'
 

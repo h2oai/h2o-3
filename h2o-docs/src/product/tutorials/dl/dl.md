@@ -67,7 +67,13 @@ Now, parse the imported data:
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Data Preview** section. The last column, `C785`, must be changed to an enum. 
+0. Scroll all the way to the right to view C785. 
+0. Click the drop-down column heading menu for C785 and select `Enum`.  
+   
+   ![Selecting Enum](../images/DL_SelectEnum.png) 
+
+0. Click the **Parse** button.  
 
   ![Parsing Data](../images/DL_Parse.png)
   
@@ -93,7 +99,18 @@ Now, parse the imported data:
 
 ##Results
 
- To view the results, click the **View** button. The output for the Deep Learning model displays the scoring history, the training metrics, and the status of the neuron layers. 
+ To view the results, click the **View** button. The output for the Deep Learning model includes the following information for both the training and testing sets:
+ 
+- Model parameters (hidden)
+- A chart of the variable importances
+- A graph of the scoring history (training MSE and validation MSE vs epochs)
+- Training and validation metrics confusion matrix
+- Output (model category, weights, biases)
+- Status of neuron layers (layer number, units, type, dropout, L1, L2, mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias, bias RMS)
+- Scoring history in tabular format
+- Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
+- Top-10 Hit Ratios for training and validation
+- Preview POJO
   
    ![Viewing Model Results](../images/DL_Results.png)
    
@@ -102,15 +119,19 @@ Now, parse the imported data:
   ![Inspecting Results](../images/DL_Inspect.png)
   
  
- Select the appropriate link to view details for: 
+Select the appropriate link to view details for: 
  
- - Neuron layer status
- - Scoring history
- - Training metrics
- - Training metrics confusion matrix
- - Validation metrics
- - Validation metrics confusion matrix
+- Parameters
+- Output
+- Neuron layer status
+- Scoring history
+- Training metrics
+- Training metrics - Top-10 Hit Ratios
+- Training metrics confusion matrix
+- Validation metrics
+- Validation metrics confusion matrix
+- Variable importances
 
-The training metrics confusion matrix is shown below. 
+The scoring history graph, training metrics confusion matrix, and validation metrics confusion matrix are shown below. 
 
    ![Training Metrics Confusion Matrix](../images/DL_Inspect_Conf.png)

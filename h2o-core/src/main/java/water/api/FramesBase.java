@@ -12,11 +12,17 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends RequestSc
   @API(help="Name of column of interest", json=false)
   public String column;
 
-  @API(help="Row offset to display", direction=API.Direction.INOUT)
+  @API(help="Row offset to return", direction=API.Direction.INOUT)
   public long row_offset;
 
-  @API(help="Number of rows to display", direction=API.Direction.INOUT)
+  @API(help="Number of rows to return", direction=API.Direction.INOUT)
   public int row_count;
+
+  @API(help="Column offset to return", direction=API.Direction.INOUT)
+  public int column_offset;
+
+  @API(help="Number of columns to return", direction=API.Direction.INOUT)
+  public int column_count;
 
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;
@@ -62,7 +68,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends RequestSc
 
       int i = 0;
       for (Frame frame : f.frames) {
-        this.frames[i++] = new FrameV3(frame, f.offset, f.len);
+        this.frames[i++] = new FrameV3(frame, f.row_offset, f.row_count);
       }
     }
     return this;

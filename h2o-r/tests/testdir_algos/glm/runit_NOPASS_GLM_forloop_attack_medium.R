@@ -47,7 +47,7 @@ set_beta_constraints <- function(standardize, cols, frame, ignored) {
   name <- list()
     lower_bound <- list()
     upper_bound <- list()
-    if (!missing(ignored) && !is.null(ignored))
+    if (!is.null(ignored) && any(colnames(frame)[cols] %in% ignored))
       cols <- cols[-which(colnames(frame)[cols] %in% ignored)]
     for (n in cols) {
       # If enum column => create Colname.Class
@@ -83,12 +83,7 @@ set_offset_column <- function(cols, frame)
     if(!is.factor(frame[,val]))
       return(val)
   }
-set_weights_column <- function(cols, frame)
-  while(1) {
-    val <- sample(names(frame)[cols], 1)
-    if(!is.factor(frame[,val]))
-      return(val)
-  }
+set_weights_column <- function(col) return("weights")
 
 randomParams <- function(family, train, test, x, y) {
   parms <- list()
@@ -99,10 +94,13 @@ randomParams <- function(family, train, test, x, y) {
     if (required || sample(bools,1)) {
       val <- do.call(paste0("set_", parm), list(...))
       if (!is.null(val))
-        if (is.vector(val))
+        if (identical(val, "weights")) {
+          Log.info(paste0(sub("_", " ", parm), ":"))
+          print(weights.train)
+        } else if (is.vector(val))
           Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
         else if (inherits(val, "H2OFrame"))
-          Log.info(paste0(sub("_", " ", parm), ": ", deparse(substitute(val))))
+          Log.info(paste0(sub("_", " ", parm), ": ",val@frame_id))
         else if (inherits(val, "data.frame")) {
           Log.info(paste0(sub("_", " ", parm), ":"))
           print(val)
@@ -112,6 +110,11 @@ randomParams <- function(family, train, test, x, y) {
     }
     return(NULL)
   }
+
+  weights.train <- runif(nrow(train), min = 0, max = 10)
+  weights.test <- runif(nrow(test), min = 0, max = 10)
+  train$weights <- as.h2o(weights.train)
+  test$weights <- as.h2o(weights.test)
 
   parms$x <- parm_set("x", required = TRUE, cols = x)
   parms$y <- parm_set("y", required = TRUE, col = y)
@@ -126,13 +129,13 @@ randomParams <- function(family, train, test, x, y) {
   # parms$tweedie_variance_power <- parm_set("tweedie_variance_power")
   # parms$tweedie_link_power <- parm_set("tweedie_link_power")
   parms$alpha <- parm_set("alpha")
-  parms$prior <- parm_set("prior")
+  parms$prior <- parm_set("prior", dep = identical(family, "binomial"))
   # parms$lambda <- parm_set("lambda")
   parms$lambda_search <- parm_set("lambda_search")
-  parms$nlambdas <- parm_set("nlambdas")
+  parms$nlambdas <- parm_set("nlambdas", dep = !is.null(parms$lambda_search) && parms$lambda_search)
   # parms$lambda_min_ratio <- parm_set("lambda_min_ratio")
   parms$offset_column <- parm_set("offset_column", cols = x, frame = train)
-  # parms$weights_column <- parm_set("weights_column", cols = x, frame = train)
+  parms$weights_column <- parm_set("weights_column")
   parms$beta_constraints <- parm_set("beta_constraints", standardize = parms$standardize,
     cols = parms$x, frame = train, ignored = parms$offset_column)
 
@@ -141,14 +144,14 @@ randomParams <- function(family, train, test, x, y) {
 
   h2o.rm(hh@model_id)
   print("#########################################################################################")
-    print("")
-    print(t)
-    print("")
+  print("")
+  print(t)
+  print("")
 }
 
 test.glm.rand_attk_forloop <- function(conn) {
   Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
