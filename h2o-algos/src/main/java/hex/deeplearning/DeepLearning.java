@@ -92,7 +92,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             true,  // always add a bucket for missing values
-            false, // no weights
+            parms._weights_column != null, // no weights
             false  // no offset
       );
   }

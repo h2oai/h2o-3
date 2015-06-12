@@ -141,7 +141,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
 
     public double epoch_counter;
-    public long training_samples;
+    public double training_samples;
     public long training_time_ms;
 
     //training/validation sets
@@ -241,7 +241,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
-    colHeaders.add("Samples"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
     if (!_output.autoencoder) {
@@ -509,7 +509,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
-                  + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+                  + ". Processed " + String.format("%f", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
                   + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
         }
       }
@@ -765,12 +765,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @return preds, can contain NaNs
    */
   @Override public double[] score0(double[] data, double[] preds) {
+    return score0(data, preds, 0);
+  }
+
+  @Override
+  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
+    return score0(data, preds, 1); //ignored weight/offset during scoring
+  }
+
+  // Actual scoring logic
+  private double[] score0(double[] data, double[] preds, int skipAtEnd) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-    ((Neurons.Input)neurons[0]).setInput(-1, data);
+    ((Neurons.Input)neurons[0]).setInput(-1, data, skipAtEnd);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null);
     float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
@@ -790,6 +800,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     return preds;
   }
+
 
   /**
    * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
@@ -874,7 +885,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp, 0); //FIXME - no weights yet
           DeepLearningTask.step(-1, neurons, model_info, null, false, null);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
@@ -914,7 +925,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data); // expands categoricals inside
+    ((Neurons.Input)neurons[0]).setInput(-1, data, 0 ); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null); // reconstructs data in expanded space
     float[] in  = neurons[0]._a.raw(); //input (expanded)
     float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)

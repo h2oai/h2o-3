@@ -89,7 +89,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Override this to do post-chunk processing work.
    * @param n Number of processed rows
    */
-  protected void chunkDone(long n){}
+  protected void chunkDone(double n){}
 
 
   /**
@@ -115,6 +115,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final int repeats = (int)Math.ceil(_useFraction);
     final float fraction = _useFraction / repeats;
 
+    Random row_weight_rng = RandomUtils.getRNG(0xDECAF);
     if (fraction < 1.0) {
       skip_rng = RandomUtils.getRNG(new Random().nextLong());
     }
@@ -125,22 +126,30 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         shuf_map[i] = start + i;
       ArrayUtils.shuffleArray(shuf_map, new Random().nextLong());
     }
-    long num_processed_rows = 0;
+    double num_processed_rows = 0;
     DataInfo.Row row = _dinfo.newDenseRow();
     for(int rrr = 0; rrr < repeats; ++rrr) {
       OUTER:
       for(int rr = start; rr < end; ++rr){
         final int r = shuf_map != null ? (int)shuf_map[rr-start] : rr;
-        final long lr = r + chunks[0].start();
         if (skip_rng != null && skip_rng.nextFloat() > fraction)continue;
-        ++num_processed_rows; //count rows with missing values even if they are skipped
-        if(!_dinfo.extractDenseRow(chunks, r, row).bad) {
+        row = _dinfo.extractDenseRow(chunks, r, row);
+        if(!row.bad) {
           long seed = offset + rrr * (end - start) + r;
-          if (outputs != null && outputs.length > 0)
-            processRow(seed, row, outputs);
-          else
-            processRow(seed, row);
+          row_weight_rng.setSeed(seed);
+          for (int i=0; i<row.weight; ++i) {
+            if (outputs != null && outputs.length > 0)
+              processRow(seed++, row, outputs);
+            else
+              processRow(seed++, row);
+          }
+          double remainder = row.weight-(int)row.weight;
+          if (remainder > 0 && row_weight_rng.nextDouble() < remainder) {
+            if (outputs != null && outputs.length > 0) processRow(seed++, row, outputs);
+            else processRow(seed++, row);
+          }
         }
+        num_processed_rows += row.weight;
       }
     }
     chunkDone(num_processed_rows);

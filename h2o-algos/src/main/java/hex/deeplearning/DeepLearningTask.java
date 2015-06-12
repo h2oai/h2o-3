@@ -102,7 +102,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * After each chunk, add the number of processed rows to the counter
    * @param n Number of processed rows
    */
-  @Override protected void chunkDone(long n) {
+  @Override protected void chunkDone(double n) {
     if (_training) _localmodel.add_processed_local(n);
   }
 

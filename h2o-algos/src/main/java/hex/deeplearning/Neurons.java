@@ -633,7 +633,7 @@ public abstract class Neurons {
    * @param n The number of training samples seen so far (for rate_annealing greater than 0)
    * @return Learning rate
    */
-  public float rate(long n) {
+  public float rate(double n) {
     return (float)(params._rate / (1 + params._rate_annealing * n));
   }
 
@@ -646,10 +646,10 @@ public abstract class Neurons {
    * @param n The number of training samples seen so far
    * @return momentum
    */
-  public float momentum(long n) {
+  public float momentum(double n) {
     double m = params._momentum_start;
     if( params._momentum_ramp > 0 ) {
-      final long num = n != -1 ? _minfo.get_processed_total() : n;
+      final double num = n != -1 ? _minfo.get_processed_total() : n;
       if( num >= params._momentum_ramp)
         m = params._momentum_stable;
       else
@@ -685,7 +685,7 @@ public abstract class Neurons {
      * @param data Data (training columns and responses) to extract the training columns
      *             from to be mapped into the input neuron layer
      */
-    public void setInput(long seed, final double[] data) {
+    public void setInput(long seed, final double[] data, int skipAtEnd) {
 //      Log.info("Data: " + ArrayUtils.toString(data));
       assert(_dinfo != null);
       double [] nums = MemoryManager.malloc8d(_dinfo._nums); // a bit wasteful - reallocated each time
@@ -710,7 +710,7 @@ public abstract class Neurons {
         }
         ncats++;
       }
-      final int n = data.length; // data contains only input features - no response is included
+      final int n = data.length - skipAtEnd; // data contains only input features - no response is included
       for(;i < n;++i){
         double d = data[i];
         if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];

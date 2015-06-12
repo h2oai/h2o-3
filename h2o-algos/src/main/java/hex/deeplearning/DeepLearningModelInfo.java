@@ -114,15 +114,15 @@ public class DeepLearningModelInfo extends Iced {
     unstable = true;
   }
 
-  private long processed_global;
-  public synchronized long get_processed_global() { return processed_global; }
-  public synchronized void set_processed_global(long p) { processed_global = p; }
-  public synchronized void add_processed_global(long p) { processed_global += p; }
-  private long processed_local;
-  public synchronized long get_processed_local() { return processed_local; }
-  public synchronized void set_processed_local(long p) { processed_local = p; }
-  public synchronized void add_processed_local(long p) { processed_local += p; }
-  public synchronized long get_processed_total() { return processed_global + processed_local; }
+  private double processed_global;
+  public synchronized double get_processed_global() { return processed_global; }
+  public synchronized void set_processed_global(double p) { processed_global = p; }
+  public synchronized void add_processed_global(double p) { processed_global += p; }
+  private double processed_local;
+  public synchronized double get_processed_local() { return processed_local; }
+  public synchronized void set_processed_local(double p) { processed_local = p; }
+  public synchronized void add_processed_local(double p) { processed_local += p; }
+  public synchronized double get_processed_total() { return processed_global + processed_local; }
 
   // package local helpers
   int[] units; //number of neurons per layer, extracted from parameters and from datainfo
@@ -297,7 +297,7 @@ public class DeepLearningModelInfo extends Iced {
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
                     + ", " + get_params()._loss.toString() + " loss, "
                     + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size) + ", "
-                    + String.format("%,d", get_processed_global()) + " training samples",
+                    + String.format("%f", get_processed_global()) + " training samples",
             new String[neurons.length],
             new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                     "Mean Rate", "Rate RMS", "Momentum",
@@ -645,7 +645,7 @@ public class DeepLearningModelInfo extends Iced {
    */
   protected long checksum_impl() {
     long cs = parameters._seed;
-    cs ^= size() * get_processed_total();
+    cs ^= size() * (long)get_processed_total();
     cs ^= (long) (2234.3424 * ArrayUtils.sum(mean_bias));
     cs *= (long) (9234.1343 * ArrayUtils.sum(rms_bias));
     cs ^= (long) (9723.9734 * ArrayUtils.sum(mean_weight));
