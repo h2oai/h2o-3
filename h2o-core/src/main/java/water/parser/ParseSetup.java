@@ -1,17 +1,14 @@
 package water.parser;
 
-import water.*;
+import water.DKV;
+import water.Iced;
+import water.Key;
+import water.MRTask;
 import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OInternalParseException;
 import water.exceptions.H2OParseException;
 import water.exceptions.H2OParseSetupException;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.UploadFileVec;
-import water.fvec.FileVec;
-import water.fvec.ByteVec;
-import water.util.Log;
+import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -106,6 +103,9 @@ public final class ParseSetup extends Iced {
    * Used by Ray's schema magic
    */
   public ParseSetup() {}
+
+  public String[] getColumnNames() { return _column_names; }
+  public String[][] getData() { return _data; }
 
   public String[] getColumnTypeStrings() {
     String[] types = new String[_column_types.length];
