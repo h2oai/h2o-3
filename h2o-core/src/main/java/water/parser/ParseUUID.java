@@ -19,10 +19,10 @@ public class ParseUUID {
    */
   public static final boolean isUUID(ValueString str) {
     boolean res;
-    int old = str.get_off();
+    int old = str.getOffset();
     attemptUUIDParseLow(str);
     attemptUUIDParseHigh(str);
-    res = str.get_off() != -1;
+    res = str.getOffset() != -1;
     str.setOff(old);
     return res;
   }
@@ -44,9 +44,9 @@ public class ParseUUID {
   public static long[] attemptUUIDParse( ValueString str) {
     long[] uuid = new long[2];
     uuid[0] = attemptUUIDParseLow(str);
-    if (str.get_off() == -1) return badUUID();
+    if (str.getOffset() == -1) return badUUID();
     uuid[1] = attemptUUIDParseHigh(str);
-    if (str.get_off() == -1) return badUUID();
+    if (str.getOffset() == -1) return badUUID();
     return uuid;
   }
 
@@ -54,8 +54,8 @@ public class ParseUUID {
   // Parse XXXXXXXX-XXXX-XXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).
   private static long attemptUUIDParseLow(ValueString str) {
-    final byte[] buf = str.get_buf();
-    int i=str.get_off();
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
     if( i+36 > buf.length ) return markBad(str);
     long lo=0;
     lo = get2(lo,buf,(i+=2)-2);
@@ -73,8 +73,8 @@ public class ParseUUID {
   // Parse -XXXX-XXXXXXXXXXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).
   public static long attemptUUIDParseHigh(ValueString str) {
-    final byte[] buf = str.get_buf();
-    int i=str.get_off();
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
     if ( i== -1 ) return markBad(str);
     long hi=0;
     if( buf[i++]!='-' ) return markBad(str);

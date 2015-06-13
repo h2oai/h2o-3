@@ -136,10 +136,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         long l = ParseTime.attemptTimeParse(str);
         if( l == Long.MIN_VALUE ) addInvalidCol(colIdx);
         else {
-          int time_pat = ParseTime.decodePat(l); // Get time pattern
+          int timePat = ParseTime.decodePat(l); // Get time pattern
           l = ParseTime.decodeTime(l);           // Get time
           addNumCol(colIdx, l, 0);               // Record time in msec
-          _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
+          _nvs[_col]._timCnt[timePat]++; // Count histo of time parse patterns
         }
       } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
         long[] uuid = ParseUUID.attemptUUIDParse(str);

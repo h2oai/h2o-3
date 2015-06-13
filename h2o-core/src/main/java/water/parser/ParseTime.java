@@ -71,9 +71,9 @@ public abstract class ParseTime {
   }
   // So I just brutally parse "yyyy-MM-dd HH:mm:ss.SSS"
   private static long attemptTimeParse_01( ValueString str ) {
-    final byte[] buf = str.get_buf();
-    int i=str.get_off();
-    final int end = i+str.get_length();
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
+    final int end = i+str.length();
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
     if( (end-i) != 10 && (end-i) < 19 ) return Long.MIN_VALUE;
@@ -423,9 +423,9 @@ public abstract class ParseTime {
   }
 
   private static long attemptTimeParse_2( ValueString str ) {
-    final byte[] buf = str.get_buf();
-    int i=str.get_off();
-    final int end = i+str.get_length();
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
+    final int end = i+str.length();
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
     if( (end-i) < 8 ) return Long.MIN_VALUE;
