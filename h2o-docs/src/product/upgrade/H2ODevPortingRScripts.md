@@ -191,7 +191,6 @@ The following parameters have been removed:
  - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. (may be re-added)
  - `higher_accuracy`: For improved accuracy, adjust the `beta_epsilon` value. 
  - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. (may be re-added as enabled by default)
- - `intercept`: Defines factor columns in the model. (may be re-added)
  - `non_negative`: Specify a non-negative response. (may be re-added)
  - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
@@ -220,7 +219,7 @@ H2O Classic | H2O 3.0
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
 `return_all_lambda = FALSE,` | 
-`intercept = TRUE,` | 
+`intercept = TRUE,` | `intercept = TRUE`
 `non_negative = FALSE,` | 
 &nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
