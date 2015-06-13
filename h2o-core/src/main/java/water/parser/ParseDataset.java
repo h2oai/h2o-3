@@ -692,7 +692,7 @@ public final class ParseDataset extends Job<Frame> {
         _espc = MemoryManager.malloc8(_nchunks);
       }
       @Override public void map( Chunk in ) {
-        Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
+        //Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
@@ -721,7 +721,7 @@ public final class ParseDataset extends Job<Frame> {
         // remove parsed data right away (each chunk is used by 2)
         freeMem(in,0);
         freeMem(in,1);
-        Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
+        //Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
       }
 
       private void freeMem(Chunk in, int off) {
@@ -733,13 +733,13 @@ public final class ParseDataset extends Job<Frame> {
         v.freeMem();
       }
       @Override public void reduce(DistributedParse dp) {
-        Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+        //Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
         _dout.reduce(dp._dout);
-        Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+        //Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
       }
 
       @Override public void postGlobal() {
-        Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
+        //Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         _dout = null;           // Reclaim GC eagerly
@@ -754,7 +754,7 @@ public final class ParseDataset extends Job<Frame> {
           if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,new Futures()).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
         }
-        Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
+        //Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
       }
     }
 
