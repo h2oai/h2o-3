@@ -206,6 +206,8 @@ The GLM suite includes:
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
 
+- **Intercept**: To include a constant term in the model, check this checkbox. This option is selected by default. 
+
 - **Objective_epsilon**: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
 - **Beta_epsilon**: Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 

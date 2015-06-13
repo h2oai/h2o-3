@@ -85,8 +85,16 @@ Now, parse the imported data:
 
 ### GLM Results
 
-To view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when
-standardization is requested). The output also displays AIC, AUC, and deviance rates.  
+To view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when standardization is requested). The output also includes: 
+
+- Model parameters (hidden)
+- A graph of the scoring history (objective vs. iteration) 
+- Output (model category, validation metrics, and standardized coefficients magnitude)
+- GLM model summary (family, link, regularization, number of total predictors, number of active predictors, number of iterations, training frame)
+-  Scoring history in tabular form (timestamp, duration, iteration, log likelihood, objective)
+-  Training metrics (model, model checksum, frame, frame checksum, description, model category, scoring time, predictions, MSE, r2, residual deviance, null deviance, AIC, null degrees of freedom, residual degrees of freedom) 
+-  Coefficients
+-  Preview POJO
 
 ![GLM Results](../images/GLM_ModelResults.png)
 

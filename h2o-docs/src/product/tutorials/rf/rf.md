@@ -68,13 +68,20 @@ Now, parse the imported data:
 
 The DRF model output includes the following: 
 
+- Model parameters (hidden)
+- Scoring history graph (number for each tree and MSE)
+- ROC curve, training metrics, AUC (with drop-down menus to select thresholds and criterion) 
+- Variable importances (variable name, relative importance, scaled importance, percentage)
 - Output (model category, validation metrics, initf)
 - Model summary (number of trees, min. depth, max. depth, mean depth, min. leaves, max. leaves, mean leaves)
-- Scoring history (number for each tree and MSE)
+- Scoring history (in tabular format)
 - Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, R2, Logloss, AUC, Gini)
+- Domain 
 - Training metrics (thresholds, F1, F2, F0Points, Accuracy, Precision, Recall, Specificity, Absolute MCC, min. per-class accuracy, TNS, FNS, FPS, TPS, IDX)
 - Maximum metrics (metric, threshold, value, IDX)
-- Variable importances (variable name, relative importance, scaled importance, percentage)
+- Variable importances
+- Preview POJO
+
 
   ![Random Forest Model Results](../images/RF_Model_Results.png)
 
