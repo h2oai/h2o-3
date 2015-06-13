@@ -19,9 +19,9 @@ The data are composed of 210 observations, 7 attributes, and an a priori groupin
 ####Importing Data
 Before creating a model, import data into H2O:
 
-0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
-  
-  ![Assist Me button](../images/AssistButton.png)
+0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
+
+ ![Assist Me button](../images/Flow_AssistMeButton.png)
 
 0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the drop. 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
@@ -69,7 +69,7 @@ Now, parse the imported data:
 0. Uncheck the **Standardize** checkbox to disable column standardization. 
 0. Click the **Build Model** button. 
 
-  ![K-Means Model Builder cell](../images/Kmeans_BuildModel)
+  ![K-Means Model Builder cell](../images/Kmeans_BuildModel.png)
 
 ### K-Means Output
 
