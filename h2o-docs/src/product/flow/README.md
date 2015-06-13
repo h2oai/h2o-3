@@ -403,6 +403,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA), [GLM)](#GLM) Specify the number of training iterations. 
  
+- **Intercept**: [(GLM)](#GLM) To include a constant term in the model, check this checkbox. This option is selected by default. 
+
 - **Objective_epsilon**: [(GLM)](#GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
 - **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
