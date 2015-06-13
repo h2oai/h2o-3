@@ -21,6 +21,11 @@ public abstract class ParseTime {
   // ArrayIndexOutOfBoundsException... and the Piece de resistance: a
   // ClassCastException deep in the SimpleDateFormat code:
   // "sun.util.calendar.Gregorian$Date cannot be cast to sun.util.calendar.JulianCalendar$Date"
+
+  public static final boolean isTime(ValueString str) {
+    return attemptTimeParse(str) != Long.MIN_VALUE;
+  }
+
   private static int digit( int x, int c ) {
     if( x < 0 || c < '0' || c > '9' ) return -1;
     return x*10+(c-'0');

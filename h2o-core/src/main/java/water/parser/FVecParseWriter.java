@@ -127,15 +127,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         addInvalidCol(colIdx);
         return;
       }
-      if(_ctypes[colIdx] == Vec.T_BAD && ParseTime.attemptTimeParse(str) > 0)
+      if(_ctypes[colIdx] == Vec.T_BAD && ParseTime.isTime(str))
         _ctypes[colIdx] = Vec.T_TIME;
-      if( _ctypes[colIdx] == Vec.T_BAD ) { // Attempt UUID parse
-        int old = str.get_off();
-        ParseUUID.attemptUUIDParse0(str);
-        ParseUUID.attemptUUIDParse1(str);
-        if( str.get_off() != -1 ) _ctypes[colIdx] = Vec.T_UUID;
-        str.setOff(old);
-      }
+      if( _ctypes[colIdx] == Vec.T_BAD && ParseUUID.isUUID(str))
+        _ctypes[colIdx] = Vec.T_UUID;
 
       if( _ctypes[colIdx] == Vec.T_TIME ) {
         long l = ParseTime.attemptTimeParse(str);

@@ -163,10 +163,9 @@ public final class ParseSetup extends Iced {
         Double.parseDouble(s);
         return false;       // Number in 1st row guesses: No Column Header
       } catch (NumberFormatException e) { /*Pass - determining if number is possible*/ }
-      if( ParseTime.attemptTimeParse(str.setTo(s)) != Long.MIN_VALUE ) return false;
-      ParseUUID.attemptUUIDParse0(str.setTo(s));
-      ParseUUID.attemptUUIDParse1(str);
-      if( str.get_off() != -1 ) return false; // Valid UUID parse
+      str.setTo(s);
+      if(ParseTime.isTime(str)) return false;
+      if(ParseUUID.isUUID(str)) return false;
     }
     return true;
   }
