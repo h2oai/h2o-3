@@ -142,10 +142,9 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
         }
       } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
-        long lo = ParseUUID.attemptUUIDParse0(str);
-        long hi = ParseUUID.attemptUUIDParse1(str);
-        if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
-        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
+        long[] uuid = ParseUUID.attemptUUIDParse(str);
+        // FIXME: what if colIdx > _nCols
+        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(uuid[0], uuid[1]);
       } else if( _ctypes[colIdx] == Vec.T_STR ) {
         _nvs[_col = colIdx].addStr(str);
       } else { // Enums

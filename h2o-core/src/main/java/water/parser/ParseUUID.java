@@ -1,57 +1,98 @@
 package water.parser;
 
+import water.fvec.C16Chunk;
+
+/**
+ * Utility class for parsing UUIDs.
+ *
+ * This class creates a hash value of two longs from
+ * a {@link ValueString} containing a correct UUID.
+ *
+ */
 public class ParseUUID {
+  /**
+   * Confirms whether the provided UUID is considered
+   * valid.
+   *
+   * @param str
+   * @return TRUE if str represents a valid UUID
+   */
   public static final boolean isUUID(ValueString str) {
     boolean res;
     int old = str.get_off();
-    attemptUUIDParse0(str);
-    attemptUUIDParse1(str);
+    attemptUUIDParseLow(str);
+    attemptUUIDParseHigh(str);
     res = str.get_off() != -1;
     str.setOff(old);
     return res;
   }
+
+  /**
+   * Attempts to parse the provided {@link ValueString} as
+   * a UUID into hash value in two longs.
+   *
+   * Warning: as written, this method does modify the state
+   * of the passed in ValueString.
+   *
+   * @param str
+   * @return A two value long array array containing the low
+   * and high hash values in indices 0,1 respectively.  For
+   * invalid UUID strings, the returned values are
+   * {link @C16Chunk._LO_NA} and {link @C16Chunk._HI_NA},
+   * respectively.
+   */
+  public static long[] attemptUUIDParse( ValueString str) {
+    long[] uuid = new long[2];
+    uuid[0] = attemptUUIDParseLow(str);
+    if (str.get_off() == -1) return badUUID();
+    uuid[1] = attemptUUIDParseHigh(str);
+    if (str.get_off() == -1) return badUUID();
+    return uuid;
+  }
+
   // --------------------------------
   // Parse XXXXXXXX-XXXX-XXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).
-  public static long attemptUUIDParse0( ValueString str ) {
+  private static long attemptUUIDParseLow(ValueString str) {
     final byte[] buf = str.get_buf();
     int i=str.get_off();
-    if( i+36>buf.length ) return badUUID(str);
+    if( i+36 > buf.length ) return markBad(str);
     long lo=0;
     lo = get2(lo,buf,(i+=2)-2);
     lo = get2(lo,buf,(i+=2)-2);
     lo = get2(lo,buf,(i+=2)-2);
     lo = get2(lo,buf,(i+=2)-2);
-    if( buf[i++]!='-' ) return badUUID(str);
+    if( buf[i++]!='-' ) return markBad(str);
     lo = get2(lo,buf,(i+=2)-2);
     lo = get2(lo,buf,(i+=2)-2);
-    if( buf[i++]!='-' ) return badUUID(str);
+    if( buf[i++]!='-' ) return markBad(str);
     lo = get2(lo,buf,(i+=2)-2);
-    return attemptUUIDParseLast(str,lo,buf,i);
-  }
-  // Parse -XXXX-XXXXXXXXXXXX and return an arbitrary long, or set str.off==-1
-  // (and return Long.MIN_VALUE but this is a valid long return value).
-  public static long attemptUUIDParse1( ValueString str ) {
-    final byte[] buf = str.get_buf();
-    int i=str.get_off();
-    if( i== -1 ) return badUUID(str);
-    long hi=0;
-    if( buf[i++]!='-' ) return badUUID(str);
-    hi = get2(hi,buf,(i+=2)-2);
-    hi = get2(hi,buf,(i+=2)-2);
-    if( buf[i++]!='-' ) return badUUID(str);
-    hi = get2(hi,buf,(i+=2)-2);
-    hi = get2(hi,buf,(i+=2)-2);
-    hi = get2(hi,buf,(i+=2)-2);
-    hi = get2(hi,buf,(i+=2)-2);
-    hi = get2(hi,buf,(i+=2)-2);
-    return attemptUUIDParseLast(str,hi,buf,i);
+    return attemptUUIDParseEnd(str, lo, buf, i);
   }
 
-  private static long attemptUUIDParseLast( ValueString str, long lo, byte[] buf, int i ) {
+  // Parse -XXXX-XXXXXXXXXXXX and return an arbitrary long, or set str.off==-1
+  // (and return Long.MIN_VALUE but this is a valid long return value).
+  public static long attemptUUIDParseHigh(ValueString str) {
+    final byte[] buf = str.get_buf();
+    int i=str.get_off();
+    if ( i== -1 ) return markBad(str);
+    long hi=0;
+    if( buf[i++]!='-' ) return markBad(str);
+    hi = get2(hi,buf,(i+=2)-2);
+    hi = get2(hi,buf,(i+=2)-2);
+    if( buf[i++]!='-' ) return markBad(str);
+    hi = get2(hi,buf,(i+=2)-2);
+    hi = get2(hi,buf,(i+=2)-2);
+    hi = get2(hi,buf,(i+=2)-2);
+    hi = get2(hi,buf,(i+=2)-2);
+    hi = get2(hi,buf,(i+=2)-2);
+    return attemptUUIDParseEnd(str, hi, buf, i);
+  }
+
+  private static long attemptUUIDParseEnd(ValueString str, long lo, byte[] buf, int i) {
     // Can never equal MIN_VALUE since only parsed 14 of 16 digits, unless
     // failed parse already.
-    if( lo == Long.MIN_VALUE ) return badUUID(str);
+    if( lo == Long.MIN_VALUE ) return markBad(str);
     // If the last 2 digits are 0x8000 and the first 14 are all 0's then might
     // legitimately parse MIN_VALUE, need to check for it special.
     str.setOff(i+2);            // Mark as parsed
@@ -62,7 +103,7 @@ public class ParseUUID {
     lo = get2(lo,buf,i);
     return (lo == Long.MIN_VALUE || // broken UUID already, OR
             // too many valid UUID digits
-            (i+2< buf.length && hdigit(0,buf[i+2]) != Long.MIN_VALUE)) ? badUUID(str) : lo;
+            (i+2< buf.length && hdigit(0,buf[i+2]) != Long.MIN_VALUE)) ? markBad(str) : lo;
   }
 
 
@@ -80,8 +121,11 @@ public class ParseUUID {
     else if( b >= 'a' && b <= 'f' ) return (x<<4)+b-'a'+10;
     else return Long.MIN_VALUE;
   }
-  public static long badUUID( ValueString str ) {
+  private static long markBad(ValueString str) {
     str.setOff(-1);
     return Long.MIN_VALUE;
+  }
+  private static long[] badUUID() {
+    return new long[]{C16Chunk._LO_NA, C16Chunk._HI_NA};
   }
 }
