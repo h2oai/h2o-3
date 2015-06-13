@@ -4,8 +4,6 @@ This tutorial describes how to create a Distributed Random Forest (DRF) model us
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-For more details on the math behind H2O's implementation of Random Forest, refer to <a href="http://docs.h2o.ai/datascience/rf.html" target="_blank">RF Data Science</a>. 
-
 
 ### Getting Started
 
@@ -13,13 +11,12 @@ This tutorial uses a publicly available data set that can be found at <a href ="
 
 The data are composed of 3279 observations, 1557 attributes, and an a priori grouping assignment. The objective is to build a prediction tool that predicts whether an object is an internet ad or not.
 
-To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
-
 ####Importing Data
 Before creating a model, import data into H2O:
 
-0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
- ![Assist Me button](../images/AssistButton.png)
+0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
+
+ ![Assist Me button](../images/Flow_AssistMeButton.png)
 
 0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the file drop.  
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
