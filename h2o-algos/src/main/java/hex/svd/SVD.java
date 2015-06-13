@@ -118,8 +118,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return ivv_sum;
   }
 
-  // Compute sum of column variance with transformed numeric cols, expanded categorical indicator cols
-  public double totalVar(DataInfo dinfo) { return totalVar(dinfo, null, false); }
+  // Compute sum of diagonal of X'X/(nrow(X)-1), where X = transformed and expanded training frame
   public double totalVar(DataInfo dinfo, double[][] gram, boolean includeCats) {
     double total = 0;
     double nrow = dinfo._adaptedFrame.numRows();
@@ -130,8 +129,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // The indicator column for that level will have variance
         // ((1 - c/n)^2 * c + (0 - c/n)^2 * (n-c))/(n-1) = (c * (n-c))/(n * (n-1))
         for(int j = 0; j < dinfo._catOffsets[i+1]; j++) {
-          double c = gram[j][j] * nrow;   // Since diagonal of gram is c/n
-          total += c * (nrow - c) / (nrow * (nrow - 1));
+          // double c = gram[j][j] * nrow;   // Since diagonal of gram is c/n
+          // total += c * (nrow - c) / (nrow * (nrow - 1));
+          total += gram[j][j] * nrow / (nrow-1);
         }
       }
     }
