@@ -4,7 +4,7 @@ This tutorial describes how to perform a K-Means analysis. By the end of this tu
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-In H2O-dev, the K-means algorithm has a "k-modes" function that allows you to use mixed categorical and real-valued data. By using dissimilarity measures to handle categoricals, replacing cluster means with cluster modes, and using a frequency-based method to update modes in the clustering process to minimize the clustering costs, the k-modes algorithm is scalable in both the number of clusters and the number of records. The k-modes method is used anytime categorical data is present. 
+In the latest version of H2O, the K-means algorithm has a "k-modes" function that allows you to use mixed categorical and real-valued data. By using dissimilarity measures to handle categoricals, replacing cluster means with cluster modes, and using a frequency-based method to update modes in the clustering process to minimize the clustering costs, the k-modes algorithm is scalable in both the number of clusters and the number of records. The k-modes method is used anytime categorical data is present. 
 
 For more information, refer to <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.83&rep=rep1&type=pdf" target="_blank">"A Fast Clustering Algorithm to Cluster Very Large Categorical Data Sets in Data Mining"</a> and <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.4028&rep=rep1&type=pdf" target="_blank">"Extensions to the k-Means Algorithm for Clustering Large Data Sets with Catgorical Values"</a> by Zhexue Huang.
 
@@ -15,8 +15,6 @@ For more information, refer to <a href="http://citeseerx.ist.psu.edu/viewdoc/dow
 This tutorial uses a publicly available data set that can be found at <a href"http://archive.ics.uci.edu/ml/datasets/seeds" target="_blank">http://archive.ics.uci.edu/ml/datasets/seeds</a>.
 
 The data are composed of 210 observations, 7 attributes, and an a priori grouping assignment. All data are positively valued and continuous. 
-
-To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
 
 ####Importing Data
 Before creating a model, import data into H2O:
@@ -75,20 +73,19 @@ Now, parse the imported data:
 
 ### K-Means Output
 
-K-Means randomly chooses starting points and converges on
-optimal centroids. The cluster number is arbitrary, and should
-be thought of as a factor.
+K-Means randomly chooses starting points and converges on optimal centroids. The cluster number is arbitrary, and should be thought of as a factor.
 
 The output for K-Means includes the following: 
 
-- Output (model category, validation metrics if applicable, and centers standard deviation)
-- Model summary (number of clusters, number of categorical columns, number of iterations, avg. within sum of squares, avg. sum of squares, avg. between sum of squares)
+- Model parameters (hidden)
+- A graph of the scoring history (number of iterations vs. average within the cluster's sum of squares) 
+- Output (model category, validation metrics if applicable, and centers std)
+- Model Summary (number of clusters, number of categorical columns, number of iterations, avg. within sum of squares, avg. sum of squares, avg. between the sum of squares)
 - Scoring history (number of iterations, avg. change of standardized centroids, avg. within cluster sum of squares)
-- Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, avg. within sum of squares, avg. sum of squares, avg. between sum of squares) 
-- Training metrics (centroid statistics)
-- Cluster means (centroids by column) 
+- Training metrics (model name, checksum name, frame name, frame checksum name, description if applicable, model category, duration in ms, scoring time, predictions, MSE, avg. within sum of squares, avg. between sum of squares)
+- Centroid statistics (centroid number, size, within sum of squares)
+- Cluster means (centroid number, column)
 - Preview POJO
-
 
 
 
