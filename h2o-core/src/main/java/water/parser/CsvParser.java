@@ -632,7 +632,7 @@ MAIN_LOOP:
             ValueString str = new ValueString(data[0][0]);
             if (ParseTime.isDateTime(str))
               ctypes[0] = Vec.T_TIME;
-            else if (ParseTime.isUUID(str))
+            else if (ParseUUID.isUUID(str))
                 ctypes[0] = Vec.T_UUID;
             else { // give up and guess enum
                 ctypes[0] = Vec.T_ENUM;

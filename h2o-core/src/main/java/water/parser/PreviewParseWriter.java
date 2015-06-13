@@ -106,7 +106,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       }
 
       //Check for UUID
-      if(ParseTime.isUUID(str)) {
+      if(ParseUUID.isUUID(str)) {
         ++_nUUID[colIdx];
         return;
       }

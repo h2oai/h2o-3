@@ -131,8 +131,8 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         _ctypes[colIdx] = Vec.T_TIME;
       if( _ctypes[colIdx] == Vec.T_BAD ) { // Attempt UUID parse
         int old = str.get_off();
-        ParseTime.attemptUUIDParse0(str);
-        ParseTime.attemptUUIDParse1(str);
+        ParseUUID.attemptUUIDParse0(str);
+        ParseUUID.attemptUUIDParse1(str);
         if( str.get_off() != -1 ) _ctypes[colIdx] = Vec.T_UUID;
         str.setOff(old);
       }
@@ -147,8 +147,8 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
         }
       } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
-        long lo = ParseTime.attemptUUIDParse0(str);
-        long hi = ParseTime.attemptUUIDParse1(str);
+        long lo = ParseUUID.attemptUUIDParse0(str);
+        long hi = ParseUUID.attemptUUIDParse1(str);
         if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
         if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
       } else if( _ctypes[colIdx] == Vec.T_STR ) {
