@@ -100,7 +100,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   @Override public void addStrCol(int colIdx, ValueString str) {
     if(colIdx < _ncols) {
       // Check for time
-      if (ParseTime.isDateTime(str)) {
+      if (ParseTime.isTime(str)) {
         ++_ndates[colIdx];
         return;
       }

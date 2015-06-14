@@ -629,7 +629,7 @@ MAIN_LOOP:
             ctypes[0] = Vec.T_NUM;
           } else { // non-numeric
             ValueString str = new ValueString(data[0][0]);
-            if (ParseTime.isDateTime(str))
+            if (ParseTime.isTime(str))
               ctypes[0] = Vec.T_TIME;
             else if (ParseUUID.isUUID(str))
                 ctypes[0] = Vec.T_UUID;

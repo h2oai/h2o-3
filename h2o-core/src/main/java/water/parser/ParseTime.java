@@ -50,8 +50,6 @@ public abstract class ParseTime {
   // Time parse patterns
   public static final String TIME_PARSE[] = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.SSS", "dd-MMM-yy" };
 
-  public static boolean isDateTime(ValueString str) { return ParseTime.attemptTimeParse(str) != Long.MIN_VALUE; };
-
   // Returns:
   //  - not a time parse: Long.MIN_VALUE 
   //  - time parse via pattern X: time in msecs since Jan 1, 1970, shifted left by 1 byte, OR'd with X
