@@ -147,6 +147,8 @@ public class AUC2 extends Iced {
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)
   // points.  TPR and FPR are monotonically increasing from 0 to 1.
   private double compute_auc() {
+    if (_fps[_nBins-1] == 0) return 1.0; //special case
+
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
     double tp0 = 0, fp0 = 0;

@@ -840,7 +840,7 @@ public final class Gram extends Iced<Gram> {
     public long _nobs;
 
     public GramTask(Key jobKey, DataInfo dinfo){
-      super(jobKey,dinfo._key,dinfo._activeCols);
+      super(jobKey,dinfo);
     }
     @Override protected void chunkInit(){
       _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats, false);

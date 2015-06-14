@@ -478,7 +478,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // and update the progress message
     Job.Progress prog = DKV.getGet(progressKey);
     float progress = prog == null ? 0 : prog.progress();
-    String msg = "Training at " + model_info().get_processed_total() * 1000 / run_time + " samples/s..."
+    String msg = "Training at " + String.format("%.2f", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
@@ -769,8 +769,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   @Override
-  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
-    return score0(data, preds, 1); //ignored weight/offset during scoring
+  protected double[] score0(double[] data, double[] preds, double weight, double offset /*ignored*/) {
+    assert(Double.isNaN(weight) || weight > 0); //either missing or non-zero (don't score holdout rows!)
+    return score0(data, preds, 1 /*skip weight column at the end*/);
   }
 
   // Actual scoring logic

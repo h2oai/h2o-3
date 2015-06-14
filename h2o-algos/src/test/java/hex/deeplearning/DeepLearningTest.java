@@ -27,19 +27,19 @@ public class DeepLearningTest extends TestUtil {
 
     // iris ntree=1
     basicDLTest_Classification(
-            "./smalldata/iris/iris.csv", "iris.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.numCols() - 1;
-              }
-            },
-            1,
-            ard(ard(0, 50, 0),
-                    ard(0, 8, 42),
-                    ard(0, 1, 49)),
-            s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/iris/iris.csv", "iris.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            return fr.numCols() - 1;
+          }
+        },
+        1,
+        ard(ard(0, 50, 0),
+            ard(0, 8, 42),
+            ard(0, 1, 49)),
+        s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
+        DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -265,65 +265,65 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void testCreditProstateRegression1() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegression.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            1,
-            50.644808115120775,
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/logreg/prostate.csv", "prostateRegression.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        1,
+        50.644808115120775,
+        DeepLearningParameters.Activation.Rectifier);
 
   }
 
   @Test public void testCreditProstateRegressionTanh() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegressionTanh.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            1,
-            43.23511220404915,
-            DeepLearningParameters.Activation.Tanh);
+        "./smalldata/logreg/prostate.csv", "prostateRegressionTanh.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        1,
+        43.23511220404915,
+        DeepLearningParameters.Activation.Tanh);
 
   }
 
   @Test public void testCreditProstateRegressionMaxout() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegressionMaxout.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            1,
-            42.894661346549356,
-            DeepLearningParameters.Activation.Maxout);
+        "./smalldata/logreg/prostate.csv", "prostateRegressionMaxout.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        1,
+        42.894661346549356,
+        DeepLearningParameters.Activation.Maxout);
 
   }
 
   @Test public void testCreditProstateRegression5() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegression5.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            5,
-            43.187341679697695,
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/logreg/prostate.csv", "prostateRegression5.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        5,
+        43.187341679697695,
+        DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -344,18 +344,18 @@ public class DeepLearningTest extends TestUtil {
   }
   @Test public void testAlphabet() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.find("y");
-              }
-            },
-            10,
-            ard(ard(2080, 0),
-                    ard(0, 2080)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            return fr.find("y");
+          }
+        },
+        10,
+        ard(ard(2080, 0),
+            ard(0, 2080)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Rectifier);
   }
   @Test public void testAlphabetRegression() throws Throwable {
     basicDLTest_Regression(
@@ -374,48 +374,48 @@ public class DeepLearningTest extends TestUtil {
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                for (String s : new String[]{
-                        "DepTime", "ArrTime", "ActualElapsedTime",
-                        "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-                        "CancellationCode", "CarrierDelay", "WeatherDelay",
-                        "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
-                }) {
-                  fr.remove(s).remove();
-                }
-                return fr.find("IsDepDelayed");
-              }
-            },
-            7,
-            ard(ard(4051, 15612), //for 5-node
-                    ard(1397, 20322)),
+        "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            for (String s : new String[]{
+                "DepTime", "ArrTime", "ActualElapsedTime",
+                "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+                "CancellationCode", "CarrierDelay", "WeatherDelay",
+                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+            }) {
+              fr.remove(s).remove();
+            }
+            return fr.find("IsDepDelayed");
+          }
+        },
+        7,
+        ard(ard(4051, 15612), //for 5-node
+            ard(1397, 20322)),
 //            a(a(4396, 15269), //for 1-node
 //              a(1740, 19993)),
-            s("NO", "YES"),
-            DeepLearningParameters.Activation.Rectifier);
+        s("NO", "YES"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Ignore //PUBDEV-1001
   @Test public void testCzechboard() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                Vec resp = fr.remove("C2");
-                fr.add("C2", resp.toEnum());
-                resp.remove();
-                return fr.find("C3");
-              }
-            },
-            1,
-            ard(ard(1, 44999),
-                    ard(0, 45000)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            Vec resp = fr.remove("C2");
+            fr.add("C2", resp.toEnum());
+            resp.remove();
+            return fr.find("C3");
+          }
+        },
+        1,
+        ard(ard(1, 44999),
+            ard(0, 45000)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
 
@@ -662,6 +662,157 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testNoRowWeights() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._l1 = 0.1;
+      parms._epochs = 1;
+      parms._hidden = new int[]{1};
+      parms._classification_stop = -1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+      assertEquals(0.3189442010379401, mse, 1e-8);
+
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test
+  public void testNoRowWeightsShuffled() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._l1 = 0.1;
+      parms._epochs = 1;
+      parms._hidden = new int[]{1};
+      parms._classification_stop = -1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+      assertEquals(0.3720304832926737, mse, 1e-8);
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test
+  public void testRowWeightsOne() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._classification_stop = -1;
+      parms._l1 = 0.1;
+      parms._hidden = new int[]{1};
+      parms._epochs = 1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+      assertEquals(0.7592592592592592, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+      assertEquals(0.3736149104133342, mse, 1e-8); //Note: better results than non-shuffled
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test
+  public void testRowWeights() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._classification_stop = -1;
+      parms._l1 = 0.1;
+      parms._hidden = new int[]{1};
+      parms._epochs = 10;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+      assertEquals(0.4082698715870419, mse, 1e-8);
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
   @Ignore
   @Test public void testWhatever() {
     DeepLearningParameters dl;
@@ -706,162 +857,5 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Test
-  public void testNoRowWeights() {
-    Frame tfr = null, vfr = null;
-
-    Scope.enter();
-    try {
-      tfr = parse_test_file("smalldata/junit/no_weights.csv");
-      DKV.put(tfr);
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = "response";
-      parms._reproducible = true;
-      parms._seed = 0xdecaf;
-      parms._l1 = 0.1;
-      parms._epochs = 0.1;
-      parms._hidden = new int[]{1};
-      parms._classification_stop = -1;
-
-      // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
-
-      dl.score(parms.train());
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
-      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
-
-      double mse = dl._output._training_metrics.mse();
-//      assertEquals(0.21757859226445403, mse, 1e-6); //Note: better results than non-shuffled
-      assertEquals(0.31894419928669016, mse, 1e-6); //Note: better results than non-shuffled
-
-      job.remove();
-      dl.delete();
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
-    }
-    Scope.exit();
-  }
-
-  @Test
-  public void testNoRowWeightsShuffled() {
-    Frame tfr = null, vfr = null;
-
-    Scope.enter();
-    try {
-      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
-      DKV.put(tfr);
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = "response";
-      parms._reproducible = true;
-      parms._seed = 0xdecaf;
-      parms._l1 = 0.1;
-      parms._epochs = 0.1;
-      parms._hidden = new int[]{1};
-      parms._classification_stop = -1;
-
-      // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
-
-      dl.score(parms.train());
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
-      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
-
-      double mse = dl._output._training_metrics.mse();
-      assertEquals(0.37203048338693356, mse, 1e-6); //Shuffling changes results!
-      job.remove();
-      dl.delete();
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
-    }
-    Scope.exit();
-  }
-
-  @Test
-  public void testRowWeightsOne() {
-    Frame tfr = null, vfr = null;
-
-    Scope.enter();
-    try {
-      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
-      DKV.put(tfr);
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = "response";
-      parms._weights_column = "weight";
-      parms._reproducible = true;
-      parms._seed = 0xdecaf;
-      parms._classification_stop = -1;
-      parms._l1 = 0.1;
-      parms._hidden = new int[]{1};
-      parms._epochs = 0.1;
-
-      // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
-
-      dl.score(parms.train());
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
-      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
-
-      double mse = dl._output._training_metrics.mse();
-//      assertEquals(0.21757859226445403, mse, 1e-6); //Note: better results than non-shuffled
-      assertEquals(0.31894419928669016, mse, 1e-6); //Note: better results than non-shuffled
-      job.remove();
-      dl.delete();
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
-    }
-    Scope.exit();
-  }
-
-  @Test
-  public void testRowWeights() {
-    Frame tfr = null, vfr = null;
-
-    Scope.enter();
-    try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
-      DKV.put(tfr);
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = "response";
-      parms._weights_column = "weight";
-      parms._reproducible = true;
-      parms._seed = 0xdecaf;
-      parms._classification_stop = -1;
-      parms._l1 = 0.1;
-      parms._hidden = new int[]{1};
-      parms._epochs = 0.1;
-
-      // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
-
-      dl.score(parms.train());
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-//      assertEquals(0.8518518518518519, mm.auc()._auc, 1e-8);
-      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
-
-      double mse = dl._output._training_metrics.mse();
-//      assertEquals(0.21757859226445403, mse, 1e-6); //Note: better results than non-shuffled
-      assertEquals(0.31894419928669016, mse, 1e-6); //Note: better results than non-shuffled
-      job.remove();
-      dl.delete();
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
-    }
-    Scope.exit();
-  }
 
 }

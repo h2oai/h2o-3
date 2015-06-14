@@ -7,8 +7,10 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.RandomUtils;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
@@ -17,36 +19,24 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   final Key _dinfoKey;
   final int [] _activeCols;
   final protected Key _jobKey;
-//  double    _ymu = Double.NaN; // mean of the response
-  // size of the expanded vector of parameters
 
   protected float _useFraction = 1.0f;
+  private final long _seed;
   protected boolean _shuffle = false;
 
   public FrameTask(Key jobKey, DataInfo dinfo) {
-    this(jobKey, dinfo._key, dinfo._activeCols,null);
+    this(jobKey,dinfo._key,dinfo._activeCols,0xDECAFBEE);
   }
-  public FrameTask(Key jobKey, DataInfo dinfo, H2OCountedCompleter cmp) {
-    this(jobKey, dinfo._key, dinfo._activeCols,cmp);
+  public FrameTask(Key jobKey, DataInfo dinfo, long seed) {
+    this(jobKey,dinfo._key,dinfo._activeCols,seed);
   }
-  public FrameTask(Key jobKey, Key dinfoKey, int [] activeCols) {
-    this(jobKey,dinfoKey, activeCols,null);
-  }
-  public FrameTask(Key jobKey, Key dinfoKey, int [] activeCols, H2OCountedCompleter cmp) {
-    super(cmp);
+  private FrameTask(Key jobKey, Key dinfoKey, int [] activeCols,long seed) {
+    super(null);
     assert dinfoKey == null || DKV.get(dinfoKey) != null;
     _jobKey = jobKey;
     _dinfoKey = dinfoKey;
     _activeCols = activeCols;
-  }
-  protected FrameTask(FrameTask ft){
-    _dinfo = ft._dinfo;
-    _jobKey = ft._jobKey;
-    _useFraction = ft._useFraction;
-    _shuffle = ft._shuffle;
-    _activeCols = ft._activeCols;
-    _dinfoKey = ft._dinfoKey;
-    assert DKV.get(_dinfoKey) != null;
+    _seed = seed;
   }
   @Override protected void setupLocal(){
     DataInfo dinfo = DKV.get(_dinfoKey).get();
@@ -101,8 +91,6 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     chunkInit();
-    int start = 0;
-    int end = nrows;
 
     Random skip_rng = null; //random generator for skipping rows
 
@@ -115,40 +103,62 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final int repeats = (int)Math.ceil(_useFraction);
     final float fraction = _useFraction / repeats;
 
-    Random row_weight_rng = RandomUtils.getRNG(0xDECAF);
-    if (fraction < 1.0) {
-      skip_rng = RandomUtils.getRNG(new Random().nextLong());
+    if (fraction < 1.0 || _dinfo._weights) {
+      skip_rng = RandomUtils.getRNG(_seed+offset);
     }
     long[] shuf_map = null;
-    if (_shuffle) {
-      shuf_map = new long[end-start];
-      for (int i=0;i<shuf_map.length;++i)
-        shuf_map[i] = start + i;
-      ArrayUtils.shuffleArray(shuf_map, new Random().nextLong());
+    if (_shuffle && ! _dinfo._weights) { //we are already shuffling when using row weights
+      shuf_map = new long[nrows];
+      for (int i=0;i<nrows;++i)
+        shuf_map[i] = i;
+      ArrayUtils.shuffleArray(shuf_map, new Random(_seed+offset).nextLong());
     }
-    double num_processed_rows = 0;
     DataInfo.Row row = _dinfo.newDenseRow();
+    float[] weight_map = null;
+    float weight_sum;
+    //TODO: store node-local helper arrays in _dinfo -> avoid re-allocation and construction
+    if (_dinfo._weights) {
+      weight_map = new float[nrows];
+      weight_sum = 0;
+      for (int i=0;i<nrows;++i) {
+        row = _dinfo.extractDenseRow(chunks, i, row);
+        weight_sum+=row.weight;
+        weight_map[i]=weight_sum;
+      }
+      if (weight_sum > 0)
+        ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
+      else return; //nothing to do here - all rows have 0 weight
+    }
+
+    double num_processed_rows = 0;
     for(int rrr = 0; rrr < repeats; ++rrr) {
       OUTER:
-      for(int rr = start; rr < end; ++rr){
-        final int r = shuf_map != null ? (int)shuf_map[rr-start] : rr;
+      for(int rr = 0; rr < nrows; ++rr){
+        // only train with a given number of training samples (fraction*nrows)
         if (skip_rng != null && skip_rng.nextFloat() > fraction)continue;
+
+        // find out which training row to process
+        int r;
+        if (_dinfo._weights) {
+          // importance sampling based on inverse of cumulative distribution
+          float key = skip_rng.nextFloat();
+          r = Arrays.binarySearch(weight_map, 0, nrows, key);
+//          Log.info(Arrays.toString(weight_map));
+//          Log.info("key: " + key + " idx: " + (r >= 0 ? r : (-r-1)));
+          if (r<0) r=-r-1;
+        } else {
+          r = shuf_map != null ? (int) shuf_map[rr] : rr;
+        }
+
         row = _dinfo.extractDenseRow(chunks, r, row);
         if(!row.bad) {
-          long seed = offset + rrr * (end - start) + r;
-          row_weight_rng.setSeed(seed);
-          for (int i=0; i<row.weight; ++i) {
-            if (outputs != null && outputs.length > 0)
-              processRow(seed++, row, outputs);
-            else
-              processRow(seed++, row);
-          }
-          double remainder = row.weight-(int)row.weight;
-          if (remainder > 0 && row_weight_rng.nextDouble() < remainder) {
-            if (outputs != null && outputs.length > 0) processRow(seed++, row, outputs);
-            else processRow(seed++, row);
-          }
+          long seed = offset + rrr * nrows + r;
+          if (outputs != null && outputs.length > 0)
+            processRow(seed++, row, outputs);
+          else
+            processRow(seed++, row);
         }
+        assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
         num_processed_rows += row.weight;
       }
     }

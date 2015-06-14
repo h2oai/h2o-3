@@ -36,7 +36,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param fraction Fraction of rows of the training to train with
    */
   public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction){
-    super(jobKey, inputModel.data_info(),null);
+    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + (long)inputModel.get_processed_global());
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;

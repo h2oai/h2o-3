@@ -406,7 +406,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     public long _nobs;
 
     public GramUpdate(Key jobKey, DataInfo dinfo, double[][] ivv) {
-      super(jobKey, dinfo._key, dinfo._activeCols);
+      super(jobKey, dinfo);
       assert null != ivv && ivv.length == ivv[0].length;
       _ivv = ivv;
     }
