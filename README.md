@@ -85,7 +85,7 @@ See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) 
 <a name="Building"></a>
 ## 4. Building H2O Dev
 
-Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/technetwork/java/javase/downloads/), [Node.js](https://nodejs.org/), and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
 ### 4.1. Building from the command line (Quick Start)
 
@@ -138,9 +138,9 @@ Syncing smalldata is not strictly required after each pull, but if tests fail du
 
 ##### Install required python packages (using `sudo` if necessary)
 
-    `pip install grip`
-    `pip install tabulate`
-    `pip install wheel`
+    pip install grip
+    pip install tabulate
+    pip install wheel
 
 ### 4.3. Setup on Windows
 
@@ -149,9 +149,9 @@ Syncing smalldata is not strictly required after each pull, but if tests fail du
   
 ###### Step 2: Install required Python packages:
 
-    `pip install grip`
-    `pip install tabulate`
-    `pip install wheel`
+    pip install grip
+    pip install tabulate
+    pip install wheel
 
 ##### Step 3: Install JDK
 

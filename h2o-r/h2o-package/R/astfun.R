@@ -99,7 +99,7 @@ function(o, map) {
 .is.unary_op  <- function(o) .is.in(o, .unary_op.map)
 .is.binary_op <- function(o) .is.in(o, .binary_op.map)
 .is.nary_op   <- function(o) .is.in(o, .nary_op.map)
-.is.prefix    <- function(o) .is.in(o, .prefix.map)
+  .is.prefix    <- function(o) .is.in(o, .prefix.map)
 .is.slice     <- function(o) .is.in(o, .slice.map)
 .is.op        <- function(o) .is.unary_op(o) || .is.binary_op(o) || .is.nary_op(o) || .is.prefix(o)
 
@@ -283,10 +283,7 @@ function(stmnt) {
   s <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
   lhs <- ""
   if (is(s, "ASTNode")) lhs <- s
-  else {
-    x <- deparse(stmnt[[2L]])
-    lhs <- x   # TODO: checkup on this (should be doing __no__ DKV puts!!!
-  }
+  else                  lhs <- deparse(stmnt[[2L]])
   y <- .stmnt.to.ast.switchboard(stmnt_list[[3L]])
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))
 }
@@ -381,7 +378,7 @@ function(fun, name) {
 
 .fun.visitor<-
 function(astfun) {
-  body <- paste0("(,", unlist(.body.visitor(astfun@body), use.names = FALSE), ")", collapse = " ")
+  body <- paste0("(,", paste0(unlist(.body.visitor(astfun@body), use.names = FALSE),collapse=" "), ")", collapse = " ")
   list(ast = paste0("(def ", astfun@name, " ", astfun@arguments, " ", body , ")"))
 }
 

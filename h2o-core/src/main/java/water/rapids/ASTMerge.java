@@ -65,7 +65,7 @@ public class ASTMerge extends ASTOp {
         if( lv.get_type() != rv.get_type() )
           throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
-        if( lv.isString() )  
+        if( lv.isString() )
           throw new IllegalArgumentException("Cannot merge Strings; flip toEnum first");
         if( lv.isNumeric() && !lv.isInt())  
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
@@ -228,10 +228,10 @@ public class ASTMerge extends ASTOp {
       for( int i=0; i<len; i++ ) {
         Row smaller = rows.get(row.fill(i,_ncols,_enum_maps));
         if( smaller == null ) { // Smaller is missing
-          if( _allLeft )        // But need all of larger, so force a NA row
+//          if( _allLeft )        // But need all of larger, so force a NA row
             for( NewChunk nc : nchks ) nc.addNA();
-          else
-            throw H2O.unimpl(); // Need to remove larger row
+//          else
+//            throw H2O.unimpl(); // Need to remove larger row
         } else {
           // Copy fields from matching smaller set into larger set
           assert smaller._chks.length == _ncols + nchks.length;
