@@ -80,7 +80,6 @@ public abstract class ParseTime {
     yy = digit(yy,buf[i++]);
     yy = digit(yy,buf[i++]);
     yy = digit(yy,buf[i++]);
-    if( yy < 1970 ) return Long.MIN_VALUE;
     if( buf[i++] != '-' ) return Long.MIN_VALUE;
     MM = digit(MM,buf[i++]);
     MM = digit(MM,buf[i++]);
