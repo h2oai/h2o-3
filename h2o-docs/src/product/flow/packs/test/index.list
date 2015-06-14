@@ -1,4 +1,14 @@
 split_frame.flow
+billionRow_twoCol_gz.flow
+cancel_dl_model_job.flow
+cancel_gbm_model_job.flow
+cancel_glm_model_job.flow
+cancel_parse_job.flow
+cancel_rf_model_job.flow
+delete_dl_model.flow
+delete_gbm_model.flow
+delete_glm_model.flow
+delete_rf_model_job.flow
 adult_2013_census.flow
 prostate.flow
 covtype_data.flow

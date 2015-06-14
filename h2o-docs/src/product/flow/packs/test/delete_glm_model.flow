@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/iris.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"hdfs://mr-0x6.0xdata.loc/datasets/iris.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/iris.csv\"]\n  destination_frame: \"iris.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"iris.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-cac3c583-3545-44e2-95bc-faa87b49326a\",\"training_frame\":\"iris.hex\",\"ignore_const_cols\":true,\"response_column\":\"C5\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-cac3c583-3545-44e2-95bc-faa87b49326a\""
+    },
+    {
+      "type": "cs",
+      "input": "deleteModel \"glm-cac3c583-3545-44e2-95bc-faa87b49326a\""
+    }
+  ]
+}
