@@ -562,6 +562,18 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
+    elif self._op == "day":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "week":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "hour":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
     elif self._op in ["min", "max", "sum", "median"]:
       if left.is_local():   raise NotImplementedError
       else:                 __CMD__ += "%FALSE"
