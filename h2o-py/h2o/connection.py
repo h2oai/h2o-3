@@ -383,7 +383,15 @@ class H2OConnection(object):
     for k,v in kwargs.iteritems():
       if isinstance(v, list):
         x = '['
-        x += ','.join([str(l).encode("utf-8") for l in v])
+        for l in v:
+          if isinstance(l,list):
+            x += '['
+            x += ','.join([str(e).encode("utf-8") for e in l])
+            x += ']'
+          else:
+            x += str(l).encode("utf-8")
+          x += ','
+        x = x[:-1]
         x += ']'
       else:
         x = str(v).encode("utf-8")
