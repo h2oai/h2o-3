@@ -1076,6 +1076,12 @@ class H2OFrame:
     """
     return sum([vec.sum() for vec in self._vecs])
 
+  def anyfactor(self):
+    """
+    :return: Whether or not the frame has any factor columns
+    """
+    return any([vec.anyfactor() for vec in self._vecs])
+
   def var(self):
     """
     :return: The covariance matrix of the columns in this H2OFrame.
@@ -1482,6 +1488,12 @@ class H2OVec:
   def isfactor(self):
     """
     :return: A lazy Expr representing the truth of whether or not this vec is a factor.
+    """
+    return Expr("is.factor", self._expr, None, length=1).eager()
+
+  def anyfactor(self):
+    """
+    :return: Same as isfactor for a vec
     """
     return Expr("is.factor", self._expr, None, length=1).eager()
 
