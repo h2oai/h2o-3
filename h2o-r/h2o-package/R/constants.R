@@ -120,7 +120,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                   "all" = "all",
                   "is.na" = "is.na",
                   "trunc" = "trunc",
-                  "is.factor" = "is.factor")
+                  "is.factor" = "is.factor",
+                  "h2o.which"     = "which")
 
 #'
 #' The n-ary args operations

@@ -223,7 +223,8 @@ class H2OCloudNode:
                "-cp", self.h2o_jar,
                main_class,
                "-name", self.cloud_name,
-               "-baseport", str(self.my_base_port)]
+               "-baseport", str(self.my_base_port),
+	       "-ga_opt_out"]
 
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
@@ -1334,7 +1335,7 @@ class TestRunner:
         """
         for test in self.tests:
             test_name = test.get_test_name()
-            if (is_python_test_file(test_name)):
+            if is_python_test_file(test_name):
                 return True
 
         return False

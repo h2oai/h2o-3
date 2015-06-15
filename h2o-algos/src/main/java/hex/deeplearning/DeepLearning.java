@@ -336,21 +336,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         model.update(self());
         model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
         Log.info("Starting to train the Deep Learning model.");
+        new ProgressUpdate("Training...").fork(_progressKey);
 
         //main loop
         do {
-          DeepLearningModelInfo mi = model.model_info();
-          assert(mi.get_processed_local() == 0);
-          assert(mi.get_params()._replicate_training_data == mp._replicate_training_data);
-          final String speed = (model.run_time!=0 ? (" at " + mi.get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
-          final String etl = model.run_time == 0 || progress() == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
-          new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
-          final float frac = rowFraction(train, mp, model);
-          model.set_model_info(mp._epochs == 0 ? mi : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(self(), train, mi, frac).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
-                  new DeepLearningTask2(self(), train, mi, frac).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepLearningTask (self(),        mi, frac).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
-          update(model.actual_train_samples_per_iteration);
+          model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
+                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
+                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes(             ).model_info()): //replicated data + multi-node mode
+                  new DeepLearningTask (self(),        model.model_info(), rowFraction(train, mp, model)).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
         }
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
 
@@ -398,6 +391,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       return model;
     }
     transient HashSet<Frame> _delete_me = new HashSet<>();
+
 
     /**
      * Rebalance a frame for load balancing
