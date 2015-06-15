@@ -35,7 +35,8 @@ test.offset.comparison <- function(conn) {
   print(paste("aic:           ", h2o.aic(glm.bin.h2o)))
   expect_equal(glm.bin.R$deviance, h2o.residual_deviance(glm.bin.h2o), tolerance = 0.1)
   expect_equal(glm.bin.R$null.deviance, h2o.null_deviance(glm.bin.h2o), tolerance = 0.1)
-  expect_equal(glm.bin.R$aic, h2o.aic(glm.bin.h2o), tolerance = 0.1)
+  if (glm.bin.R$aic != Inf)
+    expect_equal(glm.bin.R$aic, h2o.aic(glm.bin.h2o), tolerance = 0.1)
 
   Log.info("Running Regression Comparisons...")
   for(fam in family_type) {
@@ -56,9 +57,10 @@ test.offset.comparison <- function(conn) {
     expect_equal(glm.R$null.deviance, h2o.null_deviance(glm.h2o),
                  label = paste(fam, "H2O null deviance"),
                  expected.label = paste(fam, "R null deviance"), tolerance = 0.1)
-    expect_equal(glm.R$aic, h2o.aic(glm.h2o),
-                 label = paste(fam, "H2O aic"),
-                 expected.label = paste(fam, "R aic"), tolerance = 0.1)
+    if (glm.R$aic != Inf)
+      expect_equal(glm.R$aic, h2o.aic(glm.h2o),
+                   label = paste(fam, "H2O aic"),
+                   expected.label = paste(fam, "R aic"), tolerance = 0.1)
   }
 
   testEnd()

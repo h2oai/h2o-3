@@ -126,8 +126,8 @@ test.chicago.demo <- function(conn) {
   predDL <- predict(dlModel, crimeExamplesMerge)
   for(i in 1:nrow(crimeExamples)) {
     cat("\nCrime:\n"); print(crimeExamples[i,])
-    cat("\n\tProbability of arrest using GBM:", predGBM$true[i])
-    cat("\n\tProbability of arrest using Deep Learning:", predDL$true[i])
+    cat("\n\tProbability of arrest using GBM:", as.matrix(predGBM$true[i]))
+    cat("\n\tProbability of arrest using Deep Learning:", as.matrix(predDL$true[i]), "\n")
   }
   testEnd()
 }
