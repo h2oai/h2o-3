@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 class CsvParser extends Parser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
@@ -697,7 +698,7 @@ MAIN_LOOP:
       }
     }
 
-  // Assemble the setup understood so far
+    // Assemble the setup understood so far
     ParseSetup resSetup = new ParseSetup(ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
@@ -712,6 +713,8 @@ MAIN_LOOP:
         throw new RuntimeException(e);
       }
     } else {
+      // If user sets column type as unknown/bad, guess numeric.
+      for(int i=0; i < columnTypes.length; i++) if (columnTypes[i] == Vec.T_BAD) columnTypes[i] = Vec.T_NUM;
       resSetup._column_types = columnTypes;
       resSetup._na_strings = null;
     }

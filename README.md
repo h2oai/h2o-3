@@ -493,14 +493,23 @@ Alex Tellez
 Allison Washburn
 Amy Wang
 Erik Eckstrand
-James Dean
 Neeraja Madabhushi
 Sebastian Vidrio
 Ben Sabrin
 Matt Dowle
 Mark Landry
-Tony D'Amato
 Erin LeDell
+Oleg Rogynskyy
+Nick Martin
+Nancy Jordan 
+Nishant Kalonia
+Nadine Hussami
+Jeff Cramer
+Stacie Spreitzer
+Vinod Iyengar
+Charlene Windom
+Parag Sanghavi
+
 
 ```
 

@@ -191,7 +191,6 @@ The following parameters have been removed:
  - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. (may be re-added)
  - `higher_accuracy`: For improved accuracy, adjust the `beta_epsilon` value. 
  - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. (may be re-added as enabled by default)
- - `intercept`: Defines factor columns in the model. (may be re-added)
  - `non_negative`: Specify a non-negative response. (may be re-added)
  - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
@@ -220,7 +219,7 @@ H2O Classic | H2O 3.0
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
 `return_all_lambda = FALSE,` | 
-`intercept = TRUE,` | 
+`intercept = TRUE,` | `intercept = TRUE`
 `non_negative = FALSE,` | 
 &nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
@@ -459,6 +458,7 @@ H2O Classic | H2O 3.0  | Model Type
 
 Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O Classic. In H2O Classic, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRF (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
 In H2O 3.0, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
+Please note that H2O does not currently support the ability to specify the number of trees when using `h2o.predict` for a DRF model. 
 
 **Note**: H2O 3.0 only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O 3.0 is similar to DRF functionality in H2O. 
 

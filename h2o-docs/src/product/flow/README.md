@@ -175,7 +175,7 @@ There are multiple ways to import data in H2O flow:
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 
-**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. 
+**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. Please note that .zip files containing multiple files are not currently supported. 
 
  ![Import Files](images/Flow_import.png)
 
@@ -403,6 +403,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA), [GLM)](#GLM) Specify the number of training iterations. 
  
+- **Intercept**: [(GLM)](#GLM) To include a constant term in the model, check this checkbox. This option is selected by default. 
+
 - **Objective_epsilon**: [(GLM)](#GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
 - **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 

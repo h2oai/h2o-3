@@ -46,6 +46,7 @@
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
+#' @param intercept Logical, include constant term (intercept) in the model
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a

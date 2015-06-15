@@ -4,8 +4,6 @@ The purpose of this tutorial is to walk new users through Deep Learning using H2
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-For more details on the math behind H2O's implementation of Deep Learning, refer to <a href="http://docs.h2o.ai/datascience/deeplearning.html" target="_blank">Deep Learning Data Science</a>. 
-
 For tips on improving the performance and results of your Deep Learning model, refer to our <a href="http://h2o.ai/blog/2015/02/deep-learning-performance/" target="_blank">Definintive Performance Tuning Guide for Deep Learning</a>.
 
 ###Using Deep Learning
@@ -13,7 +11,7 @@ For tips on improving the performance and results of your Deep Learning model, r
 H2O’s Deep Learning functionalities include:
 
 - purely supervised training protocol for regression and classification tasks
-- fast and memory-efficient Java implementations based on columnar compression and fine- grain Map/Reduce
+- fast and memory-efficient Java implementations based on columnar compression and fine-grain Map/Reduce
 - multi-threaded and distributed parallel computation to be run on either a single node or a multi-node cluster
 - fully automatic per-neuron adaptive learning rate for fast convergence
 - optional specification of learning rate, annealing and momentum options
@@ -38,9 +36,9 @@ To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resource
 ####Importing Data
 Before creating a model, import the data into H2O:
 
-0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
+0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
- ![Assist Me button](../images/AssistButton.png)
+ ![Assist Me button](../images/Flow_AssistMeButton.png)
 
 0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field. 
 
