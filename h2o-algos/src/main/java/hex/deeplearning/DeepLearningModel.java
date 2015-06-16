@@ -470,7 +470,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
     final long now = System.currentTimeMillis();
-    epoch_counter = (float)model_info().get_processed_total()/training_rows;
+    epoch_counter = model_info().get_processed_total()/training_rows;
     final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
     run_time += time_last_iter_millis;
 
