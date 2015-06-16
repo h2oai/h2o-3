@@ -160,7 +160,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
-
+    _parms._tweedie_link_power = 1 - _parms._tweedie_variance_power;
     if (expensive) {
       // bail early if we have basic errors like a missing training frame
       if (error_count() > 0) return;
@@ -1188,7 +1188,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
           // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
           GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
-          new ADMM.L1Solver(1e-4, 5000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
+          new ADMM.L1Solver(1e-4, 10000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
         } else {
           glmt._gram.addDiag(l2pen);
           new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
