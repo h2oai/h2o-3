@@ -62,8 +62,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    *
    * @param gid      - global id of this row, in [0,_adaptedFrame.numRows())
    */
-  protected void processRow(long gid, DataInfo.Row r){throw new RuntimeException("should've been overriden!");}
-  protected void processRow(long gid, DataInfo.Row r, NewChunk [] outputs){throw new RuntimeException("should've been overriden!");}
+  protected void processRow(long gid, DataInfo.Row r){throw new RuntimeException("should've been overridden!");}
+  protected void processRow(long gid, DataInfo.Row r, NewChunk [] outputs){throw new RuntimeException("should've been overridden!");}
 
   @Override
   public T dfork(Frame fr){

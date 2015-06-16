@@ -1,6 +1,7 @@
 package hex.svd;
 
 import hex.DataInfo;
+import hex.SplitFrame;
 import hex.svd.SVDModel.SVDParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -237,6 +238,57 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
+  @Test public void testIrisSplitScoring() throws InterruptedException, ExecutionException {
+    SVD job = null;
+    SVDModel model = null;
+    Frame fr = null, fr2= null;
+    Frame tr = null, te= null;
+
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      SplitFrame sf = new SplitFrame(Key.make());
+      sf.dataset = fr;
+      sf.ratios = new double[] { 0.5 };
+      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+
+      // Invoke the job
+      sf.exec().get();
+      Key[] ksplits = sf.destination_frames;
+      tr = DKV.get(ksplits[0]).get();
+      te = DKV.get(ksplits[1]).get();
+
+      SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      parms._train = ksplits[0];
+      parms._valid = ksplits[1];
+      parms._nv = 4;
+      parms._max_iterations = 1000;
+
+      try {
+        job = new SVD(parms);
+        model = job.trainModel().get();
+      } finally {
+        if (job != null) job.remove();
+      }
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = model.score(te);
+      Assert.assertTrue(model.testJavaScoring(te, fr2, 1e-5));
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( tr  != null ) tr .delete();
+      if( te  != null ) te .delete();
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();

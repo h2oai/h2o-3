@@ -4618,12 +4618,22 @@ class ASTWhich extends ASTUniPrefixOp {  // 1-based index
 
 class ASTMajorityVote extends ASTUniPrefixOp {  // 1-based index
   int _n;
+  double[] _weights;
   ASTMajorityVote() {super(null); }
   @Override String opStr() { return "h2o.vote"; }
   @Override ASTMajorityVote make() { return new ASTMajorityVote(); }
   @Override ASTMajorityVote parse_impl(Exec E) {
     AST condition = E.parse();
     _n = (int)E.nextDbl();  // number of classes
+    AST a = E.parse();
+    if( a instanceof ASTNum ) _weights = new double[]{((ASTNum)a)._d};
+    else if( a instanceof ASTLongList ) {
+      long[] l = ((ASTLongList)a)._l;
+      _weights = new double[l.length];
+      for(int i =0;i<l.length;++i) _weights[i] = l[i];
+    } else {
+      _weights = ((ASTDoubleList) a)._d;
+    }
     ASTMajorityVote res = (ASTMajorityVote)clone();
     res._asts = new AST[]{condition};
     return res;
@@ -4631,14 +4641,15 @@ class ASTMajorityVote extends ASTUniPrefixOp {  // 1-based index
   @Override public void apply(Env e) {
     Frame f=e.popAry();
     final int n=_n;
+    final double[] weights = _weights;
     Frame f2 = new MRTask() {
       @Override public void map(Chunk[] c, NewChunk nc) {
-        int[] votes = new int[n+1];
+        double[] votes = new double[n+1];
         for(int row=0;row<c[0]._len;++row) {
           for(int i=0;i<votes.length;++i)votes[i]=0; // rezero the array each time
-          for( int col=0;col<c.length;++col) { votes[(int)c[col].at8(row)]++; }
+          for( int col=0;col<c.length;++col) { votes[(int)c[col].at8(row)] += weights[col]; };// weights[(int)(4*col+(c[col].at8(row)-1))]; }
           int i=0;
-          int max=votes[i];
+          double max=votes[i];
           int iter=0;
           while(iter < votes.length) {
             if (votes[iter] > max) { max = votes[i]; i = iter; }

@@ -2,25 +2,33 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.australia.golden <- function(H2Oserver) {
-  # Import data: 
   Log.info("Importing AustraliaCoast.csv data...") 
   australiaR <- read.csv(locate("smalldata/pca_test/AustraliaCoast.csv"), header = TRUE)
   australiaH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/AustraliaCoast.csv"), destination_frame = "australiaH2O")
   
-  Log.info("Compare with PCA when center = FALSE, scale. = FALSE")
-  fitR <- prcomp(australiaR, center = FALSE, scale. = FALSE)
-  fitH2O <- h2o.prcomp(australiaH2O, k = 8, transform = 'NONE', max_iterations = 2000)
-  isFlipped1 <- checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
-  
-  Log.info("Compare Projections into PC space")
-  predR <- predict(fitR, australiaR)
-  predH2O <- predict(fitH2O, australiaH2O)
-  Log.info("R Projection:"); print(head(predR))
-  Log.info("H2O Projection:"); print(head(predH2O))
-  isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-4)
-  expect_equal(isFlipped1, isFlipped2)
-  
+  k_test <- sort(sample(1:8,3))
+  for(k in k_test) {
+    Log.info(paste("Compare with PCA when k = ", k, ", transform = 'NONE'", sep = ""))
+    fitR <- prcomp(australiaR, center = FALSE, scale. = FALSE)
+    fitH2O <- h2o.prcomp(australiaH2O, k = k, transform = 'NONE', max_iterations = 2000)
+    checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
+    
+    Log.info(paste("Compare with PCA when k = ", k, ", transform = 'DEMEAN'", sep = ""))
+    fitR <- prcomp(australiaR, center = TRUE, scale. = FALSE)
+    fitH2O <- h2o.prcomp(australiaH2O, k = k, transform = 'DEMEAN', max_iterations = 2000)
+    checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
+    
+    Log.info(paste("Compare with PCA when k = ", k, ", transform = 'DESCALE'", sep = ""))
+    fitR <- prcomp(australiaR, center = FALSE, scale. = apply(australiaR, 2, sd, na.rm = TRUE))
+    fitH2O <- h2o.prcomp(australiaH2O, k = k, transform = 'DESCALE', max_iterations = 2000)
+    checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
+    
+    Log.info(paste("Compare with PCA when k = ", k, ", transform = 'STANDARDIZE'", sep = ""))
+    fitR <- prcomp(australiaR, center = TRUE, scale. = TRUE)
+    fitH2O <- h2o.prcomp(australiaH2O, k = k, transform = 'STANDARDIZE', max_iterations = 2000)
+    checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
+  }
   testEnd()
 }
 
-doTest("PCA Golden Test: AustraliaCoast with Scoring", test.australia.golden)
+doTest("PCA Golden Test: AustraliaCoast with Variable K", test.australia.golden)
