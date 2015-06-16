@@ -1093,7 +1093,6 @@ class H2OFrame:
     expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,frame_keys[0])
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
-
   def transpose(self):
     """
     :return: The transpose of the H2OFrame.
@@ -1116,6 +1115,26 @@ class H2OFrame:
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (table %{} {}))".format(tmp_key,frame_keys[0],"%"+frame_keys[1] if data2 else "()")
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def scale(self, center=True, scale=True):
+    """
+    Centers and/or scales the columns of the H2OFrame
+    :return: H2OFrame
+    :param center: either a ‘logical’ value or numeric list of length equal to the number of columns of the H2OFrame
+    :param scale: either a ‘logical’ value or numeric list of length equal to the number of columns of H2OFrame.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if   isinstance(center, bool) and isinstance(scale, bool):
+      return H2OFrame(vecs=[vec.scale(center=center, scale=scale) for vec in self._vecs])
+    elif isinstance(center, list) and isinstance(scale, bool):
+      return H2OFrame(vecs=[vec.scale(center=c, scale=scale) for vec, c in zip(self._vecs,center)])
+    elif isinstance(center, list) and isinstance(scale, list):
+      return H2OFrame(vecs=[vec.scale(center=c, scale=s) for vec, c, s in zip(self._vecs, center, scale)])
+    elif isinstance(center, bool) and isinstance(scale, list):
+      return H2OFrame(vecs=[vec.scale(center=center, scale=s) for vec, s in zip(self._vecs,scale)])
+    else: raise(ValueError, "`center` and `scale` arguments (for a frame) must be bools or lists of numbers, but got "
+                            "center: {0}, scale: {1}".format(center, scale))
 
   def signif(self, digits=6):
     """
@@ -1581,6 +1600,31 @@ class H2OVec:
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (match %{} {} #{} ()))".format(tmp_key,self.key(),rtable,nomatch)
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def scale(self, center=True, scale=True):
+    """
+    Centers and/or scales the column (H2OVec)
+    :return: H2OVec
+    :param center: either a ‘logical’ value or numeric value.
+    :param scale: either a ‘logical’ value or numeric value.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    if   isinstance(center, bool) and isinstance(scale, bool):
+      c = '%TRUE' if center else '%FALSE'
+      s = '%TRUE' if scale else '%FALSE'
+    elif isinstance(center, bool) and isinstance(scale, (int, float)):
+      c = '%TRUE' if center else '%FALSE'
+      s = '#'+str(scale)
+    elif isinstance(center, (int, float)) and isinstance(scale, bool):
+      c = '#'+str(center)
+      s = '%TRUE' if scale else '%FALSE'
+    elif isinstance(center, (int, float)) and isinstance(scale, (int, float)):
+      c = '#'+str(center)
+      s = '#'+str(scale)
+    else: raise(ValueError, "`center` and `scale` arguments (for a H2OVec) must be a bool or a number, but "
+                            "got center: {0}, scale: {1}".format(center, scale))
+    expr = "(= !{} (scale %{} {} {}))".format(tmp_key,self.key(), c, s)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
 
   def round(self, digits=0):
     """

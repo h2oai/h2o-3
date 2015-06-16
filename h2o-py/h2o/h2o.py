@@ -840,6 +840,7 @@ def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
 def table(data1,data2=None):
   if not data2: return data1.table()
   else: return data1.table(data2=data2)
+def scale(data,center=True,scale=True): return data.scale(center=center, scale=scale)
 
 class H2ODisplay:
   """
