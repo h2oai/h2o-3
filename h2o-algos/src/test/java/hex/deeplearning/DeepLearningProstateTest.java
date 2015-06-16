@@ -192,7 +192,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               // no sampling - every node does its share of the full data
                                               if (!replicate) assert((double)model1._output._scoring_history.get(1,3) == 1);
                                                 // sampling on each node
-                                              else assert((double)model1._output._scoring_history.get(1,3) > 0.8 && (double)model1._output._scoring_history.get(1,3) < 1.2);
+                                              else assert((double)model1._output._scoring_history.get(1,3) > 0.7 && (double)model1._output._scoring_history.get(1,3) < 1.3);
                                             }
                                             else if (p._train_samples_per_iteration == -1) {
                                               // no sampling - every node does its share of the full data
