@@ -35,7 +35,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   public TwoDimTableBase max_criteria_and_metric_scores;
 
   @Override
-  public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
+  public S fillFromImpl(ModelMetricsBinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
 //    sigma = modelMetrics._sigma;
     r2 = modelMetrics.r2();
@@ -93,6 +93,6 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
 
       max_criteria_and_metric_scores = new TwoDimTableV3().fillFromImpl(maxMetrics);
     }
-    return this;
+    return (S) this;
   }
 }

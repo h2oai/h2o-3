@@ -100,13 +100,13 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   @Override public void addStrCol(int colIdx, ValueString str) {
     if(colIdx < _ncols) {
       // Check for time
-      if (ParseTime.isDateTime(str)) {
+      if (ParseTime.isTime(str)) {
         ++_ndates[colIdx];
         return;
       }
 
       //Check for UUID
-      if(ParseTime.isUUID(str)) {
+      if(ParseUUID.isUUID(str)) {
         ++_nUUID[colIdx];
         return;
       }
@@ -209,7 +209,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
 
   public String[][] guessNAStrings(byte[] types) {
     //For now just catch 0's as NA in Enums
-    String[][] na_strings = new String[_ncols][];
+    String[][] naStrings = new String[_ncols][];
     boolean empty = true;
     for (int i = 0; i < _ncols; ++i) {
       int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line (based on 4M boundary)
@@ -217,13 +217,13 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
               && _nzeros[i] > 0
               && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
               && (_domains[i].size() <= 0.95 * _nstrings[i])) { // not all unique strings
-        na_strings[i] = new String[1];
-        na_strings[i][0] = "0";
+        naStrings[i] = new String[1];
+        naStrings[i][0] = "0";
         empty = false;
       }
     }
     if (empty) return null;
-    else return na_strings;
+    else return naStrings;
   }
 
   public static PreviewParseWriter unifyColumnPreviews(PreviewParseWriter prevA, PreviewParseWriter prevB) {
