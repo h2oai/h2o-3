@@ -595,7 +595,7 @@ class Test:
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
-                   self.ip + ":" + str(self.port)]
+                   self.ip + ":" + str(self.port), str(g_phantomjs_to)]
         else:
             print("")
             print("ERROR: Test runner failure with test: " + self.test_name)
@@ -1517,6 +1517,7 @@ g_path_to_h2o_jar = None
 g_path_to_tar = None
 g_path_to_whl = None
 g_produce_unit_reports = True
+g_phantomjs_to = 3600
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1604,6 +1605,8 @@ def usage():
     print("")
     print("    --tar         Supply a path to the R TAR.")
     print("")
+    print("    --pto         The phantomjs timeout in seconds. Default is 3600 (1hr).")
+    print("")
     print("    --noxunit     Do not produce xUnit reports.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
@@ -1688,6 +1691,7 @@ def parse_args(argv):
     global g_path_to_tar
     global g_path_to_whl
     global g_produce_unit_reports
+    global g_phantomjs_to
 
     i = 1
     while (i < len(argv)):
@@ -1774,6 +1778,9 @@ def parse_args(argv):
         elif s == "--h2ojar":
             i += 1
             g_path_to_h2o_jar = os.path.abspath(argv[i])
+        elif s == "--pto":
+            i += 1
+            g_phantomjs_to = int(argv[i])
         elif s == "--tar":
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])

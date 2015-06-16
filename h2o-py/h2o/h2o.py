@@ -829,12 +829,18 @@ def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
 
-def asnumeric(data)       : return data.asnumeric()
-def transpose(data)       : return data.transpose()
-def signif(data, digits=6): return data.signif(digits=digits)
-def round(data, digits=0) : return data.round(digits=digits)
-def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
+def asnumeric(data) : return data.asnumeric()
+def transpose(data) : return data.transpose()
+def anyfactor(data) : return data.anyfactor()
 
+# munging ops with args
+def signif(data, digits=6)       : return data.signif(digits=digits)
+def round(data, digits=0)        : return data.round(digits=digits)
+def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
+def table(data1,data2=None):
+  if not data2: return data1.table()
+  else: return data1.table(data2=data2)
+def scale(data,center=True,scale=True): return data.scale(center=center, scale=scale)
 
 class H2ODisplay:
   """

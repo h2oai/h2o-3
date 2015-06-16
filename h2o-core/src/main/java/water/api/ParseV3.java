@@ -17,7 +17,7 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   @API(help="Source frames",required=true)
   FrameKeyV3[] source_frames;
 
-  @API(help="Parser type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
+  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   ParserType parse_type;
 
   @API(help="Field separator")

@@ -44,7 +44,7 @@ class CsvParser extends Parser {
     int quotes = 0;
     long number = 0;
     int exp = 0;
-    int sgn_exp = 1;
+    int sgnExp = 1;
     boolean decimal = false;
     int fractionDigits = 0;
     int tokenStart = 0; // used for numeric token to backtrace if not successful
@@ -107,8 +107,8 @@ MAIN_LOOP:
           if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
             break;
           // we have parsed the string enum correctly
-          if((str.get_off() + str.get_length()) > str.get_buf().length){ // crossing chunk boundary
-            assert str.get_buf() != bits;
+          if((str.getOffset() + str.length()) > str.getBuffer().length){ // crossing chunk boundary
+            assert str.getBuffer() != bits;
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
@@ -138,7 +138,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case EOL:
           if(quotes != 0){
-            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.get_length()+1) < offset && str.get_off() > 0)?new String(Arrays.copyOfRange(bits,str.get_off()-1,offset)):""));
+            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
             dout.invalidLine("Unmatched quote char " + ((char)quotes));
             colIdx = 0;
             quotes = 0;
@@ -245,7 +245,7 @@ MAIN_LOOP:
             break;
           } else if ((c == 'e') || (c == 'E')) {
             state = NUMBER_EXP_START;
-            sgn_exp = 1;
+            sgnExp = 1;
             break;
           }
           if (exp == -1) {
@@ -311,7 +311,7 @@ MAIN_LOOP:
             break;
           } else if ((c == 'e') || (c == 'E')) {
             state = NUMBER_EXP_START;
-            sgn_exp = 1;
+            sgnExp = 1;
             break;
           }
           state = COND_QUOTED_NUMBER_END;
@@ -322,7 +322,7 @@ MAIN_LOOP:
             break;
           } else if ((c == 'e') || (c == 'E')) {
             state = NUMBER_EXP_START;
-            sgn_exp = 1;
+            sgnExp = 1;
             break;
           }
           state = COND_QUOTED_NUMBER_END;
@@ -344,7 +344,7 @@ MAIN_LOOP:
             if (decimal)
               fractionDigits = offset - 1 - fractionDigits;
             state = NUMBER_EXP_START;
-            sgn_exp = 1;
+            sgnExp = 1;
             break;
           }
           state = COND_QUOTED_NUMBER_END;
@@ -362,7 +362,7 @@ MAIN_LOOP:
           }
           exp = 0;
           if (c == '-') {
-            sgn_exp *= -1;
+            sgnExp *= -1;
             break;
           } else if (c == '+'){
             break;
@@ -380,7 +380,7 @@ MAIN_LOOP:
             exp = (exp*10)+(c-'0');
             break;
           }
-          exp *= sgn_exp;
+          exp *= sgnExp;
           state = COND_QUOTED_NUMBER_END;
           continue MAIN_LOOP;
 
@@ -479,11 +479,11 @@ MAIN_LOOP:
   private static int[] determineSeparatorCounts(String from, byte singleQuote) {
     int[] result = new int[separators.length];
     byte[] bits = from.getBytes();
-    boolean in_quote = false;
+    boolean inQuote = false;
     for( byte c : bits ) {
       if( (c == singleQuote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
-        in_quote ^= true;
-      if( !in_quote || c == HIVE_SEP )
+        inQuote ^= true;
+      if( !inQuote || c == HIVE_SEP )
         for( int i = 0; i < separators.length; ++i )
           if( c == separators[i] )
             ++result[i];
@@ -547,9 +547,9 @@ MAIN_LOOP:
 
 
   public static byte guessSeparator(String l1, String l2, boolean singleQuotes) {
-    final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
-    int[] s1 = determineSeparatorCounts(l1, single_quote);
-    int[] s2 = determineSeparatorCounts(l2, single_quote);
+    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
+    int[] s1 = determineSeparatorCounts(l1, singleQuote);
+    int[] s2 = determineSeparatorCounts(l2, singleQuote);
     // Now we have the counts - if both lines have the same number of
     // separators the we assume it is the separator.  Separators are ordered by
     // their likelyhoods.
@@ -559,8 +559,8 @@ MAIN_LOOP:
       if( s1[max] < s1[i] ) max=i; // Largest count sep on 1st line
       if( s1[i] == s2[i] ) {       // Sep counts are equal?
         try {
-          String[] t1 = determineTokens(l1, separators[i], single_quote);
-          String[] t2 = determineTokens(l2, separators[i], single_quote);
+          String[] t1 = determineTokens(l1, separators[i], singleQuote);
+          String[] t2 = determineTokens(l2, separators[i], singleQuote);
           if( t1.length != s1[i]+1 || t2.length != s2[i]+1 )
             continue;           // Token parsing fails
           return separators[i];
@@ -572,8 +572,8 @@ MAIN_LOOP:
     // one.  If there's no largest one, space will be used.
     if( s1[max]==0 ) max=separators.length-1; // Try last separator (space)
     if( s1[max]!=0 ) {
-      String[] t1 = determineTokens(l1, separators[max], single_quote);
-      String[] t2 = determineTokens(l2, separators[max], single_quote);
+      String[] t1 = determineTokens(l1, separators[max], singleQuote);
+      String[] t2 = determineTokens(l2, separators[max], singleQuote);
       if( t1.length == s1[max]+1 && t2.length == s2[max]+1 )
         return separators[max];
     }
@@ -629,9 +629,9 @@ MAIN_LOOP:
             ctypes[0] = Vec.T_NUM;
           } else { // non-numeric
             ValueString str = new ValueString(data[0][0]);
-            if (ParseTime.isDateTime(str))
+            if (ParseTime.isTime(str))
               ctypes[0] = Vec.T_TIME;
-            else if (ParseTime.isUUID(str))
+            else if (ParseUUID.isUUID(str))
                 ctypes[0] = Vec.T_UUID;
             else { // give up and guess enum
                 ctypes[0] = Vec.T_ENUM;
@@ -697,7 +697,7 @@ MAIN_LOOP:
       }
     }
 
-  // Assemble the setup understood so far
+    // Assemble the setup understood so far
     ParseSetup resSetup = new ParseSetup(ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
@@ -712,6 +712,8 @@ MAIN_LOOP:
         throw new RuntimeException(e);
       }
     } else {
+      // If user sets column type as unknown/bad, guess numeric.
+      for(int i=0; i < columnTypes.length; i++) if (columnTypes[i] == Vec.T_BAD) columnTypes[i] = Vec.T_NUM;
       resSetup._column_types = columnTypes;
       resSetup._na_strings = null;
     }
