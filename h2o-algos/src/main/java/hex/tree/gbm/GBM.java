@@ -121,12 +121,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if( init != 0.0 )       // Only non-zero for regression or bernoulli
         new MRTask() {
           @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-        }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
+        }.doAll(vec_tree(_train,0), _parms._build_tree_one_node); // Only setting tree-column 0
 
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
         Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, _model._output._treeKeys).doAll(_train);
+        new ResidualsCollector(_ncols, _nclass, _model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
       }
 
@@ -135,7 +135,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms._checkpoint ) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, false, false);
+          double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error
         }
@@ -143,12 +143,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // ESL2, page 387
         // Step 2a: Compute prediction (prob distribution) from prior tree results:
         //   Work <== f(Tree)
-        new ComputeProb().doAll(_train);
+        new ComputeProb().doAll(_train, _parms._build_tree_one_node);
 
         // ESL2, page 387
         // Step 2b i: Compute residuals from the prediction (probability distribution)
         //   Work <== f(Work)
-        new ComputeRes().doAll(_train);
+        new ComputeRes().doAll(_train, _parms._build_tree_one_node);
 
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
@@ -158,7 +158,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
       }
       // Final scoring (skip if job was cancelled)
-      doScoringAndSaveModel(true, false, false);
+      doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
     }
 
     // --------------------------------------------------------------------------
@@ -270,7 +270,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
         if( !isRunning() ) return;
-        hcs = buildLayer(_train, adj_nbins, _parms._nbins_cats, ktrees, leafs, hcs, false, false);
+        hcs = buildLayer(_train, adj_nbins, _parms._nbins_cats, ktrees, leafs, hcs, false, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
