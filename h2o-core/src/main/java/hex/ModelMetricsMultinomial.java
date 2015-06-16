@@ -87,26 +87,29 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public double[] perRow(double ds[], float[] yact, Model m) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m) { return perRow(ds, yact, 1, 0, m); }
+    @Override public double[] perRow(double ds[], float[] yact, double w, double o, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+      if( Double.isNaN(ds[0]) ) return ds; // No errors if prediction is missing
+      if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
+      _wsum += w;
+      _count++;
 
       // Compute error
       double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
-      assert !Double.isNaN(err); // No NaNs in the predictions please
-      _sumsqe += err*err;        // Squared error
+      _sumsqe += w*err*err;        // Squared error
+      assert !Double.isNaN(_sumsqe);
 
       // Plain Olde Confusion Matrix
       _cm[iact][(int)ds[0]]++; // actual v. predicted
-      _count++;
 
       // Compute hit ratio
-      if( _K > 0 && iact < ds.length-1) updateHits(1,iact,ds,_hits);
+      if( _K > 0 && iact < ds.length-1) updateHits(w,iact,ds,_hits);
 
       // Compute log loss
       final double eps = 1e-15;
-      _logloss -= Math.log(Math.max(eps, 1-err));
+      _logloss -= w*Math.log(Math.max(eps, 1-err));
 
       return ds;                // Flow coding
     }
@@ -130,8 +133,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
             for (int i = 0; i < hr.length; i++)  hr[i] = (float)_hits[i] / _count;
             for (int i = 1; i < hr.length; i++)  hr[i] += hr[i-1];
           }
-          mse = _sumsqe / _count;
-          logloss = _logloss / _count;
+          mse = _sumsqe / _wsum;
+          logloss = _logloss / _wsum;
         }
         return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, mse, _domain, sigma, cm, hr, logloss));
       } else {
