@@ -407,13 +407,13 @@ class H2OFrame:
     """
     A method to set all column values to one of the levels.
     :param level: The level at which the column will be set (a string)
-    :return: An H2OVec with all entries set to the desired level
+    :return: An H2OFrame with all entries set to the desired level
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
     if len(self) != 1: raise(ValueError, "`setLevel` can only be called on a single H2OVec or an H2OFrame with "
                                          "one column")
-    return self[0].setLevel(level=level)
+    return H2OFrame(vecs=[self[0].setLevel(level=level)])
 
   def setLevels(self, levels):
     """
@@ -431,6 +431,17 @@ class H2OFrame:
                                          "one column")
     self[0].setLevels(levels=levels)
 
+  def as_date(self,format):
+    """
+    Return the column with all elements converted to millis since the epoch.
+    :param format: The date time format string
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if len(self) != 1: raise(ValueError, "`setLevels` can only be called on a single H2OVec or an H2OFrame with "
+                                         "one column")
+    return H2OFrame(vecs=[self[0].as_date(format=format)])
 
   def setNames(self,names):
     """
@@ -1299,9 +1310,9 @@ class H2OVec:
 
   def as_date(self,format):
     """
-    Inplace update the column to millis since the epoch.
+    Return the column with all elements converted to millis since the epoch.
     :param format: The date time format string
-    :return: None
+    :return: H2OVec
     """
     if not isinstance(format, str):
       raise ValueError("format must be a string")

@@ -842,9 +842,10 @@ def table(data1,data2=None):
   else: return data1.table(data2=data2)
 def scale(data,center=True,scale=True): return data.scale(center=center, scale=scale)
 def setLevel(data, level)  : return data.setLevel(level=level)
-def setLevels(data, levels)  : return data.setLevels(levels=levels)
+def setLevels(data, levels): return data.setLevels(levels=levels)
 def levels(data, col=0)    : return data.levels(col=col)
 def nlevels(data, col=0)   : return data.nlevels(col=col)
+def as_date(data, format)  : return data.as_date(format=format)
 
 class H2ODisplay:
   """
