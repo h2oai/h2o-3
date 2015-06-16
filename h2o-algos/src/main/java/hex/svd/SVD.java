@@ -118,6 +118,34 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return ivv_sum;
   }
 
+  // Compute sum of diagonal of X'X/(nrow(X)-1), where X = transformed and expanded training frame
+  public double totalVar(DataInfo dinfo, double[][] gram, boolean includeCats) {
+    double total_cat = 0, total_num = 0;
+    double nrow = dinfo._adaptedFrame.numRows();
+
+    if(includeCats) {
+      if(_parms._use_all_factor_levels)
+        total_cat = dinfo._cats;  // sum of variance = number of categoricals
+      else {
+        for (int i = 0; i < dinfo._cats; i++) {
+          for (int j = dinfo._catOffsets[i]; j < dinfo._catOffsets[i + 1]; j++) {
+            total_cat += gram[j][j];
+          }
+        }
+      }
+      total_cat *= nrow / (nrow - 1);   // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
+    }
+
+    if(_parms._transform == DataInfo.TransformType.STANDARDIZE)
+      total_num = dinfo._nums;   // variance of every column is 1
+    else {
+      for(int i = dinfo.numStart(); i < gram.length; i++)
+        total_num += gram[i][i];
+      total_num *= nrow / (nrow-1);   // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
+    }
+    return total_cat + total_num;
+  }
+
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
 
     @Override protected void compute2() {
@@ -158,6 +186,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gram = gtsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
         assert gram.length == _ncolExp;
         model._output._nobs = gtsk._nobs;
+        model._output._total_variance = totalVar(dinfo, gram, true);
         model._output._v = new double[_parms._nv][gram.length];
         model.update(self());
         update(1);
@@ -169,7 +198,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
         double[][] ivv_sum = new double[gram.length][gram.length];
         for(int i = 0; i < gram.length; i++) ivv_sum[i][i] = 1;
-
 
         // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
         if(!_parms._only_v) {

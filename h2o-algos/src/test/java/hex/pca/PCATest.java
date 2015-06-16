@@ -209,7 +209,7 @@ public class PCATest extends TestUtil {
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._k = 4;
-      parms._max_iterations = 10;
+      parms._max_iterations = 1000;
 
       try {
         job = new PCA(parms);
