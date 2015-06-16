@@ -701,6 +701,44 @@ public class DeepLearningTest extends TestUtil {
   }
 
   @Test
+  public void testRowWeightsOne() {
+    Frame tfr = null, vfr = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._reproducible = true;
+      parms._seed = 0xdecaf;
+      parms._classification_stop = -1;
+      parms._l1 = 0.1;
+      parms._hidden = new int[]{1};
+      parms._epochs = 1;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      DeepLearningModel dl = job.trainModel().get();
+
+      dl.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
+      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+
+      double mse = dl._output._training_metrics.mse();
+      assertEquals(0.3189442010379401, mse, 1e-8); //Note: better results than non-shuffled
+      job.remove();
+      dl.delete();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test
   public void testNoRowWeightsShuffled() {
     Frame tfr = null, vfr = null;
 
@@ -728,44 +766,6 @@ public class DeepLearningTest extends TestUtil {
 
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.3720304832926737, mse, 1e-8);
-      job.remove();
-      dl.delete();
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
-    }
-    Scope.exit();
-  }
-
-  @Test
-  public void testRowWeightsOne() {
-    Frame tfr = null, vfr = null;
-
-    Scope.enter();
-    try {
-      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
-      DKV.put(tfr);
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = "response";
-      parms._weights_column = "weight";
-      parms._reproducible = true;
-      parms._seed = 0xdecaf;
-      parms._classification_stop = -1;
-      parms._l1 = 0.1;
-      parms._hidden = new int[]{1};
-      parms._epochs = 1;
-
-      // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
-
-      dl.score(parms.train());
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7592592592592592, mm.auc()._auc, 1e-8);
-
-      double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3736149104133342, mse, 1e-8); //Note: better results than non-shuffled
       job.remove();
       dl.delete();
     } finally {

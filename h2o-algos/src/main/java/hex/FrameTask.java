@@ -1,13 +1,11 @@
 package hex;
 
 import water.*;
-import water.H2O.H2OCountedCompleter;
 import water.Job.JobCancelledException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
@@ -103,11 +101,14 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final int repeats = (int)Math.ceil(_useFraction);
     final float fraction = _useFraction / repeats;
 
-    if (fraction < 1.0 || _dinfo._weights) {
+    // have non-trivial ?
+    final boolean nontrivial_weights = _dinfo._weights && !_dinfo._adaptedFrame.vecs()[_dinfo.weightChunkId()].isConst();
+
+    if (fraction < 1.0 || nontrivial_weights) {
       skip_rng = RandomUtils.getRNG(_seed+offset);
     }
     long[] shuf_map = null;
-    if (_shuffle && ! _dinfo._weights) { //we are already shuffling when using row weights
+    if (_shuffle && !nontrivial_weights) { //we are already shuffling when using nontrivial_weights
       shuf_map = new long[nrows];
       for (int i=0;i<nrows;++i)
         shuf_map[i] = i;
@@ -117,7 +118,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     float[] weight_map = null;
     float weight_sum;
     //TODO: store node-local helper arrays in _dinfo -> avoid re-allocation and construction
-    if (_dinfo._weights) {
+    if (nontrivial_weights) {
       weight_map = new float[nrows];
       weight_sum = 0;
       for (int i=0;i<nrows;++i) {
@@ -139,7 +140,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
         // find out which training row to process
         int r;
-        if (_dinfo._weights) {
+        if (nontrivial_weights) {
           // importance sampling based on inverse of cumulative distribution
           float key = skip_rng.nextFloat();
           r = Arrays.binarySearch(weight_map, 0, nrows, key);
