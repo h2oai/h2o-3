@@ -393,6 +393,45 @@ class H2OFrame:
     res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(urllib.quote(vec._expr.eager()), "C1"))
     return res["domain"][0]
 
+  def nlevels(self, col=0):
+    """
+    Get the number of factor levels for this frame and the specified column index.
+
+    :param col: A column index in this H2OFrame.
+    :return: an integer.
+    """
+    nlevels = self.levels(col=col)
+    return len(nlevels) if nlevels else 0
+
+  def setLevel(self, level):
+    """
+    A method to set all column values to one of the levels.
+    :param level: The level at which the column will be set (a string)
+    :return: An H2OVec with all entries set to the desired level
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if len(self) != 1: raise(ValueError, "`setLevel` can only be called on a single H2OVec or an H2OFrame with "
+                                         "one column")
+    return self[0].setLevel(level=level)
+
+  def setLevels(self, levels):
+    """
+    Works on a single categorical vector. New domains must be aligned with the old domains. This call has SIDE
+    EFFECTS and mutates the column in place (does not make a copy).
+    :param level: The level at which the column will be set (a string)
+    :param x: A single categorical column.
+    :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
+    old levels.
+    :return: None
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if len(self) != 1: raise(ValueError, "`setLevels` can only be called on a single H2OVec or an H2OFrame with "
+                                         "one column")
+    self[0].setLevels(levels=levels)
+
+
   def setNames(self,names):
     """
     Change the column names to `names`.
@@ -1681,6 +1720,50 @@ class H2OVec:
     data2_key = "%"+data2.key() if data2 else "()"
     expr = "(= !{} (table %{} {}))".format(tmp_key,self.key(),data2_key)
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def levels(self):
+    """
+    Get the factor levels for this vec.
+
+    :return: a list of strings that are the factor levels for the column.
+    """
+    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(urllib.quote(self._expr.eager()), "C1"))
+    return res["domain"][0]
+
+  def nlevels(self):
+    """
+    Get the number of factor levels for this frame and the specified column index.
+
+    :return: an integer.
+    """
+    nlevels = self.levels()
+    return len(nlevels) if nlevels else 0
+
+  def setLevel(self, level):
+    """
+    A method to set all column values to one of the levels.
+    :param level: The level at which the column will be set (a string). Must be a member of self.levels().
+    :return: An H2OVec with all entries set to the desired level
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (setLevel %{} {}))".format(tmp_key,self.key(), '\"'+level+'\"')
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def setLevels(self, levels):
+    """
+    Works on a single categorical vector. New domains must be aligned with the old domains. This call has SIDE
+    EFFECTS and mutates the column in place (does not make a copy).
+    :param level: The level at which the column will be set (a string)
+    :param x: A single categorical column.
+    :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
+    old levels.
+    :return: None
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (setDomain %{} {}))".format(tmp_key,self.key(), '(slist '+ ' '.join(['\"'+l+'\"' for l in
+                                                                                        levels]) + ')')
+    h2o.rapids(expr)
+    h2o.removeFrameShallow(tmp_key)
 
   # Error if lengths are not compatible.  Return self for flow-coding
   def _len_check(self,x):
