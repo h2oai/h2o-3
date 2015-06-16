@@ -120,29 +120,30 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   // Compute sum of diagonal of X'X/(nrow(X)-1), where X = transformed and expanded training frame
   public double totalVar(DataInfo dinfo, double[][] gram, boolean includeCats) {
-    double total = 0;
+    double total_cat = 0, total_num = 0;
     double nrow = dinfo._adaptedFrame.numRows();
 
     if(includeCats) {
-      for(int i = 0; i < dinfo._cats; i++) {
-        // Let n = number of rows, c = count of a categorical level
-        // The indicator column for that level will have variance
-        // ((1 - c/n)^2 * c + (0 - c/n)^2 * (n-c))/(n-1) = (c * (n-c))/(n * (n-1))
-        for(int j = 0; j < dinfo._catOffsets[i+1]; j++) {
-          // double c = gram[j][j] * nrow;   // Since diagonal of gram is c/n
-          // total += c * (nrow - c) / (nrow * (nrow - 1));
-          total += gram[j][j] * nrow / (nrow-1);
+      if(_parms._use_all_factor_levels)
+        total_cat = dinfo._cats;  // sum of variance = number of categoricals
+      else {
+        for (int i = 0; i < dinfo._cats; i++) {
+          for (int j = dinfo._catOffsets[i]; j < dinfo._catOffsets[i + 1]; j++) {
+            total_cat += gram[j][j];
+          }
         }
       }
+      total_cat *= nrow / (nrow - 1);   // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
     }
 
-    if(_parms._transform == DataInfo.TransformType.DESCALE || _parms._transform == DataInfo.TransformType.STANDARDIZE)
-      total += dinfo._nums;   // variance of every column is 1
+    if(_parms._transform == DataInfo.TransformType.STANDARDIZE)
+      total_num = dinfo._nums;   // variance of every column is 1
     else {
       for(int i = dinfo.numStart(); i < gram.length; i++)
-        total += gram[i][i] * nrow / (nrow-1);    // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
+        total_num += gram[i][i];
+      total_num *= nrow / (nrow-1);   // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
     }
-    return total;
+    return total_cat + total_num;
   }
 
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
