@@ -104,6 +104,7 @@ Hadoop Launch Parameters
 - `-driverport <port of mapper -> callback interface>`: Specify the port number for callback messages from the mapper to the driver. 
 - `-network <IPv4Network1>[,<IPv4Network2>]`: Specify the IPv4 network(s) to bind to the H2O nodes; multiple networks can be specified to force H2O to use the specified host in the Hadoop cluster. `10.1.2.0/24` allows 256 possibilities.   
 - `-timeout <seconds>`: Specify the timeout duration (in seconds) to wait for the cluster to form before failing. 
+  **Note**: The default value is 120 seconds; if your cluster is very busy, this may not provide enough time for the nodes to launch. If H2O does not launch, try increasing this value (for example, `-timeout 600`). 
 - `-disown`: Exit the driver after the cluster forms.
 - `-notify <notification file name>`: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up". 
 - `-mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O (at least 6g). 
