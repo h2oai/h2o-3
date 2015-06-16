@@ -102,6 +102,17 @@ public final class Gram extends Iced<Gram> {
         if(xx[i][j] != 0) nzs += 1;
     return nzs/(xx.length*xx.length);
   }
+
+  public double diagSum(){
+    double res = 0;
+    if(_diag != null){
+      for(double d:_diag) res += d;
+    }
+    if(_xx != null){
+      for(double [] x:_xx)res += x[x.length-1];
+    }
+    return res;
+  }
   public double diagAvg(){
     double res = 0;
     int n = 0;
