@@ -38,6 +38,12 @@ Check back for updates, as these algorithms will be re-introduced in an improved
 
 ---
 
+##Parsing Changes
+
+In H2O Classic, the parser reads all the data and tries to guess the column type. In H2O 3.0, the parser reads a subset and makes a type guess for each column. In Flow, you can view the preliminary parse results in the **Data Preview** area. To change the column type, select an option from the drop-down menu at the top of the column. H2O 3.0 can also automatically identify mixed-type columns; in H2O Classic, if one column is mixed integers or real numbers using a string, the output is blank. 
+
+---
+
 ##Web UI Changes
 
 Our web UI has been completely overhauled with a much more intuitive interface that is similar to IPython Notebook. Each point-and-click action is translated immediately into an individual workflow script that can be saved for later interactive and offline use.  As a result, you can now revise and rerun your workflows easily, and can even add comments and rich media. 
