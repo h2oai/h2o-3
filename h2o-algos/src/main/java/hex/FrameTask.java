@@ -135,11 +135,18 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     for(int rrr = 0; rrr < repeats; ++rrr) {
       OUTER:
       for(int rr = 0; rr < nrows; ++rr){
-        // only train with a given number of training samples (fraction*nrows)
-        if (skip_rng != null && skip_rng.nextFloat() > fraction)continue;
+        int r = 0; //index of local training row in this chunk to process
 
-        // find out which training row to process
-        int r;
+        // only train with a given number of training samples (fraction*nrows)
+        if (skip_rng != null && skip_rng.nextFloat() > fraction) {
+          // we need to pick at least one row per map pass
+          if (rrr==repeats-1 && rr==nrows-1 && num_processed_rows == 0) {
+            r = -1; //marker
+          } else {
+            continue; //toss of coin
+          }
+        }
+
         if (nontrivial_weights) {
           // importance sampling based on inverse of cumulative distribution
           float key = skip_rng.nextFloat();
@@ -147,9 +154,13 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 //          Log.info(Arrays.toString(weight_map));
 //          Log.info("key: " + key + " idx: " + (r >= 0 ? r : (-r-1)));
           if (r<0) r=-r-1;
-        } else {
+        } else if (r == -1){
+          // uniformly pick one row
+          r = skip_rng.nextInt(nrows);
+        } else if (r != -1){
           r = shuf_map != null ? (int) shuf_map[rr] : rr;
         }
+        assert(r >= 0 && r<=nrows);
 
         row = _dinfo.extractDenseRow(chunks, r, row);
         if(!row.bad) {
