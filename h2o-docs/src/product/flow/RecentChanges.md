@@ -2,11 +2,100 @@
 
 ##H2O
 
-###Shannon (3.0.0.21) - 6/12/15
+###Shannon (3.0.0.23) - 6/17/15
 
 ####New Features
 
 The following changes represent features that have been added since the previous release:
+
+#####Algorithms
+
+- [HEXDEV-21](https://0xdata.atlassian.net/browse/HEXDEV-21): Offset for GLM
+- [HEXDEV-208](https://0xdata.atlassian.net/browse/HEXDEV-208): Add observation weights to GLM (was HEXDEV-4)
+
+#####API
+
+- [PUBDEV-633](https://0xdata.atlassian.net/browse/PUBDEV-633): Generate Java bindings for REST API: POJOs for the entities (schemas)
+
+#####Python 
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/9ab55a5e612af9d807f069863a50667dd6970484) added h2o.anyfactor() and respective pyunit
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/34f4110ac2d5a7fb6b47f1919851ade2e9f8f279): Add `_build_tree_one_node` option to GBM
+
+##### API
+
+- [HEXDEV-352](https://0xdata.atlassian.net/browse/HEXDEV-352): Additional attributes on /Frames and /Frames/foo/summary
+
+
+#####R
+
+- [PUBDEV-706](https://0xdata.atlassian.net/browse/PUBDEV-706): Release h2o-dev to CRAN
+
+#####System
+
+- [PUBDEV-717](https://0xdata.atlassian.net/browse/PUBDEV-717): refector the duplicated code in FramesV2
+- [PUBDEV-1281](https://0xdata.atlassian.net/browse/PUBDEV-1281): Add horizontal pagination of frames to Flow [GitHub](https://github.com/h2oai/h2o-3/commit/5b9f0b84e79aa4dc09c7350c9b37c27d954b4c14)
+- [PUBDEV-607](https://0xdata.atlassian.net/browse/PUBDEV-607): Add Xmx reporting to GA
+- [GitHub](https://github.com/h2oai/h2o-3/commit/60a6e5d6705e04a2d8b7a6e45e13ae8a34013587):Added support for Freezable[][][] in serialization (added addAAA to auto buffer and DocGen, DocGen will just throw H2O.fail())
+- [GitHub](https://github.com/h2oai/h2o-3/commit/75f6a6c87e943d2222597755788c8d9a23e8013f): No longer set yyyy-MM-dd and dd-MMM-yy dates that precede the epoch to be NA. Negative time values are fine. This unifies these two time formats with the behavior of as.Date.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/0bb1e10b5c888a7fd1274991348ea214302728db): Reduces the verbosity of parse tracing messages. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/04566d7a9efd15418885e46f3db9eba1d52b04d8): Rename AUTO->GUESS for figuring out file type.
+
+##### Web UI
+
+- [HEXDEV-276](https://0xdata.atlassian.net/browse/HEXDEV-276): Add frame pagination
+- [PUBDEV-1405](https://0xdata.atlassian.net/browse/PUBDEV-1405): Flow : Decision to be made on display of number of columns for wider datasets for Parse and Frame summary
+- [PUBDEV-1404](https://0xdata.atlassian.net/browse/PUBDEV-1404): Usability improvements
+
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+
+#####Algorithms 
+
+- [PUBDEV-1365](https://0xdata.atlassian.net/browse/PUBDEV-1365): GLM: Buggy when likelihood equals infinity
+- [PUBDEV-1394](https://0xdata.atlassian.net/browse/PUBDEV-1394): GLM: Some offsets hang
+- [PUBDEV-1268](https://0xdata.atlassian.net/browse/PUBDEV-1268): GLM: get java.lang.AssertionError at hex.glm.GLM$GLMSingleLambdaTsk.compute2 for attached data
+- [PUBDEV-1403](https://0xdata.atlassian.net/browse/PUBDEV-1403): pca: h2o-3 reporting incorrect proportion of variance and cum prop [GitHub](https://github.com/h2oai/h2o-3/commit/1c874f38b4927b3f9d2a30560dc697a78a2bfe13)
+- [HEXDEV-281](https://0xdata.atlassian.net/browse/HEXDEV-281): GLM - beta constraints with categorical variables fails with AIOOB
+- [HEXDEV-280](https://0xdata.atlassian.net/browse/HEXDEV-280): GLM - gradient not within tolerance when specifying beta_constraints w/ and w/o prior values
+
+
+
+##### Python
+
+- [PUBDEV-1425](https://0xdata.atlassian.net/browse/PUBDEV-1425): Class Cast Exception ValStr to ValNum [GitHub](https://github.com/h2oai/h2o-3/commit/7ed0befac7b47e867c017e4a52f9e4036e5f2aad)
+- [PUBDEV-1421](https://0xdata.atlassian.net/browse/PUBDEV-1421): python client parse fail on hdfs /datasets/airlines/airlines.test.csv
+- [PUBDEV-1153](https://0xdata.atlassian.net/browse/PUBDEV-1153): Demo: Airlines Demo in Python [GitHub](https://github.com/h2oai/h2o-3/commit/8f82d1de294c83f2fa9f2ab9e05ab0f829b8ec7f)
+- [PUBDEV-1286](https://0xdata.atlassian.net/browse/PUBDEV-1286): Python ifelse on H2OFrame never finishes
+- [PUBDEV-1435](https://0xdata.atlassian.net/browse/PUBDEV-1435): Run.py modify to accept phantomjs timeout command line option [GitHub](https://github.com/h2oai/h2o-3/commit/d720f4441e26bcd2715fb40b14370013a126d7c0)
+
+##### R
+
+- [PUBDEV-1154](https://0xdata.atlassian.net/browse/PUBDEV-1154): Demo: Chicago Crime Demo in R
+- [PUBDEV-1240](https://0xdata.atlassian.net/browse/PUBDEV-1240): Merge causes IllegalArgumentException
+
+##### System
+
+- [PUBDEV-1423](https://0xdata.atlassian.net/browse/PUBDEV-1423): Phantomjs : Add timeout command line option 
+- [PUBDEV-1401](https://0xdata.atlassian.net/browse/PUBDEV-1401): Flow : Import file 15 M Rows 2.2K cols=> Parse these files => Change first column type => Unknown => Try to change other columns => Kind of hangs 
+- [PUBDEV-1406](https://0xdata.atlassian.net/browse/PUBDEV-1406): make the ParseSetup / Parse API more efficient for high column counts [GitHub](https://github.com/h2oai/h2o-3/commit/4cc459401afbd7598d5c9a79a4b858237d91fc4f)
+
+
+---
+
+###Shannon (3.0.0.21) - 6/12/15
+
+####New Features
 
 ##### Python
 - [HEXDEV-29](https://0xdata.atlassian.net/browse/HEXDEV-29): The ability to define features as categorical or continuous in the web UI and in the python API
@@ -14,7 +103,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
