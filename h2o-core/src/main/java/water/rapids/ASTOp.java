@@ -1830,7 +1830,7 @@ class ASTSum extends ASTReducerOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        assert C.vec().isNumeric();
+//        assert C.vec().isNumeric();
         double sum=_d;
         if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) sum += d; }
         else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        sum += d; }
@@ -3540,8 +3540,12 @@ class ASTMean extends ASTUniPrefixOp {
       throw new IllegalArgumentException("mean only applies to numeric vector.");
     if (fr.numCols() > 1) {
       double mean=0;
-      for(Vec v : fr.vecs()) mean += v.at(0);
-      env.push(new ValNum(mean/fr.numCols()));
+      double rows=0;
+      for(Vec v : fr.vecs()) {
+        double val = v.at(0);
+        if( !Double.isNaN(val)) {mean += v.at(0); rows++;}
+      }
+      env.push(new ValNum(mean/rows));
     } else {
       MeanNARMTask t = new MeanNARMTask(_narm).doAll(fr.anyVec()).getResult();
       if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
