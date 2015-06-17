@@ -18,8 +18,8 @@ test.pubdev.1398 <- function(conn) {
   
   Log.info("R Eigenvectors:"); print(fitR$rotation[,1:k])
   Log.info("H2O Eigenvectors:"); print(fitH2O@model$eigenvectors)
+  eigvecR <- as.matrix(fitR$rotation[,1:k])
   eigvecH2O <- as.matrix(fitH2O@model$eigenvectors)
-  eigvecR <- fitR$rotation[,1:k]
   dimnames(eigvecH2O) <- dimnames(eigvecR)   # Since H2O row names don't match R
   checkSignedCols(eigvecH2O, eigvecR, tolerance = 1e-5)
   
