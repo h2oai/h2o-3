@@ -1528,15 +1528,12 @@ g_no_run = False
 g_jvm_xmx = "1g"
 g_nopass = False
 g_convenient = False
-<<<<<<< HEAD
 g_include_jacoco = False
-=======
 g_path_to_h2o_jar = None
 g_path_to_tar = None
 g_path_to_whl = None
 g_produce_unit_reports = True
 g_phantomjs_to = 3600
->>>>>>> 33072f035d92a6aff1dc647f4f1309c8a1487ef8
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1711,12 +1708,9 @@ def parse_args(argv):
     global g_path_to_h2o_jar
     global g_path_to_tar
     global g_path_to_whl
-<<<<<<< HEAD
     global g_include_jacoco
-=======
     global g_produce_unit_reports
     global g_phantomjs_to
->>>>>>> 33072f035d92a6aff1dc647f4f1309c8a1487ef8
 
     i = 1
     while (i < len(argv)):

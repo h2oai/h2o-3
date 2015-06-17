@@ -13,7 +13,7 @@ shadowJar {
   mergeServiceFiles()
   classifier = ''
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
-  relocate 'org.joda.time', 'ai.h2o.org.joda.time'
+  //relocate 'org.joda.time', 'ai.h2o.org.joda.time'
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
