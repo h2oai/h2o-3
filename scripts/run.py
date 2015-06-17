@@ -225,10 +225,10 @@ class H2OCloudNode:
                "-cp", self.h2o_jar,
                main_class,
                "-name", self.cloud_name,
-<<<<<<< HEAD
-               "-baseport", str(self.my_base_port)]
+               "-baseport", str(self.my_base_port),
+	       "-ga_opt_out"]
+
         
-        # BEGIN TEST CODE
         if g_include_jacoco:
             root_dir = os.path.abspath(__file__ + "/../../")
             agent_dir = root_dir + "/jacoco/jacocoagent.jar"
@@ -239,11 +239,7 @@ class H2OCloudNode:
             jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
             cmd[4] = agent_dir + ":" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
             cmd = cmd[:1] + [jacoco] + cmd[1:]
-        # END TEST CODE    
-=======
-               "-baseport", str(self.my_base_port),
-	       "-ga_opt_out"]
->>>>>>> 33072f035d92a6aff1dc647f4f1309c8a1487ef8
+
 
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
