@@ -803,7 +803,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.4082698715870419, mse, 1e-8);
+      assertEquals(0.33732890360518414, mse, 1e-8);
       job.remove();
       dl.delete();
     } finally {
