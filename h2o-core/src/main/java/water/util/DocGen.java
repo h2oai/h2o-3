@@ -2,6 +2,7 @@ package water.util;
 
 import water.Freezable;
 import water.H2O;
+import water.Iced;
 
 import java.io.Serializable;
 
@@ -100,10 +101,13 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAA4f (String name, float  [][] fss) { return fss==null?f(name,"null"):f0(name).array(fss).f1(); }
     public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.fail(); }
+    public HTML putAAA  (String name, Freezable[][][]fss){ throw H2O.fail(); }
 
-    public HTML putAAA4 (String name, int    [][][]isss) { return isss==null?f(name,"null"):f0(name).array(isss).f1(); }
-    public HTML putAAA8 (String name, long   [][][]lsss) { return lsss==null?f(name,"null"):f0(name).array(lsss).f1(); }
-    public HTML putAAA8d(String name, double [][][]dsss) { return dsss==null?f(name,"null"):f0(name).array(dsss).f1(); }
+    public HTML putAAA4 (String name,  int    [][][]isss) { return isss==null?f(name,"null"):f0(name).array(isss).f1(); }
+    public HTML putAAA8 (String name,  long   [][][]lsss) { return lsss==null?f(name,"null"):f0(name).array(lsss).f1(); }
+    public HTML putAAA8d(String name,  double [][][]dsss) { return dsss==null?f(name,"null"):f0(name).array(dsss).f1(); }
+    public HTML putAAASer(String name, Object  [][][]dsss) { throw H2O.fail();}
+
 
     public HTML href( String name, String text, String link ) {
       return f0(name).p("<a href='").p(link).p("'>").p(text).p("</a>").f1();

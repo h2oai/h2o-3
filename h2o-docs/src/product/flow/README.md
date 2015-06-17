@@ -1,6 +1,6 @@
 #Flow Web UI ...
 
-H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
+H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document. 
 
 With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment. 
 
@@ -29,7 +29,7 @@ The following help window displays:
 
 To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. You can also access this list of shortcuts by clicking the **Help** menu and selecting **Keyboard Shortcuts**. 
 
-For additional help, click the **Assist Me!** button in the row of buttons below the menus. 
+For additional help, click **Help** > **Assist Me** or click the **Assist Me!** button in the row of buttons below the menus. 
 
 ![Assist Me](images/Flow_AssistMeButton.png) 
 
@@ -39,7 +39,7 @@ You can also type `assist` in a blank cell and press **Ctrl+Enter**. A list of c
  
 There are multiple resources to help you get started with Flow in the **Help** sidebar. To access this document, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
 
-You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows, click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
+You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows, click the **view example Flows** link below the **Quickstart Videos** button in the **Help** sidebar or click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
 
   ![Flow Packs](images/Flow_ExampleFlows.png)
 
@@ -49,7 +49,7 @@ To view the REST API documentation, click the **Help** tab in the sidebar and th
 
  ![REST API documentation](images/Flow_REST_docs.png)
 
-Before getting started with H2O Flow, make sure you understand the different cell modes. 
+Before getting started with H2O Flow, make sure you understand the different cell modes. Certain actions can only be performed when the cell is in a specific mode. 
 
 ---
 
@@ -58,7 +58,7 @@ Before getting started with H2O Flow, make sure you understand the different cel
 
 There are two modes for cells: edit and command. 
 
-
+<a name="EditMode"></a>
 ###Using Edit Mode
 In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
@@ -66,12 +66,17 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 ![Edit Mode](images/Flow_EditMode.png)
  
 <a name="CmdMode"></a>
-##Using Command Mode
+###Using Command Mode
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
 - **MD**: Markdown 
    
-   **Note**: Markdown formatting is not applied until you run the cell by clicking the **Run** button or clicking the **Run** menu and selecting **Run**. 
+   **Note**: Markdown formatting is not applied until you run the cell by:
+   - clicking the **Run** button
+     
+     or
+      
+   - pressing **Ctrl+Enter**
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
@@ -110,6 +115,28 @@ Heading 3     | `3`
 Heading 4     | `4` 
 Heading 5     | `5`
 Heading 6     | `6` 
+
+
+###Running Cells
+
+
+The series of buttons at the top of the page below the menus run cells in a flow. 
+ 
+ ![Flow - Run Buttons](images/Flow_RunButtons.png)
+
+- To run all cells in the flow, click the **Flow** menu, then click **Run All Cells**. 
+- To run the current cell and all subsequent cells, click the **Flow** menu, then click **Run All Cells Below**. 
+- To run an individual cell in a flow, confirm the cell is in [Edit Mode](#EditMode), then: 
+
+ - press **Ctrl+Enter**
+
+     or
+  
+ - click the **Run** button 
+ 
+      ![Flow - Run Button](images/Flow_RunButton.png)
+
+
 
 ###Running Flows
 When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
@@ -237,6 +264,7 @@ A preview of the data displays in the "Data Preview" section.
  ![Flow - Parse options](images/Flow_parse_setup.png)
 
 **Note**: To change the column type, select the drop-down list at the top of the column and select the data type. The options are: 
+  
   - Unknown
   - Numeric
   - Enum
@@ -385,7 +413,7 @@ The available options vary depending on the selected model. If an option is only
    
 - **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0. 
 
-- **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
+- **Build\_tree\_one\_node**: [(DRF](#DRF), [GBM)](#GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
 - **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
 
@@ -754,7 +782,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 <a name="Outline"></a>
 ## Viewing Outlines
 
-The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
+The **Outline** tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
 
 - To jump to a specific cell, click the cell description. 
 - To delete a cell, select it and press the X key on your keyboard. 
@@ -886,6 +914,7 @@ To view the logs for a specific node, select it from the drop-down **Select Node
 
 ---
 
+<a name="DL_Logs"></a>
 ## Downloading Logs
 
 To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to [support@h2o.ai](mailto:support@h2o.ai) for issue resolution. 
@@ -938,6 +967,32 @@ To view a timeline of events in Flow, click the **Admin** menu, then click **Tim
 To obtain the most recent information, click the **Refresh** button.  
 
 ---
+
+##Reporting Issues
+
+If you experience an error with Flow, you can submit a JIRA ticket to notify our team. 
+
+0. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.  
+0. Click the **Help** menu, then click **Report an issue**. This will open our JIRA page where you can file your ticket.  
+0. Click the **Create** button at the top of the JIRA page. 
+0. Attach the log file from the first step, write a description of the error you experienced, then click the **Create** button at the bottom of the page. Our team will work to resolve the issue and you can track the progress of your ticket in JIRA. 
+
+---
+
+##Requesting Help
+
+If you have a Google account, you can submit a request for assistance with H2O on our Google Groups page, [H2Ostream](https://groups.google.com/forum/#!forum/h2ostream). 
+
+To access H2Ostream from Flow:
+
+0. Click the **Help** menu.
+0. Click **Forum/Ask a question**. 
+0. Click the red **New topic** button.
+0. Enter your question and click the red **Post** button. If you are requesting assistance for an error you experienced, be sure to include your [logs](#DL_Logs). 
+
+---
+
+
 
 ## Shutting Down H2O
 
