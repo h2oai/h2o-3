@@ -30,6 +30,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   @API(help="Number of columns to return", direction=API.Direction.INOUT)
   public int column_count;
 
+  @API(help="Total number of columns in the Frame", direction=API.Direction.INOUT)
+  public int total_column_count;
+
   // Output fields
   @API(help="checksum", direction=API.Direction.OUTPUT)
   public long checksum;
@@ -108,6 +111,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     @API(help="domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
     public String[] domain;
 
+    @API(help="cardinality of this column's domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
+    public int domain_cardinality;
+
     @API(help="data", direction=API.Direction.OUTPUT)
     public double[] data;
 
@@ -158,6 +164,12 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
 
       type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
+      if (vec.isEnum()) {
+        domain_cardinality = domain.length;
+      } else {
+        domain_cardinality = 0;
+      }
+
       len = (int)Math.min(len,vec.length()-off);
       if( vec.isUUID() ) {
         string_data = new String[len];
@@ -222,6 +234,8 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     this.row_offset = row_offset;
     this.rows = f.numRows();
     this.row_count = row_count;
+
+    this.total_column_count = f.numCols();
     this.column_offset = column_offset;
     this.column_count = column_count;
 

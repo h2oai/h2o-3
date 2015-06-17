@@ -152,12 +152,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       // Compute standard deviation
       double[] sdev = new double[svd._output._d.length];
       double[] vars = new double[svd._output._d.length];
-      double totVar = 0;
       double dfcorr = 1.0 / Math.sqrt(svd._output._nobs - 1.0);
       for (int i = 0; i < sdev.length; i++) {
         sdev[i] = dfcorr * svd._output._d[i];
         vars[i] = sdev[i] * sdev[i];
-        totVar += vars[i];
       }
       pca._output._std_deviation = sdev;
 
@@ -165,7 +163,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       double[] prop_var = new double[vars.length];    // Proportion of total variance
       double[] cum_var = new double[vars.length];    // Cumulative proportion of total variance
       for (int i = 0; i < vars.length; i++) {
-        prop_var[i] = vars[i] / totVar;
+        prop_var[i] = vars[i] / svd._output._total_variance;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i - 1] + prop_var[i];
       }
       pca._output._pc_importance = new TwoDimTable("Importance of components", null,

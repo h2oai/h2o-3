@@ -373,6 +373,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  blocking. */
   public final T doAll( Vec... vecs ) { return doAll(0,vecs); }
   public final T doAll(int outputs, Vec... vecs ) { return doAll(outputs,new Frame(vecs), false); }
+  public final T doAll( Vec vec, boolean run_local ) { return doAll(0,vec, run_local); }
+  public final T doAll(int outputs, Vec vec, boolean run_local ) { return doAll(outputs,new Frame(vec), run_local); }
 
   /** Invokes the map/reduce computation over the given Frame.  This call is
    *  blocking.  */
