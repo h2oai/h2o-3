@@ -43,7 +43,7 @@ class H2OObj:
 
 
 class ExprNode(H2OObj):
-  """ Composable Expressions. """
+  """ Composable Expressions """
   def __init__(self,op,*args):
     self._data=None    # a scalar, an H2OFrame (with a real-live ID in H2O), or None if pending
     self._op=op        # unary/binary/prefix op
@@ -85,5 +85,6 @@ class ExprNode(H2OObj):
   def _arg_to_expr(arg):
     if isinstance(arg, h2o.H2OFrame): return arg._id
     elif isinstance(arg, (int, float, ExprNode)): return arg
-    elif isinstance(arg, str): return '"' + arg + '"'
+    elif isinstance(arg, str): return '"'+arg+'"'
+    elif isinstance(arg, slice): return "[{}:{}]".format(arg.start,arg.stop)
     raise ValueError("Unexpected arg type: " + str(type(arg)))

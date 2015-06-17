@@ -323,8 +323,17 @@ class H2OFrame(H2OObj):
     if isinstance(item, (int,str,list)): return ExprNode("cols", self, item)  # just columns
     elif isinstance(item, tuple):
       rows = item[0]
+      cols = item[1]
+      allrows = False
+      allcols = False
+      if isinstance(cols, slice):
+        allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
       if isinstance(rows, slice):
-        if all([a is None for a in [rows.start,rows.step,rows.stop]]): return ExprNode("cols",self, item[1])  # fr[:,cols] -> reallyjust a column slice
+        allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
+
+      if allrows and allcols: return self               # fr[:,:]    -> all rows and columns.. return self
+      if allrows: return ExprNode("cols",self,item[1])  # fr[:,cols] -> really just a column slice
+      if allcols: return ExprNode("rows",self,item[0])  # fr[rows,:] -> really just a row slices
       return ExprNode("rows", ExprNode("cols", self, item[1]), item[0])
 
   def __setitem__(self, b, c):

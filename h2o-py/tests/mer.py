@@ -30,3 +30,10 @@ print "fr[fr[1] >= 2,1] :"
 a = fr[fr[1] >= 2,1]
 a.visit()
 a._pprint()
+
+
+a = fr[0:10,:]
+a.visit()
+
+
+fr.head()
