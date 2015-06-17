@@ -25,12 +25,13 @@ h2o.removeAll()
 # Parameters for the test.
 #----------------------------------------------------------------------
 parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
-#paste("Time it took to parse", parse_time[[1]])
-paste("Time it took to parse", parse_time)
+#print("Time it took to parse", parse_time[[1]])
+print("Time it took to parse")
+print(parse_time)
 
 colNames = {}
 for(col in names(data.hex)) {
-    colName <- if(is.na(as.numeric(col))) col else paste0("C", as.character(col))
+    colName <- if(is.na(as.numeric(col))) col else print0("C", as.character(col))
     colNames = append(colNames, colName)
 }
 
@@ -43,7 +44,8 @@ myX = setdiff(names(data.hex), myY)
 # Start modeling
 #Deep Learning
 dl_time <- system.time(data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex, epochs=.1, hidden=c(5,5)))
-paste("Time it took to build DL ", dl_time)
+print("Time it took to build DL")
+print(dl_time)
 data1.dl 
 
 PASS_BANNER()

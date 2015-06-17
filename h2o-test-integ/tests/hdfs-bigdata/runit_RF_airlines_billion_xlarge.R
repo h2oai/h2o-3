@@ -28,7 +28,8 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it took to parse", parse_time)
+print("Time it took to parse")
+print(parse_time)
 
 data1.hex <- data.hex
 
@@ -51,6 +52,7 @@ myX = setdiff(names(data1.hex), myY)
 
 rf_time <- system.time(data1.rf <- h2o.randomForest(x = myX, y = myY, training_frame = data.train, validation_frame=data.valid, ntrees = 10, max_depth = 5))
 data1.rf
-paste("Time it took to build RF ", rf_time)
+print("Time it took to build RF")
+print(rf_time)
 
 PASS_BANNER()
