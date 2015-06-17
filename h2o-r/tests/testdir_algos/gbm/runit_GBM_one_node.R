@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.one.node.gbm <- function(conn) {
   Log.info("Loading data and building models...")
-  airs.hex <- h2o.importFile(locate("smalldata/airlines/allyears2k.csv"))
+  airs.hex <- h2o.importFile(locate("smalldata/airlines/allyears2k.zip"))
 
   gbm.mult <- h2o.gbm(x = 1:30, y = 31, training_frame = airs.hex,
                       build_tree_one_node = F, seed = 1234)
