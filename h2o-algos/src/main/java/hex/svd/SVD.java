@@ -98,7 +98,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return v;
   }
 
-
   // Compute ivv_sum - vec * vec' for symmetric array ivv_sum
   public static double[][] updateIVVSum(double[][] ivv_sum, double[] vec) {
     double diff;
