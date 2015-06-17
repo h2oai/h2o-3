@@ -491,6 +491,28 @@ def rapids(expr):
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
 
+def ls():
+  """
+  List Keys on an H2O Cluster
+  :return: Returns a list of keys in the current H2O instance
+  """
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ls ))".format(tmp_key)
+  rapids(expr)
+  j = frame(tmp_key)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_ids']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+  fr = H2OFrame(vecs=vecs)
+  fr.setNames(["keys"])
+  print "First 10 Keys: "
+  fr.show()
+  return as_list(fr, use_pandas=False)
+
+
 def frame(frame_id):
   """
   Retrieve metadata for a id that points to a Frame.
@@ -499,7 +521,6 @@ def frame(frame_id):
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
-
 
 def frames():
   """
