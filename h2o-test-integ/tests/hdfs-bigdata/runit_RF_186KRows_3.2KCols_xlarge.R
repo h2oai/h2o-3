@@ -30,7 +30,7 @@ print(parse_time)
 
 colNames = {}
 for(col in names(data.hex)) {
-    colName <- if(is.na(as.numeric(col))) col else print0("C", as.character(col))
+    colName <- if(is.na(as.numeric(col))) col else paste0("C", as.character(col))
     colNames = append(colNames, colName)
 }
 
