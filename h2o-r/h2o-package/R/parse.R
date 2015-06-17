@@ -23,8 +23,8 @@
 #'        progress bar.
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL, blocking=FALSE) {
-  parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings)
+                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL) {
+  parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings, parse_type=parse_type)
 
   parse.params <- list(
             source_frames = .collapse.char(parse.params$source_frames),
@@ -59,7 +59,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 #' Get a parse setup back for the staged data.
 #' @inheritParams h2o.parseRaw
 #' @export
-h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL) {
+h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
 
   # quick sanity checking
   if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
@@ -94,6 +94,10 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
   # check the na.strings
   if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
+
+  # check the parse_type
+  # currently valid types are ARFF, XLS, CSV, SVMLight
+  if( !is.null(parse_type) ) parseSetup.params$parse_type <- parse_type
 
   # pass through ParseSetup
   parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
