@@ -25,15 +25,12 @@ function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
 
-  if (is(x, "H2OFrame")) {
-    x <- .get(x)
-  } else {
-    if (is(x, "ASTNode"))       x <- x
-    else if (is.numeric(x))     x <- paste0('#', x)
-    else if (is.character(x))   x <- deparse(eval(x))
-    else if (is(x, "ASTEmpty")) x <- paste0('%', x@key)
-    else stop("operand type not handled: ", class(x))
-  }
+  if( is(x, "H2OFrame") )      x <- .get(x)
+  else if( is(x, "ASTNode") )  x <- x
+  else if( is.numeric(x) )     x <- paste0('#', x)
+  else if( is.character(x) )   x <- deparse(eval(x))
+  else if( is(x, "ASTEmpty") ) x <- paste0('%', x@key)
+  else stop("operand type not handled: ", class(x))
   new("ASTNode", root=op, children=list(x))
 }
 

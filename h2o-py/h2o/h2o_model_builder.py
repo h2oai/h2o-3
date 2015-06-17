@@ -3,7 +3,7 @@ This file builds H2O model
 """
 
 from connection import H2OConnection
-from frame      import H2OFrame, H2OVec
+from frame2      import H2OFrame
 from job        import H2OJob
 import h2o
 
@@ -36,8 +36,8 @@ def _check_frame(x,y,response):
       raise ValueError("`x` must be an H2OFrame or a list of H2OVecs. Got: " + str(type(x)))
     x = H2OFrame(vecs=x)
   if y is not None:
-    if not isinstance(y,H2OVec):
-      raise ValueError("`y` must be an H2OVec. Got: " + str(type(y)))
+    # if not isinstance(y,H2OVec):
+    #   raise ValueError("`y` must be an H2OVec. Got: " + str(type(y)))
     for v in x._vecs:
       if y._name == v._name:
         raise ValueError("Found response "+y._name+" in training `x` data")

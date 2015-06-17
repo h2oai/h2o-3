@@ -8,14 +8,15 @@ import os.path
 import re
 import urllib
 import urllib2
+import imp
 import json
 import random
 import tabulate
 import numpy as np
 from connection import H2OConnection
 from job import H2OJob
-from frame import H2OFrame, H2OVec
-from expr import Expr
+from frame2 import H2OFrame
+from ast import ExprNode
 import h2o_model_builder
 
 
@@ -35,7 +36,7 @@ def _import1(path):
     raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
   return j['destination_frames'][0]
 
-def upload_file(path, destination_frame=""):
+def upload_frame(path, destination_frame=""):
   """
   Upload a dataset at the path given from the local machine to the H2O cluster.
 
@@ -49,14 +50,14 @@ def upload_file(path, destination_frame=""):
   return H2OFrame(text_key=destination_frame)
 
 
-def import_frame(path=None, vecs=None):
+def import_frame(path=None):
   """
   Import a frame from a file (remote or local machine). If you run H2O on Hadoop, you can access to HDFS
 
   :param path: A path specifying the location of the data to import.
   :return: A new H2OFrame
   """
-  return H2OFrame(vecs=vecs) if vecs else H2OFrame(remote_fname=path)
+  return H2OFrame(file_path=path)
 
 
 def parse_setup(raw_frames):
@@ -164,14 +165,15 @@ def split_frame(data, ratios=[0.75], destination_frames=None):
 
 
 def get_frame(frame_id):
-  if frame_id is None:
-    raise ValueError("frame_id must not be None")
-  res = H2OConnection.get_json("Frames/"+urllib.quote(frame_id))
-  res = res["frames"][0]
-  colnames = [v["label"] for v in res["columns"]]
-  veckeys  = res["vec_ids"]
-  vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
-  return H2OFrame(vecs=vecs)
+  raise NotImplementedError
+  # if frame_id is None:
+  #   raise ValueError("frame_id must not be None")
+  # res = H2OConnection.get_json("Frames/"+urllib.quote(frame_id))
+  # res = res["frames"][0]
+  # colnames = [v["label"] for v in res["columns"]]
+  # veckeys  = res["vec_ids"]
+  # vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
+  # return H2OFrame(vecs=vecs)
 
 """
 Here are some testing utilities for running the pyunit tests in conjunction with run.py.
@@ -339,16 +341,7 @@ def remove(object):
   if object is None:
     raise ValueError("remove with no object is not supported, for your protection")
 
-  if isinstance(object, H2OFrame):
-    object._vecs=[]
-
-  elif isinstance(object, H2OVec):
-    H2OConnection.delete("DKV/"+str(object.key()))
-    object._expr=None
-    object=None
-
-  else:
-    H2OConnection.delete("DKV/" + object)
+  H2OConnection.delete("DKV/" + object)
   #
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
@@ -436,37 +429,7 @@ def cbind(left,right):
   :param right: H2OFrame or H2OVec
   :return: new H2OFrame with left|right cbinded
   """
-  # Check left and right data types
-  vecs = []
-  if isinstance(left,H2OFrame) and isinstance(right,H2OFrame):
-    vecs = left._vecs + right._vecs
-  elif isinstance(left,H2OFrame) and isinstance(right,H2OVec):
-    [vecs.append(vec) for vec in left._vecs]
-    vecs.append(right)
-  elif isinstance(left,H2OVec) and isinstance(right,H2OVec):
-    vecs = [left, right]
-  elif isinstance(left,H2OVec) and isinstance(right,H2OFrame):
-    vecs.append(left)
-    [vecs.append(vec) for vec in right._vecs]
-  else:
-    raise ValueError("left and right data must be H2OVec or H2OFrame")
-  names = [vec.name() for vec in vecs]
-
-  fr = H2OFrame.py_tmp_key()
-  cbind = "(= !" + fr + " (cbind %FALSE %"
-  cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
-  rapids(cbind)
-
-  j = frame(fr)
-  fr = j['frames'][0]
-  rows = fr['rows']
-  vec_ids = fr['vec_ids']
-  cols = fr['columns']
-  colnames = [col['label'] for col in cols]
-  result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
-  result.setNames(names)
-  return result
-
+  return ExprNode("cbind", left, right)
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
          license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
@@ -496,7 +459,7 @@ def export_file(frame,path,force=False):
   :param force: Overwrite any preexisting file with the same path
   :return: None
   """
-  fr = H2OFrame.send_frame(frame)
+  fr = frame._id
   f = "true" if force else "false"
   H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
@@ -618,75 +581,64 @@ def as_list(data):
 
   :return: List of list (Rows x Columns).
   """
-  if isinstance(data, Expr):
-    if data.is_local(): return data._data
-    if data.is_pending():
-      data.eager()
-      if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
-    j = frame(data._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
-  if isinstance(data, H2OVec):
-    if data._expr.is_local(): return data._expr._data
-    if data._expr.is_pending():
-      data._expr.eager()
-      if data._expr.is_local(): return [[data._expr._data]]
-    j = frame(data._expr._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
-  if isinstance(data, H2OFrame):
-    vec_as_list = [as_list(v) for v in data._vecs]
-    frm = []
-    for row in range(len(vec_as_list[0])):
-      tmp = []
-      for col in range(len(vec_as_list)):
-        tmp.append(vec_as_list[col][row][0])
-      frm.append(tmp)
-    return frm
+  raise NotImplementedError
+  # if isinstance(data, Expr):
+  #   if data.is_local(): return data._data
+  #   if data.is_pending():
+  #     data.eager()
+  #     if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
+  #   j = frame(data._data) # data is remote
+  #   return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  # if isinstance(data, H2OVec):
+  #   if data._expr.is_local(): return data._expr._data
+  #   if data._expr.is_pending():
+  #     data._expr.eager()
+  #     if data._expr.is_local(): return [[data._expr._data]]
+  #   j = frame(data._expr._data) # data is remote
+  #   return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  # if isinstance(data, H2OFrame):
+  #   vec_as_list = [as_list(v) for v in data._vecs]
+  #   frm = []
+  #   for row in range(len(vec_as_list[0])):
+  #     tmp = []
+  #     for col in range(len(vec_as_list)):
+  #       tmp.append(vec_as_list[col][row][0])
+  #     frm.append(tmp)
+  #   return frm
 
 def logical_negation(data) : return data.logical_negation()
 
-def cos(data)     : return _simple_un_math_op("cos", data)
-def sin(data)     : return _simple_un_math_op("sin", data)
-def tan(data)     : return _simple_un_math_op("tan", data)
-def acos(data)    : return _simple_un_math_op("acos", data)
-def asin(data)    : return _simple_un_math_op("asin", data)
-def atan(data)    : return _simple_un_math_op("atan", data)
-def cosh(data)    : return _simple_un_math_op("cosh", data)
-def sinh(data)    : return _simple_un_math_op("sinh", data)
-def tanh(data)    : return _simple_un_math_op("tanh", data)
-def acosh(data)   : return _simple_un_math_op("acosh", data)
-def asinh(data)   : return _simple_un_math_op("asinh", data)
-def atanh(data)   : return _simple_un_math_op("atanh", data)
-def cospi(data)   : return _simple_un_math_op("cospi", data)
-def sinpi(data)   : return _simple_un_math_op("sinpi", data)
-def tanpi(data)   : return _simple_un_math_op("tanpi", data)
-def abs(data)     : return _simple_un_math_op("abs", data)
-def sign(data)    : return _simple_un_math_op("sign", data)
-def sqrt(data)    : return _simple_un_math_op("sqrt", data)
-def trunc(data)   : return _simple_un_math_op("trunc", data)
-def ceil(data)    : return _simple_un_math_op("ceiling", data)
-def floor(data)   : return _simple_un_math_op("floor", data)
-def log(data)     : return _simple_un_math_op("log", data)
-def log10(data)   : return _simple_un_math_op("log10", data)
-def log1p(data)   : return _simple_un_math_op("log1p", data)
-def log2(data)    : return _simple_un_math_op("log2", data)
-def exp(data)     : return _simple_un_math_op("exp", data)
-def expm1(data)   : return _simple_un_math_op("expm1", data)
-def gamma(data)   : return _simple_un_math_op("gamma", data)
-def lgamma(data)  : return _simple_un_math_op("lgamma", data)
-def digamma(data) : return _simple_un_math_op("digamma", data)
-def trigamma(data): return _simple_un_math_op("trigamma", data)
-
-def _simple_un_math_op(op, data):
-  """
-  Element-wise math operations on H2OFrame and H2OVec
-
-  :param op: the math operation
-  :param data: the H2OFrame or H2OVec object to operate on.
-  :return: H2OFrame or H2oVec, with lazy operation
-  """
-  if isinstance(data, H2OFrame): return H2OFrame(vecs=[_simple_un_math_op(op,vec) for vec in data._vecs])
-  if isinstance(data, H2OVec)  : return H2OVec(data._name, Expr(op, left=data, length=len(data)))
-  raise ValueError, op + " only operates on H2OFrame or H2OVec objects"
+def cos(data)     : return ExprNode("cos", data)
+def sin(data)     : return ExprNode("sin", data)
+def tan(data)     : return ExprNode("tan", data)
+def acos(data)    : return ExprNode("acos", data)
+def asin(data)    : return ExprNode("asin", data)
+def atan(data)    : return ExprNode("atan", data)
+def cosh(data)    : return ExprNode("cosh", data)
+def sinh(data)    : return ExprNode("sinh", data)
+def tanh(data)    : return ExprNode("tanh", data)
+def acosh(data)   : return ExprNode("acosh", data)
+def asinh(data)   : return ExprNode("asinh", data)
+def atanh(data)   : return ExprNode("atanh", data)
+def cospi(data)   : return ExprNode("cospi", data)
+def sinpi(data)   : return ExprNode("sinpi", data)
+def tanpi(data)   : return ExprNode("tanpi", data)
+def abs(data)     : return ExprNode("abs", data)
+def sign(data)    : return ExprNode("sign", data)
+def sqrt(data)    : return ExprNode("sqrt", data)
+def trunc(data)   : return ExprNode("trunc", data)
+def ceil(data)    : return ExprNode("ceiling", data)
+def floor(data)   : return ExprNode("floor", data)
+def log(data)     : return ExprNode("log", data)
+def log10(data)   : return ExprNode("log10", data)
+def log1p(data)   : return ExprNode("log1p", data)
+def log2(data)    : return ExprNode("log2", data)
+def exp(data)     : return ExprNode("exp", data)
+def expm1(data)   : return ExprNode("expm1", data)
+def gamma(data)   : return ExprNode("gamma", data)
+def lgamma(data)  : return ExprNode("lgamma", data)
+def digamma(data) : return ExprNode("digamma", data)
+def trigamma(data): return ExprNode("trigamma", data)
 
 # generic reducers: these are eager
 def min(data)   : return data.min()
@@ -772,3 +724,12 @@ class H2ODisplay:
     entry = "<td>{}</td>"
     entries = "\n".join([entry.format(str(r)) for r in row])
     return res.format(entries)
+
+def can_use_pandas():
+  # check to see if we can use pandas
+  found_pandas=False
+  try:
+    imp.find_module('pandas')  # if have pandas, use this to eat a frame
+    return True
+  except ImportError:
+    return False

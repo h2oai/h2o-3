@@ -18,18 +18,12 @@
 #' All ASTNodes have children. All nodes with the @@root slot has a list in the @@children slot that represent operands.
 .visitor<-
 function(node) {
-  if (is.list(node))
-    unlist(lapply(node, .visitor), use.names = FALSE)
-  else if (is(node, "ASTNode") || is(node, "ASTSpan"))
-    paste0("(", node@root@op, " ", paste0(.visitor(node@children), collapse = " "), ")")
-  else if (is(node, "ASTSeries"))
-    paste0(" ", node@op, paste0(.visitor(node@children), collapse = ";"), "}")
-  else if (is(node, "ASTEmpty"))
-    node@key
-  else if (is(node, "H2OFrame"))
-    .visitor(.get(node))
-  else
-    node
+  if( is.list(node) )                                    unlist(lapply(node, .visitor), use.names = FALSE)
+  else if( is(node, "ASTNode") || is(node, "ASTSpan") )  paste0("(", node@root@op, " ", paste0(.visitor(node@children), collapse = " "), ")")
+  else if( is(node, "ASTSeries") )                       paste0(" ", node@op, paste0(.visitor(node@children), collapse = ";"), "}")
+  else if( is(node, "ASTEmpty") )                        node@key
+  else if( is(node, "H2OFrame") )                        .visitor(.get(node))
+  else                                                  node
 }
 
 #'
@@ -37,10 +31,8 @@ function(node) {
 #'
 #' Key points to a bonified object in the H2O cluster
 .get <- function(H2OFrame) {
-  if( H2OFrame@mutable$computed )
-    paste0('%', H2OFrame@id)
-  else
-    H2OFrame@mutable$ast
+  if( H2OFrame@mutable$computed ) paste0('%', H2OFrame@id)
+  else                            H2OFrame@mutable$ast
 }
 
 #'
@@ -53,10 +45,8 @@ function(node) {
 #'
 .as_list<-
 function(expr) {
-  if (is.call(expr))
-    lapply(as.list(expr), .as_list)
-  else
-    expr
+  if (is.call(expr)) lapply(as.list(expr), .as_list)
+  else               expr
 }
 
 #'
@@ -64,17 +54,15 @@ function(expr) {
 #'
 .eval<-
 function(x, envir) {
-  statements <- unlist(lapply(as.list(x), .as_list), recursive = TRUE)
+  statements  <- unlist(lapply(as.list(x), .as_list), recursive = TRUE)
   anyH2OFrame <- FALSE
-  for (i in statements) {
+  for( i in statements ) {
     anyH2OFrame <- tryCatch(is(i, "H2OFrame") ||
                             is(get(as.character(i), envir), "H2OFrame"),
                             error = function(e) FALSE)
-    if (anyH2OFrame)
-      break
+    if( anyH2OFrame ) break
   }
-  if (anyH2OFrame)
-    x <- eval(x, envir)
+  if( anyH2OFrame )   x <- eval(x, envir)
   return(paste0('[',.ast.walker(x, envir, FALSE),']',collapse=" "))
 }
 
@@ -107,7 +95,7 @@ function(expr, envir, neg) {
 
   # expr := 17
   expr1 <- expr[[1L]]    # First token of lists
-  if( length(expr) == 1L && is.numeric(expr1) ) return(as.character(ifelse(neg,-expr1,expr1-1)))
+  if( length(expr) == 1L && is.numeric(expr1) ) return(as.character(ifelse(neg,-expr1,expr1-1L)))   # if not neg-index, then do 1 -> 0 indexing (expr1 - 1L)
 
   # expr := "baz"
   if( length(expr) == 1L && is.character(expr ) ) {
@@ -121,9 +109,9 @@ function(expr, envir, neg) {
   # expr := (: lo hi)
   if( expr1 == quote(`:`)) {
     if( length(expr) != 3L ) stop("Spans need exactly a lower bound and an upper bound")
-    lb = .ast.walker(expr[[2L]],envir,neg)
-    ub = .ast.walker(expr[[3L]],envir,neg)
-    cnt = as.numeric(ub)-as.numeric(lb)+1
+    lb <- .ast.walker(expr[[2L]],envir,neg)
+    ub <- .ast.walker(expr[[3L]],envir,neg)
+    cnt <- as.numeric(ub)-as.numeric(lb)+1
     if( length(lb) != 1L ) stop("Bounds must be 1 value")
     if( length(ub) != 1L ) stop("Bounds must be 1 value")
     return(paste0(lb,':',cnt))
@@ -151,36 +139,21 @@ function(expr, envir, neg) {
 #'                      .h2o.nary_op("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
-  if (is(a, "H2OFrame")) {
-    .get(a)
-  } else if (is(a, "ASTNode")) {
-    a
-  } else if (is(a, "ASTFun")) {
-    paste0('%', a@name)
-  } else if (is(a, "ASTEmpty")) {
-    paste0('%', a@key)
-  } else {
+  if (is(a, "H2OFrame"))      .get(a)
+  else if (is(a, "ASTNode"))  a
+  else if (is(a, "ASTFun"))   paste0('%', a@name)
+  else if (is(a, "ASTEmpty")) paste0('%', a@key)
+  else {
     res <- eval(a)
-    if (is.null(res)) {
-      "()"
-    } else if (is.vector(res)) {
+    if (is.null(res)) "()"
+    else if (is.vector(res)) {
       if (length(res) > 1L) {
-        if (is.numeric(res)) res <- as.numeric(res)
-        if( is.numeric(res) ) {
-          paste0("[", paste0(res, collapse=" "), "]")
-        } else {
-          paste0("[", paste0(unlist(lapply(res, deparse)), collapse= " "), "]")
-        }
-      } else if (is.numeric(res)) {
-        res
-      } else if (is.logical(res)) {
-        res
-      } else {
-        deparse(eval(a))
-      }
-    } else {
-      deparse(eval(a))
-    }
+        if (is.numeric(res))  res <- as.numeric(res)
+        if( is.numeric(res) ) paste0("[", paste0(res, collapse=" "), "]")
+        else                  paste0("[", paste0(unlist(lapply(res, deparse)), collapse= " "), "]")
+      } else if( is.numeric(res) || is.logical(res)) res
+      else deparse(eval(a))
+    } else deparse(eval(a))
   }
 }
 

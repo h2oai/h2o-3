@@ -11,7 +11,6 @@ import sys
 import string
 import time
 import tempfile
-import tabulate
 import subprocess
 import atexit
 import pkg_resources
