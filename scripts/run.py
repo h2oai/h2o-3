@@ -216,6 +216,8 @@ class H2OCloudNode:
             java = os.environ["JAVA_HOME"] + "/bin/java"
         else:
             java = "java"
+
+
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
@@ -224,6 +226,19 @@ class H2OCloudNode:
                main_class,
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port)]
+        
+        # BEGIN TEST CODE
+        if g_include_jacoco:
+            root_dir = os.path.abspath(__file__ + "/../../")
+            agent_dir = root_dir + "/jacoco/jacocoagent.jar"
+            jresults_dir = self.output_dir + "/jacoco/"
+            if not os.path.exists(jresults_dir):
+                os.mkdir(jresults_dir)
+            jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
+            cmd[4] = agent_dir + ":" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
+            cmd = cmd[:1] + [jacoco] + cmd[1:]
+        # END TEST CODE    
 
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
@@ -1502,6 +1517,7 @@ g_no_run = False
 g_jvm_xmx = "1g"
 g_nopass = False
 g_convenient = False
+g_include_jacoco = False
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1592,6 +1608,8 @@ def usage():
     print("")
     print("    --noxunit     Do not produce xUnit reports.")
     print("")
+    print("    --jacoco      Generate a code coverage report using JaCoCo")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1671,6 +1689,7 @@ def parse_args(argv):
     global g_convenient
     global g_path_to_tar
     global g_path_to_whl
+    global g_include_jacoco
 
     i = 1
     while (i < len(argv)):
@@ -1767,6 +1786,8 @@ def parse_args(argv):
             g_no_run = True
         elif (s == "--noxunit"):
             g_produce_unit_reports = False
+        elif (s == "--jacoco"):
+            g_include_jacoco = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:

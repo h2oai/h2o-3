@@ -33,6 +33,18 @@ trap cleanup SIGTERM SIGINT
 #   build/resources/main - Main resources (e.g. page.html)
 JVM="nice java -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 
+# Checking whether to generate a coverage report...
+if [ "$1" = "jacoco" ]
+then
+    CP="../build/jacoco_instrumented/h2o-scala/build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../build/jacoco_instrumented/h2o-core/build/libs/h2o-core.jar${SEP}../build/jacoco_instrumented/h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+    AGENT="../jacoco/jacocoagent.jar"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-scala.exec,excludes=$CP"
+    TEMP_PRE_JVM=${JVM:0:10}
+    TEMP_POST_JVM="${JVM:9:9}$AGENT${SEP}$CP"
+    JVM=$TEMP_PRE_JVM$COVERAGE$TEMP_POST_JVM
+    echo $JVM
+fi
+
 # Runner
 # Default JUnit runner is org.junit.runner.JUnitCore
 JUNIT_RUNNER="water.junit.H2OTestRunner"

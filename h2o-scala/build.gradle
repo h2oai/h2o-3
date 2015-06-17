@@ -30,3 +30,7 @@ test {
 artifacts {
     toPublish scaladocJar
 }
+
+task cleanCoverageData(type: Delete) {
+    delete files("${buildDir}/jacoco")
+}

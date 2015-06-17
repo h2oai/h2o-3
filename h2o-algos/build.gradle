@@ -29,3 +29,7 @@ test {
   // Defeat task 'test' by running no tests.
   exclude '**'
 }
+
+task cleanCoverageData(type: Delete) {
+    delete files("${buildDir}/jacoco")
+}

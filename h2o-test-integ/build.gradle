@@ -14,11 +14,22 @@ def pythonMultiJVMTestsPath = new File("$rootDir/py/testdir_multi_jvm")
 
 task runPythonMultiJVMTests(type: Exec) {
     workingDir pythonMultiJVMTestsPath
-    commandLine 'python', runner, '--wipeall', '--numclouds', '2', '--jvm.xmx', '2g'
+    
+    if (project.hasProperty("jacocoCoverage")) {
+        commandLine 'python', runner, '--wipeall', '--numclouds', '2', '--jvm.xmx', '2g', '--jacoco'
+    } else if (project.hasProperty("coberturaCoverage")) {
+         commandLine 'python', runner, '--wipeall', '--numclouds', '2', '--jvm.xmx', '2g', '--cobertura'
+    } else {
+      	commandLine 'python', runner, '--wipeall', '--numclouds', '2', '--jvm.xmx', '2g'
+    }
 }
 
 task cleanPythonMultiJVMTests(type: Delete) {
     delete "$pythonMultiJVMTestsPath/results"
+}
+
+task cleanPythonMultiJVMTestsCoverageData(type: Delete) {
+    delete "$pythonMultiJVMTestsPath/results/jacoco"
 }
 
 apply from: '../gradle/dataCheck.gradle'
@@ -35,14 +46,26 @@ def nodeJsSingleJVMTestsPath = new File("$rootDir/h2o-web")
 
 task runNodeJsSingleJVMTests(type: Exec) {
     workingDir nodeJsSingleJVMTestsPath
-    commandLine 'python', runner, '--wipeall', '--numclouds', '1', '--test', 'src/main/resources/www/steam/js/steam-tests.js', '--jvm.xmx', '4g'
+    if (project.hasProperty("jacocoCoverage")) {
+        commandLine 'python', runner, '--wipeall', '--numclouds', '1', '--test', 'src/main/resources/www/steam/js/steam-tests.js', '--jvm.xmx', '4g', '--jacoco'
+    } else {
+        commandLine 'python', runner, '--wipeall', '--numclouds', '1', '--test', 'src/main/resources/www/steam/js/steam-tests.js', '--jvm.xmx', '4g'
+    }
 }
 
 task cleanNodeJsSingleJVMTests(type: Delete) {
     delete "$nodeJsSingleJVMTestsPath/results"
 }
 
+task cleanNodeJsSingleJVMTestsCoverageData(type: Delete) {
+    delete "$nodeJsSingleJVMTestsPath/results/jacoco"
+}
+
 // Commented out on 12/15/2014
 // test.dependsOn runNodeJsSingleJVMTests
 clean.dependsOn cleanNodeJsSingleJVMTests
+
+task cleanCoverageData {
+    dependsOn cleanNodeJsSingleJVMTestsCoverageData, cleanPythonMultiJVMTestsCoverageData
+}
 

@@ -1,5 +1,9 @@
 // Actually run the tests by building a cluster of free-running JVMs first.
 task testMultiNode(type: Exec) {
     dependsOn jar, testJar
-    commandLine 'bash', './testMultiNode.sh'
+    if (project.hasProperty("jacocoCoverage")) {
+        commandLine 'bash', './testMultiNode.sh', 'jacoco'
+    } else {
+        commandLine 'bash', './testMultiNode.sh'
+    }
 }

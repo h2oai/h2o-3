@@ -77,6 +77,10 @@ task cleanBuildVersionJava(type: Delete) {
     delete buildVersionFile
 }
 
+task cleanCoverageData(type: Delete) {
+    delete files("${buildDir}/jacoco")
+}
+
 clean.dependsOn cleanBuildVersionJava
 
 apply from: '../gradle/javaIgnoreSymbolFile.gradle'

@@ -63,11 +63,19 @@ task smokeTest(type: Exec) {
     println "PyUnit smoke test (run.py --wipeall --testsize s)..."
     workingDir testsPath
     commandLine 'pwd'
-    commandLine 'python', '../../scripts/run.py', '--wipeall', '--testsize', 's'
+    if (project.hasProperty("jacocoCoverage")) {
+        commandLine 'python', '../../scripts/run.py', '--wipeall', '--testsize', 's', "--jacoco"
+    } else {
+        commandLine 'python', '../../scripts/run.py', '--wipeall', '--testsize', 's'
+    }
 }
 
 task cleanUpSmokeTest << {
     new File([T, "tests/results"].join(File.separator)).deleteDir()
+}
+
+task cleanCoverageData(type: Delete) {
+    delete files("${testsPath}/results/jacoco")
 }
 
 task cleaner << {
