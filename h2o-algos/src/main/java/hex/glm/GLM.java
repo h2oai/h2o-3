@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.ModelMetricsBinomial;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;
@@ -1079,6 +1080,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     // latest is the best
                     _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
                     _model._output._validation_metrics = gt2._val.makeModelMetrics(_model,_parms.valid(),_validDinfo._adaptedFrame.lastVec().sigma());
+                    if(_parms._family == Family.binomial)
+                      _model._output._threshold = ((ModelMetricsBinomial)_model._output._validation_metrics)._auc.defaultThreshold();
                   }
                   _model.generateSummary(_parms._train, _taskInfo._iter);
                   _model._output._scoring_history = _sc.to2dTable();
@@ -1094,8 +1097,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _sc.addLambdaScore(_taskInfo._iter,_parms._lambda[_lambdaId], sm.rank(), gt1._val.explainedDev(), Double.NaN);
             if(score) { // set the training metrics (always the last iteration if running without validation set)
               _model._output.pickBestModel();
-              if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId])
-                _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
+              if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId]) {
+                _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train(), _dinfo._adaptedFrame.lastVec().sigma());
+                if(_parms._family == Family.binomial)
+                  _model._output._threshold = ((ModelMetricsBinomial)_model._output._training_metrics)._auc.defaultThreshold();
+              }
               _model.generateSummary(_parms._train,_taskInfo._iter);
               _model._output._scoring_history = _sc.to2dTable();
               _model.update(GLM.this._key);
@@ -1151,6 +1157,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       @Override
       public void callback(final GLMIterationTask glmt) {
+        System.out.println("likelihood = " + glmt._likelihood);
         assert _parms._intercept || glmt._beta[_activeData.fullN()] == 0;
         double objVal = objVal(glmt._likelihood, glmt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
         if (!isRunning(GLM.this._key)) throw new JobCancelledException();
