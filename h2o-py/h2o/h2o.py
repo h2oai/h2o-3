@@ -537,6 +537,25 @@ def download_pojo(model,path=""):
     with open(file_path, 'w') as f:
       f.write(java.text)
 
+def download_csv(data, filename):
+  '''
+  Download an H2O data set to a CSV file on the local disk.
+  Warning: Files located on the H2O server may be very large! Make
+  sure you have enough hard drive space to accomodate the entire file.
+  :param data: an H2OFrame object to be downloaded.
+  :param filename:A string indicating the name that the CSV file should be
+  should be saved to.
+  :return: None
+  '''
+  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got "
+                                                       "{0}".format(type(data)))
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/3/DownloadDataset?frame_id=' + \
+        data.send_frame()
+  with open(filename, 'w' ) as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
 # Non-Mutating cbind
 def cbind(left,right):
   """
