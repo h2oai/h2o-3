@@ -24,6 +24,15 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   @API(help="Number of rows to display",direction=API.Direction.INOUT)
   public int row_count;
 
+  @API(help="Column offset to return", direction=API.Direction.INOUT)
+  public int column_offset;
+
+  @API(help="Number of columns to return", direction=API.Direction.INOUT)
+  public int column_count;
+
+  @API(help="Total number of columns in the Frame", direction=API.Direction.INOUT)
+  public int total_column_count;
+
   // Output fields
   @API(help="checksum", direction=API.Direction.OUTPUT)
   public long checksum;
@@ -102,6 +111,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     @API(help="domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
     public String[] domain;
 
+    @API(help="cardinality of this column's domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
+    public int domain_cardinality;
+
     @API(help="data", direction=API.Direction.OUTPUT)
     public double[] data;
 
@@ -152,6 +164,12 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
 
       type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
+      if (vec.isEnum()) {
+        domain_cardinality = domain.length;
+      } else {
+        domain_cardinality = 0;
+      }
+
       len = (int)Math.min(len,vec.length()-off);
       if( vec.isUUID() ) {
         string_data = new String[len];
@@ -187,79 +205,71 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   FrameV3(Key frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   FrameV3(Frame fr) {
-    this(fr, 1, (int)fr.numRows()); // NOTE: possible len truncation
+    this(fr, 1, (int)fr.numRows(), 0, 0); // NOTE: possible row len truncation
   }
 
-  /** TODO: refactor together with fillFromImpl(). */
-  FrameV3(Frame fr, long off2, int len2) {
-    // if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
-    if( len2==0 ) len2=100;     // Default length if zero passed
-    frame_id = new FrameKeyV3(fr._key);
-    _fr = fr;
-    row_offset = off2;
-    rows = fr.numRows();
-    row_count = (int)Math.min(len2,rows);
-    byte_size = fr.byteSize();
-    columns = new ColV3[fr.numCols()];
-    Key[] keys = fr.keys();
-    if(keys != null && keys.length > 0) {
-      vec_ids = new VecKeyV3[keys.length];
-      for (int i = 0; i < keys.length; i++)
-        vec_ids[i] = new VecKeyV3(keys[i]);
-    }
-    Vec[] vecs = fr.vecs();
-    for( int i=0; i<columns.length; i++ )
-      columns[i] = new ColV3(fr._names[i],vecs[i], row_offset, row_count);
-    is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
-    default_percentiles = Vec.PERCENTILES;
-    this.checksum = fr.checksum();
-    ChunkSummary cs = FrameUtils.chunkSummary(fr);
-    TwoDimTable table = cs.toTwoDimTableChunkTypes();
-    chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
-    table = cs.toTwoDimTableDistribution();
-    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
+  FrameV3(Frame f, long row_offset, int row_count) {
+    this(f, row_offset, row_count, 0, 0);
   }
 
-  //==========================
-  // Custom adapters go here
+  FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
+    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, ColV3.NO_SUMMARY);
+  }
 
   @Override public FrameV3 fillFromImpl(Frame f) {
-    return fillFromImpl(f, 1, (int)f.numRows(), ColV3.NO_SUMMARY);
+    return fillFromImpl(f, 1, (int)f.numRows(), 0, 0, ColV3.NO_SUMMARY);
   }
 
-  // Version&Schema-specific filling from the impl
-  public FrameV3 fillFromImpl(Frame f, long off2, int len2, boolean force_summary) {
-    // TODO: pass in offset and column from Inspect page
-    // if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
-    // if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
-    if( len2==0 ) len2=100;     // Default length if zero passed
-    this._fr = f;
+  public FrameV3 fillFromImpl(Frame f, long row_offset, int row_count, int column_offset, int column_count, boolean force_summary) {
+    if( row_count == 0 ) row_count = 100;                                 // 100 rows by default
+    if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
+
+    row_count = (int)Math.min(row_count, row_offset + f.numRows());
+    column_count = (int) Math.min(column_count, column_offset + f.numCols());
+
     this.frame_id = new FrameKeyV3(f._key);
-    this.checksum = _fr.checksum();
-    row_offset = off2;
-    rows = _fr.numRows();
-    row_count = (int)Math.min(len2,rows);
-    byte_size = _fr.byteSize();
-    columns = new ColV3[_fr.numCols()];
-    Key[] keys = _fr.keys();
+    this.checksum = f.checksum();
+    this.byte_size = f.byteSize();
+
+    this.row_offset = row_offset;
+    this.rows = f.numRows();
+    this.row_count = row_count;
+
+    this.total_column_count = f.numCols();
+    this.column_offset = column_offset;
+    this.column_count = column_count;
+
+    this.columns = new ColV3[column_count];
+    Key[] keys = f.keys();
     if(keys != null && keys.length > 0) {
-      vec_ids = new VecKeyV3[keys.length];
-      for (int i = 0; i < keys.length; i++)
-        vec_ids[i] = new VecKeyV3(keys[i]);
+      vec_ids = new VecKeyV3[column_count];
+      for (int i = 0; i < column_count; i++)
+        vec_ids[i] = new VecKeyV3(keys[column_offset + i]);
     }
-    Vec[] vecs = _fr.vecs();
-    for( int i=0; i<columns.length; i++ ) {
+
+    Vec[] vecs = f.vecs();
+    for( int i = 0; i < column_count; i++ ) {
       try {
-        columns[i] = new ColV3(_fr._names[i], vecs[i], row_offset, row_count, force_summary);
+        columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, force_summary);
       }
       catch (Exception e) {
-        Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + _fr._names[i], e);
+        Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + f._names[column_offset + i], e);
         throw e;
       }
     }
-    is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
-    default_percentiles = Vec.PERCENTILES;
-    chunk_summary = new TwoDimTableV3().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTableChunkTypes());
+    this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
+    this.default_percentiles = Vec.PERCENTILES;
+
+    ChunkSummary cs = FrameUtils.chunkSummary(f);
+
+    TwoDimTable chunk_summary_table = cs.toTwoDimTableChunkTypes();
+    this.chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), chunk_summary_table).fillFromImpl(chunk_summary_table);
+
+    TwoDimTable distribution_summary_table = cs.toTwoDimTableDistribution();
+    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), distribution_summary_table).fillFromImpl(distribution_summary_table);
+
+    this._fr = f;
+
     return this;
   }
 

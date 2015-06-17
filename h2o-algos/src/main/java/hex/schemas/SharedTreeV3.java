@@ -15,7 +15,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
       "max_after_balance_size",
       "max_confusion_matrix_size",
       "max_hit_ratio_k",
-      "ntrees", "max_depth", "min_rows", "nbins", "nbins_cats", "r2_stopping", "seed"
+      "ntrees", "max_depth", "min_rows", "nbins", "nbins_cats", "r2_stopping", "seed",
+      "build_tree_one_node"
     };
 
     // supervised Schema
@@ -84,5 +85,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help = "Seed for pseudo random number generator (if applicable)")
     public long seed;
+
+    @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.secondary)
+    public boolean build_tree_one_node;
   }
 }

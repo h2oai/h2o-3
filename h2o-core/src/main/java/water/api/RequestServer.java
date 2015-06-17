@@ -176,6 +176,12 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll",
       "Delete all Models from the H2O distributed K/V store.");
 
+    // Model serialization - import/export calls
+    register("/3/Models.bin/(?<modelid>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel",                            new String[] {"model_id"},
+            "Import given binary model into H2O.");
+    register("/3/Models.bin/(?<modelid>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel",                            new String[] {"model_id"},
+            "Export given model.");
+
     register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility",
       "Set Model Builders visibility level.");
     register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
@@ -244,8 +250,8 @@ public class RequestServer extends NanoHTTPD {
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
-    register("/3/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
-    register("/3/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
+    register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/99/Rapids/isEval"                                   ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", new String[] { "key"}, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
@@ -466,28 +472,22 @@ public class RequestServer extends NanoHTTPD {
   }
 
     // Log all requests except the overly common ones
-  void maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
-    if (uri.endsWith(".css")) return;
-    if (uri.endsWith(".js")) return;
-    if (uri.endsWith(".png")) return;
-    if (uri.endsWith(".ico")) return;
+  boolean maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
+    if (uri.endsWith(".css") ||
+        uri.endsWith(".js") ||
+        uri.endsWith(".png") ||
+        uri.endsWith(".ico")) return false;
 
-    if (uri.contains("/Cloud")) return;
-    if (uri.contains("/Jobs") && method.equals("GET")) return;
-    if (uri.contains("/Log")) return;
-    if (uri.contains("/Progress")) return;
-    if (uri.contains("/Typeahead")) return;
-    if (uri.contains("/WaterMeterCpuTicks")) return;
+    if (uri.contains("/Cloud") ||
+        (uri.contains("/Jobs") && method.equals("GET")) ||
+        uri.contains("/Log") ||
+        uri.contains("/Progress") ||
+        uri.contains("/Typeahead") ||
+        uri.contains("/WaterMeterCpuTicks")) return false;
 
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
-
-    if (H2O.GA != null) {
-      if (header.getProperty("user-agent") != null)
-        H2O.GA.postAsync(new ScreenViewHit(uri).customDimension(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
-      else
-      H2O.GA.postAsync(new ScreenViewHit(uri));
-    }
+    return true;
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -571,13 +571,16 @@ public class RequestServer extends NanoHTTPD {
 
     // Load resources, or dispatch on handled requests
     try {
+      boolean logged;
       // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
       if (method.equals("GET") && uri.equals("/")) {
-        maybeLogRequest(method, uri, "", parms, header);
+        logged = maybeLogRequest(method, uri, "", parms, header);
+        if (logged) GAUtils.logRequest(uri, header);
         return redirectToFlow();
       }
       if (method.equals("GET") && uri.endsWith("/Logs/download")) {
-        maybeLogRequest(method, uri, "", parms, header);
+        logged = maybeLogRequest(method, uri, "", parms, header);
+        if (logged) GAUtils.logRequest(uri, header);
         return downloadLogs();
       }
       if (method.equals("GET")) {
@@ -606,7 +609,8 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
+        logged = maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
+        if (logged) GAUtils.logRequest(uri, header);
         Schema s = handle(type, route, version, parms);
         PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
         Response r = wrap(s, type);
@@ -933,7 +937,7 @@ public class RequestServer extends NanoHTTPD {
         boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
         if (healthy) {
           GetLogsFromNode g = new GetLogsFromNode();
-          g.nodeidx = 0;
+          g.nodeidx = i;
           g.doIt();
           bytes = g.bytes;
         } else {

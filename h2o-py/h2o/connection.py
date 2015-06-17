@@ -369,13 +369,29 @@ class H2OConnection(object):
   def _do_raw_rest(self, url_suffix, method, file_upload_info, **kwargs):
     if not url_suffix:
       raise ValueError("No url suffix supplied.")
-    url = "http://{}:{}/{}/{}".format(self._ip,self._port,self._rest_version,url_suffix)
+    
+    # allow override of REST version, currently used for Rapids which is /99
+    if '_rest_version' in kwargs:
+      _rest_version = kwargs['_rest_version']
+      del kwargs['_rest_version']
+    else:
+      _rest_version = self._rest_version
+
+    url = "http://{}:{}/{}/{}".format(self._ip,self._port,_rest_version,url_suffix)
 
     query_string = ""
     for k,v in kwargs.iteritems():
       if isinstance(v, list):
         x = '['
-        x += ','.join([str(l).encode("utf-8") for l in v])
+        for l in v:
+          if isinstance(l,list):
+            x += '['
+            x += ','.join([str(e).encode("utf-8") for e in l])
+            x += ']'
+          else:
+            x += str(l).encode("utf-8")
+          x += ','
+        x = x[:-1]
         x += ']'
       else:
         x = str(v).encode("utf-8")

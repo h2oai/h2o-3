@@ -143,6 +143,11 @@ public class DataInfo extends Keyed {
       setResponseTransform(response_transform);
   }
 
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset, boolean intercept) {
+    this(selfKey, train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, missingBucket, weight, offset);
+    _intercept = intercept;
+  }
+
   public DataInfo validDinfo(Frame valid) {
     DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false, _weights,_offset);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
@@ -367,7 +372,32 @@ public class DataInfo extends Keyed {
       this.nNums = sparse?0:nNums;
     }
 
+    public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, double etaOffset) {
+      int nNums = numVals == null ? 0:numVals.length;
+      this.numVals = numVals;
+      if(sparse)
+        numIds = MemoryManager.malloc4(nNums);
+      this.etaOffset = etaOffset;
+      this.nNums = sparse ? 0:nNums;
+      this.nBins = binIds == null ? 0:binIds.length;
+      this.binIds = binIds;
+      this.response = response;
+    }
+
     public double response(int i) {return response[i];}
+
+    public double get(int i) {
+      int off = numStart();
+      if(i >= off) { // numbers
+        if(numIds == null)
+          return numVals[i-off];
+        int j = Arrays.binarySearch(numIds,i);
+        return j >= 0?numVals[j]:0;
+      } else { // categoricvasl
+        int j = Arrays.binarySearch(binIds,i);
+        return j >= 0?1:0;
+      }
+    }
 
     public void addBinId(int id) {
       if(binIds.length == nBins)
@@ -384,7 +414,6 @@ public class DataInfo extends Keyed {
       numIds[i] = id;
       numVals[i] = val;
     }
-
 
     public final double innerProduct(double [] vec) {
       double res = 0;
@@ -468,21 +497,29 @@ public class DataInfo extends Keyed {
   public Row newDenseRow(){
     return new Row(false,_nums,_cats,_responses,0);
   }
+  public Row newDenseRow(double[] numVals) {
+    return new Row(false, numVals, null, null, 0);
+  }
+  public double computeSparseOffset(double [] coefficients) {
+    double etaOffset = 0;
+    if(_normMul != null && _normSub != null && coefficients != null)
+      for(int i = 0; i < _nums; ++i)
+        etaOffset -= coefficients[i+numStart()] * _normSub[i] * _normMul[i];
+    return etaOffset;
+  }
   /**
    * Extract (sparse) rows from given chunks.
    * Essentially turns the dataset 90 degrees.
-   * @param chunks
-   * @return
+   * @param chunks - chunk of dataset
+   * @param offset - adjustment for 0s if running with on-the-fly standardization (i.e. zeros are not really zeros because of centering)
+   * @return array of sparse rows
    */
-  public final Row[]  extractSparseRows(Chunk [] chunks, double [] beta) {
+  public final Row[]  extractSparseRows(Chunk [] chunks, double offset) {
     if(!_skipMissing)  throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
-    double etaOffset = 0;
-    if(_normMul != null && _normSub != null && beta != null)
-      for(int i = 0; i < _nums; ++i)
-        etaOffset -= beta[i+numStart()] * _normSub[i] * _normMul[i];
+
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
+      rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, offset);
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);

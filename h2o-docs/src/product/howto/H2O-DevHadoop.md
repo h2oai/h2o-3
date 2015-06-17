@@ -4,6 +4,7 @@ Currently supported versions:
 
 - CDH 5.2
 - CDH 5.3
+- CDH 5.4.2
 - HDP 2.1
 - HDP 2.2
 - MapR 3.1.1
@@ -12,7 +13,7 @@ Currently supported versions:
 **Important Points to Remember**: 
 
 - The command used to launch H2O differs from previous versions (refer to the [Tutorial](#Tutorial) section)
-- Launching H2O on Hadoop requires at least 5 GB of memory 
+- Launching H2O on Hadoop requires at least 6 GB of memory 
 - Each H2O node runs as a mapper
 - Run only one mapper per host
 - There are no combiners or reducers 
@@ -32,7 +33,7 @@ Optionally specify this port using the `-driverport` option in the `hadoop jar` 
 
 **Path 2: mapper to mapper**
 
-Optionally specify this port using the `-baseport` option in the `hadoop jar` command (see "Hadoop Launch Parameters" below). This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 (TCP) and 54322 (TCP & UDP) are used. 
+Optionally specify this port using the `-baseport` option in the `hadoop jar` command (refer to [Hadoop Launch Parameters](#LaunchParam) below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 (TCP) and 54322 (TCP & UDP) are used. 
 
 The mapper port is adaptive: if 54321 and 54322 are not available, H2O will try 54323 and 54324 and so on. The mapper port is designed to be adaptive because sometimes if the YARN cluster is low on resources, YARN will place two H2O mappers for the same H2O cluster request on the same physical host. For this reason, we recommend opening a range of more than two ports (20 ports should be sufficient). 
 
@@ -92,6 +93,8 @@ review the output from your command after the nodes has clouded up and formed a 
 		Blocking until the H2O cluster shuts down...
 
 
+<a name="LaunchParam"></a>
+
 Hadoop Launch Parameters
 ------------------------
 
@@ -101,10 +104,11 @@ Hadoop Launch Parameters
 - `-driverport <port of mapper -> callback interface>`: Specify the port number for callback messages from the mapper to the driver. 
 - `-network <IPv4Network1>[,<IPv4Network2>]`: Specify the IPv4 network(s) to bind to the H2O nodes; multiple networks can be specified to force H2O to use the specified host in the Hadoop cluster. `10.1.2.0/24` allows 256 possibilities.   
 - `-timeout <seconds>`: Specify the timeout duration (in seconds) to wait for the cluster to form before failing. 
+  **Note**: The default value is 120 seconds; if your cluster is very busy, this may not provide enough time for the nodes to launch. If H2O does not launch, try increasing this value (for example, `-timeout 600`). 
 - `-disown`: Exit the driver after the cluster forms.
-- `notify <notification file name>`: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up". 
-- `mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O (at least 6g). 
-- `extramempercent <0-20>`: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of `mapperXmx`. 
+- `-notify <notification file name>`: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up". 
+- `-mapperXmx <per mapper Java Xmx heap size>`: Specify the amount of memory to allocate to H2O (at least 6g). 
+- `-extramempercent <0-20>`: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of `mapperXmx`. 
 - `-n | -nodes <number of H2O nodes>`: Specify the number of nodes. 
 - `-nthreads <maximum number of CPUs>`: Specify the number of CPUs to use. Enter `-1` to use all CPUs on the host, or enter a positive integer. 
 - `-baseport <initialization port for H2O nodes>`: Specify the initialization port for the H2O nodes. The default is `54321`. 

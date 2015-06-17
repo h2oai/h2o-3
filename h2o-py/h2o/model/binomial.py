@@ -324,7 +324,7 @@ class H2OBinomialModel(ModelBase):
     if tm is None: return None
     crit2d = tm._metric_json['max_criteria_and_metric_scores']
     for e in crit2d.cell_values:
-      if e[0]==metric:
+      if e[0]=="max "+metric:
         return e[1]
     raise ValueError("No metric "+str(metric))
 

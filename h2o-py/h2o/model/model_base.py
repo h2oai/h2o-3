@@ -202,14 +202,19 @@ class ModelBase(object):
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
-  def varimp(self):
+  def varimp(self, return_list=False):
     """
-    Pretty print the variable importances
-    :return: None
+    Pretty print the variable importances, or return them in a list
+    :param return_list: if True, then return the variable importances in an list (ordered from most important to least
+    important). Each entry in the list is a 4-tuple of (variable, relative_importance, scaled_importance, percentage).
+    :return: None or ordered list
     """
     model = self._model_json["output"]
     if "variable_importances" in model.keys() and model["variable_importances"]:
-      return model["variable_importances"].show()
+      if not return_list: return model["variable_importances"].show()
+      else: return model["variable_importances"].cell_values
+    else:
+      print "Warning: This model doesn't have variable importances"
 
   def residual_deviance(self,train=False,valid=False):
     """
@@ -375,7 +380,7 @@ class ModelBase(object):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     if tm is None: return None
     tm = tm._metric_json
-    return tm.aic()
+    return tm["AIC"]
 
   def giniCoef(self, train=False, valid=False):
     """

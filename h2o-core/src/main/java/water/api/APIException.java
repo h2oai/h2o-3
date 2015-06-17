@@ -9,4 +9,7 @@ abstract public class APIException extends RuntimeException {
   public APIException(String s, Throwable t) {
     super(s,t);
   }
+  public APIException(String s) {
+    super(s);
+  }
 }

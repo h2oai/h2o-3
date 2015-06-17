@@ -39,7 +39,7 @@ public class DeepLearningScoreTest extends TestUtil {
     DeepLearningModel dlModel = null;
     try {
       // Launch Deep Learning
-      DeepLearningModel.DeepLearningParameters dlParams = new DeepLearningModel.DeepLearningParameters();
+      DeepLearningParameters dlParams = new DeepLearningParameters();
       dlParams._train = rebalancedKey;
       dlParams._epochs = 5;
       dlParams._response_column = "CAPSULE";

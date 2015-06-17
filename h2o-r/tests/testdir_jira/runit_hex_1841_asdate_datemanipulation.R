@@ -27,6 +27,10 @@ print_diff <- function(r, h2o) {
 # available to the format strings.  It also test corner cases in the time
 # conversion/interpretation.
 #
+# hdf - dataframe on H2O server
+# ldf - dataframe copied from H2O server
+# rdf - dataframe created using only R native methods
+#
 datetest <- function(conn){
   Log.info('Test 1')
   Log.info('uploading date testing dataset')
@@ -42,7 +46,8 @@ datetest <- function(conn){
   summary(hdf)
 
   Log.info('Converting columns 5-10 to date columns')
-  # NB: h2o automagically recognizes and if it doesn't recognize, you're out of luck
+  # h2o automagically recognizes and if it doesn't recognize,
+  # you need to call as.Date to convert the values to dates
   hdf$ds5 <- as.Date(hdf$ds5, "%d/%m/%y %H:%M")
   hdf$ds6 <- as.Date(hdf$ds6, "%d/%m/%Y %H:%M:%S")
   hdf$ds7 <- as.Date(hdf$ds7, "%m/%d/%y")
@@ -51,8 +56,6 @@ datetest <- function(conn){
   hdf$ds10 <- as.Date(hdf$ds10, "%Y_%m_%d")
 
   Log.info('extracting year and month from posix date objects')
-  date_cols <- paste(rep("ds",9),c(2:10),sep="")
-  year_cols <- paste(rep("year",9),c(2:10),sep="")
   # extract year from each date and put in its own column (on server)
   for( i in 2:10) {
     hdf[[paste("year",i,sep="")]] <- year(hdf[[paste("ds",i,sep="")]])
@@ -67,7 +70,7 @@ datetest <- function(conn){
   for( i in 2:10) {
     hdf[[paste("idx",i,sep="")]] <- year(hdf[[paste("ds",i,sep="")]]) * 12 + month(hdf[[paste("ds",i,sep="")]])
   }
-  #server dataframe is now 37 columns, 10 dates, 9 years, 9 month, 9 totalmonths
+  #server dataframe is now 37 columns, 10 dates, 9 years, 9 months, 9 totalmonths
   
   # set the column names for the new columns
   cc <- colnames(hdf)
@@ -94,7 +97,8 @@ datetest <- function(conn){
   # create year, month, and totalmonth columns for R's version of the data
   years <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$year))
   colnames(years) <- paste(rep("year",10),c(1:10),sep="")
-  
+
+  # as.POSIX.lt(x).mon returns a 0-11 range, but the R/H2O month(x) method returns 1-12
   months <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$mon + 1))
   colnames(months) <- paste(rep("month",10),c(1:10),sep="")
   

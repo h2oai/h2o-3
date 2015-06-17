@@ -152,12 +152,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       // Compute standard deviation
       double[] sdev = new double[svd._output._d.length];
       double[] vars = new double[svd._output._d.length];
-      double totVar = 0;
       double dfcorr = 1.0 / Math.sqrt(svd._output._nobs - 1.0);
       for (int i = 0; i < sdev.length; i++) {
         sdev[i] = dfcorr * svd._output._d[i];
         vars[i] = sdev[i] * sdev[i];
-        totVar += vars[i];
       }
       pca._output._std_deviation = sdev;
 
@@ -165,7 +163,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       double[] prop_var = new double[vars.length];    // Proportion of total variance
       double[] cum_var = new double[vars.length];    // Cumulative proportion of total variance
       for (int i = 0; i < vars.length; i++) {
-        prop_var[i] = vars[i] / totVar;
+        prop_var[i] = vars[i] / svd._output._total_variance;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i - 1] + prop_var[i];
       }
       pca._output._pc_importance = new TwoDimTable("Importance of components", null,
@@ -190,8 +188,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Frame x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -253,24 +251,24 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       return _key;
     }
   }
-}
 
-class EmbeddedSVD extends SVD {
+  public class EmbeddedSVD extends SVD {
 
-  final private Key sharedProgressKey;
+    final private Key sharedProgressKey;
 
-  public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
-    super(parms);
-    this.sharedProgressKey = sharedProgressKey;
-  }
+    public EmbeddedSVD(SVDModel.SVDParameters parms, Key sharedProgressKey) {
+      super(parms);
+      this.sharedProgressKey = sharedProgressKey;
+    }
 
-  @Override
-  protected Key createProgressKey() {
-    return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-  }
+    @Override
+    protected Key createProgressKey() {
+      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
+    }
 
-  @Override
-  protected boolean deleteProgressKey() {
-    return false;
+    @Override
+    protected boolean deleteProgressKey() {
+      return false;
+    }
   }
 }

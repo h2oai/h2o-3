@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.ModelMetricsBinomial;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;
@@ -434,8 +435,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       @Override
       public void callback(GLMIterationTask glmIterationTask) {
         if(glmIterationTask._likelihood > _likelihood){ // line search
-          InitTsk.this.addToPendingCount(1);
-          new GLMTask.GLMIterationTask(GLM.this._key,_nullDinfo,0,_parms,false,new double[]{.5*(_ymu + glmIterationTask._beta[0])},0,_rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          if(++_iter  < 50) {
+            InitTsk.this.addToPendingCount(1);
+            new GLMTask.GLMIterationTask(GLM.this._key, _nullDinfo, 0, _parms, false, new double[]{.5 * (_ymu + glmIterationTask._beta[0])}, 0, _rowFilter, new NullModelIteration(_nullDinfo)).asyncExec(_nullDinfo._adaptedFrame);
+          } else {
+            _ymuLink = _ymu;
+            _ymu = _parms.linkInv(_ymuLink);
+            computeGradients();
+          }
           return;
         }
         _likelihood = glmIterationTask._likelihood;
@@ -469,7 +476,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});
-            new GLMIterationTask(GLM.this._key,dinfo,0,_parms,false,new double[]{0},0,_rowFilter, new NullModelIteration(dinfo)).asyncExec(dinfo._adaptedFrame);
+            new GLMIterationTask(GLM.this._key,dinfo,0,_parms,false,new double[]{_parms.link(_response.mean()) - _offset.mean()},0,_rowFilter, new NullModelIteration(dinfo)).asyncExec(dinfo._adaptedFrame);
           } else
             computeGradients();
         }
@@ -1073,6 +1080,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     // latest is the best
                     _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
                     _model._output._validation_metrics = gt2._val.makeModelMetrics(_model,_parms.valid(),_validDinfo._adaptedFrame.lastVec().sigma());
+                    if(_parms._family == Family.binomial)
+                      _model._output._threshold = ((ModelMetricsBinomial)_model._output._validation_metrics)._auc.defaultThreshold();
                   }
                   _model.generateSummary(_parms._train, _taskInfo._iter);
                   _model._output._scoring_history = _sc.to2dTable();
@@ -1088,8 +1097,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _sc.addLambdaScore(_taskInfo._iter,_parms._lambda[_lambdaId], sm.rank(), gt1._val.explainedDev(), Double.NaN);
             if(score) { // set the training metrics (always the last iteration if running without validation set)
               _model._output.pickBestModel();
-              if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId])
-                _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train(),_dinfo._adaptedFrame.lastVec().sigma());
+              if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId]) {
+                _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train(), _dinfo._adaptedFrame.lastVec().sigma());
+                if(_parms._family == Family.binomial)
+                  _model._output._threshold = ((ModelMetricsBinomial)_model._output._training_metrics)._auc.defaultThreshold();
+              }
               _model.generateSummary(_parms._train,_taskInfo._iter);
               _model._output._scoring_history = _sc.to2dTable();
               _model.update(GLM.this._key);
@@ -1110,7 +1122,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _sc.addIterationScore(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal); // it's in here for the gaussian family score :(
           _taskInfo._beta = fullBeta;
         }
-      }).setValidate(_parms._intercept?_taskInfo._ymu : 0.5, score).asyncExec(_dinfo._adaptedFrame);
+      }).setValidate(_parms._intercept?_taskInfo._ymu : _parms._family == Family.binomial?0.5:0, score).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
     protected void compute2() {
@@ -1145,6 +1157,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       @Override
       public void callback(final GLMIterationTask glmt) {
+        System.out.println("likelihood = " + glmt._likelihood);
         assert _parms._intercept || glmt._beta[_activeData.fullN()] == 0;
         double objVal = objVal(glmt._likelihood, glmt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
         if (!isRunning(GLM.this._key)) throw new JobCancelledException();
@@ -1258,7 +1271,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       @Override
       public void callback(final GLMLineSearchTask lst) {
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
-        assert Double.isNaN(_expectedLikelihood) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
+        assert (Double.isNaN(_expectedLikelihood) || Double.isInfinite(_expectedLikelihood)) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);

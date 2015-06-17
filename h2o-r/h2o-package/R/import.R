@@ -12,7 +12,7 @@
 #' automatically.
 #'
 #' Other than \code{h2o.uploadFile}, if the given path is relative, then it will be relative to the
-#' start location of the H2O instance. Addtionally, the file must be on the same machine as the H2O
+#' start location of the H2O instance. Additionally, the file must be on the same machine as the H2O
 #' cloud. In the case of \code{h2o.uploadFile}, a relative path will resolve relative to the working
 #' directory of the current R session.
 #'
@@ -167,9 +167,10 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
-#' Load a saved H2O model from disk. Currnetly not implemented.
+#' Load a saved H2O model from disk.
+#'
 #' @param path The path of the H2O Model to be imported.
-#' @param conn an \linkS4class{H2OConnection} object contianing the IP address
+#' @param conn an \linkS4class{H2OConnection} object containing the IP address
 #'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
 #'         built.
@@ -182,7 +183,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #' # prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
 #' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel.path = h2o.saveModel(prostate.glm, dir = "/Users/UserName/Desktop")
 #' # glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
 #' }
 #' @export
@@ -195,7 +196,8 @@ h2o.loadModel <- function(path, conn = h2o.getConnection()) {
   if(!is(conn, 'H2OConnection')) stop('`conn` must be of class H2OConnection')
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
-  stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(conn, .h2o.__PAGE_LoadModel, path = path)
-  # h2o.getModel(res$model$'_key', conn)
+
+  res <- .h2o.__remoteSend(conn, .h2o.__LOAD_MODEL, dir = path, method = "POST")$models[[1L]]
+  res
+  h2o.getModel(res$model_id$name, conn)
 }

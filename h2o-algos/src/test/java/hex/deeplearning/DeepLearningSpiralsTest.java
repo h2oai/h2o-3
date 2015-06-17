@@ -13,8 +13,6 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.Log;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-
 public class DeepLearningSpiralsTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
@@ -38,6 +36,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._hidden = new int[]{100};
           p._sparse = sparse;
           p._col_major = col_major;
+          p._elastic_averaging = false;
           p._activation = DeepLearningParameters.Activation.Tanh;
           p._max_w2 = Float.POSITIVE_INFINITY;
           p._l1 = 0;

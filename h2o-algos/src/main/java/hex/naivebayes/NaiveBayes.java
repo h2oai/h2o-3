@@ -187,9 +187,9 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
       DataInfo dinfo = null;
 
       try {
-        init(true);
-        if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
+        if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
         dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
 
         // The model to be built

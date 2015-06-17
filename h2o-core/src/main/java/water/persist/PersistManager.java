@@ -279,10 +279,7 @@ public class PersistManager {
 
     ArrayList<PersistEntry> arr = new ArrayList<>();
     for (File f : files) {
-      PersistEntry entry = new PersistEntry();
-      entry._name = f.getName();
-      entry._size = f.length();
-      entry._timestamp_millis = f.lastModified();
+      PersistEntry entry = new PersistEntry(f.getName(), f.length(), f.lastModified());
       arr.add(entry);
     }
 
@@ -394,5 +391,23 @@ public class PersistManager {
     File f = new File(path);
     boolean b = f.delete();
     return b;
+  }
+
+  public Persist getPersistForURI(URI uri) {
+    String scheme = uri.getScheme();
+    if (scheme != null ) {
+      switch (scheme) {
+        case Schemes.FILE:
+          return I[Value.ICE]; // Local FS
+        case Schemes.HDFS:
+          return I[Value.HDFS];
+        case Schemes.S3:
+          return I[Value.S3];
+        default:
+          throw new IllegalArgumentException("Cannot find persist manager for scheme " + scheme);
+      }
+    } else {
+      return I[Value.ICE];
+    }
   }
 }

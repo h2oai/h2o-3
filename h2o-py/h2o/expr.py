@@ -562,6 +562,18 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
+    elif self._op == "day":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "week":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "hour":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
     elif self._op in ["min", "max", "sum", "median"]:
       if left.is_local():   raise NotImplementedError
       else:                 __CMD__ += "%FALSE"
@@ -589,8 +601,12 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
-    elif self._op in ["as.factor", "h2o.runif", "is.na"]:
+    elif self._op in ["as.character", "as.factor", "h2o.runif", "is.na"]:
       if left.is_local():   self._data = map(str, left._data)
+      else:                 pass
+
+    elif self._op == "as.numeric":
+      if left.is_local():   raise NotImplementedError
       else:                 pass
 
     elif self._op == "quantile":
@@ -600,6 +616,10 @@ class Expr(object):
         __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "t":
       if left.is_local():   raise NotImplementedError
       else:                 pass
 

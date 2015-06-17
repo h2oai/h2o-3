@@ -4,8 +4,6 @@ The purpose of this tutorial is to walk new users through Deep Learning using H2
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-For more details on the math behind H2O's implementation of Deep Learning, refer to <a href="http://docs.h2o.ai/datascience/deeplearning.html" target="_blank">Deep Learning Data Science</a>. 
-
 For tips on improving the performance and results of your Deep Learning model, refer to our <a href="http://h2o.ai/blog/2015/02/deep-learning-performance/" target="_blank">Definintive Performance Tuning Guide for Deep Learning</a>.
 
 ###Using Deep Learning
@@ -13,7 +11,7 @@ For tips on improving the performance and results of your Deep Learning model, r
 H2O’s Deep Learning functionalities include:
 
 - purely supervised training protocol for regression and classification tasks
-- fast and memory-efficient Java implementations based on columnar compression and fine- grain Map/Reduce
+- fast and memory-efficient Java implementations based on columnar compression and fine-grain Map/Reduce
 - multi-threaded and distributed parallel computation to be run on either a single node or a multi-node cluster
 - fully automatic per-neuron adaptive learning rate for fast convergence
 - optional specification of learning rate, annealing and momentum options
@@ -38,9 +36,9 @@ To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resource
 ####Importing Data
 Before creating a model, import the data into H2O:
 
-0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
+0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
- ![Assist Me button](../images/AssistButton.png)
+ ![Assist Me button](../images/Flow_AssistMeButton.png)
 
 0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field. 
 
@@ -67,7 +65,13 @@ Now, parse the imported data:
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Data Preview** section. The last column, `C785`, must be changed to an enum. 
+0. Scroll all the way to the right to view C785. 
+0. Click the drop-down column heading menu for C785 and select `Enum`.  
+   
+   ![Selecting Enum](../images/DL_SelectEnum.png) 
+
+0. Click the **Parse** button.  
 
   ![Parsing Data](../images/DL_Parse.png)
   
@@ -93,7 +97,18 @@ Now, parse the imported data:
 
 ##Results
 
- To view the results, click the **View** button. The output for the Deep Learning model displays the scoring history, the training metrics, and the status of the neuron layers. 
+ To view the results, click the **View** button. The output for the Deep Learning model includes the following information for both the training and testing sets:
+ 
+- Model parameters (hidden)
+- A chart of the variable importances
+- A graph of the scoring history (training MSE and validation MSE vs epochs)
+- Training and validation metrics confusion matrix
+- Output (model category, weights, biases)
+- Status of neuron layers (layer number, units, type, dropout, L1, L2, mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias, bias RMS)
+- Scoring history in tabular format
+- Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
+- Top-10 Hit Ratios for training and validation
+- Preview POJO
   
    ![Viewing Model Results](../images/DL_Results.png)
    
@@ -102,15 +117,19 @@ Now, parse the imported data:
   ![Inspecting Results](../images/DL_Inspect.png)
   
  
- Select the appropriate link to view details for: 
+Select the appropriate link to view details for: 
  
- - Neuron layer status
- - Scoring history
- - Training metrics
- - Training metrics confusion matrix
- - Validation metrics
- - Validation metrics confusion matrix
+- Parameters
+- Output
+- Neuron layer status
+- Scoring history
+- Training metrics
+- Training metrics - Top-10 Hit Ratios
+- Training metrics confusion matrix
+- Validation metrics
+- Validation metrics confusion matrix
+- Variable importances
 
-The training metrics confusion matrix is shown below. 
+The scoring history graph, training metrics confusion matrix, and validation metrics confusion matrix are shown below. 
 
    ![Training Metrics Confusion Matrix](../images/DL_Inspect_Conf.png)

@@ -12,8 +12,9 @@
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param mtries Columns to randomly select at each level, or -1 for
-#'        sqrt(#cols).
+#' @param mtries Number of variables randomly sampled as candidates at each split.
+#'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
+#'        where p is the number of predictors.
 #' @param sample_rate Sample rate, from 0 to 1.0.
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.

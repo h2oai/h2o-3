@@ -1,9 +1,11 @@
 package hex;
 
+import water.H2O;
 import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.FrameCreator;
+import water.util.PrettyPrint;
 
 import java.util.Random;
 
@@ -41,7 +43,21 @@ public class CreateFrame extends Job<Frame> {
     if (Math.abs(categorical_fraction) > 1) throw new IllegalArgumentException("Categorical fraction must be between 0 and 1.");
     if (categorical_fraction > 0 && factors <= 1) throw new IllegalArgumentException("Factors must be larger than 2 for categorical data.");
     if (response_factors < 1) throw new IllegalArgumentException("Response factors must be either 1 (real-valued response), or >=2 (factor levels).");
+    if (response_factors > 1024) throw new IllegalArgumentException("Response factors must be <= 1024.");
+    if (factors > 1000000) throw new IllegalArgumentException("Number of factors must be <= 1,000,000).");
     if (cols <= 0 || rows <= 0) throw new IllegalArgumentException("Must have number of rows > 0 and columns > 1.");
+
+    // estimate byte size of the frame
+    double byte_estimate = randomize ? rows * cols * (
+            binary_fraction * 1./8 //bits
+                    + categorical_fraction * (factors < 128 ? 1 : factors < 32768 ? 2 : 4)
+                    + integer_fraction * (integer_range < 128 ? 1 : integer_range < 32768 ? 2 : integer_range < (1<<31) ? 4 : 8)
+                    + (1-integer_fraction - binary_fraction - categorical_fraction) * 8 ) //reals
+            + rows * 1 //response is
+            : 0; // all constants - should be small
+
+    if (byte_estimate > H2O.CLOUD._memary[0].get_max_mem() * H2O.CLOUD.size())
+      throw new IllegalArgumentException("Frame is expected to require " + PrettyPrint.bytes((long) byte_estimate) + ", won't fit into H2O's memory.");
 
     if (!randomize) {
       if (integer_fraction != 0 || categorical_fraction != 0)
