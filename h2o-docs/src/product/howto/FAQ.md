@@ -5,13 +5,13 @@
 
 - Confirm your internet connection is active. 
 
-- Test connectivity using curl: First, log in to the first node and enter curl http://<Node2IP>:54321 (where <Node2IP> is the IP address of the second node. Then, log in to the second node and enter curl http://<Node1IP>:54321 (where <Node1IP> is the IP address of the first node). Look for output from H2O.
-
+- Test connectivity using curl: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O.
+- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in Terminal. 
 - Confirm ports 54321 and 54322 are available for both TCP and UDP.
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
-- Check if the nodes are on different networks.
+- Confirm that the nodes are not on different networks.
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
@@ -61,6 +61,22 @@ If the response column is numeric, H2O generates a regression model. If the resp
 
 ---
 
+##Building H2O
+
+
+**Using `./gradlew build` doesn't generate a build successfully - is there anything I can do to troubleshoot?**
+
+Use `./gradlew clean` before running `./gradlew build`. 
+
+---
+
+**I tried using `./gradlew build` after using `git pull` to update my local H2O repo, but now I can't get H2O to build successfully - what should I do?**
+
+Try using `./gradlew build -x test` - the build may be failing tests if data is not synced correctly. 
+
+
+---
+
 ##Clusters
 
 
@@ -82,7 +98,7 @@ If this does not resolve the issue, try the following additional troubleshooting
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
-- Check if the nodes are on different networks.
+- Confirm that the nodes are not on different networks.
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
@@ -309,6 +325,34 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
 Currently, this is not yet supported. To provide resource isolation (for example, to isolate H2O to the worker nodes, rather than the master nodes), use YARN Nodemanagers to specify the nodes to use. 
+
+---
+
+**How do I import data from HDFS in R and in Flow?**
+
+To import from HDFS in R: 
+
+```
+h2o.importHDFS(path, conn = h2o.getConnection(), pattern = "",
+destination_frame = "", parse = TRUE, header = NA, sep = "",
+col.names = NULL, na.strings = NULL)
+```
+
+Here is another example: 
+
+```
+# pathToAirlines <- "hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv"
+# airlines.hex <- h2o.importFile(conn = h, path = pathToAirlines, destination_frame = "airlines.hex")
+```
+
+
+In Flow, the easiest way is to let the auto-suggestion feature in the *Search:* field complete the path for you. Just start typing the path to the file, starting with the top-level directory, and H2O provides a list of matching files. 
+
+  ![Flow - Import Auto-Suggest](images/Flow_Import_AutoSuggest.png)
+  
+Click the file to add it to the *Search:* field.   
+
+
 
 ---
 
