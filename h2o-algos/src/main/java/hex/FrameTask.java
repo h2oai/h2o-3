@@ -77,7 +77,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Override this to do post-chunk processing work.
    * @param n Number of processed rows
    */
-  protected void chunkDone(double n){}
+  protected void chunkDone(long n){}
 
 
   /**
@@ -110,7 +110,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       }
       if (weight_sum > 0) {
         ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
-        relative_chunk_weight = global_weight_sum / _dinfo._adaptedFrame.anyVec().nChunks() / weight_sum;
+        relative_chunk_weight = global_weight_sum * nrows / _dinfo._adaptedFrame.numRows() / weight_sum;
       }
       else return; //nothing to do here - all rows have 0 weight
     }
@@ -125,17 +125,17 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final float fraction = (float)(_useFraction * relative_chunk_weight) / repeats;
     assert(fraction <= 1.0);
 
-    if (fraction < 1.0 || nontrivial_weights) {
+    if (fraction < 0.999 || nontrivial_weights) {
       skip_rng = RandomUtils.getRNG(_seed+offset);
     }
 
-    double num_processed_rows = 0;
+    long num_processed_rows = 0;
     for(int rep = 0; rep < repeats; ++rep) {
       for(int row_idx = 0; row_idx < nrows; ++row_idx){
         int r = _shuffle ? -1 : 0;
 
         // only train with a given number of training samples (fraction*nrows)
-        if (skip_rng != null && skip_rng.nextDouble() > fraction) {
+        if (fraction < 0.999 && skip_rng != null && skip_rng.nextDouble() > fraction) {
           // we need to pick at least one row per map pass
           if (rep==repeats-1 && row_idx==nrows-1 && num_processed_rows == 0) {
             r = -1; //do random sampling
@@ -144,7 +144,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
           }
         }
 
-        if (nontrivial_weights) { // && row_idx % 2 == 0) { //every second row is totally random
+        if (nontrivial_weights) { // && num_processed_rows % 2 == 0) { //every second row is totally random
           // importance sampling based on inverse of cumulative distribution
           double key = skip_rng.nextDouble();
           r = Arrays.binarySearch(weight_map, 0, nrows, key);
@@ -167,7 +167,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
             processRow(seed++, row);
         }
         assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
-        num_processed_rows += row.weight;
+        num_processed_rows++;
       }
     }
     chunkDone(num_processed_rows);

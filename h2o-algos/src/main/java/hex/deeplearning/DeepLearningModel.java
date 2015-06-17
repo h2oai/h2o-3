@@ -470,7 +470,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
     final long now = System.currentTimeMillis();
-    epoch_counter = model_info().get_processed_total()/training_rows;
+    epoch_counter = (double)model_info().get_processed_total()/training_rows;
     final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
     run_time += time_last_iter_millis;
 
@@ -478,7 +478,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // and update the progress message
     Job.Progress prog = DKV.getGet(progressKey);
     float progress = prog == null ? 0 : prog.progress();
-    String msg = "Training at " + String.format("%.2f", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
+    String msg = "Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
@@ -509,8 +509,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
-                  + ". Processed " + String.format("%f", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-                  + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+                  + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+                  + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
         }
       }
 
@@ -529,7 +529,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
-        err.training_samples = model_info().get_processed_total();
+        err.training_samples = (double)model_info().get_processed_total();
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
         err.classification = _output.isClassifier();
@@ -689,7 +689,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //        }
 
           // print the freshly scored model to ASCII
-          if (keep_running)
+          if (keep_running && printme)
             for (String s : toString().split("\n")) Log.info(s);
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }

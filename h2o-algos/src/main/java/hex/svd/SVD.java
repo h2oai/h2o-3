@@ -452,7 +452,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       ++_nobs;
     }
 
-    @Override protected void chunkDone(double n){
+    @Override protected void chunkDone(long n){
       double r = 1.0/_nobs;
       _gram.mul(r);
     }

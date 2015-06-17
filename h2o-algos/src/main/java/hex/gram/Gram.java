@@ -850,7 +850,7 @@ public final class Gram extends Iced<Gram> {
       _gram.addRow(r, w);
       ++_nobs;
     }
-    @Override protected void chunkDone(double n){
+    @Override protected void chunkDone(long n){
       double r = 1.0/_nobs;
       _gram.mul(r);
     }
