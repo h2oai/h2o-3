@@ -125,7 +125,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final float fraction = (float)(_useFraction * relative_chunk_weight) / repeats;
     assert(fraction <= 1.0);
 
-    if (fraction < 0.999 || nontrivial_weights) {
+    if (fraction < 0.999 || nontrivial_weights || _shuffle) {
       skip_rng = RandomUtils.getRNG(_seed+offset);
     }
 
