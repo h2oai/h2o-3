@@ -46,6 +46,7 @@
 #'        forced to a certain type upon import parsing.
 #' @param na.strings (Optional) H2O will interpret these strings as missing.
 #' @param parse_type (Optional) Specify which parser type H2O will use.
+#'        Valid types are "ARFF", "XLS", "CSV", "SVMLight"
 #' @param progressBar (Optional) When FALSE, tell H2O parse call to block
 #'        synchronously instead of polling.  This can be faster for small
 #'        datasets but loses the progress bar.
