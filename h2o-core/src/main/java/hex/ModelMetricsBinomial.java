@@ -78,7 +78,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       }
     }
     public String toString(){
-      return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _count;
+      return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wsum;
     }
   }
 }
