@@ -205,6 +205,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Gram gram_update = guptsk._gram;
 
         for(int k = 1; k < _parms._nv; k++) {
+          if(!isRunning()) break;
+
           // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
           model._output._v[k] = powerLoop(gram_update, _parms._seed);
 
@@ -228,6 +230,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
 
         // 4) Normalize last left singular vector and save parameters
+        // TODO: Make sure model building consistent if algo cancelled midway
         model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
         if(!_parms._only_v) {
           if(_parms._keep_u) {
