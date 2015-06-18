@@ -796,6 +796,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testNoRowWeights() {
     Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
 
     Scope.enter();
     try {
@@ -812,7 +813,7 @@ public class GBMTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
+      gbm = job.trainModel().get();
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
@@ -822,20 +823,20 @@ public class GBMTest extends TestUtil {
       assertEquals(0.24850374695598948, mse, 1e-8);
 
       job.remove();
-      gbm.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 
-  @Ignore
   @Test
   public void testRowWeightsOne() {
     Frame tfr = null, vfr = null;
 
     Scope.enter();
+    GBMModel gbm = null;
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
@@ -851,7 +852,7 @@ public class GBMTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
+      gbm = job.trainModel().get();
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
@@ -860,17 +861,18 @@ public class GBMTest extends TestUtil {
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8); //Note: better results than non-shuffled
       job.remove();
-      gbm.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 
   @Test
   public void testNoRowWeightsShuffled() {
     Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
 
     Scope.enter();
     try {
@@ -887,7 +889,7 @@ public class GBMTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
+      gbm = job.trainModel().get();
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
@@ -896,18 +898,19 @@ public class GBMTest extends TestUtil {
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8);
       job.remove();
-      gbm.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 
   @Ignore
   @Test
   public void testRowWeights() {
     Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
 
     Scope.enter();
     try {
@@ -925,7 +928,7 @@ public class GBMTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
+      gbm = job.trainModel().get();
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
@@ -934,11 +937,11 @@ public class GBMTest extends TestUtil {
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8);
       job.remove();
-      gbm.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 }

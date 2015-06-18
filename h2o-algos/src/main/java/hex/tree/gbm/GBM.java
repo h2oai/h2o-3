@@ -181,7 +181,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         } else if( _nclass > 1 ) {       // Classification
           double fs[] = new double[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
-            double sum = score1(chks,fs,row);
+            double weight = 1; //chk_weight(chks).atd(row);//FIXME
+            double offset = 0; //chk_offset(chks).atd(row);//FIXME
+            double sum = score1(chks, weight,offset,fs,row);
             if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
                 chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
@@ -490,7 +492,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
+  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
       fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
       fs[2] = 1.0-fs[1];

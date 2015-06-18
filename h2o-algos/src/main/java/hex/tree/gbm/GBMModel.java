@@ -38,8 +38,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     return score0(tmp,preds);
   }
 
-  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
+    super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
     if( _parms._distribution == GBMParameters.Family.bernoulli ) {
       double fx = preds[1] + _output._init_f;
       preds[2] = 1.0/(1.0+Math.exp(-fx));

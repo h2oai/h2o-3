@@ -42,9 +42,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
      * Otherwise, there's 1 response at the end, and no other reserved columns in the data
      * @return Number of features (possible predictors)
      */
-    @Override public int nfeatures() {
-      return _names.length - (autoencoder ? 0 : 1);
-    }
     public DeepLearningModelOutput() { super(); autoencoder = false;}
     public DeepLearningModelOutput(DeepLearning b) {
       super(b);
@@ -762,30 +759,26 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
+  @Override
+  protected double[] score0(double[] data, double[] preds, double weight, double offset /*ignored*/) {
+    assert(Double.isNaN(weight) || weight > 0); //either missing or non-zero (don't score holdout rows!)
+    return score0(data, preds);
+  }
+
   /**
    * Predict from raw double values representing the data
    * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 0);
-  }
-
   @Override
-  protected double[] score0(double[] data, double[] preds, double weight, double offset /*ignored*/) {
-    assert(Double.isNaN(weight) || weight > 0); //either missing or non-zero (don't score holdout rows!)
-    return score0(data, preds, 1 /*skip weight column at the end*/);
-  }
-
-  // Actual scoring logic
-  private double[] score0(double[] data, double[] preds, int skipAtEnd) {
+  public double[] score0(double[] data, double[] preds) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-    ((Neurons.Input)neurons[0]).setInput(-1, data, skipAtEnd);
+    ((Neurons.Input)neurons[0]).setInput(-1, data);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null);
     float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
@@ -890,7 +883,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp, 0); //FIXME - no weights yet
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
           DeepLearningTask.step(-1, neurons, model_info, null, false, null);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
@@ -930,7 +923,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data, 0 ); // FIXME - no weights yet
+    ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null); // reconstructs data in expanded space
     float[] in  = neurons[0]._a.raw(); //input (expanded)
     float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
