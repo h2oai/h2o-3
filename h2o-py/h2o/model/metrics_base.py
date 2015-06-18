@@ -182,6 +182,12 @@ class H2OMultinomialModelMetrics(MetricsBase):
     """
     return self._metric_json['cm']['table']
 
+  def hit_ratio_table(self):
+    """
+    Retrieve the Hit Ratios
+    """
+    return self._metric_json['hit_ratio_table']
+
 class H2OBinomialModelMetrics(MetricsBase):
   """
   This class is essentially an API for the AUC object.
