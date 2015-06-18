@@ -10,15 +10,15 @@ source('../h2o-runit.R')
 
 
 test <- function(conn) {
-  
+
 	print("Reading in Mushroom data for binomial glm.")
 	mushroom.train <-  h2o.importFile(conn, locate("smalldata/glm_test/Mushroom.gz"), destination_frame="mushroom.train")
 	mushroom.train$label <- ifelse(mushroom.train$"C1"=="e",1,0)
 	myX <- c(2:23)
 	myY <- "label"
 	print("Creating model with CV")
-	h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=mushroom.train, model_id="h2o.glm.CV.mushroom", family="binomial", 
-						  alpha=1, lambda_search=T, nfolds=3, use_all_factor_levels=TRUE)
+	h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=mushroom.train, model_id="h2o.glm.CV.mushroom", family="binomial",
+						  alpha=1, lambda_search=T, nfolds=3, standardize = TRUE)
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
 
 	print("Reading in Abalone data for gaussian glm.")
@@ -26,10 +26,10 @@ test <- function(conn) {
 	myX <- c(1:8)
 	myY <- "C9"
 	print("Creating model with CV")
-	h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=abalone.train, model_id="h2o.glm.CV.abalone", family="gaussian", 
-						  alpha=1, lambda_search=T, nfolds=3, use_all_factor_levels=TRUE)
+	h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=abalone.train, model_id="h2o.glm.CV.abalone", family="gaussian",
+						  alpha=1, lambda_search=T, nfolds=3, standardize = TRUE)
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
-  
+
   testEnd()
 }
 

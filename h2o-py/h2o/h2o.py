@@ -125,6 +125,21 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
+def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
+  """
+  Used in conjunction with import_file and parse_setup in order to make alterations before parsing.
+  :param setup: Result of h2o.parse_setup
+  :param id: An optional id for the frame.
+  :param first_line_is_header: -1,0,1 if the first line is to be used as the header
+  :return: An H2OFrame object
+  """
+  if id is None: id = H2OFrame.py_tmp_key()
+  parsed = parse(setup, id, first_line_is_header)
+  veckeys = parsed['vec_ids']
+  rows = parsed['rows']
+  cols = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
+  vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+  return H2OFrame(vecs=vecs)
 
 def impute(data, column, method=["mean","median","mode"], # TODO: add "bfill","ffill"
            combine_method=["interpolate", "average", "low", "high"], by=None, inplace=True):
@@ -147,6 +162,59 @@ def _quoted(key):
   key = key if is_quoted  else "\"" + key + "\""
   return key
 
+
+def ifelse(test,yes,no):
+  """
+  Semantically equivalent to R's ifelse.
+  Based on the booleans in the test vector, the output has the values of the yes and no
+  vectors interleaved (or merged together).
+
+  :param test: A "test" H2OFrame
+  :param yes:  A "yes" H2OFrame
+  :param no:   A "no"  H2OFrame
+  :return: An H2OFrame
+  """
+  test_a=None
+  yes_a =None
+  no_a  =None
+
+  test_tmp = None
+  yes_tmp  = None
+  no_tmp   = None
+
+  if isinstance(test, bool): test_a = "%TRUE" if test else "%FALSE"
+  else:
+    if isinstance(test,H2OVec): test_tmp = test._expr.eager()
+    else:                       test_tmp = test.key()
+    test_a = "'"+test_tmp+"'"
+  if isinstance(yes, (int,float)): yes_a = "#{}".format(str(yes))
+  elif yes is None:                yes_a = "#NaN"
+  else:
+    if isinstance(yes,H2OVec): yes_tmp = yes._expr.eager()
+    else:                      yes_tmp = yes.key()
+    yes_a = "'"+yes_tmp+"'"
+  if isinstance(no, (int,float)): no_a = "#{}".format(str(no))
+  elif no is None:                no_a = "#NaN"
+  else:
+    if isinstance(no,H2OVec): no_tmp = no._expr.eager()
+    else:                     no_tmp = no.key()
+    no_a = "'"+no_tmp+"'"
+
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ifelse {} {} {}))".format(tmp_key,test_a,yes_a,no_a)
+  rapids(expr)
+  j = frame(tmp_key) # Fetch the frame as JSON
+  fr = j['frames'][0]    # Just the first (only) frame
+  rows = fr['rows']      # Row count
+  veckeys = fr['vec_ids']# List of h2o vec keys
+  cols = fr['columns']   # List of columns
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+  removeFrameShallow(tmp_key)
+  if yes_tmp is not  None: removeFrameShallow(str(yes_tmp))
+  if no_tmp is not   None: removeFrameShallow(str(no_tmp))
+  if test_tmp is not None: removeFrameShallow(str(test_tmp))
+  return H2OFrame(vecs=vecs)
 
 def split_frame(data, ratios=[0.75], destination_frames=None):
   """
@@ -250,18 +318,34 @@ def is_running_internal_to_h2o():
     internal = False
   return internal
 
-def dim_check(data1, data2):
+def check_dims_values(python_obj, h2o_frame, rows, cols):
   """
-  Check that the dimensions of the data1 and data2 are the same
-  :param data1: an H2OFrame or H2OVec
-  :param data2: an H2OFrame or H2OVec
+  Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
+  conforms to the rules specified in the h2o frame documentation.
+  :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
+  :param h2o_frame: an H2OFrame
+  :param rows: number of rows
+  :param cols: number of columns
   :return: None
   """
-  data1_rows, data1_cols = data1.dim()
-  data2_rows, data2_cols = data2.dim()
-  assert data1_rows == data2_rows and data1_cols == data2_cols, \
-    "failed dim check! data1_rows:{0} data2_rows:{1} data1_cols:{2} data2_cols:{3}".format(data1_rows, data2_rows,
-                                                                                           data1_cols, data2_cols)
+  h2o_rows, h2o_cols = h2o_frame.dim()
+  assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
+                                                "".format(h2o_rows, rows, h2o_cols, cols)
+  if isinstance(python_obj, (list, tuple)):
+    for r in range(rows):
+      for c in range(cols):
+        pval = python_obj[r][c] if rows > 1 else python_obj[c]
+        hval = h2o_frame[r,c]
+        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
+                             "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
+  elif isinstance(python_obj, dict):
+    for r in range(rows):
+      for k in python_obj.keys():
+        pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
+        hval = h2o_frame[r,k]
+        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
+                             "{1}, but h2o got {2} and python got {3}.".format(r, k, hval, pval)
+
 def np_comparison_check(h2o_data, np_data, num_elements):
   """
   Check values achieved by h2o against values achieved by numpy
@@ -405,10 +489,32 @@ def rapids(expr):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
+  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
   if result['error'] is not None:
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
+
+def ls():
+  """
+  List Keys on an H2O Cluster
+  :return: Returns a list of keys in the current H2O instance
+  """
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ls ))".format(tmp_key)
+  rapids(expr)
+  j = frame(tmp_key)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_ids']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+  fr = H2OFrame(vecs=vecs)
+  fr.setNames(["keys"])
+  print "First 10 Keys: "
+  fr.show()
+  return as_list(fr, use_pandas=False)
+
 
 def frame(frame_id):
   """
@@ -418,7 +524,6 @@ def frame(frame_id):
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
-
 
 def frames():
   """
@@ -459,6 +564,79 @@ def download_pojo(model,path=""):
 def get_frame_data(frame_id):
   fd = H2OConnection.get( "DownloadDataset?frame_id="+frame_id )
   return fd.text
+def download_csv(data, filename):
+  '''
+  Download an H2O data set to a CSV file on the local disk.
+  Warning: Files located on the H2O server may be very large! Make
+  sure you have enough hard drive space to accomodate the entire file.
+  :param data: an H2OFrame object to be downloaded.
+  :param filename:A string indicating the name that the CSV file should be
+  should be saved to.
+  :return: None
+  '''
+  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got "
+                                                       "{0}".format(type(data)))
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/3/DownloadDataset?frame_id=' + \
+        data.send_frame()
+  with open(filename, 'w') as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
+def download_all_logs(dirname=".",filename=None):
+  """
+  Download H2O Log Files to Disk
+  :param dirname: (Optional) A character string indicating the directory that the log file should be saved in.
+  :param filename: (Optional) A string indicating the name that the CSV file should be
+  :return: path of logs written (as a string)
+  """
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/Logs/download'
+  response = urllib2.urlopen(url)
+
+  if not os.path.exists(dirname): os.mkdir(dirname)
+  if filename == None:
+    for h in response.headers.headers:
+      if 'filename=' in h:
+        filename = h.split("filename=")[1].strip()
+        break
+  path = os.path.join(dirname,filename)
+
+  with open(path, 'w') as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
+  print "Writing H2O logs to " + path
+  return path
+
+def cluster_status():
+  """
+  TODO: This isn't really a cluster status... it's a node status check for the node we're connected to.
+  This is possibly confusing because this can come back without warning,
+  but if a user tries to do any remoteSend, they will get a "cloud sick warning"
+
+  Retrieve information on the status of the cluster running H2O.
+  :return: None
+  """
+  cluster_json = H2OConnection.get_json("Cloud?skip_ticks=true")
+
+  print "Version: {0}".format(cluster_json['version'])
+  print "Cloud name: {0}".format(cluster_json['cloud_name'])
+  print "Cloud size: {0}".format(cluster_json['cloud_size'])
+  if cluster_json['locked']: print "Cloud is locked\n"
+  else: print "Accepting new members\n"
+  if cluster_json['nodes'] == None or len(cluster_json['nodes']) == 0:
+    print "No nodes found"
+    return
+
+  status = []
+  for node in cluster_json['nodes']:
+    for k, v in zip(node.keys(),node.values()):
+      if k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
+               "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
+               "open_fds", "rpcs_active"]: status.append(k+": {0}".format(v))
+    print ', '.join(status)
+    print
 
 # Non-Mutating cbind
 def cbind(left,right):
@@ -729,6 +907,7 @@ def gamma(data)   : return _simple_un_math_op("gamma", data)
 def lgamma(data)  : return _simple_un_math_op("lgamma", data)
 def digamma(data) : return _simple_un_math_op("digamma", data)
 def trigamma(data): return _simple_un_math_op("trigamma", data)
+def all(data)     : return _simple_un_math_op("all", data)
 
 def _simple_un_math_op(op, data):
   """
@@ -751,6 +930,23 @@ def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
 
+def asnumeric(data) : return data.asnumeric()
+def transpose(data) : return data.transpose()
+def anyfactor(data) : return data.anyfactor()
+
+# munging ops with args
+def signif(data, digits=6)       : return data.signif(digits=digits)
+def round(data, digits=0)        : return data.round(digits=digits)
+def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
+def table(data1,data2=None):
+  if not data2: return data1.table()
+  else: return data1.table(data2=data2)
+def scale(data,center=True,scale=True): return data.scale(center=center, scale=scale)
+def setLevel(data, level)  : return data.setLevel(level=level)
+def setLevels(data, levels): return data.setLevels(levels=levels)
+def levels(data, col=0)    : return data.levels(col=col)
+def nlevels(data, col=0)   : return data.nlevels(col=col)
+def as_date(data, format)  : return data.as_date(format=format)
 
 class H2ODisplay:
   """

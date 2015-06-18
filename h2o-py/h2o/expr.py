@@ -372,7 +372,10 @@ class Expr(object):
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
     elif j['result_type'] in [1,2,3,4]:
-      if isinstance(j['string'], (unicode, str)): self._data = str(j['string'])
+      if isinstance(j['string'], str):
+        self._data = j['string']
+      if isinstance(j['string'], unicode):
+        self._data = j['string'].encode('utf-8')
       else:
         if not hasattr(j['scalar'], '__len__'): self._data = j['scalar']
 
@@ -547,11 +550,27 @@ class Expr(object):
         elif self._op == "trigamma": self._data = eval("[scipy.special.polygamma(1,x) for x in left._data]")
       else:                 pass
 
+    elif self._op == "year":
+      if left.is_local(): raise NotImplementedError
+      else:               pass
+
     elif self._op == "month":
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
     elif self._op == "dayOfWeek":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "day":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "week":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "hour":
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
@@ -582,8 +601,12 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
-    elif self._op in ["as.factor", "h2o.runif", "is.na"]:
+    elif self._op in ["as.character", "as.factor", "h2o.runif", "is.na"]:
       if left.is_local():   self._data = map(str, left._data)
+      else:                 pass
+
+    elif self._op == "as.numeric":
+      if left.is_local():   raise NotImplementedError
       else:                 pass
 
     elif self._op == "quantile":
@@ -593,6 +616,10 @@ class Expr(object):
         __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "t":
       if left.is_local():   raise NotImplementedError
       else:                 pass
 

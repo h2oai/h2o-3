@@ -9,7 +9,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.concurrent.ExecutionException;
 
@@ -71,7 +70,7 @@ public class PCATest extends TestUtil {
         } finally {
           if( model != null ) {
             if (model._parms._keep_loading)
-              model._parms._loading_key.get().delete();
+              model._output._loading_key.get().delete();
             model.delete();
           }
         }
@@ -126,7 +125,7 @@ public class PCATest extends TestUtil {
       if (scoreR != null) scoreR.delete();
       if (model != null) {
         if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -152,7 +151,7 @@ public class PCATest extends TestUtil {
       parms._train = train._key;
       parms._k = 7;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._useAllFactorLevels = true;
+      parms._use_all_factor_levels = true;
 
       try {
         job = new PCA(parms);
@@ -181,7 +180,7 @@ public class PCATest extends TestUtil {
       if (scoreR != null) scoreR.delete();
       if (model != null) {
         if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -210,7 +209,7 @@ public class PCATest extends TestUtil {
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._k = 4;
-      parms._max_iterations = 10;
+      parms._max_iterations = 1000;
 
       try {
         job = new PCA(parms);
@@ -232,7 +231,7 @@ public class PCATest extends TestUtil {
       if( te  != null ) te .delete();
       if (model != null) {
         if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }

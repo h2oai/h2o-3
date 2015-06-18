@@ -4,13 +4,12 @@ import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
 import water.fvec.*;
+import water.serial.AutoBufferSerializer;
 import water.util.*;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -962,5 +961,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Remove temp keys.
       cleanup_adapt(fr, data);
     }
+  }
+
+  @Override
+  public List<Key> getPublishedKeys() {
+    List<Key> p = Arrays.asList(_output._model_metrics);
+    p.addAll(super.getPublishedKeys());
+    return p;
   }
 }

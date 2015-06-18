@@ -80,7 +80,7 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@frame_id)
+  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?frame_id=', data@frame_id)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -104,9 +104,9 @@ h2o.downloadCSV <- function(data, filename) {
 #'
 #' Save an H2O Model Object to Disk
 #'
-#' Save an \linkS4class{H2OModel} to disk. Currnetly not implemented.
+#' Save an \linkS4class{H2OModel} to disk.
 #'
-#' In the case of existing files \code{forse = TRUE} will overwrite the file.
+#' In the case of existing files \code{force = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
 #' @param object an \linkS4class{H2OModel} object.
@@ -119,11 +119,11 @@ h2o.downloadCSV <- function(data, filename) {
 #' \dontrun{
 #' # library(h2o)
 #' # localH2O <- h2o.init()
-#' # prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
-#' #   "h2oai/h2o/master/smalldata/logreg/prostate.csv", sep = "/"),
+#' # prostate.hex <- h2o.importFile(localH2O, path = paste("https://raw.github.com",
+#' #   "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"),
 #' #   destination_frame = "prostate.hex")
 #' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #   training+frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 #' # h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE,
 #' # force = TRUE)
 #' }
@@ -152,8 +152,9 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   else
     path <- file.path(dir, name)
 
-  stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
+  res <- .h2o.__remoteSend(object@conn, .h2o.__SAVE_MODEL(object@model_id), dir=path, force=force)
 
-# path
+  # return the path
+  res$dir
 }
+

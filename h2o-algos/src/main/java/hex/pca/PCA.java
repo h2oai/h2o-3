@@ -11,7 +11,6 @@ import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -36,7 +35,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public Job<PCAModel> trainModel() {
-    return start(new PCADriver(), 0);
+    return start(new PCADriver(), 1);
   }
 
   @Override
@@ -74,13 +73,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
+    // if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
+    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
+      _parms._loading_name = "PCALoading_" + Key.rand();
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
-    _ncolExp = _train.numColsExp(_parms._useAllFactorLevels, false);
+    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
 
     // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
     int k_min = (int)Math.min(_ncolExp, _train.numRows());
@@ -151,12 +152,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       // Compute standard deviation
       double[] sdev = new double[svd._output._d.length];
       double[] vars = new double[svd._output._d.length];
-      double totVar = 0;
-      double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
+      double dfcorr = 1.0 / Math.sqrt(svd._output._nobs - 1.0);
       for (int i = 0; i < sdev.length; i++) {
         sdev[i] = dfcorr * svd._output._d[i];
         vars[i] = sdev[i] * sdev[i];
-        totVar += vars[i];
       }
       pca._output._std_deviation = sdev;
 
@@ -164,7 +163,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       double[] prop_var = new double[vars.length];    // Proportion of total variance
       double[] cum_var = new double[vars.length];    // Cumulative proportion of total variance
       for (int i = 0; i < vars.length; i++) {
-        prop_var[i] = vars[i] / totVar;
+        prop_var[i] = vars[i] / svd._output._total_variance;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i - 1] + prop_var[i];
       }
       pca._output._pc_importance = new TwoDimTable("Importance of components", null,
@@ -189,8 +188,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Frame x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -202,7 +201,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
-        parms._useAllFactorLevels = _parms._useAllFactorLevels;
+        parms._use_all_factor_levels = _parms._use_all_factor_levels;
         parms._transform = _parms._transform;
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
@@ -210,14 +209,16 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Calculate standard deviation and projection as well
         parms._only_v = false;
-        parms._u_key = _parms._loading_key;
+        parms._u_name = _parms._loading_name;
         parms._keep_u = _parms._keep_loading;
 
         SVDModel svd = null;
         SVD job = null;
         try {
-          job = new SVD(parms);
+          job = new EmbeddedSVD(_key, _progressKey, parms);
           svd = job.trainModel().get();
+          if(job.isCancelledOrCrashed())
+            PCA.this.cancel();
         } finally {
           if (job != null) job.remove();
           if (svd != null) svd.remove();
@@ -225,7 +226,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Recover PCA results from SVD model
         computeStatsFillModel(model, svd);
-        model.update(_key);
+        model.update(self());
         update(1);
 
         done();
@@ -250,6 +251,33 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     Key self() {
       return _key;
+    }
+  }
+
+  public class EmbeddedSVD extends SVD {
+
+    final private Key sharedProgressKey;
+    final private Key pcaJobKey;
+
+    public EmbeddedSVD(Key pcaJobKey, Key sharedProgressKey, SVDModel.SVDParameters parms) {
+      super(parms);
+      this.sharedProgressKey = sharedProgressKey;
+      this.pcaJobKey = pcaJobKey;
+    }
+
+    @Override
+    protected Key createProgressKey() {
+      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
+    }
+
+    @Override
+    protected boolean deleteProgressKey() {
+      return false;
+    }
+
+    @Override
+    public boolean isRunning() {
+      return super.isRunning() && ((Job) pcaJobKey.get()).isRunning();
     }
   }
 }

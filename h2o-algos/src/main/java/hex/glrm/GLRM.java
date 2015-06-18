@@ -50,7 +50,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   @Override public Job<GLRMModel> trainModel() {
-    return start(new GLRMDriver(), 0);
+    return start(new GLRMDriver(), _parms._max_iterations);
   }
 
   @Override public ModelCategory[] can_build() {
@@ -201,7 +201,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
-        parms._useAllFactorLevels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
+        parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
@@ -359,8 +359,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Frame fr = null, x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built

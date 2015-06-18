@@ -22,6 +22,7 @@ public class AutoSerialTest extends Iced {
   static AutoBuffer abr() { return _ab. flipForReading(); }
 
 
+
   @Test public void testByte() throws Exception {
     byte[] tests = { 0, 4, -1, 127, -128 };
     for( byte exp : tests) {
@@ -250,5 +251,21 @@ public class AutoSerialTest extends Iced {
           Assert.assertTrue(Arrays.equals(_doubless[i],exp[i]));
       } else Assert.assertNull(_doubless);
     }
+  }
+
+  private static class IcedSerTest extends Iced {
+    final double x;
+    public IcedSerTest(double x){this.x = x;}
+  }
+  Freezable [][][] _aaa;
+  @Test public void testIcedArrays() {
+    _aaa = new IcedSerTest[][][]{{{new IcedSerTest(Math.PI)}}};
+    this.write(abw());
+    this.read(abr());
+    Assert.assertTrue(_aaa.length == 1);
+    Assert.assertTrue(_aaa[0].length == 1);
+    Assert.assertTrue(_aaa[0][0].length == 1);
+    Assert.assertTrue(((IcedSerTest)_aaa[0][0][0]).x == Math.PI);
+    _aaa = null;
   }
 }

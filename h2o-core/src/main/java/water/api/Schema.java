@@ -235,11 +235,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       }
 
       int version = extractVersion(clz.getSimpleName());
-      if (version > getHighestSupportedVersion())
+      if (version > getHighestSupportedVersion() && version != EXPERIMENTAL_VERSION)
         throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
 
       // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBase, so that we can fetch the metadata for them.
-      if (version > -1) {
+      if (version > -1 && version != EXPERIMENTAL_VERSION) {
         // Track highest version of all schemas; only valid after all are registered at startup time.
         if (version > HIGHEST_SUPPORTED_VERSION)
           throw H2O.fail("Found a schema with a version greater than the highest supported version of: " + getHighestSupportedVersion() + ": " + clz);
@@ -323,7 +323,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Convenience helper which creates and fill an impl. */
   final public I createAndFillImpl() {
-    return this.fillImpl(this.createImpl());
+    return (I)this.fillImpl(this.createImpl());
   }
 
   // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
@@ -740,6 +740,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return schema(version, impl_class.getSimpleName());
   }
 
+  // FIXME: can be parameterized by type: public static <T extends Schema> T newInstance(Class<T> clz)
   public static Schema newInstance(Class<? extends Schema> clz) {
     Schema s = null;
     try {

@@ -816,7 +816,7 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  max_metrics[match(metric,max_metrics$metric),"threshold"]
+  max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
 }
 
 #
@@ -899,7 +899,7 @@ h2o.betweenss <- function(object, valid=FALSE, ...) {
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.totss <- function(object,valid=FALSE, ...) {
-  model.parts <- .model.parts(objects)
+  model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
     else                          return( model.parts$vm@metrics$totss )
@@ -940,7 +940,7 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
 h2o.null_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_deviance )
@@ -957,7 +957,7 @@ h2o.null_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_deviance )
@@ -975,7 +975,7 @@ h2o.residual_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_degrees_of_freedom )
@@ -992,7 +992,7 @@ h2o.residual_dof <- function(object, valid=FALSE, ...) {
 h2o.null_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_degrees_of_freedom )

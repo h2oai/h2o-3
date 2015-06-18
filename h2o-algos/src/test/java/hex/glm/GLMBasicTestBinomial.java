@@ -690,9 +690,9 @@ public class GLMBasicTestBinomial extends TestUtil {
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
         for (int i = 0; i < cfs1.length; ++i)
-          assertEquals(vals[i], coefs.get(cfs1[i]), Math.abs(1e-1 * vals[i]));
-        assertEquals(390.3468,   GLMTest.nullDeviance(model), 1e-1);
-        assertEquals(300.7231, GLMTest.residualDeviance(model), 1);
+          assertEquals(vals[i], coefs.get(cfs1[i]), Math.abs(5e-2 * vals[i]));
+        assertEquals(390.3468,   GLMTest.nullDeviance(model), 1e-4);
+        assertEquals(300.7231, GLMTest.residualDeviance(model), 5e-1);
         System.out.println("VAL METRICS: " + model._output._validation_metrics);
         model.delete();
         // test scoring
@@ -1002,6 +1002,13 @@ public class GLMBasicTestBinomial extends TestUtil {
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("abcd.hex");
     _abcd = ParseDataset.parse(outputKey, nfs._key);
+
+    f = find_test_file_static("smalldata/glm_test/abcd.csv");
+    assert f.exists();
+    nfs = NFSFileVec.make(f);
+    outputKey = Key.make("abcd.hex");
+    _abcd = ParseDataset.parse(outputKey, nfs._key);
+
   }
 
   @AfterClass

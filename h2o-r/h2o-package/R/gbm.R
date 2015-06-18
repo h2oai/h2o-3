@@ -28,6 +28,8 @@
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
 #'        than 1.0)
 #' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+#' @param build_tree_one_node Run on one node only; no network overhead but
+#'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty. **Currently not supported**
 #' @param score_each_iteration Attempts to score each tree.
 #' @param ... extra arguments to pass on (currently no implemented)
@@ -58,6 +60,7 @@ h2o.gbm <- function(x, y, training_frame,
                     balance_classes = FALSE,
                     max_after_balance_size = 1,
                     seed,
+                    build_tree_one_node = FALSE,
                     nfolds,
                     score_each_iteration,
                     ...)
@@ -114,6 +117,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(seed))
     parms$seed <- seed
+  if(!missing(build_tree_one_node))
+    parms$build_tree_one_node <- build_tree_one_node
   if (!missing(nfolds) && nfolds > 1)
     stop("Nfolds > 1 not currently implemented.", call. = FALSE)
   if (!missing(score_each_iteration))

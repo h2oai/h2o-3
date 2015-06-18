@@ -131,6 +131,8 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
+h2o.kappa <- function(act,pred,nclass) { .h2o.nary_frame_op("kappa", act, pred, nclass) }
+
 #' Categorical Interaction Feature Creation in H2O
 #'
 #' Creates a data frame in H2O with n-th order interaction features between categorical columns, as specified by the user.
@@ -641,10 +643,6 @@ as.Date.H2OFrame <- function(x, format, ...) {
 
   expr = paste("as.Date(", paste(x@frame_id, deparse(eval(format, envir = parent.frame())), sep = ","), ")", sep = "")
   .h2o.nary_frame_op("as.Date", x, format, ...)
-  #res = .h2o.__exec2(x@h2o, expr)
-  #res <- .h2o.exec2(res$dest_key, h2o = x@h2o, res$dest_key)
-  #res@logic <- FALSE
-  #return(res)
 }
 
 #' Set the Time Zone on the H2O Cloud
@@ -654,9 +652,7 @@ as.Date.H2OFrame <- function(x, format, ...) {
 #' @export
 h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
   expr <- paste0("(setTimeZone \"", tz, "\"")
-  ret <- .h2o.raw_expr_op(expr,  key = .key.make(conn, "setTimeZone"))
-  h2o.rm(ret@frame_id, ret@conn)
-  ret
+  res <- .h2o.__remoteSend(conn, h2oRestApiVersion = 99, .h2o.__RAPIDS, ast=expr, method = "POST")
 }
 
 #' Get the Time Zone on the H2O Cloud
@@ -773,11 +769,10 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   missingI <- missing(i)
   missingJ <- missing(j)
 
-  if (missingJ) {
-    if (missingI)
-      return(x)
+  if( missingJ ) {
+    if( missingI ) return(x)
 
-    if (((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L)) {
+    if( ((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L) ) {
       j <- i
       missingI <- TRUE
       missingJ <- FALSE
@@ -818,9 +813,13 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   }
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
-  mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", conn = x@conn,  frame_id = .key.make(x@conn, "subset"),
-                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+  if( !missingI && !missingJ && length(i) == 1L && length(j) == 1L && i > 0L && j > 0) {
+    .h2o.eval.scalar(h2o.getConnection(), ast)
+  } else {
+    mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+    .newH2OFrame("H2OFrame", conn = x@conn,  frame_id = .key.make(x@conn, "subset"),
+                  finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+  }
 })
 
 #' @rdname H2OFrame-Extract
@@ -2368,6 +2367,9 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   }
 }
 
+
+h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x) }
+h2o.vote  <- function(x, nclasses, weights=rep(0,ncol(x))) { .h2o.nary_frame_op("h2o.vote", x, nclasses, weights) }
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2689,9 +2691,9 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
   mids <- na.omit(h[,4])
   histo <- list()
   histo$breaks <- h$breaks
-  histo$counts <- counts
-  histo$density <- histo$counts / sum(histo$counts) * 1 / diff(histo$breaks)
-  histo$mids   <- mids
+  histo$counts <- as.numeric(counts)
+  histo$density <- as.numeric(histo$counts / sum(histo$counts) * 1 / diff(histo$breaks))
+  histo$mids   <- as.numeric(mids)
   histo$xname  <- deparse(substitute(x))
   oldClass(histo) <- "histogram"
   if( plot ) {

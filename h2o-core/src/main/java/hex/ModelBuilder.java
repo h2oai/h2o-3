@@ -226,11 +226,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(_parms._weights_column != null) {
       Vec w = _train.remove(_parms._weights_column);
       if(w == null)
-        error("_weights_column","Offset column '" + _parms._offset_column  + "' not found in the training frame");
+        error("_weights_column","Offset column '" + _parms._weights_column  + "' not found in the training frame");
       else {
         if(!w.isNumeric())
-          error("_weights_column","Invalid offset column '" + _parms._weights_column  + "', weights must be numeric");
+          error("_weights_column","Invalid weights column '" + _parms._weights_column  + "', weights must be numeric");
         _weights = w;
+        if(w.min() < 0)
+          error("_weights_columns","Weights must be >= 0");
         _train.add(_parms._weights_column, w);
         ++res;
       }
@@ -243,6 +245,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(!o.isNumeric())
           error("_offset_column","Invalid offset column '" + _parms._offset_column  + "', offset must be numeric");
         _offset = o;
+        if(_weights == _offset)
+          error("_offset_column", "Offset must be different from weights");
         _train.add(_parms._offset_column, o);
         ++res;
       }
@@ -392,6 +396,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       try {
         String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true);
         _vresponse = _valid.vec(_parms._response_column);
+        if (_vresponse == null && _parms._response_column != null)
+          error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
         if (expensive) {
           for (String s : msgs) {
             Log.info(s);

@@ -48,17 +48,6 @@ object) and the "target" representation (the H2O object). Concretely, the topics
 of discussion will be on the following: Headers, Data Types, Number of Rows,
 Number of Columns, and Missing Values.
 
-Aside: Why is Pandas' DataFrame not a permissible type?
-
-There are two reasons that Pandas' DataFrame objects are not included.
-First, it is best to minimize the number of dependencies, and secondly it
-is difficult to justify including the Pandas module as a dependency if
-its only function is related to this small detail of transferring data from
-python to H2O.
-
-Second, Pandas objects are simple wrappers of numpy arrays that include some
-meta data, so the transfer of data from a Pandas DataFrame to an H2O Frame could readily be achieved.
-
 
 In the following documentation, H2OFrame and Frame will be used synonymously. Technically, an
 H2OFrame is the object-pointer that resides in the python VM and points to a Frame

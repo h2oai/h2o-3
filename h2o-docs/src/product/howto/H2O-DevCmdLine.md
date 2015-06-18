@@ -2,6 +2,8 @@
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O 3.0. When you launch from the command line, you can include additional instructions to H2O 3.0, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 
+For more detailed instructions on how to build and launch H2O, including how to clone the repository, how to pull from the repository, and how to install required dependencies, refer to the [developer documentation](https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start). 
+
 There are two different argument types:
 
 - JVM arguments
@@ -24,7 +26,7 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 - `-flatfile <FileName>`: Specify a flatfile of IP address for faster cloud formation (where `<FileName>` is the name of the flatfile. 
 - `-ip <IPnodeAddress>`: Specify an IP address other than the default `localhost` for the node to use (where `<IPnodeAddress>` is the IP address). 
 - `-port <#>`: Specify a port number other than the default `54321` for the node to use (where `<#>` is the port number). 
-- `-network <IPv4NetworkSpecification1>[,<IPv4NetworkSpecification2> ...]`: Specify a range (where applicable) of IP addresses (where `<IPv4NetworkSpecification1>` represents the first interface, `<IPv4NetworkSpecification2>` represents the second, and so on). The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list. For example, `10.1.2.0/24` supports 256 possibilities. 
+- `-network ###.##.##.#/##`: Specify an IP addresses (where `###.##.##.#/##` represents the IP address and subnet mask). The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list; to specify an IP address, use `-network`. To specify a range, use a comma to separate the IP addresses: `-network 123.45.67.0/22,123.45.68.0/24`. For example, `10.1.2.0/24` supports 256 possibilities.
 - `-ice_root <fileSystemPath>`: Specify a directory for H2O to spill temporary data to disk (where `<fileSystemPath>` is the file path). 
 - `-flow_dir <server-side or HDFS directory>`: Specify a directory for saved flows. The default is `/Users/h2o-<H2OUserName>/h2oflows` (where `<H2OUserName>` is your user name). 
 - `-nthreads <#ofThreads>`: Specify the maximum number of threads in the low-priority batch work queue (where `<#ofThreads>` is the number of threads). The default is 99. 
@@ -42,9 +44,12 @@ New H2O nodes join to form a cloud during launch. After a job has started on the
   `java -Xmx6g -jar h2o.jar -name MyCloud`
 
 - To start an H2O cloud with three 2GB nodes using the default cloud names: 
-  `java -Xmx2g -jar h2o.jar &`
-  `java -Xmx2g -jar h2o.jar &`
-  `java -Xmx2g -jar h2o.jar &`
+
+  ```
+  java -Xmx2g -jar h2o.jar &
+  java -Xmx2g -jar h2o.jar &
+  java -Xmx2g -jar h2o.jar &
+  ```
 
 Wait for the `INFO: Registered: # schemas in: #mS` output before entering the above command again to add another node (the number for # will vary).
 

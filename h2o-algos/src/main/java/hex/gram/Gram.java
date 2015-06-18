@@ -102,6 +102,17 @@ public final class Gram extends Iced<Gram> {
         if(xx[i][j] != 0) nzs += 1;
     return nzs/(xx.length*xx.length);
   }
+
+  public double diagSum(){
+    double res = 0;
+    if(_diag != null){
+      for(double d:_diag) res += d;
+    }
+    if(_xx != null){
+      for(double [] x:_xx)res += x[x.length-1];
+    }
+    return res;
+  }
   public double diagAvg(){
     double res = 0;
     int n = 0;
@@ -843,7 +854,7 @@ public final class Gram extends Iced<Gram> {
       super(jobKey,dinfo._key,dinfo._activeCols);
     }
     @Override protected void chunkInit(){
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,false);
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats, false);
     }
     @Override protected void processRow(long gid, DataInfo.Row r) {
       double w = 1; // todo add weights to dinfo?
