@@ -170,7 +170,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p._classification_stop = -1;
                                             p._regression_stop = -1;
                                             p._balance_classes = classification && balance_classes;
-                                            p._quiet_mode = true;
+                                            p._quiet_mode = false;
                                             p._score_validation_sampling = csm;
                                             p._elastic_averaging = elastic_averaging;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
@@ -191,13 +191,13 @@ public class DeepLearningProstateTest extends TestUtil {
                                             if (p._train_samples_per_iteration == 0) {
                                               // no sampling - every node does its share of the full data
                                               if (!replicate) assert((double)model1._output._scoring_history.get(1,3) == 1);
-                                                // sampling on each node
-                                              else assert((double)model1._output._scoring_history.get(1,3) > 0.7 && (double)model1._output._scoring_history.get(1,3) < 1.3) : ("First scoring at " + model1._output._scoring_history.get(1,3) + " epochs, should be closer to 1!");
+                                              // sampling on each node - replicated data
+                                              else assert((double)model1._output._scoring_history.get(1,3) > 0.7 && (double)model1._output._scoring_history.get(1,3) < 1.3) : ("First scoring at " + model1._output._scoring_history.get(1,3) + " epochs, should be closer to 1!" + "\n" + model1.toString());
                                             }
                                             else if (p._train_samples_per_iteration == -1) {
                                               // no sampling - every node does its share of the full data
                                               if (!replicate) assert ((double) model1._output._scoring_history.get(1, 3) == 1);
-                                                // every node passes over the full dataset
+                                              // every node passes over the full dataset
                                               else assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
                                             }
 
