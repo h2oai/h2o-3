@@ -107,6 +107,7 @@ The following parameters have been added:
 
 - `seed`: A random number to control sampling and initialization when `balance_classes` is enabled. 
 - `score_each_iteration`: Display error rate information after each tree in the requested set is built. 
+- `build_tree_one_node`: Run on a single node to use fewer CPUs. 
 
 ###GBM Algorithm Comparison
 
@@ -127,6 +128,7 @@ H2O Classic  | H2O 3.0
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
  &nbsp; | `seed,` 
+ &nbsp; | `build_tree_one_node = FALSE,`
  &nbsp; | `score_each_iteration)`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 

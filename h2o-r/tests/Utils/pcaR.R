@@ -1,16 +1,20 @@
 # Check each principal component (eigenvector) equal up to a sign flip
 checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   expect_equal(dim(object), dim(expected))
-  isFlipped <- rep(FALSE, ncol(object))
   
-  for(j in 1:ncol(object)) {
-    # isFlipped[j] <- abs(object[1,j] - expected[1,j]) > tolerance
-    isFlipped[j] <- abs(object[1,j] - expected[1,j]) > abs(object[1,j] + expected[1,j])
-    mult <- ifelse(isFlipped[j], -1, 1)
-    for(i in 1:nrow(object))
-      expect_equal(mult*object[i,j], expected[i,j], tolerance = tolerance, scale = 1)
-  }
-  return(isFlipped)
+  is_flipped <- sapply(1:ncol(object), function(j) {
+    flipped <- abs(object[,j] - expected[,j]) > abs(object[,j] + expected[,j])
+    num_true <- length(which(flipped))
+    num_false <- length(which(!flipped))
+    if(num_true == num_false) return(runif(1) >= 0.5)
+    num_true > num_false
+  })
+  
+  mult <- ifelse(is_flipped, -1, 1)
+  sapply(1:ncol(object), function(j) {
+    expect_equal(mult[j] * object[,j], expected[,j], tolerance = tolerance, scale = 1)
+  })
+  return(is_flipped)
 }
 
 checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {
