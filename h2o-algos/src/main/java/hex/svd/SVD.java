@@ -439,8 +439,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       _ivv = ivv;
     }
 
-    @Override protected void chunkInit(){
+    @Override protected boolean chunkInit(){
       _gram = new Gram(_dinfo.fullN(), 0, _ivv.length, 0, false);
+      return true;
     }
 
     @Override protected void processRow(long gid, DataInfo.Row r) {

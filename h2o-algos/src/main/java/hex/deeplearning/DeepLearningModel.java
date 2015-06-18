@@ -466,9 +466,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
    * @param progressKey key of the progress
+   * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
     final long now = System.currentTimeMillis();
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
     final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
@@ -478,7 +479,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // and update the progress message
     Job.Progress prog = DKV.getGet(progressKey);
     float progress = prog == null ? 0 : prog.progress();
-    String msg = "Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
+    String msg = "Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
@@ -508,9 +509,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
+          if (iteration>=1)
+            Log.info("Map/Reduce iteration #" + String.format("%,d", iteration));
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
                   + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
                   + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+          Log.info(msg);
         }
       }
 
@@ -976,8 +980,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
-    if (model_info().get_params()._elastic_averaging)
-      DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), DKV.getGet(model_info.elasticAverageModelInfoKey()));
+    if (model_info().get_params()._elastic_averaging) {
+      DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());
+      if (eamodel != null)
+        DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), eamodel);
+    }
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
   }

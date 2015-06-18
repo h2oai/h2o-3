@@ -842,8 +842,9 @@ public final class Gram extends Iced<Gram> {
     public GramTask(Key jobKey, DataInfo dinfo){
       super(jobKey,dinfo);
     }
-    @Override protected void chunkInit(){
+    @Override protected boolean chunkInit(){
       _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats, false);
+      return true;
     }
     @Override protected void processRow(long gid, DataInfo.Row r) {
       double w = 1; // todo add weights to dinfo?

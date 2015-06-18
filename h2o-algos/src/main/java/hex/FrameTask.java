@@ -21,20 +21,22 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected float _useFraction = 1.0f;
   private final long _seed;
   protected boolean _shuffle = false;
+  private final int _iteration;
 
   public FrameTask(Key jobKey, DataInfo dinfo) {
-    this(jobKey,dinfo._key,dinfo._activeCols,0xDECAFBEE);
+    this(jobKey, dinfo, 0xDECAFBEE, -1);
   }
-  public FrameTask(Key jobKey, DataInfo dinfo, long seed) {
-    this(jobKey,dinfo._key,dinfo._activeCols,seed);
+  public FrameTask(Key jobKey, DataInfo dinfo, long seed, int iteration) {
+    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration);
   }
-  private FrameTask(Key jobKey, Key dinfoKey, int [] activeCols,long seed) {
+  private FrameTask(Key jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration) {
     super(null);
     assert dinfoKey == null || DKV.get(dinfoKey) != null;
     _jobKey = jobKey;
     _dinfoKey = dinfoKey;
     _activeCols = activeCols;
     _seed = seed;
+    _iteration = iteration;
   }
   @Override protected void setupLocal(){
     DataInfo dinfo = DKV.get(_dinfoKey).get();
@@ -63,22 +65,16 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected void processRow(long gid, DataInfo.Row r){throw new RuntimeException("should've been overridden!");}
   protected void processRow(long gid, DataInfo.Row r, NewChunk [] outputs){throw new RuntimeException("should've been overridden!");}
 
-  @Override
-  public T dfork(Frame fr){
-    assert fr == _dinfo._adaptedFrame;
-    return super.dfork(fr);
-  }
-
   /**
    * Override this to initialize at the beginning of chunk processing.
+   * @return whether or not to process this chunk
    */
-  protected void chunkInit(){}
+  protected boolean chunkInit(){ return true; }
   /**
    * Override this to do post-chunk processing work.
    * @param n Number of processed rows
    */
   protected void chunkDone(long n){}
-
 
   /**
    * Extracts the values, applies regularization to numerics, adds appropriate offsets to categoricals,
@@ -88,18 +84,16 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     if(_jobKey != null && !Job.isRunning(_jobKey))throw new JobCancelledException();
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
-    chunkInit();
-
-    Random skip_rng = null; //random generator for skipping rows
-
-    final boolean nontrivial_weights = _dinfo._weights && !_dinfo._adaptedFrame.vecs()[_dinfo.weightChunkId()].isConst();
-    final double global_weight_sum = nontrivial_weights ? _dinfo._adaptedFrame.vecs()[_dinfo.weightChunkId()].mean() * _dinfo._adaptedFrame.numRows() : 0;
+    boolean doWork = chunkInit();
+    if (!doWork) return;
+    final boolean obs_weights = _dinfo._weights && !_fr.vecs()[_dinfo.weightChunkId()].isConst();
+    final double global_weight_sum = obs_weights ? _fr.vecs()[_dinfo.weightChunkId()].mean() * _fr.numRows() : 0;
 
     DataInfo.Row row = _dinfo.newDenseRow();
     double[] weight_map = null;
     double relative_chunk_weight = 1;
     //TODO: store node-local helper arrays in _dinfo -> avoid re-allocation and construction
-    if (nontrivial_weights) {
+    if (obs_weights) {
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i=0;i<nrows;++i) {
@@ -110,7 +104,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       }
       if (weight_sum > 0) {
         ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
-        relative_chunk_weight = global_weight_sum * nrows / _dinfo._adaptedFrame.numRows() / weight_sum;
+        relative_chunk_weight = global_weight_sum * nrows / _fr.numRows() / weight_sum;
       }
       else return; //nothing to do here - all rows have 0 weight
     }
@@ -125,26 +119,16 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final float fraction = (float)(_useFraction * relative_chunk_weight) / repeats;
     assert(fraction <= 1.0);
 
-    if (fraction < 0.999 || nontrivial_weights || _shuffle) {
-      skip_rng = RandomUtils.getRNG(_seed+offset);
-    }
+    final boolean sample = (fraction < 0.999 || obs_weights || _shuffle);
+    final Random skip_rng = sample ? RandomUtils.getRNG((0x8734093502429734L+_seed+offset)*(_iteration+0x9823423497823423L)) : null;
 
     long num_processed_rows = 0;
     for(int rep = 0; rep < repeats; ++rep) {
       for(int row_idx = 0; row_idx < nrows; ++row_idx){
-        int r = _shuffle ? -1 : 0;
-
+        int r = sample ? -1 : 0;
         // only train with a given number of training samples (fraction*nrows)
-        if (fraction < 0.999 && skip_rng != null && skip_rng.nextDouble() > fraction) {
-          // we need to pick at least one row per map pass
-          if (rep==repeats-1 && row_idx==nrows-1 && num_processed_rows == 0) {
-            r = -1; //do random sampling
-          } else {
-            continue;
-          }
-        }
-
-        if (nontrivial_weights) { // && num_processed_rows % 2 == 0) { //every second row is totally random
+        if (sample && !obs_weights && skip_rng.nextDouble() > fraction) continue;
+        if (obs_weights && num_processed_rows % 2 == 0) { //every second row is randomly sampled -> that way we won't "forget" rare rows
           // importance sampling based on inverse of cumulative distribution
           double key = skip_rng.nextDouble();
           r = Arrays.binarySearch(weight_map, 0, nrows, key);
@@ -170,6 +154,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         num_processed_rows++;
       }
     }
+    assert(fraction != 1 || num_processed_rows == repeats * nrows);
     chunkDone(num_processed_rows);
   }
 

@@ -265,17 +265,17 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void testCreditProstateRegression1() throws Throwable {
     basicDLTest_Regression(
-        "./smalldata/logreg/prostate.csv", "prostateRegression.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            fr.remove("ID").remove();
-            return fr.find("AGE");
-          }
-        },
-        1,
-        50.644808115120775,
-        DeepLearningParameters.Activation.Rectifier);
+            "./smalldata/logreg/prostate.csv", "prostateRegression.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                fr.remove("ID").remove();
+                return fr.find("AGE");
+              }
+            },
+            1,
+            50.644808115120775,
+            DeepLearningParameters.Activation.Rectifier);
 
   }
 
@@ -344,18 +344,18 @@ public class DeepLearningTest extends TestUtil {
   }
   @Test public void testAlphabet() throws Throwable {
     basicDLTest_Classification(
-        "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            return fr.find("y");
-          }
-        },
-        10,
-        ard(ard(2080, 0),
-            ard(0, 2080)),
-        s("0", "1"),
-        DeepLearningParameters.Activation.Rectifier);
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            10,
+            ard(ard(2080, 0),
+                    ard(0, 2080)),
+            s("0", "1"),
+            DeepLearningParameters.Activation.Rectifier);
   }
   @Test public void testAlphabetRegression() throws Throwable {
     basicDLTest_Regression(
@@ -374,28 +374,28 @@ public class DeepLearningTest extends TestUtil {
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
     basicDLTest_Classification(
-        "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            for (String s : new String[]{
-                "DepTime", "ArrTime", "ActualElapsedTime",
-                "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-                "CancellationCode", "CarrierDelay", "WeatherDelay",
-                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
-            }) {
-              fr.remove(s).remove();
-            }
-            return fr.find("IsDepDelayed");
-          }
-        },
-        7,
-        ard(ard(4051, 15612), //for 5-node
-            ard(1397, 20322)),
+            "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                for (String s : new String[]{
+                        "DepTime", "ArrTime", "ActualElapsedTime",
+                        "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+                        "CancellationCode", "CarrierDelay", "WeatherDelay",
+                        "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+                }) {
+                  fr.remove(s).remove();
+                }
+                return fr.find("IsDepDelayed");
+              }
+            },
+            7,
+            ard(ard(4051, 15612), //for 5-node
+                    ard(1397, 20322)),
 //            a(a(4396, 15269), //for 1-node
 //              a(1740, 19993)),
-        s("NO", "YES"),
-        DeepLearningParameters.Activation.Rectifier);
+            s("NO", "YES"),
+            DeepLearningParameters.Activation.Rectifier);
   }
 
   @Ignore //PUBDEV-1001
@@ -803,7 +803,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.33732890360518414, mse, 1e-8);
+      assertEquals(0.3235564455920481, mse, 1e-8);
       job.remove();
       dl.delete();
     } finally {
