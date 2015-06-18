@@ -240,6 +240,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);
       fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
       fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
+      fr2.add(fr._names[idx_weight()],vecs[idx_weight()]);
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar));
     }
@@ -325,16 +326,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // --------------------------------------------------------------------------
   // Convenience accessor for a complex chunk layout.
   // Wish I could name the array elements nicer...
-//  protected int idx_weight(   ) { return _model._output.weightsIdx(); }
-//  protected int idx_offset(   ) { return _model._output.offsetIdx(); }
+  protected int idx_weight(   ) { return _model._output.weightsIdx(); }
+  protected int idx_offset(   ) { return _model._output.offsetIdx(); }
   protected int idx_resp(     ) { return _model._output.responseIdx(); }
   protected int idx_tree(int c) { return _ncols+1+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
   protected int idx_work(int c) { return _ncols+1+_nclass+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
   protected int idx_nids(int c) { return _ncols+1+_nclass+_nclass+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
   protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass+(hasOffset()?1:0)+(hasWeights()?1:0); }
 
-//  protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
-//  protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
+  protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
+  protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp(  )]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c )]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c )]; }

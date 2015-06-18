@@ -84,9 +84,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override public void map( Chunk[] chks ) {
-    assert chks.length==_ncols+4;
+    assert chks.length==_ncols+5;
     final Chunk wrks = chks[_ncols+2];
     final Chunk nids = chks[_ncols+3];
+    final Chunk weight = chks[_ncols+4];
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
@@ -101,8 +102,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         if( isDecidedRow((int)nids.atd(row)) ) nnids[row] = -1;
 
     // Pass 2: accumulate all rows, cols into histograms
-    if( _subset ) accum_subset(chks,wrks,nnids);
-    else          accum_all   (chks,wrks,nnids);
+    if( _subset ) accum_subset(chks,wrks,weight,nnids);
+    else          accum_all   (chks,wrks,weight,nnids);
   }
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
@@ -156,16 +157,20 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   // All rows, some cols, accumulate histograms
-  private void accum_subset(Chunk chks[], Chunk wrks, int nnids[]) {
+  private void accum_subset(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];                     // Get Node to decide from
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
         assert !Double.isNaN(wrks.atd(row)); // Already marked as sampled-away
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
+        //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
         for( int col : sCols ) // For tracked cols
-          //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
-          nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
+        {
+          double w = weight.atd(row); //FIXME: Use weight
+          assert (w > 0);
+          nhs[col].incr((float) chks[col].atd(row), wrks.atd(row)); // Histogram row/col
+        }
       }
     }
   }
@@ -177,7 +182,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // order.  The hot-part of this code updates the histograms racily (via
   // atomic updates) - once-per-row.  This optimized version updates the
   // histograms once-per-NID, but requires pre-sorting the rows by NID.
-  private void accum_all(Chunk chks[], Chunk wrks, int nnids[]) {
+  private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
     int nh[] = new int[_hcs.length+1];
@@ -191,11 +196,11 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         rows[nh[nnids[row]]++] = row;
     // rows[] has Chunk-local ROW-numbers now, in-order, grouped by NID.
     // nh[] lists the start of each new NID, and is indexed by NID+1.
-    accum_all2(chks,wrks,nh,rows);
+    accum_all2(chks,wrks,weight,nh,rows);
   }
 
   // For all columns, for all NIDs, for all ROWS...
-  private void accum_all2(Chunk chks[], Chunk wrks, int nh[], int[] rows) {
+  private void accum_all2(Chunk chks[], Chunk wrks, Chunk weight, int nh[], int[] rows) {
     final DHistogram hcs[][] = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
@@ -233,6 +238,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           bins[b]++;                // Bump count in bin
           double resp = wrks.atd(row);
+          double w = weight.atd(row); //FIXME: Use weight
+          assert (w > 0);
           sums[b] += resp;
           ssqs[b] += resp*resp;
         }
