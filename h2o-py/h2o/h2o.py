@@ -4,8 +4,11 @@ By simply
 """
 
 import os
+import csv
+import sys
 import os.path
 import re
+import uuid
 import urllib
 import urllib2
 import imp
@@ -16,7 +19,6 @@ import numpy as np
 from connection import H2OConnection
 from job import H2OJob
 from frame2 import H2OFrame
-from ast import ExprNode
 import h2o_model_builder
 
 
@@ -274,9 +276,9 @@ def run_test(sys_args, test_to_run):
   log_and_echo("STARTING TEST: "+str(ou()))
   log_and_echo("")
   log_and_echo("------------------------------------------------------------")
-  num_keys = store_size()
+  # num_keys = store_size()
   test_to_run(ip, port)
-  if keys_leaked(num_keys): print "Leaked Keys!"
+  # if keys_leaked(num_keys): print "Leaked Keys!"
 
 def ou():
   """

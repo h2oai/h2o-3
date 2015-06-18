@@ -4,9 +4,6 @@ import h2o
 
 
 def user(ip, port):
-    # Connect to a pre-existing cluster
-    h2o.init(ip=ip, port=port)
-
     a = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 

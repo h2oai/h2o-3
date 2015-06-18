@@ -7,52 +7,22 @@ This module contains code for the lazy expression DAG.
 """
 
 import sys
-from math import sqrt, isnan
 import h2o
+from h2oobject import H2OObject
 
-
-class H2OObj:
-  # ops
-  def __add__(self, i): return ExprNode("+",   self,i)
-  def __sub__(self, i): return ExprNode("-",   self,i)
-  def __mul__(self, i): return ExprNode("*",   self,i)
-  def __div__(self, i): return ExprNode("/",   self,i)
-  def __mod__(self, i): return ExprNode("mod", self,i)
-  def __or__ (self, i): return ExprNode("|",   self,i)
-  def __and__(self, i): return ExprNode("&",   self,i)
-  def __ge__ (self, i): return ExprNode(">=",  self,i)
-  def __gt__ (self, i): return ExprNode(">",   self,i)
-  def __le__ (self, i): return ExprNode("<=",  self,i)
-  def __lt__ (self, i): return ExprNode("<",   self,i)
-  def __eq__ (self, i): return ExprNode("==",  self,i)
-  def __ne__ (self, i): return ExprNode("!=",  self,i)
-  def __pow__(self, i): return ExprNode("^",   self,i)
-
-  # rops
-  def __rmod__(self, i): return ExprNode("mod",i,self)
-  def __radd__(self, i): return self.__add__(i)
-  def __rsub__(self, i): return ExprNode("-",i,self)
-  def __rand__(self, i): return self.__and__(i)
-  def __ror__ (self, i): return self.__or__ (i)
-  def __rdiv__(self, i): return ExprNode("/",i,self)
-  def __rmul__(self, i): return self.__mul__(i)
-  def __rpow__(self, i): return ExprNode("^",i,self)
-
-  # unops
-  def __abs__ (self): return ExprNode("abs",self)
-
-
-class ExprNode(H2OObj):
+class ExprNode(H2OObject):
   """ Composable Expressions """
   def __init__(self,op,*args):
+    self._rows = self._cols = self._id = None
     self._data=None    # a scalar, an H2OFrame (with a real-live ID in H2O), or None if pending
     self._op=op        # unary/binary/prefix op
     self._args=args    # arguments to the op
     self._children=[ExprNode._arg_to_expr(a) for a in self._args]  # a list of ExprNode instances; the children of "this" node; (e.g. (+ left rite)  self._children = [left,rite] )
 
   def is_pending(self): return self._data is None
+  def is_computed(self): return not self.is_pending()
 
-  def visit(self):
+  def _visit(self):
     sb = self._to_string()
     expr = ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
     print expr
@@ -80,6 +50,19 @@ class ExprNode(H2OObj):
   def _pprint(self):
     sb = self._to_string()
     print "".join(sb)
+
+  def _eager(self):
+    if self.is_computed(): return self._data
+
+  def _do_it(self):
+    if not self.is_computed():
+      # self is really just a node in expression DAG
+      # self may have referrers within the DAG and without!
+      # if self has ___ referrers, then need to SAVE the result
+      # of the execution of self
+      cnt = sys.getrefcount(self) - 1
+      pytmp = cnt != 5
+
 
   @staticmethod
   def _arg_to_expr(arg):

@@ -409,4 +409,4 @@ from model import *
 from frame2 import H2OFrame
 from two_dim_table import H2OTwoDimTable
 
-__all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]
+__all__ = ["H2OFrame", "H2OConnection", "H2OObject", "H2OTwoDimTable"]

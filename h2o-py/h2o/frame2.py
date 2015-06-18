@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, copy, urllib,sys,urllib2
-import h2o
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib
 from connection import H2OConnection
 from ast import *
 
-class H2OFrame(H2OObj):
+class H2OFrame:
 
-  def __init__(self, python_obj=None, file_path=None, raw_id=None):
+  def __init__(self, python_obj=None, file_path=None, raw_id=None,expr=None):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
@@ -28,28 +27,33 @@ class H2OFrame(H2OObj):
     :param text_key: A raw key resulting from an upload_file.
     :return: An instance of an H2OFrame object.
     """
-    self.remote_fname = file_path
-    self._id = ""
-    self._rows=None
-    self._cols=None
+    self._id        = H2OFrame.py_tmp_key()  # gets overwritten if a parse happens
+    self._nrows     = None
+    self._ncols     = None
+    self._col_names = None
+    self._computed  = False
+    self._ast       = None
 
-    if python_obj is not None: self._upload_python_object(python_obj)
-    elif file_path is not None: self._import_parse()
-    elif raw_id: self._handle_text_key(raw_id, None)
+    if expr is not None:         self._ast = expr
+    elif python_obj is not None: self._upload_python_object(python_obj)
+    elif file_path is not None:  self._import_parse(file_path)
+    elif raw_id:                 self._handle_text_key(raw_id, None)
     else: raise ValueError("H2OFrame instances require a python object, a file path, or a raw import file identifier.")
 
-  def _import_parse(self):
-    rawkey = h2o.import_file(self.remote_fname)
+  def _import_parse(self,file_path):
+    rawkey = h2o.import_file(file_path)
     setup = h2o.parse_setup(rawkey)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
-    rows = self._rows = parse['rows']
-    cols = self._cols = parse['column_names']
+    self._computed=True
+    rows = self._nrows = parse['rows']
+    cols = self._col_names = parse['column_names']
+    self._ncols = len(cols)
     thousands_sep = h2o.H2ODisplay.THOUSANDS
-    if isinstance(self.remote_fname, str):
-      print "Imported {}. Parsed {} rows and {} cols".format(self.remote_fname,thousands_sep.format(rows), thousands_sep.format(len(cols)))
+    if isinstance(file_path, str):
+      print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(rows), thousands_sep.format(len(cols)))
     else:
-      h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(self.remote_fname)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(rows), thousands_sep.format(len(cols))))
+      h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(rows), thousands_sep.format(len(cols))))
 
   def _upload_python_object(self, python_obj):
     """
@@ -82,11 +86,11 @@ class H2OFrame(H2OObj):
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()            # write the header
-    csv_writer.writerows(data_to_write) # write the data
-    tmp_file.close()                    # close the streams
-    self._upload_raw_data(tmp_path, header) # actually upload the data to H2O
-    os.remove(tmp_path)                     # delete the tmp file
+    csv_writer.writeheader()                 # write the header
+    csv_writer.writerows(data_to_write)      # write the data
+    tmp_file.close()                         # close the streams
+    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
+    os.remove(tmp_path)                      # delete the tmp file
 
   def _handle_text_key(self, text_key, column_names):
     """
@@ -99,9 +103,11 @@ class H2OFrame(H2OObj):
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    self._cols = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_ids'])+1)]
+    self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_ids'])+1)]
+    self._ncols = len(cols)
     # set the rows
-    self._rows = rows = parse['rows']
+    self._nrows = rows = parse['rows']
+    self._computed=True
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(rows), thousands_sep.format(len(cols)))
 
@@ -123,13 +129,41 @@ class H2OFrame(H2OObj):
     """
     raise ValueError("iterable: unimpl")
 
+  # ops
+  def __add__ (self, i): return H2OFrame(expr=ExprNode("+",   self,i))
+  def __sub__ (self, i): return H2OFrame(expr=ExprNode("-",   self,i))
+  def __mul__ (self, i): return H2OFrame(expr=ExprNode("*",   self,i))
+  def __div__ (self, i): return H2OFrame(expr=ExprNode("/",   self,i))
+  def __mod__ (self, i): return H2OFrame(expr=ExprNode("mod", self,i))
+  def __or__  (self, i): return H2OFrame(expr=ExprNode("|",   self,i))
+  def __and__ (self, i): return H2OFrame(expr=ExprNode("&",   self,i))
+  def __ge__  (self, i): return H2OFrame(expr=ExprNode(">=",  self,i))
+  def __gt__  (self, i): return H2OFrame(expr=ExprNode(">",   self,i))
+  def __le__  (self, i): return H2OFrame(expr=ExprNode("<=",  self,i))
+  def __lt__  (self, i): return H2OFrame(expr=ExprNode("<",   self,i))
+  def __eq__  (self, i): return H2OFrame(expr=ExprNode("==",  self,i))
+  def __ne__  (self, i): return H2OFrame(expr=ExprNode("!=",  self,i))
+  def __pow__ (self, i): return H2OFrame(expr=ExprNode("^",   self,i))
+  # rops
+  def __rmod__(self, i): return H2OFrame(expr=ExprNode("mod",i,self))
+  def __radd__(self, i): return self.__add__(i)
+  def __rsub__(self, i): return H2OFrame(expr=ExprNode("-",i,  self))
+  def __rand__(self, i): return self.__and__(i)
+  def __ror__ (self, i): return self.__or__ (i)
+  def __rdiv__(self, i): return H2OFrame(expr=ExprNode("/",i,  self))
+  def __rmul__(self, i): return self.__mul__(i)
+  def __rpow__(self, i): return H2OFrame(expr=ExprNode("^",i,  self))
+  # unops
+  def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
+
   def col_names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
 
     :return: A character list[] of column names.
     """
-    return self._cols
+    if isinstance(self, ExprNode): self.eager()
+    return self._col_names
 
   def names(self):
     """
@@ -137,6 +171,7 @@ class H2OFrame(H2OObj):
 
     :return: A character list[] of column names.
     """
+    if isinstance(self, ExprNode): self.eager()
     return self.col_names()
 
   def nrow(self):
@@ -145,7 +180,8 @@ class H2OFrame(H2OObj):
 
     :return: The number of rows in this dataset.
     """
-    return self._rows
+    if isinstance(self, ExprNode): self.eager()
+    return self._nrows
 
   def ncol(self):
     """
@@ -153,7 +189,8 @@ class H2OFrame(H2OObj):
 
     :return: The number of columns in this H2OFrame.
     """
-    return len(self._cols)
+    if isinstance(self, ExprNode): self.eager()
+    return self._ncols
 
   def filterNACols(self, frac=0.2):
     """
@@ -182,6 +219,7 @@ class H2OFrame(H2OObj):
     :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
+    self._eager()
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
@@ -199,6 +237,7 @@ class H2OFrame(H2OObj):
     :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
+    if isinstance(self, ExprNode): self.eager()
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
@@ -284,6 +323,7 @@ class H2OFrame(H2OObj):
   #   return ""
 
   def as_data_frame(self, use_pandas=True):
+    if isinstance(self, ExprNode): self.eager()
     url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(id) + "&hex_string=false"
     response = urllib2.urlopen(url)
     if h2o.can_use_pandas() and use_pandas:
@@ -320,7 +360,7 @@ class H2OFrame(H2OObj):
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list)): return ExprNode("cols", self, item)  # just columns
+    if isinstance(item, (int,str,list,slice)): return ExprNode("cols", self, item)  # just columns
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
@@ -420,17 +460,16 @@ class H2OFrame(H2OObj):
     """
     return unicode("py" + str(uuid.uuid4()))
 
-  # @staticmethod
-  # def _handle_numpy_array(python_obj):
-  #     header = H2OFrame._gen_header(python_obj.shape[1])
-  #
-  #     as_list = python_obj.tolist()
-  #     lol = H2OFrame._is_list_of_lists(as_list)
-  #     data_to_write = [dict(zip(header, row)) for row in as_list] \
-  #         if lol else [dict(zip(header, as_list))]
-  #
-  #     return header, data_to_write
-
+    # @staticmethod
+    # def _handle_numpy_array(python_obj):
+    #     header = H2OFrame._gen_header(python_obj.shape[1])
+    #
+    #     as_list = python_obj.tolist()
+    #     lol = H2OFrame._is_list_of_lists(as_list)
+    #     data_to_write = [dict(zip(header, row)) for row in as_list] \
+    #         if lol else [dict(zip(header, as_list))]
+    #
+    #     return header, data_to_write
   # Quantiles
   def quantile(self, prob=None, combine_method="interpolate"):
     """
@@ -719,6 +758,17 @@ class H2OFrame(H2OObj):
     :return: The covariance matrix of the columns in this H2OFrame.
     """
     return ExprNode("var", self,na_rm,use)
+
+  def _eager(self):
+    if not self._computed:
+      # top-level call to execute all subparts of self._ast
+      # must fill in the following:
+      #  self._computed = True
+      #  self._ncols
+      #  self._nrows
+      #  self._col_names
+      #  self._id
+      self._ast._eager()
 
 
 # private static methods
