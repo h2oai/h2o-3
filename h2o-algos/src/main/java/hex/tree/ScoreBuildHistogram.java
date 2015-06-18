@@ -167,9 +167,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
         for( int col : sCols ) // For tracked cols
         {
-          double w = weight.atd(row); //FIXME: Use weight
-          assert (w > 0);
-          nhs[col].incr((float) chks[col].atd(row), wrks.atd(row)); // Histogram row/col
+          double w = weight.atd(row);
+          assert (w > 0.0);
+          assert(w==1);
+          nhs[col].incr((float) chks[col].atd(row), w*wrks.atd(row)); // Histogram row/col
         }
       }
     }
@@ -204,7 +205,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final DHistogram hcs[][] = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
-    int    bins[] = new int   [Math.max(_nbins, _nbins_cats)];
+    double bins[] = new double[Math.max(_nbins, _nbins_cats)];
     double sums[] = new double[Math.max(_nbins, _nbins_cats)];
     double ssqs[] = new double[Math.max(_nbins, _nbins_cats)];
     // For All Columns
@@ -223,7 +224,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         // the (few) splits) so it's safe to bin more; also categoricals want
         // to split one bin-per-level no matter how many levels).
         if( rh._bins.length >= bins.length ) { // Grow bins if needed
-          bins = new int   [rh._bins.length];
+          bins = new double[rh._bins.length];
           sums = new double[rh._bins.length];
           ssqs = new double[rh._bins.length];
         }
@@ -238,17 +239,18 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           bins[b]++;                // Bump count in bin
           double resp = wrks.atd(row);
-          double w = weight.atd(row); //FIXME: Use weight
+          double w = weight.atd(row);
+          assert (w == 1);
           assert (w > 0);
-          sums[b] += resp;
-          ssqs[b] += resp*resp;
+          sums[b] += w*resp;
+          ssqs[b] += w*w*resp*resp;
         }
 
         // Add all the data into the Histogram (atomically add)
         rh.setMin(min);       // Track actual lower/upper bound per-bin
         rh.setMax(max);
         for( int b=0; b<rh._bins.length; b++ ) { // Bump counts in bins
-          if( bins[b] != 0 ) { AtomicUtils.IntArray.add(rh._bins,b,bins[b]); bins[b]=0; }
+          if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rh._bins,b,bins[b]); bins[b]=0; }
           if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
         }
       }
