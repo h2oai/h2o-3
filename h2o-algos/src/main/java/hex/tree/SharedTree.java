@@ -99,7 +99,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
       error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows + " , number of rows: " + _train.numRows() + " < 2*" + _parms._min_rows);
     if( _train != null )
-      _ncols = _train.numCols()-1;
+      _ncols = _train.numCols()-1-(_parms._weights_column!=null?1:0)-(_parms._offset_column!=null?1:0);
   }
 
   // --------------------------------------------------------------------------
@@ -240,6 +240,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);
       fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
       fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
+      if (idx_weight() >= 0)
+        fr2.add(fr._names[idx_weight()],vecs[idx_weight()]);
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar));
     }
@@ -325,21 +327,25 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // --------------------------------------------------------------------------
   // Convenience accessor for a complex chunk layout.
   // Wish I could name the array elements nicer...
-  protected int idx_resp(     ) { return _ncols; }
-  protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass; }
-  protected int idx_tree(int c) { return _ncols+1+c; }
-  protected int idx_work(int c) { return _ncols+1+_nclass+c; }
-  protected int idx_nids(int c) { return _ncols+1+_nclass+_nclass+c; }
+  protected int idx_weight(   ) { return _model._output.weightsIdx(); }
+  protected int idx_offset(   ) { return _model._output.offsetIdx(); }
+  protected int idx_resp(     ) { return _model._output.responseIdx(); }
+  protected int idx_tree(int c) { return _ncols+1+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
+  protected int idx_work(int c) { return _ncols+1+_nclass+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
+  protected int idx_nids(int c) { return _ncols+1+_nclass+_nclass+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
+  protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass+(hasOffset()?1:0)+(hasWeights()?1:0); }
 
-  protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp( )]; }
-  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
-  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
-  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
+  protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
+  protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
+  protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp(  )]; }
+  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c )]; }
+  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c )]; }
+  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c )]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
-  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
+  protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
-  protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
-  protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[_ncols]; }
+  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
+  protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[idx_resp() ]; }
   protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
@@ -354,12 +360,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  abstract protected double score1( Chunk chks[], double fs[/*nclass*/], int row );
+  abstract protected double score1( Chunk chks[], double offset, double weight, double fs[/*nclass*/], int row );
 
   // Call builder specific score code and then correct probabilities
   // if it is necessary.
-  void score2(Chunk chks[], double fs[/*nclass*/], int row ) {
-    double sum = score1(chks, fs, row);
+  void score2(Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+    double sum = score1(chks, weight, offset, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
       if (_parms._balance_classes)
