@@ -2,7 +2,8 @@
 
 ##H2O
 
-###Shannon (3.0.0.23) - 6/17/15
+###Shannon (3.0.0.23) - 6/18/15
+
 
 ####New Features
 
@@ -37,6 +38,12 @@ The following changes are improvements to existing features (which includes chan
 #####R
 
 - [PUBDEV-706](https://0xdata.atlassian.net/browse/PUBDEV-706): Release h2o-dev to CRAN
+- Adding parameter `parse_type` to upload/import file [(GitHub)](https://github.com/h2oai/h2o-3/commit/7074685e0cea8ea956c98ebd02883045b52df63b)
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/9c697c0bc55195ae13365250b587efd49fd9cace): print out where h2o jar is looked for
+
 
 #####System
 
@@ -53,6 +60,7 @@ The following changes are improvements to existing features (which includes chan
 - [HEXDEV-276](https://0xdata.atlassian.net/browse/HEXDEV-276): Add frame pagination
 - [PUBDEV-1405](https://0xdata.atlassian.net/browse/PUBDEV-1405): Flow : Decision to be made on display of number of columns for wider datasets for Parse and Frame summary
 - [PUBDEV-1404](https://0xdata.atlassian.net/browse/PUBDEV-1404): Usability improvements
+- [PUBDEV-244](https://0xdata.atlassian.net/browse/PUBDEV-244): "View Data" display may need to be modified/shortened.
 
 
 ####Bug Fixes
@@ -83,6 +91,8 @@ The following changes are to resolve incorrect software behavior:
 
 - [PUBDEV-1154](https://0xdata.atlassian.net/browse/PUBDEV-1154): Demo: Chicago Crime Demo in R
 - [PUBDEV-1240](https://0xdata.atlassian.net/browse/PUBDEV-1240): Merge causes IllegalArgumentException
+- [PUBDEV-1447](https://0xdata.atlassian.net/browse/PUBDEV-1447): R: no argument parser_type in h2o.uploadFile/h2o.importFile [(GitHub)](https://github.com/h2oai/h2o-3/commit/b7a608d0031b25b23b869fdf9b0dd7ab4dc78fc6)
+
 
 ##### System
 
@@ -148,6 +158,8 @@ The following changes are to resolve incorrect software behavior:
 - [GitHub](https://github.com/h2oai/h2o-3/commit/900929e99eeda7c885a984fe8bcc790c0339dbbe) GLM fix - fixed fitting of null model constant term
 - [GitHub](https://github.com/h2oai/h2o-3/commit/fdebe7ade04cb1e0bf1c488e268815c46cbf2052) Fix remote bug
 - [GitHub](https://github.com/h2oai/h2o-3/commit/2e679013a5c2a39023240f38890690658411be08) Remove elastic averaging parameters from Flow.
+- [PUBDEV-1398](https://0xdata.atlassian.net/browse/PUBDEV-1398): pca: predictions on the attached data from v2 and v3 differ
+ 
 
 ##### Python
 - [PUBDEV-1286](https://0xdata.atlassian.net/browse/PUBDEV-1286): Python ifelse on H2OFrame never finishes [GitHub](https://github.com/h2oai/h2o-3/commit/e64909d307aaa80524ed38d25fc9152af9594879)

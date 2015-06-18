@@ -23,7 +23,7 @@ Before creating a model, import data into H2O:
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the drop. 
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
   ![Importing Files](../images/KM_ImportFile.png)
 
@@ -42,12 +42,12 @@ Now, parse the imported data:
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
 
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/KM_Parse.png)
 
 
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  **NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 
 ### Building a Model

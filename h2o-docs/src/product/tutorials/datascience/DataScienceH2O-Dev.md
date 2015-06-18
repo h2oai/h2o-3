@@ -402,7 +402,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. 
 
 - **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -415,8 +415,6 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 - **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
-
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 
 ###Interpreting a DRF Model

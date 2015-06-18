@@ -4,7 +4,7 @@ This tutorial describes how to create a Generalized Linear Analysis (GLM) model 
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-**Note**: GLM in H2O-Dev may provide slightly different coefficient values when applying an L1 penalty in comparison with H2O1.
+**Note**: GLM in the current version may provide slightly different coefficient values when applying an L1 penalty in comparison with previous versions of H2O.
 
 ###Using GLM
 Use GLM when the variable of interest relates to predictions or inferences about a rate, an event, or a continuous measurement or for questions about how a set of environmental conditions influence the dependent variable.
@@ -29,7 +29,7 @@ Before creating a model, import data into H2O:
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the file drop.  
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field.  
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
 
   ![Importing Files](../images/GLM_ImportFile.png)
@@ -50,11 +50,11 @@ Now, parse the imported data:
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/GLM_Parse.png)
 
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  **NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 
 ### Building a Model
