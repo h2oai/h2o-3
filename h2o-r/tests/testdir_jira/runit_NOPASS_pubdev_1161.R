@@ -8,7 +8,7 @@ test.pca.mds <- function(conn) {
   train.dat <- mds %*% t(mds)
   train.hex <- as.h2o(conn, train.dat)
   
-  nvec <- 8
+  nvec <- 9
   Log.info(paste("R SVD with nv = ", nvec, sep = ""))
   fitR <- svd(train.dat)
   

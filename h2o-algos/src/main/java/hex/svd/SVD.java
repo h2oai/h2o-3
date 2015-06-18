@@ -71,6 +71,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   public double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
   public double[] powerLoop(Gram gram, long seed) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed)); }
   public double[] powerLoop(Gram gram, double[] vinit) {
+    // TODO: What happens if Gram matrix is essentially zero? Numerical inaccuracies in PUBDEV-1161.
     assert vinit.length == gram.fullN();
 
     // Set initial value v_0 to standard normal distribution
