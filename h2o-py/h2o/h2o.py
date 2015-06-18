@@ -762,6 +762,31 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
 
+def prcomp(x,validation_x=None,**kwargs):
+  """
+  Principal components analysis of a H2O dataset using the power method
+  to calculate the singular value decomposition of the Gram matrix.
+
+  :param x: (Optional) A list containing the data columns on which SVD operates.
+  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
+  is provided.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
+  for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+  for demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included
+  in each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of
+  every categorical variable will be dropped. Defaults to FALSE.
+  :return: a new dim reduction model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
+
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 

@@ -432,3 +432,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 class H2OAutoEncoderModelMetrics(MetricsBase):
   def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
     super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
+
+class H2ODimReductionModelMetrics(MetricsBase):
+  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
+    super(H2ODimReductionModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
