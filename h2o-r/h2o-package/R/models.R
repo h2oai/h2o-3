@@ -629,6 +629,44 @@ h2o.scoreHistory <- function(object, ...) {
 }
 
 #'
+#' Retrieve the respective weight matrix
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.weights <- function(object, matrix_id=1, ...){
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$weights[[matrix_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No weights for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
+#' Return the respective bias vector
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.biases <- function(object, vector_id=1, ...){
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$biases[[vector_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No biases for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
 #' Retrieve the Hit Ratios
 #'
 #' @param object An \linkS4class{H2OModel} object.
