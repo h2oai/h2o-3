@@ -100,7 +100,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         row = _dinfo.extractDenseRow(chunks, i, row);
         weight_sum+=row.weight;
         weight_map[i]=weight_sum;
-        assert(i == 0 || weight_map[i] > weight_map[i-1]);
+        assert(i == 0 || row.weight == 0 || weight_map[i] > weight_map[i-1]);
       }
       if (weight_sum > 0) {
         ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
@@ -135,22 +135,28 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 //          Log.info(Arrays.toString(weight_map));
 //          Log.info("key: " + key + " idx: " + (r >= 0 ? r : (-r-1)));
           if (r<0) r=-r-1;
+          assert(r == 0 || weight_map[r] > weight_map[r-1]);
         } else if (r == -1){
-          r = skip_rng.nextInt(nrows); //random sampling (with replacement)
+          do {
+            r = skip_rng.nextInt(nrows); //random sampling (with replacement)
+          }
+          // if we have weights, and we did the %2 skipping above, then we need to find an alternate row with non-zero weight
+          while (obs_weights && ((r == 0 && weight_map[0] == 0) || (r > 0 && weight_map[r] == weight_map[r-1])));
         } else {
+          assert(!obs_weights);
           r = row_idx; //linear scan - slightly faster
         }
         assert(r >= 0 && r<=nrows);
 
         row = _dinfo.extractDenseRow(chunks, r, row);
         if(!row.bad) {
+          assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           long seed = offset + rep * nrows + r;
           if (outputs != null && outputs.length > 0)
             processRow(seed++, row, outputs);
           else
             processRow(seed++, row);
         }
-        assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
         num_processed_rows++;
       }
     }
