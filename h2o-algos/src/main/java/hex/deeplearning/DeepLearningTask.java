@@ -34,9 +34,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param jobKey
    * @param inputModel Initial model state
    * @param fraction Fraction of rows of the training to train with
+   * @param iteration
    */
-  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction){
-    super(jobKey, inputModel.data_info(),null);
+  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration){
+    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration);
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
@@ -77,9 +78,12 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   // Create local workspace (neurons) and link them to shared weights
-  @Override protected void chunkInit(){
+  @Override protected boolean chunkInit(){
+    if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
+      return false;
     _neurons = makeNeuronsForTraining(_localmodel);
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
+    return true;
   }
 
   /**

@@ -16,6 +16,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //        "n_folds",
 //        "keep_cross_validation_splits",
         "response_column",
+        "weights_column",
         "balance_classes",
         "class_sampling_factors",
         "max_after_balance_size",
@@ -83,6 +84,10 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     // column names are related to training_frame.
     @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 response_column;
+
+    // todo move this up in the hierarchy when there is weights support?
+    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 weights_column;
 
   /*Imbalanced Classes*/
     /**

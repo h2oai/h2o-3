@@ -51,7 +51,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 response_column;
 
-    // todo move this up in the hierarchy when there is offset support?
+    // todo move this up in the hierarchy when there is weights support?
     @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 weights_column;
 

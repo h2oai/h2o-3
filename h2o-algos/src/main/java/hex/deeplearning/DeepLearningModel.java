@@ -141,7 +141,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
 
     public double epoch_counter;
-    public long training_samples;
+    public double training_samples;
     public long training_time_ms;
 
     //training/validation sets
@@ -241,7 +241,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
-    colHeaders.add("Samples"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
     if (!_output.autoencoder) {
@@ -466,11 +466,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
    * @param progressKey key of the progress
+   * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
     final long now = System.currentTimeMillis();
-    epoch_counter = (float)model_info().get_processed_total()/training_rows;
+    epoch_counter = (double)model_info().get_processed_total()/training_rows;
     final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
     run_time += time_last_iter_millis;
 
@@ -478,7 +479,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // and update the progress message
     Job.Progress prog = DKV.getGet(progressKey);
     float progress = prog == null ? 0 : prog.progress();
-    String msg = "Training at " + model_info().get_processed_total() * 1000 / run_time + " samples/s..."
+    String msg = "Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
@@ -508,9 +509,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
+          if (iteration>=1)
+            Log.info("Map/Reduce iteration #" + String.format("%,d", iteration));
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
                   + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-                  + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+                  + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+          Log.info(msg);
         }
       }
 
@@ -529,7 +533,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
-        err.training_samples = model_info().get_processed_total();
+        err.training_samples = (double)model_info().get_processed_total();
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
         err.classification = _output.isClassifier();
@@ -689,7 +693,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //        }
 
           // print the freshly scored model to ASCII
-          if (keep_running)
+          if (keep_running && printme)
             for (String s : toString().split("\n")) Log.info(s);
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
@@ -765,12 +769,23 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @return preds, can contain NaNs
    */
   @Override public double[] score0(double[] data, double[] preds) {
+    return score0(data, preds, 0);
+  }
+
+  @Override
+  protected double[] score0(double[] data, double[] preds, double weight, double offset /*ignored*/) {
+    assert(Double.isNaN(weight) || weight > 0); //either missing or non-zero (don't score holdout rows!)
+    return score0(data, preds, 1 /*skip weight column at the end*/);
+  }
+
+  // Actual scoring logic
+  private double[] score0(double[] data, double[] preds, int skipAtEnd) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-    ((Neurons.Input)neurons[0]).setInput(-1, data);
+    ((Neurons.Input)neurons[0]).setInput(-1, data, skipAtEnd);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null);
     float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
@@ -790,6 +805,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     return preds;
   }
+
 
   /**
    * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
@@ -874,7 +890,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp, 0); //FIXME - no weights yet
           DeepLearningTask.step(-1, neurons, model_info, null, false, null);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
@@ -914,7 +930,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data); // expands categoricals inside
+    ((Neurons.Input)neurons[0]).setInput(-1, data, 0 ); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null); // reconstructs data in expanded space
     float[] in  = neurons[0]._a.raw(); //input (expanded)
     float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
@@ -964,8 +980,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
-    if (model_info().get_params()._elastic_averaging)
-      DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), DKV.getGet(model_info.elasticAverageModelInfoKey()));
+    if (model_info().get_params()._elastic_averaging) {
+      DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());
+      if (eamodel != null)
+        DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), eamodel);
+    }
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
   }

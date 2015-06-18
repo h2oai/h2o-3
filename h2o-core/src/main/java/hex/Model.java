@@ -657,6 +657,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
+        if (hasWeightsOrOffset && weightsChunk.atd(row) == 0) continue;
         double [] p = hasWeightsOrOffset
           ?score0(chks, weightsChunk.atd(row), offsetChunk.atd(row), row, tmp, preds)
           :score0(chks, row, tmp, preds);

@@ -6,9 +6,9 @@ source('../h2o-runit.R')
 
 test.parser_type <- function(conn) {
 
-  hex <- h2o.uploadFile(conn, locate("smalldata/syn_binary_100x3000.svm"), "svm_data", parser_type = "SVMLight")
+  hex <- h2o.uploadFile(conn, locate("smalldata/synthetic/syn_binary_100x3000.svm"), "svm_data", parse_type = "SVMLight")
 
-  hex.csv <- h2o.uploadFile(conn, locate("smalldata/syn_binary_100x3000.svm"), "svm_data_as_csv", parser_type = "CSV")
+  hex.csv <- h2o.uploadFile(conn, locate("smalldata/synthetic/syn_binary_100x3000.svm"), "svm_data_as_csv", parse_type = "CSV")
 
   print(hex)
 

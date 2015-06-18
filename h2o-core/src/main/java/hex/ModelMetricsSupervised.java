@@ -13,7 +13,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
     _sigma = sigma;
   }
   public final double r2() {
-    double var = _sigma*_sigma;
+    double var = _sigma*_sigma; //FIXME PUBDEV-677: variance must use observation weights as well
     return 1.0-(_MSE /var);
   }
 
