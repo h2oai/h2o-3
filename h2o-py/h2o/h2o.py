@@ -491,6 +491,28 @@ def rapids(expr):
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
 
+def ls():
+  """
+  List Keys on an H2O Cluster
+  :return: Returns a list of keys in the current H2O instance
+  """
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ls ))".format(tmp_key)
+  rapids(expr)
+  j = frame(tmp_key)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_ids']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+  fr = H2OFrame(vecs=vecs)
+  fr.setNames(["keys"])
+  print "First 10 Keys: "
+  fr.show()
+  return as_list(fr, use_pandas=False)
+
+
 def frame(frame_id):
   """
   Retrieve metadata for a id that points to a Frame.
@@ -499,7 +521,6 @@ def frame(frame_id):
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
-
 
 def frames():
   """
@@ -536,6 +557,80 @@ def download_pojo(model,path=""):
   else:
     with open(file_path, 'w') as f:
       f.write(java.text)
+
+def download_csv(data, filename):
+  '''
+  Download an H2O data set to a CSV file on the local disk.
+  Warning: Files located on the H2O server may be very large! Make
+  sure you have enough hard drive space to accomodate the entire file.
+  :param data: an H2OFrame object to be downloaded.
+  :param filename:A string indicating the name that the CSV file should be
+  should be saved to.
+  :return: None
+  '''
+  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got "
+                                                       "{0}".format(type(data)))
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/3/DownloadDataset?frame_id=' + \
+        data.send_frame()
+  with open(filename, 'w') as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
+def download_all_logs(dirname=".",filename=None):
+  """
+  Download H2O Log Files to Disk
+  :param dirname: (Optional) A character string indicating the directory that the log file should be saved in.
+  :param filename: (Optional) A string indicating the name that the CSV file should be
+  :return: path of logs written (as a string)
+  """
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/Logs/download'
+  response = urllib2.urlopen(url)
+
+  if not os.path.exists(dirname): os.mkdir(dirname)
+  if filename == None:
+    for h in response.headers.headers:
+      if 'filename=' in h:
+        filename = h.split("filename=")[1].strip()
+        break
+  path = os.path.join(dirname,filename)
+
+  with open(path, 'w') as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
+  print "Writing H2O logs to " + path
+  return path
+
+def cluster_status():
+  """
+  TODO: This isn't really a cluster status... it's a node status check for the node we're connected to.
+  This is possibly confusing because this can come back without warning,
+  but if a user tries to do any remoteSend, they will get a "cloud sick warning"
+
+  Retrieve information on the status of the cluster running H2O.
+  :return: None
+  """
+  cluster_json = H2OConnection.get_json("Cloud?skip_ticks=true")
+
+  print "Version: {0}".format(cluster_json['version'])
+  print "Cloud name: {0}".format(cluster_json['cloud_name'])
+  print "Cloud size: {0}".format(cluster_json['cloud_size'])
+  if cluster_json['locked']: print "Cloud is locked\n"
+  else: print "Accepting new members\n"
+  if cluster_json['nodes'] == None or len(cluster_json['nodes']) == 0:
+    print "No nodes found"
+    return
+
+  status = []
+  for node in cluster_json['nodes']:
+    for k, v in zip(node.keys(),node.values()):
+      if k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
+               "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
+               "open_fds", "rpcs_active"]: status.append(k+": {0}".format(v))
+    print ', '.join(status)
+    print
 
 # Non-Mutating cbind
 def cbind(left,right):
@@ -841,6 +936,11 @@ def table(data1,data2=None):
   if not data2: return data1.table()
   else: return data1.table(data2=data2)
 def scale(data,center=True,scale=True): return data.scale(center=center, scale=scale)
+def setLevel(data, level)  : return data.setLevel(level=level)
+def setLevels(data, levels): return data.setLevels(levels=levels)
+def levels(data, col=0)    : return data.levels(col=col)
+def nlevels(data, col=0)   : return data.nlevels(col=col)
+def as_date(data, format)  : return data.as_date(format=format)
 
 class H2ODisplay:
   """

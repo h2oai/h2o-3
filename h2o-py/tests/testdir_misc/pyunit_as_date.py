@@ -51,5 +51,23 @@ def download_pojo(ip,port):
   hdf["idx9"] = hdf["ds9"].year() * 12 + hdf["ds9"].month()
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
+  # frames
+  hdf = h2o.import_frame(path=h2o.locate("smalldata/jira/v-11.csv"))
+  hdf["ds9"] = hdf["ds9"].asfactor()
+
+  hdf5 = h2o.H2OFrame(vecs=[hdf["ds5"]])
+  hdf6 = h2o.H2OFrame(vecs=[hdf["ds6"]])
+  hdf7 = h2o.H2OFrame(vecs=[hdf["ds7"]])
+  hdf8 = h2o.H2OFrame(vecs=[hdf["ds8"]])
+  hdf9 = h2o.H2OFrame(vecs=[hdf["ds9"]])
+  hdf10 = h2o.H2OFrame(vecs=[hdf["ds10"]])
+
+  hdf5 = hdf5.as_date("%d/%m/%y %H:%M")
+  hdf6 = hdf6.as_date("%d/%m/%Y %H:%M:%S")
+  hdf7 = hdf7.as_date("%m/%d/%y")
+  hdf8 = hdf8.as_date("%m/%d/%Y")
+  hdf9 = hdf9.as_date("%Y%m%d")
+  hdf10 = hdf10.as_date("%Y_%m_%d")
+
 if __name__ == "__main__":
   h2o.run_test(sys.argv, download_pojo)

@@ -68,15 +68,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
   }
 
-  public double[] powerLoop(double[][] gram) {
-    return powerLoop(gram, ArrayUtils.gaussianVector(gram[0].length));
-  }
-  public double[] powerLoop(double[][] gram, long seed) {
-    return powerLoop(gram, ArrayUtils.gaussianVector(gram[0].length, seed));
-  }
-  public double[] powerLoop(double[][] gram, double[] vinit) {
-    assert gram.length == gram[0].length;
-    assert vinit.length == gram.length;
+  public double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
+  public double[] powerLoop(Gram gram, long seed) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed)); }
+  public double[] powerLoop(Gram gram, double[] vinit) {
+    // TODO: What happens if Gram matrix is essentially zero? Numerical inaccuracies in PUBDEV-1161.
+    assert vinit.length == gram.fullN();
 
     // Set initial value v_0 to standard normal distribution
     int iters = 0;
@@ -87,8 +83,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
     while(iters < _parms._max_iterations && err > TOLERANCE) {
       // Compute x_i <- A'Av_{i-1} and ||x_i||
-      for (int i = 0; i < v.length; i++)
-        vnew[i] = ArrayUtils.innerProduct(gram[i], v);
+      gram.mul(v, vnew);
       double norm = ArrayUtils.l2norm(vnew);
 
       double diff; err = 0;
@@ -104,7 +99,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return v;
   }
 
-
   // Compute ivv_sum - vec * vec' for symmetric array ivv_sum
   public static double[][] updateIVVSum(double[][] ivv_sum, double[] vec) {
     double diff;
@@ -116,34 +110,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       ivv_sum[i][i] -= vec[i] * vec[i];
     }
     return ivv_sum;
-  }
-
-  // Compute sum of diagonal of X'X/(nrow(X)-1), where X = transformed and expanded training frame
-  public double totalVar(DataInfo dinfo, double[][] gram, boolean includeCats) {
-    double total_cat = 0, total_num = 0;
-    double nrow = dinfo._adaptedFrame.numRows();
-
-    if(includeCats) {
-      if(_parms._use_all_factor_levels)
-        total_cat = dinfo._cats;  // sum of variance = number of categoricals
-      else {
-        for (int i = 0; i < dinfo._cats; i++) {
-          for (int j = dinfo._catOffsets[i]; j < dinfo._catOffsets[i + 1]; j++) {
-            total_cat += gram[j][j];
-          }
-        }
-      }
-      total_cat *= nrow / (nrow - 1);   // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
-    }
-
-    if(_parms._transform == DataInfo.TransformType.STANDARDIZE)
-      total_num = dinfo._nums;   // variance of every column is 1
-    else {
-      for(int i = dinfo.numStart(); i < gram.length; i++)
-        total_num += gram[i][i];
-      total_num *= nrow / (nrow-1);   // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
-    }
-    return total_cat + total_num;
   }
 
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
@@ -183,11 +149,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
-        double[][] gram = gtsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
-        assert gram.length == _ncolExp;
+        Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
+        assert gram.fullN() == _ncolExp;
+        double nrow = dinfo._adaptedFrame.numRows();
+        model._output._total_variance = gram.diagSum() * nrow / (nrow-1);  // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
         model._output._nobs = gtsk._nobs;
-        model._output._total_variance = totalVar(dinfo, gram, true);
-        model._output._v = new double[_parms._nv][gram.length];
+        model._output._v = new double[_parms._nv][_ncolExp];
         model.update(self());
         update(1);
 
@@ -196,8 +163,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._v[0] = powerLoop(gram, _parms._seed);
 
         // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
-        double[][] ivv_sum = new double[gram.length][gram.length];
-        for(int i = 0; i < gram.length; i++) ivv_sum[i][i] = 1;
+        double[][] ivv_sum = new double[_ncolExp][_ncolExp];
+        for(int i = 0; i < _ncolExp; i++) ivv_sum[i][i] = 1;
 
         // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
         if(!_parms._only_v) {
@@ -235,9 +202,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         updateIVVSum(ivv_sum, model._output._v[0]);
         // double[][] gram_update = ArrayUtils.multArrArr(ArrayUtils.multArrArr(ivv_sum, gram), ivv_sum);
         GramUpdate guptsk = new GramUpdate(self(), dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
-        double[][] gram_update = guptsk._gram.getXX();
+        Gram gram_update = guptsk._gram;
 
         for(int k = 1; k < _parms._nv; k++) {
+          if(!isRunning()) break;
+
           // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
           model._output._v[k] = powerLoop(gram_update, _parms._seed);
 
@@ -255,12 +224,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           updateIVVSum(ivv_sum, model._output._v[k]);   // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
           // gram_update = ArrayUtils.multArrArr(ivv_sum, ArrayUtils.multArrArr(gram, ivv_sum));  // Too slow on wide arrays
           guptsk = new GramUpdate(self(), dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
-          gram_update = guptsk._gram.getXX();
+          gram_update = guptsk._gram;
           model.update(self()); // Update model in K/V store
           update(1);            // One unit of work
         }
 
         // 4) Normalize last left singular vector and save parameters
+        // TODO: Make sure model building consistent if algo cancelled midway
         model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
         if(!_parms._only_v) {
           if(_parms._keep_u) {
