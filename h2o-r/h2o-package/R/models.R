@@ -915,6 +915,21 @@ h2o.totss <- function(object,valid=FALSE, ...) {
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
 
 #'
+#' Retrieve the centroid statistics
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed on (currently unimplemented)
+#' @export
+h2o.centroid_stats <- function(object, valid=FALSE, ...) {
+  model.parts <- .model.parts(object)
+  if( valid ) {
+    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+    else                          return( model.parts$vm@metrics$centroid_stats )
+  } else                          return( model.parts$tm@metrics$centroid_stats )
+}
+
+#'
 #' Retrieve the cluster sizes
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
