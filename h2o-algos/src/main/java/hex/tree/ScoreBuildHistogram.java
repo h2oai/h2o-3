@@ -2,6 +2,7 @@ package hex.tree;
 
 import water.MRTask;
 import water.H2O.H2OCountedCompleter;
+import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.util.AtomicUtils;
 
@@ -84,10 +85,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override public void map( Chunk[] chks ) {
-    assert chks.length==_ncols+5;
     final Chunk wrks = chks[_ncols+2];
     final Chunk nids = chks[_ncols+3];
-    final Chunk weight = chks[_ncols+4];
+    final Chunk weight = chks.length == _ncols + 5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current

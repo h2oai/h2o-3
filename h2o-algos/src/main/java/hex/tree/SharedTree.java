@@ -240,6 +240,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);
       fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
       fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
+      if (idx_weight()> 0)
       fr2.add(fr._names[idx_weight()],vecs[idx_weight()]);
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar));
