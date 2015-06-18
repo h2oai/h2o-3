@@ -1,4 +1,4 @@
-## Random Forest Tutorial
+## Distributed Random Forest Tutorial
 
 This tutorial describes how to create a Distributed Random Forest (DRF) model using H2O Flow.
 
@@ -18,7 +18,7 @@ Before creating a model, import data into H2O:
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the file drop.  
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field.  
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
 
   ![Importing Files](../images/RF_ImportFile.png)
@@ -37,13 +37,13 @@ Now, parse the imported data:
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after parsing, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
+  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/RF_Parse.png)
 
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  **NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 
 
@@ -61,7 +61,7 @@ Now, parse the imported data:
    ![Random Forest Model Builder](../images/RF_BuildModel.png)
 
 
-### RF Output
+### DRF Output
 
 The DRF model output includes the following: 
 
@@ -82,7 +82,7 @@ The DRF model output includes the following:
 
   ![Random Forest Model Results](../images/RF_Model_Results.png)
 
-### RF Predict
+### DRF Predict
 
 To generate a prediction, click the **Predict** button in the model results and select the `ad.hex` file from the drop-down **Frame** list, then click the **Predict** button. 
 

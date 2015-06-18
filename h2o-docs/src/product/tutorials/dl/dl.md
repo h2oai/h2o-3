@@ -40,9 +40,9 @@ Before creating a model, import the data into H2O:
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field. 
+0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field. 
 
-  **NOTE**: Deep Learning requires a training dataset and a validation (or testing) dataset. Make sure to upload and parse both datasets before creating a model. 
+  >**NOTE**: Deep Learning requires a training dataset and a validation (or testing) dataset. Make sure to upload and parse both datasets before creating a model. 
 
   ![Importing Testing Data](../images/DL_importFile_test.png)
 
@@ -56,17 +56,17 @@ Before creating a model, import the data into H2O:
 Now, parse the imported data: 
 
 0. Click the **Parse these files...** button. 
-**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
+>**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
 0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
 0. If the data uses a separator, select it from the drop-down **Separator** list. 
 0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
+  >**NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Data Preview** section. The last column, `C785`, must be changed to an enum. 
-0. Scroll all the way to the right to view C785. 
+0. Review the data in the **Edit Column Names and Types** section. The last column, `C785`, must be changed to an enum for a classification model. 
+0. Enter `C785` in the *Search by column name* entry field at the top. 
 0. Click the drop-down column heading menu for C785 and select `Enum`.  
    
    ![Selecting Enum](../images/DL_SelectEnum.png) 
@@ -75,7 +75,7 @@ Now, parse the imported data:
 
   ![Parsing Data](../images/DL_Parse.png)
   
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  >**NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 ##Building a Model
 
@@ -83,7 +83,7 @@ Now, parse the imported data:
 0. Select `Deep Learning` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed training data is not already listed in the **Training_frame** drop-down list, select it. 
 
-  **Note**: If the **Ignore\_const\_col** checkbox is checked, a list of the excluded columns displays below the **Training_frame** drop-down list. 
+  >**Note**: If the **Ignore\_const\_col** checkbox is checked, a list of the excluded columns displays below the **Training_frame** drop-down list. 
 
 0. From the drop-down **Validation_frame** list, select the parsed testing (validation) data. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. 
