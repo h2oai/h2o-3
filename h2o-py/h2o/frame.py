@@ -30,7 +30,7 @@ class H2OFrame:
     if len(vecs)==0: return
     h2o.remove(H2OFrame(vecs=vecs))
 
-  def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
+  def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None, column_types=None):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
@@ -58,6 +58,7 @@ class H2OFrame:
     self.local_fname = local_fname
     self.remote_fname = remote_fname
     self._vecs = None
+    self.column_types = column_types
 
     if python_obj is not None:  # avoids the truth value of an array is ambiguous err
       self._upload_python_object(python_obj)
@@ -176,7 +177,7 @@ class H2OFrame:
     :return: Part of the H2OFrame constructor.
     """
     # perform the parse setup
-    setup = h2o.parse_setup(text_key)
+    setup = h2o.parse_setup(text_key,self.column_types)
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them

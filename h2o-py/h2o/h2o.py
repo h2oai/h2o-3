@@ -61,7 +61,7 @@ def import_frame(path=None, vecs=None):
   return H2OFrame(vecs=vecs) if vecs else H2OFrame(remote_fname=path)
 
 
-def parse_setup(raw_frames):
+def parse_setup(raw_frames,column_types=None):
   """
   :param raw_frames: A collection of imported file frames
   :return: A ParseSetup "object"
@@ -69,7 +69,10 @@ def parse_setup(raw_frames):
 
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+  if column_types is not None:
+	j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], column_types=[_quoted(id) for id in column_types] )
+  else: 	
+  	j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames] )
   return j
 
 
@@ -558,6 +561,9 @@ def download_pojo(model,path=""):
     with open(file_path, 'w') as f:
       f.write(java.text)
 
+def get_frame_data(frame_id):
+  fd = H2OConnection.get( "DownloadDataset?frame_id="+frame_id )
+  return fd.text
 def download_csv(data, filename):
   '''
   Download an H2O data set to a CSV file on the local disk.

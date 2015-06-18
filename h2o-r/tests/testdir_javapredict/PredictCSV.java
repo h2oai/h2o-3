@@ -206,7 +206,7 @@ class PredictCSV {
                     }
                 } else {
                     if (i > 0) output.write(",");
-                    output.write(Double.toHexString(preds[i]));
+                    output.write(Double.toString(preds[i]));
                     if (!model.isClassifier() && !model.isAutoEncoder()) break;
                 }
             }
