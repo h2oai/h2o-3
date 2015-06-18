@@ -81,7 +81,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(0, 0, 0, 0, 0),
-                    ard(3, 64, 0, 2, 0),
+                    ard(3, 65, 0, 1, 0),
                     ard(0, 1, 0, 0, 0),
                     ard(0, 0, 1, 30, 0),
                     ard(0, 0, 0, 1, 39)),
@@ -103,7 +103,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(3, 0, 0, 0, 0),
-                    ard(2, 178, 1, 3, 0),
+                    ard(2, 179, 1, 2, 0),
                     ard(0, 1, 1, 0, 0),
                     ard(0, 3, 2, 68, 1),
                     ard(0, 0, 0, 3, 87)),
@@ -574,7 +574,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2087, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20841945889333927, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
