@@ -178,7 +178,7 @@ The GLM suite includes:
 
 - **Offset_column**: Select a column to use as the offset. 
 
-- **Weights_column**: Select a column to use for the observation weights.
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
 - **Family**: Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -383,6 +383,8 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
+
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
 - **Ntrees**: Specify the number of trees.  
 
@@ -782,6 +784,8 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+
 - **Ntrees**: Specify the number of trees.  
 
 - **Max\_depth**: Specify the maximum tree depth.  
@@ -933,6 +937,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: Select the column to use as the independent variable.
+
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
 - **Activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).   
 
