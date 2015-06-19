@@ -630,7 +630,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
-  public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+  public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
 
     /*
 

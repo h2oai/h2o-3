@@ -1073,7 +1073,7 @@ public class GLMTest  extends TestUtil {
 
       float[] actual = new float[1];
       for (int i = 0; i < chks[0]._len; ++i) {
-        _m.score0(chks, 1.0, 0.0, i, null, ds);
+        _m.score0(chks, i, null, ds);
         actual[0] = (float) chks[chks.length - 1].atd(i);
         _val2.perRow(ds, actual, _m);
       }

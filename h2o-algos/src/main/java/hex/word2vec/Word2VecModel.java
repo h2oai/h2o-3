@@ -42,6 +42,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl("No Model Metrics for Word2Vec.");
   }
 
+  @Override public double[] score0(Chunk[] cs, int foo, double data[/*ncols*/], double preds[/*nclasses+1*/]) {
+    throw H2O.unimpl();
+  }
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
