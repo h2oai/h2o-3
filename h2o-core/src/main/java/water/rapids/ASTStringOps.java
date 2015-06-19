@@ -107,12 +107,12 @@ class ASTToLower extends ASTUniPrefixOp {
 }
 
 class ASTToUpper extends ASTUniPrefixOp {
-  @Override String opStr() { return "tolower"; }
+  @Override String opStr() { return "toupper"; }
   @Override ASTOp make() { return new ASTToUpper(); }
   @Override void apply(Env env) {
-    if( !env.isAry() ) { throw new IllegalArgumentException("tolower only operates on a single vector!"); }
+    if( !env.isAry() ) { throw new IllegalArgumentException("toupper only operates on a single vector!"); }
     Frame fr = env.popAry();
-    if (fr.numCols() != 1) throw new IllegalArgumentException("tolower only takes a single column of data. Got "+ fr.numCols()+" columns.");
+    if (fr.numCols() != 1) throw new IllegalArgumentException("toupper only takes a single column of data. Got "+ fr.numCols()+" columns.");
     String[] dom = fr.anyVec().domain();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
