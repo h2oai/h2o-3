@@ -651,7 +651,7 @@ h2o.weights <- function(object, matrix_id=1, ...){
 #' Return the respective bias vector
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
-#' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
+#' @param vector_id An integer, ranging from 1 to number of layers + 1, that specifies the bias vector to return.
 #' @param \dots further arguments to be passed to/from this method.
 #' @export
 h2o.biases <- function(object, vector_id=1, ...){
