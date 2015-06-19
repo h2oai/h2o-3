@@ -79,33 +79,33 @@ test.LiblineaR.airlines <- function(conn) {
     #print(all.equal(abs(as.vector(h2o@model$coefficients)), abs(as.vector(libR$W))), "\n")
   }
   
-  Log.info("Importing Airlines test/train data...\n")
-  exdir         <- locate("smalldata/airlines/unzipped")
-  airlinesTrain <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
-  airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
-  aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
-  aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
-  trainhex      <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
-  testhex       <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
-  remove_exdir(exdir)
-  
-  print(trainhex)
+  #Log.info("Importing Airlines test/train data...\n")
+  #exdir         <- locate("smalldata/airlines/unzipped")
+  #airlinesTrain <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
+  #airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
+  #aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
+  #aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
+  #trainhex      <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
+  #testhex       <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
+  #remove_exdir(exdir)
+  #
+  #print(trainhex)
 
-  Log.info("Mapping column IsDepDelayed_REC from {-1,1} to {0,1}...\n")
-  aTrain$IsDepDelayed_REC   <- aTrain$IsDepDelayed_REC == 1
-  aTest$IsDepDelayed_REC    <- aTest$IsDepDelayed_REC == 1
-  trainhex$IsDepDelayed_REC <- trainhex$IsDepDelayed_REC == 1
-  trainhex$IsDepDelayed_REC <- as.factor(trainhex$IsDepDelayed_REC)
-  testhex$IsDepDelayed_REC  <- testhex$IsDepDelayed_REC == 1
-   
-  #xTrain  <- scale(model.matrix(IsDepDelayed_REC ~., aTrain[,-11])[,-1])
-  xTrain  <- scale(data.frame(aTrain$DepTime, aTrain$ArrTime, aTrain$Distance))
-  yTrain  <- aTrain[,12]
-  #xTest   <- model.matrix(IsDepDelayed_REC ~., aTest[-11])[,-1]
-  xTest   <- scale(data.frame(aTest$DepTime, aTest$ArrTime, aTest$Distance))
-  yTest   <- aTest[,12]
-  models  <- L1logistic(xTrain,yTrain,xTest,yTest,trainhex,testhex)
-  compareCoefs(models[[1]], models[[2]], conn)
+  #Log.info("Mapping column IsDepDelayed_REC from {-1,1} to {0,1}...\n")
+  #aTrain$IsDepDelayed_REC   <- aTrain$IsDepDelayed_REC == 1
+  #aTest$IsDepDelayed_REC    <- aTest$IsDepDelayed_REC == 1
+  #trainhex$IsDepDelayed_REC <- trainhex$IsDepDelayed_REC == 1
+  #trainhex$IsDepDelayed_REC <- as.factor(trainhex$IsDepDelayed_REC)
+  #testhex$IsDepDelayed_REC  <- testhex$IsDepDelayed_REC == 1
+  # 
+  ##xTrain  <- scale(model.matrix(IsDepDelayed_REC ~., aTrain[,-11])[,-1])
+  #xTrain  <- scale(data.frame(aTrain$DepTime, aTrain$ArrTime, aTrain$Distance))
+  #yTrain  <- aTrain[,12]
+  ##xTest   <- model.matrix(IsDepDelayed_REC ~., aTest[-11])[,-1]
+  #xTest   <- scale(data.frame(aTest$DepTime, aTest$ArrTime, aTest$Distance))
+  #yTest   <- aTest[,12]
+  #models  <- L1logistic(xTrain,yTrain,xTest,yTest,trainhex,testhex)
+  #compareCoefs(models[[1]], models[[2]], conn)
   
   testEnd()
 }

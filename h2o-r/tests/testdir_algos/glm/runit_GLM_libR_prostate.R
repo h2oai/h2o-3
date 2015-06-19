@@ -139,20 +139,20 @@ test.LiblineaR <- function(conn) {
     Log.info(paste(all.equal(abs(as.vector(h2o@model$coefficients_table$coefficients)), abs(as.vector(libR$W))), "\n", sep = ""))
   }
 
-  Log.info("Importing prostate test/train data...\n")
-  prostate.train.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
-  prostate.test.hex  <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
-  prostate.train.hex$CAPSULE <- as.factor(prostate.train.hex$CAPSULE)
-  prostate.test.hex$CAPSULE <- as.factor(prostate.test.hex$CAPSULE)
-  prostate.train.dat <- read.csv(locate("smalldata/logreg/prostate_train.csv")) #head(prostate.train.hex,nrow(prostate.train.hex))
-  prostate.test.dat  <- read.csv(locate("smalldata/logreg/prostate_test.csv")) #head(prostate.test.hex,nrow(prostate.test.hex))
-  xTrain             <- prostate.train.dat[,-1]
-  yTrain             <- factor(prostate.train.dat[,1])
-  xTest              <- prostate.test.dat[,-1]
-  yTest              <- factor(prostate.test.dat[,1])
-  models             <- L1logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
-  #models2            <- L2logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
-  compareCoefs(models[[1]], models[[2]])
+  #Log.info("Importing prostate test/train data...\n")
+  #prostate.train.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
+  #prostate.test.hex  <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
+  #prostate.train.hex$CAPSULE <- as.factor(prostate.train.hex$CAPSULE)
+  #prostate.test.hex$CAPSULE <- as.factor(prostate.test.hex$CAPSULE)
+  #prostate.train.dat <- read.csv(locate("smalldata/logreg/prostate_train.csv")) #head(prostate.train.hex,nrow(prostate.train.hex))
+  #prostate.test.dat  <- read.csv(locate("smalldata/logreg/prostate_test.csv")) #head(prostate.test.hex,nrow(prostate.test.hex))
+  #xTrain             <- prostate.train.dat[,-1]
+  #yTrain             <- factor(prostate.train.dat[,1])
+  #xTest              <- prostate.test.dat[,-1]
+  #yTest              <- factor(prostate.test.dat[,1])
+  #models             <- L1logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
+  ##models2            <- L2logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
+  #compareCoefs(models[[1]], models[[2]])
   testEnd()
 }
 
