@@ -1166,6 +1166,19 @@ class H2OFrame:
     expr = "(= !{} (table %{} {}))".format(tmp_key,frame_keys[0],"%"+frame_keys[1] if data2 else "()")
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
+  def rep_len(self, length_out):
+    """
+    Replicates the values in `data` in the H2O backend
+    :param length_out: the number of columns of the resulting H2OFrame
+    :return: an H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (rep_len %{} #{}))".format(tmp_key,frame_keys[0],length_out)
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
   def scale(self, center=True, scale=True):
     """
     Centers and/or scales the columns of the H2OFrame
@@ -1690,6 +1703,16 @@ class H2OVec:
     """
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (signif %{} #{}))".format(tmp_key,self.key(),digits)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def rep_len(self, length_out):
+    """
+    Replicates the values in `data` in the H2O backend
+    :param length_out: the length of the resulting H2OVec
+    :return: an H2OVec
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (rep_len %{} #{}))".format(tmp_key,self.key(),length_out)
     return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
 
   def asnumeric(self):

@@ -1004,6 +1004,22 @@ def setLevels(data, levels): return data.setLevels(levels=levels)
 def levels(data, col=0)    : return data.levels(col=col)
 def nlevels(data, col=0)   : return data.nlevels(col=col)
 def as_date(data, format)  : return data.as_date(format=format)
+def rep_len(data, length_out):
+  if isinstance(data, (str, int)):
+    tmp_key = H2OFrame.py_tmp_key()
+    scaler = '#{}'.format(data) if isinstance(data, int) else '\"{}\"'.format(data)
+    expr = "(= !{} (rep_len {} {}))".format(tmp_key,scaler,'#{}'.format(length_out))
+    rapids(expr)
+    j = frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+    removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+  return data.rep_len(length_out=length_out)
 
 class H2ODisplay:
   """
