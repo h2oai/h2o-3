@@ -294,7 +294,7 @@ class H2OBinomialModel(ModelBase):
       metrics.append([t,row[midx]])
     return metrics
 
-  def plot(self, type="roc", train=False, valid=False, show=True):
+  def plot(self, type="roc", train=False, valid=False, **kwargs):
     """
     Produce the desired metric plot
     :param type: the type of metric plot (currently, only ROC supported)
@@ -305,7 +305,7 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    tm.plot(type=type, show=show)
+    tm.plot(type=type, **kwargs)
 
   def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False):
     """

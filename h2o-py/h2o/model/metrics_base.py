@@ -345,7 +345,7 @@ class H2OBinomialModelMetrics(MetricsBase):
       metrics.append([t,row[midx]])
     return metrics
 
-  def plot(self, type="roc", show=True):
+  def plot(self, type="roc", **kwargs):
     """
     Produce the desired metric plot
     :param type: the type of metric plot (currently, only ROC supported)
@@ -355,6 +355,8 @@ class H2OBinomialModelMetrics(MetricsBase):
     # check for matplotlib. exit if absent.
     try:
       imp.find_module('matplotlib')
+      import matplotlib
+      if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
       import matplotlib.pyplot as plt
     except ImportError:
       print "matplotlib is required for this function!"
@@ -373,7 +375,7 @@ class H2OBinomialModelMetrics(MetricsBase):
       plt.text(0.5, 0.5, r'AUC={0}'.format(self._metric_json["AUC"]))
       plt.plot(x_axis, y_axis, 'b--')
       plt.axis([0, 1, 0, 1])
-      if show: plt.show()
+      if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
 
   def confusion_matrix(self, metrics=None, thresholds=None):
     """

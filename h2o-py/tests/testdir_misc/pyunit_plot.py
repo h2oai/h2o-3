@@ -5,6 +5,8 @@ import h2o
 def plot_test(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
+    kwargs = {}
+    kwargs['server'] = True
 
     air = h2o.import_frame(h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
@@ -20,14 +22,14 @@ def plot_test(ip,port):
                       distribution="bernoulli", ntrees=100, max_depth=3, learn_rate=0.01)
 
     # Plot ROC for training and validation sets
-    air_gbm.plot(type="roc", train=True, show=False)
-    air_gbm.plot(type="roc", valid=True, show=False)
+    air_gbm.plot(type="roc", train=True, **kwargs)
+    air_gbm.plot(type="roc", valid=True, **kwargs)
 
     air_test = h2o.import_frame(h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
     perf = air_gbm.model_performance(air_test)
 
     #Plot ROC for test set
-    perf.plot(type="roc", show=False)
+    perf.plot(type="roc", **kwargs)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, plot_test)
