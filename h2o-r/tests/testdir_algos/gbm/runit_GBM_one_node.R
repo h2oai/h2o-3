@@ -10,23 +10,25 @@ test.one.node.gbm <- function(conn) {
               build_tree_one_node = T, seed = 1234)
           gbm.mult <- h2o.gbm(x = 1:30, y = 31, training_frame = airs.hex,
               build_tree_one_node = F, seed = 1234)
-          }, error = function(err) { err })
+          },
+          error = function(err) { 
+              expect_identical(err[[1]], "Cannot run on a single node in client mode.\n")
+              testEnd()
+          })
 
-  if (!is.null(e) && !identical(e[[1]], "Cannot run on a single node in client mode.\n")) {
-      Log.info("Multi Node:")
-          print(paste("MSE:", h2o.mse(gbm.mult)))
-          print(paste("AUC:", h2o.auc(gbm.mult)))
-          print(paste("R^2:", h2o.r2(gbm.mult)))
-          Log.info("Single Node:")
-          print(paste("MSE:", h2o.mse(gbm.sing)))
-          print(paste("AUC:", h2o.auc(gbm.sing)))
-          print(paste("R^2:", h2o.r2(gbm.sing)))
+  Log.info("Multi Node:")
+  print(paste("MSE:", h2o.mse(gbm.mult)))
+  print(paste("AUC:", h2o.auc(gbm.mult)))
+  print(paste("R^2:", h2o.r2(gbm.mult)))
+  Log.info("Single Node:")
+  print(paste("MSE:", h2o.mse(gbm.sing)))
+  print(paste("AUC:", h2o.auc(gbm.sing)))
+  print(paste("R^2:", h2o.r2(gbm.sing)))
 
-          Log.info("MSE, AUC, and R2 should be the same...")
-          expect_equal(h2o.mse(gbm.sing), h2o.mse(gbm.mult))
-          expect_equal(h2o.auc(gbm.sing), h2o.auc(gbm.mult))
-          expect_equal(h2o.r2(gbm.sing), h2o.r2(gbm.mult))
-  }
+  Log.info("MSE, AUC, and R2 should be the same...")
+  expect_equal(h2o.mse(gbm.sing), h2o.mse(gbm.mult))
+  expect_equal(h2o.auc(gbm.sing), h2o.auc(gbm.mult))
+  expect_equal(h2o.r2(gbm.sing), h2o.r2(gbm.mult))
 
   testEnd()
 }
