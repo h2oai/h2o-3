@@ -283,7 +283,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    public final double linkDeriv(double x) {
+    public final double linkDeriv(double x) { // note: compute an inverse of what R does
       switch(_link) {
         case logit:
           double div = (x * (1 - x));
@@ -296,9 +296,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case inverse:
           return -1.0 / (x * x);
         case tweedie:
+//          double res = _tweedie_link_power == 0
+//            ?Math.max(2e-16,Math.exp(x))
+//            // (1/lambda) * eta^(1/lambda - 1)
+//            :(1.0/_tweedie_link_power) * Math.pow(link(x), 1.0/_tweedie_link_power - 1.0);
+
           return _tweedie_link_power == 0
-            ?Math.max(2e-16,Math.exp(x))
-            :1.0/_tweedie_link_power * Math.pow(x, 1.0/_tweedie_link_power - 1.0);
+            ?1.0/Math.max(2e-16,x)
+            :_tweedie_link_power * Math.pow(x,_tweedie_link_power-1);
         default:
           throw H2O.unimpl();
       }
