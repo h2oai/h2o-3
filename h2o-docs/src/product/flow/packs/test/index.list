@@ -1,9 +1,4 @@
 split_frame.flow
-cancel_dl_model_job.flow
-cancel_gbm_model_job.flow
-cancel_glm_model_job.flow
-cancel_parse_job.flow
-cancel_rf_model_job.flow
 delete_dl_model.flow
 delete_gbm_model.flow
 delete_glm_model.flow
