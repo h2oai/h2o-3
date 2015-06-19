@@ -98,7 +98,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
         double tmp [] = new double[_output._names.length];
         double preds[] = new double[_parms._nv];
         for( int row = 0; row < chks[0]._len; row++) {
-          double p[] = score0(chks, row, tmp, preds);
+          double weight = 1.0;
+          double offset = 0.0;
+          double p[] = score0(chks, weight, offset, row, tmp, preds);
           for( int c=0; c<preds.length; c++ )
             chks[_output._names.length+c].set(row, p[c]);
         }

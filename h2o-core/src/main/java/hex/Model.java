@@ -668,9 +668,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    return score0(chks, 1, 0, row_in_chunk, tmp, preds);
-  }
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
