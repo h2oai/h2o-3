@@ -5,10 +5,16 @@ test.one.node.gbm <- function(conn) {
   Log.info("Loading data and building models...")
   airs.hex <- h2o.importFile(locate("smalldata/airlines/allyears2k.zip"))
 
-  gbm.mult <- h2o.gbm(x = 1:30, y = 31, training_frame = airs.hex,
-                      build_tree_one_node = F, seed = 1234)
-  gbm.sing <- h2o.gbm(x = 1:30, y = 31, training_frame = airs.hex,
-                      build_tree_one_node = T, seed = 1234)
+  e = tryCatch({
+          gbm.sing <- h2o.gbm(x = 1:30, y = 31, training_frame = airs.hex,
+              build_tree_one_node = T, seed = 1234)
+          gbm.mult <- h2o.gbm(x = 1:30, y = 31, training_frame = airs.hex,
+              build_tree_one_node = F, seed = 1234)
+          },
+          error = function(err) { 
+              expect_identical(err[[1]], "Cannot run on a single node in client mode.\n")
+              testEnd()
+          })
 
   Log.info("Multi Node:")
   print(paste("MSE:", h2o.mse(gbm.mult)))

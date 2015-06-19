@@ -77,6 +77,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
     _hasWeights = super.hasWeights();
     _hasOffset = super.hasOffset();
+    if (H2O.ARGS.client && _parms._build_tree_one_node)
+      error("_build_tree_one_node", "Cannot run on a single node in client mode");
     if(_vresponse != null)
       _vresponse_key = _vresponse._key;
     if(_response != null)

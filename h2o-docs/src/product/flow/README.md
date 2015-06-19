@@ -218,10 +218,6 @@ There are multiple ways to import data in H2O flow:
 - Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
  ![Flow - Import Files Auto-Suggest](images/Flow_Import_AutoSuggest.png)
  
-- You can also drag and drop the file onto the **Search** field in the cell.
-  
- ![Flow - Import Files](images/Flow_Import_DragDrop.png)
-
 - In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
@@ -284,11 +280,15 @@ Select any necessary additional options:
 - **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum. This option is not selected by default. 
 - **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
-A preview of the data displays in the "Data Preview" section. 
+A preview of the data displays in the "Edit Column Names and Types" section. 
  ![Flow - Parse options](images/Flow_parse_setup.png)
 
->**Note**: To change the column type, select the drop-down list at the top of the column and select the data type. The options are: 
->  
+To change or add a column name, edit or enter the text in the column's entry field. In the screenshot below, the entry field for column 16 is highlighted in red.  
+  
+ ![Flow - Column Name Entry Field](images/Flow_ColNameEntry.png)
+
+To change the column type, select the drop-down list to the right of the column name entry field and select the data type. The options are: 
+  
   - Unknown
   - Numeric
   - Enum
@@ -297,6 +297,11 @@ A preview of the data displays in the "Data Preview" section.
   - String
   - Invalid
 
+You can search for a column by entering it in the *Search by column name...* entry field above the first column name entry field. As you type, H2O displays the columns that match the specified search terms.
+
+To navigate the data preview, click the **<- Previous page** or **-> Next page** buttons.  
+
+  ![Flow - Pagination buttons](images/Flow_PageButtons.png)
 
 After making your selections, click the **Parse** button. 
 
@@ -406,8 +411,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 
-  >**NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
-
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **->** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **<-** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. 
@@ -469,7 +472,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Offset_column**: [(GLM)](#GLM) Select a column to use as the offset. 
 
-- **Weights_column**: [(GLM)](#GLM) Select a column to use for the observation weights. 
+- **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -527,7 +530,7 @@ The available options vary depending on the selected model. If an option is only
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
    >**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#DRF), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
 - **Max\_confusion\_matrix\_size**: ([DRF](#DRF), [Naïve Bayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 

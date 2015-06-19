@@ -129,7 +129,10 @@ public class MRUtils {
   public static Frame sampleFrameStratified(final Frame fr, Vec label, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
     if (fr == null) return null;
     assert(label.isEnum());
-    assert(maxrows >= label.domain().length);
+    if (maxrows < label.domain().length) {
+      Log.warn("Attempting to do stratified sampling to fewer samples than there are class labels - automatically increasing to #rows == #labels (" + label.domain().length + ").");
+      maxrows = label.domain().length;
+    }
 
     long[] dist = new ClassDist(label).doAll(label).dist();
     assert(dist.length > 0);

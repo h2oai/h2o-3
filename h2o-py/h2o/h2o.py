@@ -762,6 +762,69 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
 
+def prcomp(x,validation_x=None,**kwargs):
+  """
+  Principal components analysis of a H2O dataset using the power method
+  to calculate the singular value decomposition of the Gram matrix.
+
+  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
+  is provided.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
+  for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+  for demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included
+  in each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of
+  every categorical variable will be dropped. Defaults to FALSE.
+  :return: a new dim reduction model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
+
+def svd(x,validation_x=None,**kwargs):
+  """
+  Singular value decomposition of a H2O dataset using the power method.
+
+  :param nv: The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
+  and 1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
+  dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE": for
+  demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included in
+  each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of every
+  categorical variable will be dropped. Defaults to TRUE.
+  :return: a new dim reduction model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"svd",kwargs)
+
+def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
+  Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.
+  When building a naive Bayes classifier, every row in the training dataset that contains at least one NA will be
+  skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability
+  calculation during prediction.
+
+  :param laplace: A positive number controlling Laplace smoothing. The default zero disables smoothing.
+  :param threshold: The minimum standard deviation to use for observations without enough data. Must be at least 1e-10.
+  :param eps: A threshold cutoff to deal with numeric instability, must be positive.
+  :param compute_metrics: A logical value indicating whether model metrics should be computed. Set to FALSE to reduce
+  the runtime of the algorithm.
+  :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"naivebayes",kwargs)
+
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 

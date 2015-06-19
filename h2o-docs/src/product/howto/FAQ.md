@@ -6,6 +6,9 @@
 - Confirm your internet connection is active. 
 
 - Test connectivity using curl: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O.
+
+- Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
+
 - Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in Terminal. 
 - Confirm ports 54321 and 54322 are available for both TCP and UDP.
 - Confirm your firewall is not preventing the nodes from locating each other.
@@ -15,9 +18,7 @@
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
-- (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. For example, if you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available.
-
- For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
+- (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. 
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
 - (EC2 only) Check the configuration for the EC2 security group.
 
@@ -61,6 +62,13 @@ If the response column is numeric, H2O generates a regression model. If the resp
 
 ---
 
+**What's the largest number of classes that H2O supports for multinomial prediction?**
+
+For tree-based algorithms, the maximum number of classes (or levels) for a response column is 1000. 
+
+
+---
+
 ##Building H2O
 
 
@@ -73,7 +81,6 @@ Use `./gradlew clean` before running `./gradlew build`.
 **I tried using `./gradlew build` after using `git pull` to update my local H2O repo, but now I can't get H2O to build successfully - what should I do?**
 
 Try using `./gradlew build -x test` - the build may be failing tests if data is not synced correctly. 
-
 
 ---
 

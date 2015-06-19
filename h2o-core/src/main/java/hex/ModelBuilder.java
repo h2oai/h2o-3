@@ -233,6 +233,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _weights = w;
         if(w.min() < 0)
           error("_weights_columns","Weights must be >= 0");
+        if(w.max() == 0)
+          error("_weights_columns","Max. weight must be > 0");
         _train.add(_parms._weights_column, w);
         ++res;
       }
@@ -345,8 +347,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
 
-      if(_response != null)
-        _nclass = _response.isEnum()?_response.cardinality():1;
+      if(_response != null) {
+        _nclass = _response.isEnum() ? _response.cardinality() : 1;
+        if (_response.isConst())
+          error("_response","Response cannot be constant.");
+      }
       if (! _parms._balance_classes)
         hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
       if( _parms._max_after_balance_size <= 0.0 )

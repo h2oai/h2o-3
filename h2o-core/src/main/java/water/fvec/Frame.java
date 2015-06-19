@@ -1236,7 +1236,7 @@ public class Frame extends Lockable<Frame> {
             if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
             else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
             else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-            else if (vs[i].isString()) sb.append(vs[i].atStr(new ValueString(), _row));
+            else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
             else {
               double d = vs[i].at(_row);
               // R 3.1 unfortunately changed the behavior of read.csv().
