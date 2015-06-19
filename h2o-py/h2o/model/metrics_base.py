@@ -1,6 +1,7 @@
 
 from model_base import ModelBase
 from h2o.model.confusion_matrix import ConfusionMatrix
+import imp
 
 class MetricsBase(object):
   """
@@ -343,6 +344,36 @@ class H2OBinomialModelMetrics(MetricsBase):
       row = thresh2d.cell_values[idx]
       metrics.append([t,row[midx]])
     return metrics
+
+  def plot(self, type="roc", show=True):
+    """
+    Produce the desired metric plot
+    :param type: the type of metric plot (currently, only ROC supported)
+    :param show: if False, the plot is not shown. matplotlib show method is blocking.
+    :return: None
+    """
+    # check for matplotlib. exit if absent.
+    try:
+      imp.find_module('matplotlib')
+      import matplotlib.pyplot as plt
+    except ImportError:
+      print "matplotlib is required for this function!"
+      return
+
+    # TODO: add more types (i.e. cutoffs)
+    if type not in ["roc"]: raise ValueError("type {0} is not supported".format(type))
+    if type == "roc":
+      fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
+      tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
+      x_axis = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
+      y_axis = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
+      plt.xlabel('False Positive Rate (FPR)')
+      plt.ylabel('True Positive Rate (TPR)')
+      plt.title('ROC Curve')
+      plt.text(0.5, 0.5, r'AUC={0}'.format(self._metric_json["AUC"]))
+      plt.plot(x_axis, y_axis, 'b--')
+      plt.axis([0, 1, 0, 1])
+      if show: plt.show()
 
   def confusion_matrix(self, metrics=None, thresholds=None):
     """

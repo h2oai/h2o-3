@@ -294,6 +294,19 @@ class H2OBinomialModel(ModelBase):
       metrics.append([t,row[midx]])
     return metrics
 
+  def plot(self, type="roc", train=False, valid=False, show=True):
+    """
+    Produce the desired metric plot
+    :param type: the type of metric plot (currently, only ROC supported)
+    :param train: Return the max per class error for training data.
+    :param valid: Return the max per class error for the validation data.
+    :param show: if False, the plot is not shown. matplotlib show method is blocking.
+    :return: None
+    """
+    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
+    if tm is None: return None
+    tm.plot(type=type, show=show)
+
   def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False):
     """
     Get the confusion matrix for the specified metrics/thresholds
