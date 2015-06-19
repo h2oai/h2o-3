@@ -472,7 +472,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Offset_column**: [(GLM)](#GLM) Select a column to use as the offset. 
 
-- **Weights_column**: [(GLM)](#GLM) Select a column to use for the observation weights. 
+- **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
