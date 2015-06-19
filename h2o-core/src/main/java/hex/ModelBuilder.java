@@ -233,6 +233,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _weights = w;
         if(w.min() < 0)
           error("_weights_columns","Weights must be >= 0");
+        if(w.max() == 0)
+          error("_weights_columns","Max. weight must be > 0");
         _train.add(_parms._weights_column, w);
         ++res;
       }
