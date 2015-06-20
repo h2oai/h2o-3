@@ -6,7 +6,6 @@ import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
-import static water.util.FrameUtils.generateNumKeys;
 
 /**
  * Frame splitter function to divide given frame into
@@ -30,7 +29,7 @@ import static water.util.FrameUtils.generateNumKeys;
  * <p>NOTE: the implementation is data-transfer expensive and in some cases it would be beneficial to use original
  * implementation from <a href="https://github.com/0xdata/h2o/commits/9af3f4e">9af3f4e</a>.</p>.
  */
-public class FrameSplitter extends H2OCountedCompleter {
+public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
   /** Dataset to split */
   final Frame   dataset;
   /** Split ratios - resulting number of split is ratios.length+1 */
