@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class DRFTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 

@@ -181,8 +181,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         } else if( _nclass > 1 ) {       // Classification
           double fs[] = new double[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
-            double weight = 1; //chk_weight(chks).atd(row);//FIXME
-            double offset = 0; //chk_offset(chks).atd(row);//FIXME
+            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
+            double offset = hasOffset() ? chk_offset(chks).atd(row) : 0;
             double sum = score1(chks, weight,offset,fs,row);
             if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
