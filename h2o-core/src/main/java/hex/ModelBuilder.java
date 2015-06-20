@@ -383,6 +383,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         hide("_max_after_balance_size", "Max after balance size is only applicable to classification problems.");
         hide("_max_confusion_matrix_size", "Max confusion matrix size is only applicable to classification problems.");
       }
+      else {
+        if (_offset != null)
+          error("_offset", "Offset only applies to regression problems.");
+      }
       if (_nclass <= 2) {
         hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
         hide("_max_confusion_matrix_size", "Only for multi-class classification problems.");

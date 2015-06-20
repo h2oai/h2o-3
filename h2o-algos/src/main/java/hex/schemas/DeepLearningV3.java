@@ -17,6 +17,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //        "keep_cross_validation_splits",
         "response_column",
         "weights_column",
+        "offset_column",
         "balance_classes",
         "class_sampling_factors",
         "max_after_balance_size",
@@ -88,6 +89,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     // todo move this up in the hierarchy when there is weights support?
     @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 weights_column;
+
+    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 offset_column;
 
   /*Imbalanced Classes*/
     /**
