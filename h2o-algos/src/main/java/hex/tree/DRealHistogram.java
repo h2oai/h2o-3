@@ -133,7 +133,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       sums1[b] = m0+m1;
       ssqs1[b] = s0+s1;
       ns1  [b] = k0+k1;
-      assert ns0[b]+ns1[b]==tot;
+      assert MathUtils.compare(ns0[b]+ns1[b],tot,1e-5,1e-5);
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
