@@ -231,6 +231,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(!w.isNumeric())
           error("_weights_column","Invalid weights column '" + _parms._weights_column  + "', weights must be numeric");
         _weights = w;
+        if(w.naCnt() > 0)
+          error("_weights_columns","Weights cannot have missing values.");
         if(w.min() < 0)
           error("_weights_columns","Weights must be >= 0");
         if(w.max() == 0)
@@ -247,6 +249,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(!o.isNumeric())
           error("_offset_column","Invalid offset column '" + _parms._offset_column  + "', offset must be numeric");
         _offset = o;
+        if(o.naCnt() > 0)
+          error("_offset_column","Offset cannot have missing values.");
         if(_weights == _offset)
           error("_offset_column", "Offset must be different from weights");
         _train.add(_parms._offset_column, o);
