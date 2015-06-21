@@ -290,8 +290,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             trainSamplingFactors = mp._class_sampling_factors.clone(); //clone: don't modify the original
           }
           train = sampleFrameStratified(
-                  train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
-          model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
+                  train, train.lastVec(), train.vec(model._output.weightsName()), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
+          Vec l = train.lastVec();
+          Vec w = train.vec(model._output.weightsName());
+          MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
+          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
         }
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
@@ -302,7 +305,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
           if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
             new ProgressUpdate("Sampling validation data (stratified)...").fork(_progressKey);
-            validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(), null,
+            validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(),  val_fr.vec(model._output.weightsName()), null,
                     mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
           } else {
             new ProgressUpdate("Sampling validation data...").fork(_progressKey);

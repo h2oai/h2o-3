@@ -326,7 +326,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String cns[] = classNames();
       return cns==null ? 1 : cns.length;
     }
-    public long [] _distribution;
+    public double [] _distribution;
     public double [] _modelClassDist;
     public double [] _priorClassDist;
     // Note: some algorithms MUST redefine this method to return other model categories

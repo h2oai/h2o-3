@@ -15,6 +15,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 
@@ -223,7 +224,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       // Use for all k-trees the same seed. NOTE: this is only to make a fair
       // view for all k-trees
-      final long[] _distribution = _model._output._distribution;
+      final double[] _distribution = _model._output._distribution;
       long rseed = rand.nextLong();
         // Initially setup as-if an empty-split had just happened
       for (int k = 0; k < _nclass; k++) {
@@ -275,6 +276,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
                 ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _response.mean());
+                if (!isClassifier() && _weights != null && (_weights.min() != 1 || _weights.max() != 1))
+                  ln._pred = (float)new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
               }
               continue;
             }

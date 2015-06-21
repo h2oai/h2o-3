@@ -166,12 +166,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                 throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain().length + " elements");
               trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
             }
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
             if (stratified != _train) {
               _train = stratified;
               _response = stratified.lastVec();
               // Recompute distribution since the input frame was modified
-              MRUtils.ClassDist cdmt2 = new MRUtils.ClassDist(_nclass).doAll(_response);
+              MRUtils.ClassDist cdmt2 = _weights != null ?
+                  new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
               _model._output._distribution = cdmt2.dist();
               _model._output._modelClassDist = cdmt2.rel_dist();
             }

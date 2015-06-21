@@ -4,6 +4,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.fvec.C0DChunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -291,7 +292,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected void checkMemoryFootPrint() {}
 
 
-  transient long [] _distribution;
+  transient double [] _distribution;
   transient double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
@@ -358,6 +359,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       if (! _parms._balance_classes)
         hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
+      else if (_parms._weights_column != null)
+        error("_balance_classes", "Balance classes and observation weights are not currently supported together.");
       if( _parms._max_after_balance_size <= 0.0 )
         error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
@@ -371,11 +374,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
-            MRUtils.ClassDist cdmt = new MRUtils.ClassDist(nclasses()).doAll(_response);
+            MRUtils.ClassDist cdmt =
+                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
             _distribution = cdmt.dist();
             _priorClassDist = cdmt.rel_dist();
           } else {                    // Regression; only 1 "class"
-            _distribution = new long[]{train().numRows()};
+            _distribution = new double[]{ (_weights != null ? _weights.mean() : 1.0) * train().numRows() };
             _priorClassDist = new double[]{1.0f};
           }
         }
