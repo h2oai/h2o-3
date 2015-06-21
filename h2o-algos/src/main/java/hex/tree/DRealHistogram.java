@@ -38,12 +38,12 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   // Add one row to a bin found via simple linear interpolation.
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
-  @Override void incr0( int b, double y ) {
-    AtomicUtils.DoubleArray.add(_sums,b,y);
-    AtomicUtils.DoubleArray.add(_ssqs,b,y*y);
+  @Override void incr0( int b, double y, double w ) {
+    AtomicUtils.DoubleArray.add(_sums,b,w*y);
+    AtomicUtils.DoubleArray.add(_ssqs,b,w*y*y);
   }
   // Same, except square done by caller
-  void incr1( int b, double y, double yy ) {
+  void incr1( int b, double y, double yy) {
     AtomicUtils.DoubleArray.add(_sums,b,y);
     AtomicUtils.DoubleArray.add(_ssqs,b,yy);
   }

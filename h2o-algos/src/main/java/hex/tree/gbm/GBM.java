@@ -9,6 +9,7 @@ import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -79,6 +80,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       mean = _response.mean();
+      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1))
+        mean = new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
+
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
 

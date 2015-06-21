@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.AUC2;
+import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
@@ -822,6 +823,12 @@ public class GBMTest extends TestUtil {
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8);
 
+      double r2 = ((ModelMetricsBinomial)gbm._output._training_metrics).r2();
+      assertEquals(0.06120806705515103, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)gbm._output._training_metrics)._logloss;
+      assertEquals(0.690155, ll, 1e-6);
+
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();
@@ -860,6 +867,13 @@ public class GBMTest extends TestUtil {
 
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8); //Note: better results than non-shuffled
+
+      double r2 = ((ModelMetricsBinomial)gbm._output._training_metrics).r2();
+      assertEquals(0.06120806705515103, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)gbm._output._training_metrics)._logloss;
+      assertEquals(0.690155, ll, 1e-6);
+
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();
@@ -897,6 +911,13 @@ public class GBMTest extends TestUtil {
 
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8);
+
+      double r2 = ((ModelMetricsBinomial)gbm._output._training_metrics).r2();
+      assertEquals(0.06120806705515103, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)gbm._output._training_metrics)._logloss;
+      assertEquals(0.690155, ll, 1e-6);
+
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();
@@ -906,7 +927,6 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testRowWeights() {
     Frame tfr = null, vfr = null;
@@ -936,6 +956,13 @@ public class GBMTest extends TestUtil {
 
       double mse = gbm._output._training_metrics.mse();
       assertEquals(0.24850374695598948, mse, 1e-8);
+
+      double r2 = ((ModelMetricsBinomial)gbm._output._training_metrics).r2();
+      assertEquals(0.06120806705515103, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)gbm._output._training_metrics)._logloss;
+      assertEquals(0.690155, ll, 1e-6);
+
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();

@@ -129,7 +129,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   // Add one row to a bin found via simple linear interpolation.
   // Compute bin min/max.
   // Compute response mean & variance.
-  abstract void incr0( int b, double y );
+  abstract void incr0( int b, double y, double w );
   final void incr( float col_data, double y, double w ) {
     assert Float.isNaN(col_data) || Float.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
@@ -139,7 +139,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       setMin(col_data);
       setMax(col_data);
     }
-    if( y != 0 ) incr0(b,w*y);
+    if( y != 0 ) incr0(b,y,w);
   }
 
   // Merge two equal histograms together.  Done in a F/J reduce, so no

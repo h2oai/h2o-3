@@ -2,6 +2,7 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -69,6 +70,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
 
     @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      sigma = weightedSigma(m,f,sigma);
       if (sigma != 0.0 && _count > 0 ) {
         double mse = _sumsqe / _wsum;
         double logloss = _logloss / _wsum;

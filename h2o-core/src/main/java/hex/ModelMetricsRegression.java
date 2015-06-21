@@ -2,6 +2,7 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
@@ -42,6 +43,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      sigma = weightedSigma(m,f,sigma);
       double mse = _sumsqe / _wsum;
       return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, sigma));
     }

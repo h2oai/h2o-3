@@ -87,7 +87,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   @Override public void map( Chunk[] chks ) {
     final Chunk wrks = chks[_ncols+2];
     final Chunk nids = chks[_ncols+3];
-    final Chunk weight = chks.length == _ncols + 5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
+    final Chunk weight = chks.length >= _ncols+5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
@@ -240,7 +240,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           assert (w > 0);
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
-          ssqs[b] += w*w*resp*resp;
+          ssqs[b] += w*resp*resp;
         }
 
         // Add all the data into the Histogram (atomically add)

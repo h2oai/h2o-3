@@ -3,6 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
@@ -123,6 +124,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     }
 
     @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      sigma = weightedSigma(m,f,sigma);
       if (sigma != 0) {
         ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
         float[] hr = new float[_K];
