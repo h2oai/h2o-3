@@ -1154,6 +1154,18 @@ class H2OFrame:
     expr = "(= !{} (t %{}))".format(tmp_key,frame_keys[0])
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
+  def trim(self):
+    """
+    Trim the edge-spaces in a column of strings (only operates on frame with one column)
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (trim %{}))".format(tmp_key,frame_keys[0])
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
   def table(self, data2=None):
     """
     :return: a frame of the counts at each combination of factor levels
@@ -1743,6 +1755,15 @@ class H2OVec:
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (t %{}))".format(tmp_key,self.key())
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def trim(self):
+    """
+    Trim the edge-spaces in a column of strings
+    :return: H2OVec
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (trim %{}))".format(tmp_key,self.key())
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
 
   def table(self, data2=None):
     """

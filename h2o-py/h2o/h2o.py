@@ -987,6 +987,7 @@ def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
 
+def trim(data)      : return data.trim()
 def asnumeric(data) : return data.asnumeric()
 def transpose(data) : return data.transpose()
 def anyfactor(data) : return data.anyfactor()
