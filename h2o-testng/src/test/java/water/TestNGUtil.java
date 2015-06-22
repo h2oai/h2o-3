@@ -33,7 +33,7 @@ public class TestNGUtil extends Iced {
                 // Leader node, where the tests execute from.
                 String cloudName = UUID.randomUUID().toString();
                 String[] args = new String[]{"-name",cloudName,"-ice_root",find_test_file_static("h2o-testng/" +
-                        "build/test-results").toString()};
+                        "build").toString()};
                 H2O.main(args);
 
                 // Secondary nodes, skip if expected to be pre-built
@@ -41,7 +41,7 @@ public class TestNGUtil extends Iced {
                     for( int i = 0; i < x-1; i++ )
                         new NodeContainer(args).start();
 
-                H2O.waitForCloudSize(x, 10000);
+                H2O.waitForCloudSize(x, 30000);
 
                 _stall_called_before = true;
             }
