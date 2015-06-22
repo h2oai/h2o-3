@@ -1,6 +1,5 @@
 package hex.glm;
 
-import hex.ModelMetricsBinomialGLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -14,8 +13,6 @@ import water.parser.ParseDataset;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.nio.file.Files;
 
@@ -23,8 +20,14 @@ import static org.testng.Assert.*;
 import org.testng.annotations.*;
 
 public class GLMBasic extends TestNGUtil {
-    static Frame _airquality;
-    static Frame _insurance;
+    static Frame _airquality_train1;
+    static Frame _airquality_train2;
+    static Frame _insurance_train1;
+    static Frame _iris_train1;
+    static Frame _airquality_validation1;
+    static Frame _airquality_validation2;
+    static Frame _insurance_validation1;
+    static Frame _iris_validation1;
 
     @DataProvider(name = "glmCases")
     public static Object[][] glmCases() {
@@ -47,16 +50,19 @@ public class GLMBasic extends TestNGUtil {
     }
 
     @Test(dataProvider = "glmCases")
-    public void basic(String gaussian, String binomial ,String poissan, String gamma, String auto,
-                                String irlsm, String lbfgs, String alpha, String lambda, String lambdaSearch,
-                                String standardize, String betaConstraints, String lowerBound, String upperBound,
-                                String useAllFactorLevels, String prior, String maxActivePredictors, String dataset) {
+    public void basic(String regression, String	classification, String gaussian, String binomial, String poisson,
+                      String gamma, String auto, String irlsm, String lbfgs, String ignore_const_cols,
+                      String offset_column, String weights_column, String alpha, String lambda, String lambdaSearch,
+                      String standardize, String non_negative, String betaConstraints, String lowerBound,
+                      String upperBound, String intercept, String prior, String maxActivePredictors,
+                      String distribution, String train_dataset_id, String train_dataset_filename,
+                      String validate_dataset_id, String validate_dataset_filename) {
 
         // Set GLM parameters
         Family f = null;
         if     (gaussian.equals("x")) { f = Family.gaussian; }
         else if(binomial.equals("x")) { f = Family.binomial; }
-        else if(poissan.equals("x"))  { f = Family.poisson; }
+        else if(poisson.equals("x"))  { f = Family.poisson; }
         else if(gamma.equals("x"))    { f = Family.gamma; }
         GLMParameters params = null != f ? new GLMParameters(f) : new GLMParameters();
         if     (irlsm.equals("x")) { params._solver = Solver.IRLSM; }
@@ -65,19 +71,34 @@ public class GLMBasic extends TestNGUtil {
         params._alpha = alpha.equals("") ? null : new double[]{ Double.parseDouble(alpha)};
         params._standardize = standardize.equals("x");
         params._lambda_search = lambdaSearch.equals("x");
-        params._use_all_factor_levels = useAllFactorLevels.equals("x");
         //params._prior = prior.equals("") ? -1 : Double.parseDouble(prior);
         //params._max_active_predictors = maxActivePredictors.equals("") ? -1 : Integer.parseInt(maxActivePredictors);
         //boolean bc = betaConstraints.equals("x");
-        switch(dataset){
-            case "airquality.csv":
-                params._train = _airquality._key;
+
+        // Pick the training and validation datasets and the correct response column
+        switch(train_dataset_filename){
+            case "airquality_train1.csv":
+                params._train = _airquality_train1._key;
+                params._valid = _airquality_validation1._key;
+                params._response_column = "Ozone";
                 break;
-            case "insurance.csv":
-                params._train = _insurance._key;
+            case "airquality_train2.csv":
+                params._train = _airquality_train2._key;
+                params._valid = _airquality_validation2._key;
+                params._response_column = "Ozone";
+                break;
+            case "insurance_train1.csv":
+                params._train = _insurance_train1._key;
+                params._valid = _insurance_validation1._key;
+                params._response_column = "Claims";
+                break;
+            case "iris_train1.csv":
+                params._train = _iris_train1._key;
+                params._valid = _iris_validation1._key;
+                params._response_column = "Species";
                 break;
         }
-        params._response_column = "Ozone";
+
 
         // Build the appropriate glm, given the above parameters
         GLM job = null;
@@ -86,39 +107,18 @@ public class GLMBasic extends TestNGUtil {
         try {
             Scope.enter();
 
-            if(gaussian.equals("x") && dataset.equals("airquality.csv")) {
+            // This is the only test case that works right now
+            if(train_dataset_filename.equals("airquality_train1.csv")) {
                 job = new GLM(Key.make("model"), "basic glm test", params);
                 model = job.trainModel().get();
 
-                //HashMap<String, Double> coefs = model.coefficients();
-                //GLMTest.nullDeviance(model);
-                //GLMTest.residualDeviance(model);
-                //GLMTest.nullDOF(model);
-                //GLMTest.resDOF(model);
-                //GLMTest.aic(model);
-
-                // Score the model
-                score = model.score(_airquality);
-
-                //hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _airquality);
-                hex.ModelMetricsRegression mm = hex.ModelMetricsRegression.getFromDKV(model, _airquality);
-                //hex.AUC2 adata = mm._auc;
-                double mse = mm._MSE;
-                System.out.println(mse);
-                assertTrue(mse >= 0.0,"Expected mse to be greater than 0.0");
-                //assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
-                //assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
-                //assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
-                //Frame score1 = model.score(_airquality);
-                //score1.remove();
-                //mm = hex.ModelMetricsBinomial.getFromDKV(model, _airquality);
-                //assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
-                //assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
-                //assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
+                if (gaussian.equals("x")) { assertTrue(model._output._validation_metrics._MSE >= 0.0,
+                        "Expected mse to be greater than 0.0"); }
+                else if(binomial.equals("x")) { assertTrue(model._output._validation_metrics.auc()._auc >= 0.0,
+                        "Expected mse to be greater than 0.0"); }
             }
         } finally {
             if (model != null) model.delete();
-            if (score != null) score.delete();
             if (job != null) job.remove();
             Scope.exit();
         }
@@ -126,25 +126,72 @@ public class GLMBasic extends TestNGUtil {
 
     @BeforeClass
     public static void setup() {
-        File airquality = find_test_file_static("smalldata/glm_test/airquality.csv");
-        assert airquality.exists();
-        NFSFileVec nfs_airquality = NFSFileVec.make(airquality);
-        Key airqualityKey = Key.make("airquality.hex");
-        _airquality = ParseDataset.parse(airqualityKey,  nfs_airquality._key);
+        //Parse the training datasets
+        File airquality_train1 = find_test_file_static("smalldata/testng/airquality_train1.csv");
+        File airquality_train2 = find_test_file_static("smalldata/testng/airquality_train2.csv");
+        File insurance_train1 = find_test_file_static("smalldata/testng/insurance_train1.csv");
+        File iris_train1 = find_test_file_static("smalldata/testng/iris_train1.csv");
 
-        File insurance = find_test_file_static("smalldata/glm_test/insurance.csv");
-        assert insurance.exists();
-        NFSFileVec nfs_insurance = NFSFileVec.make(insurance);
-        Key insuranceKey = Key.make("insurance.hex");
-        _insurance = ParseDataset.parse(insuranceKey,  nfs_insurance._key);
+        assert airquality_train1.exists() && airquality_train2.exists() && insurance_train1.exists() &&
+                iris_train1.exists();
+
+        NFSFileVec nfs_airquality_train1 = NFSFileVec.make(airquality_train1);
+        NFSFileVec nfs_airquality_train2 = NFSFileVec.make(airquality_train2);
+        NFSFileVec nfs_insurance_train1 = NFSFileVec.make(insurance_train1);
+        NFSFileVec nfs_iris_train1 = NFSFileVec.make(iris_train1);
+
+        Key airquality_train1Key = Key.make("airquality_train1.hex");
+        Key airquality_train2Key = Key.make("airquality_train2.hex");
+        Key insurance_train1Key = Key.make("insurance_train1.hex");
+        Key iris_train1Key = Key.make("iris_train1.hex");
+
+        _airquality_train1 = ParseDataset.parse(airquality_train1Key,  nfs_airquality_train1._key);
+        _airquality_train2 = ParseDataset.parse(airquality_train2Key,  nfs_airquality_train2._key);
+        _insurance_train1 = ParseDataset.parse(insurance_train1Key,  nfs_insurance_train1._key);
+        _iris_train1 = ParseDataset.parse(iris_train1Key,  nfs_iris_train1._key);
+
+        //Parse the validation datasets
+        File airquality_validation1 = find_test_file_static("smalldata/testng/airquality_validation1.csv");
+        File airquality_validation2 = find_test_file_static("smalldata/testng/airquality_validation2.csv");
+        File insurance_validation1 = find_test_file_static("smalldata/testng/insurance_validation1.csv");
+        File iris_validation1 = find_test_file_static("smalldata/testng/iris_validation1.csv");
+
+        assert airquality_validation1.exists() && airquality_validation2.exists() && insurance_validation1.exists() &&
+                iris_validation1.exists();
+
+        NFSFileVec nfs_airquality_validation1 = NFSFileVec.make(airquality_validation1);
+        NFSFileVec nfs_airquality_validation2 = NFSFileVec.make(airquality_validation2);
+        NFSFileVec nfs_insurance_validation1 = NFSFileVec.make(insurance_validation1);
+        NFSFileVec nfs_iris_validation1 = NFSFileVec.make(iris_validation1);
+
+        Key airquality_validation1Key = Key.make("airquality_validation1.hex");
+        Key airquality_validation2Key = Key.make("airquality_validation2.hex");
+        Key insurance_validation1Key = Key.make("insurance_validation1.hex");
+        Key iris_validation1Key = Key.make("iris_validation1.hex");
+
+        _airquality_validation1 = ParseDataset.parse(airquality_validation1Key,  nfs_airquality_validation1._key);
+        _airquality_validation2 = ParseDataset.parse(airquality_validation2Key,  nfs_airquality_validation2._key);
+        _insurance_validation1 = ParseDataset.parse(insurance_validation1Key,  nfs_insurance_validation1._key);
+        _iris_validation1 = ParseDataset.parse(iris_validation1Key,  nfs_iris_validation1._key);
     }
 
     @AfterClass
     public void cleanUp() {
-        if(_airquality != null)
-            _airquality.delete();
-
-        if(_insurance != null)
-            _insurance.delete();
+        if(_airquality_train1 != null)
+            _airquality_train1.delete();
+        if(_airquality_train2 != null)
+            _airquality_train2.delete();
+        if(_insurance_train1 != null)
+            _insurance_train1.delete();
+        if(_iris_train1 != null)
+            _iris_train1.delete();
+        if(_airquality_validation1 != null)
+            _airquality_validation1.delete();
+        if(_airquality_validation2 != null)
+            _airquality_validation2.delete();
+        if(_insurance_validation1 != null)
+            _insurance_validation1.delete();
+        if(_iris_validation1 != null)
+            _iris_validation1.delete();
     }
 }

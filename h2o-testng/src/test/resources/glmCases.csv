@@ -1,612 +1,612 @@
-x,,,,x,,,,,,x,,,,,,,airquality.csv
-x,,,,,x,,,,,x,,,,,,,airquality.csv
-x,,,,,,x,,,,x,,,,,,,airquality.csv
-x,,,,x,,,,,,,,,,,,,airquality.csv
-x,,,,,x,,,,,,,,,,,,airquality.csv
-x,,,,,,x,,,,,,,,,,,airquality.csv
-,,x,,x,,,,,,x,,,,,,,insurance.csv
-,,x,,,x,,,,,x,,,,,,,insurance.csv
-,,x,,,,x,,,,x,,,,,,,insurance.csv
-,,x,,x,,,,,,,,,,,,,insurance.csv
-,,x,,,x,,,,,,,,,,,,insurance.csv
-,,x,,,,x,,,,,,,,,,,insurance.csv
-,,,x,x,,,,,,x,,,,,,,
-,,,x,,x,,,,,x,,,,,,,
-,,,x,,,x,,,,x,,,,,,,
-,,,x,x,,,,,,,,,,,,,
-,,,x,,x,,,,,,,,,,,,
-,,,x,,,x,,,,,,,,,,,
-x,,,,x,,,,,,x,,,,,,,
-x,,,,,x,,,,,x,,,,,,,
-x,,,,,,x,,,,x,,,,,,,
-x,,,,x,,,,,,,,,,,,,
-x,,,,,x,,,,,,,,,,,,
-x,,,,,,x,,,,,,,,,,,
-,x,,,x,,,,,,x,,,,,,,
-,x,,,,x,,,,,x,,,,,,,
-,x,,,,,x,,,,x,,,,,,,
-,x,,,x,,,,,,,,,,,,,
-,x,,,,x,,,,,,,,,,,,
-,x,,,,,x,,,,,,,,,,,
-,,x,,x,,,,,,x,,,,,,,
-,,x,,,x,,,,,x,,,,,,,
-,,x,,,,x,,,,x,,,,,,,
-,,x,,x,,,,,,,,,,,,,
-,,x,,,x,,,,,,,,,,,,
-,,x,,,,x,,,,,,,,,,,
-,x,,,x,,,,,,x,,,,,,,iris.csv
-,x,,,,x,,,,,x,,,,,,,iris.csv
-,x,,,,,x,,,,x,,,,,,,iris.csv
-,x,,,x,,,,,,,,,,,,,iris.csv
-,x,,,,x,,,,,,,,,,,,iris.csv
-,x,,,,,x,,,,,,,,,,,iris.csv
-,x,,,x,,,,,,x,,,,,,,airquality.csv
-,x,,,,x,,,,,x,,,,,,,airquality.csv
-,x,,,,,x,,,,x,,,,,,,airquality.csv
-,x,,,x,,,,,,,,,,,,,airquality.csv
-,x,,,,x,,,,,,,,,,,,airquality.csv
-,x,,,,,x,,,,,,,,,,,airquality.csv
-,x,,,x,,,,,,x,,,,,,,newsgroup_balanced
-,x,,,,x,,,,,x,,,,,,,newsgroup_balanced
-,x,,,,,x,,,,x,,,,,,,newsgroup_balanced
-,x,,,x,,,,,,,,,,,,,newsgroup_balanced
-,x,,,,x,,,,,,,,,,,,newsgroup_balanced
-,x,,,,,x,,,,,,,,,,,newsgroup_balanced
-,x,,,x,,,,,,x,,,,,,,newsgroup_unbalanced
-,x,,,,x,,,,,x,,,,,,,newsgroup_unbalanced
-,x,,,,,x,,,,x,,,,,,,newsgroup_unbalanced
-,x,,,x,,,,,,,,,,,,,newsgroup_unbalanced
-,x,,,,x,,,,,,,,,,,,newsgroup_unbalanced
-,x,,,,,x,,,,,,,,,,,newsgroup_unbalanced
-x,,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
-x,,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
-x,,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
-x,,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
-x,,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
-x,,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
-,,x,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,insurance.csv
-,,x,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,insurance.csv
-,,x,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,insurance.csv
-,,x,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,insurance.csv
-,,x,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,insurance.csv
-,,x,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,insurance.csv
-,,,x,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,iris.csv
-,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,iris.csv
-,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,iris.csv
-,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,iris.csv
-,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,iris.csv
-,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,iris.csv
-,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
-,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
-,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,airquality.csv
-,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
-,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
-,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,airquality.csv
-,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,x,,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,,,x,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,x,,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,,,x,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,x,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,x,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
-,x,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,newsgroup_unbalanced
-,,,x,x,,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,1,,Y,x,Y,LB=UB,LB=UB,,,,
-,,,x,x,,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,x,,1,,Y,,Y,LB=UB,LB=UB,,,,
-,,,x,,,x,1,,Y,,Y,LB=UB,LB=UB,,,,
-x,,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
-x,,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
-x,,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
-x,,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
-x,,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
-x,,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
-,,x,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,insurance.csv
-,,x,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,insurance.csv
-,,x,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,insurance.csv
-,,x,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,insurance.csv
-,,x,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,insurance.csv
-,,x,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,insurance.csv
-,,,x,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
-,,,x,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
-,,,x,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,iris.csv
-,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,iris.csv
-,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,iris.csv
-,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,iris.csv
-,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,iris.csv
-,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,iris.csv
-,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
-,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
-,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,airquality.csv
-,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
-,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
-,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,airquality.csv
-,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,x,,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,,,x,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,,,x,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,,,x,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,x,,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,,,x,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,,,x,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
-,,,x,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
-,,,x,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
-x,,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
-x,,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,
-,,x,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,
-,,x,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,
-,x,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,x,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,x,,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,,Y,LB>UB,LB>UB,,,,newsgroup_unbalanced
-x,,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
-x,,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
-x,,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
-x,,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
-x,,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
-x,,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,,x,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,insurance.csv
-,,x,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,insurance.csv
-,,x,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,insurance.csv
-,,x,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,insurance.csv
-,,x,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,insurance.csv
-,,x,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,insurance.csv
-,,,x,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-x,,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-x,,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-x,,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,iris.csv
-,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,iris.csv
-,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,iris.csv
-,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,iris.csv
-,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,iris.csv
-,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,iris.csv
-,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,airquality.csv
-,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,x,,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,,,x,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup
-x,,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup
-x,,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup
-x,,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup
-x,,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup
-x,,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup
-,x,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,,,x,x,,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0.5,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,0.5,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,,x,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,,x,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-x,,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-x,,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-x,,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-x,,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,
-,,x,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,,x,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,
-,x,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,x,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,x,,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,,Y,LB = -ve,UB = +ve,,,,newsgroup_unbalanced
-x,,,,x,,,0,,Y,x,Y,LB,UB,,,,airquality.csv
-x,,,,,x,,0,,Y,x,Y,LB,UB,,,,airquality.csv
-x,,,,,,x,0,,Y,x,Y,LB,UB,,,,airquality.csv
-x,,,,x,,,0,,Y,,Y,LB,UB,,,,airquality.csv
-x,,,,,x,,0,,Y,,Y,LB,UB,,,,airquality.csv
-x,,,,,,x,0,,Y,,Y,LB,UB,,,,airquality.csv
-,,x,,x,,,0,,Y,x,Y,LB,UB,,,,insurance.csv
-,,x,,,x,,0,,Y,x,Y,LB,UB,,,,insurance.csv
-,,x,,,,x,0,,Y,x,Y,LB,UB,,,,insurance.csv
-,,x,,x,,,0,,Y,,Y,LB,UB,,,,insurance.csv
-,,x,,,x,,0,,Y,,Y,LB,UB,,,,insurance.csv
-,,x,,,,x,0,,Y,,Y,LB,UB,,,,insurance.csv
-,,,x,x,,,0,,Y,x,Y,LB,UB,,,,
-,,,x,,x,,0,,Y,x,Y,LB,UB,,,,
-,,,x,,,x,0,,Y,x,Y,LB,UB,,,,
-,,,x,x,,,0,,Y,,Y,LB,UB,,,,
-,,,x,,x,,0,,Y,,Y,LB,UB,,,,
-,,,x,,,x,0,,Y,,Y,LB,UB,,,,
-x,,,,x,,,0,,Y,x,Y,LB,UB,,,,
-x,,,,,x,,0,,Y,x,Y,LB,UB,,,,
-x,,,,,,x,0,,Y,x,Y,LB,UB,,,,
-x,,,,x,,,0,,Y,,Y,LB,UB,,,,
-x,,,,,x,,0,,Y,,Y,LB,UB,,,,
-x,,,,,,x,0,,Y,,Y,LB,UB,,,,
-,x,,,x,,,0,,Y,x,Y,LB,UB,,,,
-,x,,,,x,,0,,Y,x,Y,LB,UB,,,,
-,x,,,,,x,0,,Y,x,Y,LB,UB,,,,
-,x,,,x,,,0,,Y,,Y,LB,UB,,,,
-,x,,,,x,,0,,Y,,Y,LB,UB,,,,
-,x,,,,,x,0,,Y,,Y,LB,UB,,,,
-,,x,,x,,,0,,Y,x,Y,LB,UB,,,,
-,,x,,,x,,0,,Y,x,Y,LB,UB,,,,
-,,x,,,,x,0,,Y,x,Y,LB,UB,,,,
-,,x,,x,,,0,,Y,,Y,LB,UB,,,,
-,,x,,,x,,0,,Y,,Y,LB,UB,,,,
-,,x,,,,x,0,,Y,,Y,LB,UB,,,,
-,x,,,x,,,0,,Y,x,Y,LB,UB,,,,iris.csv
-,x,,,,x,,0,,Y,x,Y,LB,UB,,,,iris.csv
-,x,,,,,x,0,,Y,x,Y,LB,UB,,,,iris.csv
-,x,,,x,,,0,,Y,,Y,LB,UB,,,,iris.csv
-,x,,,,x,,0,,Y,,Y,LB,UB,,,,iris.csv
-,x,,,,,x,0,,Y,,Y,LB,UB,,,,iris.csv
-,x,,,x,,,0,,Y,x,Y,LB,UB,,,,airquality.csv
-,x,,,,x,,0,,Y,x,Y,LB,UB,,,,airquality.csv
-,x,,,,,x,0,,Y,x,Y,LB,UB,,,,airquality.csv
-,x,,,x,,,0,,Y,,Y,LB,UB,,,,airquality.csv
-,x,,,,x,,0,,Y,,Y,LB,UB,,,,airquality.csv
-,x,,,,,x,0,,Y,,Y,LB,UB,,,,airquality.csv
-,x,,,x,,,0,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,x,,0,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,,x,0,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,x,,,0,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,x,,,0,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,x,,0,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,,x,0,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,,,x,x,,,0.5,,Y,x,Y,LB,UB,,,,
-,,,x,,x,,0.5,,Y,x,Y,LB,UB,,,,
-,,,x,,,x,0.5,,Y,x,Y,LB,UB,,,,
-,,,x,x,,,0.5,,Y,,Y,LB,UB,,,,
-,,,x,,x,,0.5,,Y,,Y,LB,UB,,,,
-,,,x,,,x,0.5,,Y,,Y,LB,UB,,,,
-x,,,,x,,,0.5,,Y,x,Y,LB,UB,,,,
-x,,,,,x,,0.5,,Y,x,Y,LB,UB,,,,
-x,,,,,,x,0.5,,Y,x,Y,LB,UB,,,,
-x,,,,x,,,0.5,,Y,,Y,LB,UB,,,,
-x,,,,,x,,0.5,,Y,,Y,LB,UB,,,,
-x,,,,,,x,0.5,,Y,,Y,LB,UB,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB,UB,,,,
-,x,,,,x,,0.5,,Y,x,Y,LB,UB,,,,
-,x,,,,,x,0.5,,Y,x,Y,LB,UB,,,,
-,x,,,x,,,0.5,,Y,,Y,LB,UB,,,,
-,x,,,,x,,0.5,,Y,,Y,LB,UB,,,,
-,x,,,,,x,0.5,,Y,,Y,LB,UB,,,,
-,,x,,x,,,0.5,,Y,x,Y,LB,UB,,,,
-,,x,,,x,,0.5,,Y,x,Y,LB,UB,,,,
-,,x,,,,x,0.5,,Y,x,Y,LB,UB,,,,
-,,x,,x,,,0.5,,Y,,Y,LB,UB,,,,
-,,x,,,x,,0.5,,Y,,Y,LB,UB,,,,
-,,x,,,,x,0.5,,Y,,Y,LB,UB,,,,
-,x,,,x,,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,x,,0.5,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,,x,0.5,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,x,,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,x,,,0.5,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,x,,0.5,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,,x,0.5,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,,,x,x,,,1,,Y,x,Y,LB,UB,,,,
-,,,x,,x,,1,,Y,x,Y,LB,UB,,,,
-,,,x,,,x,1,,Y,x,Y,LB,UB,,,,
-,,,x,x,,,1,,Y,,Y,LB,UB,,,,
-,,,x,,x,,1,,Y,,Y,LB,UB,,,,
-,,,x,,,x,1,,Y,,Y,LB,UB,,,,
-x,,,,x,,,1,,Y,x,Y,LB,UB,,,,
-x,,,,,x,,1,,Y,x,Y,LB,UB,,,,
-x,,,,,,x,1,,Y,x,Y,LB,UB,,,,
-x,,,,x,,,1,,Y,,Y,LB,UB,,,,
-x,,,,,x,,1,,Y,,Y,LB,UB,,,,
-x,,,,,,x,1,,Y,,Y,LB,UB,,,,
-,x,,,x,,,1,,Y,x,Y,LB,UB,,,,
-,x,,,,x,,1,,Y,x,Y,LB,UB,,,,
-,x,,,,,x,1,,Y,x,Y,LB,UB,,,,
-,x,,,x,,,1,,Y,,Y,LB,UB,,,,
-,x,,,,x,,1,,Y,,Y,LB,UB,,,,
-,x,,,,,x,1,,Y,,Y,LB,UB,,,,
-,,x,,x,,,1,,Y,x,Y,LB,UB,,,,
-,,x,,,x,,1,,Y,x,Y,LB,UB,,,,
-,,x,,,,x,1,,Y,x,Y,LB,UB,,,,
-,,x,,x,,,1,,Y,,Y,LB,UB,,,,
-,,x,,,x,,1,,Y,,Y,LB,UB,,,,
-,,x,,,,x,1,,Y,,Y,LB,UB,,,,
-,x,,,x,,,1,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,x,Y,LB,UB,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,x,,1,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,,,x,1,,Y,,Y,LB,UB,,,,newsgroup_balanced
-,x,,,x,,,1,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,x,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,x,,,1,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,x,,1,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,,,x,1,,Y,,Y,LB,UB,,,,newsgroup_unbalanced
-,x,,,x,,,0,,Y,x,Y,,,,x,,newsgroup_set3
-,x,,,,x,,0,,Y,x,Y,,,,x,,newsgroup_set3
-,x,,,,,x,0,,Y,x,Y,,,,x,,newsgroup_set3
-,x,,,x,,,0,,Y,x,Y,,,,,x,newsgroup_set3
-,x,,,,x,,0,,Y,x,Y,,,,,x,newsgroup_set3
-,x,,,,,x,0,,Y,x,Y,,,,,x,newsgroup_balanced
+x,,x,,,,x,,,,,,,,,x,,,,,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,,,,x,,,,,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,,,,x,,,,,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,x,,,,,,,,,,,,,,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,,,,,,,,,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,,,,,,,,,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,,,x,,x,,,,,,,,,x,,,,,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,,,,x,,,,,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,,,,x,,,,,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,x,,,,,,,,,,,,,,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,,,,,,,,,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,,,,,,,,,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,,x,x,,,,,,,,,x,,,,,,,,Gamma,,,,
+x,,,,,x,,x,,,,,,,,x,,,,,,,,Gamma,,,,
+x,,,,,x,,,x,,,,,,,x,,,,,,,,Gamma,,,,
+x,,,,,x,x,,,,,,,,,,,,,,,,,Gamma,,,,
+x,,,,,x,,x,,,,,,,,,,,,,,,,Gamma,,,,
+x,,,,,x,,,x,,,,,,,,,,,,,,,Gamma,,,,
+x,,x,,,,x,,,,,,,,,x,,,,,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,,,,x,,,,,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,,,,x,,,,,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,,,,,,,,,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,,,,,,,,,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,,,,,,,,,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,,,,x,,,,,,,,Poissan,,,,
+x,,,x,,,,x,,,,,,,,x,,,,,,,,Poissan,,,,
+x,,,x,,,,,x,,,,,,,x,,,,,,,,Poissan,,,,
+x,,,x,,,x,,,,,,,,,,,,,,,,,Poissan,,,,
+x,,,x,,,,x,,,,,,,,,,,,,,,,Poissan,,,,
+x,,,x,,,,,x,,,,,,,,,,,,,,,Poissan,,,,
+x,,,,x,,x,,,,,,,,,x,,,,,,,,Gamma,,,,
+x,,,,x,,,x,,,,,,,,x,,,,,,,,Gamma,,,,
+x,,,,x,,,,x,,,,,,,x,,,,,,,,Gamma,,,,
+x,,,,x,,x,,,,,,,,,,,,,,,,,Gamma,,,,
+x,,,,x,,,x,,,,,,,,,,,,,,,,Gamma,,,,
+x,,,,x,,,,x,,,,,,,,,,,,,,,Gamma,,,,
+,x,,x,,,x,,,,,,,,,x,,,,,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,,,,x,,,,,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,,,,x,,,,,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,,,,,,,,,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,,,,,,,,,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,,,,,,,,,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,,,,x,,,,,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,,,,x,,,,,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,,,,x,,,,,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,,,,,,,,,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,,,,,,,,,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,,,,,,,,,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,,,,x,,,,,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,,,,x,,,,,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,,,,x,,,,,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,,,,,,,,,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,,,,,,,,,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,,,,,,,,,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,,,,x,,,,,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,,,,x,,,,,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,,,,x,,,,,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,,,,,,,,,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,,,,,,,,,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,,,,,,,,,,,,Binomial,,newsgroup_unbalanced,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,,x,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,,,x,x,,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,,,x,,x,,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,,,x,,,x,,,,1,,Y,x,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,,,x,x,,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,,,x,,x,,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+,x,,,,x,,,x,,,,1,,Y,,,Y,LB=UB,LB=UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,,x,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB>UB,LB>UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,,x,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,newsgroup,,
+x,,x,,,,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,newsgroup,,
+x,,x,,,,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,newsgroup,,
+x,,x,,,,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,newsgroup,,
+x,,x,,,,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,newsgroup,,
+x,,x,,,,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,newsgroup,,
+x,,,x,,,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,,,x,x,,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,x,,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,,x,,,,0.5,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,x,,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,x,,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,,,x,,,x,,,,0.5,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,x,,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,x,,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,x,,,,x,,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,x,,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Poissan,,,,
+x,,,,x,,x,,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,x,,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Gamma,,,,
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB = -ve,UB = +ve,,,,Binomial,,newsgroup_unbalanced,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Gaussian,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Poissan,insurance_train1,insurance_train1.csv,insurance_validation1,insurance_validation1.csv
+x,,,,,x,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Binomial,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Binomial,airquality_train2,airquality_validation2,airquality_train2.csv,airquality_validation2.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,0.5,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,0.5,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,0.5,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,0.5,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,0.5,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0.5,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0.5,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,0.5,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,0.5,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,0.5,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,0.5,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,0.5,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,0.5,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,0.5,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,0.5,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,0.5,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,0.5,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,0.5,,Y,,,Y,LB,UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,0.5,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0.5,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,0.5,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,0.5,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+x,,,,,x,x,,,,,,1,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,x,,,,,,1,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,x,,,,,1,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,,x,,,x,,,,1,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,x,,,,x,,,,,,1,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,x,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,x,,,,,,1,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,x,,,,,1,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,x,,,,,,x,,,,1,,Y,,,Y,LB,UB,,,,Gaussian,,,,
+x,,,x,,,x,,,,,,1,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,x,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,x,,,,,,1,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,x,,,,,1,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,x,,,,,x,,,,1,,Y,,,Y,LB,UB,,,,Poissan,,,,
+x,,,,x,,x,,,,,,1,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,x,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,x,,,,,,1,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,x,,,,,1,,Y,,,Y,LB,UB,,,,Gamma,,,,
+x,,,,x,,,,x,,,,1,,Y,,,Y,LB,UB,,,,Gamma,,,,
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB,UB,,,,Binomial,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv
+,x,,x,,,x,,,,,,1,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,x,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,1,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,x,,,,,1,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,,,x,,,,1,,Y,,,Y,LB,UB,,,,Binomial,,newsgroup_unbalanced,,
+,x,,x,,,x,,,,,,0,,Y,x,,Y,,,,x,,Binomial,,newsgroup_set3,,
+,x,,x,,,,x,,,,,0,,Y,x,,Y,,,,x,,Binomial,,newsgroup_set3,,
+,x,,x,,,,,x,,,,0,,Y,x,,Y,,,,x,,Binomial,,newsgroup_set3,,
+,x,,x,,,x,,,,,,0,,Y,x,,Y,,,,,x,Binomial,,newsgroup_set3,,
+,x,,x,,,,x,,,,,0,,Y,x,,Y,,,,,x,Binomial,,newsgroup_set3,,
+,x,,x,,,,,x,,,,0,,Y,x,,Y,,,,,x,Binomial,,newsgroup_balanced,,
