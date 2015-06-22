@@ -97,9 +97,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", "Binomial requires the response to be a 2-class categorical");
-      else if( _response != null ) 
+      else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         _initialPrediction = Math.log(mean / (1.0 - mean));
+        if (_offset != null) throw H2O.unimpl("Newton-Raphson iteration needed.");
+      }
       break;
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
