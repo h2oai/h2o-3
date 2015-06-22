@@ -312,7 +312,6 @@ public class DeepLearningModelInfo extends Iced {
             new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
 
-    final String format = "%7g";
     for (int i = 0; i < neurons.length; ++i) {
       table.set(i, 0, i + 1);
       table.set(i, 1, neurons[i].units);

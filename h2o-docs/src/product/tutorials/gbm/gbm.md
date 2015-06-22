@@ -21,7 +21,7 @@ Before creating a model, import data into H2O:
 0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the drop. 
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
   ![Importing Files](../images/GBM_ImportFile.png)
 
@@ -31,14 +31,16 @@ Before creating a model, import data into H2O:
 Now, parse the imported data: 
 
 0. Click the **Parse these files...** button. 
-**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
+
+ >**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
+
 0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
 0. If the data uses a separator, select it from the drop-down **Separator** list. 
 0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
+  >**NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
 
 
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  
@@ -46,7 +48,7 @@ Now, parse the imported data:
   ![Parsing Data](../images/GBM_Parse.png)
 
 
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  **NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 
 

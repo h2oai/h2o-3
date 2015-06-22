@@ -15,6 +15,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 
@@ -223,7 +224,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       // Use for all k-trees the same seed. NOTE: this is only to make a fair
       // view for all k-trees
-      final long[] _distribution = _model._output._distribution;
+      final double[] _distribution = _model._output._distribution;
       long rseed = rand.nextLong();
         // Initially setup as-if an empty-split had just happened
       for (int k = 0; k < _nclass; k++) {
@@ -233,8 +234,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // inverse of the first (and that the same columns were picked)
           if( k==1 && _nclass==2 && !_parms._binomial_double_trees) continue;
           ktrees[k] = new DRFTree(fr, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, mtrys, rseed);
-          boolean isBinom = isClassifier();
-          new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0], isBinom)); // The "root" node
+          new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
         }
       }
 
@@ -276,6 +276,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
                 ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _response.mean());
+                if (!isClassifier() && _weights != null && (_weights.min() != 1 || _weights.max() != 1))
+                  ln._pred = (float)new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
               }
               continue;
             }
@@ -488,7 +490,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
+  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double sum = 0;
     if (_nclass > 2 || (_nclass == 2 && _parms._binomial_double_trees) ) { //multinomial or binomial with 1 tree per class
       for (int k = 0; k < _nclass; k++)

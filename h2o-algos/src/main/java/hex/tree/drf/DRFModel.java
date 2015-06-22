@@ -12,7 +12,6 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     int _mtries = -1;
     float _sample_rate = 0.632f;
-    public boolean _build_tree_one_node = false;
     public boolean _binomial_double_trees = true;
     public DRFParameters() {
       super();
@@ -35,15 +34,8 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=tmp.length;
-    for( int i=0; i<tmp.length; i++ )
-      tmp[i] = chks[i].atd(row_in_chunk);
-    return score0(tmp,preds);
-  }
-
-  @Override protected double[] score0(double data[], double preds[]) {
-    super.score0(data, preds);
+  @Override protected double[] score0(double data[], double preds[], double weight, double offset) {
+    super.score0(data, preds, weight, offset);
     int N = _parms._ntrees;
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
       preds[0] /= N;

@@ -7,6 +7,8 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.JCodeGen;
+import water.util.SB;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
@@ -37,6 +39,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
     // Number of good rows in training frame (not skipped)
     public long _nobs;
+
+    // Total column variance for expanded and transformed data
+    public double _total_variance;
 
     // Categorical offset vector
     public int[] _catOffsets;
@@ -117,8 +122,10 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     for(int i = 0; i < _parms._nv; i++) {
       preds[i] = 0;
       for (int j = 0; j < _output._ncats; j++) {
-        int level = (int)data[_output._permutation[j]];
-        if (_output._catOffsets[j]+level >= _output._catOffsets[j+1]) continue;   // Skip categorical levels not in training frame
+        double tmp = data[_output._permutation[j]];
+        int last_cat = _output._catOffsets[j+1]-_output._catOffsets[j]-1;   // Missing categorical values are mapped to extra (last) factor
+        int level = Double.isNaN(tmp) ? last_cat : (int)tmp - (_parms._use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
+        if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
         preds[i] += _output._v[_output._catOffsets[j]+level][i];
       }
 
@@ -138,5 +145,45 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;
+  }
+
+  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
+    sb = super.toJavaInit(sb, fileContextSB);
+    sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
+    sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
+    sb.ip("public int nclasses() { return "+_parms._nv+"; }").nl();
+
+    if (_output._nnums > 0) {
+      JCodeGen.toStaticVar(sb, "NORMMUL", _output._normMul, "Standardization/Normalization scaling factor for numerical variables.");
+      JCodeGen.toStaticVar(sb, "NORMSUB", _output._normSub, "Standardization/Normalization offset for numerical variables.");
+    }
+    JCodeGen.toStaticVar(sb, "CATOFFS", _output._catOffsets, "Categorical column offsets.");
+    JCodeGen.toStaticVar(sb, "PERMUTE", _output._permutation, "Permutation index vector.");
+    JCodeGen.toStaticVar(sb, "EIGVECS", _output._v, "Eigenvector matrix.");
+    return sb;
+  }
+
+  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
+    SB model = new SB();
+    bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
+    final int cats = _output._ncats;
+    final int nums = _output._nnums;
+    bodySb.i().p("final int nstart = CATOFFS[CATOFFS.length-1];").nl();
+    bodySb.i().p("for(int i = 0; i < ").p(_parms._nv).p("; i++) {").nl();
+    // Categorical columns
+    bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
+    bodySb.i(2).p("double d = data[PERMUTE[j]];").nl();
+    bodySb.i(2).p("int last = CATOFFS[j+1]-CATOFFS[j]-1;").nl();
+    bodySb.i(2).p("int c = Double.isNaN(d) ? last : (int)d").p(_parms._use_all_factor_levels ? ";":"-1;").nl();
+    bodySb.i(2).p("if(c < 0 || c > last) continue;").nl();
+    bodySb.i(2).p("preds[i] += EIGVECS[CATOFFS[j]+c][i];").nl();
+    bodySb.i(1).p("}").nl();
+
+    // Numeric columns
+    bodySb.i(1).p("for(int j = 0; j < ").p(nums).p("; j++) {").nl();
+    bodySb.i(2).p("preds[i] += (data[PERMUTE[j" + (cats > 0 ? "+" + cats : "") + "]]-NORMSUB[j])*NORMMUL[j]*EIGVECS[j" + (cats > 0 ? "+ nstart" : "") +"][i];").nl();
+    bodySb.i(1).p("}").nl();
+    bodySb.i().p("}").nl();
+    fileCtxSb.p(model);
   }
 }

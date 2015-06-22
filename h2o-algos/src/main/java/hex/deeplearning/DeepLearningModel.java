@@ -42,9 +42,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
      * Otherwise, there's 1 response at the end, and no other reserved columns in the data
      * @return Number of features (possible predictors)
      */
-    @Override public int nfeatures() {
-      return _names.length - (autoencoder ? 0 : 1);
-    }
     public DeepLearningModelOutput() { super(); autoencoder = false;}
     public DeepLearningModelOutput(DeepLearning b) {
       super(b);
@@ -141,7 +138,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
 
     public double epoch_counter;
-    public long training_samples;
+    public double training_samples;
     public long training_time_ms;
 
     //training/validation sets
@@ -241,7 +238,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
-    colHeaders.add("Samples"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
     if (!_output.autoencoder) {
@@ -466,11 +463,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
    * @param progressKey key of the progress
+   * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
     final long now = System.currentTimeMillis();
-    epoch_counter = (float)model_info().get_processed_total()/training_rows;
+    epoch_counter = (double)model_info().get_processed_total()/training_rows;
     final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
     run_time += time_last_iter_millis;
 
@@ -478,7 +476,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // and update the progress message
     Job.Progress prog = DKV.getGet(progressKey);
     float progress = prog == null ? 0 : prog.progress();
-    String msg = "Training at " + model_info().get_processed_total() * 1000 / run_time + " samples/s..."
+    String msg = "Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
@@ -508,9 +506,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
+          if (iteration>=1)
+            Log.info("Map/Reduce iteration #" + String.format("%,d", iteration));
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
                   + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-                  + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+                  + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+          Log.info(msg);
         }
       }
 
@@ -529,7 +530,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
-        err.training_samples = model_info().get_processed_total();
+        err.training_samples = (double)model_info().get_processed_total();
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
         err.classification = _output.isClassifier();
@@ -689,7 +690,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //        }
 
           // print the freshly scored model to ASCII
-          if (keep_running)
+          if (keep_running && printme)
             for (String s : toString().split("\n")) Log.info(s);
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
@@ -758,20 +759,26 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
+  @Override
+  protected double[] score0(double[] data, double[] preds) {
+    return score0(data, preds, 1, 0);
+  }
+
   /**
    * Predict from raw double values representing the data
    * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public double[] score0(double[] data, double[] preds) {
+  @Override
+  public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
-    DeepLearningTask.step(-1, neurons, model_info, null, false, null);
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
     float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
@@ -790,6 +797,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     return preds;
   }
+
 
   /**
    * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
@@ -874,8 +882,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
-          DeepLearningTask.step(-1, neurons, model_info, null, false, null);
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
+          DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
@@ -914,8 +922,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data); // expands categoricals inside
-    DeepLearningTask.step(-1, neurons, model_info, null, false, null); // reconstructs data in expanded space
+    ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
     float[] in  = neurons[0]._a.raw(); //input (expanded)
     float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
@@ -964,8 +972,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
-    if (model_info().get_params()._elastic_averaging)
-      DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), DKV.getGet(model_info.elasticAverageModelInfoKey()));
+    if (model_info().get_params()._elastic_averaging) {
+      DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());
+      if (eamodel != null)
+        DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), eamodel);
+    }
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
   }

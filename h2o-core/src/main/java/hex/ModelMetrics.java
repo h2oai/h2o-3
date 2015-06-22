@@ -144,7 +144,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
-      throw H2O.unimpl();
+      assert(weight==1 && offset == 0);
+      return perRow(ds, yact, m);
     }
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;

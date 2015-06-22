@@ -19,9 +19,6 @@ function() {
 src()
 
 
-#h <- h2o.init("localhost", 54321)
-h <- h2o.init(strict_version_check=F)
-conn <- h
-#hex <- as.h2o(iris, h)
-#
+conn <- h2o.init("localhost", 54321)
+hex <- as.h2o(iris, conn)
 #hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))

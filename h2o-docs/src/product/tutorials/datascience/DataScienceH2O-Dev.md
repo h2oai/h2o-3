@@ -178,7 +178,7 @@ The GLM suite includes:
 
 - **Offset_column**: Select a column to use as the offset. 
 
-- **Weights_column**: Select a column to use for the observation weights.
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
 - **Family**: Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -384,6 +384,8 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+
 - **Ntrees**: Specify the number of trees.  
 
 - **Max\_depth**: Specify the maximum tree depth.
@@ -402,7 +404,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. 
 
 - **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -415,8 +417,6 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 - **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
-
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 
 ###Interpreting a DRF Model
@@ -784,6 +784,8 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+
 - **Ntrees**: Specify the number of trees.  
 
 - **Max\_depth**: Specify the maximum tree depth.  
@@ -809,6 +811,8 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
 - **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees.   
+
+- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
@@ -933,6 +937,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: Select the column to use as the independent variable.
+
+- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
 - **Activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).   
 

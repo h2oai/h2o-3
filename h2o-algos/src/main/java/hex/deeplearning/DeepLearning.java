@@ -92,8 +92,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             true,  // always add a bucket for missing values
-            false, // no weights
-            false  // no offset
+            parms._weights_column != null, // observation weights
+            parms._offset_column != null
       );
   }
 
@@ -290,8 +290,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             trainSamplingFactors = mp._class_sampling_factors.clone(); //clone: don't modify the original
           }
           train = sampleFrameStratified(
-                  train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
-          model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
+                  train, train.lastVec(), train.vec(model._output.weightsName()), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
+          Vec l = train.lastVec();
+          Vec w = train.vec(model._output.weightsName());
+          MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
+          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
         }
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
@@ -302,7 +305,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
           if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
             new ProgressUpdate("Sampling validation data (stratified)...").fork(_progressKey);
-            validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(), null,
+            validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(),  val_fr.vec(model._output.weightsName()), null,
                     mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
           } else {
             new ProgressUpdate("Sampling validation data...").fork(_progressKey);
@@ -330,7 +333,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
-          model.doScoring(trainScoreFrame, validScoreFrame, self(), null); //get the null model reconstruction error
+          model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
         }
         // put the initial version of the model into DKV
         model.update(self());
@@ -339,13 +342,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         new ProgressUpdate("Training...").fork(_progressKey);
 
         //main loop
+        int iteration = 0;
         do {
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
-                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepLearningTask (self(),        model.model_info(), rowFraction(train, mp, model)).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model), ++iteration).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
+                  new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model), ++iteration).doAllNodes(             ).model_info()): //replicated data + multi-node mode
+                  new DeepLearningTask (self(),        model.model_info(), rowFraction(train, mp, model), ++iteration).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
         }
-        while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
+        while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
 
         // replace the model with the best model so far (if it's better)
         if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
@@ -360,14 +364,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(self());
-            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey);
+            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, -1);
             assert(best_model.error() == model.error());
           }
         }
 
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
-          Log.info("Finished training the Deep Learning model.");
+          Log.info("Finished training the Deep Learning model (" + iteration + " Map/Reduce iterations)");
           Log.info(model);
           Log.info("==============================================================================================================================================================================");
         }

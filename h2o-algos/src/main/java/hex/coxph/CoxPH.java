@@ -582,7 +582,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     @Override
-    protected void chunkInit(){
+    protected boolean chunkInit(){
       final int n_coef = _beta.length;
       sumWeightedCatX  = MemoryManager.malloc8d(n_coef - (_dinfo._nums - _n_offsets));
       sumWeightedNumX  = MemoryManager.malloc8d(_dinfo._nums);
@@ -598,6 +598,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       rcumsumXRisk     = malloc2DArray(_n_time, n_coef);
       sumXXRiskEvents  = malloc3DArray(_n_time, n_coef, n_coef);
       rcumsumXXRisk    = malloc3DArray(_n_time, n_coef, n_coef);
+      return true;
     }
 
     @Override
