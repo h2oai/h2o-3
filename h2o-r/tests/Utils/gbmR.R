@@ -1,7 +1,10 @@
 checkGBMModel <- function(myGBM.h2o, myGBM.r, h2oTest, RTest) {
   #Check GBM model against R
   Log.info("MSE by tree in H2O:")
-  expect_true(length(myGBM.h2o@model$scoring_history$training_MSE) == n.trees)
+
+  #The scoring history only shows scored trees - need to set score_each_iteration to TRUE if this test is to be re-enabled
+  #expect_true(length(myGBM.h2o@model$scoring_history$training_MSE) == n.trees)
+
   Log.info("Gaussian Deviance by tree in R (i.e. the per tree 'train error'): \n")
   print(myGBM.r$train.error)
   #Log.info("Expect these to be close... mean of the absolute differences is < .5, and sd < 0.1")

@@ -173,7 +173,7 @@ public class AUC2 extends Iced {
   /** @return the default CM, or null for an empty AUC */
   public double[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
   /** @return the default threshold; threshold that maximizes the default criterion */
-  public double defaultThreshold( ) { return _ths[_max_idx]; }
+  public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
   public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
 

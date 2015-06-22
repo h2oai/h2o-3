@@ -685,7 +685,7 @@ public abstract class Neurons {
      * @param data Data (training columns and responses) to extract the training columns
      *             from to be mapped into the input neuron layer
      */
-    public void setInput(long seed, final double[] data, int skipAtEnd) {
+    public void setInput(long seed, final double[] data) {
 //      Log.info("Data: " + ArrayUtils.toString(data));
       assert(_dinfo != null);
       double [] nums = MemoryManager.malloc8d(_dinfo._nums); // a bit wasteful - reallocated each time
@@ -710,7 +710,7 @@ public abstract class Neurons {
         }
         ncats++;
       }
-      final int n = data.length - skipAtEnd; // data contains only input features - no response is included
+      final int n = data.length - (_dinfo._weights ? 1 : 0) - (_dinfo._offset ? 1 : 0);
       for(;i < n;++i){
         double d = data[i];
         if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];

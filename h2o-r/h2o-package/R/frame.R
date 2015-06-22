@@ -330,7 +330,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   params$dataset <- data@frame_id
   params$ratios <- .collapse(ratios)
   if (!missing(destination_frames))
-    params$dest_keys <- .collapse.char(destination_frames)
+    params$destination_frames <- .collapse.char(destination_frames)
 
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame", .params = params)
   job_key <- res$key$name

@@ -1,6 +1,7 @@
 package hex.tree.drf;
 
 
+import hex.ModelMetricsBinomial;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import water.*;
@@ -81,7 +82,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(0, 0, 0, 0, 0),
-                    ard(3, 64, 0, 2, 0),
+                    ard(3, 65, 0, 1, 0),
                     ard(0, 1, 0, 0, 0),
                     ard(0, 0, 1, 30, 0),
                     ard(0, 0, 0, 1, 39)),
@@ -103,7 +104,7 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(3, 0, 0, 0, 0),
-                    ard(2, 178, 1, 3, 0),
+                    ard(2, 179, 1, 2, 0),
                     ard(0, 1, 1, 0, 0),
                     ard(0, 3, 2, 68, 1),
                     ard(0, 0, 0, 3, 87)),
@@ -574,7 +575,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2087, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20841945889333927, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -628,6 +629,7 @@ public class DRFTest extends TestUtil {
   @Test
   public void testNoRowWeights() {
     Frame tfr = null, vfr = null;
+    DRFModel drf = null;
 
     Scope.enter();
     try {
@@ -643,7 +645,7 @@ public class DRFTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
-      DRFModel drf = job.trainModel().get();
+      drf = job.trainModel().get();
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
@@ -652,19 +654,25 @@ public class DRFTest extends TestUtil {
       double mse = drf._output._training_metrics.mse();
       assertEquals(0.07692307692307693, mse, 1e-8);
 
+      double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
+      assertEquals(0.7094017094017094, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
+      assertEquals(2.656828953454668, ll, 1e-6);
+
       job.remove();
-      drf.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (drf != null) drf.remove();
+      Scope.exit();
     }
-    Scope.exit();
   }
 
-  @Ignore
   @Test
   public void testRowWeightsOne() {
     Frame tfr = null, vfr = null;
+    DRFModel drf = null;
 
     Scope.enter();
     try {
@@ -681,7 +689,7 @@ public class DRFTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
-      DRFModel drf = job.trainModel().get();
+      drf = job.trainModel().get();
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
@@ -689,18 +697,26 @@ public class DRFTest extends TestUtil {
 
       double mse = drf._output._training_metrics.mse();
       assertEquals(0.07692307692307693, mse, 1e-8); //Note: better results than non-shuffled
+
+      double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
+      assertEquals(0.7094017094017094, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
+      assertEquals(2.656828953454668, ll, 1e-6);
+
       job.remove();
-      drf.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 
   @Test
   public void testNoRowWeightsShuffled() {
     Frame tfr = null, vfr = null;
+    DRFModel drf = null;
 
     Scope.enter();
     try {
@@ -716,7 +732,7 @@ public class DRFTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
-      DRFModel drf = job.trainModel().get();
+      drf = job.trainModel().get();
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
@@ -724,19 +740,26 @@ public class DRFTest extends TestUtil {
 
       double mse = drf._output._training_metrics.mse();
       assertEquals(0.11538629999502548, mse, 1e-8); //different rows are sampled -> results differ from unshuffled data
+
+      double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
+      assertEquals(0.5640962000187928, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
+      assertEquals(0.31942928561508804, ll, 1e-6);
+
       job.remove();
-      drf.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 
-  @Ignore
   @Test
   public void testRowWeights() {
     Frame tfr = null, vfr = null;
+    DRFModel drf = null;
 
     Scope.enter();
     try {
@@ -753,20 +776,27 @@ public class DRFTest extends TestUtil {
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
-      DRFModel drf = job.trainModel().get();
+      drf = job.trainModel().get();
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
       assertEquals(1.0, mm.auc()._auc, 1e-8);
 
       double mse = drf._output._training_metrics.mse();
-      assertEquals(0.07692307692307693, mse, 1e-8);
+      assertEquals(0.09090909090909091, mse, 1e-8); //different than above - different row sampling
+
+      double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
+      assertEquals(0.6565656565656566, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
+      assertEquals(3.1398887631736985, ll, 1e-6);
+
       job.remove();
-      drf.delete();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
     }
-    Scope.exit();
   }
 }

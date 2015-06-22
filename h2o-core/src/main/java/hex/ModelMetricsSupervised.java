@@ -2,6 +2,8 @@ package hex;
 
 import water.H2O;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.FrameUtils;
 
 public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes
@@ -13,7 +15,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
     _sigma = sigma;
   }
   public final double r2() {
-    double var = _sigma*_sigma; //FIXME PUBDEV-677: variance must use observation weights as well
+    double var = _sigma*_sigma;
     return 1.0-(_MSE /var);
   }
 
@@ -33,5 +35,13 @@ public class ModelMetricsSupervised extends ModelMetrics {
     }
 
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) { return null; }
+  }
+
+  protected static double weightedSigma(Model m, Frame f, double sigma) {
+    Vec w = f.vec(m._output.weightsName());
+    Vec y = f.vec(m._output.responseName());
+    if (w != null && y != null)
+      return new FrameUtils.WeightedSigma().doAll(y, w).weightedSigma();
+    return sigma;
   }
 }

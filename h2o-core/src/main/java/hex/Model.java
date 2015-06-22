@@ -4,10 +4,8 @@ import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
 import water.fvec.*;
-import water.serial.AutoBufferSerializer;
 import water.util.*;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -27,7 +25,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
-  public double defaultThreshold(){return .5;}
+  /**
+   * Default threshold for assigning class labels to the target class (for binomial models)
+   * @return threshold in 0...1
+   */
+  public final double defaultThreshold() {
+    if (_output.nclasses() != 2 || _output._training_metrics == null)
+      return 0.5;
+    if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultThreshold();
+    if (_output._training_metrics != null && ((ModelMetricsBinomial)_output._training_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
+    return 0.5;
+  }
+
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   /** Model-specific parameter class.  Each model sub-class contains an
@@ -290,11 +301,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
-    // Vec layout is  [c1,c2,...,cn,w?,r,o?], cn are predcitor cols, r is reponse, w and o are weights and offset, both are optional
-    public int responseIdx    () {
-      if(!isSupervised()) return -1;
-      return _names.length-1;
-    }
+    // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx     () {
       if(!_hasWeights) return -1;
       return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1;
@@ -302,6 +309,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int offsetIdx      () {
       if(!_hasOffset) return -1;
       return _names.length - (isSupervised()?1:0) - 1;
+    }
+    public int responseIdx    () {
+      if(!isSupervised()) return -1;
+      return _names.length-1;
     }
 
     /** The names of the levels for an enum (categorical) response column. */
@@ -315,7 +326,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String cns[] = classNames();
       return cns==null ? 1 : cns.length;
     }
-    public long [] _distribution;
+    public double [] _distribution;
     public double [] _modelClassDist;
     public double [] _priorClassDist;
     // Note: some algorithms MUST redefine this method to return other model categories
@@ -620,30 +631,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean _computeMetrics;  // Column means of test frame
     final boolean _hasWeights;
 
-
     BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics ) {
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
       _hasWeights = testHasWeights;
-
     }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      int n = chks.length;
-      Chunk offsetChunk = null, weightsChunk = null, responseChunk = null;
-      if(_output.hasOffset())
-        offsetChunk = chks[_output.offsetIdx()]; // offset chunk is always the last, can not use output offsetChunkIdx call here cause response and/or weights might be missing
-      if(_hasWeights && _computeMetrics)
-        weightsChunk = chks[_output.weightsIdx()];
-      boolean hasWeightsOrOffset = offsetChunk != null || weightsChunk != null;
-      if(hasWeightsOrOffset) {
-        if(offsetChunk == null)
-          offsetChunk = new C0DChunk(0, chks[0]._len);
-        if(weightsChunk == null)
-          weightsChunk = new C0DChunk(1, chks[0]._len);
-        chks = Arrays.copyOf(chks, n);
-      }
+      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
+      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
+      Chunk responseChunk = null;
       double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
@@ -657,10 +655,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        if (hasWeightsOrOffset && weightsChunk.atd(row) == 0) continue;
-        double [] p = hasWeightsOrOffset
-          ?score0(chks, weightsChunk.atd(row), offsetChunk.atd(row), row, tmp, preds)
-          :score0(chks, row, tmp, preds);
+        double weight = weightsChunk.atd(row);
+        if (weight == 0) continue;
+        double offset = offsetChunk.atd(row);
+        double [] p = score0(chks, weight, offset, row, tmp, preds);
         if (_computeMetrics) {
           if(isSupervised()) {
             actual[0] = (float)responseChunk.atd(row);
@@ -668,10 +666,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             for(int i = 0; i < actual.length; ++i)
               actual[i] = (float)chks[i].atd(row);
           }
-          if (hasWeightsOrOffset) {
-            _mb.perRow(preds, actual, weightsChunk.atd(row), offsetChunk.atd(row), Model.this);
-          } else
-            _mb.perRow(preds, actual, Model.this);
+          _mb.perRow(preds, actual, weight, offset, Model.this);
         }
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
@@ -687,24 +682,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=_output._names.length;
-    int nfeatures = _output.nfeatures();
-    for( int i=0; i<nfeatures; i++ )
-      tmp[i] = chks[i].atd(row_in_chunk);
-    double [] scored = score0(tmp,preds);
-    if(isSupervised()) {
-      // Correct probabilities obtained from training on oversampled data back to original distribution
-      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-      if( _output.isClassifier()) {
-        if (_parms._balance_classes)
-          GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
-        //assign label at the very end (after potentially correcting probabilities)
-        scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
-      }
-    }
-    return scored;
+    return score0(chks, 1, 0, row_in_chunk, tmp, preds);
   }
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+    assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     double [] scored = score0(tmp, preds, weight, offset);
@@ -725,8 +706,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
+
+  /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
-    throw H2O.unimpl();
+    assert (weight == 1 && offset == 0) : "Override this method for non-trivial weight/offset!";
+    return score0(data, preds);
   }
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.

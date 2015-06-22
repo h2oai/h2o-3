@@ -323,7 +323,8 @@ public class Frame extends Lockable<Frame> {
   /**   Finds the matching column index, or -1 if missing
    *  @return the matching column index, or -1 if missing */
   public int find( Vec vec ) {
-    Vec[] vecs = vecs();
+    Vec[] vecs = vecs(); //warning: side-effect
+    if (vec == null) return -1;
     for( int i=0; i<vecs.length; i++ )
       if( vec.equals(vecs[i]) )
         return i;
