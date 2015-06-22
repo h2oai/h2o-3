@@ -76,12 +76,14 @@ class H2OConnection(object):
         print "No instance found at ip and port: " + ip + ":" + str(port) + ". Trying to start local jar..."
         print
         print
-        if os.path.exists(os.path.join(sys.prefix, "h2o_jar/h2o.jar")):
+        path_to_jar = os.path.exists(os.path.join(sys.prefix, "h2o_jar", "h2o.jar"))
+        if path_to_jar:
           if not ice_root:
             ice_root = tempfile.mkdtemp()
           cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root)
         else:
           print "No jar file found. Could not start local instance."
+          print "No h2o jar found at: " + path_to_jar
           raise
     __H2OCONN__._cld = cld
 
@@ -383,7 +385,15 @@ class H2OConnection(object):
     for k,v in kwargs.iteritems():
       if isinstance(v, list):
         x = '['
-        x += ','.join([str(l).encode("utf-8") for l in v])
+        for l in v:
+          if isinstance(l,list):
+            x += '['
+            x += ','.join([str(e).encode("utf-8") for e in l])
+            x += ']'
+          else:
+            x += str(l).encode("utf-8")
+          x += ','
+        x = x[:-1]
         x += ']'
       else:
         x = str(v).encode("utf-8")

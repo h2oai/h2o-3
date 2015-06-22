@@ -32,6 +32,15 @@ def vec_math_ops(ip,port):
     row, col = h2o_data1.dim()
 
     c = random.randint(0,col-1)
+    for d in range(1,6):
+        h2o_signif = h2o.signif(h2o_data5[c], digits=d)
+        h2o_round = h2o.round(h2o_data5[c], digits=d+4)
+        s = h2o_signif[0]
+        r = h2o_round[0]
+        assert s == r, "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
+    h2o_transposed = h2o.transpose(h2o_data1[c])
+    x, y = h2o_transposed.dim()
+    assert x == 1 and y == 10, "Expected 1 row and 10 columns, but got {0} rows and {1} columns".format(x,y)
     h2o.np_comparison_check(h2o.cos(h2o_data1[c]), np.cos(np_data1[:,c]), 10)
     h2o.np_comparison_check(h2o.sin(h2o_data1[c]), np.sin(np_data1[:,c]), 10)
     h2o.np_comparison_check(h2o.tan(h2o_data1[c]), np.tan(np_data1[:,c]), 10)
@@ -79,7 +88,7 @@ def vec_math_ops(ip,port):
     for c in range(col):
         h2o_val = h2o.all(h2o_data5[c])
         num_val = True if np.all(np_data5[:,c]) else False
-        assert h2o_val == num_val, "check unsuccessful! h2o computed {0} and math computed {1}. expected equal " \
+        assert h2o_val == num_val, "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal " \
                                    "values between h2o and numpy".format(h2o_val,num_val)
 
 if __name__ == "__main__":

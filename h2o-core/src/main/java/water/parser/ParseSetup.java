@@ -1,9 +1,11 @@
 package water.parser;
 
-import water.*;
+import water.DKV;
+import water.Iced;
+import water.Key;
+import water.MRTask;
 import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OInternalParseException;
 import water.exceptions.H2OParseException;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Frame;
@@ -11,7 +13,6 @@ import water.fvec.Vec;
 import water.fvec.UploadFileVec;
 import water.fvec.FileVec;
 import water.fvec.ByteVec;
-import water.util.Log;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -74,7 +75,7 @@ public final class ParseSetup extends Iced {
     this(ps.parse_type, ps.separator, ps.single_quotes, ps.check_header,
             GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
             null, ps.na_strings, null, ps.chunk_size);
-    if(ps.parse_type == null) _parse_type = ParserType.AUTO;
+    if(ps.parse_type == null) _parse_type = ParserType.GUESS;
     if(ps.separator == 0) _separator = GUESS_SEP;
   }
 
@@ -106,6 +107,9 @@ public final class ParseSetup extends Iced {
    * Used by Ray's schema magic
    */
   public ParseSetup() {}
+
+  public String[] getColumnNames() { return _column_names; }
+  public String[][] getData() { return _data; }
 
   public String[] getColumnTypeStrings() {
     String[] types = new String[_column_types.length];
@@ -165,10 +169,9 @@ public final class ParseSetup extends Iced {
         Double.parseDouble(s);
         return false;       // Number in 1st row guesses: No Column Header
       } catch (NumberFormatException e) { /*Pass - determining if number is possible*/ }
-      if( ParseTime.attemptTimeParse(str.setTo(s)) != Long.MIN_VALUE ) return false;
-      ParseTime.attemptUUIDParse0(str.setTo(s));
-      ParseTime.attemptUUIDParse1(str);
-      if( str.get_off() != -1 ) return false; // Valid UUID parse
+      str.setTo(s);
+      if(ParseTime.isTime(str)) return false;
+      if(ParseUUID.isUUID(str)) return false;
     }
     return true;
   }
@@ -188,7 +191,7 @@ public final class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup(Key[] fkeys, boolean singleQuote, int checkHeader) {
-    return guessSetup(fkeys, new ParseSetup(ParserType.AUTO, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null));
+    return guessSetup(fkeys, new ParseSetup(ParserType.GUESS, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null));
   }
 
   /**
@@ -447,7 +450,7 @@ public final class ParseSetup extends Iced {
       case SVMLight: return SVMLightParser.guessSetup(bits);
       case XLS:      return      XlsParser.guessSetup(bits);
       case ARFF:     return      ARFFParser.guessSetup(bits, sep, singleQuotes, columnNames, naStrings);
-      case AUTO:
+      case GUESS:
         for( ParserType pTypeGuess : guessFileTypeOrder ) {
           try {
             ParseSetup ps = guessSetup(bits,pTypeGuess,sep,ncols,singleQuotes,checkHeader,columnNames,columnTypes, domains, naStrings);

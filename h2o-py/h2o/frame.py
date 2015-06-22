@@ -393,6 +393,56 @@ class H2OFrame:
     res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(urllib.quote(vec._expr.eager()), "C1"))
     return res["domain"][0]
 
+  def nlevels(self, col=0):
+    """
+    Get the number of factor levels for this frame and the specified column index.
+
+    :param col: A column index in this H2OFrame.
+    :return: an integer.
+    """
+    nlevels = self.levels(col=col)
+    return len(nlevels) if nlevels else 0
+
+  def setLevel(self, level):
+    """
+    A method to set all column values to one of the levels.
+    :param level: The level at which the column will be set (a string)
+    :return: An H2OFrame with all entries set to the desired level
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if len(self) != 1: raise(ValueError, "`setLevel` can only be called on a single H2OVec or an H2OFrame with "
+                                         "one column")
+    return H2OFrame(vecs=[self[0].setLevel(level=level)])
+
+  def setLevels(self, levels):
+    """
+    Works on a single categorical vector. New domains must be aligned with the old domains. This call has SIDE
+    EFFECTS and mutates the column in place (does not make a copy).
+    :param level: The level at which the column will be set (a string)
+    :param x: A single categorical column.
+    :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
+    old levels.
+    :return: None
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if len(self) != 1: raise(ValueError, "`setLevels` can only be called on a single H2OVec or an H2OFrame with "
+                                         "one column")
+    self[0].setLevels(levels=levels)
+
+  def as_date(self,format):
+    """
+    Return the column with all elements converted to millis since the epoch.
+    :param format: The date time format string
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if len(self) != 1: raise(ValueError, "`setLevels` can only be called on a single H2OVec or an H2OFrame with "
+                                         "one column")
+    return H2OFrame(vecs=[self[0].as_date(format=format)])
+
   def setNames(self,names):
     """
     Change the column names to `names`.
@@ -1076,27 +1126,22 @@ class H2OFrame:
     """
     return sum([vec.sum() for vec in self._vecs])
 
+  def anyfactor(self):
+    """
+    :return: Whether or not the frame has any factor columns
+    """
+    return any([vec.anyfactor() for vec in self._vecs])
+
   def var(self):
     """
     :return: The covariance matrix of the columns in this H2OFrame.
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
+    frame_keys = [self.send_frame()]
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,key)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    expr = "(= !{} (var %{} () %FALSE \"everything\"))".format(tmp_key,frame_keys[0])
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
   def transpose(self):
     """
@@ -1104,21 +1149,42 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
+    frame_keys = [self.send_frame()]
     tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (t %{}))".format(tmp_key,key)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    expr = "(= !{} (t %{}))".format(tmp_key,frame_keys[0])
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def table(self, data2=None):
+    """
+    :return: a frame of the counts at each combination of factor levels
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    if data2: frame_keys.append(data2.send_frame())
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (table %{} {}))".format(tmp_key,frame_keys[0],"%"+frame_keys[1] if data2 else "()")
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def scale(self, center=True, scale=True):
+    """
+    Centers and/or scales the columns of the H2OFrame
+    :return: H2OFrame
+    :param center: either a ‘logical’ value or numeric list of length equal to the number of columns of the H2OFrame
+    :param scale: either a ‘logical’ value or numeric list of length equal to the number of columns of H2OFrame.
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if   isinstance(center, bool) and isinstance(scale, bool):
+      return H2OFrame(vecs=[vec.scale(center=center, scale=scale) for vec in self._vecs])
+    elif isinstance(center, list) and isinstance(scale, bool):
+      return H2OFrame(vecs=[vec.scale(center=c, scale=scale) for vec, c in zip(self._vecs,center)])
+    elif isinstance(center, list) and isinstance(scale, list):
+      return H2OFrame(vecs=[vec.scale(center=c, scale=s) for vec, c, s in zip(self._vecs, center, scale)])
+    elif isinstance(center, bool) and isinstance(scale, list):
+      return H2OFrame(vecs=[vec.scale(center=center, scale=s) for vec, s in zip(self._vecs,scale)])
+    else: raise(ValueError, "`center` and `scale` arguments (for a frame) must be bools or lists of numbers, but got "
+                            "center: {0}, scale: {1}".format(center, scale))
 
   def signif(self, digits=6):
     """
@@ -1126,21 +1192,7 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (signif %{} #{}))".format(tmp_key,key,digits)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    return H2OFrame(vecs=[vec.signif(digits=digits) for vec in self._vecs])
 
   def round(self, digits=0):
     """
@@ -1148,34 +1200,21 @@ class H2OFrame:
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (round %{} #{}))".format(tmp_key,key,digits)
-    h2o.rapids(expr)
-    # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    h2o.removeFrameShallow(tmp_key)
-    return H2OFrame(vecs=vecs)
+    return H2OFrame(vecs=[vec.round(digits=digits) for vec in self._vecs])
 
   def asnumeric(self):
     """
-    :return: A lazy Expr representing this vec converted to numbers
+    :return: A frame with factor columns converted to numbers (numeric columns untouched).
     """
     if self._vecs is None or self._vecs == []:
       raise ValueError("Frame Removed")
-    key = self.send_frame()
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (as.numeric %{}))".format(tmp_key,key)
+    return H2OFrame(vecs=[vec.asnumeric() for vec in self._vecs])
+
+  @staticmethod
+  def _get_frame_from_rapids_string(expr, tmp_key, frame_keys):
     h2o.rapids(expr)
     # Remove h2o temp frame after var
-    h2o.removeFrameShallow(key)
+    for key in frame_keys: h2o.removeFrameShallow(key)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
     rows = fr['rows']
@@ -1271,9 +1310,9 @@ class H2OVec:
 
   def as_date(self,format):
     """
-    Inplace update the column to millis since the epoch.
+    Return the column with all elements converted to millis since the epoch.
     :param format: The date time format string
-    :return: None
+    :return: H2OVec
     """
     if not isinstance(format, str):
       raise ValueError("format must be a string")
@@ -1521,6 +1560,12 @@ class H2OVec:
     """
     return Expr("is.factor", self._expr, None, length=1).eager()
 
+  def anyfactor(self):
+    """
+    :return: Same as isfactor for a vec
+    """
+    return Expr("is.factor", self._expr, None, length=1).eager()
+
   def ascharacter(self):
     """
     :return: A lazy Expr representing this vec converted to characters
@@ -1604,6 +1649,58 @@ class H2OVec:
 
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (match %{} {} #{} ()))".format(tmp_key,self.key(),rtable,nomatch)
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def scale(self, center=True, scale=True):
+    """
+    Centers and/or scales the column (H2OVec)
+    :return: H2OVec
+    :param center: either a ‘logical’ value or numeric value.
+    :param scale: either a ‘logical’ value or numeric value.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    if   isinstance(center, bool) and isinstance(scale, bool):
+      c = '%TRUE' if center else '%FALSE'
+      s = '%TRUE' if scale else '%FALSE'
+    elif isinstance(center, bool) and isinstance(scale, (int, float)):
+      c = '%TRUE' if center else '%FALSE'
+      s = '#'+str(scale)
+    elif isinstance(center, (int, float)) and isinstance(scale, bool):
+      c = '#'+str(center)
+      s = '%TRUE' if scale else '%FALSE'
+    elif isinstance(center, (int, float)) and isinstance(scale, (int, float)):
+      c = '#'+str(center)
+      s = '#'+str(scale)
+    else: raise(ValueError, "`center` and `scale` arguments (for a H2OVec) must be a bool or a number, but "
+                            "got center: {0}, scale: {1}".format(center, scale))
+    expr = "(= !{} (scale %{} {} {}))".format(tmp_key,self.key(), c, s)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def round(self, digits=0):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of decimal digits.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (round %{} #{}))".format(tmp_key,self.key(),digits)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def signif(self, digits=6):
+    """
+    :return: The rounded values in the H2OFrame to the specified number of significant digits.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (signif %{} #{}))".format(tmp_key,self.key(),digits)
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def asnumeric(self):
+    """
+    :return: A vec with factor columns converted to numbers.
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (as.numeric %{}))".format(tmp_key,self.key())
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def _get_vec_from_rapids_string(self, expr, tmp_key):
     h2o.rapids(expr)
     j = h2o.frame(tmp_key)
     fr = j['frames'][0]
@@ -1611,8 +1708,73 @@ class H2OVec:
     veckeys = fr['vec_ids']
     cols = fr['columns']
     colnames = [col['label'] for col in cols]
-    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
-    return H2OFrame(vecs=vecs)
+    vec=H2OVec.new_vecs(zip(colnames, veckeys), rows)[0]
+    vec.setName(self._name)
+    h2o.removeFrameShallow(tmp_key)
+    return vec
+
+  def transpose(self):
+    """
+    :return: The transpose of the H2OVec (as an H20Frame).
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (t %{}))".format(tmp_key,self.key())
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def table(self, data2=None):
+    """
+    :return: a frame of the counts at each combination of factor levels
+    """
+    if data2 and not isinstance(data2, H2OVec): raise ValueError("`data2` must be a vec, but got {0}"
+                                                                 "".format(type(data2)))
+    tmp_key = H2OFrame.py_tmp_key()
+    data2_key = "%"+data2.key() if data2 else "()"
+    expr = "(= !{} (table %{} {}))".format(tmp_key,self.key(),data2_key)
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def levels(self):
+    """
+    Get the factor levels for this vec.
+
+    :return: a list of strings that are the factor levels for the column.
+    """
+    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(urllib.quote(self._expr.eager()), "C1"))
+    return res["domain"][0]
+
+  def nlevels(self):
+    """
+    Get the number of factor levels for this frame and the specified column index.
+
+    :return: an integer.
+    """
+    nlevels = self.levels()
+    return len(nlevels) if nlevels else 0
+
+  def setLevel(self, level):
+    """
+    A method to set all column values to one of the levels.
+    :param level: The level at which the column will be set (a string). Must be a member of self.levels().
+    :return: An H2OVec with all entries set to the desired level
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (setLevel %{} {}))".format(tmp_key,self.key(), '\"'+level+'\"')
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def setLevels(self, levels):
+    """
+    Works on a single categorical vector. New domains must be aligned with the old domains. This call has SIDE
+    EFFECTS and mutates the column in place (does not make a copy).
+    :param level: The level at which the column will be set (a string)
+    :param x: A single categorical column.
+    :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
+    old levels.
+    :return: None
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (setDomain %{} {}))".format(tmp_key,self.key(), '(slist '+ ' '.join(['\"'+l+'\"' for l in
+                                                                                        levels]) + ')')
+    h2o.rapids(expr)
+    h2o.removeFrameShallow(tmp_key)
 
   # Error if lengths are not compatible.  Return self for flow-coding
   def _len_check(self,x):

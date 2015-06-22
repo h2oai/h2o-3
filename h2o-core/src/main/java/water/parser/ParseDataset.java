@@ -31,14 +31,14 @@ public final class ParseDataset extends Job<Frame> {
   // Guess setup from inspecting the first Key only, then parse.
   // Suitable for e.g. testing setups, where the data is known to be sane.
   // NOT suitable for random user input!
-  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, boolean singleQuote, int checkHeader) {
-    return parse(okey,keys,delete_on_done,ParseSetup.guessSetup(keys, singleQuote, checkHeader));
+  public static Frame parse(Key okey, Key[] keys, boolean deleteOnDone, boolean singleQuote, int checkHeader) {
+    return parse(okey,keys,deleteOnDone,ParseSetup.guessSetup(keys, singleQuote, checkHeader));
   }
-  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
-    return parse(okey,keys,delete_on_done,globalSetup,true).get();
+  public static Frame parse(Key okey, Key[] keys, boolean deleteOnDone, ParseSetup globalSetup) {
+    return parse(okey,keys,deleteOnDone,globalSetup,true).get();
   }
-  public static ParseDataset parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup, boolean blocking) {
-    ParseDataset job = forkParseDataset(okey, keys, globalSetup, delete_on_done);
+  public static ParseDataset parse(Key okey, Key[] keys, boolean deleteOnDone, ParseSetup globalSetup, boolean blocking) {
+    ParseDataset job = forkParseDataset(okey, keys, globalSetup, deleteOnDone);
     try { if( blocking ) job.get(); return job; } 
     catch( Throwable ex ) {
 
@@ -84,7 +84,7 @@ public final class ParseDataset extends Job<Frame> {
   }
 
   // Same parse, as a backgroundable Job
-  public static ParseDataset forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean delete_on_done) {
+  public static ParseDataset forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean deleteOnDone) {
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
       throw new IllegalArgumentException("Found duplicate column name "+x);
@@ -94,10 +94,10 @@ public final class ParseDataset extends Job<Frame> {
       Key k = keys[i];
       if( dest.equals(k) )
         throw new IllegalArgumentException("Destination key "+dest+" must be different from all sources");
-      if( delete_on_done )
+      if( deleteOnDone )
         for( int j=i+1; j<keys.length; j++ )
           if( k==keys[j] )
-            throw new IllegalArgumentException("Source key "+k+" appears twice, delete_on_done must be false");
+            throw new IllegalArgumentException("Source key "+k+" appears twice, deleteOnDone must be false");
 
       // estimate total size in bytes
       totalParseSize += getByteVec(k).length();
@@ -126,7 +126,7 @@ public final class ParseDataset extends Job<Frame> {
     ParseDataset job = new ParseDataset(dest);
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
-    ParserFJTask fjt = new ParserFJTask(job, keys, setup, delete_on_done); // Fire off background parse
+    ParserFJTask fjt = new ParserFJTask(job, keys, setup, deleteOnDone); // Fire off background parse
     job.start(fjt, totalParseSize);
     return job;
   }
@@ -142,16 +142,16 @@ public final class ParseDataset extends Job<Frame> {
     final ParseDataset _job;
     final Key[] _keys;
     final ParseSetup _setup;
-    final boolean _delete_on_done;
+    final boolean _deleteOnDone;
 
-    public ParserFJTask( ParseDataset job, Key[] keys, ParseSetup setup, boolean delete_on_done) {
+    public ParserFJTask( ParseDataset job, Key[] keys, ParseSetup setup, boolean deleteOnDone) {
       _job = job;
       _keys = keys;
       _setup = setup;
-      _delete_on_done = delete_on_done;
+      _deleteOnDone = deleteOnDone;
     }
     @Override public void compute2() {
-      parseAllKeys(_job, _keys, _setup, _delete_on_done);
+      parseAllKeys(_job, _keys, _setup, _deleteOnDone);
       tryComplete();
     }
 
@@ -179,7 +179,7 @@ public final class ParseDataset extends Job<Frame> {
   }
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parseAllKeys(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
+  private static void parseAllKeys(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean deleteOnDone) {
     assert setup._number_columns > 0;
     if( setup._column_names != null &&
         ( (setup._column_names.length == 0) ||
@@ -189,7 +189,7 @@ public final class ParseDataset extends Job<Frame> {
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
-    MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
+    MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,deleteOnDone);
     if (fkeys.length > 1) job.update(0, "Ingesting files.");
     else job.update(0, "Ingesting file.");
     mfpt.doAll(fkeys);
@@ -298,7 +298,7 @@ public final class ParseDataset extends Job<Frame> {
     assert fr2._names.length == fr2.numCols();
     fr.unlock(job._key);
     // Remove CSV files from H2O memory
-    if( delete_on_done )
+    if( deleteOnDone )
       for( Key k : fkeys )
         assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
   }
@@ -444,12 +444,12 @@ public final class ParseDataset extends Job<Frame> {
     // The Key used to sort out *this* parse's Categorical[]
     private final Key _eKey = Key.make();
     // Eagerly delete Big Data
-    private final boolean _delete_on_done;
+    private final boolean _deleteOnDone;
     // Mapping from Chunk# to cluster-node-number holding the enum mapping.
     // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
     private int[] _chunk2Enum;
     // Job Key, to unlock & remove raw parsed data; to report progress
-    private final Key _job_key;
+    private final Key _jobKey;
     // A mapping of Key+ByteVec to rolling total Chunk counts.
     private final int[]  _fileChunkOffsets;
 
@@ -458,11 +458,11 @@ public final class ParseDataset extends Job<Frame> {
     String[] _errors;
 
     int _reservedKeys;
-    MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
+    MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; _parseSetup = setup;
       _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type == ParserType.SVMLight ? 100000000 : setup._number_columns);
-      _delete_on_done = delete_on_done;
-      _job_key = job_key;
+      _deleteOnDone = deleteOnDone;
+      _jobKey = jobKey;
 
       // A mapping of Key+ByteVec to rolling total Chunk counts.
       _fileChunkOffsets = new int[fkeys.length];
@@ -541,11 +541,11 @@ public final class ParseDataset extends Job<Frame> {
       // For Big Data, must delete data as eagerly as possible.
       Iced ice = DKV.get(key).get();
       if( ice==vec ) {
-        if( _delete_on_done ) vec.remove();
+        if(_deleteOnDone) vec.remove();
       } else {
         Frame fr = (Frame)ice;
-        if( _delete_on_done ) fr.delete(_job_key,new Futures()).blockForPending();
-        else if( fr._key != null ) fr.unlock(_job_key);
+        if(_deleteOnDone) fr.delete(_jobKey,new Futures()).blockForPending();
+        else if( fr._key != null ) fr.unlock(_jobKey);
       }
     }
 
@@ -584,14 +584,14 @@ public final class ParseDataset extends Job<Frame> {
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2Enum[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {
-            InputStream bvs = vec.openStream(_job_key);
+            InputStream bvs = vec.openStream(_jobKey);
             _dout[_lo] = streamParse(bvs, localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             chunksAreLocal(vec,chunkStartIdx,key);
           }
           break;
         case ZIP: {
           // Zipped file; no parallel decompression;
-          InputStream bvs = vec.openStream(_job_key);
+          InputStream bvs = vec.openStream(_jobKey);
           ZipInputStream zis = new ZipInputStream(bvs);
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
@@ -607,7 +607,7 @@ public final class ParseDataset extends Job<Frame> {
           break;
         }
         case GZIP: {
-          InputStream bvs = vec.openStream(_job_key);
+          InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
           _dout[_lo] = streamParse(new GZIPInputStream(bvs),localSetup,makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
           // set this node as the one which processed all the chunks
@@ -667,7 +667,7 @@ public final class ParseDataset extends Job<Frame> {
       private final VectorGroup _vg;
       private FVecParseWriter _dout;
       private final Key _eKey;  // Parse-local-Enums key
-      private final Key _job_key;
+      private final Key _jobKey;
       private transient final MultiFileParseTask _outerMFPT;
       private transient final Key _srckey; // Source/text file to delete on done
       private transient NonBlockingSetInt _visited;
@@ -682,7 +682,7 @@ public final class ParseDataset extends Job<Frame> {
         _startChunkIdx = startChunkIdx;
         _outerMFPT = mfpt;
         _eKey = mfpt._eKey;
-        _job_key = mfpt._job_key;
+        _jobKey = mfpt._jobKey;
         _srckey = srckey;
         _nchunks = nchunks;
       }
@@ -692,7 +692,7 @@ public final class ParseDataset extends Job<Frame> {
         _espc = MemoryManager.malloc8(_nchunks);
       }
       @Override public void map( Chunk in ) {
-        Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
+        //Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
@@ -716,12 +716,12 @@ public final class ParseDataset extends Job<Frame> {
         }
         p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);
-        Job.update(in._len,_job_key); // Record bytes parsed
+        Job.update(in._len, _jobKey); // Record bytes parsed
 
         // remove parsed data right away (each chunk is used by 2)
         freeMem(in,0);
         freeMem(in,1);
-        Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
+        //Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
       }
 
       private void freeMem(Chunk in, int off) {
@@ -733,13 +733,13 @@ public final class ParseDataset extends Job<Frame> {
         v.freeMem();
       }
       @Override public void reduce(DistributedParse dp) {
-        Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+        //Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
         _dout.reduce(dp._dout);
-        Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
+        //Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
       }
 
       @Override public void postGlobal() {
-        Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
+        //Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         _dout = null;           // Reclaim GC eagerly
@@ -748,13 +748,13 @@ public final class ParseDataset extends Job<Frame> {
         if( val == null ) return;
         Iced ice = val.get();
         if( ice instanceof ByteVec ) {
-          if( _outerMFPT._delete_on_done ) ((ByteVec)ice).remove();
+          if( _outerMFPT._deleteOnDone) ((ByteVec)ice).remove();
         } else {
           Frame fr = (Frame)ice;
-          if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,new Futures()).blockForPending();
-          else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
+          if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures()).blockForPending();
+          else if( fr._key != null ) fr.unlock(_outerMFPT._jobKey);
         }
-        Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
+        //Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
       }
     }
 

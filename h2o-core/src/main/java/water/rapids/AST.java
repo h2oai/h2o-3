@@ -893,6 +893,11 @@ class ASTAssign extends AST {
       ASTId id = (ASTId)this._asts[0];
       assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
+      if( e.isNum() && id.isLocalSet() ) {
+        e.put(id.value(),Env.NUM,String.valueOf(e.popDbl()));
+        return;
+      }
+
       // RHS is a frame
       if (e.isAry() || (id.isGlobalSet() && e.isNum())) {
         Frame f = e.isAry()

@@ -34,9 +34,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param jobKey
    * @param inputModel Initial model state
    * @param fraction Fraction of rows of the training to train with
+   * @param iteration
    */
-  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction){
-    super(jobKey, inputModel.data_info(),null);
+  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration){
+    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration);
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
@@ -71,14 +72,18 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
     } else {
       _localmodel = _sharedmodel;
+      _sharedmodel = null;
     }
     _localmodel.set_processed_local(0);
   }
 
   // Create local workspace (neurons) and link them to shared weights
-  @Override protected void chunkInit(){
+  @Override protected boolean chunkInit(){
+    if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
+      return false;
     _neurons = makeNeuronsForTraining(_localmodel);
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
+    return true;
   }
 
   /**
@@ -94,7 +99,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
-    step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response);
+    step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
   }
 
   /**
@@ -248,7 +253,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param responses
    */
   public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
-                          DeepLearningModelInfo consensus_minfo, boolean training, double[] responses) {
+                          DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double offset) {
     try {
       for (int i=1; i<neurons.length-1; ++i) {
         neurons[i].fprop(seed, training);
@@ -284,6 +289,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           }
         } else {
           ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
+          if (offset > 0)
+            neurons[neurons.length-1]._a.add(0, (float)offset);
           if (training) {
             for (int i = 1; i < neurons.length - 1; i++)
               Arrays.fill(neurons[i]._e.raw(), 0);

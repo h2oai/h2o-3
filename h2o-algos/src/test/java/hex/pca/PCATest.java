@@ -196,7 +196,7 @@ public class PCATest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       SplitFrame sf = new SplitFrame(Key.make());
       sf.dataset = fr;
-      sf.ratios = new double[] { 0.5 };
+      sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
 
       // Invoke the job
@@ -209,7 +209,7 @@ public class PCATest extends TestUtil {
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._k = 4;
-      parms._max_iterations = 10;
+      parms._max_iterations = 1000;
 
       try {
         job = new PCA(parms);

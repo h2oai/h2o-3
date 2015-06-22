@@ -672,6 +672,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final double [] b = beta();
     final DataInfo dinfo = _output._dinfo;
     for(int i = 0; i < dinfo._cats; ++i) {
+      if(Double.isNaN(data[i])) {
+        eta = Double.NaN;
+        break;
+      }
       int ival = (int) data[i];
       if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
       ival += dinfo._catOffsets[i];

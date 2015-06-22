@@ -53,14 +53,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
-    _metricBuilder.perRow(ds,yact,m);
-    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if (_parms._family == Family.binomial)
-        add2(yact[0], ds[2], 1, 0);
-      else
-        add2(yact[0], ds[0], 1, 0);
-    }
-    return ds;
+    return perRow(ds, yact, 1, 0, m);
   }
 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {

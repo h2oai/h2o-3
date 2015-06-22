@@ -1,5 +1,28 @@
 #FAQ
 
+##General Troubleshooting Tips
+
+
+- Confirm your internet connection is active. 
+
+- Test connectivity using curl: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O.
+
+- Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
+
+- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in Terminal. 
+- Confirm ports 54321 and 54322 are available for both TCP and UDP.
+- Confirm your firewall is not preventing the nodes from locating each other.
+- Confirm the nodes are not using different versions of H2O.
+- Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
+- Confirm that the nodes are not on different networks.
+- Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
+- Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
+- (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
+- (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. 
+- (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
+- (EC2 only) Check the configuration for the EC2 security group.
+
+
 
 ##Algorithms
 
@@ -16,11 +39,48 @@ If your r2 value is negative after your model is complete, your model is likely 
 
 ---
 
+**What's the process for implementing new algorithms in H2O?**
+
+This [blog post](http://h2o.ai/blog/2014/16/Hacking/Algos/) by Cliff  walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples. 
+
+To learn more about performance characteristics when implementing new algorithms, refer to Cliff's [KV Store Guide](http://0xdata.com/blog/2014/05/kv-store-memory-analytics-part-2-2/). 
+
+---
+
 **How do I find the standard errors of the parameter estimates (p-values)?**
 
 P-values are currently not supported. They are on our road map and will be added, depending on the current customer demand/priorities. Generally, adding p-values involves significant engineering effort because p-values for regularized GLM are not straightforward and have been defined only recently (with no standard implementation available that we know of). P-values for a restricted set of GLM problems (no regularization, low number of predictors) are easier to do and may be added sooner, if there is a sufficient demand.
 
 For now, we recommend using a non-zero l1 penalty (alpha  > 0) and considering all non-zero coefficients in the model as significant. The recommended use case is running GLM with lambda search enabled and alpha > 0 and picking the best lambda value based on cross-validation or hold-out set validation.
+
+---
+
+**How do I specify regression or classification for Distributed Random Forest in the web UI?**
+
+
+If the response column is numeric, H2O generates a regression model. If the response column is enum, the model uses classification. To specify the column type, select it from the drop-down column heading list in the **Data Preview** section during parsing. 
+
+---
+
+**What's the largest number of classes that H2O supports for multinomial prediction?**
+
+For tree-based algorithms, the maximum number of classes (or levels) for a response column is 1000. 
+
+
+---
+
+##Building H2O
+
+
+**Using `./gradlew build` doesn't generate a build successfully - is there anything I can do to troubleshoot?**
+
+Use `./gradlew clean` before running `./gradlew build`. 
+
+---
+
+**I tried using `./gradlew build` after using `git pull` to update my local H2O repo, but now I can't get H2O to build successfully - what should I do?**
+
+Try using `./gradlew build -x test` - the build may be failing tests if data is not synced correctly. 
 
 ---
 
@@ -37,16 +97,19 @@ To specify an IP address, launch H2O using the following command:
 
 If this does not resolve the issue, try the following additional troubleshooting tips: 
 
-- Test connectivity using `curl`: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O. 
-- Confirm ports 54321 and 54322 are available for both TCP and UDP. 
-- Confirm your firewall is not preventing the nodes from locating each other. 
-- Check if you have SELINUX or IPTABLES enabled; if so, disable them.  
-- Check the configuration for the EC2 security group.
-- Confirm that the username is the same on all nodes; if not, define the cloud using `-name`. 
-- Check if the nodes are on different networks. 
-- Check if the nodes have different interfaces; if so, use the `-network` option to define the network (for example, `-network 127.0.0.1`). 
-- Force the bind address using `-ip`. 
-- Confirm the nodes are not using different versions of H2O. 
+- Confirm your internet connection is active. 
+
+- Test connectivity using curl: First, log in to the first node and enter curl http://<Node2IP>:54321 (where <Node2IP> is the IP address of the second node. Then, log in to the second node and enter curl http://<Node1IP>:54321 (where <Node1IP> is the IP address of the first node). Look for output from H2O.
+
+- Confirm ports 54321 and 54322 are available for both TCP and UDP.
+- Confirm your firewall is not preventing the nodes from locating each other.
+- Confirm the nodes are not using different versions of H2O.
+- Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
+- Confirm that the nodes are not on different networks.
+- Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`).
+- Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
+- (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
+- (EC2 only) Check the configuration for the EC2 security group.
 
 ---
 
@@ -238,6 +301,12 @@ Killed.
 The H2O launch failed because more memory was requested than was available. Make sure you are not trying to specify more memory in the launch parameters than you have available. 
 
 ---
+
+**How does the architecture of H2O work?**
+
+This [PDF](https://github.com/h2oai/h2o-meetups/blob/master/2014_11_18_H2O_in_Big_Data_Environments/H2OinBigDataEnvironments.pdf) includes diagrams and slides depicting how H2O works in big data environments. 
+
+---
 ##Hadoop
 
 <!---
@@ -266,7 +335,85 @@ Currently, this is not yet supported. To provide resource isolation (for example
 
 ---
 
+**How do I import data from HDFS in R and in Flow?**
+
+To import from HDFS in R: 
+
+```
+h2o.importHDFS(path, conn = h2o.getConnection(), pattern = "",
+destination_frame = "", parse = TRUE, header = NA, sep = "",
+col.names = NULL, na.strings = NULL)
+```
+
+Here is another example: 
+
+```
+# pathToAirlines <- "hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv"
+# airlines.hex <- h2o.importFile(conn = h, path = pathToAirlines, destination_frame = "airlines.hex")
+```
+
+
+In Flow, the easiest way is to let the auto-suggestion feature in the *Search:* field complete the path for you. Just start typing the path to the file, starting with the top-level directory, and H2O provides a list of matching files. 
+
+  ![Flow - Import Auto-Suggest](images/Flow_Import_AutoSuggest.png)
+  
+Click the file to add it to the *Search:* field.   
+
+
+
+---
+
+##R
+
+**How can I install the H2O R package if I am having permissions problems?**
+
+This issue typically occurs for Linux users when the R software was installed by a root user. For more information, refer to the following [link](https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html). 
+
+To specify the installation location for the R packages, create a file that contains the `R_LIBS_USER` environment variable:
+
+`echo R_LIBS_USER=\"~/.Rlibrary\" > ~/.Renviron`
+
+Confirm the file was created successfully using `cat`: 
+
+`$ cat ~/.Renviron`
+
+You should see the following output:
+ 
+`R_LIBS_USER="~/.Rlibrary"`
+
+Create a new directory for the environment variable:
+
+`$ mkdir ~/.Rlibrary`
+
+Start R and enter the following: 
+
+`.libPaths()`
+
+Look for the following output to confirm the changes: 
+
+```
+[1] "<Your home directory>/.Rlibrary"                                         
+[2] "/Library/Frameworks/R.framework/Versions/3.1/Resources/library"
+```
+
+---
+
 ##Sparkling Water
+
+**How do I filter an H2OFrame using Sparkling Water?**
+
+Filtering columns is easy: just remove the unnecessary columns or create a new H2OFrame from the columns you want to include (`Frame(String[] names, Vec[] vec)`), then make the H2OFrame wrapper around it (`new H2OFrame(frame)`). 
+
+Filtering rows is a little bit harder. There are two ways: 
+
+- Create an additional binary vector holding `1/0` for the `in/out` sample (make sure to take this additional vector into account in your computations). This solution is quite cheap, since you do not duplicate data - just create a simple vector in a data walk. 
+
+  or 
+  
+- Create a new frame with the filtered rows. This is a harder task, since you have to copy data. For reference, look at the #deepSlice call on Frame (`H2OFrame`)
+
+
+---
 
 **How do I inspect H2O using Flow while a droplet is running?**
 
@@ -305,42 +452,6 @@ water.DException$DistributedException: from /10.23.36.177:54321; by class water.
 ```
 
 This error output displays if the input file is not present on all nodes. Because of the way that Sparkling Water distributes data, the input file is required on all nodes (including remote), not just the primary node. Make sure there is a copy of the input file on all the nodes, then try again. 
-
----
-
-##R
-
-**How can I install the H2O R package if I am having permissions problems?**
-
-This issue typically occurs for Linux users when the R software was installed by a root user. For more information, refer to the following [link](https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html). 
-
-To specify the installation location for the R packages, create a file that contains the `R_LIBS_USER` environment variable:
-
-`echo R_LIBS_USER=\"~/.Rlibrary\" > ~/.Renviron`
-
-Confirm the file was created successfully using `cat`: 
-
-`$ cat ~/.Renviron`
-
-You should see the following output:
- 
-`R_LIBS_USER="~/.Rlibrary"`
-
-Create a new directory for the environment variable:
-
-`$ mkdir ~/.Rlibrary`
-
-Start R and enter the following: 
-
-`.libPaths()`
-
-Look for the following output to confirm the changes: 
-
-```
-[1] "<Your home directory>/.Rlibrary"                                         
-[2] "/Library/Frameworks/R.framework/Versions/3.1/Resources/library"
-```
-
 
 
 ---
