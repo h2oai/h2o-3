@@ -70,7 +70,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
 
     @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      sigma = weightedSigma(m,f,sigma);
       if (sigma != 0.0 && _count > 0 ) {
         double mse = _sumsqe / _wsum;
         double logloss = _logloss / _wsum;
