@@ -12,22 +12,22 @@ test.pca.mds <- function(conn) {
   Log.info(paste("R SVD with nv = ", nvec, sep = ""))
   fitR <- svd(train.dat)
   
-  Log.info(paste("H2O PCA with nv = ", nvec, ", transform = 'NONE', max_iterations = 2000", sep = ""))
+  Log.info(paste("H2O SVD with nv = ", nvec, ", transform = 'NONE', max_iterations = 2000", sep = ""))
   fitH2O <- h2o.svd(training_frame = train.hex, nv = nvec, transform = "NONE", max_iterations = 2000)
   
-  Log.info("R eigenvalues:"); print(fitR$d)
+  Log.info("R eigenvalues:"); print(fitR$d[1:nvec])
   Log.info("H2O eigenvalues:"); print(fitH2O@model$d)
   expect_equal(fitH2O@model$d, fitR$d[1:nvec], tolerance = 1e-6, scale = 1)
   
-  # Log.info("R right singular values:"); print(fitR$v)
-  # Log.info("H2O right singular values:"); print(fitH2O@model$v)
-  # checkSignedCols(fitH2O@model$v, fitR$v, tolerance = 1e-6)
+  Log.info("R right singular values:"); print(fitR$v[,1:nvec])
+  Log.info("H2O right singular values:"); print(fitH2O@model$v)
+  # checkSignedCols(fitH2O@model$v, fitR$v[,1:nvec], tolerance = 1e-6)
   
   Log.info("Check H2O decomposition UDV' = training data")
   u.h2o <- h2o.getFrame(fitH2O@model$u_key$name)
   u.h2o <- as.matrix(u.h2o)
   udv.h2o <- u.h2o %*% diag(fitH2O@model$d) %*% t(fitH2O@model$v)
-  print(head(udv.h2o))
+  # print(head(udv.h2o))
   expect_equal(udv.h2o, train.dat, tolerance = 1e-6, scale = 1)
   
   testEnd()
