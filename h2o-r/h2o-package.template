@@ -21,7 +21,7 @@ Depends: \tab R (>= 2.13.0), RCurl, rjson, statmod, tools, methods, utils\cr
 
 This package allows the user to run basic H2O commands using R commands. In order to use it, you must first have H2O running. To run H2O on your local machine, call \code{h2o.init} without any arguments, and H2O will be automatically launched at localhost:54321, where the IP is "127.0.0.1" and the port is 54321. If H2O is running on a cluster, you must provide the IP and port of the remote machine as arguments to the h2o.init() call.
 
-H2O supports a number of standard statistical models, such as GLM, K-means, and Random Forest classification. For example, to run GLM, call \code{\link{h2o.glm}} with the H2O parsed data and parameters (response variable, error distribution, etc...) as arguments. (The operation will be done on the server associated with the data object where H2O is running, not within the R environment).
+H2O supports a number of standard statistical models, such as GLM, K-means, and Random Forest. For example, to run GLM, call \code{\link{h2o.glm}} with the H2O parsed data and parameters (response variable, error distribution, etc...) as arguments. (The operation will be done on the server associated with the data object where H2O is running, not within the R environment).
 
 Note that no actual data is stored in the R workspace; and no actual work is carried out by R. R only saves the named objects, which uniquely identify the data set, model, etc on the server. When the user makes a request, R queries the server via the REST API, which returns a JSON file with the relevant information that R then displays in the console.
 

@@ -41,7 +41,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   public final char  _nbin;     // Bin count
   public final float _step;     // Linear interpolation step per bin
   public final float _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
-  public       int   _bins[];   // Bins, shared, atomically incremented
+  public      double _bins[];   // Bins, shared, atomically incremented
 
   // Atomically updated float min/max
   protected    float  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
@@ -71,8 +71,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       old = _maxIn;
   }
 
-  public DHistogram(String name, final int nbins, int nbins_cats, final byte isInt, final float min, final float maxEx, long nelems) {
-    assert nelems > 0;
+  public DHistogram(String name, final int nbins, int nbins_cats, final byte isInt, final float min, final float maxEx) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -96,7 +95,6 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     _nbin = (char)xbins;
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
-  abstract boolean isBinom();
 
   // Interpolate d to find bin#
   int bin( float col_data ) {
@@ -116,7 +114,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   float binAt( int b ) { return _min+b/_step; }
 
   public int nbins() { return _nbin; }
-  public int bins(int b) { return _bins[b]; }
+  public double bins(int b) { return _bins[b]; }
   abstract public double mean(int b);
   abstract public double var (int b);
 
@@ -124,24 +122,24 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   abstract void init0();
   final void init() {
     assert _bins == null;
-    _bins = MemoryManager.malloc4(_nbin);
+    _bins = MemoryManager.malloc8d(_nbin);
     init0();
   }
 
   // Add one row to a bin found via simple linear interpolation.
   // Compute bin min/max.
   // Compute response mean & variance.
-  abstract void incr0( int b, double y );
-  final void incr( float col_data, double y ) {
+  abstract void incr0( int b, double y, double w );
+  final void incr( float col_data, double y, double w ) {
     assert Float.isNaN(col_data) || Float.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
-    water.util.AtomicUtils.IntArray.incr(_bins,b); // Bump count in bin
+    water.util.AtomicUtils.DoubleArray.add(_bins,b,w); // Bump count in bin
     // Track actual lower/upper bound per-bin
     if (!Float.isInfinite(col_data)) {
       setMin(col_data);
       setMax(col_data);
     }
-    if( y != 0 ) incr0(b,y);
+    if( y != 0 ) incr0(b,y,w);
   }
 
   // Merge two equal histograms together.  Done in a F/J reduce, so no
@@ -177,7 +175,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   abstract public DTree.Split scoreMSE( int col, int min_rows );
 
   // The initial histogram bins are setup from the Vec rollups.
-  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, DHistogram hs[], boolean isBinom) {
+  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, DHistogram hs[]) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -186,15 +184,14 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       final float maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins, nbins_cats, (byte)(v.isEnum() ? 2 : (v.isInt()?1:0)), minIn, maxEx, vlen, isBinom);
+        make(fr._names[c],nbins, nbins_cats, (byte)(v.isEnum() ? 2 : (v.isInt()?1:0)), minIn, maxEx);
+      assert (hs[c] == null || vlen > 0);
     }
     return hs;
   }
 
-  static public DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx, long nelems, boolean isBinom) {
-    return isBinom
-      ? new DBinomHistogram(name,nbins, nbins_cats, isInt, min, maxEx, nelems)
-      : new  DRealHistogram(name,nbins, nbins_cats, isInt, min, maxEx, nelems);
+  static public DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx) {
+    return new DRealHistogram(name,nbins, nbins_cats, isInt, min, maxEx);
   }
 
   // Check for a constant response variable

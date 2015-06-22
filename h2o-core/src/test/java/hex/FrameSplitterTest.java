@@ -127,7 +127,7 @@ public class FrameSplitterTest extends TestUtil {
     try {
       SplitFrame sf = new SplitFrame(Key.make());
       sf.dataset = f;
-      sf.ratios = new double[] { 0.5 };
+      sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
       // Invoke the job
       sf.exec().get();

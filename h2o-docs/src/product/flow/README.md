@@ -37,9 +37,20 @@ You can also type `assist` in a blank cell and press **Ctrl+Enter**. A list of c
 
  ![Assist Me links](images/Flow_assist.png)
  
-There are multiple resources to help you get started with Flow in the **Help** sidebar. To access this document, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+There are multiple resources to help you get started with Flow in the **Help** sidebar. 
 
-You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows, click the **view example Flows** link below the **Quickstart Videos** button in the **Help** sidebar or click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
+>**Note**: To hide the sidebar, click the **>>** button above it. ![Flow - Hide Sidebar](images/Flow_SidebarHide.png)
+>
+>To display the sidebar if it is hidden, click the **<<** button. ![Flow - Hide Sidebar](images/Flow_SidebarDisplay.png)
+
+To access this documentation, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+
+You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows:
+
+- Click the **view example Flows** link below the **Quickstart Videos** button in the **Help** sidebar 
+  ![Flow - View Example Flows link](images/Flow_ViewExampleFlows.png)
+  or 
+- Click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
 
   ![Flow Packs](images/Flow_ExampleFlows.png)
 
@@ -71,12 +82,12 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 
 - **MD**: Markdown 
    
-   **Note**: Markdown formatting is not applied until you run the cell by:
-   - clicking the **Run** button
-     
-     or
+   >**Note**: Markdown formatting is not applied until you run the cell by:
+   > 
+   >- clicking the **Run** button
+        > or
       
-   - pressing **Ctrl+Enter**
+   >- pressing **Ctrl+Enter**
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
@@ -92,7 +103,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 
  ![Flow - Heading Levels](images/Flow_headinglevels.png)
 
-**NOTE**: If there is an error in the cell, the flag is red. 
+>**NOTE**: If there is an error in the cell, the flag is red. 
 
  ![Cell error](images/Flow_redflag.png)
  
@@ -144,7 +155,7 @@ When you run the flow, a progress bar that indicates the current status of the f
   ![Flow Progress Bar](images/Flow_progressbar.png)
 
 When the flow is complete, a message displays in the upper right. 
-**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
+>**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
 
   ![Flow - Completed Successfully](images/Flow_run_pass.png)
   ![Flow - Did Not Complete](images/Flow_run_fail.png) 
@@ -166,6 +177,18 @@ The following commands must be entered in [command mode](#CmdMode).
 
 You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar. 
 
+###Using Variables in Cells
+
+Variables can be used to store information such as download locations. To use a variable in Flow: 
+
+0. Define the variable in a code cell (for example, `locA = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv"`). 
+  ![Flow variable definition](images/Flow_VariableDefinition.png)
+0. Run the cell. H2O validates the variable. 
+  ![Flow variable validation](images/Flow_VariableValidation.png)
+0. Use the variable in another code cell (for example, `importFiles [locA]`). 
+  ![Flow variable example](images/Flow_VariableExample.png)
+To further simplify your workflow, you can save the cells containing the variables and definitions as [clips](#Clips). 
+
 
 ###Using Flow Buttons
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
@@ -175,7 +198,7 @@ There are also a series of buttons at the top of the page below the flow name th
 You can also use the menus at the top of the screen to edit the order of the cells, toggle specific format types (such as input or output), create models, or score models. You can also access troubleshooting information or obtain help with Flow.  
  ![Flow menus](images/Flow_menus.png)
 
-**Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**. 
+>**Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**. 
 
 Now that you are familiar with the cell modes, let's import some data. 
 
@@ -193,18 +216,15 @@ If you don't have any data of your own to work with, you can find some example d
 There are multiple ways to import data in H2O flow:
 
 - Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
+ ![Flow - Import Files Auto-Suggest](images/Flow_Import_AutoSuggest.png)
  
-- You can also drag and drop the file onto the **Search** field in the cell.
-  
- ![Flow - Import Files](images/Flow_Import_DragDrop.png)
-
 - In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
+![Import Files](images/Flow_import.png)
+>**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. Please note that .zip files containing multiple files are not currently supported. 
 
-**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. Please note that .zip files containing multiple files are not currently supported. 
 
- ![Import Files](images/Flow_import.png)
 
 - To import the selected file(s), click the **Import** button. 
 
@@ -245,7 +265,7 @@ Select the parser type (if necessary) from the drop-down **Parser** list. For mo
 - CSV
 - SVMLight
 
-   **Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order. 
+   >**Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order. 
 
 If a separator or delimiter is used, select it from the **Separator** list. 
 
@@ -260,10 +280,14 @@ Select any necessary additional options:
 - **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum. This option is not selected by default. 
 - **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
-A preview of the data displays in the "Data Preview" section. 
+A preview of the data displays in the "Edit Column Names and Types" section. 
  ![Flow - Parse options](images/Flow_parse_setup.png)
 
-**Note**: To change the column type, select the drop-down list at the top of the column and select the data type. The options are: 
+To change or add a column name, edit or enter the text in the column's entry field. In the screenshot below, the entry field for column 16 is highlighted in red.  
+  
+ ![Flow - Column Name Entry Field](images/Flow_ColNameEntry.png)
+
+To change the column type, select the drop-down list to the right of the column name entry field and select the data type. The options are: 
   
   - Unknown
   - Numeric
@@ -273,6 +297,11 @@ A preview of the data displays in the "Data Preview" section.
   - String
   - Invalid
 
+You can search for a column by entering it in the *Search by column name...* entry field above the first column name entry field. As you type, H2O displays the columns that match the specified search terms.
+
+To navigate the data preview, click the **<- Previous page** or **-> Next page** buttons.  
+
+  ![Flow - Pagination buttons](images/Flow_PageButtons.png)
 
 After making your selections, click the **Parse** button. 
 
@@ -321,7 +350,7 @@ The following information displays:
 - Run time
 - Progress
 
-**NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
+>**NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
  
 Ok, now that you understand how to find jobs in H2O, let's submit a new one by building a model. 
 
@@ -382,14 +411,12 @@ The available options vary depending on the selected model. If an option is only
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 
-  **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
-
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **->** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **<-** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. 
 
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
-**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
+>**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
 - **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale.  
 
@@ -441,11 +468,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Init**: [(K-Means](#Kmeans), [PCA)](#PCA) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
 
-  **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+  >**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - **Offset_column**: [(GLM)](#GLM) Select a column to use as the offset. 
 
-- **Weights_column**: [(GLM)](#GLM) Select a column to use for the observation weights. 
+- **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -501,9 +528,9 @@ The available options vary depending on the selected model. If an option is only
 - **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring.
 
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
-   **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
+   >**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#DRF), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
 - **Max\_confusion\_matrix\_size**: ([DRF](#DRF), [Naïve Bayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -701,11 +728,12 @@ Datasets can be split within Flow for use in model training and testing.
  ![splitFrame cell](images/Flow_splitFrame.png)
 
 0. To split a frame, click the **Assist Me** button, then click **splitFrame**.
-  **Note**: You can also click the drop-down **Data** menu and select **Split Frame...**.
+  
+  >**Note**: You can also click the drop-down **Data** menu and select **Split Frame...**.
 0. From the drop-down **Frame:** list, select the frame to split. 
 0. In the second **Ratio** entry field, specify the fractional value to determine the split. The first **Ratio** field is automatically calculated based on the values entered in the second **Ratio** field. 
    
-  **Note**: Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
+  >**Note**: Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
 0. In the **Key** entry field, specify a name for the new frame. 
 0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
 0. Click the **Create** button.  
@@ -741,7 +769,7 @@ Select one of the above options from the drop-down **Color** menu to display the
 
  ![Flow - Plotting Frames](images/Flow_Plot.png)
 
-**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
+>**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
 
 ---
 
@@ -771,11 +799,11 @@ To use a clip in a workflow, click the "Clips" tab in the sidebar on the right.
 
 All saved clips, including the default system clips (such as `assist`, `importFiles`, and `predict`), are listed. Clips you have created are listed under the "My Clips" heading. To select a clip to insert, click the circular button to the left of the clip name. To delete a clip, click the trashcan icon to right of the clip name. 
 
-**NOTE**: The default clips listed under "System" cannot be deleted. 
+>**NOTE**: The default clips listed under "System" cannot be deleted. 
 
 Deleted clips are stored in the trash. To permanently delete all clips in the trash, click the **Empty Trash** button. 
 
-**NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
+>**NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
 ---
 
@@ -825,7 +853,7 @@ where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified locatio
 
 ### Saving Flows on a Hadoop cluster
 
-**Note**: If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
+If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
 
 `hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
 
@@ -854,8 +882,9 @@ To load an exported flow, click the **Flow** menu and select **Open Flow...**. I
 
  ![Open Flow](images/Flow_Open.png)
 
-**Notes**: 
-- Only exported flows using the default .flow filetype are supported. Other filetypes will not open. 
+>**Notes**: 
+
+>- Only exported flows using the default .flow filetype are supported. Other filetypes will not open. 
 - If the current notebook has the same name as the selected file, a pop-up confirmation appears to confirm that the current notebook should be overwritten. 
 
 ---
@@ -865,7 +894,7 @@ To load an exported flow, click the **Flow** menu and select **Open Flow...**. I
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
-**NOTE**: To view the current H2O Flow version, click the **Help** menu, then click **About**. 
+>**NOTE**: To view the current H2O Flow version, click the **Help** menu, then click **About**. 
 
 ## Viewing Cluster Status
 
@@ -875,7 +904,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
   
-  **Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
+  >**Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
 - H2O version
 - Number of used and available nodes
 - When the cluster was created

@@ -822,7 +822,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // Computes XY where X is n by k, Y is k by p, and k <= p
-  //  Resulting matrix Z = XY will have dimensions n by p
+  // The resulting matrix Z = XY will have dimensions n by p
   private static class BMulTask extends FrameTask<BMulTask> {
     double[][] _yt;   // _yt = Y' (transpose of Y)
 
