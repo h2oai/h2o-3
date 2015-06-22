@@ -249,6 +249,7 @@ public abstract class ASTOp extends AST {
 
     putPrefix(new ASTKappa());
     putPrefix(new ASTWhich());
+    putPrefix(new ASTWhichMax());
     putPrefix(new ASTMajorityVote());
 
 //    // Time series operations
@@ -1896,7 +1897,7 @@ class ASTKappa extends ASTUniPrefixOp {
         _O[x][y]++;
       }
     }
-    @Override public void reduce(OMatrixTask t) { _O=ArrayUtils.add(_O, t._O); t._O=null; }
+    @Override public void reduce(OMatrixTask t) { _O=ArrayUtils.add(_O, t._O); _aHist=ArrayUtils.add(_aHist, t._aHist); _pHist=ArrayUtils.add(_pHist,t._pHist);  t._O=null; }
   }
 }
 
@@ -4617,6 +4618,60 @@ class ASTWhich extends ASTUniPrefixOp {  // 1-based index
     out=new double[w.size()];
     for(int i=0;i<w.size();++i) out[i]=w.get(i);
     return out;
+  }
+}
+
+class ASTWhichMax extends ASTUniPrefixOp {  // 1-based index
+  ASTWhichMax() {super(null); }
+  @Override ASTWhichMax make() { return new ASTWhichMax(); }
+  @Override ASTWhichMax parse_impl(Exec E) {
+    AST condition = E.parse();
+    ASTWhichMax res = (ASTWhichMax)clone();
+    res._asts = new AST[]{condition};
+    return res;
+  }
+  @Override String opStr() { return "h2o.which.max"; }
+  @Override public void apply(Env e) {
+    Frame f=e.popAry();
+    if( f.numRows()==1 && f.numCols() > 1) {
+      int idx=0;
+      double max = -Double.MAX_VALUE;
+      for(int i=0;i<f.numCols();++i) {
+        double val=f.vecs()[i].at(0);
+        if( val > max ) {
+          max = val;
+          idx = i;
+        }
+      }
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      chunk.addNum(idx+1,0);
+      chunk.close(0, fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(vec);
+      e.pushAry(fr2);
+      return;
+    }
+    Frame f2 = new MRTask() {
+      @Override public void map(Chunk[] c, NewChunk nc) {
+        for(int row=0;row<c[0]._len;++row) {
+          double max=-Double.MAX_VALUE;
+          int idx=0;
+          for(int col=0;col<c.length;++col) {
+            double val = c[col].atd(row);
+            if( val > max ) {
+              max = val;
+              idx = col;
+            }
+          }
+          nc.addNum(idx+1);
+        }
+      }
+    }.doAll(1,f).outputFrame();
+    e.pushAry(f2);
   }
 }
 
