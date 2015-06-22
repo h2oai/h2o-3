@@ -479,6 +479,8 @@ public class DeepLearningParameters extends Model.Parameters {
       dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
     if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data))
       dl.hide("_single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
+    if (H2O.ARGS.client && _single_node_mode)
+      dl.error("_single_node_mode", "Cannot run on a single node in client mode");
     if (_autoencoder)
       dl.hide("_use_all_factor_levels", "use_all_factor_levels is mandatory in combination with autoencoder.");
     if (getNumFolds() != 0)

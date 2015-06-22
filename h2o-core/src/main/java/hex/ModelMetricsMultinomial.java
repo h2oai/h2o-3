@@ -3,6 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
@@ -90,7 +91,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     @Override public double[] perRow(double ds[], float[] yact, Model m) { return perRow(ds, yact, 1, 0, m); }
     @Override public double[] perRow(double ds[], float[] yact, double w, double o, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Double.isNaN(ds[0]) ) return ds; // No errors if prediction is missing
+      if(ArrayUtils.hasNaNs(ds)) return ds;
       if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
       _wsum += w;
@@ -123,14 +124,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     }
 
     @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      sigma = weightedSigma(m,f,sigma);
       if (sigma != 0) {
         ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
         float[] hr = new float[_K];
         double mse = Double.NaN;
         double logloss = Double.NaN;
-        if (_count != 0) {
+        if (_wsum > 0) {
           if (_hits != null) {
-            for (int i = 0; i < hr.length; i++)  hr[i] = (float)_hits[i] / _count;
+            for (int i = 0; i < hr.length; i++)  hr[i] = (float)(_hits[i] / _wsum);
             for (int i = 1; i < hr.length; i++)  hr[i] += hr[i-1];
           }
           mse = _sumsqe / _wsum;

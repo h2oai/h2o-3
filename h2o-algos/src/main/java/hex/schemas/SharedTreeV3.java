@@ -10,6 +10,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
   public static class SharedTreeParametersV3<P extends SharedTreeParameters, S extends SharedTreeParametersV3<P, S>> extends ModelParametersSchema<P, S> {
     static public String[] own_fields = new String[] {
       "response_column",
+      "offset_column",
+      "weights_column",
       "balance_classes",
       "class_sampling_factors",
       "max_after_balance_size",
@@ -26,6 +28,12 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     // column names are related to training_frame.
     @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 response_column;
+
+    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 weights_column;
+
+    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 offset_column;
 
   /*Imbalanced Classes*/
     /**

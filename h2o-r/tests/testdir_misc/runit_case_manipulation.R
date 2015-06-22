@@ -6,11 +6,11 @@ test.string.case.manipulation <- function(conn) {
   hex <- as.h2o(letters)
   print(hex)
   Log.info("Changing to upper case...")
-  h2o.toupper(hex)
+  hex <- h2o.toupper(hex)
   print(hex)
   upper.r <- as.character(as.data.frame(hex)[1:26,])
   Log.info("Changing to lower case...")
-  h2o.tolower(hex)
+  hex <- h2o.tolower(hex)
   lower.r <- as.character(as.data.frame(hex)[1:26,])
   print(hex)
 

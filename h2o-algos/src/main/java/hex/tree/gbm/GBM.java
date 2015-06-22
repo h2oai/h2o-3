@@ -9,6 +9,7 @@ import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -79,6 +80,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       mean = _response.mean();
+      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1))
+        mean = new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
+
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
 
@@ -181,7 +185,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         } else if( _nclass > 1 ) {       // Classification
           double fs[] = new double[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
-            double sum = score1(chks,fs,row);
+            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
+            double offset = hasOffset() ? chk_offset(chks).atd(row) : 0;
+            double sum = score1(chks, weight,offset,fs,row);
             if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
                 chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
@@ -258,7 +264,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // DRF picks a random different set of columns for the 2nd tree.
           if( k==1 && _nclass==2 ) continue;
           ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_parms._nbins_cats, (char)_nclass,_parms._min_rows);
-          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,adj_nbins,_parms._nbins_cats,hcs[k][0], false) ); // The "root" node
+          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,adj_nbins,_parms._nbins_cats,hcs[k][0]) ); // The "root" node
         }
       }
       int[] leafs = new int[_nclass]; // Define a "working set" of leaf splits, from here to tree._len
@@ -490,7 +496,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
+  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
       fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
       fs[2] = 1.0-fs[1];

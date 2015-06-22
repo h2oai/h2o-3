@@ -728,7 +728,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3189442010379401, mse, 1e-8); //Note: better results than non-shuffled
+      assertEquals(0.31868918279790326, mse, 1e-8); //Note: better results than non-shuffled
       job.remove();
       dl.delete();
     } finally {
@@ -800,10 +800,10 @@ public class DeepLearningTest extends TestUtil {
 
       dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+      assertEquals(0.7777777777777778, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3235564455920481, mse, 1e-8);
+      assertEquals(0.26629256850235067, mse, 1e-8);
       job.remove();
       dl.delete();
     } finally {
