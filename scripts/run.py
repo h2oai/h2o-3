@@ -236,8 +236,9 @@ class H2OCloudNode:
             if not os.path.exists(jresults_dir):
                 os.mkdir(jresults_dir)
             jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
-            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
-            cmd[4] = agent_dir + ":" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
+            #jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=" + root_dir + "/build/jacoco_instrumented/build/h2o.jar,classdumpdir=" + jresults_dir + "/{cloud}_{node}_dump".format(cloud = self.cloud_num, node = self.node_num)
+            #cmd[4] = agent_dir + ":" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num)
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
 

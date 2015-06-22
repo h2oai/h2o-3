@@ -1,0 +1,68 @@
+// Gradle file for jacoco code coverage
+
+apply plugin: 'jacoco'
+
+//
+// Currently Jenkins isn't compatible with anything above
+// Jacoco version 0.7.4
+// 
+jacoco {
+    toolVersion = "0.7.4.201502262128"
+}
+
+repositories {
+    mavenCentral()
+}
+
+String destination = "${buildDir}/reports/jacoco/report.exec"
+
+task jacocoMergeExecs(type: JacocoMerge) {
+    FileTree execs = fileTree(dir: "${rootDir}", include: "**/*.exec", exclude: destination)
+    executionData = execs
+    destinationFile = new File(destination) 
+}
+
+//
+// Generate a test report for all tests
+//
+jacocoTestReport {
+    // String to help locate the directories of the source code
+    String sourceDirEnd = "/src/main/java/"
+
+    // Collect .exec files
+    FileTree execLocation = fileTree(destination)
+    executionData = execLocation
+
+    // Collect source files
+    FileTree sourceLocation = fileTree("$rootDir")
+    sourceLocation.include ("**" + sourceDirEnd + "**")
+    sourceLocation.each {File file ->
+    	String fileDir = file.getParent() + "/"
+	fileDir = fileDir.substring(0, (fileDir.lastIndexOf(sourceDirEnd) + sourceDirEnd.length()))
+    	if (sourceDirectories == null) {
+	   sourceDirectories = files(fileDir)
+	} else {
+           sourceDirectories = sourceDirectories + files(fileDir)
+	}
+    }
+
+    // Collect class files
+    FileTree classLocation = fileTree(dir: "$rootDir", include: "**/build/libs/**/*.jar", excludes: ["build/", "h2o-assembly/"])
+    classDirectories = classLocation
+    
+    reports {
+        xml.enabled false
+        csv.enabled false
+	html.enabled true
+    }
+}
+
+task cleanCoverageData(type: Delete) {
+    delete files("${buildDir}/jacoco_instrumented", "${buildDir}/jardump")
+}
+
+task cleanCoverageReports(type: Delete) {
+    delete files("${buildDir}/reports/jacoco")
+}
+
+jacocoTestReport.dependsOn jacocoMergeExecs

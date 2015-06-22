@@ -37,11 +37,11 @@ JVM="nice java -ea -Xmx2g -Xms2g -cp build/libs/h2o-algos-test.jar${SEP}build/li
 # Checking whether to generate a coverage report...
 if [ "$1" = "jacoco" ]
 then
-    CP="build/libs/h2o-algos-test.jar${SEP}../build/jacoco_instrumented/h2o-algos/build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../build/jacoco_instrumented/h2o-core/build/libs/h2o-core.jar${SEP}../build/jacoco_instrumented/h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+#    CP="build/libs/h2o-algos-test.jar${SEP}../build/jacoco_instrumented/h2o-algos/build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../build/jacoco_instrumented/h2o-core/build/libs/h2o-core.jar${SEP}../build/jacoco_instrumented/h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
     AGENT="../jacoco/jacocoagent.jar"
-    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-algos.exec,excludes=$CP"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-algos.exec"
     TEMP_PRE_JVM=${JVM:0:10}
-    TEMP_POST_JVM="${JVM:9:23}$AGENT${SEP}$CP"
+    TEMP_POST_JVM=${JVM:9}
     JVM=$TEMP_PRE_JVM$COVERAGE$TEMP_POST_JVM
     echo $JVM
 fi
