@@ -68,7 +68,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
   }
 
-  public double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
+  // public double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
   public double[] powerLoop(Gram gram, long seed) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed)); }
   public double[] powerLoop(Gram gram, double[] vinit) {
     // TODO: What happens if Gram matrix is essentially zero? Numerical inaccuracies in PUBDEV-1161.
@@ -147,14 +147,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._names_expanded = dinfo.coefNames();
 
         // Calculate and save Gram matrix of training data
-        // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
+        // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
         GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
         assert gram.fullN() == _ncolExp;
-        double nrow = dinfo._adaptedFrame.numRows();
-        model._output._total_variance = gram.diagSum() * nrow / (nrow-1);  // Since gram = X'X/nrow, but variance requires nrow-1 in denominator
         model._output._nobs = gtsk._nobs;
         model._output._v = new double[_parms._nv][_ncolExp];
+        model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
         model.update(self());
         update(1);
 
