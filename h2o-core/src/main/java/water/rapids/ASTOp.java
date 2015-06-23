@@ -4293,9 +4293,8 @@ class ASTLs extends ASTOp {
   }
 
   private double getSize(Key k) {
-    Keyed v = k.get();
-    if( !(v instanceof Frame) ) return Double.NaN;
-    return (double)(((Frame) k.get()).byteSize());
+    try { return (double) (((Frame) k.get()).byteSize()); }
+    catch (Exception e) { return Double.NaN; }
   }
 }
 
