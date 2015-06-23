@@ -15,7 +15,7 @@ class ExprNode:
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
-  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 6 : 4
+  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
   def __init__(self,op,*args):
     self._rows = self._cols = self._id = None
