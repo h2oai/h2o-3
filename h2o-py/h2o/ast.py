@@ -25,12 +25,7 @@ class ExprNode:
   def _eager(self,sb=None):
     """
     The top-level call to evaluate an expression DAG.
-
-    This call is mutually recusrive with ExprNode._do_it and H2OFrame._do_it
-
-    First walk the expr DAG and build a rapids string.
-    Second evaluate the rapids string and exit.
-    Caller handles the results
+    This call is mutually recursive with ExprNode._do_it and H2OFrame._do_it
 
     :return: sb
     """
