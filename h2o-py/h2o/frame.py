@@ -1154,6 +1154,18 @@ class H2OFrame:
     expr = "(= !{} (t %{}))".format(tmp_key,frame_keys[0])
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
+  def strsplit(self, pattern):
+    """
+    Split the strings in the target column on the given pattern
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (strsplit %{} {}))".format(tmp_key, frame_keys[0], "\""+pattern+"\"")
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
   def trim(self):
     """
     Trim the edge-spaces in a column of strings (only operates on frame with one column)
@@ -1836,7 +1848,6 @@ class H2OVec:
     expr = "(= !{} (tolower %{}))".format(tmp_key, self.key())
     return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
 
-
   def _get_vec_from_rapids_string(self, expr, tmp_key):
     h2o.rapids(expr)
     j = h2o.frame(tmp_key)
@@ -1856,6 +1867,15 @@ class H2OVec:
     """
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (t %{}))".format(tmp_key,self.key())
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
+
+  def strsplit(self, pattern):
+    """
+    Split the strings in the target column on the given pattern
+    :return: H2OFrame
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (strsplit %{} {}))".format(tmp_key, self.key(), "\""+pattern+"\"")
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
 
   def table(self, data2=None):

@@ -1027,6 +1027,7 @@ def sub(pattern, replacement, data, ignore_case=False): return data.sub(pattern=
                                                                         ignore_case=ignore_case)
 def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(pattern=pattern, replacement=replacement,
                                                                         ignore_case=ignore_case)
+def strsplit(data, pattern): return data.strsplit(pattern=pattern)
 
 class H2ODisplay:
   """
