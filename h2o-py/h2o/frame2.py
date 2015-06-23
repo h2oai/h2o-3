@@ -790,7 +790,7 @@ class H2OFrame:
     #  If it's not clear, the reason for the "long" road is so that pending expressions
     #  in the DAG that have references elsewhere can be saved (i.e., pytmp is True case
     #  where the referrers is the magic count)
-    if self._computed:                                                sb += [self._id+" "]
+    if self._computed:                                            sb += [self._id+" "]
     else:
       if len(gc.get_referrers(self)) >= ExprNode.MAGIC_REF_COUNT: sb += self._eager(True )
       else:                                                       sb += self._eager(False)
