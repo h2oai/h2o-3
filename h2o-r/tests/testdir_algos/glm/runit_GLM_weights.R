@@ -3,7 +3,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 # TO DO: Deduplicate code for lambda=0 and lambda>=0 cases
 
-test_weights_vs_glmnet <- function(h) {
+test_weights_vs_glmnet <- function(conn) {
   
   require(testthat)
   require(glmnet)
@@ -18,7 +18,7 @@ test_weights_vs_glmnet <- function(h) {
   
   x1 <- rep(1, n)  #weight vector (all weights = 1.0)
   df <- data.frame(x, x1, y)  #design matrix with weight and outcome cols
-  hdf <- as.h2o(object = df, conn = h, destination_frame = "hdf")  #for h2o
+  hdf <- as.h2o(object = df, conn = conn, destination_frame = "hdf")  #for h2o
   df <- as.matrix(df)  #for glmnet
   
   # create test data
@@ -131,7 +131,7 @@ test_weights_vs_glmnet <- function(h) {
 }
 
 
-test_weights_by_row_duplication <- function(h) {
+test_weights_by_row_duplication <- function(conn) {
   
   require(testthat)
   
@@ -148,13 +148,13 @@ test_weights_by_row_duplication <- function(h) {
   set.seed(1234)
   x1 <- rpois(n, rep(2, n)) + 1  #Random integer-valued (>=1) weights
   df <- data.frame(x, x1, y)  #design matrix with weight and outcome cols
-  hdf <- as.h2o(object = df, conn = h, destination_frame = "hdf")  #for h2o
+  hdf <- as.h2o(object = df, conn = conn, destination_frame = "hdf")  #for h2o
   
   # Training data (weights == 1.0 with repeated rows instead of weights)
   rep_idxs <- unlist(sapply(1:n, function(i) rep(i, df$x1[i])))
   rdf <- df[rep_idxs,]  #repeat rows
   rdf$x1 <- 1  #set weights back to 1.0
-  rhdf <- as.h2o(object = rdf, conn = h, destination_frame = "rhdf")  #for h2o
+  rhdf <- as.h2o(object = rdf, conn = conn, destination_frame = "rhdf")  #for h2o
   
   ## for glmnet
   #df <- as.matrix(df)
