@@ -779,13 +779,13 @@ class H2OFrame:
     #
     #  Here's a diagram that illustrates the call order:
     #
-    #           H2OFrame:                     ExprNode:
-    #               _eager ---------------->      _eager
+    #           H2OFrame:                   ExprNode:
+    #               _eager ---------------->  _eager
     #
-    #                 ^^                           ^^ ||
-    #                 ||                           || \/
+    #                 ^^                       ^^ ||
+    #                 ||                       || \/
     #
-    #               _do_it <----------------      _do_it
+    #               _do_it <----------------  _do_it
     #
     if self._computed:                                                sb += [self._id+" "]
     else:
