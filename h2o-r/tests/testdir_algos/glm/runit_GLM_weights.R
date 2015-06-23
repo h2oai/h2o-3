@@ -143,22 +143,13 @@ test_weights_by_row_duplication <- function(h) {
   y <- rnorm(n)
   
   # Training data with weights
-  #x1 <- rep(1, n)  #weight vector (all weights = 1.0)
-  #df <- data.frame(x, x1, y)  #design matrix with weight and outcome cols
-  #hdf <- as.h2o(object = df, conn = h, destination_frame = "hdf")  #for h2o
-  #df <- as.matrix(df)  #for glmnet
-  
-  #draw some random weights ~ Poisson, add 'x1' weight col and y to df, hdf
+  # draw some random weights ~ Poisson, add 'x1' weight col and y to df, hdf
   set.seed(1234)
   x1 <- rpois(n, rep(2, n)) + 1  #Random integer-valued (>=1) weights
   df <- data.frame(x, x1, y)  #design matrix with weight and outcome cols
   hdf <- as.h2o(object = df, conn = h, destination_frame = "hdf")  #for h2o
-  #set.seed(4321)
-  #wt2 <- rpois(n, rep(100, n)) + 1  #Random integer-valued (>=1) weights  
-  #df$x1 <- wt1
-  #hdf$wt1 <- as.h2o(wt1)
   
-  #Training data (weights == 1.0 with repeated rows instead of weights)
+  # Training data (weights == 1.0 with repeated rows instead of weights)
   rep_idxs <- unlist(sapply(1:n, function(i) rep(i, df$x1[i])))
   rdf <- df[rep_idxs,]  #repeat rows
   rdf$x1 <- 1  #set weights back to 1.0
@@ -186,9 +177,7 @@ test_weights_by_row_duplication <- function(h) {
   
   
   #lambda=0
-  print("build models with weights in h2o and R with lambda=0")
-  #gg <- glmnet(x = df[,1:20], y = df[,22], alpha = 0.5, 
-  #             lambda = 0, weights = df[,21])
+  print("build models with weights vs repeated rows with h2o and lambda!=0")
   hh1 <- h2o.glm(x = 1:20, y = "y", 
                  training_frame = hdf, 
                  validation_frame = val1, 
@@ -215,10 +204,6 @@ test_weights_by_row_duplication <- function(h) {
   #             hh2@model$training_metrics@metrics$AIC)  #NOPASS, maybe AIC calc needs to be updated for weights
   #expect_equal(hh1@model$training_metrics@metrics$null_degrees_of_freedom,  #NOPASS
   #             hh2@model$training_metrics@metrics$null_degrees_of_freedom)
-  #expect_equal(as.vector(hh1@model$coefficients[-1]),
-  #             as.vector(hh2@model$coefficients[-1]))
-  #expect_equal(as.vector(hh1@model$coefficients),
-  #             as.vector(hh2@model$coefficients))
   expect_equal(hh1@model$coefficients,
                hh2@model$coefficients)  
   expect_equal(hh1@model$validation_metrics@metrics$residual_deviance,
@@ -228,21 +213,12 @@ test_weights_by_row_duplication <- function(h) {
   print("compare predictions")
   ph1 <- as.data.frame(h2o.predict(object = hh1, newdata = val1))
   ph2 <- as.data.frame(h2o.predict(object = hh2, newdata = val1))
-  #ph3 = as.data.frame(h2o.predict(object = hh1,newdata = val3))
   expect_equal(ph1, ph2)
-  #expect_equal(ph2,ph3)
-  #expect_equal(ph3,ph1)
-  #pr <- predict(object = gg, newx = valid3[,1:20], type = "response")
-  #expect_equal(min(pr), min(ph3), tolerance = 0.001)
-  #expect_equal(max(pr), max(ph3), tolerance = 0.001)
-  #expect_equal(mean(pr), mean(ph3$predict), tolerance = 0.001)
   
   
   # lambda!=0
   lambda <- 0.02984
-  print("build models with weights in h2o and R with lambda!=0")
-  #gg <- glmnet(x = df[,1:20],y = df[,22], alpha = 0.5,
-  #             lambda = lambda, weights = df[,21])
+  print("build models with weights vs repeated rows with h2o and lambda!=0")
   hh1 <- h2o.glm(x = 1:20, y = "y",
                  training_frame = hdf, 
                  validation_frame = val1,
@@ -270,36 +246,16 @@ test_weights_by_row_duplication <- function(h) {
                hh2@model$training_metrics@metrics$AIC)
   expect_equal(hh1@model$training_metrics@metrics$null_degrees_of_freedom,
                hh2@model$training_metrics@metrics$null_degrees_of_freedom)
-  #expect_equal(as.vector(hh1@model$coefficients[-1]),
-  #             as.vector(hh2@model$coefficients[-1]))
-  #expect_equal(as.vector(hh1@model$coefficients),
-  #             as.vector(hh2@model$coefficients))
   expect_equal(hh1@model$coefficients,
                hh2@model$coefficients)  
   expect_equal(hh1@model$validation_metrics@metrics$residual_deviance,
                hh2@model$validation_metrics@metrics$residual_deviance)
-  #predictions
-  print("compare predictions")
-  ph1 <- as.data.frame(h2o.predict(object = hh1, newdata = val1))
-  ph2 <- as.data.frame(h2o.predict(object = hh2, newdata = val1))
-  #ph3 = as.data.frame(h2o.predict(object = hh1,newdata = val3))
-  expect_equal(ph1, ph2)
-  #expect_equal(ph2,ph3)
-  #expect_equal(ph3,ph1)
-  #pr <- predict(object = gg, newx = valid3[,1:20], type = "response")
-  #expect_equal(min(pr), min(ph3), tolerance = 0.001)
-  #expect_equal(max(pr), max(ph3), tolerance = 0.001)
-  #expect_equal(mean(pr), mean(ph3$predict), tolerance = 0.001)
   
   #predictions
   print("compare predictions")
   ph1 <- as.data.frame(h2o.predict(object = hh1, newdata = val1))
   ph2 <- as.data.frame(h2o.predict(object = hh2, newdata = val1))
   expect_equal(ph1, ph2)
-  #pr <- predict(object = gg,
-  #              newx = valid3[,1:20],
-  #              type = "response")
-  #expect_equal(mean(pr), mean(ph3$predict), tolerance = 0.01)
   
   testEnd()
 }
