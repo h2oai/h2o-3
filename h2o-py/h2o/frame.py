@@ -1180,7 +1180,8 @@ class H2OFrame:
 
   def sub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively
+    sub and gsub perform replacement of the first and all matches respectively.
+    Of note, mutates the frame.
     :return: H2OFrame
     """
     if self._vecs is None or self._vecs == []:
@@ -1192,7 +1193,8 @@ class H2OFrame:
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively
+    sub and gsub perform replacement of the first and all matches respectively.
+    Of note, mutates the frame.
     :return: H2OFrame
     """
     if self._vecs is None or self._vecs == []:
@@ -1200,6 +1202,32 @@ class H2OFrame:
     frame_keys = [self.send_frame()]
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (gsub {} {} %{} {}))".format(tmp_key, "\""+pattern+"\"", "\""+replacement+"\"", frame_keys[0], "%TRUE" if ignore_case else "%FALSE")
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def toupper(self):
+    """
+    Translate characters from lower to upper case for a particular column
+    Of note, mutates the frame.
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (toupper %{}))".format(tmp_key, frame_keys[0])
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def tolower(self):
+    """
+    Translate characters from upper to lower case for a particular column
+    Of note, mutates the frame.
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (tolower %{}))".format(tmp_key, frame_keys[0])
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
   def rep_len(self, length_out):
@@ -1761,7 +1789,8 @@ class H2OVec:
 
   def sub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively
+    sub and gsub perform replacement of the first and all matches respectively.
+    Of note, mutates the vec.
     :return: H2OFrame
     """
     tmp_key = H2OFrame.py_tmp_key()
@@ -1770,7 +1799,8 @@ class H2OVec:
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively
+    sub and gsub perform replacement of the first and all matches respectively.
+    Of note, mutates the vec.
     :return: H2OFrame
     """
     tmp_key = H2OFrame.py_tmp_key()
@@ -1785,6 +1815,27 @@ class H2OVec:
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (trim %{}))".format(tmp_key,self.key())
     return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def toupper(self):
+    """
+    Translate characters from lower to upper case for a particular column
+    Of note, mutates the frame.
+    :return: H2OFrame
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (toupper %{}))".format(tmp_key, self.key())
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def tolower(self):
+    """
+    Translate characters from upper to lower case for a particular column
+    Of note, mutates the frame.
+    :return: H2OFrame
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (tolower %{}))".format(tmp_key, self.key())
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
 
   def _get_vec_from_rapids_string(self, expr, tmp_key):
     h2o.rapids(expr)

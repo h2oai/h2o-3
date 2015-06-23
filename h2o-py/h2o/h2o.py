@@ -988,6 +988,8 @@ def mean(data)  : return data.mean()
 def median(data): return data.median()
 
 def trim(data)      : return data.trim()
+def toupper(data)   : return data.toupper()
+def tolower(data)   : return data.tolower()
 def asnumeric(data) : return data.asnumeric()
 def transpose(data) : return data.transpose()
 def anyfactor(data) : return data.anyfactor()
