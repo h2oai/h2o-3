@@ -19,8 +19,12 @@ class ASTColSlice extends ASTPrim {
         fr2.add(fr.names()[col],fr.vecs()[col]);
       }
     } else if( (asts[2] instanceof ASTNum) ) {
-      int col = (int)(((ASTNum)asts[2])._d.getNum());
-      fr2.add(fr.names()[col],fr.vecs()[col]);
+      int col = (int) (((ASTNum) asts[2])._d.getNum());
+      fr2.add(fr.names()[col], fr.vecs()[col]);
+
+    } else if( (asts[2] instanceof ASTStr) ) {
+      int col = fr.find(asts[2].str());
+      fr2.add(fr.names()[col], fr.vecs()[col]);
     } else
       throw new IllegalArgumentException("Column slicing requires a number-list as the last argument, but found a "+asts[2].getClass());
     

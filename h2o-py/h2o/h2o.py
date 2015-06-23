@@ -49,7 +49,7 @@ def upload_frame(path, destination_frame=""):
   fui = {"file": os.path.abspath(path)}
   destination_frame = H2OFrame.py_tmp_key() if destination_frame == "" else destination_frame
   H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame)
-  return H2OFrame(text_key=destination_frame)
+  return H2OFrame(raw_id=destination_frame)
 
 
 def import_frame(path=None):
@@ -92,8 +92,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'number_columns' : None,
         'chunk_size'    : None,
         'delete_on_done' : True,
-        'blocking' : True,
-        'remove_frame' : True
+        'blocking' : False,
   }
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]
@@ -343,10 +342,8 @@ def remove(object):
   if object is None:
     raise ValueError("remove with no object is not supported, for your protection")
 
-  H2OConnection.delete("DKV/" + object)
-  #
-  # else:
-  #   raise ValueError("Can't remove objects of type: " + id.__class__)
+  if isinstance(object, H2OFrame):
+    H2OConnection.delete("DKV/"+object._id)
 
 def remove_all():
   """
@@ -366,26 +363,28 @@ def removeFrameShallow(key):
   rapids("(removeframe '"+key+"')")
   return None
 
-def rapids(expr):
+
+def rapids(expr, id):
   """
   Fire off a Rapids expression.
 
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
-  if result['error'] is not None:
-    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
+  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id)
+  # if result['error'] is not None:
+  #   raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
 
-def frame(frame_id):
+
+def frame(frame_id,exclude=""):
   """
   Retrieve metadata for a id that points to a Frame.
 
   :param frame_id: A pointer to a Frame  in H2O.
   :return: Meta information on the frame
   """
-  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
+  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id+exclude))
 
 
 def frames():

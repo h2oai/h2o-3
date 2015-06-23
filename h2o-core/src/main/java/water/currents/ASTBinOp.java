@@ -2,7 +2,10 @@ package water.currents;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.parser.ValueString;
 
 /**
@@ -75,7 +78,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(1,fr).outputFrame());
+      }.doAll(fr.numCols(),fr).outputFrame());
   }
 
   /** Auto-widen the scalar to every element of the frame */

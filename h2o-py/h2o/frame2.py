@@ -46,7 +46,7 @@ class H2OFrame:
     parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
-    rows = self._nrows = parse['rows']
+    rows = self._nrows = parse['rows']   # FIXME: this returns 0???
     cols = self._col_names = parse['column_names']
     self._ncols = len(cols)
     thousands_sep = h2o.H2ODisplay.THOUSANDS
@@ -162,7 +162,7 @@ class H2OFrame:
 
     :return: A character list[] of column names.
     """
-    if isinstance(self, ExprNode): self.eager()
+    self._eager()
     return self._col_names
 
   def names(self):
@@ -171,7 +171,7 @@ class H2OFrame:
 
     :return: A character list[] of column names.
     """
-    if isinstance(self, ExprNode): self.eager()
+    self._eager()
     return self.col_names()
 
   def nrow(self):
@@ -180,7 +180,7 @@ class H2OFrame:
 
     :return: The number of rows in this dataset.
     """
-    if isinstance(self, ExprNode): self.eager()
+    self._eager()
     return self._nrows
 
   def ncol(self):
@@ -189,7 +189,7 @@ class H2OFrame:
 
     :return: The number of columns in this H2OFrame.
     """
-    if isinstance(self, ExprNode): self.eager()
+    self._eager()
     return self._ncols
 
   def filterNACols(self, frac=0.2):
@@ -224,7 +224,7 @@ class H2OFrame:
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
     head = self[0:10,:]
-    res = head.as_data_frame(False)
+    res = head.as_data_frame(False)[1:]
     print "First {} rows and first {} columns: ".format(nrows, ncols)
     h2o.H2ODisplay(res,["Row ID"]+colnames)
 
@@ -237,7 +237,7 @@ class H2OFrame:
     :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
-    if isinstance(self, ExprNode): self.eager()
+    self._eager()
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
@@ -323,8 +323,8 @@ class H2OFrame:
   #   return ""
 
   def as_data_frame(self, use_pandas=True):
-    if isinstance(self, ExprNode): self.eager()
-    url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(id) + "&hex_string=false"
+    self._eager()
+    url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self._id) + "&hex_string=false"
     response = urllib2.urlopen(url)
     if h2o.can_use_pandas() and use_pandas:
       import pandas
@@ -337,7 +337,7 @@ class H2OFrame:
 
   # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
   def _find_idx(self,name):
-    for i,v in enumerate(self._cols):
+    for i,v in enumerate(self._col_names):
       if name == v: return i
     raise ValueError("Name " + name + " not in Frame")
 
@@ -360,7 +360,7 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list,slice)): return ExprNode("cols", self, item)  # just columns
+    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("cols", self, item))  # just columns
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
@@ -371,10 +371,10 @@ class H2OFrame:
       if isinstance(rows, slice):
         allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
-      if allrows and allcols: return self               # fr[:,:]    -> all rows and columns.. return self
-      if allrows: return ExprNode("cols",self,item[1])  # fr[:,cols] -> really just a column slice
-      if allcols: return ExprNode("rows",self,item[0])  # fr[rows,:] -> really just a row slices
-      return ExprNode("rows", ExprNode("cols", self, item[1]), item[0])
+      if allrows and allcols: return self                              # fr[:,:]    -> all rows and columns.. return self
+      if allrows: return H2OFrame(expr=ExprNode("cols",self,item[1]))  # fr[:,cols] -> really just a column slice
+      if allcols: return H2OFrame(expr=ExprNode("rows",self,item[0]))  # fr[rows,:] -> really just a row slices
+      return H2OFrame(expr=ExprNode("rows", ExprNode("cols", self, item[1]), item[0]))
 
   def __setitem__(self, b, c):
     """
@@ -421,6 +421,9 @@ class H2OFrame:
     # if isinstance(i, str):
     #   return self._vecs.pop(self._find_idx(i))
     raise NotImplementedError
+
+  def __del__(self):
+    if self._computed: h2o.remove(self)
 
   # Makes a new collection
   def drop(self, i):
@@ -759,17 +762,39 @@ class H2OFrame:
     """
     return ExprNode("var", self,na_rm,use)
 
-  def _eager(self):
+  def _eager(self, pytmp=True):
     if not self._computed:
       # top-level call to execute all subparts of self._ast
-      # must fill in the following:
-      #  self._computed = True
-      #  self._ncols
-      #  self._nrows
-      #  self._col_names
-      #  self._id
-      self._ast._eager()
+      sb = self._ast._eager()
+      if pytmp:
+        h2o.rapids(ExprNode._collapse_sb(sb), self._id)
+        sb = [self._id+" "]
+        self._update()   # fill out _nrows, _ncols, _col_names, _computed
+      return sb
 
+  def _do_it(self,sb):
+    if self._computed:                                                sb += [self._id+" "]
+    else:
+      if (len(gc.get_referrers(self))) == (ExprNode.MAGIC_REF_COUNT): sb += self._eager(True )
+      else:                                                           sb += self._eager(False)
+
+  def _update(self):
+    # get ncols,nrows,names and exclude everything else
+    frames_ex = ["row_offset", "row_count", "checksum", "default_percentiles", "compatible_models",
+                 "vec_ids","chunk_summary","distribution_summary"]
+    columns_ex = ["missing_count", "zero_count", "positive_infinity_count", "negative_infinity_count",
+                  "mins", "maxs", "mean", "sigma", "type", "domain", "data", "string_data",
+                  "precision", "histogram_bins", "histogram_base", "histogram_stride", "percentiles"]
+
+    frames_ex = "frames/" + ",frames/".join(frames_ex)
+    columns_ex = "frames/columns/" + ",frames/columns/".join(columns_ex)
+    exclude="?_exclude_fields={},{}".format(frames_ex,columns_ex)
+    res = h2o.frame(self._id)["frames"][0]  # TODO: exclude here?
+    self._nrows = res["rows"]
+    self._ncols = len(res["columns"])
+    self._col_names = [c["label"] for c in res["columns"]]
+    self._computed=True
+    self._ast=None
 
 # private static methods
 def _gen_header(cols):
