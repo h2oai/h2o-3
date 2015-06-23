@@ -27,7 +27,8 @@ hdfs_data_file = "/datasets/15Mx2.2k.csv"
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it took to parse", parse_time)
+print("Time it took to parse")
+print(parse_time)
 
 response=1 #1:1000 imbalance
 predictors=c(3:ncol(data.hex))
@@ -36,7 +37,8 @@ predictors=c(3:ncol(data.hex))
 # Gradient Boosted Trees
 gbm_time <- system.time(mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "bernoulli"))
 mdl.gbm
-paste("Time it took to build GBM ", gbm_time)
+print("Time it took to build GBM")
+print(gbm_time)
 
 PASS_BANNER()
 
