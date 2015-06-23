@@ -44,34 +44,29 @@ class ExprNode:
   @staticmethod
   def _arg_to_expr(arg):
     if isinstance(arg, (int, float, ExprNode, h2o.H2OFrame)): return arg
-    elif isinstance(arg, str): return '"'+arg+'"'
-    elif isinstance(arg, slice): return "[{}:{}]".format(arg.start,arg.stop)
+    elif isinstance(arg, str):                                return '"'+arg+'"'
+    elif isinstance(arg, slice):                              return "[{}:{}]".format(arg.start,arg.stop)
     raise ValueError("Unexpected arg type: " + str(type(arg)))
 
   @staticmethod
-  def _collapse_sb(sb):
-    return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
+  def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
 
   #### DEBUG PRINTING BELOW ####
   def _debug_print(self,pprint=True):
-    sb = self._to_string()
-    if pprint: print "".join(sb)
-    else:      print ExprNode._collapse_sb(sb)
+    if pprint: print "".join(self._to_string())
+    else:      print ExprNode._collapse_sb(self._to_string())
 
   # companion method to _debug_print
   def _to_string(self,depth=0,sb=None):
     if sb is None: sb = []
-    sb += ['\n']
-    sb += [" "*depth + "("+self._op, " "]   # the ',' gives a space and no newline
+    sb += ['\n', " "*depth + "("+self._op, " "]   # the ',' gives a space and no newline
     for i,child in enumerate(self._children):
       if isinstance(child, ExprNode): child._to_string(depth+2,sb)
       else:
-        if depth > 0:
-          sb += ["\n"]
-          sb += [" "*(depth+2) + str(child)]
+        if depth > 0: sb += ["\n", " "*(depth+2) + str(child)]
         else:
           if i==(len(self._children)-1): sb +=[str(child)]
-          else:                        sb += [str(child) + " "]
+          else:                          sb += [str(child) + " "]
       if i==(len(self._children)-1): sb += ['\n'+' '*depth+") "]
     if depth==0: sb += ["\n"]
     return sb
