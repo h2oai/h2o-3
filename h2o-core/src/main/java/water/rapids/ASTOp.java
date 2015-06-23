@@ -4272,27 +4272,27 @@ class ASTLs extends ASTOp {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    AppendableVec av2= new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
     NewChunk keys = new NewChunk(av,0);
+    NewChunk szs  = new NewChunk(av2,0);
     int r = 0;
     for( Key key : KeySnapshot.globalSnapshot().keys()) {
       keys.addEnum(r++);
+      szs.addNum(getSize(key));
       domain.add(key.toString());
     }
     keys.close(fs);
+    szs.close(fs);
     Vec c0 = av.close(fs);   // c0 is the row index vec
+    Vec c1 = av2.close(fs);
     fs.blockForPending();
     String[] key_domain = new String[domain.size()];
     for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
     c0.setDomain(key_domain);
-    env.pushAry(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
+    env.pushAry(new Frame(Key.make("h2o_ls"), new String[]{"key", "byteSize"}, new Vec[]{c0,c1}));
   }
 
-  private double getSize(Key k) {
-    return (double)(((Frame) k.get()).byteSize());
-//    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
-//    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
-//    return Double.NaN;
-  }
+  private double getSize(Key k) { return (double)(((Frame) k.get()).byteSize()); }
 }
 
 class ASTStoreSize extends ASTOp {
