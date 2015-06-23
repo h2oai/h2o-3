@@ -1021,6 +1021,10 @@ def rep_len(data, length_out):
     removeFrameShallow(tmp_key)
     return H2OFrame(vecs=vecs)
   return data.rep_len(length_out=length_out)
+def sub(pattern, replacement, data, ignore_case=False): return data.sub(pattern=pattern, replacement=replacement,
+                                                                        ignore_case=ignore_case)
+def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(pattern=pattern, replacement=replacement,
+                                                                        ignore_case=ignore_case)
 
 class H2ODisplay:
   """

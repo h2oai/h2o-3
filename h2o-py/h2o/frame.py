@@ -1178,6 +1178,30 @@ class H2OFrame:
     expr = "(= !{} (table %{} {}))".format(tmp_key,frame_keys[0],"%"+frame_keys[1] if data2 else "()")
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
+  def sub(self, pattern, replacement, ignore_case=False):
+    """
+    sub and gsub perform replacement of the first and all matches respectively
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (sub {} {} %{} {}))".format(tmp_key, "\""+pattern+"\"", "\""+replacement+"\"", frame_keys[0], "%TRUE" if ignore_case else "%FALSE")
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+  def gsub(self, pattern, replacement, ignore_case=False):
+    """
+    sub and gsub perform replacement of the first and all matches respectively
+    :return: H2OFrame
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (gsub {} {} %{} {}))".format(tmp_key, "\""+pattern+"\"", "\""+replacement+"\"", frame_keys[0], "%TRUE" if ignore_case else "%FALSE")
+    return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
   def rep_len(self, length_out):
     """
     Replicates the values in `data` in the H2O backend
@@ -1735,6 +1759,33 @@ class H2OVec:
     expr = "(= !{} (as.numeric %{}))".format(tmp_key,self.key())
     return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
 
+  def sub(self, pattern, replacement, ignore_case=False):
+    """
+    sub and gsub perform replacement of the first and all matches respectively
+    :return: H2OFrame
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (sub {} {} %{} {}))".format(tmp_key, "\""+pattern+"\"", "\""+replacement+"\"", self.key(), "%TRUE" if ignore_case else "%FALSE")
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def gsub(self, pattern, replacement, ignore_case=False):
+    """
+    sub and gsub perform replacement of the first and all matches respectively
+    :return: H2OFrame
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (gsub {} {} %{} {}))".format(tmp_key, "\""+pattern+"\"", "\""+replacement+"\"", self.key(), "%TRUE" if ignore_case else "%FALSE")
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
+  def trim(self):
+    """
+    Trim the edge-spaces in a column of strings
+    :return: H2OVec
+    """
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (trim %{}))".format(tmp_key,self.key())
+    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
+
   def _get_vec_from_rapids_string(self, expr, tmp_key):
     h2o.rapids(expr)
     j = h2o.frame(tmp_key)
@@ -1755,15 +1806,6 @@ class H2OVec:
     tmp_key = H2OFrame.py_tmp_key()
     expr = "(= !{} (t %{}))".format(tmp_key,self.key())
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, [])
-
-  def trim(self):
-    """
-    Trim the edge-spaces in a column of strings
-    :return: H2OVec
-    """
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (trim %{}))".format(tmp_key,self.key())
-    return H2OVec._get_vec_from_rapids_string(self, expr, tmp_key)
 
   def table(self, data2=None):
     """
