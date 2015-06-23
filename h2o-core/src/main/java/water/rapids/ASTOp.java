@@ -4292,7 +4292,11 @@ class ASTLs extends ASTOp {
     env.pushAry(new Frame(Key.make("h2o_ls"), new String[]{"key", "byteSize"}, new Vec[]{c0,c1}));
   }
 
-  private double getSize(Key k) { return (double)(((Frame) k.get()).byteSize()); }
+  private double getSize(Key k) {
+    Keyed v = k.get();
+    if( !(v instanceof Frame) ) return Double.NaN;
+    return (double)(((Frame) k.get()).byteSize());
+  }
 }
 
 class ASTStoreSize extends ASTOp {
