@@ -59,8 +59,13 @@ h2o.randomForest <- function( x, y, training_frame,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
-  if (length(list(...)) > 0)
-    dots <- .model.ellipses( list(...))
+  do_future <- FALSE
+  if (length(list(...)) > 0) {
+#    browser()
+    dots <- list(...) #.model.ellipses( list(...))
+    if( !is.null(dots$future) ) do_future <- TRUE
+  }
+
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -78,7 +83,7 @@ h2o.randomForest <- function( x, y, training_frame,
 
   # Parameter list to send to model builder
   parms <- list()
-  parms$training_frame
+  parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
@@ -113,5 +118,6 @@ h2o.randomForest <- function( x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  .h2o.createModel(training_frame@conn, 'drf', parms)
+  if( do_future ) .h2o.startModelJob(training_frame@conn, 'drf', parms)
+  else            .h2o.createModel(training_frame@conn, 'drf', parms)
 }

@@ -507,7 +507,6 @@ def ls():
   colnames = [col['label'] for col in cols]
   vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
   fr = H2OFrame(vecs=vecs)
-  fr.setNames(["keys"])
   print "First 10 Keys: "
   fr.show()
   return as_list(fr, use_pandas=False)

@@ -2392,6 +2392,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 
 
 h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x) }
+h2o.which.max <- function(x)  { .h2o.nary_frame_op("h2o.which.max", x) }
 h2o.vote  <- function(x, nclasses, weights=rep(0,ncol(x))) { .h2o.nary_frame_op("h2o.vote", x, nclasses, weights) }
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
