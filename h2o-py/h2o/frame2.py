@@ -3,6 +3,7 @@
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib
 from connection import H2OConnection
 from ast import *
+import gc
 
 class H2OFrame:
 
@@ -773,6 +774,19 @@ class H2OFrame:
       return sb
 
   def _do_it(self,sb):
+    # this method is only ever called from ExprNode._do_it
+    # it's the "long" way 'round the mutual recursion from ExprNode to H2OFrame
+    #
+    #  Here's a diagram that illustrates the call order:
+    #
+    #           H2OFrame:                     ExprNode:
+    #               _eager ---------------->      _eager
+    #
+    #                 ^^                           ^^ ||
+    #                 ||                           || \/
+    #
+    #               _do_it <----------------      _do_it
+    #
     if self._computed:                                                sb += [self._id+" "]
     else:
       if (len(gc.get_referrers(self))) == (ExprNode.MAGIC_REF_COUNT): sb += self._eager(True )

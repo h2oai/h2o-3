@@ -9,51 +9,42 @@ This module contains code for the lazy expression DAG.
 import sys
 import h2o
 
-import gc
 
 class ExprNode:
   """ Composable Expressions """
 
   # Magical count-of-4:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list
-  MAGIC_REF_COUNT = 4 if sys.gettrace() is None else 6  # M = debug ? 5 : 4
+  MAGIC_REF_COUNT = 4 if sys.gettrace() is None else 6  # M = debug ? 6 : 4
 
   def __init__(self,op,*args):
     self._rows = self._cols = self._id = None
-    self._data=None            # a scalar, an H2OFrame (with a real-live ID in H2O), or None if pending
     self._op=op                # unary/binary/prefix op
     self._children=[ExprNode._arg_to_expr(a) for a in args]  # a list of ExprNode instances; the children of "this" node; (e.g. (+ left rite)  self._children = [left,rite] )
-
-  def is_pending(self):  return self._data is None
-
 
   def _eager(self,sb=None):
     """
     The top-level call to evaluate an expression DAG.
 
+    This call is mutually recusrive with ExprNode._do_it and H2OFrame._do_it
+
     First walk the expr DAG and build a rapids string.
     Second evaluate the rapids string and exit.
     Caller handles the results
 
-    :return: None
+    :return: sb
     """
-    assert self.is_pending()
     if sb is None: sb = []
-
     sb += ["("+self._op+" "]
-    for child in self._children:
-      if isinstance(child, (h2o.H2OFrame,ExprNode)): child._do_it(sb)
-      else:                                          sb+=[str(child)+" "]
+    for child in self._children: ExprNode._do_it(child,sb)
     sb += [") "]
-
     return sb
 
-  def _do_it(self,sb): self._eager(sb)
-
-  def __del__(self):
-    # Dead pending op or local data; nothing to delete
-    if self.is_pending(): return
-    h2o.remove(self._data)
+  @staticmethod
+  def _do_it(child,sb):
+    if isinstance(child, h2o.H2OFrame): child._do_it(sb)
+    elif isinstance(child, ExprNode):   child._eager(sb)
+    else:                               sb+=[str(child)+" "]
 
   # debug printing
   def _debug_print(self,pprint=True):
@@ -65,20 +56,17 @@ class ExprNode:
   def _to_string(self,depth=0,sb=None):
     if sb is None: sb = []
     sb += ['\n']
-    if self.is_pending():
-      sb += [" "*depth + "("+self._op, " "]   # the ',' gives a space and no newline
-      for i,child in enumerate(self._children):
-        if isinstance(child, ExprNode): child._to_string(depth+2,sb)
+    sb += [" "*depth + "("+self._op, " "]   # the ',' gives a space and no newline
+    for i,child in enumerate(self._children):
+      if isinstance(child, ExprNode): child._to_string(depth+2,sb)
+      else:
+        if depth > 0:
+          sb += ["\n"]
+          sb += [" "*(depth+2) + str(child)]
         else:
-          if depth > 0:
-            sb += ["\n"]
-            sb += [" "*(depth+2) + str(child)]
-          else:
-            if i==(len(self._children)-1): sb +=[str(child)]
-            else:                        sb += [str(child) + " "]
-        if i==(len(self._children)-1): sb += ['\n'+' '*depth+") "]
-    else:
-      sb += [self._data]
+          if i==(len(self._children)-1): sb +=[str(child)]
+          else:                        sb += [str(child) + " "]
+      if i==(len(self._children)-1): sb += ['\n'+' '*depth+") "]
     if depth==0: sb += ["\n"]
     return sb
 
