@@ -150,10 +150,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if (_link != Link.inverse && _link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only inverse, log and identity links are allowed for family=gamma.");
             break;
-//          case tweedie:
-//            if (_link != Link.tweedie)
-//              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
-//            break;
+          case tweedie:
+            if (_link != Link.tweedie)
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
+            break;
           default:
             H2O.fail();
         }
