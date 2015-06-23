@@ -201,7 +201,7 @@ public class Env extends Iced {
   }
 
   public void toss(ValFrame f) { _trash.add(f); }
-  public void clean() {
+  public synchronized void clean() {
     if( _trash == null ) return;
     for( ValFrame f : _trash )
       if( !f._g ) cleanup(f._fr);

@@ -526,6 +526,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #'
 #' @param conn H2O connection object
 #' @return TRUE if the cluster is up; FALSE otherwise
+#' @export
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
@@ -548,6 +549,7 @@ h2o.killMinus3 <- function(conn = h2o.getConnection()) {
 #' Print H2O cluster info
 #'
 #' @param conn H2O connection object
+#' @export
 h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   stopifnot(is(conn, "H2OConnection"))
   if(! h2o.clusterIsUp(conn)) {

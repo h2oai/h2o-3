@@ -74,8 +74,12 @@ h2o.gbm <- function(x, y, training_frame,
                 "y" = "response_column")
 
   # Pass over ellipse parameters
-  if(length(list(...)) > 0)
-    dots <- .model.ellipses(list(...))
+  do_future <- FALSE
+  if (length(list(...)) > 0) {
+#    browser()
+    dots <- list(...) #.model.ellipses( list(...))
+    if( !is.null(dots$future) ) do_future <- TRUE
+  }
 
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -132,6 +136,7 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  .h2o.createModel(training_frame@conn, 'gbm', parms)
+  if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
+  else            .h2o.createModel(training_frame@conn, 'gbm', parms)
 }
 

@@ -507,7 +507,6 @@ def ls():
   colnames = [col['label'] for col in cols]
   vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
   fr = H2OFrame(vecs=vecs)
-  fr.setNames(["keys"])
   print "First 10 Keys: "
   fr.show()
   return as_list(fr, use_pandas=False)
@@ -987,6 +986,9 @@ def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
 
+def trim(data)      : return data.trim()
+def toupper(data)   : return data.toupper()
+def tolower(data)   : return data.tolower()
 def asnumeric(data) : return data.asnumeric()
 def transpose(data) : return data.transpose()
 def anyfactor(data) : return data.anyfactor()
@@ -1004,6 +1006,27 @@ def setLevels(data, levels): return data.setLevels(levels=levels)
 def levels(data, col=0)    : return data.levels(col=col)
 def nlevels(data, col=0)   : return data.nlevels(col=col)
 def as_date(data, format)  : return data.as_date(format=format)
+def rep_len(data, length_out):
+  if isinstance(data, (str, int)):
+    tmp_key = H2OFrame.py_tmp_key()
+    scaler = '#{}'.format(data) if isinstance(data, int) else '\"{}\"'.format(data)
+    expr = "(= !{} (rep_len {} {}))".format(tmp_key,scaler,'#{}'.format(length_out))
+    rapids(expr)
+    j = frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+    removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+  return data.rep_len(length_out=length_out)
+def sub(pattern, replacement, data, ignore_case=False): return data.sub(pattern=pattern, replacement=replacement,
+                                                                        ignore_case=ignore_case)
+def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(pattern=pattern, replacement=replacement,
+                                                                        ignore_case=ignore_case)
+def strsplit(data, pattern): return data.strsplit(pattern=pattern)
 
 class H2ODisplay:
   """
