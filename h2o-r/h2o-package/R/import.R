@@ -199,7 +199,7 @@ h2o.loadModel <- function(path, conn = h2o.getConnection()) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
 
-  res <- .h2o.__remoteSend(conn, .h2o.__LOAD_MODEL, dir = path, method = "POST")$models[[1L]]
+  res <- .h2o.__remoteSend(conn, .h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
   res
   h2o.getModel(res$model_id$name, conn)
 }

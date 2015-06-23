@@ -148,9 +148,9 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       case gamma:
         aic = Double.NaN;
         break;
-//      case tweedie:
-//        aic = Double.NaN;
-//        break;
+      case tweedie:
+        aic = Double.NaN;
+        break;
       default:
         assert false : "missing implementation for family " + _parms._family;
     }
