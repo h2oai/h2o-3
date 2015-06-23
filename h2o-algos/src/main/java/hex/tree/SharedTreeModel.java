@@ -136,12 +136,14 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   // Score per line per tree
   private void score0(double data[], double preds[], int treeIdx, double weight, double offset) {
     Key[] keys = _output._treeKeys[treeIdx];
-    for( int c=0; c<keys.length; c++ )
-      if( keys[c] != null ) {
+    for( int c=0; c<keys.length; c++ ) {
+      if (keys[c] != null) {
         double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
-        assert(!Double.isInfinite(pred));
+        assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
+    }
+    if (keys.length == 1) preds[0] += offset;
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
