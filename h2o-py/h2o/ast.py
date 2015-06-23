@@ -46,7 +46,18 @@ class ExprNode:
     elif isinstance(child, ExprNode):   child._eager(sb)
     else:                               sb+=[str(child)+" "]
 
-  # debug printing
+  @staticmethod
+  def _arg_to_expr(arg):
+    if isinstance(arg, (int, float, ExprNode, h2o.H2OFrame)): return arg
+    elif isinstance(arg, str): return '"'+arg+'"'
+    elif isinstance(arg, slice): return "[{}:{}]".format(arg.start,arg.stop)
+    raise ValueError("Unexpected arg type: " + str(type(arg)))
+
+  @staticmethod
+  def _collapse_sb(sb):
+    return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
+
+  #### DEBUG PRINTING BELOW ####
   def _debug_print(self,pprint=True):
     sb = self._to_string()
     if pprint: print "".join(sb)
@@ -69,14 +80,3 @@ class ExprNode:
       if i==(len(self._children)-1): sb += ['\n'+' '*depth+") "]
     if depth==0: sb += ["\n"]
     return sb
-
-  @staticmethod
-  def _arg_to_expr(arg):
-    if isinstance(arg, (int, float, ExprNode, h2o.H2OFrame)): return arg
-    elif isinstance(arg, str): return '"'+arg+'"'
-    elif isinstance(arg, slice): return "[{}:{}]".format(arg.start,arg.stop)
-    raise ValueError("Unexpected arg type: " + str(type(arg)))
-
-  @staticmethod
-  def _collapse_sb(sb):
-    return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
