@@ -177,9 +177,9 @@ public class RequestServer extends NanoHTTPD {
       "Delete all Models from the H2O distributed K/V store.");
 
     // Model serialization - import/export calls
-    register("/3/Models.bin/(?<modelid>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel",                            new String[] {"model_id"},
+    register("/99/Models.bin/(?<modelid>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel",                            new String[] {"model_id"},
             "Import given binary model into H2O.");
-    register("/3/Models.bin/(?<modelid>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel",                            new String[] {"model_id"},
+    register("/99/Models.bin/(?<modelid>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel",                            new String[] {"model_id"},
             "Export given model.");
 
     register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility",

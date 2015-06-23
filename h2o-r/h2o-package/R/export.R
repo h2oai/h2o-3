@@ -152,7 +152,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   else
     path <- file.path(dir, name)
 
-  res <- .h2o.__remoteSend(object@conn, .h2o.__SAVE_MODEL(object@model_id), dir=path, force=force)
+  res <- .h2o.__remoteSend(object@conn, .h2o.__SAVE_MODEL(object@model_id), h2oRestApiVersion = 99, dir=path, force=force)
 
   # return the path
   res$dir
