@@ -137,6 +137,9 @@ subprojects {
     // to all projects
     if (project in publishedProjects) {
       apply from: "$rootDir/gradle/publish.gradle"
+      if (project.hasProperty("doJava6Bytecode")) {
+          apply from: "$rootDir/gradle/java6bytecode.gradle"
+      }
     }
 
     apply from: "$rootDir/gradle/makeSupport.gradle"
