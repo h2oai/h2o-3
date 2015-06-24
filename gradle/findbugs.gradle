@@ -15,7 +15,7 @@ findbugsMain << {
     ignoreFailures = true
     effort = "default"
     reportLevel = "low"
-    visitors = ["DroppedException"]
+    visitors = []
     classes = files("$project.buildDir/classes/main")
     classpath = files("$project.buildDir/classes/main")
     //excludeFilter = file("$rootProject.rootDir/config/findbugs/exclude.xml")
@@ -28,8 +28,15 @@ findbugsMain << {
     }
 }
 
-check {
-    if (!project.hasProperty("runFindbugs")) {
-        dependsOn.remove(findbugsMain)
+// The findbugs plugin by default adds all tasks of type FindBugs as a dependency
+// to the check task. We don't want any FindBugs tasks to run unless the runFindBugs
+// property exists. 
+task findbugsCheck {
+    doLast{
+        findbugsMain.enabled = project.hasProperty("runFindbugs")
     }
 }
+
+findbugsMain.shouldRunAfter findbugsCheck 
+
+check.dependsOn findbugsCheck
