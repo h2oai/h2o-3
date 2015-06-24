@@ -1,7 +1,6 @@
 """
 This module contains code for the lazy expression DAG.
 """
-
 import h2o
 
 
@@ -15,7 +14,7 @@ class ExprNode:
   def _eager(self,sb=None):
     """ This call is mutually recursive with ExprNode._do_it and H2OFrame._do_it """
     if sb is None: sb = []
-    sb += ["("+self._op+" "]
+    sb += ["(",self._op," "]
     for child in self._children: ExprNode._do_it(child,sb)
     sb += [") "]
     return sb
