@@ -2,6 +2,7 @@ package water.api;
 
 import water.DKV;
 import water.Key;
+import water.exceptions.H2OParseSetupException;
 import water.parser.ParseSetup;
 import water.util.PojoUtils;
 
@@ -17,6 +18,8 @@ import java.util.regex.Pattern;
 public class ParseSetupHandler extends Handler {
 
   public ParseSetupV3 guessSetup(int version, ParseSetupV3 p) {
+    if (p.source_frames == null)
+      throw new H2OParseSetupException("No file names given for parsing.");
     Key[] fkeys = new Key[p.source_frames.length];
     for(int i=0; i < p.source_frames.length; i++) {
       fkeys[i] = p.source_frames[i].key();

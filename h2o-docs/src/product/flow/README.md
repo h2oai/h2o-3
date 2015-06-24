@@ -413,7 +413,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **->** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **<-** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
 >**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
@@ -470,7 +470,7 @@ The available options vary depending on the selected model. If an option is only
 
   >**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
-- **Offset_column**: [(GLM)](#GLM) Select a column to use as the offset. 
+- **Offset_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
 
 - **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 
@@ -1032,3 +1032,4 @@ You can also email your question to [h2ostream@googlegroups.com](mailto:h2ostrea
 To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 
 
+d
