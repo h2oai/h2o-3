@@ -1,6 +1,5 @@
 package water.api;
 
-import com.brsanthu.googleanalytics.ScreenViewHit;
 import water.*;
 import water.exceptions.*;
 import water.fvec.Frame;
