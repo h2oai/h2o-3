@@ -36,20 +36,13 @@ class ExprNode:
   @staticmethod
   def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
 
-  def _debug_print(self,pprint=True):
-    if pprint: print "".join(self._to_string())
-    else:      print ExprNode._collapse_sb(self._to_string())
+  def _debug_print(self,pprint=True): return "".join(self._to_string(sb=[])) if pprint else ExprNode._collapse_sb(self._to_string(sb=[]))
 
   def _to_string(self,depth=0,sb=None):
-    if sb is None: sb = []
-    sb += ['\n', " "*depth + "("+self._op, " "]   # the ',' gives a space and no newline
-    for i,child in enumerate(self._children):
-      if isinstance(child, ExprNode): child._to_string(depth+2,sb)
-      else:
-        if depth > 0: sb += ["\n", " "*(depth+2) + str(child)]
-        else:
-          if i==(len(self._children)-1): sb +=[str(child)]
-          else:                          sb += [str(child) + " "]
-      if i==(len(self._children)-1): sb += ['\n'+' '*depth+") "]
-    if depth==0: sb += ["\n"]
+    sb += ['\n', " "*depth, "("+self._op, " "]
+    for child in self._children:
+      if isinstance(child, h2o.H2OFrame) and not child._computed: child._ast._to_string(depth+2,sb)
+      elif isinstance(child, ExprNode):                           child._to_string(depth+2,sb)
+      else:                                                       sb+=['\n', ' '*(depth+2), str(child)]
+    sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb

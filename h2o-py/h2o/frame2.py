@@ -46,6 +46,8 @@ class H2OFrame:
     elif raw_id:                 self._handle_text_key(raw_id, None)
     else: raise ValueError("H2OFrame instances require a python object, a file path, or a raw import file identifier.")
 
+  def __str__(self): return self._id
+
   def _import_parse(self,file_path):
     rawkey = h2o.import_file(file_path)
     setup = h2o.parse_setup(rawkey)
