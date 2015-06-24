@@ -54,8 +54,8 @@ h2o.randomForest <- function( x, y, training_frame,
                              balance_classes = FALSE,
                              max_after_balance_size = 5,
                              seed,
-                             offset_column = NULL,
-                             weights_column = NULL,
+#                             offset_column = NULL,
+#                             weights_column = NULL,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
@@ -115,8 +115,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if(!missing(seed))
     parms$seed <- seed
-  if( !missing(offset_column) )             parms$offset_column          <- offset_column
-  if( !missing(weights_column) )            parms$weights_column         <- weights_column
+#  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+#  if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
   if( do_future ) .h2o.startModelJob(training_frame@conn, 'drf', parms)
   else            .h2o.createModel(training_frame@conn, 'drf', parms)
