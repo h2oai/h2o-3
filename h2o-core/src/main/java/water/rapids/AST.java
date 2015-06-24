@@ -267,7 +267,7 @@ class ASTSpan extends AST {
   }
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
-  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
+  ASTSpan setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; return this; }
   @Override void exec(Env e) { ValSpan v = new ValSpan(_ast_min, _ast_max); v.setSlice(_isRow, _isCol); e.push(v); }
   @Override String value() { return null; }
   @Override int type() { return Env.SPAN; }
@@ -367,7 +367,7 @@ class ASTSeries extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
 
-  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
+  ASTSeries setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; return this; }
 
   @Override
   void exec(Env e) {
@@ -900,9 +900,10 @@ class ASTAssign extends AST {
 
       // RHS is a frame
       if (e.isAry() || (id.isGlobalSet() && e.isNum())) {
+        Vec tVec=null;
         Frame f = e.isAry()
                 ? e.popAry() // pop without lowering counts
-                : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
+                : new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
         if( id.isGlobalSet() ) vecs = f.deepCopy(null).vecs(); // for non-blocking put, see ASTGPut
@@ -912,6 +913,7 @@ class ASTAssign extends AST {
         if( id.isGlobalSet() ) {
           DKV.put(k, fr);
           e.lock(fr);
+          if( tVec != null ) tVec.remove();
         } else {
           // not a global set, push into transient set of Frames in the SymbolTable...
           e.put(k.toString(),fr);
@@ -1126,11 +1128,11 @@ class ASTSlice extends AST {
     // List   -- A list...
     AST rows = E.parse();
     switch( rows.type() ) {
-      case Env.STR: rows = new ASTNull();                        break;
-      case Env.SPAN: ((ASTSpan) rows).setSlice(true, false);     break;
-      case Env.SERIES: ((ASTSeries) rows).setSlice(true, false); break;
-      case Env.LIST: rows = new ASTSeries(((ASTLongList)rows)._l,null,((ASTLongList)rows)._spans); ((ASTSeries)rows).setSlice(true,false); break;
-      case Env.NULL: rows = new ASTNull(); break;
+      case Env.STR:    rows = new ASTNull();                              break;
+      case Env.SPAN:   rows = ((ASTSpan) rows).setSlice(true, false);     break;
+      case Env.SERIES: rows = ((ASTSeries) rows).setSlice(true, false);   break;
+      case Env.LIST:   rows = new ASTSeries(((ASTLongList)rows)._l,null,((ASTLongList)rows)._spans); ((ASTSeries)rows).setSlice(true,false); break;
+      case Env.NULL:   rows = new ASTNull(); break;
       default: //pass thru
     }
 
@@ -1141,11 +1143,11 @@ class ASTSlice extends AST {
     AST cols = E.parse();
     if( !(cols instanceof ASTStringList) ) {
       switch( cols.type() ) {
-        case Env.STR: cols = cols.value().equals("null") ? new ASTNull() : cols; break;
-        case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
-        case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
-        case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
-        case Env.NULL: rows = new ASTNull(); break;
+        case Env.STR:    cols = cols.value().equals("null") ? new ASTNull() : cols; break;
+        case Env.SPAN:   cols = ((ASTSpan) cols).setSlice(false, true);             break;
+        case Env.SERIES: cols = ((ASTSeries) cols).setSlice(false, true);           break;
+        case Env.LIST:   cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        case Env.NULL:   cols = new ASTNull(); break;
         default: // pass thru
       }
     }

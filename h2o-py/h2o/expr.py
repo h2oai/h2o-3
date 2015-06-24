@@ -24,9 +24,13 @@ class ExprNode:
 
   @staticmethod
   def _arg_to_expr(arg):
-    if isinstance(arg, (int, float, ExprNode, h2o.H2OFrame)): return arg
-    elif isinstance(arg, str):                                return '"'+arg+'"'
-    elif isinstance(arg, slice):                              return "[{}:{}]".format(arg.start,arg.stop)
+    if isinstance(arg, (ExprNode, h2o.H2OFrame)): return arg
+    elif isinstance(arg, bool):                   return "%{}".format("TRUE" if arg else "FALSE")
+    elif isinstance(arg, (int, float)):           return "#{}".format(arg)
+    elif isinstance(arg, str):                    return '"'+arg+'"'
+    elif isinstance(arg, slice):                  return "(: #{} #{})".format(arg.start,arg.stop-1)
+    elif isinstance(arg, list):                   return ("(slist \"" + "\" \"".join(arg) + "\")") if isinstance(arg[0], str) else ("(dlist #" + " #".join(arg)+")")
+    elif arg is None:                             return "()"
     raise ValueError("Unexpected arg type: " + str(type(arg)))
 
   @staticmethod

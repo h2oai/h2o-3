@@ -76,7 +76,6 @@ def parse_setup(raw_frames):
 def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
-
   :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
   :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
@@ -91,9 +90,8 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'number_columns' : None,
         'chunk_size'    : None,
         'delete_on_done' : True,
-        'blocking' : True,
-        'remove_frame' : True
-  }
+        'blocking' : False,
+        }
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]
 
@@ -419,8 +417,8 @@ def remove(object):
   if object is None:
     raise ValueError("remove with no object is not supported, for your protection")
 
-  if isinstance(object, H2OFrame):
-    H2OConnection.delete("DKV/"+object._id)
+  if isinstance(object, H2OFrame): H2OConnection.delete("DKV/"+object._id)
+  if isinstance(object, str):      H2OConnection.delete("DKV/"+object)
 
 def remove_all():
   """
@@ -440,14 +438,14 @@ def removeFrameShallow(key):
   rapids("(removeframe '"+key+"')")
   return None
 
-def rapids(expr, id):
+def rapids(expr, id=None):
   """
   Fire off a Rapids expression.
 
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  expr = "(gput %{} {})".format(id,expr)
+  expr = "(= !{} {})".format(id,expr) if id is not None else expr
   result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
   if result['error'] is not None:
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
@@ -875,10 +873,8 @@ class H2ODisplay:
   # for python REPL console
   def __repr__(self):
     if self.do_print or not H2ODisplay._in_ipy():
-      if self.header is None:  # tabulate is picky; can't handle None for headers...
-        return tabulate.tabulate(self.table,**self.kwargs)
-      else:
-        return tabulate.tabulate(self.table,headers=self.header,**self.kwargs)
+      if self.header is None: return tabulate.tabulate(self.table,**self.kwargs)
+      else:                   return tabulate.tabulate(self.table,headers=self.header,**self.kwargs)
     self.do_print=True
     return ""
 
@@ -907,3 +903,12 @@ class H2ODisplay:
     entry = "<td>{}</td>"
     entries = "\n".join([entry.format(str(r)) for r in row])
     return res.format(entries)
+
+def can_use_pandas():
+  # check to see if we can use pandas
+  found_pandas=False
+  try:
+    imp.find_module('pandas')  # if have pandas, use this to eat a frame
+    return True
+  except ImportError:
+    return False

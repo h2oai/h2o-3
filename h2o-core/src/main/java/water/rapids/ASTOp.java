@@ -3534,7 +3534,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (env.isNum()) return;
-      Frame fr = env.popAry(); // get the frame w/o sub-reffing
+    Frame fr = env.popAry(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
@@ -3548,13 +3548,12 @@ class ASTMean extends ASTUniPrefixOp {
       }
       env.push(new ValNum(mean/rows));
     } else {
-      MeanNARMTask t = new MeanNARMTask(_narm).doAll(fr.anyVec()).getResult();
-      if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
-        double ave = Double.NaN;
-        env.push(new ValNum(ave));
-      } else {
-        double ave = t._sum / t._rowcnt;
-        env.push(new ValNum(ave));
+      Vec v = fr.anyVec();
+      if( _narm || v.naCnt()==0 ) env.push(new ValNum(v.mean()));
+      else {
+        MeanNARMTask t = new MeanNARMTask(false).doAll(v);
+        if (t._rowcnt == 0 || Double.isNaN(t._sum)) env.push(new ValNum(Double.NaN));
+        else env.push(new ValNum(t._sum / t._rowcnt));
       }
     }
   }

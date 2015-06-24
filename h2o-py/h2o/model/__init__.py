@@ -1,5 +1,4 @@
 from ..frame import H2OFrame
-from ..frame import H2OVec
 from ..connection import H2OConnection
 from ..two_dim_table import H2OTwoDimTable
 #

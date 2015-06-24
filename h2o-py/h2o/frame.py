@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib
-from connection import H2OConnection
-from ast import *
+from expr import h2o,ExprNode
 import gc
 
 
@@ -43,7 +42,7 @@ class H2OFrame:
     if expr is not None:         self._ast = expr
     elif python_obj is not None: self._upload_python_object(python_obj)
     elif file_path is not None:  self._import_parse(file_path)
-    elif raw_id:                 self._handle_text_key(raw_id, None)
+    elif raw_id:                 self._handle_text_key(raw_id)
     else: raise ValueError("H2OFrame instances require a python object, a file path, or a raw import file identifier.")
 
   def __str__(self): return self._id
@@ -100,7 +99,7 @@ class H2OFrame:
     self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
     os.remove(tmp_path)                      # delete the tmp file
 
-  def _handle_text_key(self, text_key, column_names):
+  def _handle_text_key(self, text_key):
     """
     Handle result of upload_file
     :param test_key: A key pointing to raw text to be parsed
@@ -111,6 +110,7 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
+    self._id = parse["destination_frame"]["name"]
     self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_ids'])+1)]
     self._ncols = len(cols)
     # set the rows
@@ -125,9 +125,9 @@ class H2OFrame:
     # create a random name for the data
     dest_key = H2OFrame.py_tmp_key()
     # do the POST -- blocking, and "fast" (does not real data upload)
-    H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)
+    h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)
     # actually parse the data and setup self._vecs
-    self._handle_text_key(dest_key, column_names)
+    self._handle_text_key(dest_key)
 
   def __iter__(self):
     """
@@ -136,7 +136,8 @@ class H2OFrame:
     :return: An iterator over the H2OFrame
     """
     self._eager()
-    return (self[i] for i in range(self.ncol()))
+    ncol = self._ncols
+    return (self[i] for i in range(ncol))
 
   def logical_negation(self): H2OFrame(expr=ExprNode("not", self))
 
@@ -223,13 +224,6 @@ class H2OFrame:
     # e2 = Expr("mktime",e,None,xlen)
     # return e2 if xlen==1 else H2OVec("mktime",e2)
 
-  def floor(self):
-    """
-    :return: A lazy Expr representing the Math.floor() of this H2OVec.
-    """
-    raise NotImplementedError
-    # return H2OVec(self._name,Expr("floor", self._expr, None))
-
   def col_names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
@@ -310,6 +304,12 @@ class H2OFrame:
     res = head.as_data_frame(False)[1:]
     print "First {} rows and first {} columns: ".format(nrows, ncols)
     h2o.H2ODisplay(res,["Row ID"]+colnames)
+
+  def _scalar(self):
+    res = self.as_data_frame(False)
+    res = res[1][0]
+    try:    return float(res)
+    except: return res
 
   def tail(self, rows=10, cols=200, **kwargs):
     """
@@ -415,49 +415,40 @@ class H2OFrame:
 
     :return: None (print to stdout)
     """
-    raise NotImplementedError
-    # if self._vecs is None or self._vecs == []:
-    #   raise ValueError("Frame Removed")
-    # thousands_sep = h2o.H2ODisplay.THOUSANDS
-    # print "Rows:", thousands_sep.format(len(self._vecs[0])), "Cols:", thousands_sep.format(len(self))
-    # chunk_summary_tmp_key = H2OFrame.send_frame(self)
-    # chunk_dist_sum = h2o.frame(chunk_summary_tmp_key)["frames"][0]
-    # dist_summary = chunk_dist_sum["distribution_summary"]
-    # chunk_summary = chunk_dist_sum["chunk_summary"]
-    # h2o.removeFrameShallow(chunk_summary_tmp_key)
-    # chunk_summary.show()
-    # dist_summary.show()
-    # self.summary()
+    thousands_sep = h2o.H2ODisplay.THOUSANDS
+    print "Rows:", thousands_sep.format(self._nrows), "Cols:", thousands_sep.format(self._ncols)
+    chunk_dist_sum = h2o.frame(self._id)["frames"][0]
+    dist_summary = chunk_dist_sum["distribution_summary"]
+    chunk_summary = chunk_dist_sum["chunk_summary"]
+    chunk_summary.show()
+    dist_summary.show()
+    self.summary()
 
   def summary(self):
     """
     Generate summary of the frame on a per-Vec basis.
     :return: None
     """
-    raise NotImplementedError
-    #  frame_summary =  H2OConnection.get_json("Frames/" + urllib.quote(key) + "/summary")
-    # frtmp=self.send_frame()
-    # fr_sum = h2o.frame_summary(frtmp)["frames"][0]  # only ONE frame summary at a time, the first one...
-    # h2o.removeFrameShallow(frtmp)  # wipe the frame binding the vecs immediately
-    # type = ["type"]
-    # mins = ["mins"]
-    # mean = ["mean"]
-    # maxs = ["maxs"]
-    # sigma= ["sigma"]
-    # zeros= ["zero_count"]
-    # miss = ["missing_count"]
-    # for v in fr_sum["columns"]:
-    #   type.append(v["type"])
-    #   mins.append(v["mins"][0] if v is not None else v["mins"])
-    #   mean.append(v["mean"])
-    #   maxs.append(v["maxs"][0] if v is not None else v["maxs"])
-    #   sigma.append(v["sigma"])
-    #   zeros.append(v["zero_count"])
-    #   miss.append(v["missing_count"])
-    #
-    # table = [type,mins,maxs,sigma,zeros,miss]
-    # headers = [vec._name for vec in self._vecs]
-    # h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+    fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
+    type = ["type"]
+    mins = ["mins"]
+    mean = ["mean"]
+    maxs = ["maxs"]
+    sigma= ["sigma"]
+    zeros= ["zero_count"]
+    miss = ["missing_count"]
+    for v in fr_sum["columns"]:
+      type.append(v["type"])
+      mins.append(v["mins"][0] if v is not None else v["mins"])
+      mean.append(v["mean"])
+      maxs.append(v["maxs"][0] if v is not None else v["maxs"])
+      sigma.append(v["sigma"])
+      zeros.append(v["zero_count"])
+      miss.append(v["missing_count"])
+
+    table = [type,mins,maxs,sigma,zeros,miss]
+    headers = self._col_names
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
   # def __repr__(self):
   #   if self._vecs is None or self._vecs == []:
@@ -480,7 +471,7 @@ class H2OFrame:
 
   def as_data_frame(self, use_pandas=True):
     self._eager()
-    url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self._id) + "&hex_string=false"
+    url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self._id) + "&hex_string=false"
     response = urllib2.urlopen(url)
     if h2o.can_use_pandas() and use_pandas:
       import pandas
@@ -516,7 +507,7 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("cols", self, item))  # just columns
+    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
@@ -528,9 +519,9 @@ class H2OFrame:
         allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
       if allrows and allcols: return self                              # fr[:,:]    -> all rows and columns.. return self
-      if allrows: return H2OFrame(expr=ExprNode("cols",self,item[1]))  # fr[:,cols] -> really just a column slice
-      if allcols: return H2OFrame(expr=ExprNode("rows",self,item[0]))  # fr[rows,:] -> really just a row slices
-      return H2OFrame(expr=ExprNode("rows", ExprNode("cols", self, item[1]), item[0]))
+      if allrows: return H2OFrame(expr=ExprNode("[",self,None,item[1]))  # fr[:,cols] -> really just a column slice
+      if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
+      return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
 
   def __setitem__(self, b, c):
     """
@@ -960,7 +951,7 @@ class H2OFrame:
     :param na_rm: True or False to remove NAs from computation.
     :return: The mean of the column.
     """
-    return H2OFrame(expr=ExprNode("mean", self, na_rm))
+    return H2OFrame(expr=ExprNode("mean", self, 0, na_rm))._scalar()
 
   def median(self):
     """
@@ -1293,7 +1284,7 @@ class H2OFrame:
       sb = self._ast._eager()
       if pytmp:
         h2o.rapids(ExprNode._collapse_sb(sb), self._id)
-        sb = [self._id+" "]
+        sb = ["%", self._id," "]
         self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
 
@@ -1314,7 +1305,7 @@ class H2OFrame:
     #  the "long" path:
     #     pending exprs in DAG with exterior refs must be saved (refs >= magic count)
     #
-    if self._computed: sb += [self._id+" "]
+    if self._computed: sb += ['%',self._id+" "]
     else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
 
   def _update(self):

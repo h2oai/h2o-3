@@ -3,7 +3,7 @@ This file builds H2O model
 """
 
 from connection import H2OConnection
-from frame      import H2OFrame, H2OVec
+from frame      import H2OFrame
 from job        import H2OJob
 import h2o
 
