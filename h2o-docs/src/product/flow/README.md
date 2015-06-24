@@ -1019,6 +1019,10 @@ To access H2Ostream from Flow:
 0. Click the red **New topic** button.
 0. Enter your question and click the red **Post** button. If you are requesting assistance for an error you experienced, be sure to include your [logs](#DL_Logs). 
 
+
+You can also email your question to [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
+
+
 ---
 
 
