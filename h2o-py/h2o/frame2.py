@@ -797,22 +797,20 @@ class H2OFrame:
     #  the "long" path:
     #     pending exprs in DAG with exterior refs must be saved (refs >= magic count)
     #
-    if self._computed:                                            sb += [self._id+" "]
-    else:
-      if len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT: sb += self._eager(True )
-      else:                                                       sb += self._eager(False)
+    if self._computed: sb += [self._id+" "]
+    else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
 
   def _update(self):
     # get ncols,nrows,names and exclude everything else
-    frames_ex = ["row_offset", "row_count", "checksum", "default_percentiles", "compatible_models",
-                 "vec_ids","chunk_summary","distribution_summary"]
-    columns_ex = ["missing_count", "zero_count", "positive_infinity_count", "negative_infinity_count",
-                  "mins", "maxs", "mean", "sigma", "type", "domain", "data", "string_data",
-                  "precision", "histogram_bins", "histogram_base", "histogram_stride", "percentiles"]
-
-    frames_ex = "frames/" + ",frames/".join(frames_ex)
-    columns_ex = "frames/columns/" + ",frames/columns/".join(columns_ex)
-    exclude="?_exclude_fields={},{}".format(frames_ex,columns_ex)
+    # frames_ex = ["row_offset", "row_count", "checksum", "default_percentiles", "compatible_models",
+    #              "vec_ids","chunk_summary","distribution_summary"]
+    # columns_ex = ["missing_count", "zero_count", "positive_infinity_count", "negative_infinity_count",
+    #               "mins", "maxs", "mean", "sigma", "type", "domain", "data", "string_data",
+    #               "precision", "histogram_bins", "histogram_base", "histogram_stride", "percentiles"]
+    #
+    # frames_ex = "frames/" + ",frames/".join(frames_ex)
+    # columns_ex = "frames/columns/" + ",frames/columns/".join(columns_ex)
+    # exclude="?_exclude_fields={},{}".format(frames_ex,columns_ex)
     res = h2o.frame(self._id)["frames"][0]  # TODO: exclude here?
     self._nrows = res["rows"]
     self._ncols = len(res["columns"])
