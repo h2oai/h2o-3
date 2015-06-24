@@ -13,6 +13,7 @@ include 'h2o-docs'
 include 'h2o-hadoop:h2o-mapreduce-generic'
 include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
+include 'h2o-bindings'
 
 if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HADOOP") != null) {
     include 'h2o-hadoop:h2o-cdh5.2'

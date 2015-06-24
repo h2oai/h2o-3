@@ -662,6 +662,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       Reflections reflections = new Reflections(pkg);
 
       for (Class<? extends Schema> clz : clzs) {
+        // NOTE: Reflections sees ModelOutputSchema but not ModelSchema. Another bug to work around:
+        Log.debug("Registering: " + clz.toString() + " in package: " + pkg);
+        if (!Modifier.isAbstract(clz.getModifiers()))
+          Schema.register(clz);
+
+        // Register the subclasses:
         Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
         for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
           if (!Modifier.isAbstract(schema_class.getModifiers()))

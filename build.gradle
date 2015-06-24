@@ -48,7 +48,8 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala'),
       project(':h2o-persist-hdfs'),
-      project(':h2o-genmodel')
+      project(':h2o-genmodel'),
+//      project(':h2o-bindings')
     ]
 
     javaProjects = [
@@ -59,7 +60,8 @@ ext {
       project(':h2o-persist-hdfs'),
       project(':h2o-test-integ'),
       project(':h2o-testng'),
-      project(':h2o-genmodel')
+      project(':h2o-genmodel'),
+      project(':h2o-bindings'),
     ]
 
     scalaProjects = [
