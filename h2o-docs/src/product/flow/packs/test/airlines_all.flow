@@ -3,91 +3,191 @@
   "cells": [
     {
       "type": "cs",
-      "input": ""
-    },
-    {
-      "type": "cs",
-      "input": "assist"
-    },
-    {
-      "type": "cs",
       "input": "importFiles"
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv\" ]"
+      "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/airlines_all.csv\" ]"
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv\" ]"
+      "input": "setupParse paths: [ \"hdfs://mr-0x6.0xdata.loc/datasets/airlines_all.csv\" ]"
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv\"]\n  destination_frame: \"airlines_all.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 31\n  single_quotes: false\n  column_names: [\"Year\",\"Month\",\"DayofMonth\",\"DayOfWeek\",\"DepTime\",\"CRSDepTime\",\"ArrTime\",\"CRSArrTime\",\"UniqueCarrier\",\"FlightNum\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"Origin\",\"Dest\",\"Distance\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"IsArrDelayed\",\"IsDepDelayed\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/airlines_all.csv\"]\n  destination_frame: \"airlines_all.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 31\n  single_quotes: false\n  column_names: [\"Year\",\"Month\",\"DayofMonth\",\"DayOfWeek\",\"DepTime\",\"CRSDepTime\",\"ArrTime\",\"CRSArrTime\",\"UniqueCarrier\",\"FlightNum\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"Origin\",\"Dest\",\"Distance\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"IsArrDelayed\",\"IsDepDelayed\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
     },
     {
       "type": "cs",
-      "input": "getFrame \"airlines_all.hex\""
+      "input": "getFrameSummary \"airlines_all.hex\""
     },
     {
       "type": "cs",
-      "input": "assist buildModel, null, training_frame: \"airlines_all.hex\""
+      "input": "assist splitFrame, \"airlines_all.hex\""
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-7b8071da-c477-4df9-a252-a7592948c3f4\",\"training_frame\":\"airlines_all.hex\",\"ignored_columns\":[\"Year\",\"Month\",\"DayofMonth\",\"DayOfWeek\",\"DepTime\",\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"Distance\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\"],\"response_column\":\"IsDepDelayed\",\"solver\":\"IRLSM\",\"max_iterations\":50,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"binomial\",\"balance_classes\":false,\"link\":\"family_default\",\"alpha\":[0.5],\"lambda\":[0.00001],\"lambda_search\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "splitFrame \"airlines_all.hex\", [0.2], [\"airlines_all.hex_0.20\",\"airlines_all.hex_0.80\"]"
     },
     {
       "type": "cs",
-      "input": "getModel \"glm-7b8071da-c477-4df9-a252-a7592948c3f4\""
+      "input": "getFrameSummary \"airlines_all.hex_0.80\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"glm-7b8071da-c477-4df9-a252-a7592948c3f4\""
+      "input": "assist buildModel, null, training_frame: \"airlines_all.hex_0.80\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"glm-7b8071da-c477-4df9-a252-a7592948c3f4\", frame: \"airlines_all.hex\", predictions_frame: \"prediction-c6462583-05a2-4ed2-aa69-36f37e77a5d4\""
+      "input": "buildModel 'glm', {\"model_id\":\"gaussian_irlsm_glm-10287ecf-c446-45b3-90d6-b39349a8de71\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepTime\",\"DepDelay\"],\"ignore_const_cols\":true,\"response_column\":\"Distance\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",
-      "input": "assist buildModel, null, training_frame: \"airlines_all.hex\""
+      "input": "getModel \"gaussian_irlsm_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"model_id\":\"gbm-db4caf02-34f4-407f-9698-e66103e2355c\",\"training_frame\":\"airlines_all.hex\",\"ignored_columns\":[\"Year\",\"Month\",\"DayofMonth\",\"DayOfWeek\",\"DepTime\",\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"Distance\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\"],\"response_column\":\"IsDepDelayed\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"distribution\":\"bernoulli\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+      "input": "predict model: \"gaussian_irlsm_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
     },
     {
       "type": "cs",
-      "input": "getModel \"gbm-db4caf02-34f4-407f-9698-e66103e2355c\""
+      "input": "predict model: \"gaussian_irlsm_glm-10287ecf-c446-45b3-90d6-b39349a8de71\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-0f4dedd5-4845-47e7-8ffa-bdad4931e2de\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"gbm-db4caf02-34f4-407f-9698-e66103e2355c\""
+      "input": "buildModel 'glm', {\"model_id\":\"gaussian_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepTime\",\"DepDelay\"],\"ignore_const_cols\":true,\"response_column\":\"Distance\",\"family\":\"gaussian\",\"solver\":\"L_BFGS\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",
-      "input": "predict model: \"gbm-db4caf02-34f4-407f-9698-e66103e2355c\", frame: \"airlines_all.hex\", predictions_frame: \"prediction-219de752-23a5-44c4-885d-f85dd131da73\""
+      "input": "getModel \"gaussian_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
     },
     {
       "type": "cs",
-      "input": "assist buildModel, null, training_frame: \"airlines_all.hex\""
+      "input": "predict model: \"gaussian_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
     },
     {
       "type": "cs",
-      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-6ef7f4a6-7816-42c0-9f4a-67295738c9a5\",\"training_frame\":\"airlines_all.hex\",\"ignored_columns\":[\"DepTime\",\"ArrTime\",\"Year\",\"Month\",\"DayofMonth\",\"DayOfWeek\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"Distance\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\"],\"response_column\":\"IsDepDelayed\",\"activation\":\"Rectifier\",\"hidden\":[50,50],\"epochs\":\"1\",\"variable_importances\":false,\"replicate_training_data\":true,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"rho\":0.99,\"epsilon\":1e-8,\"input_dropout_ratio\":0,\"hidden_dropout_ratios\":[],\"l1\":0,\"l2\":0,\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"autoencoder\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":8286459160428618000,\"rate\":0.005,\"rate_annealing\":0.000001,\"rate_decay\":1,\"momentum_start\":0,\"momentum_ramp\":1000000,\"momentum_stable\":0,\"nesterov_accelerated_gradient\":true,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"initial_weight_scale\":1,\"loss\":\"CrossEntropy\",\"score_duty_cycle\":0.1,\"classification_stop\":0,\"regression_stop\":0.000001,\"max_hit_ratio_k\":10,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"ignore_const_cols\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"max_confusion_matrix_size\":20,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false}"
+      "input": "predict model: \"gaussian_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-0bced4a9-19b5-4724-847d-9ffcda58844f\""
     },
     {
       "type": "cs",
-      "input": "getModel \"deeplearning-6ef7f4a6-7816-42c0-9f4a-67295738c9a5\""
+      "input": "buildModel 'glm', {\"model_id\":\"binomial_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepTime\",\"DepDelay\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"family\":\"binomial\",\"solver\":\"L_BFGS\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",
-      "input": "predict model: \"deeplearning-6ef7f4a6-7816-42c0-9f4a-67295738c9a5\""
+      "input": "getModel \"binomial_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"deeplearning-6ef7f4a6-7816-42c0-9f4a-67295738c9a5\", frame: \"airlines_all.hex\", predictions_frame: \"prediction-b0d2cfa4-185c-4584-9aa6-d37d431e5a9f\""
+      "input": "predict model: \"binomial_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"binomial_lbfgs_glm-10287ecf-c446-45b3-90d6-b39349a8de71\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-8c9a8e63-531c-4969-99df-73d3a04f6844\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"binomial_irlsm_glm-10287ecf-c446-45b3-90d6-b39349a8de71\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepTime\",\"DepDelay\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"family\":\"binomial\",\"solver\":\"L_BFGS\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"binomial_irlsm_glm-10287ecf-c446-45b3-90d6-b39349a8de71\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gaussian_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepDelay\",\"DepTime\"],\"ignore_const_cols\":true,\"response_column\":\"Distance\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1473216286468680700,\"learn_rate\":0.1,\"distribution\":\"gaussian\",\"score_each_iteration\":false,\"r2_stopping\":0.999999}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gaussian_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gaussian_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gaussian_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-e8b62607-1586-4194-aa03-8d6d1489f9ac\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"bernoulli_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepDelay\",\"DepTime\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1473216286468680700,\"learn_rate\":0.1,\"distribution\":\"bernoulli\",\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"bernoulli_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"bernoulli_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"bernoulli_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-3e24b26a-5782-46dc-956a-414a5cc2ef9f\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"multinomial_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepDelay\",\"DepTime\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1473216286468680700,\"learn_rate\":0.1,\"distribution\":\"multinomial\",\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"multinomial_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"multinomial_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"multinomial_gbm-0a6bb069-4b96-4778-a9c7-ee9021709da1\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-faebd055-08ff-4c44-b52d-0d3572ca7bd6\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'kmeans', {\"model_id\":\"kmeans-94ac6ffb-60e9-48ab-b529-91a0a3f9d7bc\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\"],\"ignore_const_cols\":true,\"k\":1,\"max_iterations\":\"10\",\"init\":\"Furthest\",\"score_each_iteration\":false,\"standardize\":true,\"seed\":2239035635389584}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"kmeans-94ac6ffb-60e9-48ab-b529-91a0a3f9d7bc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"kmeans-94ac6ffb-60e9-48ab-b529-91a0a3f9d7bc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"kmeans-94ac6ffb-60e9-48ab-b529-91a0a3f9d7bc\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-16be1a80-80ad-4af4-93c8-6afc8430fbcf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-d420161d-22c8-4134-8af5-0bd23fcbcd14\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"ntrees\":\"10\",\"max_depth\":\"5\",\"min_rows\":1,\"nbins\":\"5\",\"nbins_cats\":1024,\"seed\":1760140958885951500,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-d420161d-22c8-4134-8af5-0bd23fcbcd14\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-d420161d-22c8-4134-8af5-0bd23fcbcd14\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-d420161d-22c8-4134-8af5-0bd23fcbcd14\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-c9db682c-1eb1-4991-b7d1-bea820282458\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-75248d11-3fbf-49b2-98fc-e9988cd90097\",\"training_frame\":\"airlines_all.hex_0.80\",\"validation_frame\":\"airlines_all.hex_0.20\",\"ignored_columns\":[\"ArrTime\",\"TailNum\",\"ActualElapsedTime\",\"AirTime\",\"ArrDelay\",\"TaxiIn\",\"TaxiOut\",\"CancellationCode\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"DepDelay\",\"DepTime\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"activation\":\"Rectifier\",\"hidden\":[7,7],\"epochs\":\"1\",\"variable_importances\":false,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"replicate_training_data\":true,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":6428782375998576000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-75248d11-3fbf-49b2-98fc-e9988cd90097\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-75248d11-3fbf-49b2-98fc-e9988cd90097\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-75248d11-3fbf-49b2-98fc-e9988cd90097\", frame: \"airlines_all.hex_0.20\", predictions_frame: \"prediction-b61d03a3-267f-49c3-bdb3-337ada3fc167\""
     }
   ]
 }
