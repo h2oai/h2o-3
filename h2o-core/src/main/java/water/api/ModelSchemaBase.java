@@ -2,6 +2,7 @@ package water.api;
 
 import hex.Model;
 import hex.ModelBuilder;
+import water.Iced;
 import water.api.KeyV3.ModelKeyV3;
 
 /**
@@ -14,12 +15,7 @@ import water.api.KeyV3.ModelKeyV3;
  * </ul>
  *
  */
-abstract public class ModelSchemaBase<M extends Model<M, P, O>,
-                                  S extends ModelSchema<M, S, P, PS, O, OS>,
-                                  P extends Model.Parameters,
-                                  PS extends ModelParametersSchema<P, PS>,
-                                  O extends Model.Output,
-                                  OS extends ModelOutputSchema<O, OS>>
+public class ModelSchemaBase<M extends Iced, S extends Schema<M, S>>
     extends Schema<M, S> {
 
   public ModelSchemaBase() {
@@ -37,7 +33,8 @@ abstract public class ModelSchemaBase<M extends Model<M, P, O>,
   @API(help="The pretty algo name for this Model (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
   public String algo_full_name;
 
-  public ModelSchemaBase(M m) {
+  public ModelSchemaBase(Model m) {
+
     super();
     this.model_id = new ModelKeyV3(m._key);
     this.algo = ModelBuilder.getAlgo(m);

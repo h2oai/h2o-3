@@ -76,6 +76,8 @@ public final class ParseDataset extends Job<Frame> {
         res = Arrays.copyOf(colNames, ncols);
       }
     }
+    //FIXME we must first check if any existing columns use this naming scheme,
+    // otherwise duplicate names are possible, but the user won't know why
     //fill in any empty columns with a generic column name
     if (res == null) res = new String[ncols];
     for (; i < res.length; ++i) res[i] = "C" + String.valueOf(i + 1);

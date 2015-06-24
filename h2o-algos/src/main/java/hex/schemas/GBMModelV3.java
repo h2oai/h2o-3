@@ -1,8 +1,6 @@
 package hex.schemas;
 
 import hex.tree.gbm.GBMModel;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
 
 public class GBMModelV3 extends SharedTreeModelV3<GBMModel,
         GBMModelV3,
