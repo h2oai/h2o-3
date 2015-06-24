@@ -228,7 +228,9 @@ class H2OCloudNode:
                "-baseport", str(self.my_base_port),
 	       "-ga_opt_out"]
 
-        
+
+        # If the jacoco flag was included, then modify cmd to generate coverage
+        # data using the jacoco agent
         if g_include_jacoco:
             root_dir = os.path.abspath(__file__ + "/../../")
             agent_dir = root_dir + "/jacoco/jacocoagent.jar"
@@ -236,8 +238,6 @@ class H2OCloudNode:
             if not os.path.exists(jresults_dir):
                 os.mkdir(jresults_dir)
             jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
-            #jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=" + root_dir + "/build/jacoco_instrumented/build/h2o.jar,classdumpdir=" + jresults_dir + "/{cloud}_{node}_dump".format(cloud = self.cloud_num, node = self.node_num)
-            #cmd[4] = agent_dir + ":" + root_dir + "/build/jacoco_instrumented/build/h2o.jar"
             jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num)
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
@@ -1626,7 +1626,7 @@ def usage():
     print("")
     print("    --noxunit     Do not produce xUnit reports.")
     print("")
-    print("    --jacoco      Generate a code coverage report using JaCoCo")
+    print("    --jacoco      Generate code coverage data using JaCoCo")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")

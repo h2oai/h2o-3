@@ -147,10 +147,7 @@ subprojects {
     if (project in javaProjects) {
         apply from: "$rootDir/gradle/java.gradle"
         apply from: "$rootDir/gradle/cp.gradle"
-        // Include Findbugs only if the property is specified
-        if (applyFindbugsPlugin) {
-            apply from: "$rootDir/gradle/findbugs.gradle"
-        }
+        //apply from: "$rootDir/gradle/findbugs.gradle"
     }
 
     // Configure Scala projects

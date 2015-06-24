@@ -57,10 +57,6 @@ jacocoTestReport {
     }
 }
 
-task cleanCoverageData(type: Delete) {
-    delete files("${buildDir}/jacoco_instrumented", "${buildDir}/jardump")
-}
-
 task cleanCoverageReports(type: Delete) {
     delete files("${buildDir}/reports/jacoco")
 }
