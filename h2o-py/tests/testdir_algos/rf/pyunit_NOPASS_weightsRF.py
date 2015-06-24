@@ -9,16 +9,16 @@ def weights_check(ip,port):
     h2o.init(ip,port)
 
     def check_same(data1, data2):
-        glm1_regression = h2o.glm(x=data1[2:20], y=data1[1])
-        glm2_regression = h2o.glm(x=data2[2:21], y=data2[1], weights_column="weights")
-        glm1_binomial = h2o.glm(x=data1[1:20], y=data1[0], family="binomial")
-        glm2_binomial = h2o.glm(x=data2[1:21], y=data2[0], weights_column="weights", family="binomial")
+        rf1_regression = h2o.random_forest(x=data1[2:20], y=data1[1])
+        rf2_regression = h2o.random_forest(x=data2[2:21], y=data2[1], weights_column="weights")
+        rf1_binomial = h2o.random_forest(x=data1[1:20], y=data1[0])
+        rf2_binomial = h2o.random_forest(x=data2[1:21], y=data2[0], weights_column="weights")
 
-        assert abs(glm1_regression.mse() - glm2_regression.mse()) < 1e-6, "Expected mse's to be the same, but got {0}, " \
-                                                                          "and {1}".format(glm1_regression.mse(),
-                                                                                           glm2_regression.mse())
-        assert abs(glm1_binomial.auc() - glm2_binomial.auc()) < 1e-6, "Expected auc's to be the same, but got {0}, and " \
-                                                                      "{1}".format(glm1_binomial.auc(), glm2_binomial.auc())
+        assert abs(rf1_regression.mse() - rf2_regression.mse()) < 1e-6, "Expected mse's to be the same, but got {0}, " \
+                                                                          "and {1}".format(rf1_regression.mse(),
+                                                                                           rf2_regression.mse())
+        assert abs(rf1_binomial.auc() - rf2_binomial.auc()) < 1e-6, "Expected auc's to be the same, but got {0}, and " \
+                                                                      "{1}".format(rf1_binomial.auc(), rf2_binomial.auc())
 
     data = [["ab"[random.randint(0,1)] if c==0 else random.gauss(0,1) for c in range(20)] for r in range(100)]
     h2o_data = h2o.H2OFrame(python_obj=data)
