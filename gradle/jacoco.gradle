@@ -17,7 +17,7 @@ repositories {
 String destination = "${buildDir}/reports/jacoco/report.exec"
 
 task jacocoMergeExecs(type: JacocoMerge) {
-    FileTree execs = fileTree(dir: "${rootDir}", include: "**/*.exec", exclude: destination)
+    FileTree execs = fileTree(dir: "${rootDir}", include: "**/*.exec")
     executionData = execs
     destinationFile = new File(destination) 
 }
@@ -59,6 +59,10 @@ jacocoTestReport {
 
 task cleanCoverageReports(type: Delete) {
     delete files("${buildDir}/reports/jacoco")
+}
+
+task cleanCoverageData (type: Delete) {
+    delete file("${buildDir}/reports/jacoco/report.exec")
 }
 
 jacocoTestReport.dependsOn jacocoMergeExecs

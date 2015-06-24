@@ -11,11 +11,12 @@ findbugs {
     //reportsDir = file("$project.buildDir/reports/findbugs")
 }
 
-findbugsMain << {
+findbugsMain {
     ignoreFailures = true
-    effort = "default"
+    effort = "max"
     reportLevel = "low"
     visitors = []
+    //excludeVisitors = []
     classes = files("$project.buildDir/classes/main")
     classpath = files("$project.buildDir/classes/main")
     //excludeFilter = file("$rootProject.rootDir/config/findbugs/exclude.xml")
@@ -24,7 +25,8 @@ findbugsMain << {
     //classpath = files()
     reports {
         xml.enabled = false
-        html.enabled = true
+        html.enabled = false
+	html.destination = "${rootDir}/build/reports/findbugs/${project.name}.html"
     }
 }
 
