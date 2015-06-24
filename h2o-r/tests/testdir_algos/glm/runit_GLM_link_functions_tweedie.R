@@ -118,8 +118,6 @@ test_tweedie <- function(conn) {
       checkTrue(difference <= 0.01, "h2o's model's residualDeviance/nullDeviance is more than 0.01 lower than R's model's")
     }
     
-    # TO DO: Test tweedie_variance_power
-    
     print("compare null and residual deviance between R glm and h2o.glm for tweedie")
     expect_equal(glmfit$null.deviance, 
                  h2ofit@model$training_metrics@metrics$null_deviance)
