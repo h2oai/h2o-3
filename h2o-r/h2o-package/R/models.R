@@ -5,6 +5,7 @@
 # ------------------------------- Helper Functions --------------------------- #
 # Used to verify data, x, y and turn into the appropriate things
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
+  browser()
   if(!is(data,  "H2OFrame"))
     stop('`data` must be an H2OFrame object')
   if(!is.character(x) && !is.numeric(x))
@@ -47,6 +48,7 @@
     if( length(x_ignore) == 0L ) x_ignore <- ''
     return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
   } else {
+    x_ignore <- setdiff(cc, x)
     if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
     return(list(x=x,x_i=x_i,x_ignore=x_ignore))
   }
