@@ -853,11 +853,9 @@ def create_frame(key = None, rows = 10000, cols = 10, randomize = True, value = 
   """
   if not isinstance(rows, (int, float)) or rows < 1: raise ValueError("`rows` must be a positive number, but got {0}".format(rows))
   if not isinstance(cols, (int, float)) or cols < 1: raise ValueError("`cols` must be a positive number, but got {0}".format(cols))
-  if not isinstance(seed, int): raise ValueError("`seed` must be an integer, but got {0}".format(seed))
   if not isinstance(randomize, bool): raise ValueError("`randomize` must be a True or False, but got {0}".format(randomize))
   if not isinstance(value, (int, float)): raise ValueError("`value` must be an number, but got {0}".format(value))
   if not isinstance(real_range, (int, float)): raise ValueError("`real_range` must be a number, but got {0}".format(real_range))
-  if not isinstance(seed, int): raise ValueError("`seed` must be an integer, but got {0}".format(seed))
   if not isinstance(categorical_fraction, (int, float)): raise ValueError("`categorical_fracter` must be a number, but got {0}".format(categorical_fraction))
   if not isinstance(factors, int) or factors < 1: raise ValueError("`factors` must be a positive integer, but got {0}".format(factors))
   if not isinstance(integer_fraction, (int, float)): raise ValueError("`integer_fraction` must be a number, but got {0}".format(integer_fraction))
@@ -867,6 +865,7 @@ def create_frame(key = None, rows = 10000, cols = 10, randomize = True, value = 
   if not isinstance(missing_fraction, (int, float)): raise ValueError("`missing_fraction` must be an number, but got {0}".format(missing_fraction))
   if not isinstance(response_factors, int) or response_factors < 1: raise ValueError("`response_factors` must be a positive integer, but got {0}".format(response_factors))
   if not isinstance(has_response, bool): raise ValueError("`has_response` must be True or False, but got {0}".format(has_response))
+  if seed != None and not isinstance(seed, int): raise ValueError("`seed` must be an integer, but got {0}".format(seed))
 
   if key == None or not isinstance(key, str): dest = H2OFrame.py_tmp_key()
   else: dest = key
@@ -875,12 +874,12 @@ def create_frame(key = None, rows = 10000, cols = 10, randomize = True, value = 
                  ("integer_fraction",integer_fraction), ("integer_range",integer_range),
                  ("binary_fraction",binary_fraction), ("binary_ones_fraction",binary_ones_fraction),
                  ("missing_fraction",missing_fraction), ("response_factors",response_factors),
-                 ("has_response",has_response), ("seed",seed)])
+                 ("has_response",has_response), ("seed",seed if seed != None else -1)])
 
   job = {}
   job['job'] = H2OConnection.post_json("CreateFrame", **kwargs)
   H2OJob(job, job_type=("Create Frame")).poll()
-  res = H2OConnection.get_json("Frame/"+key)
+  res = H2OConnection.get_json("Frames/"+dest)
   res = res["frames"][0]
   colnames = [v["label"] for v in res["columns"]]
   veckeys  = res["vec_ids"]
