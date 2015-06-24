@@ -602,6 +602,39 @@ def download_all_logs(dirname=".",filename=None):
   print "Writing H2O logs to " + path
   return path
 
+def save_model(model, dir="", name="", filename="", force=False):
+  """
+  Save an H2O Model Object to Disk.
+  In the case of existing files force = TRUE will overwrite the file. Otherwise, the operation will fail.
+  :param dir: string indicating the directory the model will be written to.
+  :param name: string name of the file.
+  :param filename: full path to the file.
+  :param force: logical, indicates how to deal with files that already exist
+  :return: the path of the model (string)
+  """
+  if not isinstance(dir, str): raise ValueError("`dir` must be a character string")
+  if dir == "": dir = os.getcwd()
+  if not isinstance(name, str): raise ValueError("`name` must be a character string")
+  if name == "": name = model._model_json['model_id']['name']
+  if not isinstance(filename, str): raise ValueError("`filename` must be a character string")
+  if not isinstance(force, bool): raise ValueError("`force` must be True or False")
+  path = filename if filename != "" else os.path.join(dir, name)
+
+  kwargs = dict([("dir",path), ("force",int(force)), ("_rest_version", 99)])
+  H2OConnection.get("Models.bin/"+model._model_json['model_id']['name'], **kwargs)
+  return path
+
+def load_model(path):
+  """
+  Load a saved H2O model from disk.
+  :param path: The full path of the H2O Model to be imported.
+  :return: the model
+  """
+  if not isinstance(path, str): raise ValueError("`path` must be a non-empty character string")
+  kwargs = dict([("dir",path), ("_rest_version", 99)])
+  res = H2OConnection.post("Models.bin/", **kwargs)
+  return get_model(res.json()['models'][0]['model_id']['name'])
+
 def cluster_status():
   """
   TODO: This isn't really a cluster status... it's a node status check for the node we're connected to.
