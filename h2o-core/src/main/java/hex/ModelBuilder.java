@@ -413,7 +413,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _response = null;
       _vresponse = null;
       _nclass = 1;
-      return;
     }
 
     // Build the validation set to be compatible with the training set.
