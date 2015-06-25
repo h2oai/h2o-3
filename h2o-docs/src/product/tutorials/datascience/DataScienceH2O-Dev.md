@@ -733,6 +733,9 @@ where \(n\) is the number of observations.
 
 \(C_{x}\) is a square, symmetric \(m\times m\) matrix, the diagonal entries of which are the variances of attributes, and the off-diagonal entries are covariances between attributes. 
 
+PCA convergence is based on the method described by Gockenbach: "The rate of convergence of the power method depends on the ratio \(lambda_2|/|\lambda_1\). If this is small...then the power method converges rapidly. If the ratio is close to 1, then convergence is quite slow. The power method will fail if \(lambda_2| = |\lambda_1\)." (567). 
+
+
 The objective of PCA is to maximize variance while minimizing covariance. 
 
 To accomplish this, for a new matrix \(C_{y}\) with off diagonal entries of 0, and each successive dimension of Y ranked according to variance, PCA finds an orthonormal matrix \(P\) such that \(Y=PX\) constrained by the requirement that \(C_{y}=\frac{1}{n}YY^{T}\) be a diagonal matrix. 
@@ -758,7 +761,8 @@ Solve for \(x\) by Gaussian elimination.
 
 ###References
 
-  >Any references for PCA??)
+Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and Its Applications)." (2010): 566-567. 
+
 -->
 ---
 
