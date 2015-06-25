@@ -14,10 +14,10 @@ import random
 import tabulate
 from connection import H2OConnection
 from job import H2OJob
+from expr import ExprNode
 from frame import H2OFrame, _py_tmp_key
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
-
 
 
 def import_file(path):
@@ -155,48 +155,7 @@ def ifelse(test,yes,no):
   :param no:   A "no"  H2OFrame
   :return: An H2OFrame
   """
-  raise NotImplementedError
-  # test_a=None
-  # yes_a =None
-  # no_a  =None
-  #
-  # test_tmp = None
-  # yes_tmp  = None
-  # no_tmp   = None
-  #
-  # if isinstance(test, bool): test_a = "%TRUE" if test else "%FALSE"
-  # else:
-  #   if isinstance(test,H2OVec): test_tmp = test._expr.eager()
-  #   else:                       test_tmp = test.key()
-  #   test_a = "'"+test_tmp+"'"
-  # if isinstance(yes, (int,float)): yes_a = "#{}".format(str(yes))
-  # elif yes is None:                yes_a = "#NaN"
-  # else:
-  #   if isinstance(yes,H2OVec): yes_tmp = yes._expr.eager()
-  #   else:                      yes_tmp = yes.key()
-  #   yes_a = "'"+yes_tmp+"'"
-  # if isinstance(no, (int,float)): no_a = "#{}".format(str(no))
-  # elif no is None:                no_a = "#NaN"
-  # else:
-  #   if isinstance(no,H2OVec): no_tmp = no._expr.eager()
-  #   else:                     no_tmp = no.key()
-  #   no_a = "'"+no_tmp+"'"
-  #
-  # tmp_key = H2OFrame.py_tmp_key()
-  # expr = "(= !{} (ifelse {} {} {}))".format(tmp_key,test_a,yes_a,no_a)
-  # rapids(expr)
-  # j = frame(tmp_key) # Fetch the frame as JSON
-  # fr = j['frames'][0]    # Just the first (only) frame
-  # rows = fr['rows']      # Row count
-  # veckeys = fr['vec_ids']# List of h2o vec keys
-  # cols = fr['columns']   # List of columns
-  # colnames = [col['label'] for col in cols]
-  # vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-  # removeFrameShallow(tmp_key)
-  # if yes_tmp is not  None: removeFrameShallow(str(yes_tmp))
-  # if no_tmp is not   None: removeFrameShallow(str(no_tmp))
-  # if test_tmp is not None: removeFrameShallow(str(test_tmp))
-  # return H2OFrame(vecs=vecs)
+  return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
 
 
 def get_model(model_id):
@@ -485,6 +444,7 @@ def download_pojo(model,path=""):
     with open(file_path, 'w') as f:
       f.write(java.text)
 
+
 def download_csv(data, filename):
   '''
   Download an H2O data set to a CSV file on the local disk.
@@ -503,6 +463,7 @@ def download_csv(data, filename):
     response = urllib2.urlopen(url)
     f.write(response.read())
     f.close()
+
 
 def download_all_logs(dirname=".",filename=None):
   """
@@ -529,6 +490,7 @@ def download_all_logs(dirname=".",filename=None):
 
   print "Writing H2O logs to " + path
   return path
+
 
 def cluster_status():
   """
@@ -559,6 +521,7 @@ def cluster_status():
     print ', '.join(status)
     print
 
+
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
          license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
   """
@@ -578,6 +541,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check)
   return None
 
+
 def export_file(frame,path,force=False):
   """
   Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
@@ -591,6 +555,7 @@ def export_file(frame,path,force=False):
   f = "true" if force else "false"
   H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
+
 def cluster_info():
   """
   Display the current H2O cluster information.
@@ -599,6 +564,7 @@ def cluster_info():
   """
   H2OConnection._cluster_info()
 
+
 def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
   Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
@@ -606,6 +572,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   :return: Return a new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
+
 
 def autoencoder(x,**kwargs):
   """
@@ -617,6 +584,7 @@ def autoencoder(x,**kwargs):
   """
   return h2o_model_builder.unsupervised_model_build(x,None,"autoencoder",kwargs)
 
+
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Gradient Boosted Method model (kwargs are the same arguments that you can find in FLOW)
@@ -624,6 +592,7 @@ def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
+
 
 def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
@@ -634,6 +603,7 @@ def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
 
+
 def kmeans(x,validation_x=None,**kwargs):
   """
   Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
@@ -642,6 +612,7 @@ def kmeans(x,validation_x=None,**kwargs):
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
 
+
 def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Random Forest Model (kwargs are the same arguments that you can find in FLOW)
@@ -649,6 +620,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
+
 
 def prcomp(x,validation_x=None,**kwargs):
   """
@@ -674,6 +646,7 @@ def prcomp(x,validation_x=None,**kwargs):
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
 
+
 def svd(x,validation_x=None,**kwargs):
   """
   Singular value decomposition of a H2O dataset using the power method.
@@ -696,6 +669,7 @@ def svd(x,validation_x=None,**kwargs):
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"svd",kwargs)
 
+
 def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
@@ -713,15 +687,11 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"naivebayes",kwargs)
 
-def ddply(frame,cols,fun):
-  return frame.ddply(cols,fun)
-
-def group_by(frame,cols,aggregates):
-  return frame.group_by(cols,aggregates)
 
 def network_test():
   res = H2OConnection.get_json(url_suffix="NetworkTest")
   res["table"].show()
+
 
 def locate(path):
   """
@@ -754,6 +724,7 @@ def store_size():
   """
   return rapids("(store_size)")["result"]
 
+
 def keys_leaked(num_keys):
   """
   Ask H2O if any keys leaked.
@@ -761,6 +732,7 @@ def keys_leaked(num_keys):
   :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
   """
   return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
+
 
 def as_list(data, use_pandas=True):
   """
@@ -776,36 +748,8 @@ def as_list(data, use_pandas=True):
   :param use_pandas: Try to use pandas for reading in the data.
   :return: List of list (Rows x Columns).
   """
-  raise NotImplementedError
-  # check to see if we can use pandas
-  # found_pandas=False
-  # try:
-  #   imp.find_module('pandas')  # if have pandas, use this to eat a frame
-  #   found_pandas = True
-  # except ImportError:
-  #   found_pandas = False
-  #
-  # # if frame, download the frame and jam into lol or pandas df
-  # if isinstance(data, H2OFrame):
-  #   fr = H2OFrame.send_frame(data)
-  #   res = _as_data_frame(fr, use_pandas and found_pandas)
-  #   removeFrameShallow(fr)
-  #   return res
-  #
-  # if isinstance(data, Expr):
-  #   if data.is_local(): return data._data
-  #   if data.is_pending():
-  #     data.eager()
-  #     if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
-  #   return _as_data_frame(data._data, use_pandas and found_pandas)
-  #
-  # if isinstance(data, H2OVec):
-  #   if data._expr.is_local(): return data._expr._data
-  #   if data._expr.is_pending():
-  #     data._expr.eager()
-  #     if data._expr.is_local(): return [[data._expr._data]]
-  #
-  #   return as_list(H2OFrame(vecs=[data]), use_pandas)
+  return H2OFrame.as_data_frame(data, use_pandas)
+
 
 class H2ODisplay:
   """
@@ -883,10 +827,8 @@ class H2ODisplay:
     return res.format(entries)
 
 def can_use_pandas():
-  # check to see if we can use pandas
-  found_pandas=False
   try:
-    imp.find_module('pandas')  # if have pandas, use this to eat a frame
+    imp.find_module('pandas')
     return True
   except ImportError:
     return False
