@@ -276,8 +276,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
                 ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _response.mean());
-                if (!isClassifier() && _weights != null && (_weights.min() != 1 || _weights.max() != 1))
-                  ln._pred = (float)new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
+                if (!isClassifier() && _weights != null && (_weights.min() != 1 || _weights.max() != 1)) {
+                  FrameUtils.WeightedMean wm = new FrameUtils.WeightedMean();
+                  ln._pred = (float) (hasOffset() ? wm.doAll(_response, _weights, _offset) : wm.doAll(_response, _weights)).weightedMean();
+                }
               }
               continue;
             }

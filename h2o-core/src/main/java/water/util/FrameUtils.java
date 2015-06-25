@@ -229,6 +229,14 @@ public class FrameUtils {
         _wsum += w;
       }
     }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        _wresponse += w*(response.atd(i)-offset.atd(i));
+        _wsum += w;
+      }
+    }
     @Override public void reduce(WeightedMean mrt) { _wresponse += mrt._wresponse; }
   }
 
