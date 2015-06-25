@@ -16,7 +16,7 @@ findbugsMain {
     effort = "max"
     reportLevel = "low"
     visitors = []
-    //excludeVisitors = []
+    omitVisitors = ["DumbMethods"]
     classes = files("$project.buildDir/classes/main")
     classpath = files("$project.buildDir/classes/main")
     //excludeFilter = file("$rootProject.rootDir/config/findbugs/exclude.xml")
