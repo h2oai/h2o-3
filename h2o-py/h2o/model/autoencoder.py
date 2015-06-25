@@ -26,14 +26,4 @@ class H2OAutoEncoderModel(ModelBase):
     # get the anomaly
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data_key, reconstruction_error=True)
     # extract the frame data
-    anomaly_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    anomaly_frame_meta = h2o.frame(anomaly_frame_key)["frames"][0]
-    # create vecs by extracting vec_keys, col length, and col names
-    vec_ids = anomaly_frame_meta["vec_ids"]
-    rows = anomaly_frame_meta["rows"]
-    cols = [col["label"] for col in anomaly_frame_meta["columns"]]
-    vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
-    # remove test_data shallow key
-    h2o.removeFrameShallow(test_data_key)
-    # return new H2OFrame object
-    return H2OFrame(vecs=vecs)
+    return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])

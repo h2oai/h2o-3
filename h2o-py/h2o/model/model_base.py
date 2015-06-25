@@ -54,23 +54,9 @@ class ModelBase(object):
     :param test_data: Data to create a feature space on
     :param layer: 0 index hidden layer
     """
-    if not test_data: raise ValueError("Must specify test data")
-    # create test_data by cbinding vecs
-    test_data_key = H2OFrame.send_frame(test_data)
-    # get the deepfeatures of the dataset
-    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data_key, deep_features_hidden_layer=layer)
-    # retreive the frame data
-    deepfeatures_frame_key = j["predictions_frame"]["name"]
-    df_frame_meta = h2o.frame(deepfeatures_frame_key)["frames"][0]
-    # create vecs by extracting vec_ids, col length, and col names
-    vec_ids = df_frame_meta["vec_ids"]
-    rows = df_frame_meta["rows"]
-    cols = [col["label"] for col in df_frame_meta["columns"]]
-    vecs = H2OVec.new_vecs(zip(cols, vec_ids), rows)
-    # remove test data from kv
-    h2o.removeFrameShallow(test_data_key)
-    # finally return frame
-    return H2OFrame(vecs=vecs)
+    if test_data is None: raise ValueError("Must specify test data")
+    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id, deep_features_hidden_layer=layer)
+    return h2o.get_frame(j["predictions_frame"]["name"])
 
   def weights(self, matrix_id=0):
     """
@@ -82,14 +68,7 @@ class ModelBase(object):
     if matrix_id not in range(num_weight_matrices):
       raise ValueError("Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                        "was requested.".format(num_weight_matrices, matrix_id))
-    j = h2o.frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
-    fr = j['frames'][0]
-    rows = fr['rows']
-    vec_ids = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
-    return result
+    return h2o.get_frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
 
   def biases(self, vector_id=0):
     """
@@ -101,14 +80,7 @@ class ModelBase(object):
     if vector_id not in range(num_bias_vectors):
       raise ValueError("Bias vector does not exist. Model has {0} bias vectors (0-based indexing), but vector {1} "
                        "was requested.".format(num_bias_vectors, vector_id))
-    j = h2o.frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
-    fr = j['frames'][0]
-    rows = fr['rows']
-    vec_ids = fr['vec_ids']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, vec_ids), rows))
-    return result
+    return h2o.get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
 
   def model_performance(self, test_data=None, train=False, valid=False):
     """
@@ -422,14 +394,3 @@ class ModelBase(object):
   @staticmethod
   def _has(dictionary, key):
     return key in dictionary and dictionary[key] is not None
-
-  @staticmethod
-  def get_model(model_id):
-    model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
-    model_type = model_json["output"]["model_category"]
-    if model_type=="Binomial":      return H2OBinomialModel(model_id, model_json)
-    elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
-    elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
-    elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
-    elif model_type=="AutoEncoder": return H2OAutoEncoderModel(model_id, model_json)
-    else:                           raise NotImplementedError(model_type)

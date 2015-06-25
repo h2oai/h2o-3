@@ -545,6 +545,7 @@ class H2OFrame:
     """
     Split a frame into distinct subsets of size determined by the given ratios.
     The number of subsets is always 1 more than the number of ratios given.
+
     :param data: The dataset to split.
     :param ratios: The fraction of rows for each split.
     :param destination_frames: names of the split frames
@@ -560,29 +561,7 @@ class H2OFrame:
     :param fun: Function to execute on each group.  Right now limited to textual Rapids expression
     :return: New frame with 1 row per-group, of results from 'fun'
     """
-    raise ValueError("ddply: unimpl")
-    # if self._vecs is None or self._vecs == []:
-    #   raise ValueError("Frame Removed")
-    # # Confirm all names present in dataset; collect column indices
-    # rapids_series = "(llist #"+" #".join([str(self._find_idx(name)) for name in cols])+")"
-    #
-    # # Eagerly eval and send the cbind'd frame over
-    # key = self.send_frame()
-    # tmp_key = H2OFrame.py_tmp_key()
-    # expr = "(= !{} (h2o.ddply %{} {} {}))".format(tmp_key,key,rapids_series,fun)
-    # h2o.rapids(expr) # ddply in h2o
-    # # Remove h2o temp frame after ddply
-    # h2o.removeFrameShallow(key)
-    # # Make backing H2OVecs for the remote h2o vecs
-    # j = h2o.frame(tmp_key) # Fetch the frame as JSON
-    # fr = j['frames'][0]    # Just the first (only) frame
-    # rows = fr['rows']      # Row count
-    # veckeys = fr['vec_ids']# List of h2o vec keys
-    # cols = fr['columns']   # List of columns
-    # colnames = [col['label'] for col in cols]
-    # vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
-    # h2o.removeFrameShallow(tmp_key)
-    # return H2OFrame(vecs=vecs)
+    return H2OFrame(expr=ExprNode("ddply", self, cols, fun))._frame()
 
   def group_by(self,cols,a,order_by=None):
     """
