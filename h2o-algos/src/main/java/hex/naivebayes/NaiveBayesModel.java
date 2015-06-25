@@ -6,10 +6,12 @@ import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
+import water.util.JCodeGen;
+import water.util.SB;
 import water.util.TwoDimTable;
 
-public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
-  public static class NaiveBayesParameters extends SupervisedModel.SupervisedParameters {
+public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
+  public static class NaiveBayesParameters extends Model.Parameters {
     public double _laplace = 0;         // Laplace smoothing parameter
     public double _eps_sdev = 0;   // Cutoff below which standard deviation is replaced with _min_sdev
     public double _min_sdev = 0.001;   // Minimum standard deviation to use for observations without enough data
@@ -18,7 +20,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
   }
 
-  public static class NaiveBayesOutput extends SupervisedModel.SupervisedOutput {
+  public static class NaiveBayesOutput extends Model.Output {
     // Class distribution of the response
     public TwoDimTable _apriori;
     public double[/*res level*/] _apriori_raw;
@@ -101,5 +103,64 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     // Select class with highest conditional probability
     preds[0] = GenModel.getPrediction(preds, data, defaultThreshold());
     return preds;
+  }
+
+  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
+    sb = super.toJavaInit(sb, fileContextSB);
+    sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
+    sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
+    sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
+
+    JCodeGen.toStaticVar(sb, "RESCNT", _output._rescnt, "Count of categorical levels in response.");
+    JCodeGen.toStaticVar(sb, "APRIORI", _output._apriori_raw, "Apriori class distribution of the response.");
+    JCodeGen.toStaticVar(sb, "PCOND", _output._pcond_raw, "Conditional probability of predictors.");
+
+    double[] dlen = null;
+    if (_output._ncats > 0) {
+      dlen = new double[_output._ncats];
+      for (int i = 0; i < _output._ncats; i++)
+        dlen[i] = _output._domains[i].length;
+    }
+    JCodeGen.toStaticVar(sb, "DOMLEN", dlen, "Number of unique levels for each categorical predictor.");
+    return sb;
+  }
+
+  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
+    SB model = new SB();
+    bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
+    bodySb.i().p("double mean, sdev, prob;").nl();
+    bodySb.i().p("double[] nums = new double[" + _output._levels.length + "];").nl();
+
+    bodySb.i().p("for(int i = 0; i < " + _output._levels.length + "; i++) {").nl();
+    bodySb.i(1).p("nums[i] = Math.log(APRIORI[i]);").nl();
+    bodySb.i(1).p("for(int j = 0; j < " + _output._ncats + "; j++) {").nl();
+    bodySb.i(2).p("if(Double.isNaN(data[j])) continue;").nl();
+    bodySb.i(2).p("int level = (int)data[j];").nl();
+    bodySb.i(2).p("prob = level < " + _output._pcond_raw.length + " ? PCOND[j][i][level] : " +
+            (_parms._laplace == 0 ? 0 : _parms._laplace + "/(RESCNT[i] + " + _parms._laplace + "*DOMLEN[j])")).p(";").nl();
+    bodySb.i(2).p("nums[i] += Math.log(prob <= " + _parms._eps_prob + " ? " + _parms._min_prob + " : prob);").nl();
+    bodySb.i(1).p("}").nl();
+
+    bodySb.i(1).p("for(int j = " + _output._ncats + "; j < data.length; j++) {").nl();
+    bodySb.i(2).p("if(Double.isNaN(data[j])) continue;").nl();
+    bodySb.i(2).p("mean = Double.isNaN(PCOND[j][i][0]) ? 0 : PCOND[j][i][0];").nl();
+    bodySb.i(2).p("sdev = Double.isNaN(PCOND[j][i][1]) ? 1 : (PCOND[j][i][1] <= " + _parms._eps_sdev + " ? "
+            + _parms._min_sdev + " : PCOND[j][i][1]);").nl();
+    bodySb.i(2).p("prob = Math.exp(-((data[j]-mean)*(data[j]-mean))/(2.*sdev*sdev)) / (sdev*Math.sqrt(2.*Math.PI));").nl();
+    bodySb.i(2).p("nums[i] += Math.log(prob <= " + _parms._eps_prob + " ? " + _parms._min_prob + " : prob);").nl();
+    bodySb.i(1).p("}").nl();
+    bodySb.i().p("}").nl();
+
+    bodySb.i().p("double sum;").nl();
+    bodySb.i().p("for(int i = 0; i < nums.length; i++) {").nl();
+    bodySb.i(1).p("sum = 0;").nl();
+    bodySb.i(1).p("for(int j = 0; j < nums.length; j++) {").nl();
+    bodySb.i(2).p("sum += Math.exp(nums[j]-nums[i]);").nl();
+    bodySb.i(1).p("}").nl();
+    bodySb.i(1).p("preds[i+1] = 1/sum;").nl();
+    bodySb.i().p("}").nl();
+    fileCtxSb.p(model);
+
+    bodySb.i().p("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
   }
 }

@@ -21,7 +21,6 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
       throw new IllegalArgumentException("missing source model " + args.model);
-
     String [] names = model._output.coefficientNames();
     Map<String,Double> coefs = model.coefficients();
     for(int i = 0; i < args.names.length; ++i)
@@ -29,10 +28,11 @@ public class MakeGLMModelHandler extends Handler {
     double [] beta = model.beta().clone();
     for(int i = 0; i < beta.length; ++i)
       beta[i] = coefs.get(names[i]);
-    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, Double.NaN, Double.NaN, Double.NaN, -1);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, Double.NaN, Double.NaN, Double.NaN, -1, false, false);
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
-    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, names, beta, .5f, model._output._binomial);
+    // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
+    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, model._output.coefficientNames(), model._output._binomial);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);

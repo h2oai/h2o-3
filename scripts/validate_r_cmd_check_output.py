@@ -66,6 +66,8 @@ class Check:
             r"^NOTE: There were 2 notes.",
             r"^Status: 1 WARNING, 1 NOTE",
             r"^Status: 1 WARNING, .* NOTEs",
+            r"^Status: 2 NOTEs",
+            r"^Status: 1 NOTE",
             r"^See",
             r"^ .*/h2o-r/h2o\.Rcheck/00check\.log.*",
             r"^for details.",

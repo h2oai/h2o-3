@@ -18,9 +18,9 @@ import water.fvec.Vec;
 public class AUC2 extends Iced {
   public final int _nBins; // Max number of bins; can be less if there are fewer points
   public final double[] _ths;   // Thresholds
-  public final long[] _tps;     // True  Positives
-  public final long[] _fps;     // False Positives
-  public final long _p, _n;     // Actual trues, falses
+  public final double[] _tps;     // True  Positives
+  public final double[] _fps;     // False Positives
+  public final double _p, _n;     // Actual trues, falses
   public final double _auc, _gini; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
@@ -35,44 +35,44 @@ public class AUC2 extends Iced {
    *  from the basic parts, and from an AUC2 at a given threshold index.
    */
   public enum ThresholdCriterion {
-    f1(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
+    f1(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
         final double recl = tpr   .exec(tp,fp,fn,tn);
         return 2. * (prec * recl) / (prec + recl);
       } },
-    f2(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
+    f2(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
         final double recl = tpr   .exec(tp,fp,fn,tn);
         return 5. * (prec * recl) / (4. * prec + recl);
       } },
-    f0point5(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
+    f0point5(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
         final double recl = tpr   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return 1.0-((double)fn+fp)/(tp+fn+tn+fp); } },
-    precision(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tp/(tp+fp); } },
-    absolute_MCC(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        double mcc = ((double)tp*tn - (double)fp*fn);
+    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return 1.0-(fn+fp)/(tp+fn+tn+fp); } },
+    precision(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return tp/(tp+fp); } },
+    absolute_MCC(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
+        double mcc = (tp*tn - fp*fn);
         if (mcc == 0) return 0;
-        mcc /= Math.sqrt(((double)tp+fp)*((double)tp+fn)*((double)tn+fp)*((double)tn+fn));
+        mcc /= Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
         assert(Math.abs(mcc)<=1.) : tp + " " + fp + " " + fn + " " + tn;
         return Math.abs(mcc);
       } },
     // minimize max-per-class-error by maximizing min-per-class-accuracy.
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
-    min_per_class_accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
+    min_per_class_accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
+        return Math.min(tp/(tp+fn),tn/(tn+fp));
       } },
-    tns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
-    fns(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
-    fps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
-    tps(true ) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
-    tnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tn/(fp+tn); } },
-    fnr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fn/(fn+tp); } },
-    fpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)fp/(fp+tn); } },
-    tpr(false) { @Override double exec( long tp, long fp, long fn, long tn ) { return (double)tp/(tp+fn); } },
+    tns(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return tn; } },
+    fns(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return fn; } },
+    fps(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return fp; } },
+    tps(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return tp; } },
+    tnr(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return tn/(fp+tn); } },
+    fnr(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return fn/(fn+tp); } },
+    fpr(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return fp/(fp+tn); } },
+    tpr(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return tp/(tp+fn); } },
     ;
     public final boolean _isInt; // Integral-Valued data vs Real-Valued
     ThresholdCriterion(boolean isInt) { _isInt = isInt; }
@@ -82,7 +82,7 @@ public class AUC2 extends Iced {
      *  @param fn False Negatives (predicted false, actual true )
      *  @param tn True  Negatives (predicted false, actual false)
      *  @return criteria */
-    abstract double exec( long tp, long fp, long fn, long tn );
+    abstract double exec( double tp, double fp, double fn, double tn );
     public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx)); }
     public double max_criterion( AUC2 auc ) { return exec(auc,max_criterion_idx(auc)); }
 
@@ -102,10 +102,10 @@ public class AUC2 extends Iced {
   } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
-  public long tp( int idx ) { return _tps[idx]; }
-  public long fp( int idx ) { return _fps[idx]; }
-  public long tn( int idx ) { return _n-_fps[idx]; }
-  public long fn( int idx ) { return _p-_tps[idx]; }
+  public double tp( int idx ) { return _tps[idx]; }
+  public double fp( int idx ) { return _fps[idx]; }
+  public double tn( int idx ) { return _n-_fps[idx]; }
+  public double fn( int idx ) { return _p-_tps[idx]; }
 
   /** @return maximum F1 */
   public double maxF1() { return ThresholdCriterion.f1.max_criterion(this); }
@@ -127,13 +127,13 @@ public class AUC2 extends Iced {
     // Reverse everybody; thresholds from 1 down to 0, easier to read
     for( int i=0; i<((_nBins)>>1); i++ ) {
       double tmp= _ths[i];  _ths[i] = _ths[_nBins-1-i]; _ths[_nBins-1-i] = tmp ;
-      long tmpt = _tps[i];  _tps[i] = _tps[_nBins-1-i]; _tps[_nBins-1-i] = tmpt;
-      long tmpf = _fps[i];  _fps[i] = _fps[_nBins-1-i]; _fps[_nBins-1-i] = tmpf;
+      double tmpt = _tps[i];  _tps[i] = _tps[_nBins-1-i]; _tps[_nBins-1-i] = tmpt;
+      double tmpf = _fps[i];  _fps[i] = _fps[_nBins-1-i]; _fps[_nBins-1-i] = tmpf;
     }
 
     // Rollup counts, so that computing the rates are easier.
     // The AUC is (TPR,FPR) as the thresholds roll about
-    long p=0, n=0;
+    double p=0, n=0;
     for( int i=0; i<_nBins; i++ ) { 
       p += _tps[i]; _tps[i] = p;
       n += _fps[i]; _fps[i] = n;
@@ -147,9 +147,12 @@ public class AUC2 extends Iced {
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)
   // points.  TPR and FPR are monotonically increasing from 0 to 1.
   private double compute_auc() {
+    if (_fps[_nBins-1] == 0) return 1.0; //special case
+    if (_tps[_nBins-1] == 0) return 0.0; //special case
+
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
-    long tp0 = 0, fp0 = 0;
+    double tp0 = 0, fp0 = 0;
     double area = 0;
     for( int i=0; i<_nBins; i++ ) {
       area += (_fps[i]-fp0)*(_tps[i]+tp0)/2.0; // Trapezoid
@@ -159,20 +162,20 @@ public class AUC2 extends Iced {
     return area/_p/_n;
   }
 
-  // Build a CM for a threshold index.
-  public long[/*actual*/][/*predicted*/] buildCM( int idx ) {
+  // Build a CM for a threshold index. - typed as doubles because of double observation weights
+  public double[/*actual*/][/*predicted*/] buildCM( int idx ) {
     //  \ predicted:  0   1
     //    actual  0: TN  FP
     //            1: FN  TP
-    return new long[][]{{tn(idx),fp(idx)},{fn(idx),tp(idx)}};
+    return new double[][]{{tn(idx),fp(idx)},{fn(idx),tp(idx)}};
   }
 
   /** @return the default CM, or null for an empty AUC */
-  public long[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
+  public double[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
   /** @return the default threshold; threshold that maximizes the default criterion */
-  public double defaultThreshold( ) { return _ths[_max_idx]; }
+  public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
-  public double defaultErr( ) { return ((double)fp(_max_idx)+fn(_max_idx))/(_p+_n); }
+  public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
 
 
 
@@ -186,7 +189,7 @@ public class AUC2 extends Iced {
       AUCBuilder bldr = _bldr = new AUCBuilder(_nBins);
       for( int row = 0; row < ps._len; row++ )
         if( !ps.isNA(row) && !as.isNA(row) )
-          bldr.perRow(ps.atd(row),(int)as.at8(row));
+          bldr.perRow(ps.atd(row),(int)as.at8(row),1);
     }
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }
@@ -196,8 +199,8 @@ public class AUC2 extends Iced {
     int _n;                     // Current number of bins
     final double _ths[];        // Histogram bins, center
     final double _sqe[];        // Histogram bins, squared error
-    final long   _tps[];        // Histogram bins, true  positives
-    final long   _fps[];        // Histogram bins, false positives
+    final double _tps[];        // Histogram bins, true  positives
+    final double _fps[];        // Histogram bins, false positives
     // Merging this bin with the next gives the least increase in squared
     // error, or -1 if not known.  Requires a linear scan to find.
     int    _ssx;
@@ -205,19 +208,19 @@ public class AUC2 extends Iced {
       _nBins = nBins;
       _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
       _sqe = new double[nBins<<1]; // Squared error (variance) in this bin
-      _tps = new long  [nBins<<1]; // True  positives
-      _fps = new long  [nBins<<1]; // False positives
+      _tps = new double[nBins<<1]; // True  positives
+      _fps = new double[nBins<<1]; // False positives
       _ssx = -1;                   // Unknown best merge bin
     }
 
-    public void perRow(double pred, int act ) {
+    public void perRow(double pred, int act, double w ) {
       // Insert the prediction into the set of histograms in sorted order, as
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);
       assert act==0 || act==1;  // Actual better be 0 or 1
       int idx = Arrays.binarySearch(_ths,0,_n,pred);
       if( idx >= 0 ) {          // Found already in histogram; merge results
-        if( act==0 ) _fps[idx]++; else _tps[idx]++; // One more count; no change in squared error
+        if( act==0 ) _fps[idx]+=w; else _tps[idx]+=w; // One more count; no change in squared error
         _ssx = -1;              // Blows the known best merge
         return;
       }
@@ -230,13 +233,13 @@ public class AUC2 extends Iced {
 
         // See if this point will fold into either the left or right bin
         // immediately.  This is the desired fast-path.
-        double d0 = compute_delta_error(pred,1,_ths[idx  ],k(idx  ));
-        double d1 = compute_delta_error(_ths[idx+1],k(idx+1),pred,1);
+        double d0 = compute_delta_error(pred,w,_ths[idx  ],k(idx  ));
+        double d1 = compute_delta_error(_ths[idx+1],k(idx+1),pred,w);
         if( d0 < dssx || d1 < dssx ) {
           if( d1 < d0 ) idx++; else d0 = d1; // Pick correct bin
-          long oldk = k(idx);
-          if( act==0 ) _fps[idx]++;
-          else         _tps[idx]++;
+          double oldk = k(idx);
+          if( act==0 ) _fps[idx]+=w;
+          else         _tps[idx]+=w;
           _ths[idx] = _ths[idx] + (pred-_ths[idx])/oldk;
           _sqe[idx] = _sqe[idx] + d0;
           assert ssx == find_smallest();
@@ -258,10 +261,9 @@ public class AUC2 extends Iced {
       // Insert into the histogram
       _ths[idx] = pred;         // New histogram center
       _sqe[idx] = 0;            // Only 1 point, so no squared error
-      if( act==0 ) { _tps[idx]=0; _fps[idx]=1; }
-      else         { _tps[idx]=1; _fps[idx]=0; }
+      if( act==0 ) { _tps[idx]=0; _fps[idx]=w; }
+      else         { _tps[idx]=w; _fps[idx]=0; }
       _n++;
-
       if( _n > _nBins )         // Merge as needed back down to nBins
         mergeOneBin();          // Merge best pair of bins
     }
@@ -300,8 +302,8 @@ public class AUC2 extends Iced {
 
       // Merge two bins.  Classic bins merging by averaging the histogram
       // centers based on counts.
-      long k0 = k(ssx);
-      long k1 = k(ssx+1);
+      double k0 = k(ssx);
+      double k1 = k(ssx+1);
       _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
       _sqe[ssx] = _sqe[ssx]+_sqe[ssx+1]+compute_delta_error(_ths[ssx+1],k1,_ths[ssx],k0);
       _tps[ssx] += _tps[ssx+1];
@@ -352,7 +354,7 @@ public class AUC2 extends Iced {
     }
 
 
-    private double compute_delta_error( double ths1, long n1, double ths0, long n0 ) {
+    private double compute_delta_error( double ths1, double n1, double ths0, double n0 ) {
       // If thresholds vary by less than a float ULP, treat them as the same.
       // Some models only output predictions to within float accuracy (so a
       // variance here is junk), and also it's not statistically sane to have
@@ -363,7 +365,7 @@ public class AUC2 extends Iced {
       return delta*delta*n0*n1 / (n0+n1);
     }
 
-    private long k( int idx ) { return _tps[idx]+_fps[idx]; }
+    private double k( int idx ) { return _tps[idx]+_fps[idx]; }
 
     //private boolean sorted() {
     //  double t = _ths[0];

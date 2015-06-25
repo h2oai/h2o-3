@@ -20,7 +20,7 @@ import water.util.Log;
  * - it requires true global consensus (a Quorum of All)
  * - it is vastly simpler than Paxos
  *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
 public abstract class Paxos {

@@ -37,15 +37,16 @@
 #' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
-#' @param use_all_factor_levels A logical value indicating whether dummy variables should be used for all factor levels of the categorical predictors.
-#'                              When \code{TRUE}, results in an over parameterized models.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
+#' @param offset_column Specify the offset column.
+#' @param weights_column Specify the weights column.
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
+#' @param intercept Logical, include constant term (intercept) in the model
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -54,7 +55,7 @@
 #'
 #'          Upon completion of the GLM, the resulting object has coefficients, normalized coefficients, residual/null deviance, aic,
 #'          and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please
-#'          refer to the more in-depth GLM documentation available here: \url{http://docs2.h2o.ai/datascience/glm.html},
+#'          refer to the more in-depth GLM documentation available here: \url{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM},
 #'
 #' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
@@ -66,14 +67,12 @@
 #' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prostatePath, destination_frame = "prostate.hex")
 #' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
-#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE,
-#'         use_all_factor_levels = FALSE)
+#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #'
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
 #' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
-#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE,
-#'         use_all_factor_levels = FALSE)
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
 #' \dontrun{
 #'  # GLM variable importance
@@ -86,7 +85,7 @@
 #'  myX = 1:20
 #'  myY="y"
 #'  my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
-#'                  use_all_factor_levels=TRUE, lambda_search=TRUE)
+#'                  lambda_search=TRUE)
 #' }
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
@@ -106,6 +105,9 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_min_ratio = -1.0,
                     nfolds,
                     beta_constraints = NULL,
+                    offset_column = NULL,
+                    weights_column = NULL,
+                    intercept = TRUE,
                     ...
                     )
 {
@@ -130,40 +132,29 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(validation_frame))
-    parms$validation_frame <- validation_frame
-  if(!missing(model_id))
-    parms$model_id <- model_id
-  if(!missing(max_iterations))
-    parms$max_iterations <- max_iterations
-  if(!missing(beta_epsilon))
-    parms$beta_epsilon <- beta_epsilon
-  if(!missing(solver))
-    parms$solver <- solver
-  if(!missing(standardize))
-    parms$standardize <- standardize
-  if(!missing(family))
-    parms$family <- family
-  if(!missing(link))
-    parms$link <- link
-  if(!missing(tweedie_variance_power))
-    parms$tweedie_variance_power <- tweedie_variance_power
-  if(!missing(tweedie_link_power))
-    parms$tweedie_link_power <- tweedie_link_power
-  if(!missing(alpha))
-    parms$alpha <- alpha
-  if(!missing(prior))
-    parms$prior <- prior
-  if(!missing(lambda))
-    parms$lambda <- lambda
-  if(!missing(lambda_search))
-    parms$lambda_search <- lambda_search
-  if(!missing(nlambdas))
-    parms$nlambdas <- nlambdas
-  if(!missing(lambda_min_ratio))
-    parms$lambda_min_ratio <- lambda_min_ratio
+  if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
+  if( !missing(model_id) )                  parms$model_id               <- model_id
+  if( !missing(max_iterations) )            parms$max_iterations         <- max_iterations
+  if( !missing(beta_epsilon) )              parms$beta_epsilon           <- beta_epsilon
+  if( !missing(solver) )                    parms$solver                 <- solver
+  if( !missing(standardize) )               parms$standardize            <- standardize
+  if( !missing(family) )                    parms$family                 <- family
+  if( !missing(link) )                      parms$link                   <- link
+  if( !missing(tweedie_variance_power) )    parms$tweedie_variance_power <- tweedie_variance_power
+  if( !missing(tweedie_link_power) )        parms$tweedie_link_power     <- tweedie_link_power
+  if( !missing(alpha) )                     parms$alpha                  <- alpha
+  if( !missing(prior) )                     parms$prior                  <- prior
+  if( !missing(lambda) )                    parms$lambda                 <- lambda
+  if( !missing(lambda_search) )             parms$lambda_search          <- lambda_search
+  if( !missing(nlambdas) )                  parms$nlambdas               <- nlambdas
+  if( !missing(lambda_min_ratio) )          parms$lambda_min_ratio       <- lambda_min_ratio
+  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+  if( !missing(weights_column) )            parms$weights_column         <- weights_column
+  if( !missing(intercept) )                 parms$intercept              <- intercept
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.

@@ -16,7 +16,7 @@ import java.util.Arrays;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
+public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[] {
@@ -430,7 +430,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
 
         int nResponses = 1;
         boolean useAllFactorLevels = false;
-        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false);
+        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false);
         initStats(model, dinfo);
 
         final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;
@@ -582,7 +582,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
     }
 
     @Override
-    protected void chunkInit(){
+    protected boolean chunkInit(){
       final int n_coef = _beta.length;
       sumWeightedCatX  = MemoryManager.malloc8d(n_coef - (_dinfo._nums - _n_offsets));
       sumWeightedNumX  = MemoryManager.malloc8d(_dinfo._nums);
@@ -598,6 +598,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
       rcumsumXRisk     = malloc2DArray(_n_time, n_coef);
       sumXXRiskEvents  = malloc3DArray(_n_time, n_coef, n_coef);
       rcumsumXXRisk    = malloc3DArray(_n_time, n_coef, n_coef);
+      return true;
     }
 
     @Override

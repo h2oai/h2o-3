@@ -13,10 +13,11 @@ if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
 if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
 tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Oops. Couldn't install `rgl` package...") })
 if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
+if (!"AUC" %in% rownames(installed.packages())) install.packages("AUC")
 if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
 library(R.utils)
 
-PROJECT.ROOT <- "h2o-dev"
+PROJECT.ROOT <- "h2o-3"
 SUBPROJECT.ROOT <- "h2o-r"
 
 #'
@@ -160,7 +161,7 @@ h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort), timeout_secs=120)
+h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort), timeout_secs=600)
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {

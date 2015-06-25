@@ -434,6 +434,10 @@
     }
     x
   }
+  # hack that counters the fact that RCurl will escape already escaped string
+  txt <- gsub("\\\"","\"",txt); 
+  txt <- gsub("\\\\,","\\,",txt);
+
   res <- processMatrices(fromJSON(txt, ...))
   processTables(res)
 }
@@ -452,7 +456,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   formats <- attr(x, "formats")
   xx <- x
   for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%i"
+    if( formats[j] == "%d" ) formats[j] <- "%f"
     xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
   }
 
@@ -486,7 +490,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list(), raw=FALSE) {
+.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
@@ -506,8 +510,8 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   rawREST <- ""
 
-  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method, timeout = timeout)
-  else                    rawREST <- .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
+  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
+  else                    rawREST <- .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
 
   if( raw ) rawREST
   else      .h2o.fromJSON(rawREST)
@@ -522,10 +526,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #'
 #' @param conn H2O connection object
 #' @return TRUE if the cluster is up; FALSE otherwise
+#' @export
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
-  rv = .h2o.doRawGET(conn = conn, urlSuffix = "")
+  rv <- .h2o.doRawGET(conn = conn, urlSuffix = "")
 
   !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
 }
@@ -544,6 +549,7 @@ h2o.killMinus3 <- function(conn = h2o.getConnection()) {
 #' Print H2O cluster info
 #'
 #' @param conn H2O connection object
+#' @export
 h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   stopifnot(is(conn, "H2OConnection"))
   if(! h2o.clusterIsUp(conn)) {

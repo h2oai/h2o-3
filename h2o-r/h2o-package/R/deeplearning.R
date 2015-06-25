@@ -93,6 +93,8 @@
 #' @param reproducible Force reproducibility on small data (will be slow - only uses 1 thread)
 #' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O
 #'        Frames"
+#' @param offset_column Specify the offset column.
+#' @param weights_column Specify the weights column.
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -162,6 +164,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              max_categorical_features,
                              reproducible=FALSE,
                              export_weights_and_biases=FALSE,
+                             offset_column = NULL,
+                             weights_column = NULL,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
@@ -184,6 +188,8 @@ h2o.deeplearning <- function(x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
+  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   parms$response_column <- colargs$y
   parms$ignored_columns <- colargs$x_ignore
   if(!missing(model_id))
@@ -302,6 +308,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$reproducible <- reproducible
   if(!missing(export_weights_and_biases))
     parms$export_weights_and_biases <- export_weights_and_biases
+  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+  if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
   .h2o.createModel(training_frame@conn, 'deeplearning', parms)
 }
@@ -360,7 +368,11 @@ h2o.anomaly <- function(object, data) {
 #' @export
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
-
+  tmp <- !.is.eval(data)
+  if( tmp ) {
+    temp_key <- data@frame_id
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
+  }
   url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name

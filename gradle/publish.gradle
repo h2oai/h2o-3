@@ -1,5 +1,4 @@
 apply plugin: "java"
-apply from: "$rootDir/gradle/java6bytecode.gradle"
 apply plugin: 'maven-publish'
 apply plugin: "signing"
 

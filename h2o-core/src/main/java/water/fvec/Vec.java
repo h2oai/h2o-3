@@ -189,6 +189,9 @@ public class Vec extends Keyed<Vec> {
   byte _type;                   // Vec Type
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
+  public static final boolean DO_HISTOGRAMS = true;
+  public static final boolean NO_HISTOGRAMS = false;
+
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Categorical column.  */
@@ -957,14 +960,14 @@ public class Vec extends Keyed<Vec> {
     // Bulk dumb local remove - no JMM, no ordering, no safety.
     final int ncs = nChunks();
     new MRTask() {
-      @Override public void setupLocal() { bulk_remove(_key,ncs,_fs); }
+      @Override public void setupLocal() { bulk_remove(_key,ncs); }
     }.doAllNodes();
     return fs;
  }
   // Bulk remove: removes LOCAL keys only, without regard to total visibility.
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
-  static Futures bulk_remove( Key vkey, int ncs, Futures fs ) {
+  static void bulk_remove( Key vkey, int ncs ) {
     for( int i=0; i<ncs; i++ ) {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);
@@ -972,7 +975,6 @@ public class Vec extends Keyed<Vec> {
     Key kr = chunkKey(vkey,-2);
     H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
-    return fs;
   }
 
   // ======= Whole Vec Transformations ======

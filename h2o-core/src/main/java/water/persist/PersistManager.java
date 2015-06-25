@@ -27,6 +27,8 @@ public class PersistManager {
     public static final String FILE = "file";
     public static final String HDFS = "hdfs";
     public static final String S3   = "s3";
+    public static final String S3N  = "s3n";
+    public static final String S3A  = "s3a";
     public static final String NFS  = "nfs";
   }
 
@@ -52,7 +54,8 @@ public class PersistManager {
 
   public static boolean isHdfsPath(String path) {
     String s = path.toLowerCase();
-    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
+                          || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       return true;
     }
     return false;
@@ -60,7 +63,7 @@ public class PersistManager {
 
   private void validateHdfsConfigured() {
     if (I[Value.HDFS] == null) {
-      throw new H2OIllegalArgumentException("HDFS, S3 and S3N support is not configured");
+      throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
     }
   }
 
@@ -163,7 +166,7 @@ public class PersistManager {
     String scheme = uri.getScheme();
     if ("hdfs".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("s3".equals(scheme) || "s3n".equals(scheme)) {
+    } else if ("s3".equals(scheme) || "s3n".equals(scheme) || "s3a".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
@@ -182,9 +185,10 @@ public class PersistManager {
    */
   public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
     String s = filter.toLowerCase();
-    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
+                          || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
-        throw new H2OIllegalArgumentException("HDFS, S3 and S3N support is not configured");
+        throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
       }
 
       return I[Value.HDFS].calcTypeaheadMatches(filter, limit);
@@ -234,9 +238,10 @@ public class PersistManager {
 
       return;
     }
-    else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
+                               || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
-        throw new H2OIllegalArgumentException("HDFS, S3 and S3N support is not configured");
+        throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
       }
 
       I[Value.HDFS].importFiles(path, files, keys, fails, dels);
@@ -276,10 +281,7 @@ public class PersistManager {
 
     ArrayList<PersistEntry> arr = new ArrayList<>();
     for (File f : files) {
-      PersistEntry entry = new PersistEntry();
-      entry._name = f.getName();
-      entry._size = f.length();
-      entry._timestamp_millis = f.lastModified();
+      PersistEntry entry = new PersistEntry(f.getName(), f.length(), f.lastModified());
       arr.add(entry);
     }
 
@@ -391,5 +393,25 @@ public class PersistManager {
     File f = new File(path);
     boolean b = f.delete();
     return b;
+  }
+
+  public Persist getPersistForURI(URI uri) {
+    String scheme = uri.getScheme();
+    if (scheme != null ) {
+      switch (scheme) {
+        case Schemes.FILE:
+          return I[Value.ICE]; // Local FS
+        case Schemes.HDFS:
+        case Schemes.S3N:
+        case Schemes.S3A:
+          return I[Value.HDFS];
+        case Schemes.S3:
+          return I[Value.S3];
+        default:
+          throw new IllegalArgumentException("Cannot find persist manager for scheme " + scheme);
+      }
+    } else {
+      return I[Value.ICE];
+    }
   }
 }

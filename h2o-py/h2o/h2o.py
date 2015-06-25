@@ -7,11 +7,13 @@ import os
 import os.path
 import re
 import urllib
+import csv
+import imp
 import urllib2
 import json
+import imp
 import random
 import tabulate
-import numpy as np
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -78,7 +80,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
   :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
-  :return: A new parsed object  
+  :return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
   p = { 'destination_frame' : h2o_name,
@@ -93,7 +95,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
-    first_line_is_header = setup["check_header"] 
+    first_line_is_header = setup["check_header"]
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -120,6 +122,21 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
+def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
+  """
+  Used in conjunction with import_file and parse_setup in order to make alterations before parsing.
+  :param setup: Result of h2o.parse_setup
+  :param id: An optional id for the frame.
+  :param first_line_is_header: -1,0,1 if the first line is to be used as the header
+  :return: An H2OFrame object
+  """
+  if id is None: id = H2OFrame.py_tmp_key()
+  parsed = parse(setup, id, first_line_is_header)
+  veckeys = parsed['vec_ids']
+  rows = parsed['rows']
+  cols = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
+  vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+  return H2OFrame(vecs=vecs)
 
 def impute(data, column, method=["mean","median","mode"], # TODO: add "bfill","ffill"
            combine_method=["interpolate", "average", "low", "high"], by=None, inplace=True):
@@ -141,6 +158,123 @@ def _quoted(key):
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else "\"" + key + "\""
   return key
+
+
+def ifelse(test,yes,no):
+  """
+  Semantically equivalent to R's ifelse.
+  Based on the booleans in the test vector, the output has the values of the yes and no
+  vectors interleaved (or merged together).
+
+  :param test: A "test" H2OFrame
+  :param yes:  A "yes" H2OFrame
+  :param no:   A "no"  H2OFrame
+  :return: An H2OFrame
+  """
+  test_a=None
+  yes_a =None
+  no_a  =None
+
+  test_tmp = None
+  yes_tmp  = None
+  no_tmp   = None
+
+  if isinstance(test, bool): test_a = "%TRUE" if test else "%FALSE"
+  else:
+    if isinstance(test,H2OVec): test_tmp = test._expr.eager()
+    else:                       test_tmp = test.key()
+    test_a = "'"+test_tmp+"'"
+  if isinstance(yes, (int,float)): yes_a = "#{}".format(str(yes))
+  elif yes is None:                yes_a = "#NaN"
+  else:
+    if isinstance(yes,H2OVec): yes_tmp = yes._expr.eager()
+    else:                      yes_tmp = yes.key()
+    yes_a = "'"+yes_tmp+"'"
+  if isinstance(no, (int,float)): no_a = "#{}".format(str(no))
+  elif no is None:                no_a = "#NaN"
+  else:
+    if isinstance(no,H2OVec): no_tmp = no._expr.eager()
+    else:                     no_tmp = no.key()
+    no_a = "'"+no_tmp+"'"
+
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ifelse {} {} {}))".format(tmp_key,test_a,yes_a,no_a)
+  rapids(expr)
+  j = frame(tmp_key) # Fetch the frame as JSON
+  fr = j['frames'][0]    # Just the first (only) frame
+  rows = fr['rows']      # Row count
+  veckeys = fr['vec_ids']# List of h2o vec keys
+  cols = fr['columns']   # List of columns
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows) # Peel the Vecs out of the returned Frame
+  removeFrameShallow(tmp_key)
+  if yes_tmp is not  None: removeFrameShallow(str(yes_tmp))
+  if no_tmp is not   None: removeFrameShallow(str(no_tmp))
+  if test_tmp is not None: removeFrameShallow(str(test_tmp))
+  return H2OFrame(vecs=vecs)
+
+def split_frame(data, ratios=[0.75], destination_frames=None):
+  """
+  Split a frame into distinct subsets of size determined by the given ratios.
+  The number of subsets is always 1 more than the number of ratios given.
+  :param data: The dataset to split.
+  :param ratios: The fraction of rows for each split.
+  :param destination_frames: names of the split frames
+  :return: a list of frames
+  """
+  fr = data.send_frame()
+  if destination_frames is None: destination_frames=""
+  j = H2OConnection.post_json("SplitFrame", dataset=fr, ratios=ratios, destination_frames=destination_frames) #, "Split Frame").poll()
+  splits = []
+  for i in j["destination_frames"]:
+    splits += [get_frame(i["name"])]
+    removeFrameShallow(i["name"])
+  removeFrameShallow(fr)
+  return splits
+
+def get_model(model_id):
+  """
+  Return the specified model
+
+  :param model_id: The model identification in h2o
+  """
+  model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
+  model_type = model_json["output"]["model_category"]
+  if model_type=="Binomial":
+    from model.binomial import H2OBinomialModel
+    model = H2OBinomialModel(model_id, model_json)
+
+  elif model_type=="Clustering":
+    from model.clustering import H2OClusteringModel
+    model = H2OClusteringModel(model_id, model_json)
+
+  elif model_type=="Regression":
+    from model.regression import H2ORegressionModel
+    model = H2ORegressionModel(model_id, model_json)
+
+  elif model_type=="Multinomial":
+    from model.multinomial import H2OMultinomialModel
+    model = H2OMultinomialModel(model_id, model_json)
+
+  elif model_type=="AutoEncoder":
+    from model.autoencoder import H2OAutoEncoderModel
+    model = H2OAutoEncoderModel(model_id, model_json)
+
+  else:
+    print model_type
+    raise NotImplementedError
+
+  return model
+
+def get_frame(frame_id):
+  if frame_id is None:
+    raise ValueError("frame_id must not be None")
+  res = H2OConnection.get_json("Frames/"+urllib.quote(frame_id))
+  res = res["frames"][0]
+  colnames = [v["label"] for v in res["columns"]]
+  veckeys  = res["vec_ids"]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
+  return H2OFrame(vecs=vecs)
 
 """
 Here are some testing utilities for running the pyunit tests in conjunction with run.py.
@@ -181,26 +315,49 @@ def is_running_internal_to_h2o():
     internal = False
   return internal
 
-def dim_check(data1, data2):
+def check_dims_values(python_obj, h2o_frame, rows, cols):
   """
-  Check that the dimensions of the data1 and data2 are the same
-  :param data1: an H2OFrame, H2OVec or Expr
-  :param data2: an H2OFrame, H2OVec or Expr
+  Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
+  conforms to the rules specified in the h2o frame documentation.
+  :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
+  :param h2o_frame: an H2OFrame
+  :param rows: number of rows
+  :param cols: number of columns
   :return: None
   """
-  data1_rows, data1_cols = data1.dim()
-  data2_rows, data2_cols = data2.dim()
-  assert data1_rows == data2_rows and data1_cols == data2_cols, \
-    "failed dim check! data1_rows:{0} data2_rows:{1} data1_cols:{2} data2_cols:{3}".format(data1_rows, data2_rows,
-                                                                                           data1_cols, data2_cols)
+  h2o_rows, h2o_cols = h2o_frame.dim()
+  assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
+                                                "".format(h2o_rows, rows, h2o_cols, cols)
+  if isinstance(python_obj, (list, tuple)):
+    for r in range(rows):
+      for c in range(cols):
+        pval = python_obj[r][c] if rows > 1 else python_obj[c]
+        hval = h2o_frame[r,c]
+        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
+                             "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
+  elif isinstance(python_obj, dict):
+    for r in range(rows):
+      for k in python_obj.keys():
+        pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
+        hval = h2o_frame[r,k]
+        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
+                             "{1}, but h2o got {2} and python got {3}.".format(r, k, hval, pval)
+
 def np_comparison_check(h2o_data, np_data, num_elements):
   """
   Check values achieved by h2o against values achieved by numpy
-  :param h2o_data: an H2OFrame, H2OVec or Expr
+  :param h2o_data: an H2OFrame or H2OVec
   :param np_data: a numpy array
   :param num_elements: number of elements to compare
   :return: None
   """
+  # Check for numpy
+  try:
+    imp.find_module('numpy')
+  except ImportError:
+    assert False, "failed comparison check because unable to import numpy"
+
+  import numpy as np
   rows, cols = h2o_data.dim()
   for i in range(num_elements):
     r = random.randint(0,rows-1)
@@ -210,33 +367,43 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     assert np.absolute(h2o_val - np_val) < 1e-6, \
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
-def value_check(h2o_data, local_data, num_elements, col=None):
-  """
-  Check that the values of h2o_data and local_data are the same. In a testing context, this could be used to check
-  that an operation did not alter the original h2o_data.
-
-  :param h2o_data: an H2OFrame, H2OVec or Expr
-  :param local_data: a list of lists (row x col format)
-  :param num_elements: number of elements to check
-  :param col: an optional integer that specifies the particular column to check
-  :return: None
-  """
-  rows, cols = h2o_data.dim()
-  for i in range(num_elements):
-    r = random.randint(0,np.minimum(99,rows-1))
-    c = random.randint(0,cols-1) if not col else col
-    h2o_val = as_list(h2o_data[r,c])
-    h2o_val = h2o_val[0][0] if isinstance(h2o_val, list) else h2o_val
-    local_val = local_data[r][c]
-    assert h2o_val == local_val, "failed value check! h2o:{0} and local:{1}".format(h2o_val, local_val)
-
 def run_test(sys_args, test_to_run):
+  import pkg_resources
+  ver = pkg_resources.get_distribution("h2o").version
+  print "H2O PYTHON PACKAGE VERSION: " + str(ver)
   ip, port = sys_args[2].split(":")
   init(ip,port)
+  log_and_echo("------------------------------------------------------------")
+  log_and_echo("")
+  log_and_echo("STARTING TEST: "+str(ou()))
+  log_and_echo("")
+  log_and_echo("------------------------------------------------------------")
   num_keys = store_size()
   test_to_run(ip, port)
-  if keys_leaked(num_keys):
-    print "KEYS WERE LEAKED!!! CHECK H2O LOGS"
+  if keys_leaked(num_keys): print "Leaked Keys!"
+
+def ou():
+  """
+  Where is my baguette!?
+  :return: the name of the baguette. oh uhr uhr huhr
+  """
+  from inspect import stack
+  return stack()[2][1]
+
+def log_and_echo(message):
+  """
+  Log a message on the server-side logs
+  This is helpful when running several pieces of work one after the other on a single H2O
+  cluster and you want to make a notation in the H2O server side log where one piece of
+  work ends and the next piece of work begins.
+
+  Sends a message to H2O for logging. Generally used for debugging purposes.
+
+  :param message: A character string with the message to write to the log.
+  :return: None
+  """
+  if message is None: message = ""
+  H2OConnection.post_json("LogAndEcho", message=message)
 
 def ipy_notebook_exec(path,save_and_norun=False):
   notebook = json.load(open(path))
@@ -249,11 +416,12 @@ def ipy_notebook_exec(path,save_and_norun=False):
     with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
       f.write(program)
   else:
-    exec(program, globals())
+    d={}
+    exec program in d  # safe, but horrible (exec is horrible)
 
 def ipy_blocks(notebook):
   if 'worksheets' in notebook.keys():
-    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+    return notebook['worksheets'][0]['cells']  # just take the first worksheet
   elif 'cells' in notebook.keys():
     return notebook['cells']
   else:
@@ -278,6 +446,8 @@ def remove(object):
     raise ValueError("remove with no object is not supported, for your protection")
 
   if isinstance(object, H2OFrame):
+    fr = H2OFrame.send_frame(object)
+    remove(fr)
     object._vecs=[]
 
   elif isinstance(object, H2OVec):
@@ -291,9 +461,18 @@ def remove(object):
   # else:
   #   raise ValueError("Can't remove objects of type: " + id.__class__)
 
+def remove_all():
+  """
+  Remove all objects from H2O.
+
+  :return None
+  """
+  H2OConnection.delete("DKV")
+
 def removeFrameShallow(key):
   """
-  Do a shallow DKV remove of the frame (does not remove any internal Vecs)
+  Do a shallow DKV remove of the frame (does not remove any internal Vecs).
+  This is a "soft" delete. Just removes the top level pointer, but all big data remains!
   :param key: A Frame Key to be removed
   :return: None
   """
@@ -307,10 +486,31 @@ def rapids(expr):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
+  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
   if result['error'] is not None:
     raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
   return result
+
+def ls():
+  """
+  List Keys on an H2O Cluster
+  :return: Returns a list of keys in the current H2O instance
+  """
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (ls ))".format(tmp_key)
+  rapids(expr)
+  j = frame(tmp_key)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_ids']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+  fr = H2OFrame(vecs=vecs)
+  print "First 10 Keys: "
+  fr.show()
+  return as_list(fr, use_pandas=False)
+
 
 def frame(frame_id):
   """
@@ -319,8 +519,7 @@ def frame(frame_id):
   :param frame_id: A pointer to a Frame  in H2O.
   :return: Meta information on the frame
   """
-  return H2OConnection.get_json("Frames/" + frame_id)
-
+  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id))
 
 def frames():
   """
@@ -338,7 +537,7 @@ def frame_summary(key):
   :return: Meta and summary info on the frame
   """
   # frames_meta = H2OConnection.get_json("Frames/" + key)
-  frame_summary =  H2OConnection.get_json("Frames/" + key + "/summary")
+  frame_summary =  H2OConnection.get_json("Frames/" + urllib.quote(key) + "/summary")
   return frame_summary
 
 def download_pojo(model,path=""):
@@ -351,12 +550,119 @@ def download_pojo(model,path=""):
   """
   model_id = model._key
 
-  java = H2OConnection.get( "Models/"+model_id+".java" )
+  java = H2OConnection.get( "Models.java/"+model_id )
   file_path = path + "/" + model_id + ".java"
   if path == "": print java.text
   else:
     with open(file_path, 'w') as f:
       f.write(java.text)
+
+def download_csv(data, filename):
+  '''
+  Download an H2O data set to a CSV file on the local disk.
+  Warning: Files located on the H2O server may be very large! Make
+  sure you have enough hard drive space to accomodate the entire file.
+  :param data: an H2OFrame object to be downloaded.
+  :param filename:A string indicating the name that the CSV file should be
+  should be saved to.
+  :return: None
+  '''
+  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got "
+                                                       "{0}".format(type(data)))
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/3/DownloadDataset?frame_id=' + \
+        data.send_frame()
+  with open(filename, 'w') as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
+def download_all_logs(dirname=".",filename=None):
+  """
+  Download H2O Log Files to Disk
+  :param dirname: (Optional) A character string indicating the directory that the log file should be saved in.
+  :param filename: (Optional) A string indicating the name that the CSV file should be
+  :return: path of logs written (as a string)
+  """
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/Logs/download'
+  response = urllib2.urlopen(url)
+
+  if not os.path.exists(dirname): os.mkdir(dirname)
+  if filename == None:
+    for h in response.headers.headers:
+      if 'filename=' in h:
+        filename = h.split("filename=")[1].strip()
+        break
+  path = os.path.join(dirname,filename)
+
+  with open(path, 'w') as f:
+    response = urllib2.urlopen(url)
+    f.write(response.read())
+    f.close()
+
+  print "Writing H2O logs to " + path
+  return path
+
+def save_model(model, dir="", name="", filename="", force=False):
+  """
+  Save an H2O Model Object to Disk.
+  In the case of existing files force = TRUE will overwrite the file. Otherwise, the operation will fail.
+  :param dir: string indicating the directory the model will be written to.
+  :param name: string name of the file.
+  :param filename: full path to the file.
+  :param force: logical, indicates how to deal with files that already exist
+  :return: the path of the model (string)
+  """
+  if not isinstance(dir, str): raise ValueError("`dir` must be a character string")
+  if dir == "": dir = os.getcwd()
+  if not isinstance(name, str): raise ValueError("`name` must be a character string")
+  if name == "": name = model._model_json['model_id']['name']
+  if not isinstance(filename, str): raise ValueError("`filename` must be a character string")
+  if not isinstance(force, bool): raise ValueError("`force` must be True or False")
+  path = filename if filename != "" else os.path.join(dir, name)
+
+  kwargs = dict([("dir",path), ("force",int(force)), ("_rest_version", 99)])
+  H2OConnection.get("Models.bin/"+model._model_json['model_id']['name'], **kwargs)
+  return path
+
+def load_model(path):
+  """
+  Load a saved H2O model from disk.
+  :param path: The full path of the H2O Model to be imported.
+  :return: the model
+  """
+  if not isinstance(path, str): raise ValueError("`path` must be a non-empty character string")
+  kwargs = dict([("dir",path), ("_rest_version", 99)])
+  res = H2OConnection.post("Models.bin/", **kwargs)
+  return get_model(res.json()['models'][0]['model_id']['name'])
+
+def cluster_status():
+  """
+  TODO: This isn't really a cluster status... it's a node status check for the node we're connected to.
+  This is possibly confusing because this can come back without warning,
+  but if a user tries to do any remoteSend, they will get a "cloud sick warning"
+
+  Retrieve information on the status of the cluster running H2O.
+  :return: None
+  """
+  cluster_json = H2OConnection.get_json("Cloud?skip_ticks=true")
+
+  print "Version: {0}".format(cluster_json['version'])
+  print "Cloud name: {0}".format(cluster_json['cloud_name'])
+  print "Cloud size: {0}".format(cluster_json['cloud_size'])
+  if cluster_json['locked']: print "Cloud is locked\n"
+  else: print "Accepting new members\n"
+  if cluster_json['nodes'] == None or len(cluster_json['nodes']) == 0:
+    print "No nodes found"
+    return
+
+  status = []
+  for node in cluster_json['nodes']:
+    for k, v in zip(node.keys(),node.values()):
+      if k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
+               "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
+               "open_fds", "rpcs_active"]: status.append(k+": {0}".format(v))
+    print ', '.join(status)
+    print
 
 # Non-Mutating cbind
 def cbind(left,right):
@@ -398,7 +704,7 @@ def cbind(left,right):
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
   """
   Initiate an H2O connection to the specified ip and port.
 
@@ -488,6 +794,191 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
 
+def prcomp(x,validation_x=None,**kwargs):
+  """
+  Principal components analysis of a H2O dataset using the power method
+  to calculate the singular value decomposition of the Gram matrix.
+
+  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
+  is provided.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
+  for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+  for demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included
+  in each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of
+  every categorical variable will be dropped. Defaults to FALSE.
+  :return: a new dim reduction model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
+
+def svd(x,validation_x=None,**kwargs):
+  """
+  Singular value decomposition of a H2O dataset using the power method.
+
+  :param nv: The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
+  and 1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
+  dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE": for
+  demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included in
+  each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of every
+  categorical variable will be dropped. Defaults to TRUE.
+  :return: a new dim reduction model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"svd",kwargs)
+
+def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
+  Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.
+  When building a naive Bayes classifier, every row in the training dataset that contains at least one NA will be
+  skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability
+  calculation during prediction.
+
+  :param laplace: A positive number controlling Laplace smoothing. The default zero disables smoothing.
+  :param threshold: The minimum standard deviation to use for observations without enough data. Must be at least 1e-10.
+  :param eps: A threshold cutoff to deal with numeric instability, must be positive.
+  :param compute_metrics: A logical value indicating whether model metrics should be computed. Set to FALSE to reduce
+  the runtime of the algorithm.
+  :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"naivebayes",kwargs)
+
+def create_frame(key = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,
+                 categorical_fraction = 0.2, factors = 100, integer_fraction = 0.2, integer_range = 100,
+                 binary_fraction = 0.1, binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
+                 has_response = False, seed=None):
+  """
+  Data Frame Creation in H2O.
+  Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
+  :param key: A string indicating the destination key. If empty, this will be auto-generated by H2O.
+  :param rows: The number of rows of data to generate.
+  :param cols: The number of columns of data to generate. Excludes the response column if has_response == True}.
+  :param randomize: A logical value indicating whether data values should be randomly generated. This must be TRUE if
+  either categorical_fraction or integer_fraction is non-zero.
+  :param value: If randomize == FALSE, then all real-valued entries will be set to this value.
+  :param real_range: The range of randomly generated real values.
+  :param categorical_fraction:  The fraction of total columns that are categorical.
+  :param factors: The number of (unique) factor levels in each categorical column.
+  :param integer_fraction: The fraction of total columns that are integer-valued.
+  :param integer_range: The range of randomly generated integer values.
+  :param binary_fraction: The fraction of total columns that are binary-valued.
+  :param binary_ones_fraction: The fraction of values in a binary column that are set to 1.
+  :param missing_fraction: The fraction of total entries in the data frame that are set to NA.
+  :param response_factors: If has_response == TRUE, then this is the number of factor levels in the response column.
+  :param has_response: A logical value indicating whether an additional response column should be pre-pended to the
+  final H2O data frame. If set to TRUE, the total number of columns will be cols+1.
+  :param seed: A seed used to generate random values when randomize = TRUE.
+  :return: the H2OFrame that was created
+  """
+  if not isinstance(rows, (int, float)) or rows < 1: raise ValueError("`rows` must be a positive number, but got {0}".format(rows))
+  if not isinstance(cols, (int, float)) or cols < 1: raise ValueError("`cols` must be a positive number, but got {0}".format(cols))
+  if not isinstance(randomize, bool): raise ValueError("`randomize` must be a True or False, but got {0}".format(randomize))
+  if not isinstance(value, (int, float)): raise ValueError("`value` must be an number, but got {0}".format(value))
+  if not isinstance(real_range, (int, float)): raise ValueError("`real_range` must be a number, but got {0}".format(real_range))
+  if not isinstance(categorical_fraction, (int, float)): raise ValueError("`categorical_fracter` must be a number, but got {0}".format(categorical_fraction))
+  if not isinstance(factors, int) or factors < 1: raise ValueError("`factors` must be a positive integer, but got {0}".format(factors))
+  if not isinstance(integer_fraction, (int, float)): raise ValueError("`integer_fraction` must be a number, but got {0}".format(integer_fraction))
+  if not isinstance(integer_range, int): raise ValueError("`integer_range` must be an integer, but got {0}".format(integer_range))
+  if not isinstance(binary_fraction, (int, float)): raise ValueError("`binary_fraction` must be an number, but got {0}".format(binary_fraction))
+  if not isinstance(binary_ones_fraction, (int, float)): raise ValueError("`binary_ones_fraction` must be an number, but got {0}".format(binary_ones_fraction))
+  if not isinstance(missing_fraction, (int, float)): raise ValueError("`missing_fraction` must be an number, but got {0}".format(missing_fraction))
+  if not isinstance(response_factors, int) or response_factors < 1: raise ValueError("`response_factors` must be a positive integer, but got {0}".format(response_factors))
+  if not isinstance(has_response, bool): raise ValueError("`has_response` must be True or False, but got {0}".format(has_response))
+  if seed != None and not isinstance(seed, int): raise ValueError("`seed` must be an integer, but got {0}".format(seed))
+
+  if key == None or not isinstance(key, str): dest = H2OFrame.py_tmp_key()
+  else: dest = key
+  kwargs = dict([("dest",dest), ("rows",rows), ("cols",cols), ("randomize",randomize), ("value",value),
+                 ("real_range",real_range), ("categorical_fraction",categorical_fraction), ("factors",factors),
+                 ("integer_fraction",integer_fraction), ("integer_range",integer_range),
+                 ("binary_fraction",binary_fraction), ("binary_ones_fraction",binary_ones_fraction),
+                 ("missing_fraction",missing_fraction), ("response_factors",response_factors),
+                 ("has_response",has_response), ("seed",seed if seed != None else -1)])
+
+  job = {}
+  job['job'] = H2OConnection.post_json("CreateFrame", **kwargs)
+  H2OJob(job, job_type=("Create Frame")).poll()
+  res = H2OConnection.get_json("Frames/"+dest)
+  res = res["frames"][0]
+  colnames = [v["label"] for v in res["columns"]]
+  veckeys  = res["vec_ids"]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
+  return H2OFrame(vecs=vecs)
+
+
+
+def interaction(data, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
+  """
+  Categorical Interaction Feature Creation in H2O.
+  Creates a frame in H2O with n-th order interaction features between categorical columns, as specified by
+  the user.
+  :param data: the H2OFrame that holds the target categorical columns.
+  :param factors: factors Factor columns (either indices or column names).
+  :param pairwise: Whether to create pairwise interactions between factors (otherwise create one
+  higher-order interaction). Only applicable if there are 3 or more factors.
+  :param max_factors: Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all
+  factor will be made)
+  :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
+  :param destination_frame: A string indicating the destination key. If empty, this will be auto-generated by H2O.
+  :return: H2OFrame
+  """
+  #TODO: allow factors to be list of lists
+  #if (is.list(factors)) {
+  #res <- lapply(factors, function(factor) h2o.interaction(data, destination_frame=NULL, factor, pairwise, max_factors, min_occurrence))
+  #if (!missing(destination_frame)) {
+  #old <- h2o.cbind(res)
+  #new <- h2o.assign(old, destination_frame)
+  #return(new)
+  #} else {
+  #return(h2o.cbind(res))
+  #}
+  #}
+  if not (False in [isinstance(f,int) for f in factors]): factors = [data.names()[n] for n in factors]
+  elif False in [isinstance(f,str) for f in factors]:
+    raise ValueError("`factors` argument must be a list of integers or column names (strings), but got "
+                     "{0}".format(factors))
+  if factors == []: raise ValueError("no factors were provided")
+  if max_factors < 1: raise ValueError("max_factors cannot be < 1")
+  if not isinstance(max_factors, (int, float)): raise ValueError("max_factors must be a numeric value")
+  if min_occurrence < 1: raise ValueError("min_occurrence cannot be < 1")
+  if not isinstance(min_occurrence, (int, float)): raise ValueError("min_occurrence must be a numeric value")
+
+  if destination_frame == None or not isinstance(destination_frame, str):
+    dest = H2OFrame.py_tmp_key()
+  source_frame = H2OFrame.send_frame(data)
+  factor_columns = ["\""+f+"\"" for f in factors]
+  kwargs = dict([("dest",dest), ("source_frame",source_frame), ("factor_columns", factor_columns),
+                 ("pairwise", pairwise), ("max_factors", max_factors), ("min_occurrence", min_occurrence)])
+
+  job = {}
+  job['job'] = H2OConnection.post_json("Interaction", **kwargs)
+  H2OJob(job, job_type=("Make Interactions Frame")).poll()
+  res = H2OConnection.get_json("Frames/"+dest)
+  res = res["frames"][0]
+  colnames = [v["label"] for v in res["columns"]]
+  veckeys  = res["vec_ids"]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
+
+  # clean up
+  removeFrameShallow(source_frame)
+
+  return H2OFrame(vecs=vecs)
+
+
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 
@@ -537,39 +1028,62 @@ def keys_leaked(num_keys):
   """
   return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
 
-def as_list(data):
+def as_list(data, use_pandas=True):
   """
-  If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
-  environment an H2O Frame is represented as a list of lists (each element in the broader list represents a row).
-  Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
-  100 rows. This function is only intended to be used within the testing framework. More robust functionality must
-  be constructed for production conversion between H2O and python data types.
+  Convert an H2O data object into a python-specific object.
 
+  WARNING: This will pull all data local!
+
+  If Pandas is available (and use_pandas is True), then pandas will be used to parse the data frame.
+  Otherwise, a list-of-lists populated by character data will be returned (so the types of data will
+  all be str).
+
+  :param data: An H2O data object.
+  :param use_pandas: Try to use pandas for reading in the data.
   :return: List of list (Rows x Columns).
   """
+
+  # check to see if we can use pandas
+  found_pandas=False
+  try:
+    imp.find_module('pandas')  # if have pandas, use this to eat a frame
+    found_pandas = True
+  except ImportError:
+    found_pandas = False
+
+  # if frame, download the frame and jam into lol or pandas df
+  if isinstance(data, H2OFrame):
+    fr = H2OFrame.send_frame(data)
+    res = _as_data_frame(fr, use_pandas and found_pandas)
+    removeFrameShallow(fr)
+    return res
+
   if isinstance(data, Expr):
     if data.is_local(): return data._data
     if data.is_pending():
       data.eager()
       if data.is_local(): return [data._data] if isinstance(data._data, list) else [[data._data]]
-    j = frame(data._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+    return _as_data_frame(data._data, use_pandas and found_pandas)
+
   if isinstance(data, H2OVec):
     if data._expr.is_local(): return data._expr._data
     if data._expr.is_pending():
       data._expr.eager()
       if data._expr.is_local(): return [[data._expr._data]]
-    j = frame(data._expr._data) # data is remote
-    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
-  if isinstance(data, H2OFrame):
-    vec_as_list = [as_list(v) for v in data._vecs]
-    frm = []
-    for row in range(len(vec_as_list[0])):
-      tmp = []
-      for col in range(len(vec_as_list)):
-        tmp.append(vec_as_list[col][row][0])
-      frm.append(tmp)
-    return frm
+
+    return as_list(H2OFrame(vecs=[data]), use_pandas)
+
+def _as_data_frame(id, use_pandas):
+  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(id) + "&hex_string=false"
+  response = urllib2.urlopen(url)
+  if use_pandas:
+    import pandas
+    return pandas.read_csv(response, low_memory=False)
+  else:
+    cr = csv.reader(response)
+    rows = []
+    for row in cr: rows.append(row)
+    return rows
 
 def logical_negation(data) : return data.logical_negation()
 
@@ -604,6 +1118,7 @@ def gamma(data)   : return _simple_un_math_op("gamma", data)
 def lgamma(data)  : return _simple_un_math_op("lgamma", data)
 def digamma(data) : return _simple_un_math_op("digamma", data)
 def trigamma(data): return _simple_un_math_op("trigamma", data)
+def all(data)     : return _simple_un_math_op("all", data)
 
 def _simple_un_math_op(op, data):
   """
@@ -626,6 +1141,47 @@ def var(data)   : return data.var()
 def mean(data)  : return data.mean()
 def median(data): return data.median()
 
+def trim(data)      : return data.trim()
+def toupper(data)   : return data.toupper()
+def tolower(data)   : return data.tolower()
+def asnumeric(data) : return data.asnumeric()
+def transpose(data) : return data.transpose()
+def anyfactor(data) : return data.anyfactor()
+
+# munging ops with args
+def signif(data, digits=6)       : return data.signif(digits=digits)
+def round(data, digits=0)        : return data.round(digits=digits)
+def match(data, table, nomatch=0): return data.match(table, nomatch=nomatch)
+def table(data1,data2=None):
+  if not data2: return data1.table()
+  else: return data1.table(data2=data2)
+def scale(data,center=True,scale=True): return data.scale(center=center, scale=scale)
+def setLevel(data, level)  : return data.setLevel(level=level)
+def setLevels(data, levels): return data.setLevels(levels=levels)
+def levels(data, col=0)    : return data.levels(col=col)
+def nlevels(data, col=0)   : return data.nlevels(col=col)
+def as_date(data, format)  : return data.as_date(format=format)
+def rep_len(data, length_out):
+  if isinstance(data, (str, int)):
+    tmp_key = H2OFrame.py_tmp_key()
+    scaler = '#{}'.format(data) if isinstance(data, int) else '\"{}\"'.format(data)
+    expr = "(= !{} (rep_len {} {}))".format(tmp_key,scaler,'#{}'.format(length_out))
+    rapids(expr)
+    j = frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_ids']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+    removeFrameShallow(tmp_key)
+    return H2OFrame(vecs=vecs)
+  return data.rep_len(length_out=length_out)
+def sub(pattern, replacement, data, ignore_case=False): return data.sub(pattern=pattern, replacement=replacement,
+                                                                        ignore_case=ignore_case)
+def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(pattern=pattern, replacement=replacement,
+                                                                        ignore_case=ignore_case)
+def strsplit(data, pattern): return data.strsplit(pattern=pattern)
 
 class H2ODisplay:
   """
@@ -644,6 +1200,8 @@ class H2ODisplay:
     # if holding onto a display object, then may have odd printing behavior
     # the __repr__ and _repr_html_ methods will try to save you from many prints,
     # but just be WARNED that your mileage may vary!
+    #
+    # In other words, it's better to just new one of these when you're ready to print out.
 
     if self.table_header is not None:
       print

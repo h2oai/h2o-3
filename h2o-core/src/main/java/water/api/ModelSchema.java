@@ -26,21 +26,11 @@ public class ModelSchema<M extends Model<M, P, O>,
                                   PS extends ModelParametersSchema<P, PS>,
                                   O extends Model.Output,
                                   OS extends ModelOutputSchema<O, OS>>
-    extends Schema<M, S> {
+  extends ModelSchemaBase<M, S> {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // Input fields
-  @API(help="Model key", required=true, direction=API.Direction.INOUT)
-  public ModelKeyV3 model_id;
-
   // Output fields
-  @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
-  public String algo;
-
-  @API(help="The pretty algo name for this Model (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
-  public String algo_full_name;
-
   @API(help="The build parameters for the model (e.g. K for KMeans).", direction=API.Direction.OUTPUT)
   public PS parameters;
 

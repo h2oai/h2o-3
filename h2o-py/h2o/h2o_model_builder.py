@@ -94,6 +94,10 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
     from model.autoencoder import H2OAutoEncoderModel
     model = H2OAutoEncoderModel(job.dest_key,model_json)
 
+  elif model_type=="DimReduction":
+    from model.dim_reduction import H2ODimReductionModel
+    model = H2ODimReductionModel(job.dest_key,model_json)
+
   else:
     print model_type
     raise NotImplementedError

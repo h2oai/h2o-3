@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1"
+HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -18,6 +18,13 @@ function make_zip_common {
 
   mkdir $IMAGEDIR/R
   cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
+
+  mkdir $IMAGEDIR/python
+
+  cp h2o-py/dist/*whl $IMAGEDIR/python
+
+  mkdir -p $IMAGEDIR/bindings/java
+  cp h2o-java-rest-bindings/build/libs/h2o-java-rest-bindings-*.jar $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
@@ -28,7 +35,7 @@ function make_zip_common {
 }
 
 function make_zip {
-  PROJECT_BASE=h2o-dev-${PROJECT_VERSION}
+  PROJECT_BASE=h2o-${PROJECT_VERSION}
   IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
 
   mkdir -p $IMAGEDIR
@@ -39,7 +46,7 @@ function make_zip {
 
 function make_hadoop_zip {
   HADOOP_VERSION=$1
-  PROJECT_BASE=h2o-dev-${PROJECT_VERSION}-${HADOOP_VERSION}
+  PROJECT_BASE=h2o-${PROJECT_VERSION}-${HADOOP_VERSION}
   IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
 
   mkdir -p $IMAGEDIR
@@ -57,13 +64,8 @@ if [ -n "$DO_RELEASE" ]; then
   DO_RELEASE="-PdoRelease"
 fi
 
-if [ -z "$DO_FAST" ]; then
-  # Run some required gradle tasks to produce final build output.
-  #./gradlew :h2o-core:javadoc
-  #./gradlew :h2o-algos:javadoc
-  #./gradlew :h2o-scala:scaladoc
-  ./gradlew $DO_RELEASE publish
-fi
+# Run some required gradle tasks to produce final build output.
+./gradlew $DO_RELEASE publish
 
 # Create target dir, which is uploaded to s3.
 mkdir target
@@ -72,13 +74,30 @@ echo ${PROJECT_VERSION} > target/project_version
 # Create zip files and add them to target.
 make_zip
 
-for HADOOP_VERSION in $HADOOP_VERSIONS; do
-  make_hadoop_zip $HADOOP_VERSION
-done
+if [ -z "$DO_FAST" ]; then
+  for HADOOP_VERSION in $HADOOP_VERSIONS; do
+    make_hadoop_zip $HADOOP_VERSION
+  done
+fi
 
 # Add R CRAN structure to target.
 mkdir -p target/R/src
 cp -rp h2o-r/R/src/contrib target/R/src
+
+# Create shrunken Rcran CRAN source package with no h2o.jar file.
+# Create Rjar directory for .h2o.downloadJar()
+mkdir target/Rcran
+mkdir target/Rjar
+cd target/Rcran
+cp -p ../R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz .
+tar zxvf h2o_${PROJECT_VERSION}.tar.gz
+mv h2o/inst/java/h2o.jar ../Rjar
+rm -f h2o_${PROJECT_VERSION}.tar.gz
+tar cvf h2o_${PROJECT_VERSION}.tar h2o
+gzip h2o_${PROJECT_VERSION}.tar
+rm -fr h2o
+cd ../..
+openssl dgst target/Rjar/h2o.jar | sed 's/.*= //' > target/Rjar/h2o.jar.md5
 
 # Add Python dist to target.
 mkdir -p target/Python
@@ -94,6 +113,10 @@ cp h2o-py/dist/*whl target/Python
 cd h2o-py && sphinx-build -b html docs/ docs/docs/
 cd ..
 
+# Add Java bindings Jar to target.
+mkdir -p target/bindings/java
+cp -p h2o-java-rest-bindings/build/libs/*.jar target/bindings/java
+
 # Add Maven repo to target.
 mkdir target/maven
 cp -rp build/repo target/maven
@@ -106,7 +129,6 @@ mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 mkdir target/docs-website/h2o-scala
-cp -rp build/docs/REST target/docs-website
 cp -rp h2o-docs/web/* target/docs-website/h2o-docs
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core

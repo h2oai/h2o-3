@@ -1,5 +1,5 @@
-apply plugin: 'fatjar'
-apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
 
 description = "H2O Application Assembly"
 
@@ -9,7 +9,11 @@ dependencies {
   compile "org.slf4j:slf4j-log4j12:1.7.5"
 }
 
-fatJarPrepareFiles {
+shadowJar {
+  mergeServiceFiles()
+  classifier = ''
+  // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
+  relocate 'org.joda.time', 'ai.h2o.org.joda.time'
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
@@ -17,20 +21,13 @@ fatJarPrepareFiles {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
-}
-
-fatJar {
-   manifest {
-      attributes 'Main-Class': 'water.H2OApp'
-   }
-}
-
-// Setup Application plugin
-mainClassName = 'water.H2OApp'
-run {
-  if (project.hasProperty("h2oArgs")) {
-    args Eval.me(h2oArgs)
+  manifest {
+    attributes 'Main-Class': 'water.H2OApp'
   }
+}
+
+artifacts {
+  archives shadowJar
 }
 
 //
@@ -49,7 +46,7 @@ task copyJar(type: Copy) {
     rename { it.replace(assembly, allInOne) }
 }
 // Execute always copyJar
-fatJar.finalizedBy copyJar
-// Run fatJar as par of build
-jar.finalizedBy fatJar
+shadowJar.finalizedBy copyJar
+// Run shadowJar as par of build
+jar.finalizedBy shadowJar
 

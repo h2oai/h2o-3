@@ -27,9 +27,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("A", "B", "C"),
             ar("A", "B", "C"),
             ar("A", "B", "C"),
-            ar( ar(2L, 0L, 0L),
-                    ar(0L, 2L, 0L),
-                    ar(0L, 0L, 1L)),
+            ard( ard(2, 0, 0),
+                    ard(0, 2, 0),
+                    ard(0, 0, 1)),
             debug, false);
   }
 
@@ -41,9 +41,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("A", "B", "C"),
             ar("A", "B", "C"),
             ar("A", "B", "C"),
-            ar( ar(1L, 1L, 0L),
-                    ar(0L, 1L, 1L),
-                    ar(0L, 0L, 1L)
+            ard( ard(1, 1, 0),
+                    ard(0, 1, 1),
+                    ard(0, 0, 1)
             ),
             debug, false);
   }
@@ -59,9 +59,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("A", "B", "C"),
             ar("A", "B", "C"),
             ar("A", "B", "C"),
-            ar( ar(1L, 1L, 0L),
-                    ar(0L, 1L, 1L),
-                    ar(0L, 0L, 1L)
+            ard( ard(1, 1, 0),
+                    ard(0, 1, 1),
+                    ard(0, 0, 1)
             ),
             debug, false);
   }
@@ -75,9 +75,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("A", "B", "C"),
             ar("B", "C"),
             ar("A", "B", "C"),
-            ar( ar(0L, 2L, 0L),
-                    ar(0L, 0L, 2L),
-                    ar(0L, 0L, 1L)
+            ard( ard(0, 2, 0),
+                    ard(0, 0, 2),
+                    ard(0, 0, 1)
             ),
             debug, false);
 
@@ -87,9 +87,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("A", "B", "C"),
             ar("B", "C"),
             ar("A", "B", "C"),
-            ar( ar(0L, 1L, 0L),
-                    ar(0L, 1L, 1L),
-                    ar(0L, 0L, 2L)
+            ard( ard(0, 1, 0),
+                    ard(0, 1, 1),
+                    ard(0, 0, 2)
             ),
             debug, false);
   }
@@ -102,9 +102,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("0", "1", "2"),
             ar("0", "1", "2"),
             ar("0", "1", "2"),
-            ar( ar(2L, 0L, 0L),
-                    ar(0L, 2L, 0L),
-                    ar(0L, 0L, 1L)
+            ard( ard(2, 0, 0),
+                    ard(0, 2, 0),
+                    ard(0, 0, 1)
             ),
             debug, true);
 
@@ -114,9 +114,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("0", "1", "2"),
             ar("0", "1", "2"),
             ar("0", "1", "2"),
-            ar( ar(1L, 1L, 0L),
-                    ar(0L, 1L, 1L),
-                    ar(0L, 0L, 1L)
+            ard( ard(1, 1, 0),
+                    ard(0, 1, 1),
+                    ard(0, 0, 1)
             ),
             debug, true);
   }
@@ -130,9 +130,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("0", "1", "2"),
             ar("1", "2"),
             ar("0", "1", "2"),
-            ar( ar(0L, 2L, 0L),
-                    ar(0L, 0L, 2L),
-                    ar(0L, 0L, 1L)
+            ard( ard(0, 2, 0),
+                    ard(0, 0, 2),
+                    ard(0, 0, 1)
             ),
             debug, true);
 
@@ -142,9 +142,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("0", "1", "2"),
             ar("1", "2"),
             ar("0", "1", "2"),
-            ar( ar(0L, 1L, 0L),
-                    ar(0L, 1L, 1L),
-                    ar(0L, 0L, 2L)
+            ard( ard(0, 1, 0),
+                    ard(0, 1, 1),
+                    ard(0, 0, 2)
             ),
             debug, true);
 
@@ -162,9 +162,9 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("A","B","C"),
             ar("A","B","C"),
             ar("A","B","C"),
-            ar( ar(0L, 2L, 0L),
-                    ar(0L, 0L, 2L),
-                    ar(0L, 0L, 1L)
+            ard( ard(0, 2, 0),
+                    ard(0, 0, 2),
+                    ard(0, 0, 1)
             ),
             debug, false);
 
@@ -177,15 +177,15 @@ public class ConfusionMatrixTest extends TestUtil {
             ar("-1", "0", "1"),
             ar("0", "1"),
             ar("-1", "0", "1"),
-            ar(ar(0L, 2L, 0L),
-                    ar(0L, 0L, 2L),
-                    ar(0L, 0L, 1L)
+            ard(ard(0, 2, 0),
+                    ard(0, 0, 2),
+                    ard(0, 0, 1)
             ),
             debug, false);
 
   }
 
-  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, long[][] expectedCM, boolean debug, boolean toEnum) {
+  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toEnum) {
     try {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
@@ -197,7 +197,7 @@ public class ConfusionMatrixTest extends TestUtil {
   }
 
   /** Delete v1, v2 after potential modifying operations during processing: enums and/or train/test adaptation. */
-  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, long[][] expectedCM, boolean debug, boolean toEnum) {
+  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toEnum) {
     Scope.enter();
     try {
       ConfusionMatrix cm = buildCM(v1.vecs()[0].toEnum(), v2.vecs()[0].toEnum());
@@ -222,11 +222,11 @@ public class ConfusionMatrixTest extends TestUtil {
     }
   }
 
-  private void assertCMEqual(String[] expectedDomain, long[][] expectedCM, ConfusionMatrix actualCM) {
+  private void assertCMEqual(String[] expectedDomain, double[][] expectedCM, ConfusionMatrix actualCM) {
     Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM._domain);
-    long[][] acm = actualCM._cm;
+    double[][] acm = actualCM._cm;
     Assert.assertEquals("CM dimension differs", expectedCM.length, acm.length);
-    for (int i=0; i < acm.length; i++) Assert.assertArrayEquals("CM row " +i+" differs!", expectedCM[i], acm[i]);
+    for (int i=0; i < acm.length; i++) Assert.assertArrayEquals("CM row " +i+" differs!", expectedCM[i], acm[i],1e-10);
   }
 
 }

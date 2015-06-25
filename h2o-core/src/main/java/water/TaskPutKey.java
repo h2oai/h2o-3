@@ -3,7 +3,7 @@ package water;
 import java.util.concurrent.Future;
 
 /** Push the given key to the remote node
- *  @author <a href="mailto:cliffc@0xdata.com"></a>
+ *  @author <a href="mailto:cliffc@h2o.ai"></a>
  *  @version 1.0
  */
 public class TaskPutKey extends DTask<TaskPutKey> {

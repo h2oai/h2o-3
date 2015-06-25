@@ -183,6 +183,7 @@ public class MathUtils {
   };
 
   public static double roundToNDigits(double d, int n) {
+    if(d == 0)return d;
     int log = (int)Math.log10(d);
     int exp = n;
     exp -= log;
@@ -208,6 +209,11 @@ public class MathUtils {
     stddev /= counts.length;
     stddev = Math.sqrt(stddev);
     return new double[] {min,max,mean,stddev};
+  }
+
+  public static double sign(double d) {
+    if(d == 0)return 0;
+    return d < 0?-1:1;
   }
 
 }

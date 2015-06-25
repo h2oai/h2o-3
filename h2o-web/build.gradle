@@ -188,4 +188,4 @@ compileAndInstallDocFiles.dependsOn ":h2o-docs:build"
 build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
-clean.dependsOn deleteFlowFromWebRoot, deleteBowerModules, deleteNodeModules, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles
+clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles

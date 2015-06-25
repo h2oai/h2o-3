@@ -76,7 +76,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double"};
         String [] colFormats = new String[]{"%5f"};
-        TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", names, new String[]{"Coefficients"}, colTypes, colFormats, "names");
+        TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", ns, new String[]{"Coefficients"}, colTypes, colFormats, "names");
         tdt.set(0,0,beta[beta.length-1]);
         for(int i = 0; i < beta.length-1; ++i) {
           tdt.set(i + 1, 0, beta[i]);
@@ -95,6 +95,6 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 
   @Override public GLMModel createImpl() {
     GLMModel.GLMParameters parms = parameters.createImpl();
-    return new GLMModel( model_id.key(), parms, null, 0.0, 0.0, 0.0, 0);
+    return new GLMModel( model_id.key(), parms, null, 0.0, 0.0, 0.0, 0, false, false);
   }
 }

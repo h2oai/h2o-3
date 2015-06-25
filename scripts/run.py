@@ -33,10 +33,10 @@ def is_python_file(file_name):
     """
     Return True if file_name matches a regexp for a python program in general.  False otherwise.
 
-    This is a separate function because it's useful to have the scan-for-test operation in 
+    This is a separate function because it's useful to have the scan-for-test operation in
     build_test_list() be separated from running the test.
 
-    That allows us to run things explictly named using the --test option.  Such as:
+    That allows us to run things explicitly named using the --test option.  Such as:
         run.py --wipeall --numclouds 1 --test generate_rest_api_docs.py
     """
 
@@ -205,21 +205,26 @@ class H2OCloudNode:
         # there is no hdfs currently in ec2, except s3n/hdfs
         # the core-site.xml provides s3n info
         # it's possible that we can just always hardware the hdfs version
-        # to match the cdh3 cluster we're hardwiring tests to
+        # to match the cdh3 cluster we're hard-wiring tests to
         # i.e. it won't make s3n/s3 break on ec2
 
         if (self.is_client):
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        cmd = ["java",
+        if "JAVA_HOME" in os.environ:
+            java = os.environ["JAVA_HOME"] + "/bin/java"
+        else:
+            java = "java"
+        cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
                "-ea",
                "-cp", self.h2o_jar,
                main_class,
                "-name", self.cloud_name,
-               "-baseport", str(self.my_base_port)]
+               "-baseport", str(self.my_base_port),
+	       "-ga_opt_out"]
 
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
@@ -465,10 +470,10 @@ class H2OCloud:
 
         @return: none
         """
-        for node in self.nodes:
+        for node in self.client_nodes:
             node.terminate()
 
-        for node in self.client_nodes:
+        for node in self.nodes:
             node.terminate()
 
     def get_ip(self):
@@ -590,7 +595,7 @@ class Test:
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
-                   self.ip + ":" + str(self.port)]
+                   self.ip + ":" + str(self.port), str(g_phantomjs_to)]
         else:
             print("")
             print("ERROR: Test runner failure with test: " + self.test_name)
@@ -740,7 +745,7 @@ class Test:
 
     def _scrape_output_for_seed(self):
         """
-        @return: The seed scraped from the outpul file.
+        @return: The seed scraped from the output file.
         """
         res = ""
         with open(self.get_output_dir_file_name(), "r") as f:
@@ -770,7 +775,7 @@ class TestRunner:
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
-                 failed_output_dir, path_to_tar, produce_unit_reports, testreport_dir):
+                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir):
         """
         Create a runner.
 
@@ -788,6 +793,7 @@ class TestRunner:
         @param output_dir: Directory for output files.
         @param failed_output_dir: Directory to copy failed test output.
         @param path_to_tar: NA
+        @param path_to_whl: NA
         @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
         @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
         @return: The runner object.
@@ -821,11 +827,12 @@ class TestRunner:
         self.regression_passed = False
         self._create_output_dir()
         self._create_failed_output_dir()
-        if produce_unit_reports: 
+        if produce_unit_reports:
             self._create_testreport_dir()
         self.nopass_counter = 0
         self.nofeature_counter = 0
         self.path_to_tar = path_to_tar
+        self.path_to_whl = path_to_whl
 
         if (use_cloud):
             node_num = 0
@@ -907,7 +914,7 @@ class TestRunner:
             print("")
             sys.exit(1)
 
-    def build_test_list(self, test_group, run_small, run_medium, run_large, nopass):
+    def build_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass):
         """
         Recursively find the list of tests to run and store them in the object.
         Fills in self.tests and self.tests_not_started.
@@ -935,41 +942,46 @@ class TestRunner:
                 is_small = False
                 is_medium = False
                 is_large = False
+                is_xlarge = False
                 is_nopass = False
                 is_nofeature = False
 
-                if (re.match(".*large.*", f)):
-                    is_large = True
-                elif (re.match(".*medium.*", f)):
+                if "xlarge" in f:
+                    is_xlarge = True
+                elif "medium" in f:
+                    is_medium = True
+                elif "large" in f:
                     is_large = True
                 else:
                     is_small = True
 
-                if (re.match(".*NOPASS.*", f)):
+                if "NOPASS" in f:
                     is_nopass = True
-
-                if (re.match(".*NOFEATURE.*", f)):
+                if "NOFEATURE" in f:
                     is_nofeature = True
 
-                if (is_small and not run_small):
+                if is_small and not run_small:
                     continue
-                if (is_medium and not run_medium):
+                if is_medium and not run_medium:
                     continue
-                if (is_large and not run_large):
+                if is_large and not run_large:
                     continue
-                if (is_nopass and not nopass):
+                if is_xlarge and not run_xlarge:
+                    continue
+
+                if is_nopass and not nopass:
                     # skip all NOPASS tests for regular runs but still count the number of NOPASS tests
                     self.nopass_counter += 1
                     continue
-                if (is_nofeature and not nopass):
+                if is_nofeature and not nopass:
                     # skip all NOFEATURE tests for regular runs but still count the number of NOFEATURE tests
                     self.nofeature_counter += 1
                     continue
-                if (nopass and not is_nopass and not is_nofeature):
+                if nopass and not is_nopass and not is_nofeature:
                     # if g_nopass flag is set, then ONLY run the NOPASS and NOFEATURE tests (skip all other tests)
                     continue
 
-                if (test_group is not None):
+                if test_group is not None:
                     test_short_dir = self._calc_test_short_dir(os.path.join(root, f))
                     if (test_group.lower() not in test_short_dir) and test_group.lower() not in f:
                         continue
@@ -1084,6 +1096,28 @@ class TestRunner:
             if (rv != 0):
                 print("")
                 print("ERROR: " + runner_setup_package_r + " failed.")
+                print("       (See " + out_file_name + ")")
+                print("")
+                sys.exit(1)
+            out.close()
+
+        elif self._have_some_py_tests() and self.path_to_whl is not None:
+            # basically only do this if we have a whl to install
+            self._log("")
+            self._log("Setting up Python H2O package...")
+            out_file_name = os.path.join(self.output_dir, "pythonSetup.out.txt")
+            out = open(out_file_name, "w")
+
+            cmd = ["pip", "install", self.path_to_whl, "--force-reinstall"]
+            child = subprocess.Popen(args=cmd,
+                                     stdout=out,
+                                     stderr=subprocess.STDOUT)
+            rv = child.wait()
+            if (self.terminated):
+                return
+            if (rv != 0):
+                print("")
+                print("ERROR: Python setup failed.")
                 print("       (See " + out_file_name + ")")
                 print("")
                 sys.exit(1)
@@ -1295,6 +1329,17 @@ class TestRunner:
 
         return False
 
+    def _have_some_py_tests(self):
+        """
+        dumb check for pyunits
+        """
+        for test in self.tests:
+            test_name = test.get_test_name()
+            if is_python_test_file(test_name):
+                return True
+
+        return False
+
     def _create_failed_output_dir(self):
         try:
             os.makedirs(self.failed_output_dir)
@@ -1367,7 +1412,8 @@ class TestRunner:
             # Report junit
             if self.produce_unit_reports:
                 if not test.get_nopass(nopass):
-                    self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed", "See {}".format(test.get_output_dir_file_name()))
+                    self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed",
+                                              "See {}".format(test.get_output_dir_file_name()))
                 else:
                     self._report_xunit_result("r_suite", test_name, duration, True)
             # Copy failed test output into directory failed
@@ -1375,22 +1421,25 @@ class TestRunner:
                 shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
 
     # XSD schema for xunit reports is here; http://windyroad.com.au/dl/Open%20Source/JUnit.xsd
-    def _report_xunit_result(self, testsuiteName, testcaseName, testcaseRuntime, skipped=False, failureType=None, failureMessage=None, failureDescription=None):
+    def _report_xunit_result(self, testsuite_name, testcase_name, testcase_runtime,
+                             skipped=False, failure_type=None, failure_message=None, failure_description=None):
         errors = 0
-        failures = 1 if failureType else 0
+        failures = 1 if failure_type else 0
         skip = 1 if skipped else 0
-        failure = "" if not failureType else """"<failure type="{}" message="{}">{}</failure>""".format(failureType, failureMessage, failureDescription)
-        
-	xmlReport= """<?xml version="1.0" encoding="UTF-8"?>
+        failure = "" if not failure_type else """"<failure type="{}" message="{}">{}</failure>""" \
+            .format(failure_type, failure_message, failure_description)
+
+        xml_report = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
   <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
   {failure}
   </testcase>
 </testsuite>
-""".format(testsuiteName=testsuiteName, testcaseClassName=testcaseName, testcaseName=testcaseName, 
-        testcaseRuntime=testcaseRuntime, failure=failure,
-        errors=errors, failures=failures, skip=skip)
-        self._save_xunit_report(testsuiteName, testcaseName, xmlReport)
+""".format(testsuiteName=testsuite_name, testcaseClassName=testcase_name, testcaseName=testcase_name,
+           testcaseRuntime=testcase_runtime, failure=failure,
+           errors=errors, failures=failures, skip=skip)
+
+        self._save_xunit_report(testsuite_name, testcase_name, xml_report)
 
     def _save_xunit_report(self, testsuite, testcase, report):
         f = self._get_testreport_filehandle(testsuite, testcase)
@@ -1453,6 +1502,7 @@ g_test_group = None
 g_run_small = True
 g_run_medium = True
 g_run_large = True
+g_run_xlarge = True
 g_use_cloud = False
 g_use_cloud2 = False
 g_use_client = False
@@ -1463,14 +1513,17 @@ g_no_run = False
 g_jvm_xmx = "1g"
 g_nopass = False
 g_convenient = False
+g_path_to_h2o_jar = None
+g_path_to_tar = None
+g_path_to_whl = None
+g_produce_unit_reports = True
+g_phantomjs_to = 3600
 
 # Global variables that are set internally.
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
-g_path_to_tar = None
-g_produce_unit_reports = True
-g_testreport_dir = None
+
 
 def use(x):
     """ Hack to remove compiler warning. """
@@ -1529,7 +1582,7 @@ def usage():
     print("                  pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
     print("")
     print("    --testsize    Sizes (and by extension length) of tests to run:")
-    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer)")
+    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big)")
     print("                  (Default is to run all tests.)")
     print("")
     print("    --usecloud    ip:port of cloud to send tests to instead of starting clouds.")
@@ -1546,9 +1599,13 @@ def usage():
     print("")
     print("    --nopass      Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
-    print("    --c           Start the JVMs in a _c_onvenient location h2o-dev.")
+    print("    --c           Start the JVMs in a convenient location.")
+    print("")
+    print("    --h2ojar      Supply a path to the H2O jar file.")
     print("")
     print("    --tar         Supply a path to the R TAR.")
+    print("")
+    print("    --pto         The phantomjs timeout in seconds. Default is 3600 (1hr).")
     print("")
     print("    --noxunit     Do not produce xUnit reports.")
     print("")
@@ -1619,6 +1676,7 @@ def parse_args(argv):
     global g_run_small
     global g_run_medium
     global g_run_large
+    global g_run_xlarge
     global g_use_cloud
     global g_use_cloud2
     global g_use_client
@@ -1629,7 +1687,11 @@ def parse_args(argv):
     global g_jvm_xmx
     global g_nopass
     global g_convenient
+    global g_path_to_h2o_jar
     global g_path_to_tar
+    global g_path_to_whl
+    global g_produce_unit_reports
+    global g_phantomjs_to
 
     i = 1
     while (i < len(argv)):
@@ -1676,12 +1738,14 @@ def parse_args(argv):
                 usage()
             v = argv[i]
             if (re.match(r'(s)?(m)?(l)?', v)):
-                if ('s' not in v):
+                if 's' not in v:
                     g_run_small = False
-                if ('m' not in v):
+                if 'm' not in v:
                     g_run_medium = False
-                if ('l' not in v):
+                if 'l' not in v:
                     g_run_large = False
+                if 'x' not in v:
+                    g_run_xlarge = False
             else:
                 bad_arg(s)
         elif (s == "--usecloud"):
@@ -1711,9 +1775,18 @@ def parse_args(argv):
             g_nopass = True
         elif s == "--c":
             g_convenient = True
+        elif s == "--h2ojar":
+            i += 1
+            g_path_to_h2o_jar = os.path.abspath(argv[i])
+        elif s == "--pto":
+            i += 1
+            g_phantomjs_to = int(argv[i])
         elif s == "--tar":
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])
+        elif s == "--whl":
+            i += 1
+            g_path_to_whl = os.path.abspath(argv[i])
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
@@ -1796,7 +1869,7 @@ def main(argv):
     global g_runner
     global g_nopass
     global g_path_to_tar
-    global g_testreport_dir
+    global g_path_to_whl
 
     g_script_name = os.path.basename(argv[0])
 
@@ -1806,11 +1879,14 @@ def main(argv):
     # Calculate global variables.
     g_output_dir = os.path.join(test_root_dir, str("results"))
     g_failed_output_dir = os.path.join(g_output_dir, str("failed"))
-    g_testreport_dir = os.path.join(test_root_dir, str("../build/test-results"))
+    testreport_dir = os.path.join(test_root_dir, str("../build/test-results"))
+
+    # Override any defaults with the user's choices.
+    parse_args(argv)
 
     # Look for h2o jar file.
-    h2o_jar = None
-    if (True):
+    h2o_jar = g_path_to_h2o_jar
+    if (h2o_jar is None):
         possible_h2o_jar_parent_dir = test_root_dir
         while (True):
             possible_h2o_jar_dir = os.path.join(possible_h2o_jar_parent_dir, "build")
@@ -1824,9 +1900,6 @@ def main(argv):
                 break
 
             possible_h2o_jar_parent_dir = next_possible_h2o_jar_parent_dir
-
-    # Override any defaults with the user's choices.
-    parse_args(argv)
 
     # Wipe output directory if requested.
     if (g_wipe_output_dir):
@@ -1844,7 +1917,8 @@ def main(argv):
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
-                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_produce_unit_reports, g_testreport_dir)
+                          g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
+                          testreport_dir)
 
     # Build test list.
     if (g_test_to_run is not None):
@@ -1853,7 +1927,7 @@ def main(argv):
         g_runner.read_test_list_file(g_test_list_file)
     else:
         # Test group can be None or not.
-        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_nopass)
+        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge,  g_nopass)
 
     # If no run is specified, then do an early exit here.
     if (g_no_run):

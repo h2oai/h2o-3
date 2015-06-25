@@ -16,7 +16,7 @@ class ARFFParser extends CsvParser {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
 
     // Parse all lines starting with @ until EOF or @DATA
-    boolean have_data = false;
+    boolean haveData = false;
     int offset = 0;
     String[][] data;
     String[] labels;
@@ -39,7 +39,7 @@ class ARFFParser extends CsvParser {
         String str = new String(bits, lineStart, lineEnd - lineStart, Charset.defaultCharset()).trim();
         if (str.equalsIgnoreCase("@DATA")) {
           if (!CsvParser.isEOL(bits[offset])) {
-            have_data = true; //more than just the header
+            haveData = true; //more than just the header
           }
           break;
         }
@@ -64,7 +64,7 @@ class ARFFParser extends CsvParser {
       if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
         throw new H2OParseSetupException("Expected line to start with @ATTRIBUTE.");
       } else {
-        if (data[i].length != 3 ) {
+        if (data[i].length < 3 ) {
           throw new H2OParseSetupException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
         }
         labels[i] = data[i][1];
@@ -93,8 +93,12 @@ class ARFFParser extends CsvParser {
         else if (type.equalsIgnoreCase("RELATIONAL")) {
           throw new UnsupportedOperationException("Relational ARFF format is not supported.");
         }
-        else if (type.startsWith("{") && type.endsWith("}")) {
-          domains[i] = data[i][2].replaceAll("[{}]", "").split(",");
+        else if (type.startsWith("{") && data[i][data[i].length-1].endsWith("}")) {
+          StringBuilder builder = new StringBuilder();
+          for(int j = 2; j < data[i].length; j++) {
+            builder.append(data[i][j]);
+          }
+          domains[i] = builder.toString().replaceAll("[{}]", "").split(",");
           if (domains[i][0].length() > 0) {
             // case of {A,B,C} (valid list of factors)
             ctypes[i] = Vec.T_ENUM;
@@ -108,7 +112,7 @@ class ARFFParser extends CsvParser {
     }
 
     // data section (for preview)
-    if (have_data) {
+    if (haveData) {
       String[] datalines = new String[0];
       ArrayList<String> datablock = new ArrayList<>();
       while (offset < bits.length) {

@@ -99,7 +99,7 @@ function(o, map) {
 .is.unary_op  <- function(o) .is.in(o, .unary_op.map)
 .is.binary_op <- function(o) .is.in(o, .binary_op.map)
 .is.nary_op   <- function(o) .is.in(o, .nary_op.map)
-.is.prefix    <- function(o) .is.in(o, .prefix.map)
+  .is.prefix    <- function(o) .is.in(o, .prefix.map)
 .is.slice     <- function(o) .is.in(o, .slice.map)
 .is.op        <- function(o) .is.unary_op(o) || .is.binary_op(o) || .is.nary_op(o) || .is.prefix(o)
 
@@ -176,7 +176,6 @@ function(stmnt) {
       args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
-#      browser()
       op_args <- (stmnt_list[-1L])[-1L]         # these are any additional args passed to this op
       l <- NULL
       if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
@@ -187,6 +186,7 @@ function(stmnt) {
         }
       }
       if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
+      if( as.character(op) == "log" ) l <- NULL   # special case for plain olde log
       l <- lapply(l, function(i)
       if (length(i) != 0L) {
         if(i == "") NULL else i
@@ -218,7 +218,7 @@ function(stmnt) {
     # should never get here
     } else {
       stop("Fail in statement processing to AST. Failing statement was: ", stmnt, "\n",
-           "Please contact support@0xdata.com")
+           "Please contact support@h2oai.com")
     }
   }
 
@@ -283,10 +283,7 @@ function(stmnt) {
   s <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
   lhs <- ""
   if (is(s, "ASTNode")) lhs <- s
-  else {
-    x <- deparse(stmnt[[2L]])
-    lhs <- x   # TODO: checkup on this (should be doing __no__ DKV puts!!!
-  }
+  else                  lhs <- deparse(stmnt[[2L]])
   y <- .stmnt.to.ast.switchboard(stmnt_list[[3L]])
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))
 }
@@ -381,7 +378,7 @@ function(fun, name) {
 
 .fun.visitor<-
 function(astfun) {
-  body <- paste0("(,", unlist(.body.visitor(astfun@body), use.names = FALSE), ")", collapse = " ")
+  body <- paste0("(,", paste0(unlist(.body.visitor(astfun@body), use.names = FALSE),collapse=" "), ")", collapse = " ")
   list(ast = paste0("(def ", astfun@name, " ", astfun@arguments, " ", body , ")"))
 }
 

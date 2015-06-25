@@ -40,13 +40,13 @@ public class Env extends Iced {
   final static int LARY  =10;
   final static int NULL  =99999;
 
-  transient ExecStack _stack;            // The stack
-  transient HashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
-  transient final public StringBuilder _sb;    // Holder for print results
-  transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
-  transient final SymbolTable  _global;
-  transient final SymbolTable  _local;
-  transient final Env _parent;
+  transient ExecStack _stack;                // The stack
+  transient HashMap<Vec,IcedInt> _refcnt;    // Ref Counts for each vector
+  transient final public StringBuilder _sb;  // Holder for print results
+  transient final HashSet<Key> _locked;      // Vec keys, these shalt not be DKV.removed.
+  final SymbolTable  _global;
+  SymbolTable  _local;
+  final Env _parent;
   final private boolean _isGlobal;
 
   transient HashSet<ValFrame> _trash;
@@ -201,7 +201,7 @@ public class Env extends Iced {
   }
 
   public void toss(ValFrame f) { _trash.add(f); }
-  public void clean() {
+  public synchronized void clean() {
     if( _trash == null ) return;
     for( ValFrame f : _trash )
       if( !f._g ) cleanup(f._fr);
@@ -401,7 +401,6 @@ public class Env extends Iced {
     for( Vec v: _refcnt.keySet()) {
       if( _refcnt.get(v)._val==0 && !hasLock(v._key) ) Keyed.remove(v._key); // no lock and zero counts, nuke it.
     }
-//    pop(); // could be bad here
   }
 
   private void remove_and_unlock(Frame fr) {

@@ -1,8 +1,8 @@
-#Porting R Scripts from H2O to H2O-Dev
+#Porting R Scripts
 
-This document outlines how to port R scripts written in H2O for compatibility with the new H2O-Dev API. When upgrading from H2O to H2O-Dev, most functions are the same. However, there are some differences that will need to be resolved when porting any scripts that were originally created using H2O to H2O-Dev. 
+This document outlines how to port R scripts written in previous versions of H2O (Nunes 2.8.6.2 or prior, also known as "H2O Classic") for compatibility with the new H2O 3.0 API. When upgrading from H2O to H2O 3.0, most functions are the same. However, there are some differences that will need to be resolved when porting any scripts that were originally created using H2O to H2O 3.0. 
 
-The original R script for H2O is listed first, followed by the updated script for H2O-Dev. 
+The original R script for H2O is listed first, followed by the updated script for H2O 3.0. 
 
 Some of the parameters have been renamed for consistency. For each algorithm, a table that describes the differences is provided. 
 
@@ -10,10 +10,10 @@ For additional assistance within R, enter a question mark before the command (fo
 
 There is also a "shim" available that will review R scripts created with previous versions of H2O, identify deprecated or renamed parameters, and suggest replacements. For more information, refer to the repo [here](https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R). 
 
-##Changes from H2O to H2O-Dev
+##Changes from H2O 2.8 to H2O 3.0
 
 ###`h2o.exec`
-The `h2o.exec` command is no longer supported. Any workflows using `h2o.exec` must be revised to remove this command.  If the H2O-Dev workflow contains any parameters or commands from H2O, errors will result and the workflow will fail. 
+The `h2o.exec` command is no longer supported. Any workflows using `h2o.exec` must be revised to remove this command.  If the H2O 3.0 workflow contains any parameters or commands from H2O Classic, errors will result and the workflow will fail. 
 
 The purpose of `h2o.exec` was to wrap expressions so that they could be evaluated in a single `\Exec2` call. For example, 
  `h2o.exec(fr[,1] + 2/fr[,3])`
@@ -21,7 +21,7 @@ The purpose of `h2o.exec` was to wrap expressions so that they could be evaluate
  `fr[,1] + 2/fr[,3]`
 produced the same results in H2O. However, the first example makes a single REST call and uses a single temp object, while the second makes several REST calls and uses several temp objects. 
 
-Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typical R expression. 
+Due to the improved architecture in H2O 3.0, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typical R expression. 
 
 Currently, the only known exception is when `factor` is used in conjunction with `h2o.exec`. For example, `h2o.exec(fr$myIntCol <- factor(fr$myIntCol))` would become `fr$myIntCol <- as.factor(fr$myIntCol)`
 
@@ -46,6 +46,19 @@ The `xval` slot has been removed, as `nfolds` is not currently supported.
 
 The `validation` slot has been merged with the `model` slot. 
 
+###Principal Components Regression (PCR)
+
+Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
+
+###Saving and Loading Models
+
+Saving and loading a model from R is supported in version 3.0.0.18 and later. H2O 3.0 uses the same binary serialization method as previous versions of H2O, but saves the model and its dependencies into a directory, with each object as a separate file. The `save_CV` option for  available in previous versions of H2O has been deprecated, as `h2o.saveAll` and `h2o.loadAll` are not currently supported. The following commands are now supported: 
+
+- `h2o.saveModel`
+- `h2o.loadModel`
+
+
+
 **Table of Contents**
 
 - [GBM](#GBM)
@@ -54,21 +67,18 @@ The `validation` slot has been merged with the `model` slot.
 - [Deep Learning](#DL)
 - [Distributed Random Forest](#DRF)
 
-###Principal Components Regression (PCR)
-
-Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
 
 
 <a name="GBM"></a>
 ##GBM
 
-N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 ###Renamed GBM Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `model_id`
@@ -89,7 +99,7 @@ The following parameters have been removed:
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
-- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O-Dev. 
+- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O 3.0. 
 
 ###New GBM Parameters
 
@@ -97,10 +107,11 @@ The following parameters have been added:
 
 - `seed`: A random number to control sampling and initialization when `balance_classes` is enabled. 
 - `score_each_iteration`: Display error rate information after each tree in the requested set is built. 
+- `build_tree_one_node`: Run on a single node to use fewer CPUs. 
 
 ###GBM Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic  | H2O 3.0 
 ------------- | -------------
 `h2o.gbm <- function(` | `h2o.gbm <- function(` 
 `x,` |`x,`
@@ -117,6 +128,7 @@ H2O  | H2O-Dev
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
  &nbsp; | `seed,` 
+ &nbsp; | `build_tree_one_node = FALSE,`
  &nbsp; | `score_each_iteration)`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 
@@ -128,9 +140,9 @@ H2O  | H2O-Dev
 
 ###Output
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
@@ -159,13 +171,13 @@ H2O  | H2O-Dev  | Model Type
 <a name="GLM"></a>
 ##GLM
 
- N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+ N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 ###Renamed GLM Parameters
 
 The following parameters have been renamed, but retain the same functions:
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `model_id`
@@ -181,7 +193,6 @@ The following parameters have been removed:
  - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. (may be re-added)
  - `higher_accuracy`: For improved accuracy, adjust the `beta_epsilon` value. 
  - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. (may be re-added as enabled by default)
- - `intercept`: Defines factor columns in the model. (may be re-added)
  - `non_negative`: Specify a non-negative response. (may be re-added)
  - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
@@ -198,7 +209,7 @@ The following parameters have been removed:
 ###GLM Algorithm Comparison
 
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0 
 ------------- | -------------
 `h2o.glm <- function(` | `h2o.startGLMJob <- function(`
 `x,` | `x,`
@@ -210,7 +221,7 @@ H2O  | H2O-Dev
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
 `return_all_lambda = FALSE,` | 
-`intercept = TRUE,` | 
+`intercept = TRUE,` | `intercept = TRUE`
 `non_negative = FALSE,` | 
 &nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
@@ -237,9 +248,9 @@ H2O  | H2O-Dev
 ###Output
 
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | -------------
 `@model$params` | `@allparameters` | `all`
 `@model$coefficients` | `@model$coefficients` | `all`
@@ -266,7 +277,7 @@ H2O  | H2O-Dev  | Model Type
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `model_id`
@@ -275,7 +286,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `iter.max` | `max_iterations`
 `normalize` | `standardize`
 
-**Note** In H2O, the `normalize` parameter was disabled by default. The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
+**Note** In H2O, the `normalize` parameter was disabled by default. The `standardize` parameter is enabled by default in H2O 3.0 to provide more accurate results for datasets containing columns with large values. 
 
 ###New K-Means Parameters
 
@@ -286,7 +297,7 @@ The following parameters have been added:
 
 ###K-Means Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0
 ------------- | -------------
 `h2o.kmeans <- function(` | `h2o.kmeans <- function(`
 `data,` | `training_frame,` 
@@ -301,9 +312,9 @@ H2O  | H2O-Dev
 ###Output
 
 
-The following table provides the component name in H2O and the corresponding component name in H2O-Dev (if supported).
+The following table provides the component name in H2O and the corresponding component name in H2O 3.0 (if supported).
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0
 ------------- | -------------
 `@model$params` | `@allparameters`
 `@model$centers` | `@model$centers`
@@ -318,7 +329,7 @@ H2O  | H2O-Dev
 <a name="DL"></a>
 ##Deep Learning
 
-N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 **Note**: If the results in the confusion matrix are incorrect, verify that `score_training_samples` is equal to 0. By default, only the first 10,000 rows are included. 
 
@@ -326,7 +337,7 @@ N-fold cross-validation and grid search will be supported in a future version of
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `model_id`
@@ -355,7 +366,7 @@ The following options for the `loss` parameter have been added:
 
 ###DL Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic  | H2O 3.0 
 ------------- | -------------
 `h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
 `y,` | `y,`
@@ -424,9 +435,9 @@ H2O  | H2O-Dev
 ###Output
 
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | ------------- 
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
@@ -445,18 +456,19 @@ H2O  | H2O-Dev  | Model Type
 <a name="DRF"></a>
 ##Distributed Random Forest
 
-###Changes to DRF in H2O-Dev
+###Changes to DRF in H2O 3.0 
 
-Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O. In H2O, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRT (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
-In H2O-Dev, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
+Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O Classic. In H2O Classic, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRF (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
+In H2O 3.0, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
+Please note that H2O does not currently support the ability to specify the number of trees when using `h2o.predict` for a DRF model. 
 
-**Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O-Dev is similar to DRF functionality in H2O. 
+**Note**: H2O 3.0 only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O 3.0 is similar to DRF functionality in H2O. 
 
 ###Renamed DRF Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
-H2O Parameter Name | H2O-Dev Parameter Name
+H2O Classic Parameter Name | H2O 3.0 Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `model_id`
@@ -491,7 +503,7 @@ The following parameter has been added:
 
 ###DRF Algorithm Comparison
 
-H2O  | H2O-Dev
+H2O Classic | H2O 3.0
 ------------- | -------------
 `h2o.randomForest <- function(x,` | `h2o.randomForest <- function(`
 `x,` | `x,` 
@@ -500,7 +512,7 @@ H2O  | H2O-Dev
 `key="",` | `model_id,` 
 `validation,` | `validation_frame,` 
 `mtries = -1,` | `mtries = -1,` 
-`sample.rate=2/3,` | `sample_rate = 0.6666667,` 
+`sample.rate=2/3,` | `sample_rate = 0.632,` 
  &nbsp; | `build_tree_one_node = FALSE,` 
 `ntree=50` | `ntrees=50,` 
 `depth=20,` | `max_depth = 20,` 
@@ -526,9 +538,9 @@ H2O  | H2O-Dev
 ###Output
 
 
-The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
-H2O  | H2O-Dev  | Model Type
+H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`

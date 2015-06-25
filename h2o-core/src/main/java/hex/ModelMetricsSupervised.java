@@ -2,6 +2,8 @@ package hex;
 
 import water.H2O;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.FrameUtils;
 
 public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes
@@ -33,5 +35,21 @@ public class ModelMetricsSupervised extends ModelMetrics {
     }
 
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) { return null; }
+  }
+
+  /**
+   * Helper to compute the weighted standard deviation
+   * @param m Model - used to get the Vec names for response and weight
+   * @param f Frame - used to find the Vecs for weight and response
+   * @return (Weighted) Standard Deviation, or NaN if no response found in the Frame f
+   */
+  public static double weightedSigma(Model m, Frame f) {
+    Vec w = f.vec(m._output.weightsName());
+    Vec y = f.vec(m._output.responseName());
+    if (w != null && y != null)
+      return new FrameUtils.WeightedSigma().doAll(y, w).weightedSigma();
+    if (y != null)
+      return y.sigma();
+    return Double.NaN;
   }
 }

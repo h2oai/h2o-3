@@ -9,14 +9,14 @@ import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 
-public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
+public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
 
   // Input fields
   @API(help="Source frames", required=true, direction=API.Direction.INOUT)
   public FrameKeyV3[] source_frames;
 
-  @API(help="Parser type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"}, direction=API.Direction.INOUT)
-  public ParserType parse_type = ParserType.AUTO;
+  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"}, direction=API.Direction.INOUT)
+  public ParserType parse_type = ParserType.GUESS;
 
   @API(help="Field separator", direction=API.Direction.INOUT)
   public byte separator = ParseSetup.GUESS_SEP;
@@ -36,6 +36,15 @@ public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
   @API(help="NA strings for columns", direction=API.Direction.INOUT)
   public String[][] na_strings;
 
+  @API(help="Regex for names of columns to return", direction=API.Direction.INOUT)
+  public String column_name_filter;
+
+  @API(help="Column offset to return", direction=API.Direction.INOUT)
+  public int column_offset;
+
+  @API(help="Number of columns to return", direction=API.Direction.INOUT)
+  public int column_count;
+
   // Output fields
   @API(help="Suggested name", direction=API.Direction.OUTPUT)
   public String destination_frame;
@@ -51,6 +60,9 @@ public class ParseSetupV3 extends Schema<ParseSetup,ParseSetupV3> {
 
   @API(help="Size of individual parse tasks", direction=API.Direction.OUTPUT)
   public int chunk_size = FileVec.DFLT_CHUNK_SIZE;
+
+  @API(help="Total number of columns we would return with no column pagination", direction=API.Direction.INOUT)
+  public int total_filtered_column_count;
 
   //==========================
   // Helper so ImportV1 can link to ParseSetupV2
