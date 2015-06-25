@@ -123,22 +123,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // r_i(x_i): Regularization function for single entry x_i
-    /* public final double regularize_x(double u) { return regularize(u, _regularization_x); }
-    public final double regularize_y(double u) { return regularize(u, _regularization_y); }
-    public final double regularize(double u, Regularizer regularization) {
-      switch(regularization) {
-        case L2:
-          return u*u;
-        case L1:
-          return Math.abs(u);
-        case NonNegative:
-          return u < 0 ? Double.POSITIVE_INFINITY : 0;
-        default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
-      }
-    } */
-
     // r_i(x_i): Regularization function for single row x_i
     public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
@@ -193,22 +177,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
       return ureg;
     }
-
-    // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at entry u
-    /* public final double rproxgrad_x(double u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x); }
-    public final double rproxgrad_y(double u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y); }
-    public final double rproxgrad(double u, double alpha, double gamma, Regularizer regularization) {
-      switch(regularization) {
-        case L2:
-          return u/(1+2*alpha*gamma);
-        case L1:
-          return Math.max(u-alpha*gamma,0) + Math.min(u+alpha*gamma,0);
-        case NonNegative:
-          return Math.max(u,0);
-        default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
-      }
-    } */
 
     // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u
     public final double[] rproxgrad_x(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, rand); }

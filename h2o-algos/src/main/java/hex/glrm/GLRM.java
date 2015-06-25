@@ -387,22 +387,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         } else
           model._output._normMul = dinfo._normMul;
 
-        // TODO: Get rid of this once testing against R is finished
-        final double[] normSub = model._output._normSub;
-        final double[] normMul = model._output._normMul;
-        final int ncats = dinfo._cats;
-        new MRTask() {
-          @Override public void map(Chunk cs[]) {
-            for(int row = 0; row < cs[0]._len; row++) {
-              for(int col = 0; col < _ncolX; col++) {
-                double x = (cs[ncats+col].atd(row) - normSub[col]) * normMul[col];
-                chk_xold(cs,col,_ncolA).set(row,x);
-                chk_xnew(cs,col,_ncolA,_ncolX).set(row,x);
-              }
-            }
-          }
-        }.doAll(dinfo._adaptedFrame);
-
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
