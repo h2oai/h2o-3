@@ -1,7 +1,7 @@
 # TODO: ugh:
 import sys, pprint, argparse, string, errno, sets
 
-sys.path.extend(['.','py'])
+sys.path.extend(['.','py', '../../py'])
 import h2o, h2o_util
 import os
 
@@ -16,7 +16,7 @@ parser.add_argument('--verbose', '-v', help='verbose output', action='store_true
 parser.add_argument('--usecloud', help='ip:port to attach to', default='')
 parser.add_argument('--host', help='hostname to attach to', default='localhost')
 parser.add_argument('--port', help='port to attach to', type=int, default=54321)
-parser.add_argument('--dest', help='destination directory', default=(here + '/../build/bindings/Java/src'))
+parser.add_argument('--dest', help='destination directory', default=(here + '/../build/src-gen/main/java'))
 args = parser.parse_args()
 
 h2o.H2O.verbose = True if args.verbose else False
