@@ -10,8 +10,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
   public static class SharedTreeParametersV3<P extends SharedTreeParameters, S extends SharedTreeParametersV3<P, S>> extends ModelParametersSchema<P, S> {
     static public String[] own_fields = new String[] {
       "response_column",
-      "offset_column",
-      "weights_column",
+//      "offset_column",
+//      "weights_column",
       "balance_classes",
       "class_sampling_factors",
       "max_after_balance_size",
