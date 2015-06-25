@@ -55,29 +55,19 @@ test_weights_by_row_duplication <- function(conn) {
                  weights_column = "x1")
   
   print("compare results")
-  #expect_equal(hh1@model$training_metrics@metrics$MSE, 
-  #             hh2@model$training_metrics@metrics$MSE,
-  #             tolerance = 0.01)  #difference is about 0.003, but this gives error
+  expect_equal(hh1@model$training_metrics@metrics$MSE, 
+               hh2@model$training_metrics@metrics$MSE,
+               tolerance = 1e-6)
   expect_equal(hh1@model$training_metrics@metrics$r2, 
                hh2@model$training_metrics@metrics$r2,
-               tolerance = 0.01)  #difference is about -0.003
-  expect_equal(hh1@model$training_metrics@metrics$residual_deviance, 
-               hh2@model$training_metrics@metrics$residual_deviance)
-  expect_equal(hh1@model$training_metrics@metrics$null_deviance,
-               hh2@model$training_metrics@metrics$null_deviance)
-  expect_equal(hh1@model$training_metrics@metrics$AIC,
-               hh2@model$training_metrics@metrics$AIC)
-  expect_equal(hh1@model$training_metrics@metrics$null_degrees_of_freedom,
-               hh2@model$training_metrics@metrics$null_degrees_of_freedom)
-  expect_equal(hh1@model$coefficients,
-               hh2@model$coefficients)  
-  # NOPASS:
-  #expect_equal(hh1@model$validation_metrics@metrics$MSE,
-  #             hh2@model$validation_metrics@metrics$MSE,
-  #             tolerance = 0.01)
-  #expect_equal(hh1@model$validation_metrics@metrics$r2,
-  #             hh2@model$validation_metrics@metrics$r2,
-  #             tolerance = 0.01)
+               tolerance = 1e-6)
+
+  expect_equal(hh1@model$validation_metrics@metrics$MSE,
+               hh2@model$validation_metrics@metrics$MSE,
+               tolerance = 1e-6)
+  expect_equal(hh1@model$validation_metrics@metrics$r2,
+               hh2@model$validation_metrics@metrics$r2,
+               tolerance = 1e-6)
   
     
   #predictions
@@ -138,4 +128,4 @@ test_weights_by_row_duplication <- function(conn) {
 }
 
 
-doTest("GLM weight Test: GBM w/ weights test by row duplication", test_weights_by_row_duplication)
+doTest("GBM weight Test: GBM w/ weights test by row duplication", test_weights_by_row_duplication)
