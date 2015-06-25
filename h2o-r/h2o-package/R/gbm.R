@@ -65,8 +65,8 @@ h2o.gbm <- function(x, y, training_frame,
                     build_tree_one_node = FALSE,
                     nfolds,
                     score_each_iteration = FALSE,
-#                    offset_column = NULL,
-#                    weights_column = NULL,
+                    offset_column = NULL,
+                    weights_column = NULL,
                     ...)
 {
   # Required maps for different names params, including deprecated params
@@ -133,8 +133,8 @@ h2o.gbm <- function(x, y, training_frame,
     stop("Nfolds > 1 not currently implemented.", call. = FALSE)
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
-#  if( !missing(offset_column) )             parms$offset_column          <- offset_column
-#  if( !missing(weights_column) )            parms$weights_column         <- weights_column
+  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+  if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
   if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
   else            .h2o.createModel(training_frame@conn, 'gbm', parms)
