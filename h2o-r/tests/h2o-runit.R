@@ -17,7 +17,7 @@ if (!"AUC" %in% rownames(installed.packages())) install.packages("AUC")
 if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
 library(R.utils)
 
-PROJECT.ROOT <- "h2o-dev"
+PROJECT.ROOT <- "h2o-3"
 SUBPROJECT.ROOT <- "h2o-r"
 
 #'

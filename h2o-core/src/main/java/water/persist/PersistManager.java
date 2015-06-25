@@ -27,6 +27,8 @@ public class PersistManager {
     public static final String FILE = "file";
     public static final String HDFS = "hdfs";
     public static final String S3   = "s3";
+    public static final String S3N  = "s3n";
+    public static final String S3A  = "s3a";
     public static final String NFS  = "nfs";
   }
 
@@ -400,6 +402,8 @@ public class PersistManager {
         case Schemes.FILE:
           return I[Value.ICE]; // Local FS
         case Schemes.HDFS:
+        case Schemes.S3N:
+        case Schemes.S3A:
           return I[Value.HDFS];
         case Schemes.S3:
           return I[Value.S3];

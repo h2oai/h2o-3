@@ -1,0 +1,49 @@
+description = "H2O REST API bindings"
+
+apply plugin: 'java'
+
+dependencies {
+    compile project(":h2o-assembly")
+}
+
+def runner = new File("$rootDir/h2o-r/tests/run.py").canonicalPath
+
+// REST API Documentation generator
+// --------------------------------
+
+def restGenPath = new File("$rootDir/py")
+def generatedSources = new File("$rootDir/build/bindings/Java/src")
+def compiledBindings = new File("$rootDir/build/bindings/Java/build")
+
+sourceSets {
+    main {
+        java {
+	     srcDir "$rootDir/build/bindings/Java/src"
+	}
+    }
+}
+
+//compileJava {
+//   destinationDir = compiledBindings
+//   source = generatedSources
+//}
+
+//jar {
+//    includes = ["$rootDir/build/bindings/Java/src/*"]
+//    destinationDir = compiledBindings
+//}
+
+task runGenerateRESTAPIBindingsSrc(type: Exec) {
+    workingDir restGenPath
+
+    // Note: by default the generated sources get written to $rootDir/build/bindings/Java/src
+    commandLine 'python', runner, '--wipeall', '--baseport', '48000', '--numclouds', '1', '--jvm.xmx', '4g', '--test', 'generate_java_bindings.py'    
+}
+
+task cleanGenerateRESTAPIBindings(type: Delete) {
+    delete "$restGenPath/results"
+}
+
+build.dependsOn runGenerateRESTAPIBindingsSrc
+compileJava.dependsOn runGenerateRESTAPIBindingsSrc
+clean.dependsOn cleanGenerateRESTAPIBindings

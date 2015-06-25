@@ -1,9 +1,6 @@
 package hex.schemas;
 
-import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
 
 public class DRFModelV3 extends SharedTreeModelV3<DRFModel,
         DRFModelV3,

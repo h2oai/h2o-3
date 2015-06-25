@@ -62,10 +62,13 @@ class H2OConnection(object):
     self._rest_version = __H2O_REST_API_VERSION__
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
     __H2OCONN__ = self
+    jar_path = None
+    if os.path.exists(os.path.join(sys.prefix, "h2o_jar/h2o.jar")): jar_path = os.path.join(sys.prefix, "h2o_jar", "h2o.jar")
+    else:                                                           jar_path = os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar")
     if start_h2o:
       if not ice_root:
         ice_root = tempfile.mkdtemp()
-      cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root)
+      cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root,jar_path)
     else:
       try:
         cld = self._connect(size)
@@ -76,11 +79,11 @@ class H2OConnection(object):
         print "No instance found at ip and port: " + ip + ":" + str(port) + ". Trying to start local jar..."
         print
         print
-        path_to_jar = os.path.exists(os.path.join(sys.prefix, "h2o_jar", "h2o.jar"))
+        path_to_jar = os.path.exists(jar_path)
         if path_to_jar:
           if not ice_root:
             ice_root = tempfile.mkdtemp()
-          cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root)
+          cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path)
         else:
           print "No jar file found. Could not start local instance."
           print "No h2o jar found at: " + path_to_jar
@@ -160,7 +163,7 @@ class H2OConnection(object):
     sys.stdout.write("\rStarting H2O JVM and connecting: {}".format("." * retries))
     sys.stdout.flush()
 
-  def _start_local_h2o_jar(self, mmax, mmin, ea, license, ice):
+  def _start_local_h2o_jar(self, mmax, mmin, ea, license, ice, jar_path):
     command = H2OConnection._check_java()
     if license:
       if not os.path.exists(license):
@@ -174,8 +177,6 @@ class H2OConnection(object):
 
     print "Using ice_root: " + ice
     print
-
-    jar_file = os.path.join(sys.prefix, "h2o_jar/h2o.jar")
 
     jver = subprocess.check_output([command, "-version"], stderr=subprocess.STDOUT)
 
@@ -200,7 +201,7 @@ class H2OConnection(object):
     if mmax: vm_opts += ["-Xmx{}g".format(mmax)]
     if ea:   vm_opts += ["-ea"]
 
-    h2o_opts = ["-jar", jar_file,
+    h2o_opts = ["-jar", jar_path,
                 "-name", "H2O_started_from_python",
                 "-ip", "127.0.0.1",
                 "-port", "54321",

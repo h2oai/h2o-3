@@ -28,7 +28,8 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it took to parse", parse_time)
+print("Time it took to parse")
+print(parse_time)
 
 data1.hex <- data.hex
 
@@ -51,6 +52,7 @@ myX = setdiff(names(data1.hex), myY)
 
 dl_time <- system.time(data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5)))
 data1.dl
-paste("Time it took to build DL ", dl_time)
+print("Time it took to build DL")
+print(dl_time)
 
 PASS_BANNER()

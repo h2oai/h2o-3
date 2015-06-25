@@ -20,14 +20,14 @@ K-Means falls in the general category of clustering algorithms.
 
 ###Defining a K-Means Model
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -163,14 +163,14 @@ The GLM suite includes:
 
 ###Defining a GLM Model
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -371,14 +371,14 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 ###Defining a DRF Model
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -488,14 +488,14 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 
 ###Defining a Naïve Bayes Model
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
@@ -667,7 +667,7 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -771,18 +771,20 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 ###Defining a GBM Model
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: (Required) Select the column to use as the independent variable.
+
+- **Offset_column**: Select a column to use as the offset. 
 
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
@@ -816,7 +818,6 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 
 ###Interpreting a GBM Model
@@ -925,20 +926,22 @@ H2O’s Deep Learning is based on a multi-layer feed-forward artificial neural n
 
 H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **Response_column**: Select the column to use as the independent variable.
 
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+
+- **Offset_column**: Select a column to use as the offset. 
 
 - **Activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).   
 
@@ -979,8 +982,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
-
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 - **Overwrite\_with\_best\_model**: Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 

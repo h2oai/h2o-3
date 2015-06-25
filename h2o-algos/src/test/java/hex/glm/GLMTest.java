@@ -220,7 +220,7 @@ public class GLMTest  extends TestUtil {
     double ymu = 0;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
-      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0});
+      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       // params._response = fr.find(params._response_column);
       params._train = parsed;
       params._lambda = new double[]{0};
@@ -285,7 +285,7 @@ public class GLMTest  extends TestUtil {
     DataInfo dinfo = null;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
-      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0});
+      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       // params._response = fr.find(params._response_column);
       params._train = parsed;
       params._lambda = new double[]{0};
@@ -306,7 +306,7 @@ public class GLMTest  extends TestUtil {
         assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
         assertEquals("gradients differ", grtRow._gradient[i], logistic._gradient[i], 1e-4);
       }
-      params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
+      params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       params._use_all_factor_levels = false;
       dinfo.remove();
       dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
@@ -322,7 +322,7 @@ public class GLMTest  extends TestUtil {
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       dinfo.remove();
       fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
-      params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
+      params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
       // params._response = fr.find(params._response_column);
       params._train = parsed;
       params._lambda = new double[]{0};
@@ -365,7 +365,7 @@ public class GLMTest  extends TestUtil {
     Frame score = null;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
-      GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
+      GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
@@ -387,7 +387,7 @@ public class GLMTest  extends TestUtil {
       model.delete();
       job.remove();
 
-      params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0});
+      params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};

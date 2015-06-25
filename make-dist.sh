@@ -110,6 +110,10 @@ cp h2o-py/dist/*whl target/Python
 cd h2o-py && sphinx-build -b html docs/ docs/docs/
 cd ..
 
+# Add Java bindings Jar to target.
+mkdir -p target/bindings/java
+cp -p h2o-bindings/build/libs/*.jar target/bindings/java
+
 # Add Maven repo to target.
 mkdir target/maven
 cp -rp build/repo target/maven

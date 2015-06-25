@@ -47,6 +47,7 @@
     if( length(x_ignore) == 0L ) x_ignore <- ''
     return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
   } else {
+    x_ignore <- setdiff(cc, x)
     if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
     return(list(x=x,x_i=x_i,x_ignore=x_ignore))
   }
