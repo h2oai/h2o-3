@@ -97,9 +97,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", "Binomial requires the response to be a 2-class categorical");
-      else if( _response != null ) 
+      else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         _initialPrediction = Math.log(mean / (1.0 - mean));
+        if (_offset != null) throw H2O.unimpl("Newton-Raphson iteration needed.");
+      }
       break;
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
@@ -418,14 +420,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             assert !ress.isNA(row);
 
             // Compute numerator (rs) and denominator (gs) of gamma
+            double w = hasWeights() ? chk_weight(chks).atd(row) : 1;
             double res = ress.atd(row);
             double ares = Math.abs(res);
             if( _isBernoulli ) {
               double prob = resp.atd(row) - res;
-              gs[leafnid-leaf] += prob*(1-prob);
+              gs[leafnid-leaf] += w*prob*(1-prob);
             } else
-              gs[leafnid-leaf] += _nclass > 1 ? ares*(1-ares) : 1;
-            rs[leafnid-leaf] += res;
+              gs[leafnid-leaf] += w*(_nclass > 1 ? ares*(1-ares) : 1);
+            rs[leafnid-leaf] += w*res;
           }
         }
       }
