@@ -297,13 +297,20 @@ public class SVDTest extends TestUtil {
     }
   }
 
-  @Test public void testUpdateGram() {
+  @Test public void testIVVSum() {
     double[][] res = ard(ard(1, 2, 3), ard(2, 5, 6), ard(3, 6, 9));
     double[] v = new double[] {7, 8, 9};
-
     double[][] xvv = ard(ard(-48, -54, -60), ard(-54, -59, -66), ard(-60, -66, -72));
 
     SVD.updateIVVSum(res, v);
     Assert.assertArrayEquals(xvv, res);
+
+    double[][] vt = ard(ard(1, 2, 3, 4, 5), ard(6, 7, 8, 9, 10), ard(11, 12, 13, 14, 15));
+    double[][] ivv = ard(ard(-157, -176, -194, -212, -230), ard(-176, -196, -218, -239, -260),
+                         ard(-194, -218, -241, -266, -290), ard(-212, -239, -266, -292, -320),
+                         ard(-230, -260, -290, -320, -349));
+
+    double[][] ivv_test = SVD.computeIVVSum(vt, 3);
+    Assert.assertArrayEquals(ivv, ivv_test);
   }
 }

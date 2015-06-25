@@ -112,6 +112,35 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return ivv_sum;
   }
 
+  // Compute I - \sum_{i=1}^nv v_iv_i' where vt = V' with v_i as cols of V
+  public static double[][] computeIVVSum(double[][] vt, int nv) {
+    if(vt == null) return null;
+    assert nv >= 0 && nv <= vt.length;
+    int ncolExp = vt[0].length;
+    double[][] ivv_sum = new double[ncolExp][ncolExp];
+
+    // Calculate -\sum_{i=1}^nv v_iv_i' where vt = V'
+    for (int i = 0; i < nv; i++) {
+      for (int j = 0; j < ncolExp; j++) {
+        for (int k = j; k < ncolExp; k++)
+          ivv_sum[j][k] -= vt[i][j] * vt[i][k];
+      }
+    }
+
+    // Fill in entries below diagonal since symmetric
+    for (int i = 0; i < nv; i++) {
+      for (int j = 0; j < ncolExp; j++) {
+        for (int k = 0; k < j; k++)
+          ivv_sum[j][k] = ivv_sum[k][j];
+      }
+    }
+
+    // Add 1 to each diagonal element
+    for(int i = 0; i < ncolExp; i++)
+      ivv_sum[i][i] = 1 + ivv_sum[i][i];
+    return ivv_sum;
+  }
+
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
 
     @Override protected void compute2() {
