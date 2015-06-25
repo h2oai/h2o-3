@@ -393,21 +393,7 @@ def ls():
   List Keys on an H2O Cluster
   :return: Returns a list of keys in the current H2O instance
   """
-  NotImplementedError
-  # tmp_key = H2OFrame.py_tmp_key()
-  # expr = "(= !{} (ls ))".format(tmp_key)
-  # rapids(expr)
-  # j = frame(tmp_key)
-  # fr = j['frames'][0]
-  # rows = fr['rows']
-  # veckeys = fr['vec_ids']
-  # cols = fr['columns']
-  # colnames = [col['label'] for col in cols]
-  # vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
-  # fr = H2OFrame(vecs=vecs)
-  # print "First 10 Keys: "
-  # fr.show()
-  # return as_list(fr, use_pandas=False)
+  return H2OFrame(expr=ExprNode("ls"))._frame().as_data_frame()
 
 
 def frame(frame_id, exclude=""):
@@ -446,19 +432,18 @@ def download_pojo(model,path=""):
 
 
 def download_csv(data, filename):
-  '''
+  """
   Download an H2O data set to a CSV file on the local disk.
   Warning: Files located on the H2O server may be very large! Make
-  sure you have enough hard drive space to accomodate the entire file.
+  sure you have enough hard drive space to accommodate the entire file.
+
   :param data: an H2OFrame object to be downloaded.
   :param filename:A string indicating the name that the CSV file should be
   should be saved to.
   :return: None
-  '''
-  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got "
-                                                       "{0}".format(type(data)))
-  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/3/DownloadDataset?frame_id=' + \
-        data.send_frame()
+  """
+  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
+  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
   with open(filename, 'w') as f:
     response = urllib2.urlopen(url)
     f.write(response.read())
@@ -551,9 +536,7 @@ def export_file(frame,path,force=False):
   :param force: Overwrite any preexisting file with the same path
   :return: None
   """
-  fr = H2OFrame.send_frame(frame)
-  f = "true" if force else "false"
-  H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
+  H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false"))
 
 
 def cluster_info():
