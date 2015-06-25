@@ -25,7 +25,8 @@ h2o.removeAll()
 # Parameters for the test.
 #----------------------------------------------------------------------
 parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
-paste("Time it took to parse", parse_time)
+print("Time it took to parse")
+print(parse_time)
 
 colNames = {}
 for(col in names(data.hex)) {
@@ -42,7 +43,8 @@ myX = setdiff(names(data.hex), myY)
 # Start modeling
 #GBM on original dataset
 gbm_time <- system.time(data1.gbm <-  h2o.gbm(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5, distribution = "multinomial"))
-paste("Time it took to build GBM ", gbm_time)
+print("Time it took to build GBM")
+print(gbm_time)
 data1.gbm 
 
 PASS_BANNER()

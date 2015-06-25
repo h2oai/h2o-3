@@ -5,13 +5,10 @@ import water.*;
 import water.api.FramesHandler.Frames;
 import water.exceptions.*;
 import water.fvec.Frame;
-import water.serial.KeyedBinarySerializer;
 import water.serial.ObjectTreeBinarySerializer;
 import water.util.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {

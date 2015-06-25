@@ -56,9 +56,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      *  For GBM bernoulli, the initial prediction for 0 trees is
      *  p = 1/(1+exp(-f0))
      *
-     *  From this, the mse for 0 trees can be computed as follows:
+     *  From this, the mse for 0 trees (null model) can be computed as follows:
      *  mean((yi-p)^2)
-     *  This is what is stored in _scored_train[0]
      * */
     public double _init_f;
 
