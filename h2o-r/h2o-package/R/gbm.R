@@ -32,8 +32,6 @@
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty. **Currently not supported**
 #' @param score_each_iteration Attempts to score each tree.
-#' @param offset_column Specify the offset column.
-#' @param weights_column Specify the weights column.
 #' @param ... extra arguments to pass on (currently no implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
