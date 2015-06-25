@@ -1,7 +1,7 @@
 # TODO: ugh:
 import sys, pprint, argparse, string, errno, sets
 
-sys.path.extend(['.','py', '../../py'])
+sys.path.insert(1, '../../py')
 import h2o, h2o_util
 import os
 

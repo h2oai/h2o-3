@@ -1183,6 +1183,51 @@ def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(patter
                                                                         ignore_case=ignore_case)
 def strsplit(data, pattern): return data.strsplit(pattern=pattern)
 
+def set_timezone(tz):
+  """
+  Set the Time Zone on the H2O Cloud
+  :param tz: The desired timezone.
+  :return: None
+  """
+  expr = "(setTimeZone {0})".format("\""+tz+"\"")
+  rapids(expr)
+
+def get_timezone():
+  """
+  Get the Time Zone on the H2O Cloud
+  :return: the time zone (string)
+  """
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (getTimeZone ))".format(tmp_key)
+  rapids(expr)
+  j = frame(tmp_key)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_ids']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+  removeFrameShallow(tmp_key)
+  return H2OFrame(vecs=vecs)[0,0]
+
+def list_timezones():
+  """
+  Get a list of all the timezones
+  :return: the time zones (as an H2OFrame)
+  """
+  tmp_key = H2OFrame.py_tmp_key()
+  expr = "(= !{} (listTimeZones ))".format(tmp_key)
+  rapids(expr)
+  j = frame(tmp_key)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_ids']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows)
+  removeFrameShallow(tmp_key)
+  return H2OFrame(vecs=vecs)
+
 class H2ODisplay:
   """
   Pretty printing for H2O Objects;
