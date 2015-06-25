@@ -2,11 +2,63 @@
 
 ##H2O
 
-###Shannon (3.0.0.23) - 6/19/15
+###Shannon (3.0.0.24) - 6/25/15
 
 ####New Features
 
 The following changes represent features that have been added since the previous release:
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/cd7011b4810f11316a06fe33df0fd7d540268bce): Allow validation for unsupervised models.
+
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/2a22657e5788be6b7b85362923c3de02ae4c0b16): Added runit GBM weights
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8f0b9dc95a155fbdf9a373a9181c80a3eb3e1ed6): Updated runit_GBM_weights.R
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/0606097d95a7accce3460a73daec463ad7ea4165): add h2o.set_timezone h2o.get_timezone and h2o.list_timezones to python client and respective pyunit. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/1eabf6db7cb45166ea6fbd01997b52eb41c6079d): add h2o.save_model and h2o.load_model to python client and respective pyunit
+
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b358eb0a5f12e0dab006f012a8a8e9ea7e51d46c): Fix weights for GBM - add weight correction to Gamma computation.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8b646239e9433c719d390b03ba475715cf3b4f5e): Skip rows with weight 0.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c6f11a9069d3553694dee3e33f574f482567613d): x_ignore must be set when autoencoder is TRUE
+
+
+#####System
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c11201060001be2da98fb101dbdd8ffbe18e85bf): Fix Java bindings generator to generate code under project's location.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8768ba503b79d7f485c7c757f056dc170c9aca45): Adds input parameter check to ParseSetup.
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+
+#####Algorithms
+
+- [PUBDEV-1529](https://0xdata.atlassian.net/browse/PUBDEV-1529): dl with ae: get ava.lang.UnsupportedOperationException: Trying to predict with an unstable model.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b5869fce2ff51c5afbad397324e220942f0490c3): Bring back accidentally removed hiding of classification-related fields for unsupervised models.
+
+#####API
+
+- [PUBDEV-1456](https://0xdata.atlassian.net/browse/PUBDEV-1456): fix REST API POJO generation for enums, + java.util.map import
+
+---
+
+###Shannon (3.0.0.23) - 6/19/15
+
+####New Features
 
 #####Algorithms
 
@@ -62,9 +114,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
-
-
 #####Algorithms
 
 - [PUBDEV-676](https://0xdata.atlassian.net/browse/PUBDEV-676): Use the user-given weight Vec as observation weights for all algos
@@ -94,8 +143,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes
-
-The following changes are to resolve incorrect software behavior: 
 
 #####Algorithms
 
