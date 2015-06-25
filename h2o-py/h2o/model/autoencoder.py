@@ -5,6 +5,7 @@ AutoEncoder Models
 from model_base import *
 from metrics_base import *
 
+
 class H2OAutoEncoderModel(ModelBase):
   """
   Class for AutoEncoder models.
@@ -23,7 +24,7 @@ class H2OAutoEncoderModel(ModelBase):
     # cbind the test_data vecs together and produce a temp key
     test_data_key = H2OFrame.send_frame(test_data)
     # get the anomaly
-    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key, reconstruction_error=True)
+    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data_key, reconstruction_error=True)
     # extract the frame data
     anomaly_frame_key = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     anomaly_frame_meta = h2o.frame(anomaly_frame_key)["frames"][0]

@@ -5,7 +5,7 @@ This file builds H2O model
 from connection import H2OConnection
 from frame      import H2OFrame
 from job        import H2OJob
-import h2o
+
 
 # Response variable model building
 def supervised_model_build(x,y,validation_x,validation_y,algo_url,kwargs):
@@ -33,15 +33,13 @@ def unsupervised_model_build(x,validation_x,algo_url,kwargs):
 def _check_frame(x,y,response):
   if not isinstance(x,H2OFrame):
     if not isinstance(x,list):
-      raise ValueError("`x` must be an H2OFrame or a list of H2OVecs. Got: " + str(type(x)))
-    x = H2OFrame(vecs=x)
+      raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
   if y is not None:
-    if not isinstance(y,H2OVec):
-      raise ValueError("`y` must be an H2OVec. Got: " + str(type(y)))
-    for v in x._vecs:
-      if y._name == v._name:
-        raise ValueError("Found response "+y._name+" in training `x` data")
-    x[response._name] = y
+    if not isinstance(y,H2OFrame):
+      raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))
+    for name in x.names():
+      if name == y._col_names[0]: raise ValueError("Found response "+y._col_names[0]+" in training `x` data")
+    x[response._col_names[0]] = y
   return x
 
 # Build an H2O model
@@ -55,18 +53,13 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
         algo_url="deeplearning"
   if not x:  raise ValueError("Missing features")
   x = _check_frame(x,y,y)
-  if validation_x:
-    validation_x = _check_frame(validation_x,validation_y,y)
+  if validation_x is not None: validation_x = _check_frame(validation_x,validation_y,y)
 
   # Send frame descriptions to H2O cluster
-  train_key = x.send_frame()
-  kwargs['training_frame']=train_key
-  if validation_x is not None:
-    valid_key = validation_x.send_frame()
-    kwargs['validation_frame']=valid_key
+  kwargs['training_frame']=x._id
+  if validation_x is not None: kwargs['validation_frame']=validation_x._id
 
-  if y:
-    kwargs['response_column']=y._name
+  if y is not None: kwargs['response_column']=y._col_names[0]
 
   kwargs = dict([(k, kwargs[k]) for k in kwargs if kwargs[k] is not None])
 
@@ -101,11 +94,4 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   else:
     print model_type
     raise NotImplementedError
-
-  # Cleanup
-  h2o.removeFrameShallow(train_key)
-  if validation_x:
-    h2o.removeFrameShallow(valid_key)
-
   return model
-

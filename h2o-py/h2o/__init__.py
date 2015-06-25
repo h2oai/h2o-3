@@ -408,6 +408,7 @@ from h2o import *
 from model import *
 from demo import *
 from frame import H2OFrame
+from expr import ExprNode
 from two_dim_table import H2OTwoDimTable
 
 __all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable"]

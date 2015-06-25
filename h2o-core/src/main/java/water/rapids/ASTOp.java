@@ -4501,7 +4501,7 @@ class ASTCat extends ASTUniPrefixOp {
             long spLength = sp.length();
             // can read the whole span into the chunk
             if( sp.length() <= clen ) {
-              m = new Marker((byte)1,spIdx,sp._min,sp._max);
+              m = new Marker((byte)1,spIdx,sp._min,(long)sp._max);
               sp=null;
               spIdx++;
               spanOrDbl++;
@@ -4516,11 +4516,11 @@ class ASTCat extends ASTUniPrefixOp {
 
           // got a split span
           } else {
-            long leftInSpan = sp._max - splitPoint + 1;
+            long leftInSpan = (long)sp._max - splitPoint + 1;
 
             // can we fit the rest of the span into this chunk
             if( leftInSpan <= clen ) {
-              m = new Marker((byte)1,spIdx,splitPoint+1,sp._max);
+              m = new Marker((byte)1,spIdx,splitPoint+1,(long)sp._max);
               // advance pointers, null out split span
               sp = null;
               splitPoint=0;

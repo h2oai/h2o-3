@@ -35,24 +35,21 @@ def user(ip, port):
     print colmeans
     print
 
-    try:
-        print a["Sepal_len"]  # Error, mispelt column name
-    except ValueError, ex:
-        pass  # Expected error
+    try:                   print a["Sepal_len"]  # Error, mispelt column name
+    except ValueError, ex: pass  # Expected error
 
     b = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
     d = c + c + sum(a)
-    # dimensions is illegal
     e = c + a + 1
     e.show()
     # Note that "d=c+..." keeps the internal C expressions alive, until "d" goes
     # out of scope even as we nuke "c"
     c.show()
     c = None
-    # Internal "Expr(c=a+b)" not dead!
+    # Internal "ExprNode(c=a+b)" not dead!
 
-    # print 1 + (a[0] + b[1]).mean()
+    print 1 + (a[0] + b[1]).mean()
 
     import collections
 

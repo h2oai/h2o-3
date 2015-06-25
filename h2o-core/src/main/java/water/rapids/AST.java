@@ -235,16 +235,16 @@ class ASTNum extends AST {
  */
 class ASTSpan extends AST {
   String opStr() { return ":"; }
-  final long _min;       final long _max;
+  final long _min;       double _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
   ASTSpan() {_min=0;_max=0;_ast_max=null;_ast_min=null;}
-  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d;
+  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = max._d;
     if( _min <= 0 && _max <= 0) {
-      if (_max > _min)
+      if (!Double.isNaN(_max) && _max > _min)
         throw new IllegalArgumentException("max>min: All negative, incorrect order.");
     } else {
-        if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+        if (!Double.isNaN(_max) && _min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
     }
   }
   ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;
@@ -272,7 +272,7 @@ class ASTSpan extends AST {
   @Override String value() { return null; }
   @Override int type() { return Env.SPAN; }
   @Override public String toString() { return _min + ":" + _max; }
-  long length() { return _max - _min + 1; }
+  long length() { return (long)_max - _min + 1; }
 
   long[] toArray() {
     long[] res = new long[(int)_max - (int)_min + 1];
@@ -1303,6 +1303,7 @@ class ASTSlice extends AST {
     }
     if (env.isSpan()) {
       ValSpan a = env.popSpan();
+      if( Double.isNaN(a._max) ) a._max=len-1;
       if (!a.isValid()) throw new IllegalArgumentException("Cannot mix negative and positive array selection.");
       // if selecting out columns, build a long[] cols and return that.
       if (a.isColSelector()) return a.toArray();

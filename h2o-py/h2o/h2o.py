@@ -7,8 +7,6 @@ import os
 import os.path
 import re
 import urllib
-import csv
-import imp
 import urllib2
 import json
 import imp
@@ -16,9 +14,10 @@ import random
 import tabulate
 from connection import H2OConnection
 from job import H2OJob
-from frame import H2OFrame
-from expr import ExprNode
+from frame import H2OFrame, _py_tmp_key
+from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
+
 
 
 def import_file(path):
@@ -46,7 +45,7 @@ def upload_file(path, destination_frame=""):
   :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
-  destination_frame = H2OFrame.py_tmp_key() if destination_frame == "" else destination_frame
+  destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
   H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame)
   return H2OFrame(raw_id=destination_frame)
 
@@ -128,7 +127,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   :param first_line_is_header: -1,0,1 if the first line is to be used as the header
   :return: An H2OFrame object
   """
-  if id is None: id = H2OFrame.py_tmp_key()
+  if id is None: id = _py_tmp_key()
   fr = H2OFrame()
   parsed = parse(setup, id, first_line_is_header)
   fr._nrows = parsed['rows']
@@ -208,42 +207,21 @@ def get_model(model_id):
   """
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
   model_type = model_json["output"]["model_category"]
-  if model_type=="Binomial":
-    from model.binomial import H2OBinomialModel
-    model = H2OBinomialModel(model_id, model_json)
+  if model_type=="Binomial":      return H2OBinomialModel(model_id, model_json)
+  elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
+  elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
+  elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
+  elif model_type=="AutoEncoder": return H2OAutoEncoderModel(model_id, model_json)
+  else:                           raise NotImplementedError(model_type)
 
-  elif model_type=="Clustering":
-    from model.clustering import H2OClusteringModel
-    model = H2OClusteringModel(model_id, model_json)
-
-  elif model_type=="Regression":
-    from model.regression import H2ORegressionModel
-    model = H2ORegressionModel(model_id, model_json)
-
-  elif model_type=="Multinomial":
-    from model.multinomial import H2OMultinomialModel
-    model = H2OMultinomialModel(model_id, model_json)
-
-  elif model_type=="AutoEncoder":
-    from model.autoencoder import H2OAutoEncoderModel
-    model = H2OAutoEncoderModel(model_id, model_json)
-
-  else:
-    print model_type
-    raise NotImplementedError
-
-  return model
 
 def get_frame(frame_id):
-  raise NotImplementedError
-  # if frame_id is None:
-  #   raise ValueError("frame_id must not be None")
-  # res = H2OConnection.get_json("Frames/"+urllib.quote(frame_id))
-  # res = res["frames"][0]
-  # colnames = [v["label"] for v in res["columns"]]
-  # veckeys  = res["vec_ids"]
-  # vecs=H2OVec.new_vecs(zip(colnames, veckeys), res["rows"])
-  # return H2OFrame(vecs=vecs)
+  """
+  Obtain a handle to the frame in H2O with the frame_id key.
+
+  :return: An H2OFrame
+  """
+  return H2OFrame.get_frame(frame_id)
 
 """
 Here are some testing utilities for running the pyunit tests in conjunction with run.py.

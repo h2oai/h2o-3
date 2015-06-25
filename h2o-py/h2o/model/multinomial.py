@@ -19,7 +19,7 @@ class H2OMultinomialModel(ModelBase):
         test_data_key = H2OFrame.send_frame(data)
         # get the predictions
         # this job call is blocking
-        j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
+        j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data_key)
         # retrieve the confusion matrix
         cm = j["model_metrics"][0]["cm"]["table"]
         return cm
