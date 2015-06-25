@@ -42,8 +42,6 @@ Before creating a model, import the data into H2O:
 
 0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field. 
 
-  >**NOTE**: Deep Learning requires a training dataset and a validation (or testing) dataset. Make sure to upload and parse both datasets before creating a model. 
-
   ![Importing Testing Data](../images/DL_importFile_test.png)
 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
