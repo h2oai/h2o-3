@@ -404,6 +404,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         hide("_class_sampling_factors", "Class sampling factors is only applicable if balancing classes.");
       }
     }
+    else {
+      hide("_response_column", "Ignored for unsupervised methods.");
+      hide("_balance_classes", "Ignored for unsupervised methods.");
+      hide("_class_sampling_factors", "Ignored for unsupervised methods.");
+      hide("_max_after_balance_size", "Ignored for unsupervised methods.");
+      hide("_max_confusion_matrix_size", "Ignored for unsupervised methods.");
+      _response = null;
+      _vresponse = null;
+      _nclass = 1;
+      return;
+    }
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
