@@ -4329,9 +4329,7 @@ class ASTKeysLeaked extends ASTUniPrefixOp {
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value.isVecGroup() || k == Job.LIST ||
-                // Also leave around all attempted Jobs for the Jobs list
-                (value.isJob() && value.<Job>get().isStopped()) )
+        if( !(value.isFrame() || value.isVec() || value.get() instanceof Chunk) )
           leaked_keys--;
         else {
           if( cnt++ < 10 )

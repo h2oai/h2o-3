@@ -500,13 +500,13 @@ class H2OFrame:
     update_index=-1
     if isinstance(b, (str,unicode)): update_index=self.col_names().index(b) if b in self.col_names() else self._ncols
     elif isinstance(b, int): update_index=b
+    c._eager()
     sb = ExprNode(",", ExprNode("=", ExprNode("[", self, None, update_index), c), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
 
   def __del__(self):
     if self._computed: h2o.remove(self)
 
-  # Makes a new collection
   def drop(self, i):
     """
     Returns a Frame with the column at index i dropped.
@@ -514,7 +514,8 @@ class H2OFrame:
     :param i: Column to drop
     :return: Returns an H2OFrame
     """
-    return H2OFrame(expr=ExprNode("[", self, -(i+1)))
+    if isinstance(i, (unicode,str)): i = self._find_idx(i)
+    return H2OFrame(expr=ExprNode("[", self, None,-(i+1)))._frame()
 
   def __len__(self):
     """

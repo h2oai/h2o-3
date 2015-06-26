@@ -1056,10 +1056,11 @@ class ASTAssign extends AST {
       // Case A, just cols
       } else if (cols != null) {
         Frame rhs_ary;
+        Key tKey=null;
         // convert constant into a whole vec
         if (e.isNum()) rhs_ary = new Frame(lhs_ary.anyVec().makeCon(e.popDbl()));
         else if (e.isStr()) rhs_ary = new Frame(lhs_ary.anyVec().makeZero(new String[]{e.popStr()}));
-        else if (e.isAry()) rhs_ary = e.popAry();
+        else if (e.isAry()) rhs_ary = e.popAry().deepCopy((tKey=Key.make()).toString());
         else throw new IllegalArgumentException("Bad RHS on the stack: " + e.peekType() + " : " + e.toString());
 
         long[] cs = (long[]) cols;
@@ -1086,12 +1087,15 @@ class ASTAssign extends AST {
               rv = lhs_ary.anyVec().align(rv);
               e.addRef(rv);
             }
-            lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
+            Vec vv = lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
+            e._locked.remove(vv._key);
+            e.subRef(vv);
           }
         }
         fs.blockForPending();
         if (lhs_ary._key != null && DKV.get(lhs_ary._key) != null) DKV.put(lhs_ary);
         e.pushAry(lhs_ary);
+        if( tKey!=null ) DKV.remove(tKey);  // shallow remove of tKey
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");
     }

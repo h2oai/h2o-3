@@ -32,14 +32,9 @@ def unsupervised_model_build(x,validation_x,algo_url,kwargs):
 # Sanity check features and response variable.
 def _check_frame(x,y,response):
   if not isinstance(x,H2OFrame):
-    if not isinstance(x,list):
-      raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
-  if y is not None:
-    if not isinstance(y,H2OFrame):
-      raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))
-    for name in x.names():
-      if name == y._col_names[0]: raise ValueError("Found response "+y._col_names[0]+" in training `x` data")
-    x[response._col_names[0]] = y
+    if not isinstance(x,list): raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
+  if y is not None and not isinstance(y,H2OFrame): raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))
+  x[response._col_names[0]] = y
   return x
 
 # Build an H2O model
