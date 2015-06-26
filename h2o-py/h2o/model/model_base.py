@@ -104,14 +104,12 @@ class ModelBase(object):
     else:  # cases dealing with test_data not None
       if not isinstance(test_data, H2OFrame):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
-      fr_key = H2OFrame.send_frame(test_data)
-      res = H2OConnection.post_json("ModelMetrics/models/" + self._id + "/frames/" + fr_key)
-      h2o.removeFrameShallow(fr_key)
+      res = H2OConnection.post_json("ModelMetrics/models/" + self._id + "/frames/" + test_data._id)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
       for mm in res["model_metrics"]:
-        if mm["frame"]["name"] == fr_key:
+        if mm["frame"]["name"] == test_data._id:
           raw_metrics = mm
           break
       return self._metrics_class(raw_metrics,algo=self._model_json["algo"])

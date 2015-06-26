@@ -64,14 +64,12 @@ class H2OFrame:
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
-    rows = self._nrows = parse['rows']   # FIXME: this returns 0???
-    cols = self._col_names = parse['column_names']
-    self._ncols = len(cols)
+    self._nrows = parse['rows']   # FIXME: this returns 0???
+    self._ncols = parse["number_columns"]
+    self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols)]
     thousands_sep = h2o.H2ODisplay.THOUSANDS
-    if isinstance(file_path, str):
-      print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(rows), thousands_sep.format(len(cols)))
-    else:
-      h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(rows), thousands_sep.format(len(cols))))
+    if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
+    else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
 
   def _upload_python_object(self, python_obj):
     """
@@ -313,7 +311,7 @@ class H2OFrame:
     ncols = min(self.ncol(), cols)
     colnames = self.names()[0:ncols]
     start_idx = max(self.nrow()-nrows,0)
-    tail = self[start_idx:nrows,:]
+    tail = self[start_idx:(start_idx+nrows),:]
     res = tail.as_data_frame(False)
     print "Last {} rows and first {} columns: ".format(nrows,ncols)
     h2o.H2ODisplay(res,["Row ID"]+colnames)
@@ -377,6 +375,7 @@ class H2OFrame:
 
     :return: None (print to stdout)
     """
+    self._eager()
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Rows:", thousands_sep.format(self._nrows), "Cols:", thousands_sep.format(self._ncols)
     chunk_dist_sum = h2o.frame(self._id)["frames"][0]
@@ -474,6 +473,7 @@ class H2OFrame:
     if isinstance(item, (int,str,list,slice)):
       if isinstance(item, slice): item = slice(item.start,item.stop if item.stop != sys.maxint else float("NaN"))
       return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
+    elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("[",self,item,None))
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
@@ -500,8 +500,9 @@ class H2OFrame:
     update_index=-1
     if isinstance(b, (str,unicode)): update_index=self.col_names().index(b) if b in self.col_names() else self._ncols
     elif isinstance(b, int): update_index=b
-    c._eager()
-    sb = ExprNode(",", ExprNode("=", ExprNode("[", self, None, update_index), c), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager()
+    lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
+    rhs = c._frame() if isinstance(c,H2OFrame) else c
+    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager() if update_index > self.ncol() else ExprNode("=",lhs,rhs)._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
 
   def __del__(self):

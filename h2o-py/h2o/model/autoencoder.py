@@ -21,9 +21,5 @@ class H2OAutoEncoderModel(ModelBase):
     :return: Return the reconstruction error.
     """
     if not test_data: raise ValueError("Must specify test data")
-    # cbind the test_data vecs together and produce a temp key
-    test_data_key = H2OFrame.send_frame(test_data)
-    # get the anomaly
-    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data_key, reconstruction_error=True)
-    # extract the frame data
+    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id, reconstruction_error=True)
     return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
