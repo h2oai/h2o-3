@@ -511,7 +511,7 @@ class ASTasDate extends ASTUniPrefixOp {
           if( !c.isNA(i) ) {
             if( isStr ) date = c.atStr(vStr, i).toString();
             else        date = dom[(int)c.at8(i)];
-            nc.addNum(DateTime.parse(date,_fmt).getMillis());
+            nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
           } else nc.addNA();
         }
       }
@@ -564,7 +564,7 @@ class ASTToDate extends ASTUniPrefixOp {
           if( !c.isNA(i) ) {
             if( isStr ) date = c.atStr(vStr, i).toString();
             else        date = dom[(int)c.at8(i)];
-            nc.addNum(DateTime.parse(date,_fmt).getMillis());
+            nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
           } else nc.addNA();
         }
       }
