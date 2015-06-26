@@ -1,7 +1,5 @@
 package water.currents;
 
-import java.util.ArrayList;
-import water.util.SB;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.Key;
@@ -28,7 +26,8 @@ class ASTApply extends ASTPrim {
   private Val colwise( Env env, Frame fr, AST fun ) {
     
     // Break each column into it's own Frame, then execute the function passing
-    // the 1 argument.
+    // the 1 argument.  All columns are independent, and this loop should be
+    // parallized over each column.
     Vec vecs[] = fr.vecs();
     Val vals[] = new Val[vecs.length];
     for( int i=0; i<vecs.length; i++ ) {
@@ -47,7 +46,13 @@ class ASTApply extends ASTPrim {
       if( v0.type() != v.type() )
         throw new IllegalArgumentException("Apply of column "+fr._names[0]+" returned "+v0.getClass()+", and column "+fr._names[i]+" returned "+v.getClass());
       switch( v0.type() ) {
-      case Val.FRM:  throw water.H2O.unimpl();
+      case Val.FRM:  
+        Frame res = v0.getFrame();
+        if( res.numRows() != 1 ) throw new IllegalArgumentException("apply single-column result must be a scalar, or a frame with 1 row; found "+fr.numRows()+" rows");
+        if( res.numCols() == 1 ) ds[i] = fr.vec(0).at(0);
+        else throw water.H2O.unimpl();
+        res.delete();
+        break;
       case Val.FUN:  throw water.H2O.unimpl();
       case Val.STR:  throw water.H2O.unimpl();
       case Val.NUM:  ds[i] = v.getNum();  break;
@@ -56,7 +61,7 @@ class ASTApply extends ASTPrim {
     }
     Key<Vec> key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
     Vec vec = Vec.makeVec(ds,key);
-    throw water.H2O.unimpl(); 
+    return new ValFrame(new Frame(new String[]{fun.str()},new Vec[]{vec}));
   }
 }
 

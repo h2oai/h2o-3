@@ -7,6 +7,8 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
+
 import java.util.Arrays;
 
 public class CurrentsTest extends TestUtil {
@@ -117,14 +119,20 @@ public class CurrentsTest extends TestUtil {
     String tree = "(apply a.hex 2 {x . (sum x FALSE)})";
     checkTree(tree);
 
+    // Return two results (missing CBIND to turn on this test)
+    //tree = "(apply a.hex 2 {x . (cbind (sum x FALSE) (sum (* x x) FALSE))})";
+    //checkTree(tree);
   }
 
-  private static void checkTree(String tree) { checkTree(tree,false); }
-  private static void checkTree(String tree, boolean expectThrow) {
-    Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
-    Key ahex = Key.make("a.hex");
-    Frame fr = new Frame(ahex, null, r.vecs()); 
-    DKV.put(ahex, fr);
+  private void checkTree(String tree) { checkTree(tree,false); }
+  private void checkTree(String tree, boolean expectThrow) {
+    //Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
+    //Key ahex = Key.make("a.hex");
+    //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
+    //r.delete();
+    //DKV.put(ahex, fr);
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    fr.remove(4).remove();
     try {
       Val val = Exec.exec(tree);
       Assert.assertFalse(expectThrow);
@@ -138,7 +146,6 @@ public class CurrentsTest extends TestUtil {
       if( !expectThrow ) throw iae;
     } finally {
       fr.delete();
-      r.delete();
     }
   }
 
