@@ -7,7 +7,7 @@
 #' @import methods
 #' @import RCurl
 #' @importFrom graphics barplot lines
-#' @importFrom rjson fromJSON
+#' @importFrom jsonlite fromJSON
 #' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
@@ -435,7 +435,7 @@
     x
   }
   # hack that counters the fact that RCurl will escape already escaped string
-  txt <- gsub("\\\"","\"",txt); 
+  txt <- gsub("\\\"","\"",txt);
   txt <- gsub("\\\\,","\\,",txt);
 
   res <- processMatrices(fromJSON(txt, ...))
@@ -561,7 +561,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 
   res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   nodeInfo <- res$nodes
-  numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
+  numCPU <- sum(nodeInfo$num_cpus)
 
   if (numCPU == 0L) {
     # If the cloud has not been up for a few seconds yet, then query again.
@@ -573,10 +573,10 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   }
 
   nodeInfo <- res$nodes
-  maxMem   <- sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem']))) / (1024 * 1024 * 1024)
-  numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
-  allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
-  clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
+  maxMem   <- sum(nodeInfo$max_mem) / (1024 * 1024 * 1024)
+  numCPU   <- sum(nodeInfo$num_cpus)
+  allowedCPU = sum(nodeInfo$cpus_allowed)
+  clusterHealth <- all(nodeInfo$healthy)
 
   cat("R is connected to H2O cluster:\n")
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
@@ -588,7 +588,9 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   cat("    H2O cluster allowed cores: ", allowedCPU, "\n")
   cat("    H2O cluster healthy:       ", clusterHealth, "\n")
 
-  cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
+  cpusLimited = nodeInfo$num_cpus     >  1L &
+                nodeInfo$nthreads     != 1L &
+                nodeInfo$cpus_allowed == 1L
   if(any(cpusLimited))
     warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
             "To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
@@ -616,17 +618,11 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 
   cloudStatus <- .h2o.fromJSON(rv$payload)
   nodes = cloudStatus$nodes
-  overallHealthy = TRUE
-  for (i in 1:length(nodes)) {
-    node = nodes[[i]]
-    healthy = node$healthy
-    if (! healthy) {
-      ip_port = node$ip_port
-      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = T)
-      overallHealthy = FALSE
-    }
-  }
-  if (! overallHealthy) {
+  overallHealthy <- all(nodes$healthy)
+  if(!overallHealthy) {
+    ip_port <- nodes$ip_port[which(!nodes$healthy)]
+    warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = T)
+
     url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
     warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
   }
