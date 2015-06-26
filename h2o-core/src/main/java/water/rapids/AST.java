@@ -1152,7 +1152,17 @@ class ASTSlice extends AST {
         case Env.STR:    cols = cols.value().equals("null") ? new ASTNull() : cols; break;
         case Env.SPAN:   cols = ((ASTSpan) cols).setSlice(false, true);             break;
         case Env.SERIES: cols = ((ASTSeries) cols).setSlice(false, true);           break;
-        case Env.LIST:   cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        case Env.LIST:
+          if( cols instanceof ASTLongList ) cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans);
+          else {
+            double[] d = ((ASTDoubleList)cols)._d;
+            long  [] l = new long[d.length];
+            int i=0;
+            for(double dd:d) l[i++]=(long)dd;
+            cols = new ASTSeries(l,null,((ASTDoubleList) cols)._spans);
+          }
+          ((ASTSeries)cols).setSlice(false,true);
+          break;
         case Env.NULL:   cols = new ASTNull(); break;
         default: // pass thru
       }

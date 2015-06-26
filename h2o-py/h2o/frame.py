@@ -502,7 +502,7 @@ class H2OFrame:
     elif isinstance(b, int): update_index=b
     lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
     rhs = c._frame() if isinstance(c,H2OFrame) else c
-    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager() if update_index > self.ncol() else ExprNode("=",lhs,rhs)._eager()
+    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
 
   def __del__(self):
@@ -541,7 +541,7 @@ class H2OFrame:
     :param data: H2OFrame or H2OVec to cbind to self
     :return: void
     """
-    return H2OFrame(expr=ExprNode("cbind", self, data))
+    return H2OFrame(expr=ExprNode("cbind", False, self, data))
 
   def split_frame(self, ratios=[0.75], destination_frames=""):
     """

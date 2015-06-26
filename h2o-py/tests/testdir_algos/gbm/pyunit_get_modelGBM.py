@@ -13,7 +13,7 @@ def get_modelGBM(ip,port):
   prostate_gbm.show()
 
   prostate_gbm.predict(prostate)
-  model = h2o.get_model(prostate_gbm._key)
+  model = h2o.get_model(prostate_gbm._id)
   model.show()
 
 if __name__ == "__main__":

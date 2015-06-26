@@ -150,7 +150,7 @@ public class Frame extends Lockable<Frame> {
       lastName = pint(name);
     if( _lastNameBig && _names.length > 0 ) {
       String last = _names[_names.length-1];
-      if( last.charAt(0)=='C' && lastName == pint(last)+1 )
+      if( !last.equals("") && last.charAt(0)=='C' && lastName == pint(last)+1 )
         return name;
     }
     int cnt=0, again, max=0;
