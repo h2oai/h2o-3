@@ -1089,7 +1089,7 @@ class ASTAssign extends AST {
               e.subRef(rvOld); // should delete it now...
               e.addRef(rv);
             }
-            Vec vv = lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
+            Vec vv = lhs_ary.replace(cidx, rv);
             e._locked.remove(vv._key);
             e.subRef(vv);
           }
