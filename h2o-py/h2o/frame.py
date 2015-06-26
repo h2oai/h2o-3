@@ -64,7 +64,7 @@ class H2OFrame:
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
-    self._nrows = parse['rows']   # FIXME: this returns 0???
+    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     self._ncols = parse["number_columns"]
     self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols)]
     thousands_sep = h2o.H2ODisplay.THOUSANDS
@@ -163,7 +163,7 @@ class H2OFrame:
   def __le__  (self, i): return H2OFrame(expr=ExprNode("<=",  self,i))
   def __lt__  (self, i): return H2OFrame(expr=ExprNode("<",   self,i))
   def __eq__  (self, i): return H2OFrame(expr=ExprNode("==",  self,i))
-  def __ne__  (self, i): return H2OFrame(expr=ExprNode("!=",  self,i))
+  def __ne__  (self, i): return H2OFrame(expr=ExprNode("N",  self,i))
   def __pow__ (self, i): return H2OFrame(expr=ExprNode("^",   self,i))
   # rops
   def __rmod__(self, i): return H2OFrame(expr=ExprNode("mod",i,self))
@@ -323,7 +323,7 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    return H2OFrame("levels", self)._frame() if col is None else H2OFrame("levels", self, col)
+    return [i for sub in h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame() if col is None else H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False) for i in sub][1:]   # one NASTY list comprehension, hoo-wow!
 
   def nlevels(self, col=None):
     """
@@ -504,6 +504,10 @@ class H2OFrame:
     rhs = c._frame() if isinstance(c,H2OFrame) else c
     sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
+
+  def __int__(self):   return int(self._scalar())
+
+  def __float__(self): return self._scalar()
 
   def __del__(self):
     if self._computed: h2o.remove(self)

@@ -1151,10 +1151,11 @@ public class Frame extends Lockable<Frame> {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
-            if( chk instanceof C16Chunk ) nchks[j].addUUID(chk, i);
-            else if(chk instanceof CStrChunk) nchks[j].addStr((chk.atStr(new ValueString(), i)));
-            else if( chk.hasFloat() ) nchks[j].addNum(chk.atd(i));
-            else nchks[j].addNum(chk.at8(i),0);
+            if( chk.isNA(i) )                   nchks[j].addNA();
+            else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
+            else if(chk instanceof CStrChunk)   nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
+            else                                nchks[j].addNum(chk.at8(i),0);
           }
         }
       }
