@@ -435,8 +435,6 @@ public class DeepLearningParameters extends Model.Parameters {
     dl.hide("_score_each_iteration", "Not used by Deep Learning.");
     boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
     if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
-    if (_offset_column != null)
-      dl.error("_offset_column", "Offsets are not yet supported for Deep Learning.");
 
     for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
 
