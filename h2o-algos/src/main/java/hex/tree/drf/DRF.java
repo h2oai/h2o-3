@@ -172,7 +172,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if (_parms._checkpoint) {
         Timer t = new Timer();
         // Compute oob votes for each output level
-        new OOBScorer(_ncols, _nclass, _parms._sample_rate, _model._output._treeKeys).doAll(_train);
+        new OOBScorer(_ncols, _nclass, (hasWeights() ? 1 : 0) + (hasOffset() ? 1 : 0), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
         Log.info("Reconstructing oob stats from checkpointed model took " + t);
       }
 
