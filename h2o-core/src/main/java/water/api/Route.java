@@ -6,7 +6,7 @@ import water.util.MarkdownBuilder;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.regex.Pattern;
+import com.google.code.regexp.Pattern;
 
 /**
 * Routing of an http request to a handler method, with path parameter parsing.
@@ -104,8 +104,8 @@ final class Route extends Iced {
     if( !_handler_class .equals(route._handler_class )) return false;
     if( !_handler_method.equals(route._handler_method)) return false;
     if( !_doc_method.equals(route._doc_method)) return false;
-    if( !_http_method   .equals(route._http_method)) return false;
-    if( !_url_pattern_raw   .equals(route._url_pattern_raw)) return false;
+    if( !_http_method.equals(route._http_method)) return false;
+    if( !_url_pattern_raw.equals(route._url_pattern_raw)) return false;
     if( !Arrays.equals(_path_params, route._path_params)) return false;
     return true;
   }

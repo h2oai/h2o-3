@@ -8,8 +8,8 @@ import water.fvec.Chunk;
 
 public class ResidualsCollector extends DTreeScorer<ResidualsCollector> {
 
-  public ResidualsCollector(int ncols, int nclass, Key[][] treeKeys) {
-    super(ncols, nclass, treeKeys);
+  public ResidualsCollector(int ncols, int nclass, int skip, Key[][] treeKeys) {
+    super(ncols, nclass, skip, treeKeys);
   }
 
   @Override public void map(Chunk[] chks) {

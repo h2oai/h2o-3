@@ -9,12 +9,7 @@ test.pubdev.1383 <- function(conn) {
   print(summary(fgl.hex))
   
   Log.info("Reshuffling R data to match H2O...")
-  isNum <- sapply(fgl.dat, is.numeric)
-  fgl.mm <- fgl.dat
-  fgl.mm[,isNum] <- scale(fgl.mm[,isNum], center = TRUE, scale = TRUE)   # Standardize numeric columns
-  fgl.mm <- fgl.mm[,c(which(!isNum), which(isNum))]   # Move categorical column to front
-  fgl.mm <- model.matrix(~ . -1, fgl.mm)
-  fgl.mm <- fgl.mm[,-1]
+  fgl.mm <- alignData(fgl.dat, center = TRUE, scale = TRUE, use_all_factor_levels = FALSE)
   print(summary(fgl.mm))
   
   Log.info("Building PCA model...")
@@ -23,7 +18,10 @@ test.pubdev.1383 <- function(conn) {
   
   Log.info("R Eigenvectors:"); print(fitR$rotation[,1:k])
   Log.info("H2O Eigenvectors:"); print(fitH2O@model$eigenvectors)
-  checkSignedCols(fitH2O@model$eigenvectors, fitR$rotation[,1:k], tolerance = 1e-5)
+  eigvecR <- as.matrix(fitR$rotation[,1:k])
+  eigvecH2O <- as.matrix(fitH2O@model$eigenvectors)
+  dimnames(eigvecH2O) <- dimnames(eigvecR)   # Since H2O row names don't match R
+  checkSignedCols(eigvecH2O, eigvecR, tolerance = 1e-5)
   
   impR <- summary(fitR)$importance
   impH2O <- fitH2O@model$pc_importance

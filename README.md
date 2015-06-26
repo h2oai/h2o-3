@@ -217,7 +217,7 @@ Download and update h2o-3 source codes:
 ##### Step 9. Run the top-level gradle build:
 
     cd h2o-3
-    gradlew build
+    ./gradlew.bat build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 

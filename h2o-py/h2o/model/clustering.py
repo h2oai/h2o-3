@@ -21,6 +21,15 @@ class H2OClusteringModel(ModelBase):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     return [ v[2] for v in  tm._metric_json["centroid_stats"].cell_values]
 
+  def num_iterations(self, train=False, valid=False):
+    """
+    Get the number of iterations that it took to converge or reach max iterations.
+
+    :return: number of iterations (integer)
+    """
+    o = self._model_json["output"]
+    return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('number_of_iterations')]
+
   def betweenss(self, train, valid):
     """
     Get the between cluster sum of squares.

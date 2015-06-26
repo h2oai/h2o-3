@@ -53,14 +53,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
 
   @Override public double[] perRow(double ds[], float[] yact, Model m) {
-    _metricBuilder.perRow(ds,yact,m);
-    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if (_parms._family == Family.binomial)
-        add2(yact[0], ds[2], 1, 0);
-      else
-        add2(yact[0], ds[0], 1, 0);
-    }
-    return ds;
+    return perRow(ds, yact, 1, 0, m);
   }
 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
@@ -155,9 +148,9 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       case gamma:
         aic = Double.NaN;
         break;
-//      case tweedie:
-//        aic = Double.NaN;
-//        break;
+      case tweedie:
+        aic = Double.NaN;
+        break;
       default:
         assert false : "missing implementation for family " + _parms._family;
     }
@@ -173,10 +166,10 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     else return "explained dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
   }
 
-  @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+  @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
     GLMModel gm = (GLMModel)m;
     computeAIC();
-    ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f, sigma):_metrics;
+    ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f):_metrics;
     if (_parms._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());

@@ -21,6 +21,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "offset_column",
             "weights_column",
             "family",
+            "tweedie_variance_power",
             "solver",
             "alpha",
             "lambda",
@@ -34,8 +35,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "beta_epsilon",
             "gradient_epsilon",
             "link",
-//            "tweedie_variance_power",
-//            "tweedie_link_power",
             "prior",
             "lambda_min_ratio",
             "beta_constraints",
@@ -51,7 +50,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 response_column;
 
-    // todo move this up in the hierarchy when there is offset support?
+    // todo move this up in the hierarchy when there is weights support?
     @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
     public ColSpecifierV3 weights_column;
 
@@ -60,9 +59,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public ColSpecifierV3 offset_column;
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
+
+    @API(help = "Tweedie variance power", level = Level.critical)
+    public double tweedie_variance_power;
 
     @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
     public Solver solver;

@@ -23,3 +23,15 @@ class H2OMultinomialModel(ModelBase):
         # retrieve the confusion matrix
         cm = j["model_metrics"][0]["cm"]["table"]
         return cm
+
+    def hit_ratio_table(self, train=False, valid=False):
+        """
+        Retrieve the Hit Ratios
+
+        :param train: Return the hit ratios for training data.
+        :param valid: Return the hit ratios for the validation data.
+        :return: The hit ratio table (H2OTwoDimTable).
+        """
+        tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
+        if tm is None: return None
+        return tm.hit_ratio_table()

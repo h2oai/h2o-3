@@ -48,7 +48,8 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala'),
       project(':h2o-persist-hdfs'),
-      project(':h2o-genmodel')
+      project(':h2o-genmodel'),
+      project(':h2o-java-rest-bindings')
     ]
 
     javaProjects = [
@@ -59,7 +60,8 @@ ext {
       project(':h2o-persist-hdfs'),
       project(':h2o-test-integ'),
       project(':h2o-testng'),
-      project(':h2o-genmodel')
+      project(':h2o-genmodel'),
+      project(':h2o-java-rest-bindings'),
     ]
 
     scalaProjects = [
@@ -135,6 +137,9 @@ subprojects {
     // to all projects
     if (project in publishedProjects) {
       apply from: "$rootDir/gradle/publish.gradle"
+      if (project.hasProperty("doJava6Bytecode")) {
+          apply from: "$rootDir/gradle/java6bytecode.gradle"
+      }
     }
 
     apply from: "$rootDir/gradle/makeSupport.gradle"

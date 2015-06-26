@@ -67,7 +67,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return calcVarImp(dbl_rel_imp, coef_names);
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {
-    return calcVarImp(rel_imp, coef_names, "Variable Importances", new String[] {"Relative Importance", "Scaled Importance", "Percentage"});
+    return calcVarImp(rel_imp, coef_names, "Variable Importances", new String[]{"Relative Importance", "Scaled Importance", "Percentage"});
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names, String table_header, String[] col_headers) {
     if(rel_imp == null) return null;
@@ -140,20 +140,28 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     transient public double[] _work;
     public double _sumsqe;      // Sum-squared-error
     public long _count;
-    public double _wsum;
+    public double _wcount;
+    public double _wY; // (Weighted) sum of the response
+    public double _wYY; // (Weighted) sum of the squared response
 
+    public  double weightedSigma() {
+      return _wcount <= 1 ? 0 : Math.sqrt(1./(_wcount-1.)*_wYY-(1./(_wcount-1.)/_wcount*_wY*_wY));
+    }
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
-      throw H2O.unimpl();
+      assert(weight==1 && offset == 0);
+      return perRow(ds, yact, m);
     }
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
-      _wsum += mb._wsum;
+      _wcount += mb._wcount;
+      _wY += mb._wY;
+      _wYY += mb._wYY;
     }
 
     public void postGlobal() {}
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public abstract ModelMetrics makeModelMetrics( Model m, Frame f, double sigma);
+    public abstract ModelMetrics makeModelMetrics( Model m, Frame f);
   }
 }

@@ -3,9 +3,16 @@ package hex;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
+import water.util.ArrayUtils;
 
 import static water.util.FrameUtils.generateNumKeys;
 
+/**
+ * Split given frame based on given ratio.
+ *
+ * If single number is given then it splits a given frame into two frames (FIXME: will throw exception)
+ * if N ratios are given then then N-splits are produced.
+ */
 public class SplitFrame extends Transformer<SplitFrame> {
   /** Input dataset to split */
   public Frame dataset;
@@ -22,18 +29,32 @@ public class SplitFrame extends Transformer<SplitFrame> {
   public SplitFrame execImpl() {
     if (ratios.length < 0)      throw new IllegalArgumentException("No ratio specified!");
     if (ratios.length > 100)    throw new IllegalArgumentException("Too many frame splits demanded!");
-    for( double p : ratios )
-      if( p < 0.0 || p > 1.0 )  throw new IllegalArgumentException("Ratios must be between 0 and 1!");
-    if (destination_frames != null && ratios.length != destination_frames.length-1)
+    // Check the case for single ratio - FIXME in /4 version change this to throw exception
+    for (double r : ratios)
+      if (r <= 0.0) new IllegalArgumentException("Ratio must be > 0!");
+    if (ratios.length == 1)
+      if( ratios[0] < 0.0 || ratios[0] > 1.0 )  throw new IllegalArgumentException("Ratio must be between 0 and 1!");
+    if (destination_frames != null &&
+            !((ratios.length == 1 && destination_frames.length == 2) || (ratios.length == destination_frames.length)))
                                 throw new IllegalArgumentException("Number of destination keys has to match to a number of split ratios!");
+    // If array of ratios is given scale them and take first n-1 and pass them to FrameSplitter
+    final double[] computedRatios;
+    if (ratios.length > 1) {
+      double sum = ArrayUtils.sum(ratios);
+      if (sum <= 0.0) throw new IllegalArgumentException("Ratios sum has to be > 0!");
+      computedRatios = new double[ratios.length-1];
+      for (int i=0; i < ratios.length-1; i++) computedRatios[i] = ratios[i] / sum;
+    } else {
+      computedRatios = ratios;
+    }
 
-    // Create destinatio keys if not specified
-    if (destination_frames == null) destination_frames = generateNumKeys(dataset._key, ratios.length+1);
+    // Create destination keys if not specified
+    if (destination_frames == null) destination_frames = generateNumKeys(dataset._key, computedRatios.length+1);
 
     H2O.H2OCountedCompleter hcc = new H2O.H2OCountedCompleter() {
       @Override
       protected void compute2() {
-        FrameSplitter fs = new FrameSplitter(this, dataset, ratios, destination_frames, _key);
+        FrameSplitter fs = new FrameSplitter(this, dataset, computedRatios, destination_frames, _key);
         H2O.submitTask(fs);
       }
 
@@ -55,6 +76,6 @@ public class SplitFrame extends Transformer<SplitFrame> {
       }
     };
 
-    return (SplitFrame) start(hcc, ratios.length + 1);
+    return (SplitFrame) start(hcc, computedRatios.length + 1);
   }
 }

@@ -20,7 +20,7 @@ public class AUC2 extends Iced {
   public final double[] _ths;   // Thresholds
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
-  public final long _p, _n;     // Actual trues, falses
+  public final double _p, _n;     // Actual trues, falses
   public final double _auc, _gini; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
@@ -50,12 +50,12 @@ public class AUC2 extends Iced {
         final double recl = tpr   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return 1.0-((double)fn+fp)/(tp+fn+tn+fp); } },
-    precision(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return (double)tp/(tp+fp); } },
+    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return 1.0-(fn+fp)/(tp+fn+tn+fp); } },
+    precision(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return tp/(tp+fp); } },
     absolute_MCC(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
-        double mcc = ((double)tp*tn - (double)fp*fn);
+        double mcc = (tp*tn - fp*fn);
         if (mcc == 0) return 0;
-        mcc /= Math.sqrt(((double)tp+fp)*((double)tp+fn)*((double)tn+fp)*((double)tn+fn));
+        mcc /= Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
         assert(Math.abs(mcc)<=1.) : tp + " " + fp + " " + fn + " " + tn;
         return Math.abs(mcc);
       } },
@@ -63,7 +63,7 @@ public class AUC2 extends Iced {
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
     min_per_class_accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
-        return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
+        return Math.min(tp/(tp+fn),tn/(tn+fp));
       } },
     tns(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return tn; } },
     fns(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return fn; } },
@@ -133,7 +133,7 @@ public class AUC2 extends Iced {
 
     // Rollup counts, so that computing the rates are easier.
     // The AUC is (TPR,FPR) as the thresholds roll about
-    long p=0, n=0;
+    double p=0, n=0;
     for( int i=0; i<_nBins; i++ ) { 
       p += _tps[i]; _tps[i] = p;
       n += _fps[i]; _fps[i] = n;
@@ -147,6 +147,9 @@ public class AUC2 extends Iced {
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)
   // points.  TPR and FPR are monotonically increasing from 0 to 1.
   private double compute_auc() {
+    if (_fps[_nBins-1] == 0) return 1.0; //special case
+    if (_tps[_nBins-1] == 0) return 0.0; //special case
+
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
     double tp0 = 0, fp0 = 0;
@@ -170,9 +173,9 @@ public class AUC2 extends Iced {
   /** @return the default CM, or null for an empty AUC */
   public double[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
   /** @return the default threshold; threshold that maximizes the default criterion */
-  public double defaultThreshold( ) { return _ths[_max_idx]; }
+  public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
-  public double defaultErr( ) { return ((double)fp(_max_idx)+fn(_max_idx))/(_p+_n); }
+  public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
 
 
 

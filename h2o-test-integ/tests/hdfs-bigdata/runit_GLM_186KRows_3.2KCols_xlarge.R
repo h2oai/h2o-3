@@ -25,7 +25,8 @@ h2o.removeAll()
 # Parameters for the test.
 #----------------------------------------------------------------------
 parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
-paste("Time it took to parse", parse_time)
+print("Time it took to parse")
+print(parse_time)
 
 colNames = {}
 for(col in names(data.hex)) {
@@ -43,6 +44,7 @@ myX = setdiff(names(data.hex), myY)
 # GLM
 glm_time <- system.time(data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS")) 
 data1.glm
-paste("Time it took to build GLM ", glm_time)
+print("Time it took to build GLM")
+print(glm_time)
 
 PASS_BANNER()

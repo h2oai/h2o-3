@@ -4,6 +4,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.fvec.C0DChunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -231,8 +232,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(!w.isNumeric())
           error("_weights_column","Invalid weights column '" + _parms._weights_column  + "', weights must be numeric");
         _weights = w;
+        if(w.naCnt() > 0)
+          error("_weights_columns","Weights cannot have missing values.");
         if(w.min() < 0)
           error("_weights_columns","Weights must be >= 0");
+        if(w.max() == 0)
+          error("_weights_columns","Max. weight must be > 0");
         _train.add(_parms._weights_column, w);
         ++res;
       }
@@ -245,6 +250,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(!o.isNumeric())
           error("_offset_column","Invalid offset column '" + _parms._offset_column  + "', offset must be numeric");
         _offset = o;
+        if(o.naCnt() > 0)
+          error("_offset_column","Offset cannot have missing values.");
         if(_weights == _offset)
           error("_offset_column", "Offset must be different from weights");
         _train.add(_parms._offset_column, o);
@@ -285,7 +292,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected void checkMemoryFootPrint() {}
 
 
-  transient long [] _distribution;
+  transient double [] _distribution;
   transient double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
@@ -345,10 +352,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
 
-      if(_response != null)
-        _nclass = _response.isEnum()?_response.cardinality():1;
+      if(_response != null) {
+        _nclass = _response.isEnum() ? _response.cardinality() : 1;
+        if (_response.isConst())
+          error("_response","Response cannot be constant.");
+      }
       if (! _parms._balance_classes)
         hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
+      else if (_parms._weights_column != null)
+        error("_balance_classes", "Balance classes and observation weights are not currently supported together.");
       if( _parms._max_after_balance_size <= 0.0 )
         error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
@@ -362,11 +374,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
-            MRUtils.ClassDist cdmt = new MRUtils.ClassDist(nclasses()).doAll(_response);
+            MRUtils.ClassDist cdmt =
+                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
             _distribution = cdmt.dist();
             _priorClassDist = cdmt.rel_dist();
           } else {                    // Regression; only 1 "class"
-            _distribution = new long[]{train().numRows()};
+            _distribution = new double[]{ (_weights != null ? _weights.mean() : 1.0) * train().numRows() };
             _priorClassDist = new double[]{1.0f};
           }
         }
@@ -378,6 +391,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         hide("_max_after_balance_size", "Max after balance size is only applicable to classification problems.");
         hide("_max_confusion_matrix_size", "Max confusion matrix size is only applicable to classification problems.");
       }
+      else {
+        if (_offset != null && !this.getAlgo().equals("glm"))
+          error("_offset", "Offset only applies to regression and logistic regression.");
+      }
       if (_nclass <= 2) {
         hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
         hide("_max_confusion_matrix_size", "Only for multi-class classification problems.");
@@ -386,6 +403,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         hide("_max_after_balance_size", "Only used with balanced classes");
         hide("_class_sampling_factors", "Class sampling factors is only applicable if balancing classes.");
       }
+    }
+    else {
+      hide("_response_column", "Ignored for unsupervised methods.");
+      hide("_balance_classes", "Ignored for unsupervised methods.");
+      hide("_class_sampling_factors", "Ignored for unsupervised methods.");
+      hide("_max_after_balance_size", "Ignored for unsupervised methods.");
+      hide("_max_confusion_matrix_size", "Ignored for unsupervised methods.");
+      _response = null;
+      _vresponse = null;
+      _nclass = 1;
     }
 
     // Build the validation set to be compatible with the training set.

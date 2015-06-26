@@ -63,8 +63,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Family _family;
     public Link _link = Link.family_default;
     public Solver _solver = Solver.IRLSM;
-    public final double _tweedie_variance_power;
-    public final double _tweedie_link_power;
+    public double _tweedie_variance_power;
+    public double _tweedie_link_power;
     public double [] _alpha = null;
     public double [] _lambda = null;
     public double _prior = -1;
@@ -95,6 +95,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           _nlambdas = 100;
         else
           _exactLambdas = false;
+      if(_family != Family.tweedie)
+        glm.hide("tweedie_variance_power","Only applicable with Tweedie family");
+      _tweedie_link_power = 1 - _tweedie_variance_power;
       if(_beta_constraints != null) {
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
@@ -147,10 +150,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if (_link != Link.inverse && _link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only inverse, log and identity links are allowed for family=gamma.");
             break;
-//          case tweedie:
-//            if (_link != Link.tweedie)
-//              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
-//            break;
+          case tweedie:
+            if (_link != Link.tweedie)
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
+            break;
           default:
             H2O.fail();
         }
@@ -162,22 +165,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       assert _link == Link.family_default;
     }
     public GLMParameters(Family f){this(f,f.defaultLink);}
-    public GLMParameters(Family f, Link l){this(f,l,null, null);}
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
-      this._family = f;
-      this._lambda = lambda;
-      this._alpha = alpha;
-      _tweedie_link_power = Double.NaN;
-      _tweedie_variance_power = Double.NaN;
-      _link = l;
-    }
-    public GLMParameters(Family f, double [] lambda, double [] alpha, double twVar, double twLnk){
+    public GLMParameters(Family f, Link l){this(f,l, null, null, 0, 1);}
+
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
       this._tweedie_link_power = twLnk;
       _family = f;
-      _link = f.defaultLink;
+      _link = l;
     }
 
     public final double variance(double mu){
@@ -190,10 +186,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return mu;
         case gamma:
           return mu * mu;
-//        case tweedie:
-//          return Math.pow(mu, _tweedie_variance_power);
+        case tweedie:
+          return Math.pow(mu, _tweedie_variance_power);
         default:
-          throw new RuntimeException("unknown family Id " + this);
+          throw new RuntimeException("unknown family Id " + this._family);
       }
     }
 
@@ -215,12 +211,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public final double deviance(double yr, double ym){
+      double y1 = yr == 0?.1:yr;
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
         case binomial:
-//          if(yr == ym) return 0;
-//          return 2*( -yr * eta - Math.log(1 - ym));
           return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
         case poisson:
           if( yr == 0 ) return 2 * ym;
@@ -228,41 +223,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-//        case tweedie:
-//          // Theory of Dispersion Models: Jorgensen
-//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-//          double one_minus_p = 1 - _tweedie_variance_power;
-//          double two_minus_p = 2 - _tweedie_variance_power;
-//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        case tweedie:
+          double theta = _tweedie_variance_power == 1
+            ?Math.log(y1/ym)
+            :(Math.pow(y1,1.-_tweedie_variance_power) - Math.pow(ym,1 - _tweedie_variance_power))/(1-_tweedie_variance_power);
+          double kappa = _tweedie_variance_power == 2
+            ?Math.log(y1/ym)
+            :(Math.pow(yr,2-_tweedie_variance_power) - Math.pow(ym,2-_tweedie_variance_power))/(2 - _tweedie_variance_power);
+          return 2 * (yr * theta - kappa);
         default:
           throw new RuntimeException("unknown family " + _family);
       }
     }
     public final double deviance(float yr, float ym){
-      switch(_family){
-        case gaussian:
-          return (yr - ym) * (yr - ym);
-        case binomial:
-//          if(yr == ym) return 0;
-//          return 2*( -yr * eta - Math.log(1 - ym));
-          return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
-        case poisson:
-          if( yr == 0 ) return 2 * ym;
-          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
-        case gamma:
-          if( yr == 0 ) return -2;
-          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-//        case tweedie:
-//          // Theory of Dispersion Models: Jorgensen
-//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-//          double one_minus_p = 1 - _tweedie_variance_power;
-//          double two_minus_p = 2 - _tweedie_variance_power;
-//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
-        default:
-          throw new RuntimeException("unknown family " + _family);
-      }
+     return deviance((double)yr,(double)ym);
     }
 
     public final double likelihood(double yr, double ym){
@@ -275,7 +249,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 //          double res = Math.log(1 + Math.exp((1 - 2*yr) * eta));
 //          assert Math.abs(res - .5 * deviance(yr,eta,ym)) < 1e-8:res + " != " + .5*deviance(yr,eta,ym) +" yr = "  + yr + ", ym = " + ym + ", eta = " + eta;
 //          return res;
-//
 //          double res = -yr * eta - Math.log(1 - ym);
 //          return res;
         case poisson:
@@ -284,18 +257,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-//        case tweedie:
-//          // Theory of Dispersion Models: Jorgensen
-//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-//          double one_minus_p = 1 - _tweedie_variance_power;
-//          double two_minus_p = 2 - _tweedie_variance_power;
-//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        case tweedie:
+          return deviance(yr,ym); //fixme: not really correct, not sure what the likelihood is right now
         default:
           throw new RuntimeException("unknown family " + _family);
       }
     }
-
 
     public final double link(double x) {
       switch(_link) {
@@ -309,14 +276,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
-//        case tweedie:
-//          return Math.pow(x, _tweedie_link_power);
+        case tweedie:
+          return _tweedie_link_power == 0?Math.log(x):Math.pow(x, _tweedie_link_power);
         default:
           throw new RuntimeException("unknown link function " + this);
       }
     }
 
-    public final double linkDeriv(double x) {
+    public final double linkDeriv(double x) { // note: compute an inverse of what R does
       switch(_link) {
         case logit:
           double div = (x * (1 - x));
@@ -328,8 +295,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return 1.0 / x;
         case inverse:
           return -1.0 / (x * x);
-//        case tweedie:
-//          return _tweedie_link_power * Math.pow(x, _tweedie_link_power - 1);
+        case tweedie:
+//          double res = _tweedie_link_power == 0
+//            ?Math.max(2e-16,Math.exp(x))
+//            // (1/lambda) * eta^(1/lambda - 1)
+//            :(1.0/_tweedie_link_power) * Math.pow(link(x), 1.0/_tweedie_link_power - 1.0);
+
+          return _tweedie_link_power == 0
+            ?1.0/Math.max(2e-16,x)
+            :_tweedie_link_power * Math.pow(x,_tweedie_link_power-1);
         default:
           throw H2O.unimpl();
       }
@@ -346,8 +320,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
-//        case tweedie:
-//          return Math.pow(x, 1/ _tweedie_link_power);
+        case tweedie:
+          return _tweedie_link_power == 0
+            ?Math.max(2e-16,Math.exp(x))
+            :Math.pow(x, 1/ _tweedie_link_power);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -378,11 +354,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // supported families
     public enum Family {
       gaussian(Link.identity), binomial(Link.logit), poisson(Link.log),
-      gamma(Link.inverse)/*, tweedie(Link.tweedie)*/;
+      gamma(Link.inverse), tweedie(Link.tweedie);
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
-    public static enum Link {family_default, identity, logit, log,inverse,/* tweedie*/}
+    public static enum Link {family_default, identity, logit, log,inverse, tweedie}
 
     public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
 
@@ -696,6 +672,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final double [] b = beta();
     final DataInfo dinfo = _output._dinfo;
     for(int i = 0; i < dinfo._cats; ++i) {
+      if(Double.isNaN(data[i])) {
+        eta = Double.NaN;
+        break;
+      }
       int ival = (int) data[i];
       if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
       ival += dinfo._catOffsets[i];

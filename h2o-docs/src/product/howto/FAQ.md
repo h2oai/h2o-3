@@ -5,19 +5,20 @@
 
 - Confirm your internet connection is active. 
 
-- Test connectivity using curl: First, log in to the first node and enter curl http://<Node2IP>:54321 (where <Node2IP> is the IP address of the second node. Then, log in to the second node and enter curl http://<Node1IP>:54321 (where <Node1IP> is the IP address of the first node). Look for output from H2O.
+- Test connectivity using curl: First, log in to the first node and enter `curl http://<Node2IP>:54321` (where `<Node2IP>` is the IP address of the second node. Then, log in to the second node and enter `curl http://<Node1IP>:54321` (where `<Node1IP>` is the IP address of the first node). Look for output from H2O.
 
+- Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
+
+- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in Terminal. 
 - Confirm ports 54321 and 54322 are available for both TCP and UDP.
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
-- Check if the nodes are on different networks.
+- Confirm that the nodes are not on different networks.
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
-- (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. For example, if you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available.
-
- For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
+- (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. 
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
 - (EC2 only) Check the configuration for the EC2 security group.
 
@@ -61,6 +62,54 @@ If the response column is numeric, H2O generates a regression model. If the resp
 
 ---
 
+**What's the largest number of classes that H2O supports for multinomial prediction?**
+
+For tree-based algorithms, the maximum number of classes (or levels) for a response column is 1000. 
+
+---
+
+**How do I obtain a tree diagram of my DRF model?**
+
+Output the SVG code for the edges and nodes. A simple tree visitor is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/tree/TreeVisitor.java) and the Java code generator is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/tree/TreeJCodeGen.java). 
+
+---
+
+**Is Word2Vec available? I can see the Java and R sources, but calling the API generates an error.**
+
+Word2Vec, along with other natural language processing (NLP) algos, are currently in development in the current version of H2O. 
+
+---
+
+<!---
+#commenting out as still in dev but wanted to save for later
+
+**Are there any H2O examples using text for classification?**
+
+Currently, the following examples are available for Sparkling Water: 
+
+a) Use TF-IDF weighting scheme for classifying text messages 
+https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/mlconf_2015_hamSpam.script.scala 
+
+b) Use Word2Vec Skip-gram model + GBM for classifying job titles 
+https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.scala 
+
+-->
+
+##Building H2O
+
+
+**Using `./gradlew build` doesn't generate a build successfully - is there anything I can do to troubleshoot?**
+
+Use `./gradlew clean` before running `./gradlew build`. 
+
+---
+
+**I tried using `./gradlew build` after using `git pull` to update my local H2O repo, but now I can't get H2O to build successfully - what should I do?**
+
+Try using `./gradlew build -x test` - the build may be failing tests if data is not synced correctly. 
+
+---
+
 ##Clusters
 
 
@@ -82,7 +131,7 @@ If this does not resolve the issue, try the following additional troubleshooting
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
-- Check if the nodes are on different networks.
+- Confirm that the nodes are not on different networks.
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
@@ -183,7 +232,7 @@ Currently, H2O does not support multiple response variables. To predict differen
 
 **How do I kill any running instances of H2O?**
 
-In Terminal, enter `ps -efww | grep h2o`, then kill any running PIDs. You can also find the running instance in Terminal and press **Ctrl + C** on your keyboard. 
+In Terminal, enter `ps -efww | grep h2o`, then kill any running PIDs. You can also find the running instance in Terminal and press **Ctrl + C** on your keyboard. To confirm no H2O sessions are still running, go to `http://localhost:54321` and verify that the H2O web UI does not display. 
 
 ---
 
@@ -284,6 +333,13 @@ The H2O launch failed because more memory was requested than was available. Make
 This [PDF](https://github.com/h2oai/h2o-meetups/blob/master/2014_11_18_H2O_in_Big_Data_Environments/H2OinBigDataEnvironments.pdf) includes diagrams and slides depicting how H2O works in big data environments. 
 
 ---
+**How does H2O work with Excel?**
+
+For more information on how H2O works with Excel, refer to this [page](http://learn.h2o.ai/content/demos/excel.html). 
+
+
+---
+
 ##Hadoop
 
 <!---
@@ -309,6 +365,169 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
 Currently, this is not yet supported. To provide resource isolation (for example, to isolate H2O to the worker nodes, rather than the master nodes), use YARN Nodemanagers to specify the nodes to use. 
+
+---
+
+**How do I import data from HDFS in R and in Flow?**
+
+To import from HDFS in R: 
+
+```
+h2o.importHDFS(path, conn = h2o.getConnection(), pattern = "",
+destination_frame = "", parse = TRUE, header = NA, sep = "",
+col.names = NULL, na.strings = NULL)
+```
+
+Here is another example: 
+
+```
+# pathToAirlines <- "hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv"
+# airlines.hex <- h2o.importFile(conn = h, path = pathToAirlines, destination_frame = "airlines.hex")
+```
+
+
+In Flow, the easiest way is to let the auto-suggestion feature in the *Search:* field complete the path for you. Just start typing the path to the file, starting with the top-level directory, and H2O provides a list of matching files. 
+
+  ![Flow - Import Auto-Suggest](images/Flow_Import_AutoSuggest.png)
+  
+Click the file to add it to the *Search:* field.   
+
+---
+
+**Why do I receive the following error when I try to save my notebook in Flow?**
+
+```
+Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test%201 with opts
+```
+
+When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
+
+
+---
+
+##Java
+
+**How do I use H2O with Java?**
+
+There are two ways to use H2O with Java. The simplest way is to call the REST API from your Java program to a remote cluster and should meet the needs of most users. 
+
+You can access the REST API documentation within Flow, or on our [documentation site](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#route-reference). 
+
+Flow, Python, and R all rely on the REST API to run H2O. For example, each action in Flow translates into one or more REST API calls. The script fragments in the cells in Flow are essentially the payloads for the REST API calls. Most R and Python API calls translate into a single REST API call. 
+
+To see how the REST API is used with H2O: 
+
+- Using Chrome as your internet browser, open the developer tab while viewing the web UI. As you perform tasks, review the network calls made by Flow. 
+
+- Write an R program for H2O using the H2O R package that uses `h2o.startLogging()` at the beginning. All REST API calls used are logged. 
+
+The second way to use H2O with Java is to embed H2O within your Java application, similar to [Sparkling Water](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md). 
+
+---
+
+**How do I communicate with a remote cluster using the REST API?**
+
+To create a set of bare POJOs for the REST API payloads that can be used by JVM REST API clients: 
+
+0. Clone the sources from GitHub. 
+0. Start an H2O instance. 
+0. Enter `% cd py`.
+0. Enter `% python generate_java_binding.py`. 
+
+This script connects to the server, gets all the metadata for the REST API schemas, and writes the Java POJOs to `{sourcehome}/build/bindings/Java`. 
+
+
+---
+
+##Python
+
+**How do I specify a value as an enum in Python? Is there a Python equivalent of `as.factor()` in R?**
+
+Use `.asfactor()` to specify a value as an enum. 
+
+---
+
+**I received the following error when I tried to install H2O using the Python instructions on the downloads page - what should I do to resolve it?**
+
+```
+Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-3.0.0.12-py2.py3-none-any.whl 
+  Downloading h2o-3.0.0.12-py2.py3-none-any.whl (43.1Mb): 43.1Mb downloaded 
+  Running setup.py egg_info for package from http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-3.0.0.12-py2.py3-none-any.whl 
+    Traceback (most recent call last): 
+      File "<string>", line 14, in <module> 
+    IOError: [Errno 2] No such file or directory: '/tmp/pip-nTu3HK-build/setup.py' 
+    Complete output from command python setup.py egg_info: 
+    Traceback (most recent call last): 
+
+  File "<string>", line 14, in <module> 
+
+IOError: [Errno 2] No such file or directory: '/tmp/pip-nTu3HK-build/setup.py' 
+
+---------------------------------------- 
+Command python setup.py egg_info failed with error code 1 in /tmp/pip-nTu3HK-build
+```
+
+With Python, there is no automatic update of installed packages, so you must upgrade manually. Additionally, the package distribution method recently changed from `distutils` to `wheel`. The following procedure should be tried first if you are having trouble installing the H2O package, particularly if error messages related to `bdist_wheel` or `eggs` display. 
+
+```
+# this gets the latest setuptools 
+# see https://pip.pypa.io/en/latest/installing.html 
+wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python 
+
+# platform dependent ways of installing pip are at 
+# https://pip.pypa.io/en/latest/installing.html 
+# but the above should work on most linux platforms? 
+
+# on ubuntu 
+# if you already have some version of pip, you can skip this. 
+sudo apt-get install python-pip 
+
+# the package manager doesn't install the latest. upgrade to latest 
+# we're not using easy_install any more, so don't care about checking that 
+pip install pip --upgrade 
+
+# I've seen pip not install to the final version ..i.e. it goes to an almost 
+# final version first, then another upgrade gets it to the final version. 
+# We'll cover that, and also double check the install. 
+
+# after upgrading pip, the path name may change from /usr/bin to /usr/local/bin 
+# start a new shell, just to make sure you see any path changes 
+
+bash 
+
+# Also: I like double checking that the install is bulletproof by reinstalling. 
+# Sometimes it seems like things say they are installed, but have errors during the install. Check for no errors or stack traces. 
+
+pip install pip --upgrade --force-reinstall 
+
+# distribute should be at the most recent now. Just in case 
+# don't do --force-reinstall here, it causes an issue. 
+
+pip install distribute --upgrade 
+
+
+# Now check the versions 
+pip list | egrep '(distribute|pip|setuptools)' 
+distribute (0.7.3) 
+pip (7.0.3) 
+setuptools (17.0) 
+
+
+# Re-install wheel 
+pip install wheel --upgrade --force-reinstall 
+
+```
+
+After completing this procedure, go to Python and use `h2o.init()` to start H2O in Python. 
+
+>**Note**: 
+>
+>If you use gradlew to build the jar yourself, you have to start the jar >yourself before you do `h2o.init()`.
+>
+>If you download the jar and the H2O package, `h2o.init()` will work like R >and you don't have to start the jar yourself.
+
+
+
 
 ---
 
@@ -346,6 +565,68 @@ Look for the following output to confirm the changes:
 ```
 
 ---
+
+**I received the following error message after launching H2O in RStudio and using `h2o.init` - what should I do to resolve this error?**
+
+```
+> localH2O = h2o.init()
+Successfully connected to http://127.0.0.1:54321/
+ 
+ERROR: Unexpected HTTP Status code: 301 Moved Permanently (url = http://127.0.0.
+1:54321/3/Cloud?skip_ticks=true)
+ 
+Error in fromJSON(rv$payload) : unexpected character '<'
+Calls: h2o.init ... gsub -> .h2o.doSafeGET -> .h2o.doSafeREST -> fromJSON
+Execution halted 
+```
+
+This error is due to a version mismatch between the H2O package and the running H2O instance. Make sure you are using the latest version of both files by downloading H2O from the [downloads page](http://h2o.ai/download/) and installing the latest version and that you have removed any previous H2O R package versions by running: 
+
+```
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+```
+
+Make sure to install the dependencies for the H2O R package as well: 
+
+```
+if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
+if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
+if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
+if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
+if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
+if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+```
+
+
+Finally, install the latest version of the H2O package for R: 
+
+```
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/R")))
+library(h2o)
+localH2O = h2o.init()
+```
+
+---
+
+**I received the following error message after trying to run some code - what should I do?** 
+
+```
+> fit <- h2o.deeplearning(x=2:4, y=1, training_frame=train_hex)
+  |=========================================================================================================| 100%
+Error in model$training_metrics$MSE :
+  $ operator not defined for this S4 class
+In addition: Warning message:
+Not all shim outputs are fully supported, please see ?h2o.shim for more information
+```
+
+Remove the `h2o.shim(enable=TRUE)` line and try running the code again. Note that the `h2o.shim` is only a way to notify users of previous versions of H2O about changes to the H2O R package - it will not revise your code, but provides suggested replacements for deprecated commands and parameters. 
+
+
+---
+
 
 ##Sparkling Water
 
@@ -402,6 +683,11 @@ water.DException$DistributedException: from /10.23.36.177:54321; by class water.
 
 This error output displays if the input file is not present on all nodes. Because of the way that Sparkling Water distributes data, the input file is required on all nodes (including remote), not just the primary node. Make sure there is a copy of the input file on all the nodes, then try again. 
 
+---
+
+**Are there any drawbacks to using Sparkling Water compared to standalone H2O?**
+
+The version of H2O embedded in Sparkling Water is the same as the standalone version. 
 
 ---
 

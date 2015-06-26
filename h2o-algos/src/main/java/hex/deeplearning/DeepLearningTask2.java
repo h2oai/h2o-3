@@ -16,12 +16,13 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    * @param model_info Initial DeepLearningModelInfo (weights + biases)
    * @param sync_fraction Fraction of the training data to use for one SGD iteration
    */
-  public DeepLearningTask2(Key jobKey, Frame train, DeepLearningModelInfo model_info, float sync_fraction) {
+  public DeepLearningTask2(Key jobKey, Frame train, DeepLearningModelInfo model_info, float sync_fraction, int iteration) {
     assert(sync_fraction > 0);
     _jobKey = jobKey;
     _fr = train;
     _sharedmodel = model_info;
     _sync_fraction = sync_fraction;
+    _iteration = iteration;
   }
 
   /**
@@ -35,6 +36,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
   private DeepLearningModelInfo _sharedmodel;
   final private float _sync_fraction;
   private DeepLearningTask _res;
+  private final int _iteration;
 
   /**
    * Do the local computation: Perform one DeepLearningTask (with run_local=true) iteration.
@@ -45,7 +47,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
   @Override
   public void setupLocal() {
     super.setupLocal();
-    _res = new DeepLearningTask(_jobKey, _sharedmodel, _sync_fraction);
+    _res = new DeepLearningTask(_jobKey, _sharedmodel, _sync_fraction, _iteration);
     addToPendingCount(1);
     _res.setCompleter(this);
     _res.asyncExec(0, _fr, true /*run_local*/);

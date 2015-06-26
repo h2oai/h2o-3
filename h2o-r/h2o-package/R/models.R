@@ -47,6 +47,7 @@
     if( length(x_ignore) == 0L ) x_ignore <- ''
     return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
   } else {
+    x_ignore <- setdiff(cc, x)
     if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
     return(list(x=x,x_i=x_i,x_ignore=x_ignore))
   }
@@ -629,6 +630,44 @@ h2o.scoreHistory <- function(object, ...) {
 }
 
 #'
+#' Retrieve the respective weight matrix
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.weights <- function(object, matrix_id=1, ...){
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$weights[[matrix_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No weights for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
+#' Return the respective bias vector
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param vector_id An integer, ranging from 1 to number of layers + 1, that specifies the bias vector to return.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.biases <- function(object, vector_id=1, ...){
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$biases[[vector_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No biases for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
 #' Retrieve the Hit Ratios
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -913,6 +952,21 @@ h2o.totss <- function(object,valid=FALSE, ...) {
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
+
+#'
+#' Retrieve the centroid statistics
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed on (currently unimplemented)
+#' @export
+h2o.centroid_stats <- function(object, valid=FALSE, ...) {
+  model.parts <- .model.parts(object)
+  if( valid ) {
+    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+    else                          return( model.parts$vm@metrics$centroid_stats )
+  } else                          return( model.parts$tm@metrics$centroid_stats )
+}
 
 #'
 #' Retrieve the cluster sizes

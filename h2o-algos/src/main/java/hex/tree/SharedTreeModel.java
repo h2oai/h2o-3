@@ -56,9 +56,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      *  For GBM bernoulli, the initial prediction for 0 trees is
      *  p = 1/(1+exp(-f0))
      *
-     *  From this, the mse for 0 trees can be computed as follows:
+     *  From this, the mse for 0 trees (null model) can be computed as follows:
      *  mean((yi-p)^2)
-     *  This is what is stored in _scored_train[0]
      * */
     public double _init_f;
 
@@ -122,22 +121,28 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
+    return score0(data, preds, 1.0, 0.0);
+  }
+  @Override
+  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
     Arrays.fill(preds,0);
     for( int tidx=0; tidx<_output._treeKeys.length; tidx++ )
-      score0(data, preds, tidx);
+      score0(data, preds, tidx, weight, offset);
     return preds;
   }
   // Score per line per tree
-  public void score0(double data[], double preds[], int treeIdx) {
+  private void score0(double data[], double preds[], int treeIdx, double weight, double offset) {
     Key[] keys = _output._treeKeys[treeIdx];
-    for( int c=0; c<keys.length; c++ )
-      if( keys[c] != null ) {
+    for( int c=0; c<keys.length; c++ ) {
+      if (keys[c] != null) {
         double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
-        assert(!Double.isInfinite(pred));
+        assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
+    }
+    if (keys.length == 1) preds[0] += offset;
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
