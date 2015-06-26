@@ -918,7 +918,7 @@ class ASTAssign extends AST {
         if( id.isGlobalSet() ) {
           DKV.put(k, fr);
           e.lock(fr);
-//          if( tVec != null ) tVec.remove();
+          if( tVec != null ) tVec.remove();
         } else {
           // not a global set, push into transient set of Frames in the SymbolTable...
           e.put(k.toString(),fr);

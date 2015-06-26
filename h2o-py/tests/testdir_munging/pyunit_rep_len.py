@@ -10,7 +10,7 @@ def rep_len_check(ip,port):
 
     # data is single column (vec)
     vec = iris[0].rep_len(length_out=301)
-    assert len(vec) == 301, "Expected an H2OVec with 301 rows, but got {0} rows".format(len(vec))
+    assert vec.nrow() == 301, "Expected an H2OVec with 301 rows, but got {0} rows".format(vec.nrow())
     for r in range(len(vec)): assert vec[r] == vec[r % 150], "Expected {0}, but got {1}".format(vec[r % 150], vec[r])
 
     # data is frame

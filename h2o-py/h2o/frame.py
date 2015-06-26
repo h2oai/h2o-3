@@ -295,6 +295,7 @@ class H2OFrame:
     res = head.as_data_frame(False)[1:]
     print "First {} rows and first {} columns: ".format(nrows, ncols)
     h2o.H2ODisplay(res,colnames)
+    return head
 
   def tail(self, rows=10, cols=200, **kwargs):
     """
@@ -314,6 +315,7 @@ class H2OFrame:
     res = tail.as_data_frame(False)
     print "Last {} rows and first {} columns: ".format(nrows,ncols)
     h2o.H2ODisplay(res,["Row ID"]+colnames)
+    return tail
 
   def levels(self, col=None):
     """
@@ -322,7 +324,10 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    return [i for sub in h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame() if col is None else H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False) for i in sub][1:]   # one NASTY list comprehension, hoo-wow!
+    if self.ncol()==1:    levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
+    elif col is not None: levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+    else: levels=None
+    return None if levels is None or levels==[] else [i[0] for i in levels]
 
   def nlevels(self, col=None):
     """
@@ -341,7 +346,7 @@ class H2OFrame:
     :param level: The level at which the column will be set (a string)
     :return: An H2OFrame with all entries set to the desired level
     """
-    h2o.rapids(ExprNode("setLevel", self, level)._eager())
+    return H2OFrame(expr=ExprNode("setLevel", self, level))._frame()
 
   def setLevels(self, levels):
     """
@@ -355,6 +360,8 @@ class H2OFrame:
     :return: None
     """
     h2o.rapids(ExprNode("setDomain", self, levels)._eager())
+    self._update()
+    return self
 
   def setNames(self,names):
     """
@@ -364,6 +371,8 @@ class H2OFrame:
     :return: None. Rename the column names in this H2OFrame.
     """
     h2o.rapids(ExprNode("colnames=", self, range(self.ncol()), names)._eager())
+    self._update()
+    return self
 
   def describe(self):
     """
@@ -696,7 +705,7 @@ class H2OFrame:
     """
     :return: Whether or not the frame has any factor columns
     """
-    return H2OFrame(expr=ExprNode("anyfactor", self))
+    return H2OFrame(expr=ExprNode("any.factor", self))
 
   def transpose(self):
     """
@@ -724,8 +733,7 @@ class H2OFrame:
     """
     :return: a frame of the counts at each combination of factor levels
     """
-    if data2 is not None: return H2OFrame(expr=ExprNode("table", self, data2))
-    return H2OFrame(expr=ExprNode("table", self))
+    return H2OFrame(expr=ExprNode("table",self,data2))
 
   def sub(self, pattern, replacement, ignore_case=False):
     """
@@ -734,7 +742,7 @@ class H2OFrame:
 
     :return: H2OFrame
     """
-    return H2OFrame(ExprNode("sub",self,pattern,replacement,ignore_case))
+    return H2OFrame(expr=ExprNode("sub",self,pattern,replacement,ignore_case))
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """

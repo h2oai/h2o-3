@@ -422,10 +422,8 @@ def download_pojo(model,path=""):
   :param path:  An absolute path to the directory where POJO should be saved.
   :return: None
   """
-  model_id = model._key
-
-  java = H2OConnection.get( "Models.java/"+model_id )
-  file_path = path + "/" + model_id + ".java"
+  java = H2OConnection.get( "Models.java/"+model._id )
+  file_path = path + "/" + model._id + ".java"
   if path == "": print java.text
   else:
     with open(file_path, 'w') as f:

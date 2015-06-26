@@ -30,7 +30,7 @@ class ExprNode:
     elif isinstance(arg, (int, float)):           return "#{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, (unicode,str)):          return '"'+arg+'"'
     elif isinstance(arg, slice):                  return "(: #{} #{})".format(arg.start,"NaN" if math.isnan(arg.stop) else arg.stop-1)
-    elif isinstance(arg, list):                   return ("(slist \"" + "\" \"".join(arg) + "\")") if isinstance(arg[0], str) else ("(dlist #" + " #".join([str(i) for i in arg])+")")
+    elif isinstance(arg, list):                   return ("(slist \"" + "\" \"".join(arg) + "\")") if isinstance(arg[0], (str,unicode)) else ("(dlist #" + " #".join([str(i) for i in arg])+")")
     elif arg is None:                             return "()"
     raise ValueError("Unexpected arg type: " + str(type(arg)))
 

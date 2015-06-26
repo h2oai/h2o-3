@@ -15,10 +15,10 @@ def toupper_tolower_check(ip,port):
     # single column (vec)
     vec = frame["C5"]
     vec.toupper()
-    assert vec[2] == "IRIS-SETOSA", "Expected 'IRIS-SETOSA', but got {0}".format(vec[2])
+    assert vec[2,0] == "IRIS-SETOSA", "Expected 'IRIS-SETOSA', but got {0}".format(vec[2,0])
 
     vec.tolower()
-    assert vec[3] == "iris-setosa", "Expected 'iris-setosa', but got {0}".format(vec[3])
+    assert vec[3,0] == "iris-setosa", "Expected 'iris-setosa', but got {0}".format(vec[3,0])
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, toupper_tolower_check)

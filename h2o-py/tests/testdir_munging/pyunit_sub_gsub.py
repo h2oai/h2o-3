@@ -19,10 +19,10 @@ def sub_gsub_check(ip,port):
     # single column (vec)
     vec = frame["C5"]
     vec.sub("z", "s")
-    assert vec[2] == "Iris-setoza", "Expected 'Iris-setoza', but got {0}".format(vec[2])
+    assert vec[2,0] == "Iris-setoza", "Expected 'Iris-setoza', but got {0}".format(vec[2,0])
 
     vec.gsub("s", "z")
-    assert vec[3] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(vec[3])
+    assert vec[3,0] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(vec[3,0])
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, sub_gsub_check)
