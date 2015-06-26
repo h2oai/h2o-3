@@ -1193,6 +1193,7 @@ def sub(pattern, replacement, data, ignore_case=False): return data.sub(pattern=
 def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(pattern=pattern, replacement=replacement,
                                                                         ignore_case=ignore_case)
 def strsplit(data, pattern): return data.strsplit(pattern=pattern)
+def hist(data, breaks="Sturges", plot=True, **kwargs): return data.hist(breaks=breaks, plot=plot, **kwargs)
 
 def set_timezone(tz):
   """

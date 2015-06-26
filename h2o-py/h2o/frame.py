@@ -1190,6 +1190,65 @@ class H2OFrame:
     expr = "(= !{} (table %{} {}))".format(tmp_key,frame_keys[0],"%"+frame_keys[1] if data2 else "()")
     return H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
 
+  def hist(self, breaks="Sturges", plot=True, **kwargs):
+    """
+    Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR in computing bin width.
+    :param breaks: breaks Can be one of the following: A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott." A
+    single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width. Or,
+    A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+    :param plot: A logical value indicating whether or not a plot should be generated (default is TRUE).
+    :return: if plot is True, then return None, else, an H2OFrame with these columns: breaks, counts, mids_true, mids,
+    and density
+    """
+    if self._vecs is None or self._vecs == []:
+      raise ValueError("Frame Removed")
+    if breaks=="Sturges": breaks = "sturges"
+    if breaks=="Rice": breaks = "rice"
+    if breaks=="Doane": breaks = "doane"
+    if breaks=="FD": breaks = "fd"
+    if breaks=="Scott": breaks = "scott"
+
+    frame_keys = [self.send_frame()]
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (hist %{} {}))".format(tmp_key,frame_keys[0],"\""+breaks+"\"")
+    frame = H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+
+    total = frame["counts"].sum()
+    densities = [(frame["counts"][i]/total)*(1/(frame["breaks"][i]-frame["breaks"][i-1])) for i in range(1,len(frame["counts"]))]
+    densities.insert(0,float("nan"))
+    densities_frame = H2OFrame(python_obj=[[d] for d in densities])
+    densities_frame.setNames(["density"])
+    frame = h2o.cbind(frame, densities_frame)
+
+    if plot:
+      try:
+        imp.find_module('matplotlib')
+        import matplotlib
+        if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
+        import matplotlib.pyplot as plt
+      except ImportError:
+        print "matplotlib is required to make the histogram plot. Set `plot` to False, if a plot is not desired."
+        return
+
+      lower = float(frame["breaks"][1])
+      clist = h2o.as_list(frame["counts"], use_pandas=False)
+      clist.pop(0)
+      clist.pop(0)
+      mlist = h2o.as_list(frame["mids"], use_pandas=False)
+      mlist.pop(0)
+      mlist.pop(0)
+      counts = [float(c[0]) for c in clist]
+      counts.insert(0,0)
+      mids = [float(m[0]) for m in mlist]
+      mids.insert(0,lower)
+      plt.xlabel(self[0]._name)
+      plt.ylabel('Frequency')
+      plt.title('Histogram of {0}'.format(self[0]._name))
+      plt.bar(mids, counts)
+      if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
+
+    else: return frame
+
   def sub(self, pattern, replacement, ignore_case=False):
     """
     sub and gsub perform replacement of the first and all matches respectively.
