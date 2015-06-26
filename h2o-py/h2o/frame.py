@@ -227,11 +227,11 @@ class H2OFrame:
     self._eager()
     return self._col_names
 
-  def sd(self):
+  def sd(self, na_rm=False):
     """
     :return: Standard deviation of the H2OVec elements.
     """
-    return H2OFrame("sd", self)._scalar()
+    return H2OFrame(expr=ExprNode("sd", self,na_rm))._scalar()
 
   def names(self):
     """

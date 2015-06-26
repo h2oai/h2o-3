@@ -55,12 +55,12 @@ def download_pojo(ip,port):
   hdf = h2o.import_frame(path=h2o.locate("smalldata/jira/v-11.csv"))
   hdf["ds9"] = hdf["ds9"].asfactor()
 
-  hdf5 = h2o.H2OFrame(vecs=[hdf["ds5"]])
-  hdf6 = h2o.H2OFrame(vecs=[hdf["ds6"]])
-  hdf7 = h2o.H2OFrame(vecs=[hdf["ds7"]])
-  hdf8 = h2o.H2OFrame(vecs=[hdf["ds8"]])
-  hdf9 = h2o.H2OFrame(vecs=[hdf["ds9"]])
-  hdf10 = h2o.H2OFrame(vecs=[hdf["ds10"]])
+  hdf5 = hdf["ds5"]
+  hdf6 = hdf["ds6"]
+  hdf7 = hdf["ds7"]
+  hdf8 = hdf["ds8"]
+  hdf9 = hdf["ds9"]
+  hdf10 = hdf["ds10"]
 
   hdf5 = hdf5.as_date("%d/%m/%y %H:%M")
   hdf6 = hdf6.as_date("%d/%m/%Y %H:%M:%S")
