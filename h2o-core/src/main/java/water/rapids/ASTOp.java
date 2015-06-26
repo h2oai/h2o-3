@@ -3200,6 +3200,12 @@ class ASTSetColNames extends ASTUniPrefixOp {
     AST cols = E.parse();
     if( cols instanceof ASTSpan )          _idxs = ((ASTSpan)cols).toArray();
     else if( cols instanceof ASTLongList ) _idxs = ((ASTLongList)cols)._l;
+    else if( cols instanceof ASTDoubleList) {
+      double[] d = ((ASTDoubleList)cols)._d;
+      _idxs=new long[d.length];
+      int i=0;
+      for(double dd:d) _idxs[i++] = (long)dd;
+    }
     else if( cols instanceof ASTNum )      _idxs = new long[]{(long)((ASTNum) cols).dbl()};
     else throw new IllegalArgumentException("Bad AST: Expected a span, llist, or number for the column indices. Got: " + cols.getClass());
 

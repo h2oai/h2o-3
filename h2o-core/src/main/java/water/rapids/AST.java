@@ -899,11 +899,16 @@ class ASTAssign extends AST {
       }
 
       // RHS is a frame
-      if (e.isAry() || (id.isGlobalSet() && e.isNum())) {
+      if (e.isAry() || (id.isGlobalSet() && (e.isNum() || e.isStr()))) {
         Vec tVec=null;
-        Frame f = e.isAry()
-                ? e.popAry() // pop without lowering counts
-                : new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(e.popDbl(), 1)});
+        Frame f=null;
+        if(e.isAry()) f = e.popAry();
+        else if( e.isNum() ) f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(e.popDbl(),1)});
+        else if( e.isStr() ) {
+          String s = e.popStr();
+          if( s.equals("TRUE") ) f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(1,1)});
+          if( s.equals("FALSE")) f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(0,1)});
+        }
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
         if( id.isGlobalSet() ) vecs = f.deepCopy(null).vecs(); // for non-blocking put, see ASTGPut

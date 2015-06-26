@@ -127,7 +127,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   :param first_line_is_header: -1,0,1 if the first line is to be used as the header
   :return: An H2OFrame object
   """
-  if id is None: id = _py_tmp_key()
+  id = setup["destination_frame"]
   fr = H2OFrame()
   parsed = parse(setup, id, first_line_is_header)
   fr._nrows = parsed['rows']
@@ -382,6 +382,7 @@ def rapids(expr, id=None):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
+  if isinstance(expr, list): expr = ExprNode._collapse_sb(expr)
   expr = "(= !{} {})".format(id,expr) if id is not None else expr
   result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
   if result['error'] is not None:
@@ -802,7 +803,7 @@ def locate(path):
 
       next_tmp_dir = os.path.dirname(tmp_dir)
       if (next_tmp_dir == tmp_dir):
-          return None
+          raise ValueError("File not found: " + path)
 
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
