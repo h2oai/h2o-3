@@ -654,19 +654,19 @@ class H2OFrame:
     """
     :return: The minimum value of all frame entries
     """
-    return H2OFrame(expr=ExprNode("min", self))
+    return H2OFrame(expr=ExprNode("min", self))._scalar()
 
   def max(self):
     """
     :return: The maximum value of all frame entries
     """
-    return H2OFrame(expr=ExprNode("max", self))
+    return H2OFrame(expr=ExprNode("max", self))._scalar()
 
   def sum(self):
     """
     :return: The sum of all frame entries
     """
-    return H2OFrame(expr=ExprNode("sum", self))
+    return H2OFrame(expr=ExprNode("sum", self))._scalar()
 
   def mean(self,na_rm=False):
     """
