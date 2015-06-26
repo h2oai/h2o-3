@@ -113,6 +113,17 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void testCBind() {
+    String tree = "(cbind 1 2)";
+    checkTree(tree);
+
+    tree = "(cbind 1 a.hex 2)";
+    checkTree(tree);
+    
+    tree = "(cbind a.hex (cols a.hex 0) 2)";
+    checkTree(tree);
+    
+  }
 
   @Test public void testApply() {
     // Sum 

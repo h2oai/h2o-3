@@ -74,6 +74,7 @@ abstract public class AST extends Iced {
     init(new ASTRowSlice());
     init(new ASTRowSliceAssign());
     init(new ASTColNames());
+    init(new ASTCBind());
 
     init(new ASTApply());
 

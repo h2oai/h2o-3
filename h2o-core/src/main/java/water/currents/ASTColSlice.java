@@ -1,6 +1,7 @@
 package water.currents;
 
 import water.MRTask;
+import water.H2O;
 import water.fvec.*;
 
 /** Column slice */
@@ -24,6 +25,8 @@ class ASTColSlice extends ASTPrim {
 
     } else if( (asts[2] instanceof ASTStr) ) {
       int col = fr.find(asts[2].str());
+      if( col == -1 ) 
+        throw new IllegalArgumentException("No column named '"+asts[2].str()+"' in Frame");
       fr2.add(fr.names()[col], fr.vecs()[col]);
     } else
       throw new IllegalArgumentException("Column slicing requires a number-list as the last argument, but found a "+asts[2].getClass());
@@ -130,7 +133,7 @@ class ASTRowSliceAssign extends ASTPrim {
     }
 
     // Handle large case
-    throw water.H2O.unimpl();
+    throw H2O.unimpl();
   }
 
 
@@ -167,5 +170,54 @@ class ASTRowSliceAssign extends ASTPrim {
         }
       }
     }.doAll(dst);
+  }
+}
+
+/** cbind: bind columns together into a new frame */
+class ASTCBind extends ASTPrim {
+  @Override int nargs() { return -1; } // variable number of args
+  @Override String str() { return "cbind" ; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+
+    // Compute the variable args.  Find the common row count
+    Val vals[] = new Val[asts.length];
+    Vec vec = null;
+    int numCols = 0;
+    for( int i=1; i<asts.length; i++ ) {
+      vals[i] = stk.track(asts[i].exec(env));
+      if( vals[i].isFrame() ) {
+        numCols +=   vals[i].getFrame().numCols();
+        Vec anyvec = vals[i].getFrame().anyVec();
+        if( anyvec == null ) continue; // Ignore the empty frame
+        if( vec == null ) vec = anyvec;
+        else if( vec.length() != anyvec.length() ) 
+          throw new IllegalArgumentException("cbind frames must have all the same rows, found "+vec.length()+" and "+anyvec.length()+" rows.");
+        else if( !vec.checkCompatible(anyvec) )
+          throw H2O.unimpl();   // Bad layout, needs reshuffle
+      } else numCols++;         // Expand scalars into all rows, 1 column
+    }
+    boolean clean = false;
+    if( vec == null ) { vec = Vec.makeZero(1); clean = true; } // Default to length 1
+
+    // Populate the new Frame
+    Frame fr = new Frame();
+    for( int i=1; i<asts.length; i++ ) {
+      switch( vals[i].type() ) {
+      case Val.FRM:  
+        fr.add(vals[i].getFrame());
+        break;
+      case Val.FUN:  throw H2O.unimpl();
+      case Val.STR:  throw H2O.unimpl();
+      case Val.NUM:  
+        // Auto-expand scalars to fill every row
+        double d = vals[i].getNum();
+        fr.add(Double.toString(d),vec.makeCon(d));
+        break;
+      default: throw H2O.unimpl();
+      }
+    }
+    if( clean ) vec.remove();
+
+    return new ValFrame(fr);
   }
 }
