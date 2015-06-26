@@ -9,11 +9,11 @@ def interaction_check(ip,port):
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # add a couple of factor columns to iris
-    iris = h2o.cbind(iris, iris[4] == "Iris-setosa")
+    iris = iris.cbind(iris[4] == "Iris-setosa")
     iris[5] = iris[5].asfactor()
     iris[5].setName("C6")
 
-    iris = h2o.cbind(iris, iris[4] == "Iris-virginica")
+    iris = iris.cbind(iris[4] == "Iris-virginica")
     iris[6] = iris[6].asfactor()
     iris[6].setName("C7")
 

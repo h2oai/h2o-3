@@ -119,14 +119,13 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, _py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
+    self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]
     self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols)]
-    # set the rows
-    self._nrows = rows = parse['rows']
-    self._computed=True
+    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     thousands_sep = h2o.H2ODisplay.THOUSANDS
-    print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(rows), thousands_sep.format(len(cols)))
+    print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
 
   def _upload_raw_data(self, tmp_file_path, column_names):
     # file upload info is the normalized path to a local file
@@ -424,7 +423,7 @@ class H2OFrame:
     :param format: The date time format string
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("as.data",self,format))
+    return H2OFrame(expr=ExprNode("as.Date",self,format))
 
   def as_data_frame(self, use_pandas=True):
     """
@@ -502,8 +501,10 @@ class H2OFrame:
     elif isinstance(b, int): update_index=b
     lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
     rhs = c._frame() if isinstance(c,H2OFrame) else c
-    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,c._col_names[0]))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
+    col_name = b if isinstance(b, (str, unicode)) and update_index==self._ncols else c._col_names[0]
+    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
+    self._update()
 
   def __int__(self):   return int(self._scalar())
 
@@ -591,7 +592,7 @@ class H2OFrame:
     aggs = h2o.ExprNode("agg", *aggs)
     return H2OFrame(expr=ExprNode("GB", self,cols,aggs,order_by))._frame()
 
-  def impute(self,column,method,combine_method,by,inplace):
+  def impute(self,column,method="mean",combine_method="interpolate",by=None,inplace=True):
     """
     Impute a column in this H2OFrame.
 
@@ -602,6 +603,7 @@ class H2OFrame:
     :param inplace: Impute inplace?
     :return: the imputed frame.
     """
+    if isinstance(column, (str, unicode)): column = self._find_idx(column)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
   def merge(self, other, allLeft=False, allRite=False):
@@ -886,7 +888,7 @@ class H2OFrame:
     :param dig_lab: Number of digits following the decimal point to consider.
     :return: A factor column.
     """
-    return H2OFrame(expr=ExprNode("cut",breaks,labels,include_lowest,right,dig_lab))
+    return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
 
 
   # flow-coding result methods

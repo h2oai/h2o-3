@@ -13,7 +13,7 @@ def asnumeric(ip,port):
     assert h2oframe["cylinders"].isfactor(), "expected the column to be a factor"
 
     # H2OFrame case
-    h2oframe = h2o.asnumeric(h2oframe)
+    h2oframe = h2oframe.asnumeric()
     h2oframe['cylinders'] = h2oframe['cylinders'] - h2oframe['cylinders']
     h2oframe = h2oframe[h2oframe['cylinders'] == 0]
     assert h2oframe.nrow() == rows, "expected the same number of rows as before {0}, but got {1}".format(rows, h2oframe.nrow())
@@ -23,7 +23,7 @@ def asnumeric(ip,port):
     assert h2oframe["cylinders"].isfactor(), "expected the column to be a factor"
 
     # H2OVec case
-    h2oframe['cylinders'] = h2o.asnumeric(h2oframe['cylinders'])
+    h2oframe['cylinders'] = h2oframe['cylinders'].asnumeric()
     h2oframe['cylinders'] = h2oframe['cylinders'] - h2oframe['cylinders']
     h2oframe = h2oframe[h2oframe['cylinders'] == 0]
     assert h2oframe.nrow() == rows, "expected the same number of rows as before {0}, but got {1}".format(rows, h2oframe.nrow())

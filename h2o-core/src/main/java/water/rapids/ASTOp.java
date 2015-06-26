@@ -1305,20 +1305,30 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
 
     if( fr0!=null ) {
       if( fr0.numCols()==1 && fr0.numRows()==1 ) {
-        d0 = fr0.anyVec().at(0);
+        Vec v = fr0.anyVec();
+        if( v.isEnum() ) s0 = v.domain()[(int)v.at(0)];
+        else             d0 = v.at(0);
         fr0=null;
       }
     }
 
     if( fr1!=null ) {
       if( fr1.numCols()==1 && fr1.numRows()==1 ) {
-        d1= fr1.anyVec().at(0);
+        Vec v = fr1.anyVec();
+        if( v.isEnum() ) s1 = v.domain()[(int)v.at(0)];
+        else             d1 = v.at(0);
         fr1=null;
       }
     }
 
     // both were 1x1 frames on the stack...
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2, new ValNum(op(d0, d1))); return; }
+    if( fr0==null && fr1==null ) {
+      if( s0==null && s1==null ) env.poppush(2, new ValNum(op(d0, d1)));
+      if( s0!=null && s1==null ) env.poppush(2, new ValNum(Double.valueOf(op(s0, d1))));
+      if( s0==null && s1!=null ) env.poppush(2, new ValNum(Double.valueOf(op(d0, s1))));
+      if( s0!=null && s1!=null ) env.poppush(2, new ValNum(Double.valueOf(op(s0, s1))));
+      return;
+    }
 
     final boolean lf = fr0 != null;
     final boolean rf = fr1 != null;

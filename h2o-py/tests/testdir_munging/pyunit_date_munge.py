@@ -11,12 +11,10 @@ def refine_date_col(data, col, pattern):
   data["WeekDay"]   = data[col].dayOfWeek()
   data["HourOfDay"] = data[col].hour()
 
-  data.describe()   # HACK to force evaluation before the ifelse and cut... basically current execution scheme with Expr is way too restrictive and is going away soon. so we need hacks like this to circumvent type issues and the like
-
   # Create weekend and season cols
   # Spring = Mar, Apr, May. Summer = Jun, Jul, Aug. Autumn = Sep, Oct. Winter = Nov, Dec, Jan, Feb.
   # data["Weekend"] = [1 if x in ("Sun", "Sat") else 0 for x in data["WeekDay"]]
-  data["Weekend"] = h2o.ifelse(data["WeekDay"] == "Sun" or data["WeekDay"] == "Sat", 1, 0)[0]
+  data["Weekend"] = h2o.ifelse(data["WeekDay"] == "Sun" | data["WeekDay"] == "Sat", 1, 0)[0]
   data["Season"]  = data["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
 
 
