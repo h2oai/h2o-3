@@ -34,7 +34,7 @@ def _check_frame(x,y,response):
   if not isinstance(x,H2OFrame):
     if not isinstance(x,list): raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
   if y is not None and not isinstance(y,H2OFrame): raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))
-  x[response._col_names[0]] = y
+  if y is not None: x[response._col_names[0]] = y
   return x
 
 # Build an H2O model
