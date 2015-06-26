@@ -1,6 +1,5 @@
 package hex;
 
-import static hex.ModelMetricsSupervised.weightedSigma;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
@@ -620,7 +619,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
     if (computeMetrics)
-      bs._mb.makeModelMetrics(this, fr, isSupervised() ? weightedSigma(this,adaptFrm) : Double.NaN);
+      bs._mb.makeModelMetrics(this, fr);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
   }
 

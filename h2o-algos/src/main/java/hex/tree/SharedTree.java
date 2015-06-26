@@ -490,6 +490,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
   }
 
+  //FIXME: Use weights
   double initial_MSE( Vec train, Vec test ) {
     if( train.isEnum() ) {
       // Guess the class of the most populous class; call the fraction of those
