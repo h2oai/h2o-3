@@ -105,7 +105,7 @@
 #'
 #' # now make a prediction
 #' predictions <- h2o.predict(iris.dl, iris.hex)
-#' 
+#'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",

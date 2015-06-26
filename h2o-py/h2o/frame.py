@@ -681,13 +681,13 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("median", self))._scalar()
 
-  def var(self,na_rm=False,use="everything"):
+  def var(self,y=None,na_rm=False,use="everything"):
     """
     :param na_rm: True or False to remove NAs from computation.
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
-    return H2OFrame(expr=ExprNode("var", self,na_rm,use))
+    return H2OFrame(expr=ExprNode("var", self,y,na_rm,use))
 
   def asfactor(self):
     """
@@ -705,7 +705,7 @@ class H2OFrame:
     """
     :return: Whether or not the frame has any factor columns
     """
-    return H2OFrame(expr=ExprNode("any.factor", self))
+    return H2OFrame(expr=ExprNode("any.factor", self))._scalar()
 
   def transpose(self):
     """
