@@ -34,9 +34,17 @@ public class FileUtils {
   }
 
   public static URI getURI(String path) {
-    if (path.startsWith("/") || path.startsWith("./"))
-      path = "file://" + path;
-    return URI.create(path);
+    File[] roots = File.listRoots();
+    if (path.startsWith("./")) { // It is relative path
+      return new File(path).toURI();
+    } else {
+      for (File root : roots) { // It is local absolute path
+        if (path.startsWith(root.getAbsolutePath())) {
+          return new File(path).toURI();
+        }
+      }
+      return URI.create(path);
+    }
   }
 
   public static boolean delete(File file) {

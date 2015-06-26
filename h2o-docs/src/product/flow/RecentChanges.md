@@ -2,11 +2,49 @@
 
 ##H2O
 
-###Shannon (3.0.0.24) - 6/25/15
+###Shannon (3.0.0.25) - 6/25/15
 
 ####New Features
 
 The following changes represent features that have been added since the previous release:
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####API 
+
+- [PUBDEV-1452](https://0xdata.atlassian.net/browse/PUBDEV-1452): branch 3.0.0.2 to REGRESSION_REST_API_3 and cherry-pick the /99/Rapids changes to it
+
+#####Web UI
+
+- [PUBDEV-1545](https://0xdata.atlassian.net/browse/PUBDEV-1545): Flow => Build model => ignored columns table => should have column width resizing based on column names width => looks odd if column names are short
+- [PUBDEV-1546](https://0xdata.atlassian.net/browse/PUBDEV-1546): Flow : Build model => Search for 1 column => select it  => build model shows list of columns instead of 1 column
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+#####Algorithms
+
+- [PUBDEV-1487](https://0xdata.atlassian.net/browse/PUBDEV-1487): gbm weights: give different terminal node predictions than R for attached data
+- [GitHub](https://github.com/h2oai/h2o-3/commit/f17dc5e033ffb0ebd7e8fe16f37bca24aec197a4): Fix offset for DL.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/f1547e6a0497519646358bc39c73cf25c7935919): Gracefully handle 0 weight for GBM.
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b9bf679f27baec53cd5e5a46202b4e58cc0108f8): Fix R wrapper for DL for weights/offset.
+
+#####Web UI
+
+- [PUBDEV-1528](https://0xdata.atlassian.net/browse/PUBDEV-1528): Flow model builder: the na filter does not select all ignored columns; just the first 100.
+
+
+---
+
+###Shannon (3.0.0.24) - 6/25/15
+
+####New Features
 
 #####Algorithms
 
@@ -26,7 +64,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -42,7 +79,6 @@ The following changes are improvements to existing features (which includes chan
 
 ####Bug Fixes 
 
-The following changes are to resolve incorrect software behavior:
 
 
 #####Algorithms
