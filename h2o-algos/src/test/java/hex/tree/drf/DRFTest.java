@@ -655,7 +655,7 @@ public class DRFTest extends TestUtil {
       assertEquals(0.07692307692307693, mse, 1e-8);
 
       double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
-      assertEquals(0.7142857142857142, r2, 1e-6);
+      assertEquals(0.6904761904761905, r2, 1e-6);
 
       double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
       assertEquals(2.656828953454668, ll, 1e-6);
@@ -699,7 +699,51 @@ public class DRFTest extends TestUtil {
       assertEquals(0.07692307692307693, mse, 1e-8); //Note: better results than non-shuffled
 
       double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
-      assertEquals(0.7142857142857142, r2, 1e-6);
+      assertEquals(0.6904761904761905, r2, 1e-6);
+
+      double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
+      assertEquals(2.656828953454668, ll, 1e-6);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testRowWeightsTwo() {
+    Frame tfr = null, vfr = null;
+    DRFModel drf = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_twos.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._seed = 234;
+      parms._min_rows = 1;
+      parms._max_depth = 2;
+      parms._ntrees = 3;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      drf = job.trainModel().get();
+
+      drf.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
+      assertEquals(1.0, mm.auc()._auc, 1e-8);
+
+      double mse = drf._output._training_metrics.mse();
+      assertEquals(0.07692307692307693, mse, 1e-8); //Note: better results than non-shuffled
+
+      double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
+      assertEquals(0.6904761904761905, r2, 1e-6);
 
       double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
       assertEquals(2.656828953454668, ll, 1e-6);
@@ -742,7 +786,7 @@ public class DRFTest extends TestUtil {
       assertEquals(0.11538629999502548, mse, 1e-8); //different rows are sampled -> results differ from unshuffled data
 
       double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
-      assertEquals(0.5499934300194007, r2, 1e-6);
+      assertEquals(0.5124928825210173, r2, 1e-6);
 
       double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
       assertEquals(0.31942928561508804, ll, 1e-6);
@@ -778,18 +822,23 @@ public class DRFTest extends TestUtil {
       DRF job = new DRF(parms);
       drf = job.trainModel().get();
 
+      // OOB
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
+      assertEquals(0.9, mm.auc()._auc, 1e-8);
+      assertEquals(0.09090909090909091, mm.mse(), 1e-8);
+      assertEquals(0.6333333333333333, mm.r2(), 1e-6);
+      assertEquals(3.1398887631736985, mm.logloss(), 1e-6);
+
+
+      // test set scoring (on the same dataset, but without normalizing the weights)
       drf.score(parms.train());
-      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(1.0, mm.auc()._auc, 1e-8);
+      hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
 
-      double mse = drf._output._training_metrics.mse();
-      assertEquals(0.09090909090909091, mse, 1e-8); //different than above - different row sampling
-
-      double r2 = ((ModelMetricsBinomial)drf._output._training_metrics).r2();
-      assertEquals(0.6666666666666666, r2, 1e-6);
-
-      double ll = ((ModelMetricsBinomial)drf._output._training_metrics)._logloss;
-      assertEquals(3.1398887631736985, ll, 1e-6);
+      // Non-OOB
+      assertEquals(1, mm2.auc()._auc, 1e-8);
+      assertEquals(0.006172839506172841, mm2.mse(), 1e-8);
+      assertEquals(0.9753086419753086, mm2.r2(), 1e-8);
+      assertEquals(0.02252583933934247, mm2.logloss(), 1e-8);
 
       job.remove();
     } finally {

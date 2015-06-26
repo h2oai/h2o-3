@@ -145,7 +145,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public double _wYY; // (Weighted) sum of the squared response
 
     public  double weightedSigma() {
-      return _wcount <= 1 ? 0 : Math.sqrt(1./(_wcount-1.)*_wYY-(1./(_wcount-1.)/_wcount*_wY*_wY));
+//      return _wcount <= 1 ? 0 : Math.sqrt(_wYY/(_wcount-1.) - (_wY*_wY)/(_wcount*(_wcount-1.)));
+      return _wcount <= 1 ? 0 : Math.sqrt(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount));
     }
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
