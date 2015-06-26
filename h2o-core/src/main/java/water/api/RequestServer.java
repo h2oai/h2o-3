@@ -14,8 +14,8 @@ import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -68,8 +68,8 @@ public class RequestServer extends NanoHTTPD {
 
   // An array of regexs-over-URLs and handling Methods.
   // The list is searched in-order, first match gets dispatched.
-  private static final LinkedHashMap<Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
-  private static final LinkedHashMap<Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
+  private static final LinkedHashMap<java.util.regex.Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
+  private static final LinkedHashMap<java.util.regex.Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
   public static final int numRoutes() { return _routes.size(); }
   public static final Collection<Route> routes() { return _routes.values(); }
 
@@ -380,7 +380,7 @@ public class RequestServer extends NanoHTTPD {
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
     Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
     Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params, handler_factory);
-    _routes.put(uri_pattern, route);
+    _routes.put(uri_pattern.pattern(), route);
     return route;
   }
 
@@ -425,7 +425,7 @@ public class RequestServer extends NanoHTTPD {
       String fallback_route_uri = "/" + i + "/" + route_m.group(2);
       Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
       Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params, fallback._handler_factory);
-      _fallbacks.put(fallback_route_pattern, generated);
+      _fallbacks.put(fallback_route_pattern.pattern(), generated);
     }
 
     // Better be there in the _fallbacks cache now!
@@ -608,7 +608,7 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        logged = maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
+        logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms, header);
         if (logged) GAUtils.logRequest(uri, header);
         Schema s = handle(type, route, version, parms);
         PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
@@ -855,13 +855,13 @@ public class RequestServer extends NanoHTTPD {
     }
     arl.add(new MenuItem(base_url, name));
     */
-    return route._url_pattern.pattern();
+    return route._url_pattern.namedPattern();
   }
 
   // Return URLs for things that want to appear Frame-inspection page
   static String[] frameChoices( int version, Frame fr ) {
     ArrayList<String> al = new ArrayList<>();
-    for( Pattern p : _routes.keySet() ) {
+    for( java.util.regex.Pattern p : _routes.keySet() ) {
       try {
         Method meth = _routes.get(p)._handler_method;
         Class clz0 = meth.getDeclaringClass();

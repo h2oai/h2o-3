@@ -6,13 +6,15 @@ import water.fvec.Chunk;
 public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
   protected final int _ncols;
   protected final int _nclass;
+  protected final int _skip;
   protected final Key[][] _treeKeys;
   protected transient CompressedTree[][] _trees;
 
-  public DTreeScorer(int ncols, int nclass, Key[][] treeKeys) {
+  public DTreeScorer(int ncols, int nclass, int skip, Key[][] treeKeys) {
     _ncols = ncols;
     _nclass = nclass;
     _treeKeys = treeKeys;
+    _skip = skip;
   }
   protected int ntrees() { return _trees.length; }
 
@@ -29,8 +31,8 @@ public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
     }
   }
 
-  public final Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
-  public final Chunk chk_tree(Chunk chks[], int c) { return chks[_ncols+1+c]; }
+  public final Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass+_skip]; }
+  public final Chunk chk_tree(Chunk chks[], int c) { return chks[_ncols+1+c+_skip]; }
   public final Chunk chk_resp( Chunk chks[] ) { return chks[_ncols]; }
 
   protected void score0(double data[], double preds[], CompressedTree[] ts) { scoreTree(data, preds, ts); }

@@ -2,7 +2,6 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
@@ -37,16 +36,18 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _sumsqe += w*err*err;       // Squared error
       assert !Double.isNaN(_sumsqe);
       _count++;
-      _wsum += w;
+      _wcount += w;
+      _wY += w*yact[0];
+      _wYY += w*yact[0]*yact[0];
       return ds;                // Flow coding
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      double mse = _sumsqe / _wsum;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, sigma));
+    public ModelMetrics makeModelMetrics( Model m, Frame f) {
+      double mse = _sumsqe / _wcount;
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma()));
     }
 
-    public String toString() {return " mse = " + _sumsqe / _wsum;}
+    public String toString() {return " mse = " + _sumsqe / _wcount;}
   }
 }

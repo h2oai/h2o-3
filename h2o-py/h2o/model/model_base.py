@@ -323,7 +323,7 @@ class ModelBase(object):
     tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
     if tm is None: return None
     tm = tm._metric_json
-    return tm.auc()
+    return tm["AUC"]
 
   def aic(self, train=False, valid=False):
     """

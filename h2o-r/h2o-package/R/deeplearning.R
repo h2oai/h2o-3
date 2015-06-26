@@ -187,11 +187,11 @@ h2o.deeplearning <- function(x, y, training_frame,
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
-  colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
+  args <- .verify_dataxy(training_frame, x, y, autoencoder)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  parms$response_column <- colargs$y
-  parms$ignored_columns <- colargs$x_ignore
+  parms$response_column <- args$y
+  parms$ignored_columns <- args$x_ignore
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(overwrite_with_best_model))

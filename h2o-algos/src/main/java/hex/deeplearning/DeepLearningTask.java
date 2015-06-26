@@ -289,8 +289,11 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           }
         } else {
           ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
-          if (offset > 0)
-            neurons[neurons.length-1]._a.add(0, (float)offset);
+          if (offset > 0) {
+            double mul = minfo.data_info()._normRespMul[0];
+            double sub = minfo.data_info()._normRespSub[0];
+            neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
+          }
           if (training) {
             for (int i = 1; i < neurons.length - 1; i++)
               Arrays.fill(neurons[i]._e.raw(), 0);

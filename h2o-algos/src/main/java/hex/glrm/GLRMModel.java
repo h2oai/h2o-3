@@ -232,7 +232,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
 
       @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+      public ModelMetrics makeModelMetrics(Model m, Frame f) {
         return m._output.addModelMetrics(new ModelMetricsGLRM(m, f));
       }
     }
