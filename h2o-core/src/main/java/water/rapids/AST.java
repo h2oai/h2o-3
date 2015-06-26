@@ -913,7 +913,7 @@ class ASTAssign extends AST {
         if( id.isGlobalSet() ) {
           DKV.put(k, fr);
           e.lock(fr);
-          if( tVec != null ) tVec.remove();
+//          if( tVec != null ) tVec.remove();
         } else {
           // not a global set, push into transient set of Frames in the SymbolTable...
           e.put(k.toString(),fr);
@@ -1060,7 +1060,7 @@ class ASTAssign extends AST {
         // convert constant into a whole vec
         if (e.isNum()) rhs_ary = new Frame(lhs_ary.anyVec().makeCon(e.popDbl()));
         else if (e.isStr()) rhs_ary = new Frame(lhs_ary.anyVec().makeZero(new String[]{e.popStr()}));
-        else if (e.isAry()) rhs_ary = e.popAry().deepCopy((tKey=Key.make()).toString());
+        else if (e.isAry()) rhs_ary = e.popAry(); //.deepCopy(null);
         else throw new IllegalArgumentException("Bad RHS on the stack: " + e.peekType() + " : " + e.toString());
 
         long[] cs = (long[]) cols;
@@ -1068,23 +1068,25 @@ class ASTAssign extends AST {
           throw new IllegalArgumentException("Can only assign to a matching set of columns; trying to assign " + rhs_ary.numCols() + " cols over " + cs.length + " cols");
 
         // Replace the LHS cols with the RHS cols
-        Vec rvecs[] = rhs_ary.vecs();
+        Vec rvecs[] = rhs_ary.deepCopy((tKey=Key.make()).toString()).vecs();
         Futures fs = new Futures();
         for (int i = 0; i < cs.length; i++) {
           int cidx = (int) cs[i];
-          Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
+          Vec rv = rvecs[i];
           e.addRef(rv);
           if (cidx == lhs_ary.numCols()) {
             if (!rv.group().equals(lhs_ary.anyVec().group())) {
-              e.subRef(rv);
+              Vec rvOld = rv;
               rv = lhs_ary.anyVec().align(rv);
+              e.subRef(rvOld);
               e.addRef(rv);
             }
             lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
           } else {
             if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
-              e.subRef(rv);
-              rv = lhs_ary.anyVec().align(rv);
+              Vec rvOld = rv;
+              rv = lhs_ary.anyVec().align(rv); // creates a new vec
+              e.subRef(rvOld); // should delete it now...
               e.addRef(rv);
             }
             Vec vv = lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
