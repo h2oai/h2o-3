@@ -237,7 +237,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           double resp = wrks.atd(row);
           double w = weight.atd(row);
-          assert (w > 0);
+          if (w == 0) continue;
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
           ssqs[b] += w*resp*resp;
