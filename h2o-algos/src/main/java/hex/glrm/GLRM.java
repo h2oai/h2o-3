@@ -40,6 +40,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Convergence tolerance
   private final double TOLERANCE = 1e-6;
 
+  // Maximum number of columns when categoricals expanded
+  private final int MAX_COLS_EXPANDED = 5000;
+
   // Number of columns in training set (p)
   private transient int _ncolA;
   private transient int _ncolY;    // With categoricals expanded into 0/1 indicator cols
@@ -52,7 +55,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   @Override public Job<GLRMModel> trainModel() {
-    return start(new GLRMDriver(), _parms._max_iterations);
+    return start(new GLRMDriver(), _parms._max_iterations+1);
   }
 
   @Override public ModelCategory[] can_build() {
@@ -87,7 +90,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
     // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
-    int k_min = (int) Math.min(_train.numCols(), _train.numRows());
+    _ncolY = _train.numColsExp(true, false);
+    int k_min = (int) Math.min(_ncolY, _train.numRows());
+    if (_ncolY > MAX_COLS_EXPANDED)
+      warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm may be slow.");
+
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
       if (_parms._init != GLRM.Initialization.User)
@@ -253,7 +260,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats, dinfo._nums);
         centers_exp = expandCats(centers, dinfo);
       }
-      _ncolY = centers_exp[0].length;
+      assert centers_exp[0].length == _ncolY;
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
       double frob = frobenius2(centers_exp);
@@ -367,7 +374,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // The model to be built
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
-        model.delete_and_lock(_key);
+        model.delete_and_lock(self());
 
         // 0) a) Initialize X matrix to random numbers
         // Jam A and X into a single frame for distributed computation
@@ -395,10 +402,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
         // Compute initial objective function
-        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, true).doAll(dinfo._adaptedFrame);
+        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
+        model.update(_key); // Update model in K/V store
+        update(1);          // One unit of work
 
         boolean overwriteX = false;
         double step = _parms._init_step_size;   // Initial step size
@@ -422,7 +431,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // step = 1.0 / model._output._iterations;   // Step size \alpha_k = 1/iters
           if(model._output._avg_change_obj > 0) {   // Objective decreased this iteration
-            yt = ytnew;
+            model._output._archetypes = yt = ytnew;
             model._output._objective = obj_new;
             step *= 1.05;
             steps_in_row = Math.max(1, steps_in_row+1);
@@ -431,9 +440,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             step = step / Math.max(1.5, -steps_in_row);
             steps_in_row = Math.min(0, steps_in_row-1);
             overwriteX = false;
-            // Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective + "; reducing step size to " + step);
+            Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective + "; reducing step size to " + step);
           }
-          model.update(_key); // Update model in K/V store
+          model._output._step_size = step;
+          model.update(self()); // Update model in K/V store
           update(1);          // One unit of work
         }
 
@@ -446,14 +456,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;
-
-        model._output._archetypes = yt;
-        model._output._step_size = step;
         if (_parms._recover_pca) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
         // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);
         // tsk.outputFrame(_parms._destination_key, _train._names, null);
+        model.update(self());
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);
