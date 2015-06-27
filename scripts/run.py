@@ -613,7 +613,7 @@ class Test:
                    self.test_name,
                    self.ip + ":" + str(self.port), str(g_phantomjs_to)]
             if (g_include_jacoco):
-                cmd.append(10800) # Give the task additional time before timing out
+                cmd.append("10800") # Give the task additional time before timing out
         else:
             print("")
             print("ERROR: Test runner failure with test: " + self.test_name)
