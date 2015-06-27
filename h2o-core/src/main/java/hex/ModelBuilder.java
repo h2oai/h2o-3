@@ -36,8 +36,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
-  protected boolean _deleteWeights;
-
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
@@ -238,14 +236,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_weights_columns","Weights must be >= 0");
         if(w.max() == 0)
           error("_weights_columns","Max. weight must be > 0");
-//        double scale = new MeanWeight().doAll(w).meanWeight();
-//        Vec norm_w = w;
-//        if (scale != 1) {
-//          Log.info("Normalizing all (non-zero) weights in the training frame to have mean 1.");
-//          norm_w = w.makeZero();
-//          new ScaleWeight(1./scale).doAll(w, norm_w);
-//          _deleteWeights = true;
-//        }
         _train.add(_parms._weights_column, w);
         ++res;
       }
@@ -278,13 +268,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     return res;
   }
-
-
-//  @Override
-//  protected void cleanup() {
-//    if (_deleteWeights && _parms._weights_column != null && _train.vec(_parms._weights_column) != null)
-//      _train.vec(_parms._weights_column).remove();
-//  }
 
   protected  boolean ignoreStringColumns(){return true;}
 
@@ -553,38 +536,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
-  }
-
-  static class MeanWeight extends MRTask<MeanWeight> {
-    public double meanWeight() {
-      return _sum/_count;
-    }
-    double _sum;
-    long _count;
-    @Override
-    public void map(Chunk c) {
-      for (int i=0; i<c._len; ++i)
-        if (c.atd(i) > 0) {
-          _count++;
-          _sum+=c.atd(i);
-        }
-    }
-
-    public void reduce(MeanWeight mrt) {
-      _count += mrt._count;
-      _sum += mrt._sum;
-    }
-  }
-
-  static class ScaleWeight extends MRTask<ScaleWeight> {
-    public ScaleWeight(double scale) {
-      _scale = scale;
-    }
-    final double _scale;
-    @Override public void map(Chunk in, Chunk out) {
-      for (int i=0; i<in._len; ++i)
-        out.set(i, in.atd(i) * _scale);
-    }
   }
 
 }
