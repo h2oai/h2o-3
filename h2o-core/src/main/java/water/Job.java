@@ -179,7 +179,6 @@ public class Job<T extends Keyed> extends Keyed {
   protected Key createProgressKey() { return Key.make(); }
 
   protected boolean deleteProgressKey() { return true; }
-  protected void cleanup() { return; }
 
   /** Blocks and get result of this job.
    * <p>
@@ -256,7 +255,6 @@ public class Job<T extends Keyed> extends Keyed {
     // Remove on cancel/fail/done, only used whilst Job is Running
     if (deleteProgressKey())
       DKV.remove(_progressKey);
-    cleanup();
   }
 
   /**
