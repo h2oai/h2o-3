@@ -893,8 +893,9 @@ class ASTAssign extends AST {
       ASTId id = (ASTId)this._asts[0];
       assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
-      if( e.isNum() && id.isLocalSet() ) {
-        e.put(id.value(),Env.NUM,String.valueOf(e.popDbl()));
+      if( (e.isNum() || e.isStr()) && id.isLocalSet() ) {
+        if( e.isNum() ) e.put(id.value(),Env.NUM,String.valueOf(e.popDbl()));
+        else            e.put(id.value(),Env.STR,e.popStr());
         return;
       }
 
@@ -906,8 +907,16 @@ class ASTAssign extends AST {
         else if( e.isNum() ) f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(e.popDbl(),1)});
         else if( e.isStr() ) {
           String s = e.popStr();
-          if( s.equals("TRUE") ) f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(1,1)});
-          if( s.equals("FALSE")) f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec=Vec.makeCon(0,1)});
+          Vec v;
+          if( s.equals("TRUE") || s.equals("FALSE") ) {
+            v = Vec.makeCon(s.equals("TRUE")?1:0,1);
+            v.setDomain(new String[]{"FALSE","TRUE"});
+          } else {
+            v = Vec.makeCon(0,1);
+            v.setDomain(new String[]{s});
+          }
+          tVec = v;
+          f = new Frame(null, new String[]{"C1"}, new Vec[]{tVec});;
         }
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();

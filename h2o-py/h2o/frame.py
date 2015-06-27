@@ -962,6 +962,8 @@ class H2OFrame:
   def _scalar(self):
     res = self.as_data_frame(False)
     res = res[1][0]
+    if res == "TRUE": return True
+    if res == "FALSE":return False
     try:    return float(res)
     except: return res
 
