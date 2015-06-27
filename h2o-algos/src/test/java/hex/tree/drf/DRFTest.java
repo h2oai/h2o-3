@@ -626,6 +626,11 @@ public class DRFTest extends TestUtil {
     Scope.exit();
   }
 
+  static double _AUC = 0.9285714285714285;
+  static double _MSE = 0.07692307692307693;
+  static double _R2 = 0.6904761904761905;
+  static double _LogLoss = 2.656828953454668;
+
   @Test
   public void testNoRowWeights() {
     Frame tfr = null, vfr = null;
@@ -649,10 +654,10 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.9285714285714285, mm.auc()._auc, 1e-8);
-      assertEquals(0.07692307692307693, mm.mse(), 1e-8);
-      assertEquals(0.6904761904761905, mm.r2(), 1e-6);
-      assertEquals(2.656828953454668, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -687,10 +692,10 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.9285714285714285, mm.auc()._auc, 1e-8);
-      assertEquals(0.07692307692307693, mm.mse(), 1e-8);
-      assertEquals(0.6904761904761905, mm.r2(), 1e-6);
-      assertEquals(2.656828953454668, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -725,10 +730,10 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.9285714285714285, mm.auc()._auc, 1e-8);
-      assertEquals(0.07692307692307693, mm.mse(), 1e-8);
-      assertEquals(0.6904761904761905, mm.r2(), 1e-6);
-      assertEquals(2.656828953454668, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
