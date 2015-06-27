@@ -111,9 +111,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeights() ? _train.vec(_parms._weights_column).mean() : 1);
-      if (sumWeights < _parms._min_rows ) // Need at least min_rows weighted rows to split even once
+      if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
       error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
-              + ": must have at least " + sumWeights + " (weighted) rows.");
+              + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
     if( _train != null )
       _ncols = _train.numCols()-1-(_parms._weights_column!=null?1:0)-(_parms._offset_column!=null?1:0);
