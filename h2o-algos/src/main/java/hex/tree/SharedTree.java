@@ -467,7 +467,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
                   + "): " + _nclass + " classes.");
         }
-        Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }
       _timeLastScoreEnd = System.currentTimeMillis();
     }
