@@ -1,6 +1,7 @@
 package water.currents;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 
 import water.*;
@@ -107,7 +108,7 @@ public class Env {
       if( value.isFrame() ) {
         Frame fr = value.get();
         assert fr._key.toString().equals(id);
-        for( Vec vec : fr.vecs() ) _globals.add(vec);
+        _globals.addAll(Arrays.asList(fr.vecs()));
         return new ValFrame(fr);
       }
       // Only understand Frames right now
