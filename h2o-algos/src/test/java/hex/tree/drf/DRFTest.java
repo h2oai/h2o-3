@@ -744,6 +744,45 @@ public class DRFTest extends TestUtil {
     }
   }
 
+  @Ignore
+  @Test
+  public void testRowWeightsTiny() {
+    Frame tfr = null, vfr = null;
+    DRFModel drf = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_tiny.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._seed = 234;
+      parms._min_rows = 0.01242;
+      parms._max_depth = 2;
+      parms._ntrees = 3;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      drf = job.trainModel().get();
+
+      // OOB
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
+
   @Test
   public void testNoRowWeightsShuffled() {
     Frame tfr = null, vfr = null;
