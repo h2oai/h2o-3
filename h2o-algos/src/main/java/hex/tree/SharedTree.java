@@ -108,9 +108,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_cats <= 1) error ("_nbins_cats", "_nbins_cats must be > 1.");
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "_nbins_cats must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
-    if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
-    if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
-      error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows + " , number of rows: " + _train.numRows() + " < 2*" + _parms._min_rows);
+    if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    if (_train != null) {
+      double sumWeights = _train.numRows() * (hasWeights() ? _train.vec(_parms._weights_column).mean() : 1);
+      if (sumWeights < _parms._min_rows ) // Need at least min_rows weighted rows to split even once
+      error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
+              + ": must have at least " + sumWeights + " (weighted) rows.");
+    }
     if( _train != null )
       _ncols = _train.numCols()-1-(_parms._weights_column!=null?1:0)-(_parms._offset_column!=null?1:0);
   }

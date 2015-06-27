@@ -28,7 +28,7 @@ public class DTree extends Iced {
   final char _nbins;     // Numerical columns: Max number of bins to split over
   final char _nbins_cats; // Categorical columns: Max number of bins to split over
   final char _nclass;    // #classes, or 1 for regression trees
-  public final int _min_rows;   // Fewest allowed rows in any split
+  public final double _min_rows;   // Fewest allowed (weighted) rows in any split
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   public int _len;       // Resizable array
@@ -36,8 +36,8 @@ public class DTree extends Iced {
   public int _leaves;
   public int _depth;
 
-  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, int min_rows ) { this(names,ncols,nbins,nbins_cats,nclass,min_rows,-1); }
-  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, int min_rows, long seed ) {
+  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, double min_rows ) { this(names,ncols,nbins,nbins_cats,nclass,min_rows,-1); }
+  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, long seed ) {
     _names = names; _ncols = ncols; _nbins=nbins; _nbins_cats=nbins_cats; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed;
   }
 
@@ -157,7 +157,7 @@ public class DTree extends Iced {
     // has constant data, or was not being tracked by a prior DHistogram
     // (for being constant data from a prior split), then that column will be
     // null in the returned array.
-    public DHistogram[] split(int way, char nbins, char nbins_cats, int min_rows, DHistogram hs[], float splat) {
+    public DHistogram[] split(int way, char nbins, char nbins_cats, double min_rows, DHistogram hs[], float splat) {
       double n = way==0 ? _n0 : _n1;
       if( n < min_rows || n <= 1 ) return null; // Too few elements
       double se = way==0 ? _se0 : _se1;
@@ -366,7 +366,7 @@ public class DTree extends Iced {
       _splat = (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1; // Split-at value (-1 for group-wise splits)
       final char nbins   = _tree._nbins;
       final char nbins_cats = _tree._nbins_cats;
-      final int min_rows = _tree._min_rows;
+      final double min_rows = _tree._min_rows;
 
       for( int b=0; b<2; b++ ) { // For all split-points
         // Setup for children splits
