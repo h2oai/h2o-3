@@ -131,8 +131,8 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
 
     // Return two results (missing CBIND to turn on this test)
-    //tree = "(apply a.hex 2 {x . (cbind (sum x FALSE) (sum (* x x) FALSE))})";
-    //checkTree(tree);
+    tree = "(apply a.hex 2 {x . (cbind (sum x FALSE) (sum (* x x) FALSE))})";
+    checkTree(tree);
   }
 
   private void checkTree(String tree) { checkTree(tree,false); }

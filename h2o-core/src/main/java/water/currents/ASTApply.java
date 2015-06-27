@@ -40,28 +40,39 @@ class ASTApply extends ASTPrim {
     // 1 row column per applied function result (per column), and as many rows
     // as there are columns in the returned Frames.
     Val v0 = vals[0];
-    double ds[] = new double[vecs.length];
-    for( int i=0; i<vecs.length; i++ ) {
-      Val v = vals[i];
-      if( v0.type() != v.type() )
-        throw new IllegalArgumentException("Apply of column "+fr._names[0]+" returned "+v0.getClass()+", and column "+fr._names[i]+" returned "+v.getClass());
-      switch( v0.type() ) {
-      case Val.FRM:  
-        Frame res = v0.getFrame();
-        if( res.numRows() != 1 ) throw new IllegalArgumentException("apply single-column result must be a scalar, or a frame with 1 row; found "+fr.numRows()+" rows");
-        if( res.numCols() == 1 ) ds[i] = fr.vec(0).at(0);
-        else throw water.H2O.unimpl();
-        res.delete();
-        break;
-      case Val.FUN:  throw water.H2O.unimpl();
-      case Val.STR:  throw water.H2O.unimpl();
-      case Val.NUM:  ds[i] = v.getNum();  break;
-      default:       throw water.H2O.unimpl();
-      }
+    switch( v0.type() ) {
+    case Val.NUM: {
+      double ds[] = new double[vecs.length];
+      for( int i=0; i<vecs.length; i++ )  
+        ds[i] = vals[i].getNum();  
+      Key<Vec> key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      Vec vec = Vec.makeVec(ds,key);
+      return new ValFrame(new Frame(new String[]{fun.str()},new Vec[]{vec}));
     }
-    Key<Vec> key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    Vec vec = Vec.makeVec(ds,key);
-    return new ValFrame(new Frame(new String[]{fun.str()},new Vec[]{vec}));
+    case Val.FRM: {
+      Frame fr0 = v0.getFrame();
+      int ncols = fr0.numCols();
+      double dss[][] = new double[ncols][vecs.length];
+      for( int i=0; i<vecs.length; i++ ) {
+        Frame res = vals[i].getFrame();
+        if( res.numRows() != 1 ) 
+          throw new IllegalArgumentException("apply result must be a scalar or a frame with 1 row; found "+res.numRows()+" rows");
+        if( res.numCols() != ncols ) 
+          throw new IllegalArgumentException("apply result Frames must have all the same columns, found "+ncols+" cols and "+res.numCols());
+        for( int c=0; c<res.numCols(); c++ )
+          dss[c][i] = res.vec(c).at(0);
+        res.delete();
+      }
+      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncols);
+      Frame res = new Frame();
+      for( int c=0; c<ncols; c++ )
+        res.add(Frame.defaultColName(c),Vec.makeVec(dss[c],keys[c]));
+      return new ValFrame(res);
+    }
+    case Val.FUN:  throw water.H2O.unimpl();
+    case Val.STR:  throw water.H2O.unimpl();
+    default:       throw water.H2O.unimpl();
+    }
   }
 }
 
