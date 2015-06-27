@@ -338,8 +338,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return ModelCategory.Unknown;
     }
 
-    // TODO: Needs to be Atomic update, not just synchronized
     public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
+      DKV.put(mm);
       for( Key key : _model_metrics ) // Dup removal
         if( key==mm._key ) return mm;
       _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);

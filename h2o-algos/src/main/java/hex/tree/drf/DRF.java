@@ -82,7 +82,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     final int _mtrys;           // Number of columns to choose amongst in splits
     final long _seeds[];        // One seed for each chunk, for sampling
     final transient Random _rand; // RNG for split decisions & sampling
-    DRFTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, int min_rows, int mtrys, long seed ) {
+    DRFTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, long seed ) {
       super(fr._names, ncols, nbins, nbins_cats, nclass, min_rows, seed);
       _mtrys = mtrys;
       _rand = createRNG(seed);

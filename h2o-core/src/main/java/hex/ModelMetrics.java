@@ -40,7 +40,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _frame_checksum = frame.checksum();
     _MSE = MSE;
     _scoring_time = System.currentTimeMillis();
-    DKV.put(this);
   }
 
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
@@ -145,7 +144,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public double _wYY; // (Weighted) sum of the squared response
 
     public  double weightedSigma() {
-      return _wcount <= 1 ? 0 : Math.sqrt(1./(_wcount-1.)*_wYY-(1./(_wcount-1.)/_wcount*_wY*_wY));
+//      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
+      double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
+      return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
