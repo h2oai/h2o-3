@@ -793,6 +793,10 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+  static double _AUC = 1;
+  static double _MSE = 0.24850374695598948;
+  static double _R2 = 0.005985012176042082;
+  static double _LogLoss = 0.690155;
 
   @Test
   public void testNoRowWeights() {
@@ -808,7 +812,6 @@ public class GBMTest extends TestUtil {
       parms._response_column = "response";
       parms._seed = 0xdecaf;
       parms._min_rows = 1;
-      parms._max_depth = 2;
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
 
@@ -817,17 +820,17 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(1, mm.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm.r2(), 1e-6);
-      assertEquals(0.690155, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1, mm2.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm2.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm2.r2(), 1e-6);
-      assertEquals(0.690155, mm2.logloss(), 1e-6);
+      assertEquals(_AUC, mm2.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm2.mse(), 1e-8);
+      assertEquals(_R2, mm2.r2(), 1e-6);
+      assertEquals(_LogLoss, mm2.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -862,17 +865,17 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(1, mm.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm.r2(), 1e-6);
-      assertEquals(0.690155, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1, mm2.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm2.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm2.r2(), 1e-6);
-      assertEquals(0.690155, mm2.logloss(), 1e-6);
+      assertEquals(_AUC, mm2.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm2.mse(), 1e-8);
+      assertEquals(_R2, mm2.r2(), 1e-6);
+      assertEquals(_LogLoss, mm2.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -897,7 +900,7 @@ public class GBMTest extends TestUtil {
       parms._response_column = "response";
       parms._weights_column = "weight";
       parms._seed = 0xdecaf;
-      parms._min_rows = 2; //Must be adapted to the weights
+      parms._min_rows = 2; //Should be adapted to the weights
       parms._max_depth = 2;
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
@@ -907,17 +910,17 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(1, mm.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm.r2(), 1e-6);
-      assertEquals(0.690155, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1, mm2.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm2.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm2.r2(), 1e-6);
-      assertEquals(0.690155, mm2.logloss(), 1e-6);
+      assertEquals(_AUC, mm2.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm2.mse(), 1e-8);
+      assertEquals(_R2, mm2.r2(), 1e-6);
+      assertEquals(_LogLoss, mm2.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -951,17 +954,17 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(1, mm.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm.r2(), 1e-6);
-      assertEquals(0.690155, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1, mm2.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm2.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm2.r2(), 1e-6);
-      assertEquals(0.690155, mm2.logloss(), 1e-6);
+      assertEquals(_AUC, mm2.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm2.mse(), 1e-8);
+      assertEquals(_R2, mm2.r2(), 1e-6);
+      assertEquals(_LogLoss, mm2.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -996,17 +999,17 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(1, mm.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm.r2(), 1e-6);
-      assertEquals(0.690155, mm.logloss(), 1e-6);
+      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm.mse(), 1e-8);
+      assertEquals(_R2, mm.r2(), 1e-6);
+      assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1, mm2.auc()._auc, 1e-8);
-      assertEquals(0.24850374695598948, mm2.mse(), 1e-8);
-      assertEquals(0.005985012176042082, mm2.r2(), 1e-6);
-      assertEquals(0.690155, mm2.logloss(), 1e-6);
+      assertEquals(_AUC, mm2.auc()._auc, 1e-8);
+      assertEquals(_MSE, mm2.mse(), 1e-8);
+      assertEquals(_R2, mm2.r2(), 1e-6);
+      assertEquals(_LogLoss, mm2.logloss(), 1e-6);
 
       job.remove();
     } finally {
