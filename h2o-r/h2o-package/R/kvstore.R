@@ -44,7 +44,7 @@ h2o.ls <- function() {
   gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", id = .key.make("ls"), mutable = mutable)
+  fr <- .newH2OFrame(id = .key.make("ls"), mutable = mutable)
   as.data.frame(fr)
 }
 
@@ -155,7 +155,7 @@ h2o.getFrame <- function(id) {
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable)
+  fr <- .newH2OFrame(id=id, mutable=mutable)
   .h2o.protectFromGC(fr)
   fr
 }
@@ -172,7 +172,7 @@ h2o.getFrame <- function(id) {
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  fr <- .newH2OFrame("H2OFrame", id=id, mutable=mutable)
+  fr <- .newH2OFrame(id=id, mutable=mutable)
   .h2o.allowGC(fr)
   fr
 }

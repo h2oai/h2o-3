@@ -462,14 +462,18 @@ h2o.clusterStatus <- function() {
 }
 
 # This function returns the path to the Java executable if it exists
-# 1) Check for Java in user's PATH
+# X) NO: Fails on Windows.  Check for Java in user's PATH
 # 2) Check for JAVA_HOME environment variable
 # 3) If Windows, check standard install locations in Program Files folder. Warn if JRE found, but not JDK since H2O requires JDK to run.
-# 4) When all fails, stop and prompt user to download JDK from Oracle website.
+# 4) Check for Java in user's PATH.
+# 5) When all fails, stop and prompt user to download JDK from Oracle website.
 .h2o.checkJava <- function() {
-  if(nzchar(Sys.which("java")))
-    Sys.which("java")
-  else if(nzchar(Sys.getenv("JAVA_HOME")))
+# For reasons unknown, on Windows Sys.which("java") returns the Windows archaic
+# built-in Java, even with a good recent JDK on the PATH.  This Java version is
+# totally broken.  Try it last.
+#  if(nzchar(Sys.which("java")))
+#    Sys.which("java")
+  if(nzchar(Sys.getenv("JAVA_HOME")))
     file.path(Sys.getenv("JAVA_HOME"), "bin", "java.exe")
   else if(.Platform$OS.type == "windows") {
     # Note: Should we require the version (32/64-bit) of Java to be the same as the version of R?
@@ -490,6 +494,8 @@ h2o.clusterStatus <- function() {
       if(file.exists(path)) warning("Found JRE at ", path, " but H2O requires the JDK to run")
     }
   }
+  else if(nzchar(Sys.which("java")))
+    Sys.which("java")
   else
     stop("Cannot find Java. Please install the latest JDK from\n",
          "http://www.oracle.com/technetwork/java/javase/downloads/index.html")

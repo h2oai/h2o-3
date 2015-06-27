@@ -44,7 +44,7 @@ function(op, x) {
 function(op, x, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
   ast <- .h2o.unary_op_ast(op, x)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", id = .key.make("unary_op"), mutable = mutable)
+  .newH2OFrame(id = .key.make("unary_op"), mutable = mutable)
 }
 
 .h2o.unary_row_op<-
@@ -90,7 +90,7 @@ function(op, e1, e2) {
 function(op, e1, e2, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
   ast  <- .h2o.binary_op_ast(op, e1, e2)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", id= .key.make("binary_op"), mutable = mutable)
+  .newH2OFrame(id= .key.make("binary_op"), mutable = mutable)
 }
 
 .h2o.binary_row_op<-
@@ -123,7 +123,7 @@ function(op, ..., .args = list(...), key = .key.make("nary_op"),
 
   ast <- .h2o.nary_op_ast(op, .args = .args)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame("H2OFrame", id = key, mutable = mutable)
+  .newH2OFrame(id = key, mutable = mutable)
 }
 
 .h2o.nary_row_op<-

@@ -112,7 +112,7 @@ setClass("H2OObject",
 #' @param .Object an \code{H2OObject}
 #' @param \dots additional parameters to pass on to functions
 #' @export
-setMethod("initialize", "H2OObject", function(.Object, ..., id) {
+setMethod("initialize", signature="H2OObject", function(.Object, ..., id=character()) {
   envir <- new.env()
   assign("id", id, envir)
   assign("deleteOnGC", TRUE, envir)
@@ -120,7 +120,7 @@ setMethod("initialize", "H2OObject", function(.Object, ..., id) {
   .pkg.env$key.map[[id]] <- .pkg.env$key.map[[id]] + 1L  # bump the version of the id
   assign("version", .pkg.env$key.map[[id]], envir)
   reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-  callNextMethod(.Object, id=id, finalizer=envir)
+  callNextMethod(.Object, ..., id=id, finalizer=envir)
 })
 
 .h2o.protectFromGC <- function(.Object) { assign("deleteOnGC", FALSE, .Object@finalizer) }
@@ -236,14 +236,14 @@ setClass("H2OFrame",
          contains="H2OObject"
          )
 
-setMethod("initialize", "H2OFrame", function(.Object, ..., id, mutable) {
+setMethod("initialize", signature("H2OFrame"), function(.Object, id, mutable) {
   .Object@mutable <- mutable
-  callNextMethod(.Object, ..., id=id)
+  callNextMethod(.Object, id=id)
 })
 
-# TODO: make a more frame-specific constructor
-.newH2OFrame <- function(Class, id, mutable=NULL) {
-  new(Class, id=id, mutable=mutable)
+# Frame-specific constructor
+.newH2OFrame <- function(id, mutable=NULL) {
+  new("H2OFrame", id=id, mutable=mutable)
 }
 
 #' @rdname H2OFrame-class
@@ -280,12 +280,12 @@ setMethod("show", "H2OFrame", function(object) {
 #' @export
 setClass("H2ORawData", contains="H2OObject")
 
-setMethod("initialize", "H2ORawData", function(.Object, ..., id) {
-  callNextMethod(.Object, id=id)
+setMethod("initialize", signatur="H2ORawData", function(.Object, ..., id=character()) {
+  callNextMethod(.Object, ..., id=id)
 })
 
-.newH2ORawData <- function(Class, id = NA_character_) {
-  new(Class, id=id)
+.newH2ORawData <- function(id) {
+  new("H2ORawData", id=id)
 }
 
 #' @rdname H2ORawData-class
@@ -328,8 +328,8 @@ setMethod("initialize", "H2OW2V", function(.Object, ..., id ) {
 #' @export
 setClass("H2OModel",
          representation(id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
-                        prototype(id=NA_character_),
-                        contains=c("VIRTUAL"))
+         prototype(id=NA_character_),
+         contains=c("VIRTUAL"))
 
 # TODO: make a mode model-specific constructor
 .newH2OModel <- function(Class, ..., id = NA_character_) {

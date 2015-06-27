@@ -130,7 +130,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
   .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)
 
-  rawData <- .newH2ORawData("H2ORawData", id=srcKey)
+  rawData <- .newH2ORawData(srcKey)
   if (parse) {
     h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar)
   } else {
