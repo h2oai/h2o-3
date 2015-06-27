@@ -16,7 +16,7 @@ public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAPa
     @API(help = "Principal components matrix")
     public TwoDimTableBase eigenvectors;
 
-    @API(help = "Frame key for loading matrix")
+    @API(help = "Frame key for loading matrix (Power method only)")
     public KeyV3.FrameKeyV3 loading_key;
   }
 
