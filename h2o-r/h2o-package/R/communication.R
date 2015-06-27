@@ -363,33 +363,34 @@
 #----------------------------------------
 
 .h2o.fromJSON <- function(txt, ...) {
-  processMatrices <- function(x) {
-    if (is.list(x)) {
-      if (is.null(names(x)) &&
-          ((nrow <- length(x)) > 1L) &&
-          all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
-          (length(ncol <- unique(unlist(lapply(x, length)))) == 1L)) {
-        x <- lapply(x, function(y) {
-          if (identical(y, "NaN")) NA_real_
-          else if (identical(y, "Infinity")) Inf
-          else if (identical(y, "-Infinity")) -Inf
-          else y
-          })
-        x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
-      } else
-        x <- lapply(x, processMatrices)
-    }
-    x
-  }
+  # processMatrices <- function(x) {
+  #   if (is.list(x)) {
+  #     if (is.null(names(x)) &&
+  #         ((nrow <- length(x)) > 1L) &&
+  #         all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
+  #         (length(ncol <- unique(unlist(lapply(x, length)))) == 1L)) {
+  #       x <- lapply(x, function(y) {
+  #         if (identical(y, "NaN")) NA_real_
+  #         else if (identical(y, "Infinity")) Inf
+  #         else if (identical(y, "-Infinity")) -Inf
+  #         else y
+  #         })
+  #       x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
+  #     } else
+  #       x <- lapply(x, processMatrices)
+  #   }
+  #   x
+  # }
   processTables <- function(x) {
     if (is.list(x)) {
       if (is.list(x$"__meta") && identical(x$"__meta"$schema_type, "TwoDimTable")) {
-        if (is.matrix(x$data))
-          tbl <- t(x$data)
+        if (is.matrix(x$data[[1L]]))
+          tbl <- t(x$data[[1L]])
         else
           tbl <- do.call(cbind, lapply(x$data, sapply, function(cell) if (is.null(cell)) "" else cell))
-        cnms <- sapply(x$columns, `[[`, "name")
-        fmts <- sapply(x$columns, `[[`, "format")
+        cnms <- x$columns[[1L]]$name
+        fmts <- x$columns[[1L]]$format
+        type <- x$columns[[1L]]$type
         if( x$name=="Confusion Matrix" ) {
           colnames(tbl) <- make.unique(cnms)
           rownames(tbl) <- make.unique(c(cnms[1:(length(cnms)-2)], "Totals"))
@@ -397,7 +398,7 @@
           if (nzchar(cnms[1L]))
             colnames(tbl) <- make.unique(cnms)
           else {
-            x$columns <- x$columns[-1L]
+            type <- type[-1L]
             rnms <- tbl[, 1L, drop = TRUE]
             cnms <- cnms[-1L]
             fmts <- fmts[-1L]
@@ -411,7 +412,7 @@
         tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
 
         for (j in seq_along(tbl)) {
-          switch(x$columns[[j]]$type,
+          switch(type[j],
                  int = {
                    tbl[[j]] <- as.integer(tbl[[j]])
                  },
@@ -438,7 +439,8 @@
   txt <- gsub("\\\"","\"",txt);
   txt <- gsub("\\\\,","\\,",txt);
 
-  res <- processMatrices(fromJSON(txt, ...))
+  # res <- processMatrices(fromJSON(txt, ...))
+  res <- fromJSON(txt, ...)
   processTables(res)
 }
 
@@ -646,17 +648,15 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
       myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
       rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
       jsonObject <- .h2o.fromJSON(rawResponse)
-      jobs <- jsonObject$jobs
-      if (length(jobs) > 1) {
+      job <- jsonObject$jobs
+      if (length(job$status) > 1) {
         stop("Job list has more than 1 entry")
-      } else if (length(jobs) == 0) {
+      } else if (length(job$status) == 0) {
         stop("Job list is empty")
       }
 
-      job = jobs[[1]]
-
       status = job$status
-      stopifnot(is.character(status))
+      stopifnot(is.character(status))  ## Why is
 
       # check failed up front...
       if( status == "FAILED" ) {

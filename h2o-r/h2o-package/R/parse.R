@@ -110,7 +110,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
   # return the parse setup as a list of setup :D
   parse.params <- list(
-        source_frames      = sapply(parseSetup$source_frames, function(asrc) asrc$name),
+        source_frames      = parseSetup$source_frames$name,
         destination_frame  = destination_frame,
         separator          = parseSetup$separator,
         parse_type         = parseSetup$parse_type,
