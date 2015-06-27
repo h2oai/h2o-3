@@ -144,7 +144,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public double _wYY; // (Weighted) sum of the squared response
 
     public  double weightedSigma() {
-      return _count <= 1 ? 0 : Math.sqrt(_count/(_count-1)*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
+//      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
+      double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
+      return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
