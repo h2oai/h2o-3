@@ -23,6 +23,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return (ModelMetricsBinomial) mm;
   }
 
+  public double logloss() { return _logloss; }
   @Override public AUC2 auc() { return _auc; }
   @Override public ConfusionMatrix cm() {
     if( _auc == null ) return null;
