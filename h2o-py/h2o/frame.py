@@ -374,7 +374,7 @@ class H2OFrame:
     self._update()
     return self
 
-  def setName(self,col,name):
+  def setName(self,col=None,name=None):
     """
     Set the name of the column at the specified index.
 
@@ -382,7 +382,8 @@ class H2OFrame:
     :param name: The new name of the column to set
     :return: the input frame
     """
-    if not isinstance(col, int): raise ValueError("`col` must be an index. Got: " + str(col))
+    if not isinstance(col, int) and self.ncol() > 1: raise ValueError("`col` must be an index. Got: " + str(col))
+    if self.ncol() == 1: col = 0
     h2o.rapids(ExprNode("colnames=", self, col, name)._eager())
     self._update()
     return self
