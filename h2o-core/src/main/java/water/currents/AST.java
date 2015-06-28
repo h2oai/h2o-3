@@ -43,7 +43,7 @@ abstract public class AST extends Iced {
     init(new ASTNum(0) {public String str() { return "FALSE"; } } );
     init(new ASTNum(1) {public String str() { return "TRUE" ; } } );
 
-    // Math ops
+    // Math binary ops
     init(new ASTAnd ());
     init(new ASTDiv ());
     init(new ASTMul ());
@@ -51,6 +51,21 @@ abstract public class AST extends Iced {
     init(new ASTPlus());
     init(new ASTPow ());
     init(new ASTSub ());
+
+    // Math unary ops
+    init(new ASTACos  ());
+    init(new ASTAbs   ());
+    init(new ASTCeiling());
+    init(new ASTCos   ());
+    init(new ASTCosh  ());
+    init(new ASTExp   ());
+    init(new ASTFloor ());
+    init(new ASTLog   ());
+    init(new ASTRound ());
+    init(new ASTSin   ());
+    init(new ASTSqrt  ());
+    init(new ASTTan   ());
+    init(new ASTTanh  ());
 
     // Relational
     init(new ASTGE());
