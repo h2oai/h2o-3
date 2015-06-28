@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp
 from expr import h2o,ExprNode
 import gc, random
 
@@ -512,6 +512,9 @@ class H2OFrame:
       if allrows and allcols: return self                              # fr[:,:]    -> all rows and columns.. return self
       if allrows: return H2OFrame(expr=ExprNode("[",self,None,item[1]))  # fr[:,cols] -> really just a column slice
       if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
+
+      if isinstance(item[0], int) and isinstance(item[1], int):
+        return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
       return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
 
   def __setitem__(self, b, c):
@@ -762,25 +765,14 @@ class H2OFrame:
     :return: if plot is True, then return None, else, an H2OFrame with these columns: breaks, counts, mids_true, mids,
     and density
     """
-    if self._vecs is None or self._vecs == []:
-      raise ValueError("Frame Removed")
-    if breaks=="Sturges": breaks = "sturges"
-    if breaks=="Rice": breaks = "rice"
-    if breaks=="Doane": breaks = "doane"
-    if breaks=="FD": breaks = "fd"
-    if breaks=="Scott": breaks = "scott"
-
-    frame_keys = [self.send_frame()]
-    tmp_key = H2OFrame.py_tmp_key()
-    expr = "(= !{} (hist %{} {}))".format(tmp_key,frame_keys[0],"\""+breaks+"\"")
-    frame = H2OFrame._get_frame_from_rapids_string(expr, tmp_key, frame_keys)
+    frame = H2OFrame(expr=ExprNode("hist", self, breaks))._frame()
 
     total = frame["counts"].sum()
-    densities = [(frame["counts"][i]/total)*(1/(frame["breaks"][i]-frame["breaks"][i-1])) for i in range(1,len(frame["counts"]))]
+    densities = [(frame["counts"][i,:]/total)._scalar()*(1/(frame["breaks"][i,:]._scalar()-frame["breaks"][i-1,:]._scalar())) for i in range(1,frame["counts"].nrow())]
     densities.insert(0,float("nan"))
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.setNames(["density"])
-    frame = h2o.cbind(frame, densities_frame)
+    frame = frame.cbind(densities_frame)
 
     if plot:
       try:
@@ -792,7 +784,7 @@ class H2OFrame:
         print "matplotlib is required to make the histogram plot. Set `plot` to False, if a plot is not desired."
         return
 
-      lower = float(frame["breaks"][1])
+      lower = float(frame["breaks"][0,:])
       clist = h2o.as_list(frame["counts"], use_pandas=False)
       clist.pop(0)
       clist.pop(0)
@@ -803,9 +795,9 @@ class H2OFrame:
       counts.insert(0,0)
       mids = [float(m[0]) for m in mlist]
       mids.insert(0,lower)
-      plt.xlabel(self[0]._name)
+      plt.xlabel(self._col_names[0])
       plt.ylabel('Frequency')
-      plt.title('Histogram of {0}'.format(self[0]._name))
+      plt.title('Histogram of {0}'.format(self._col_names[0]))
       plt.bar(mids, counts)
       if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
 
