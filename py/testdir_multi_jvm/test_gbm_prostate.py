@@ -22,11 +22,11 @@ port = int(ip_port[1])
 # Connect to a pre-existing cluster
 h2o.init(ip=ip, port=port)
 
-df = h2o.import_frame(path="../../../smalldata/logreg/prostate.csv")
+df = h2o.import_frame(path="smalldata/logreg/prostate.csv")
 df.describe()
 
 # Remove ID from training frame
-df = df.drop('ID')
+df = df[:,-1]
 
 # For VOL & GLEASON, a zero really means "missing"
 vol = df['VOL']
