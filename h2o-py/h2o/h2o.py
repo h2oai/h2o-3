@@ -743,6 +743,17 @@ def cluster_info():
   """
   H2OConnection._cluster_info()
 
+def shutdown(conn=None, prompt=True):
+  """
+  Shut down the specified instance. All data will be lost.
+  This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O instance.
+  :param conn: An H2OConnection object containing the IP address and port of the server running H2O.
+  :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
+  :return: None
+  """
+  if conn == None: conn = H2OConnection.current_connection()
+  H2OConnection._shutdown(conn=conn, prompt=prompt)
+
 def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
   Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
@@ -1182,6 +1193,7 @@ def sub(pattern, replacement, data, ignore_case=False): return data.sub(pattern=
 def gsub(pattern, replacement, data, ignore_case=False): return data.gsub(pattern=pattern, replacement=replacement,
                                                                         ignore_case=ignore_case)
 def strsplit(data, pattern): return data.strsplit(pattern=pattern)
+def hist(data, breaks="Sturges", plot=True, **kwargs): return data.hist(breaks=breaks, plot=plot, **kwargs)
 
 def set_timezone(tz):
   """
