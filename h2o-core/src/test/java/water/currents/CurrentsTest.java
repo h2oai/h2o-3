@@ -122,7 +122,6 @@ public class CurrentsTest extends TestUtil {
     
     tree = "(cbind a.hex (cols a.hex 0) 2)";
     checkTree(tree);
-    
   }
 
   @Test public void testApply() {
@@ -131,19 +130,25 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
 
     // Return two results (missing CBIND to turn on this test)
-    tree = "(apply a.hex 2 {x . (cbind (sum x FALSE) (sum (* x x) FALSE))})";
+    tree = "(apply a.hex 2 {x . (cbind (sum x FALSE) (mean x FALSE))})";
     checkTree(tree);
   }
 
+  @Test public void testMath() {
+    for( String s : new String[] {"abs", "cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "round", "sqrt", "tan", "scale", "tanh"} )
+      checkTree("("+s+" a.hex)");
+  }
+
+
   private void checkTree(String tree) { checkTree(tree,false); }
   private void checkTree(String tree, boolean expectThrow) {
-    //Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
-    //Key ahex = Key.make("a.hex");
-    //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
-    //r.delete();
-    //DKV.put(ahex, fr);
-    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
-    fr.remove(4).remove();
+    Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
+    Key ahex = Key.make("a.hex");
+    Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
+    r.delete();
+    DKV.put(ahex, fr);
+    //Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    //fr.remove(4).remove();
     try {
       Val val = Exec.exec(tree);
       Assert.assertFalse(expectThrow);

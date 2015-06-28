@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.apply <- function(conn) {
-  hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"))
+test.apply <- function() {
+  hex <- h2o.importFile(locate("smalldata/logreg/prostate.csv"))
 
   Log.info("Perform apply on columns")
 

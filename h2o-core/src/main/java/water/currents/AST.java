@@ -65,9 +65,10 @@ abstract public class AST extends Iced {
     init(new ASTLOr());
 
     // Reducers
-    init(new ASTSum());
-    init(new ASTMin());
     init(new ASTMax());
+    init(new ASTMean());
+    init(new ASTMin());
+    init(new ASTSum());
 
     // Generic data mungers
     init(new ASTColSlice());
@@ -76,6 +77,7 @@ abstract public class AST extends Iced {
     init(new ASTColNames());
     init(new ASTCBind());
 
+    // Functional data mungers
     init(new ASTApply());
 
     // Cluster management
