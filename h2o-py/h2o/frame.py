@@ -497,7 +497,7 @@ class H2OFrame:
     :return: An H2OFrame.
     """
     if isinstance(item, (int,str,list,slice)):
-      if isinstance(item, slice): item = slice(item.start,item.stop if item.stop != sys.maxint else float("NaN"))
+      # if isinstance(item, slice): item = slice(item.start,item.stop if item.stop != sys.maxint else float("NaN"))
       return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
     elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("[",self,item,None))
     elif isinstance(item, tuple):
