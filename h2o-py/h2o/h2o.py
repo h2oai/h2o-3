@@ -316,6 +316,7 @@ def log_and_echo(message):
   H2OConnection.post_json("LogAndEcho", message=message)
 
 def ipy_notebook_exec(path,save_and_norun=False):
+  save_and_norun=True
   notebook = json.load(open(path))
   program = ''
   for block in ipy_blocks(notebook):
@@ -752,7 +753,7 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
            "factors": factors,
            "integer_fraction": integer_fraction,
            "integer_range": integer_range,
-           "binary_franction": binary_fraction,
+           "binary_fraction": binary_fraction,
            "binary_ones_fraction": binary_ones_fraction,
            "missing_fraction": missing_fraction,
            "response_factors": response_factors,

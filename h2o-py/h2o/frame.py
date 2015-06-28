@@ -216,7 +216,7 @@ class H2OFrame:
 
     :return: Returns msec since the Epoch.
     """
-    return H2OFrame(expr=ExprNode("mktime", msec,second,minute,hour,day,month,year))._frame()
+    return H2OFrame(expr=ExprNode("mktime", year,month,day,hour,minute,second,msec))._frame()
 
   def col_names(self):
     """
@@ -374,6 +374,19 @@ class H2OFrame:
     self._update()
     return self
 
+  def setName(self,col,name):
+    """
+    Set the name of the column at the specified index.
+
+    :param col: Index of the column whose name is to be set.
+    :param name: The new name of the column to set
+    :return: the input frame
+    """
+    if not isinstance(col, int): raise ValueError("`col` must be an index. Got: " + str(col))
+    h2o.rapids(ExprNode("colnames=", self, col, name)._eager())
+    self._update()
+    return self
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -459,6 +472,10 @@ class H2OFrame:
       if name == v: return i
     raise ValueError("Name " + name + " not in Frame")
 
+  def index(self,name):
+    self._eager()
+    return self._find_idx(name)
+
   def __getitem__(self, item):
     """
     Frame slicing.
@@ -510,7 +527,7 @@ class H2OFrame:
     elif isinstance(b, int): update_index=b
     lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
     rhs = c._frame() if isinstance(c,H2OFrame) else c
-    col_name = b if isinstance(b, (str, unicode)) and update_index==self._ncols else c._col_names[0]
+    col_name = b if (update_index==self._ncols and isinstance(b, (str, unicode))) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
     sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
     self._update()
@@ -579,7 +596,7 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("ddply", self, cols, fun))._frame()
 
-  def group_by(self,cols,a,order_by=None):
+  def group_by(self,cols,aggregates,order_by=None):
     """
     GroupBy
     :param cols: The columns to group on.
@@ -597,7 +614,7 @@ class H2OFrame:
     :return: The group by frame.
     """
     aggs = []
-    for k in a: aggs += (a[k] + [str(k)])
+    for k in aggregates: aggs += (aggregates[k] + [str(k)])
     aggs = h2o.ExprNode("agg", *aggs)
     return H2OFrame(expr=ExprNode("GB", self,cols,aggs,order_by))._frame()
 
@@ -961,6 +978,7 @@ class H2OFrame:
   # flow-coding result methods
   def _scalar(self):
     res = self.as_data_frame(False)
+    if res[1] == []: return float("nan")
     res = res[1][0]
     if res == "TRUE": return True
     if res == "FALSE":return False
@@ -971,13 +989,16 @@ class H2OFrame:
     self._eager()
     return self
 
-  ##### DO NOT ADD METHODS BELOW THIS LINE #####
+  ##### DO NOT ADD METHODS BELOW THIS LINE (pretty please) #####
   def _eager(self, pytmp=True):
     if not self._computed:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
       if pytmp:
-        h2o.rapids(ExprNode._collapse_sb(sb), self._id)
+        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
+        # t = res["result_type"]
+        # if t in [1,3]:   sb = ["#{} ".format(res["scalar"])]
+        # elif t in [2,4]: sb = ["\"{}\"".format(res["string"])]
         sb = ["%", self._id," "]
         self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
