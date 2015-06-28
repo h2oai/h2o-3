@@ -11,8 +11,8 @@ def user(ip, port):
     a.head()
 
     print a[0].names()  # Column header
-    a[2,0].show()  # column 0, row 2 value
-    a[2,"sepal_len"].show()  # Column 0, row 2 value
+    print a[2,0]           # column 0, row 2 value
+    print a[2,"sepal_len"] # Column 0, row 2 value
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()

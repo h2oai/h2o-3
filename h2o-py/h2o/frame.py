@@ -514,7 +514,7 @@ class H2OFrame:
       if allrows: return H2OFrame(expr=ExprNode("[",self,None,item[1]))  # fr[:,cols] -> really just a column slice
       if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
 
-      if isinstance(item[0], int) and isinstance(item[1], int):
+      if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)):
         return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
       return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
 
@@ -634,6 +634,7 @@ class H2OFrame:
     :return: the imputed frame.
     """
     if isinstance(column, (str, unicode)): column = self._find_idx(column)
+    if isinstance(by, (str, unicode)):     by     = self._find_idx(by)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
   def merge(self, other, allLeft=False, allRite=False):
@@ -811,7 +812,7 @@ class H2OFrame:
 
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("sub",self,pattern,replacement,ignore_case))
+    return H2OFrame(expr=ExprNode("sub",pattern,replacement,self,ignore_case))
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
@@ -819,7 +820,7 @@ class H2OFrame:
     Of note, mutates the frame.
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("gsub", self, pattern, replacement,ignore_case))
+    return H2OFrame(expr=ExprNode("gsub", pattern, replacement, self, ignore_case))
 
   def interaction(self, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
     """

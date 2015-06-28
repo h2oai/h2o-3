@@ -62,25 +62,25 @@ def expr_math_ops(ip,port):
     h2o.np_comparison_check(h2o_data3.log2(), np.log2(np_data3), 10)
     h2o.np_comparison_check(h2o_data3.exp(), np.exp(np_data3), 10)
     h2o.np_comparison_check(h2o_data3.expm1(), np.expm1(np_data3), 10)
-    h2o_val = h2o_data3.gamma()[5,5]._scalar()
-    num_val = math.gamma(h2o_data3[5,5]._scalar())
+    h2o_val = h2o_data3.gamma()[5,5]
+    num_val = math.gamma(h2o_data3[5,5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3.lgamma()[5,5]._scalar()
-    num_val = math.lgamma(h2o_data3[5,5]._scalar())
+    h2o_val = h2o_data3.lgamma()[5,5]
+    num_val = math.lgamma(h2o_data3[5,5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal lgamma values between h2o and " \
         "math".\
             format(h2o_val,num_val)
-    h2o_val = h2o_data3.digamma()[5,5]._scalar()
-    num_val = scipy.special.polygamma(0,h2o_data3[5,5]._scalar())
+    h2o_val = h2o_data3.digamma()[5,5]
+    num_val = scipy.special.polygamma(0,h2o_data3[5,5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal digamma values between h2o and " \
         "math"\
             .format(h2o_val,num_val)
-    h2o_val = h2o_data3.trigamma()[5,5]._scalar()
-    num_val = scipy.special.polygamma(1,h2o_data3[5,5]._scalar())
+    h2o_val = h2o_data3.trigamma()[5,5]
+    num_val = float(scipy.special.polygamma(1,h2o_data3[5,5]))
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and " \
         "math".format(h2o_val,num_val)

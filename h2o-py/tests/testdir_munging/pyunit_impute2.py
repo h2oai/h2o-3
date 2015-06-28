@@ -72,7 +72,7 @@ def impute2(ip,port):
 
     # mean-group by C7
     h2o_data = h2o.H2OFrame(python_obj=data)
-    h2o_data.impute(column="C3", method="mean", by=["C7"])
+    h2o_data.impute(column="C3", method="mean", by="C7")
     imputed1 = h2o_data[2,2]
     imputed2 = h2o_data[3,2]
     assert imputed1 == 3.5, "Wrong value imputed. Expected imputed value of 3.5, but got {0}".format(imputed1)
