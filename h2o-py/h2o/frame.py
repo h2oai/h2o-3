@@ -496,10 +496,8 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list,slice)):
-      # if isinstance(item, slice): item = slice(item.start,item.stop if item.stop != sys.maxint else float("NaN"))
-      return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
-    elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("[",self,item,None))
+    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
+    elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("[",self,item,None))
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
