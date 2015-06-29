@@ -9,14 +9,14 @@ def strsplit_check(ip,port):
     frame = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # single column (frame)
-    result = h2o.strsplit(frame[["C5"]], "-")
+    result = frame["C5"].strsplit("-")
     assert result.nrow() == 150 and result.ncol() == 2
     assert result[0,0] == "Iris" and result[0,1] == "setosa", "Expected 'Iris' and 'setosa', but got {0} and " \
                                                               "{1}".format(result[0,0], result[0,1])
 
     # single column (vec)
     vec = frame["C5"]
-    result = h2o.strsplit(vec, "s")
+    result = vec.strsplit("s")
     assert result.nrow() == 150 and result.ncol() == 4
     assert result[0,0] == "Iri" and result[0,1] == "-" and result[0,2] == "eto" and \
            result[0,3] == "a", "Expected 'Iri', '-', 'eto', and 'a', but got {0}, {1}, {2}, and " \

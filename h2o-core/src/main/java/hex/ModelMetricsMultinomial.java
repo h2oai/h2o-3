@@ -3,9 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -22,6 +20,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _logloss = logloss;
   }
 
+  public double logloss() { return _logloss; }
   @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() { return _hit_ratios; }
 
@@ -94,8 +93,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if(ArrayUtils.hasNaNs(ds)) return ds;
       if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
-      _wsum += w;
       _count++;
+      _wcount += w;
+      _wY += w*iact;
+      _wYY += w*iact*iact;
 
       // Compute error
       double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
@@ -123,24 +124,21 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _logloss += mb._logloss;
     }
 
-    @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      if (sigma != 0) {
-        ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
-        float[] hr = new float[_K];
-        double mse = Double.NaN;
-        double logloss = Double.NaN;
-        if (_wsum > 0) {
-          if (_hits != null) {
-            for (int i = 0; i < hr.length; i++)  hr[i] = (float)(_hits[i] / _wsum);
-            for (int i = 1; i < hr.length; i++)  hr[i] += hr[i-1];
-          }
-          mse = _sumsqe / _wsum;
-          logloss = _logloss / _wsum;
+    @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
+      double mse = Double.NaN;
+      double logloss = Double.NaN;
+      float[] hr = new float[_K];
+      ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
+      double sigma = weightedSigma();
+      if (_wcount > 0) {
+        if (_hits != null) {
+          for (int i = 0; i < hr.length; i++) hr[i] = (float) (_hits[i] / _wcount);
+          for (int i = 1; i < hr.length; i++) hr[i] += hr[i - 1];
         }
-        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, mse, _domain, sigma, cm, hr, logloss));
-      } else {
-        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, Double.NaN, null, Double.NaN, null, null, Double.NaN));
+        mse = _sumsqe / _wcount;
+        logloss = _logloss / _wcount;
       }
+      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, mse, _domain, sigma, cm,   hr,   logloss));
     }
   }
 }

@@ -345,6 +345,8 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
 `class.sampling.factors` | `class_sampling_factors`
 `nfolds` |  `n_folds`
 `override_with_best_model` | `overwrite_with_best_model`
+`dlmodel@model$valid_class_error` | `@model$validation_metrics@$MSE`
+
 
 ###Deprecated DL Parameters
 
@@ -352,6 +354,7 @@ The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
+- `dlmodel@model$best_cutoff`: This output parameter has been removed. 
 
 ###New DL Parameters
 
@@ -441,8 +444,8 @@ H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | ------------- 
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$train_class_error` | `@model$training_metrics$MSE`  | `all`
-`@model$valid_class_error` | `@model$validation_metrics$MSE` | `all`
+`@model$train_class_error` | `@model$training_metrics@$MSE`  | `all`
+`@model$valid_class_error` | `@model$validation_metrics@$MSE` | `all`
 `@model$varimp` | `@model$_variable_importances` | `all`
 `@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
 `@model$train_auc` | `@model$train_AUC`  | `binomial`
@@ -494,6 +497,8 @@ The following parameters have been removed:
 - `oobee`: The out-of-bag error estimate is now computed automatically (if no validation set is specified).
 - `stat.type`: This parameter was used for SpeeDRF, which is no longer supported.
 - `type`: This parameter was used for SpeeDRF, which is no longer supported. 
+
+
 
 ###New DRF Parameters
 

@@ -830,10 +830,10 @@ class ValStr extends Val {
 }
 
 class ValSpan extends Val {
-  final long _min;       final long _max;
+  final long _min;       double _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
-  ValSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
+  ValSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = max._d; }
   boolean contains(long a) {
     if (all_neg()) return _max <= a && a <= _min;
     return _min <= a && a <= _max;

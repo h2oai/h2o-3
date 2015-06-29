@@ -80,8 +80,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       mean = _response.mean();
-      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1))
-        mean = new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
+      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1)) {
+        FrameUtils.WeightedMean wm = new FrameUtils.WeightedMean();
+        mean = (float) (hasOffset() ? wm.doAll(_response, _weights, _offset) : wm.doAll(_response, _weights)).weightedMean();
+      }
 
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
@@ -97,9 +99,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", "Binomial requires the response to be a 2-class categorical");
-      else if( _response != null ) 
+      else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         _initialPrediction = Math.log(mean / (1.0 - mean));
+        if (_offset != null) throw H2O.unimpl("Newton-Raphson iteration needed.");
+      }
       break;
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
@@ -130,7 +134,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
         Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, _model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
+        new ResidualsCollector(_ncols, _nclass, (hasOffset()?1:0)+(hasWeights()?1:0),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
       }
 
@@ -418,14 +422,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             assert !ress.isNA(row);
 
             // Compute numerator (rs) and denominator (gs) of gamma
+            double w = hasWeights() ? chk_weight(chks).atd(row) : 1;
             double res = ress.atd(row);
             double ares = Math.abs(res);
             if( _isBernoulli ) {
               double prob = resp.atd(row) - res;
-              gs[leafnid-leaf] += prob*(1-prob);
+              gs[leafnid-leaf] += w*prob*(1-prob);
             } else
-              gs[leafnid-leaf] += _nclass > 1 ? ares*(1-ares) : 1;
-            rs[leafnid-leaf] += res;
+              gs[leafnid-leaf] += w*(_nclass > 1 ? ares*(1-ares) : 1);
+            rs[leafnid-leaf] += w*res;
           }
         }
       }

@@ -26,13 +26,13 @@ df = h2o.import_frame(path="../../../smalldata/logreg/prostate.csv")
 df.describe()
 
 # Remove ID from training frame
-del df['ID']
+df = df[:,-1]  # WARNING: this is NOT python negative indexing!!!
 
 # For VOL & GLEASON, a zero really means "missing"
 vol = df['VOL']
-vol[vol == 0] = None
+vol[vol == 0] = float("nan")
 gle = df['GLEASON']
-gle[gle == 0] = None
+gle[gle == 0] = float("nan")
 
 # Convert CAPSULE to a logical factor
 df['CAPSULE'] = df['CAPSULE'].asfactor()

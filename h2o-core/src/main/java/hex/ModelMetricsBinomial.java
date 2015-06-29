@@ -2,7 +2,6 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -24,6 +23,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return (ModelMetricsBinomial) mm;
   }
 
+  public double logloss() { return _logloss; }
   @Override public AUC2 auc() { return _auc; }
   @Override public ConfusionMatrix cm() {
     if( _auc == null ) return null;
@@ -49,8 +49,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       if(w == 0 || Double.isNaN(w)) return ds;
       final int iact = (int)yact[0];
       if( iact != 0 && iact != 1 ) return ds; // The actual is effectively a NaN
-      _wsum += w;
       _count++;
+      _wcount += w;
+      _wY += w*iact;
+      _wYY += w*iact*iact;
       // Compute error
       double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
       _sumsqe += w*err*err;           // Squared error
@@ -69,18 +71,22 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       _auc.reduce(mb._auc);
     }
 
-    @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      if (sigma != 0.0 && _count > 0 ) {
-        double mse = _sumsqe / _wsum;
-        double logloss = _logloss / _wsum;
+    @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
+      double mse = Double.NaN;
+      double logloss = Double.NaN;
+      double sigma = Double.NaN;
+      if (_wcount > 0) {
+        sigma = weightedSigma();
+        mse = _sumsqe / _wcount;
+        logloss = _logloss / _wcount;
         AUC2 auc = new AUC2(_auc);
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc, logloss));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss));
       } else {
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, Double.NaN, null, Double.NaN, null, Double.NaN));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse,   null,  sigma, null, logloss));
       }
     }
     public String toString(){
-      return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wsum;
+      return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
     }
   }
 }

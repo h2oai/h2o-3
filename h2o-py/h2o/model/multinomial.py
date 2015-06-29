@@ -16,13 +16,8 @@ class H2OMultinomialModel(ModelBase):
         """
         if not isinstance(data, H2OFrame): raise ValueError("data argument must be of type H2OFrame, but got {0}"
                                                             .format(type(data)))
-        test_data_key = H2OFrame.send_frame(data)
-        # get the predictions
-        # this job call is blocking
-        j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
-        # retrieve the confusion matrix
-        cm = j["model_metrics"][0]["cm"]["table"]
-        return cm
+        j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + data._id)
+        return j["model_metrics"][0]["cm"]["table"]
 
     def hit_ratio_table(self, train=False, valid=False):
         """

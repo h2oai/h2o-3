@@ -16,6 +16,12 @@ This tutorial uses a publicly available data set that can be found at <a href"ht
 
 The data are composed of 210 observations, 7 attributes, and an a priori grouping assignment. All data are positively valued and continuous. 
 
+If you don't have any data of your own to work with, you can find some example datasets here: 
+
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+
+
 ####Importing Data
 Before creating a model, import data into H2O:
 

@@ -754,7 +754,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
       f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
       DKV.put(f);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
+      makeMetricBuilder(null).makeModelMetrics(this, orig);
       return f;
     }
   }
@@ -830,7 +830,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    makeMetricBuilder(null).makeModelMetrics(this, frame, res.vecs()[0].mean());
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean()));
     return res;
   }
 

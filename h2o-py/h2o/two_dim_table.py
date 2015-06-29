@@ -4,6 +4,7 @@ A two dimensional table having row and column headers.
 
 import copy
 import h2o
+from frame import _is_list_of_lists
 
 
 class H2OTwoDimTable(object):
@@ -26,7 +27,7 @@ class H2OTwoDimTable(object):
     print
     table = copy.deepcopy(self.cell_values)
     nr=0
-    if h2o.H2OFrame._is_list_of_lists(table): nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
+    if _is_list_of_lists(table): nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
     if nr > 20:    # create a truncated view of the table, first/last 5 rows
       trunc_table =[]
       trunc_table += [ v for v in table[:5]]
