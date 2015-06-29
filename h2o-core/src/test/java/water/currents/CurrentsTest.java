@@ -124,13 +124,29 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void testRBind() {
+    String tree = "(rbind 1 2)";
+    checkTree(tree);
+
+    //tree = "(rbind a.hex 1 2)";
+    //checkTree(tree);
+  }
+
   @Test public void testApply() {
-    // Sum 
+    // Sum, reduction.  1 row result
     String tree = "(apply a.hex 2 {x . (sum x FALSE)})";
     checkTree(tree);
 
-    // Return two results (missing CBIND to turn on this test)
-    tree = "(apply a.hex 2 {x . (cbind (sum x FALSE) (mean x FALSE))})";
+    // Return ID column results.  Shared data result.
+    tree = "(apply a.hex 2 {x . x})";
+    checkTree(tree);
+
+    // Return column results, new data result.
+    tree = "(apply a.hex 2 abs)";
+    checkTree(tree);
+
+    // Return two results
+    tree = "(apply a.hex 2 {x . (rbind (sum x FALSE) (mean x FALSE))})";
     checkTree(tree);
   }
 
@@ -142,13 +158,13 @@ public class CurrentsTest extends TestUtil {
 
   private void checkTree(String tree) { checkTree(tree,false); }
   private void checkTree(String tree, boolean expectThrow) {
-    Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
-    Key ahex = Key.make("a.hex");
-    Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
-    r.delete();
-    DKV.put(ahex, fr);
-    //Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
-    //fr.remove(4).remove();
+    //Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
+    //Key ahex = Key.make("a.hex");
+    //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
+    //r.delete();
+    //DKV.put(ahex, fr);
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    fr.remove(4).remove();
     try {
       Val val = Exec.exec(tree);
       Assert.assertFalse(expectThrow);

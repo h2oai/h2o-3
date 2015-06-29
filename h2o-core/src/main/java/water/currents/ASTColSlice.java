@@ -1,7 +1,8 @@
 package water.currents;
 
-import water.MRTask;
+import java.util.Arrays;
 import water.H2O;
+import water.MRTask;
 import water.fvec.*;
 
 /** Column slice */
@@ -219,5 +220,51 @@ class ASTCBind extends ASTPrim {
     if( clean ) vec.remove();
 
     return new ValFrame(fr);
+  }
+}
+
+/** rbind: bind rows together into a new frame */
+class ASTRBind extends ASTPrim {
+  @Override int nargs() { return -1; } // variable number of args
+  @Override String str() { return "rbind" ; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+
+    // Compute the variable args.  Find the common column count
+    Val vals[] = new Val[asts.length];
+    Frame fr = null;
+    long numRows = 0;
+    for( int i=1; i<asts.length; i++ ) {
+      vals[i] = stk.track(asts[i].exec(env));
+      if( vals[i].isFrame() ) {
+        Frame fr0 = vals[i].getFrame();
+        numRows += fr0.numRows();
+        if( fr == null ) fr = fr0;
+        else if( fr.numCols() != fr0.numCols() ) 
+          throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
+        else if( !Arrays.deepEquals(fr._names,fr0._names) )
+          throw new IllegalArgumentException("rbind frames must have all the same column names, found "+fr._names+" and "+fr0._names);
+      } else numRows++;         // Expand scalars into all columns, 1 row
+    }
+    int numCols = fr==null ? 1 : fr.numCols();
+
+    // Populate the new Frame
+    Vec[] vecs = new Vec[numCols];
+    for( int c=0; c<numCols; c++ ) vecs[c] = Vec.makeZero(numRows);
+    Frame res = new Frame(fr==null ? new String[]{Frame.defaultColName(0)} : fr._names, vecs);
+    for( int i=1; i<asts.length; i++ ) {
+      switch( vals[i].type() ) {
+      case Val.FRM:  throw H2O.unimpl();
+      case Val.FUN:  throw H2O.unimpl();
+      case Val.STR:  throw H2O.unimpl();
+      case Val.NUM:  
+        // Auto-expand scalars to fill every column
+        for( int c=0; c<numCols; c++ )
+          res.vec(c).set(i-1,vals[i].getNum());
+        break;
+      default: throw H2O.unimpl();
+      }
+    }
+
+    return new ValFrame(res);
   }
 }
