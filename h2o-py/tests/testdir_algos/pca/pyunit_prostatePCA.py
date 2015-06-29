@@ -16,7 +16,7 @@ def pca_prostate(ip, port):
     prostate.describe()
 
     print "PCA on columns 3 to 9 with k = 3, retx = FALSE, transform = 'STANDARDIZE'"
-    fitPCA = h2o.prcomp(x=prostate[2:9], k=3, transform="NONE")
+    fitPCA = h2o.prcomp(x=prostate[2:9], k=3, transform="NONE", pca_method="Power")
     pred1 = fitPCA.predict(prostate)
     pred2 = h2o.get_frame(fitPCA._model_json['output']['loading_key']['name'])
 

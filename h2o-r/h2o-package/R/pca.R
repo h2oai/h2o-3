@@ -46,7 +46,7 @@ h2o.prcomp <- function(training_frame, x, k,
                       model_id,                          # h2o generates its own default parameters
                       max_iterations = 1000,
                       transform = c("NONE", "DEMEAN", "DESCALE", "STANDARDIZE"),
-                      method = c("GramSVD", "Power", "GLRM"),
+                      pca_method = c("GramSVD", "Power", "GLRM"),
                       seed,
                       use_all_factor_levels)
 {
@@ -80,8 +80,8 @@ h2o.prcomp <- function(training_frame, x, k,
     parms$max_iterations <- max_iterations
   if(!missing(transform))
     parms$transform <- transform
-  if(!missing(method))
-    parms$method <- method
+  if(!missing(pca_method))
+    parms$pca_method <- pca_method
   if(!missing(seed))
     parms$seed <- seed
   if(!missing(use_all_factor_levels))

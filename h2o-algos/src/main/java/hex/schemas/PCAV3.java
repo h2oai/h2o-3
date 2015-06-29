@@ -17,7 +17,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
     public DataInfo.TransformType transform;
 
     @API(help = "Method for computing PCA", values = { "GramSVD", "Power", "GLRM" })   // TODO: pull out of enum class
-    public PCAParameters.Method method;
+    public PCAParameters.Method pca_method;
 
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT)
     public int k;

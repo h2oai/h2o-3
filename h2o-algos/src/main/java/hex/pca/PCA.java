@@ -94,7 +94,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
     int k_min = (int)Math.min(_ncolExp, _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
-    if (!_parms._use_all_factor_levels && _parms._method == PCAParameters.Method.GLRM)
+    if (!_parms._use_all_factor_levels && _parms._pca_method == PCAParameters.Method.GLRM)
       error("_use_all_factor_levels", "GLRM only implemented for _use_all_factor_levels = true");
 
     if (expensive && error_count() == 0) checkMemoryFootPrint();
@@ -259,7 +259,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model = new PCAModel(dest(), _parms, new PCAModel.PCAOutput(PCA.this));
         model.delete_and_lock(_key);
 
-        if(_parms._method == PCAParameters.Method.GramSVD) {
+        if(_parms._pca_method == PCAParameters.Method.GramSVD) {
           dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
                             /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
@@ -276,7 +276,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           SingularValueDecomposition svdJ = gramJ.svd();
           computeStatsFillModel(model, dinfo, svdJ, gram, gtsk._nobs);
 
-        } else if(_parms._method == PCAParameters.Method.Power) {
+        } else if(_parms._pca_method == PCAParameters.Method.Power) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._ignored_columns = _parms._ignored_columns;
@@ -307,7 +307,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Recover PCA results from SVD model
           computeStatsFillModel(model, svd);
 
-        } else if(_parms._method == PCAParameters.Method.GLRM) {
+        } else if(_parms._pca_method == PCAParameters.Method.GLRM) {
           GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
           parms._train = _parms._train;
           parms._ignored_columns = _parms._ignored_columns;
