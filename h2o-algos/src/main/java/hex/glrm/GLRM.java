@@ -383,7 +383,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(dinfo, _parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
           xtsk.doAll(dinfo._adaptedFrame);
-
+          
           // 2) Update Y matrix given fixed X
           UpdateY ytsk = new UpdateY(dinfo, _parms, yt, step/_ncolA, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
           double[][] ytnew = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
@@ -584,7 +584,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xold(cs,k,_ncolA).atd(row) * _yt[yidx][k];
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          // TODO: Fix indexing on normSub and normMul (only contains _nums)
           double weight = _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             grad[k] += weight * _yt[yidx][k];
@@ -608,9 +607,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Numeric columns
         for(int j = _dinfo._cats; j < _ncolA; j++) {
+          int js = j - _dinfo._cats;
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          double xy = ArrayUtils.innerProduct(xnew, _yt[idx_ynum(j-_dinfo._cats,_dinfo)]);
-          _loss += _parms.loss(xy, a[j]);
+          double xy = ArrayUtils.innerProduct(xnew, _yt[idx_ynum(js,_dinfo)]);
+          _loss += _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
         }
       }
     }
