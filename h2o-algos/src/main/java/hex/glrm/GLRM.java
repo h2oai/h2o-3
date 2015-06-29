@@ -340,6 +340,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(tinfo._key, tinfo);
 
+        // Save standardization vectors for use in scoring later
         model._output._normSub = tinfo._normSub == null ? new double[tinfo._nums] : tinfo._normSub;
         if(tinfo._normMul == null) {
           model._output._normMul = new double[tinfo._nums];
@@ -361,14 +362,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
-
-        // Save standardization vectors for use in scoring later
-        model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
-        if(dinfo._normMul == null) {
-          model._output._normMul = new double[dinfo._nums];
-          Arrays.fill(model._output._normMul, 1.0);
-        } else
-          model._output._normMul = dinfo._normMul;
 
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
@@ -580,7 +573,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Numeric columns
         for(int j = _dinfo._cats; j < _ncolA; j++) {
-          int yidx = idx_ynum(j-_dinfo._cats,_dinfo);
+          int js = j - _dinfo._cats;
+          int yidx = idx_ynum(js,_dinfo);
           a[j] = cs[j].atd(row);
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
@@ -591,7 +585,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
           // TODO: Fix indexing on normSub and normMul (only contains _nums)
-          double weight = _parms.lgrad(xy, (a[j] - _normSub[j]) * _normMul[j]);
+          double weight = _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             grad[k] += weight * _yt[yidx][k];
         }
@@ -690,7 +684,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Numeric columns
       for(int j = _dinfo._cats; j < _ncolA; j++) {
-        int yidx = idx_ynum(j-_dinfo._cats,_dinfo);
+        int js = j - _dinfo._cats;
+        int yidx = idx_ynum(js,_dinfo);
 
         // Compute gradient of objective at column
         for(int row = 0; row < cs[0]._len; row++) {
@@ -703,7 +698,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold[yidx][k];
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = _parms.lgrad(xy, (a - _normSub[j]) * _normMul[j]);
+          double weight = _parms.lgrad(xy, (a - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
         }
@@ -789,9 +784,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Inner product x_i * y_j
           double xy = 0;
+          int js = j - _dinfo._cats;
           for(int k = 0; k < _ncolX; k++)
-            xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ynum(j-_dinfo._cats,_dinfo)][k];
-          _loss += _parms.loss(xy, (a - _normSub[j]) * _normMul[j]);
+            xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ynum(js,_dinfo)][k];
+          _loss += _parms.loss(xy, (a - _normSub[js]) * _normMul[js]);
         }
 
         // Calculate regularization term for old X if requested
