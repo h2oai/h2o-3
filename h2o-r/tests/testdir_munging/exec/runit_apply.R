@@ -6,7 +6,7 @@ test.apply <- function() {
 
   Log.info("Perform apply on columns")
 
-  kalls <- c("mean", "abs", "cos", "sin", "acos", "ceiling",
+  kalls <- c("abs", "cos", "sin", "acos", "ceiling",
              "floor", "cosh", "exp", "log", "round",
              "sqrt", "tan", "scale", "tanh")
 
