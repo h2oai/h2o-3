@@ -80,6 +80,8 @@ h2o.prcomp <- function(training_frame, x, k,
     parms$max_iterations <- max_iterations
   if(!missing(transform))
     parms$transform <- transform
+  if(!missing(method))
+    parms$method <- method
   if(!missing(seed))
     parms$seed <- seed
   if(!missing(use_all_factor_levels))
