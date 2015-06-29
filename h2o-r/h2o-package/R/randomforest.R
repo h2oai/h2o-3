@@ -99,6 +99,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$sample_rate <- sample_rate
   if(!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
+  if(!missing(binomial_double_trees))
+    parms$binomial_double_trees <- binomial_double_trees
   if(!missing(ntrees))
     parms$ntrees <- ntrees
   if(!missing(max_depth))
