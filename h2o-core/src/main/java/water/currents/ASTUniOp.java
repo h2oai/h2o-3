@@ -3,10 +3,7 @@ package water.currents;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.parser.ValueString;
 
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument

@@ -8,7 +8,7 @@ test.apply <- function() {
 
   kalls <- c("abs", "cos", "sin", "acos", "ceiling",
              "floor", "cosh", "exp", "log", "round",
-             "sqrt", "tan", "scale", "tanh")
+             "sqrt", "tan", "tanh")
 
   lapply(kalls, function(call) { print(apply(hex, 2, call)); })
 
