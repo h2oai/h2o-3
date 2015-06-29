@@ -720,7 +720,7 @@ public class DRFTest extends TestUtil {
       parms._response_column = "response";
       parms._weights_column = "weight";
       parms._seed = 234;
-      parms._min_rows = 1;
+      parms._min_rows = 2; //in terms of weighted rows
       parms._max_depth = 2;
       parms._ntrees = 3;
 
@@ -759,7 +759,7 @@ public class DRFTest extends TestUtil {
       parms._response_column = "response";
       parms._weights_column = "weight";
       parms._seed = 234;
-      parms._min_rows = 0.01242;
+      parms._min_rows = 0.01242; // in terms of weighted rows
       parms._max_depth = 2;
       parms._ntrees = 3;
 
