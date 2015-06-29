@@ -22,7 +22,7 @@ public class GLRMModelV3 extends ModelSchema<GLRMModel, GLRMModelV3, GLRMModel.G
     public double[][] archetypes;
 
     @API(help = "Singular values of XY matrix")
-    public double[] std_deviation;
+    public double[] singular_vals;
 
     @API(help = "Eigenvectors of XY matrix")
     public double[][] eigenvectors;

@@ -10,7 +10,7 @@ test.glrm.benign <- function(conn) {
   rank <- seq(from = 8, to = 14, by = 2)
   for( i in rank ) {
     Log.info(paste("H2O GLRM with rank", i, "decomposition:\n"))
-    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = i, init = "PlusPlus", recover_pca = TRUE)
+    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = i, init = "PlusPlus", recover_svd = TRUE)
     print(benign.glrm)
     h2o.rm(benign.glrm@model$loading_key$name)   # Remove loading matrix to free memory
   }
