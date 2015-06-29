@@ -14,7 +14,7 @@ def expr_slicing(ip,port):
     # H2OFrame[int] (column slice)
     res = 2 - iris
     res2 = res[0]
-    assert abs(res2[3] - -2.6) < 1e-10 and abs(res2[17] - -3.1) < 1e-10 and abs(res2[24] - -2.8) < 1e-10, \
+    assert abs(res2[3,:] - -2.6) < 1e-10 and abs(res2[17,:] - -3.1) < 1e-10 and abs(res2[24,:] - -2.8) < 1e-10, \
         "incorrect values"
 
     # H2OFrame[int,int]
@@ -27,8 +27,8 @@ def expr_slicing(ip,port):
 
     # H2OFrame[slice, int]
     res5 = res[5:9, 1]
-    assert abs(res5[0] - -1.9) < 1e-10 and abs(res5[1] - -1.4) < 1e-10 and abs(res5[2] - -1.4) < 1e-10 and \
-           abs(res5[3] - -0.9) < 1e-10, "incorrect values"
+    assert abs(res5[0,:] - -1.9) < 1e-10 and abs(res5[1,:] - -1.4) < 1e-10 and abs(res5[2,:] - -1.4) < 1e-10 and \
+           abs(res5[3,:] - -0.9) < 1e-10, "incorrect values"
 
     # H2OFrame[slice, slice]
     res = iris * 2

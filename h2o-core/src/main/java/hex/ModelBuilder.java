@@ -4,9 +4,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.fvec.C0DChunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.ReflectionUtils;
@@ -270,7 +268,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     return res;
   }
-
 
   protected  boolean ignoreStringColumns(){return true;}
 
@@ -540,4 +537,5 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
   }
+
 }

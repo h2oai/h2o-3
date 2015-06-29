@@ -33,7 +33,7 @@ def sdev(ip,port):
   try:
     iris_h2o[0:2].sd()
     assert False, "expected an error. more than one column."
-  except AttributeError:
+  except EnvironmentError:
     assert True
   
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from model_base import ModelBase
 from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
 
+
 class MetricsBase(object):
   """
   A parent class to house common metrics available for the various Metrics types.
@@ -188,6 +189,7 @@ class H2OMultinomialModelMetrics(MetricsBase):
     Retrieve the Hit Ratios
     """
     return self._metric_json['hit_ratio_table']
+
 
 class H2OBinomialModelMetrics(MetricsBase):
   """

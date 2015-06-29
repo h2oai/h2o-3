@@ -80,8 +80,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       mean = _response.mean();
-      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1))
-        mean = new FrameUtils.WeightedMean().doAll(_response, _weights).weightedMean();
+      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1)) {
+        FrameUtils.WeightedMean wm = new FrameUtils.WeightedMean();
+        mean = (float) (hasOffset() ? wm.doAll(_response, _weights, _offset) : wm.doAll(_response, _weights)).weightedMean();
+      }
 
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
@@ -132,7 +134,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
         Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, _model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
+        new ResidualsCollector(_ncols, _nclass, (hasOffset()?1:0)+(hasWeights()?1:0),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
       }
 

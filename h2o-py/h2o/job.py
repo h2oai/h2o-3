@@ -13,10 +13,9 @@ class H2OJob(object):
   A class representing an H2O Job.
   """
   def __init__(self, jobs, job_type):
-    if "jobs" in jobs:
-      job = jobs["jobs"][0]
-    else:
-      job = jobs["job"]
+    if "jobs" in jobs:  job = jobs["jobs"][0]
+    elif "job" in jobs: job = jobs["job"]
+    else:               job = jobs
 
     self.jobs = jobs
     self.job = job
