@@ -475,6 +475,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
           _nobs = ymut._nobs;
+          if(ymut._comupteWeightedSigma) { // got weights, need to recompute standardization
+            double [] sigmas = MemoryManager.malloc8d(_dinfo._nums);
+            double [] mean = MemoryManager.malloc8d(_dinfo._nums);
+            for(int i = 0; i < _dinfo._nums; ++i) {
+              sigmas[i] = MathUtils.weightedSigma(ymut._nobs, ymut._wsum, ymut._xsum[i], ymut._xxsum[i]);
+              mean[i] = ymut._xsum[i]/ymut._wsum;
+            }
+            _dinfo.updateWeightedSigmaAndMean(sigmas, mean);
+          }
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});
