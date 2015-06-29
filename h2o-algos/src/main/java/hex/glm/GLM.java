@@ -1288,8 +1288,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         if(t > MINLINE_SEARCH_STEP) {
           getCompleter().addToPendingCount(1);
+          t /= LINE_SEARCH_STEP;
           // GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
-          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._reg, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, lst._rowFilter, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length-1])).asyncExec(_activeData._adaptedFrame);
+          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._reg, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, lst._rowFilter, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length - 1])).asyncExec(_activeData._adaptedFrame);
           return;
         }
         // no line step worked => converge
