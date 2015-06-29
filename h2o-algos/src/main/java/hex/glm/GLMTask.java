@@ -110,14 +110,15 @@ public abstract class GLMTask  {
     final double [] _beta;
     final double [] _direction;
     final double _step;
+    final double _initStep;
     final int _nSteps;
     final GLMParameters _params;
     final double _reg;
     Vec _rowFilter;
     boolean _useFasterMetrics = false;
 
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter){this(dinfo, params, reg, beta, direction, step, nsteps, rowFilter, null);}
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter){this(dinfo, params, reg, beta, direction, initStep, step, nsteps, rowFilter, null);}
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
       super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
       _reg = reg;
@@ -127,6 +128,7 @@ public abstract class GLMTask  {
       _nSteps = nsteps;
       _params = params;
       _rowFilter = rowFilter;
+      _initStep = initStep;
     }
     public GLMLineSearchTask setFasterMetrics(boolean b){
       _useFasterMetrics = b;
@@ -161,7 +163,7 @@ public abstract class GLMTask  {
       // intercept
       for (int r = 0; r < eta.length; ++r) {
         double b = beta[beta.length - 1];
-        double t = pk[beta.length - 1];
+        double t = pk[beta.length - 1] * _initStep;
         for (int j = 0; j < _nSteps; ++j, t *= _step) {
           eta[r][j] += b + t;
         }
@@ -176,7 +178,7 @@ public abstract class GLMTask  {
           }
           int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
           if(off != -1) {
-            double t = pk[off];
+            double t = pk[off] * _initStep;
             double b = beta[off];
             for (int j = 0; j < _nSteps; ++j, t *= _step)
               eta[r][j] += b + t;
@@ -189,7 +191,7 @@ public abstract class GLMTask  {
       if(_dinfo._normMul != null && _dinfo._normSub != null) {
         for (int i = 0; i < _dinfo._nums; ++i) {
           double b = beta[numStart+i];
-          double s = pk[numStart+i];
+          double s = pk[numStart+i] * _initStep;
           double d = _dinfo._normSub[i] * _dinfo._normMul[i];
           for (int j = 0; j < _nSteps; ++j, s *= _step)
             off[j] -= (b + s) * d;
@@ -207,7 +209,7 @@ public abstract class GLMTask  {
           if (_dinfo._normMul != null)
             d *= _dinfo._normMul[i];
           double b = beta[numStart+i];
-          double s = pk[numStart+i];
+          double s = pk[numStart+i] * _initStep;
           for (int j = 0; j < _nSteps; ++j, s *= _step)
             eta[r][j] += (b + s) * d;
         }

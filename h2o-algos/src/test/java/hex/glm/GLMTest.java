@@ -237,7 +237,7 @@ public class GLMTest  extends TestUtil {
         beta[i] = 1 - 2 * rnd.nextDouble();
         pk[i] = 10 * (1 - 2 * rnd.nextDouble());
       }
-      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, 1, beta, pk, .7, 16, null).doAll(dinfo._adaptedFrame);
+      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, 1, beta, pk, 1, .7, 16, null).doAll(dinfo._adaptedFrame);
       double step = 1, stepDec = .7;
       for (int i = 0; i < glst._nSteps; ++i) {
         double[] b = beta.clone();
