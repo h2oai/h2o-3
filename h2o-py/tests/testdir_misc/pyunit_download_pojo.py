@@ -1,7 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
 import h2o
-from h2o.frame import H2OVec
 
 def download_pojo(ip,port):
   # Connect to h2o
@@ -11,18 +10,9 @@ def download_pojo(ip,port):
   print "iris:"
   iris.show()
 
-  ###################################################################
+  m = h2o.gbm(x=iris[:4],y=iris[4])
+  h2o.download_pojo(m)
 
-  res = 2 - iris
-  res2 = H2OVec(name="C0", expr=res[0]._expr)
-  print "res2:"
-  res2.show()
-
-  res3 = H2OVec(name="C1", expr=res[1]._expr)
-  print "res3:"
-  res3.show()
-
-  iris[2].show()
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, download_pojo)

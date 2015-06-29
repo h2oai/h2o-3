@@ -26,9 +26,9 @@ def missing(ip,port):
         # add missing values to the data section of the file (leave the response alone)
         if missing_ratios[i] > 0:
             resp = data[23]
-            pred = data[list(set(range(data.ncol())) - set([23]))]
+            pred = data[:,range(23)+range(24,data.ncol())]
             data_missing = pred.insert_missing_values(fraction=missing_ratios[i])
-            data_fin = h2o.cbind(data_missing,resp)
+            data_fin = data_missing.cbind(resp)
         else:
             data_fin = data
 

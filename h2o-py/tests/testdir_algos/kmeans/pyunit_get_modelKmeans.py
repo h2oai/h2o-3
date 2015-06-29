@@ -23,7 +23,7 @@ def get_modelKmeans(ip,port):
         # Log.info("H2O K-Means")
         km_h2o = h2o.kmeans(x=benign_h2o, k=i)
         km_h2o.show()
-        model = h2o.get_model(km_h2o._key)
+        model = h2o.get_model(km_h2o._id)
         model.show()
 
         km_sci = KMeans(n_clusters=i, init='k-means++', n_init=1)

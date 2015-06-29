@@ -79,8 +79,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Maximum tree depth.", gridable = true)
     public int max_depth;
 
-    @API(help="Fewest allowed observations in a leaf (in R called 'nodesize').", gridable = true)
-    public int min_rows;
+    @API(help="Fewest allowed (weighted) observations in a leaf (in R called 'nodesize').", gridable = true)
+    public double min_rows;
 
     @API(help="For numerical columns (real/int), build a histogram of this many bins, then split at the best point", gridable = true)
     public int nbins;

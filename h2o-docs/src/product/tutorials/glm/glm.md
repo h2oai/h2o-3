@@ -22,6 +22,12 @@ This tutorial uses a publicly available data set that can be found at the UCI Ma
 The original data are the Abalone data, available from UCI Machine Learning Repository. They are composed of 4177 observations on 9 attributes. All attributes are real valued, and continuous, except for Sex and Rings, found in columns 0 and 8 respectively.
 Sex is categorical with 3 levels (male, female, and infant), and Rings is an integer valued count.
 
+If you don't have any data of your own to work with, you can find some example datasets here: 
+
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+
+
 ####Importing Data
 Before creating a model, import data into H2O:
 

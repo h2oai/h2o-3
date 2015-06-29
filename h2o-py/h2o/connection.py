@@ -86,7 +86,7 @@ class H2OConnection(object):
           cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path)
         else:
           print "No jar file found. Could not start local instance."
-          print "No h2o jar found at: " + path_to_jar
+          print "No h2o jar found at: " + jar_path
           raise
     __H2OCONN__._cld = cld
 
@@ -296,6 +296,26 @@ class H2OConnection(object):
     raise ValueError("Unkown type in H2OConnection._tmp_file call: " + type)
 
   @staticmethod
+  def _shutdown(conn, prompt):
+    """
+    Shut down the specified instance. All data will be lost.
+    This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O
+    instance.
+    :param conn: An H2OConnection object containing the IP address and port of the server running H2O.
+    :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
+    :return: None
+    """
+    if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
+    if not conn.cluster_is_up(conn):  raise ValueError("There is no H2O instance running at ip: {0} and port: "
+                                                       "{1}".format(conn.ip(), conn.port()))
+
+    if not isinstance(prompt, bool): raise ValueError("`prompt` must be TRUE or FALSE")
+    if prompt: response = raw_input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
+                                    "(Y/N)? ".format(conn.ip(), conn.port()))
+    else: response = "Y"
+    if response == "Y" or response == "y": conn.post(url_suffix="Shutdown")
+
+  @staticmethod
   def get_session_id():
       return H2OConnection.get_json(url_suffix="InitID")["session_key"]
 
@@ -319,6 +339,18 @@ class H2OConnection(object):
     if not __H2OCONN__:
       raise EnvironmentError("No active connection to an H2O cluster.  Try calling `h2o.init()`")
     return __H2OCONN__
+
+  @staticmethod
+  def cluster_is_up(conn):
+    """
+    Determine if an H2O cluster is up or not
+    :param conn: An H2OConnection object containing the IP address and port of the server running H2O.
+    :return: TRUE if the cluster is up; FALSE otherwise
+    """
+    if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
+    rv = conn.current_connection()._attempt_rest(url="http://{0}:{1}/".format(conn.ip(), conn.port()), method="GET",
+                                                 post_body="", file_upload_info="")
+    return rv.status_code == 200 or rv.status_code == 301
 
   """
   Below is the REST implementation layer:

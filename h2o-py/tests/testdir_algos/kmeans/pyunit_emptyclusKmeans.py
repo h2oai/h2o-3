@@ -31,7 +31,6 @@ def emptyclusKmeans(ip,port):
         initial_centers[i] = [100*i for z in range(1,len(initial_centers[0])+1)]
 
     initial_centers_h2o = h2o.H2OFrame(initial_centers)
-    initial_centers_h2o_key = initial_centers_h2o.send_frame()
     initial_centers_sci = np.asarray(initial_centers)
 
     #Log.info("Initial cluster centers:")
@@ -47,7 +46,7 @@ def emptyclusKmeans(ip,port):
     print "scikit final centers"
     print km_sci.cluster_centers_
 
-    km_h2o = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=initial_centers_h2o_key, standardize=True)
+    km_h2o = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=initial_centers_h2o, standardize=True)
     print "H2O final centers"
     print km_h2o.centers()
 

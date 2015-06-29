@@ -18,7 +18,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _max_depth = 5; // Maximum tree depth. Grid Search, comma sep values:5,7
 
-    public int _min_rows = 10; // Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values
+    public double _min_rows = 10; // Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values
 
     public int _nbins = 20; // Numerical (real/int) cols: Build a histogram of this many bins, then split at the best point
 

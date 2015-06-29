@@ -511,7 +511,7 @@ class ASTasDate extends ASTUniPrefixOp {
           if( !c.isNA(i) ) {
             if( isStr ) date = c.atStr(vStr, i).toString();
             else        date = dom[(int)c.at8(i)];
-            nc.addNum(DateTime.parse(date,_fmt).getMillis());
+            nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
           } else nc.addNA();
         }
       }
@@ -564,7 +564,7 @@ class ASTToDate extends ASTUniPrefixOp {
           if( !c.isNA(i) ) {
             if( isStr ) date = c.atStr(vStr, i).toString();
             else        date = dom[(int)c.at8(i)];
-            nc.addNum(DateTime.parse(date,_fmt).getMillis());
+            nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
           } else nc.addNA();
         }
       }
@@ -1305,20 +1305,30 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
 
     if( fr0!=null ) {
       if( fr0.numCols()==1 && fr0.numRows()==1 ) {
-        d0 = fr0.anyVec().at(0);
+        Vec v = fr0.anyVec();
+        if( v.isEnum() ) s0 = v.domain()[(int)v.at(0)];
+        else             d0 = v.at(0);
         fr0=null;
       }
     }
 
     if( fr1!=null ) {
       if( fr1.numCols()==1 && fr1.numRows()==1 ) {
-        d1= fr1.anyVec().at(0);
+        Vec v = fr1.anyVec();
+        if( v.isEnum() ) s1 = v.domain()[(int)v.at(0)];
+        else             d1 = v.at(0);
         fr1=null;
       }
     }
 
     // both were 1x1 frames on the stack...
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2, new ValNum(op(d0, d1))); return; }
+    if( fr0==null && fr1==null ) {
+      if( s0==null && s1==null ) env.poppush(2, new ValNum(op(d0, d1)));
+      if( s0!=null && s1==null ) env.poppush(2, new ValNum(Double.valueOf(op(s0, d1))));
+      if( s0==null && s1!=null ) env.poppush(2, new ValNum(Double.valueOf(op(d0, s1))));
+      if( s0!=null && s1!=null ) env.poppush(2, new ValNum(Double.valueOf(op(s0, s1))));
+      return;
+    }
 
     final boolean lf = fr0 != null;
     final boolean rf = fr1 != null;
@@ -3190,6 +3200,12 @@ class ASTSetColNames extends ASTUniPrefixOp {
     AST cols = E.parse();
     if( cols instanceof ASTSpan )          _idxs = ((ASTSpan)cols).toArray();
     else if( cols instanceof ASTLongList ) _idxs = ((ASTLongList)cols)._l;
+    else if( cols instanceof ASTDoubleList) {
+      double[] d = ((ASTDoubleList)cols)._d;
+      _idxs=new long[d.length];
+      int i=0;
+      for(double dd:d) _idxs[i++] = (long)dd;
+    }
     else if( cols instanceof ASTNum )      _idxs = new long[]{(long)((ASTNum) cols).dbl()};
     else throw new IllegalArgumentException("Bad AST: Expected a span, llist, or number for the column indices. Got: " + cols.getClass());
 
@@ -3534,7 +3550,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (env.isNum()) return;
-      Frame fr = env.popAry(); // get the frame w/o sub-reffing
+    Frame fr = env.popAry(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
@@ -3548,13 +3564,12 @@ class ASTMean extends ASTUniPrefixOp {
       }
       env.push(new ValNum(mean/rows));
     } else {
-      MeanNARMTask t = new MeanNARMTask(_narm).doAll(fr.anyVec()).getResult();
-      if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
-        double ave = Double.NaN;
-        env.push(new ValNum(ave));
-      } else {
-        double ave = t._sum / t._rowcnt;
-        env.push(new ValNum(ave));
+      Vec v = fr.anyVec();
+      if( _narm || v.naCnt()==0 ) env.push(new ValNum(v.mean()));
+      else {
+        MeanNARMTask t = new MeanNARMTask(false).doAll(v);
+        if (t._rowcnt == 0 || Double.isNaN(t._sum)) env.push(new ValNum(Double.NaN));
+        else env.push(new ValNum(t._sum / t._rowcnt));
       }
     }
   }
@@ -4330,9 +4345,7 @@ class ASTKeysLeaked extends ASTUniPrefixOp {
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value.isVecGroup() || k == Job.LIST ||
-                // Also leave around all attempted Jobs for the Jobs list
-                (value.isJob() && value.<Job>get().isStopped()) )
+        if( !(value.isFrame() || value.isVec() || value.get() instanceof Chunk) )
           leaked_keys--;
         else {
           if( cnt++ < 10 )
@@ -4502,7 +4515,7 @@ class ASTCat extends ASTUniPrefixOp {
             long spLength = sp.length();
             // can read the whole span into the chunk
             if( sp.length() <= clen ) {
-              m = new Marker((byte)1,spIdx,sp._min,sp._max);
+              m = new Marker((byte)1,spIdx,sp._min,(long)sp._max);
               sp=null;
               spIdx++;
               spanOrDbl++;
@@ -4517,11 +4530,11 @@ class ASTCat extends ASTUniPrefixOp {
 
           // got a split span
           } else {
-            long leftInSpan = sp._max - splitPoint + 1;
+            long leftInSpan = (long)sp._max - splitPoint + 1;
 
             // can we fit the rest of the span into this chunk
             if( leftInSpan <= clen ) {
-              m = new Marker((byte)1,spIdx,splitPoint+1,sp._max);
+              m = new Marker((byte)1,spIdx,splitPoint+1,(long)sp._max);
               // advance pointers, null out split span
               sp = null;
               splitPoint=0;
