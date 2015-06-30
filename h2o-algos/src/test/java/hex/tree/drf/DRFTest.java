@@ -104,9 +104,9 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(3, 0, 0, 0, 0),
-                    ard(2, 179, 1, 2, 0),
+                    ard(2, 177, 1, 4, 0),
                     ard(0, 1, 1, 0, 0),
-                    ard(0, 3, 2, 68, 1),
+                    ard(0, 2, 2, 69, 1),
                     ard(0, 0, 0, 3, 87)),
             s("3", "4", "5", "6", "8"));
   }
@@ -398,7 +398,7 @@ public class DRFTest extends TestUtil {
       drf._ntrees = ntree;
       drf._max_depth = max_depth;
       drf._min_rows = min_rows;
-      drf._binomial_double_trees = new Random().nextBoolean();
+//      drf._binomial_double_trees = new Random().nextBoolean();
       drf._nbins = nbins;
       drf._nbins_cats = nbins;
       drf._mtries = -1;
@@ -563,7 +563,7 @@ public class DRFTest extends TestUtil {
         DRFModel drf = job.trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
-        mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
+        mses[i] = drf._output._training_metrics.mse();
         job.remove();
         drf.delete();
       }
@@ -575,7 +575,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20841945889333927, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20934191392060025, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -590,23 +590,24 @@ public class DRFTest extends TestUtil {
       // Load data, hack frames
       tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
       test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
-      for (int i : new int[]{0,1,2}) {
-        tfr.vecs()[i] = tfr.vecs()[i].toEnum();
-        test.vecs()[i] = test.vecs()[i].toEnum();
-      }
+//      for (int i : new int[]{0,1,2}) {
+//        tfr.vecs()[i] = tfr.vecs()[i].toEnum();
+//        test.vecs()[i] = test.vecs()[i].toEnum();
+//      }
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
       parms._valid = test._key;
+      parms._ignored_columns = new String[]{"Origin","Dest"};
 //      parms._ignored_columns = new String[]{"UniqueCarrier","Origin","Dest"};
 //      parms._ignored_columns = new String[]{"UniqueCarrier","Origin"};
 //      parms._ignored_columns = new String[]{"Month","DayofMonth","DayOfWeek","DepTime","UniqueCarrier","Origin","Distance"};
       parms._response_column = "dep_delayed_15min";
       parms._nbins = 20;
-      parms._nbins_cats = 20;
-      parms._binomial_double_trees = true;
-      parms._ntrees = 100;
-      parms._max_depth = 20;
+      parms._nbins_cats = 1024;
+      parms._binomial_double_trees = new Random().nextBoolean(); //doesn't matter!
+      parms._ntrees = 1;
+      parms._max_depth = 3;
       parms._mtries = -1;
       parms._sample_rate = 0.632f;
       parms._min_rows = 10;
@@ -615,7 +616,12 @@ public class DRFTest extends TestUtil {
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
       DRFModel drf = job.trainModel().get();
-      Log.info("Test set AUC: " + drf._output._validation_metrics.auc()._auc);
+      Log.info("Training set AUC:   " + drf._output._training_metrics.auc()._auc);
+      Log.info("Validation set AUC: " + drf._output._validation_metrics.auc()._auc);
+
+      // all numerical
+      assertEquals(drf._output._training_metrics.auc()._auc, 0.6498819479528417, 1e-8);
+      assertEquals(drf._output._validation_metrics.auc()._auc, 0.6479974533672835, 1e-8);
 
       job.remove();
       drf.delete();
@@ -808,9 +814,9 @@ public class DRFTest extends TestUtil {
       // Shuffling changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(0.975, mm.auc()._auc, 1e-8);
-      assertEquals(0.11538629999502548, mm.mse(), 1e-8);
-      assertEquals(0.5124928825210173, mm.r2(), 1e-6);
-      assertEquals(0.31942928561508804, mm.logloss(), 1e-6);
+      assertEquals(0.09254807692307693, mm.mse(), 1e-8);
+      assertEquals(0.6089843749999999, mm.r2(), 1e-6);
+      assertEquals(0.24567709133200652, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
