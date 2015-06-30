@@ -50,7 +50,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              min_rows = 1,
                              nbins = 20,
                              nbins_cats = 1024,
-                             binomial_double_trees = TRUE,
+                             binomial_double_trees = FALSE,
                              balance_classes = FALSE,
                              max_after_balance_size = 5,
                              seed,
@@ -99,6 +99,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$sample_rate <- sample_rate
   if(!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
+  if(!missing(binomial_double_trees))
+    parms$binomial_double_trees <- binomial_double_trees
   if(!missing(ntrees))
     parms$ntrees <- ntrees
   if(!missing(max_depth))

@@ -1,0 +1,35 @@
+################################################################################
+## PUBDEV-1572
+##
+## In the case of multiple supplied ratios, h2o.splitFrame shouldn't treat the
+## ratios as relative ratios
+##
+################################################################################
+
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+test.splitFrame.multiple.ratios <- function(conn) {
+  hex <- as.h2o(iris)
+
+  Log.info("Splits using c(0.1, 0.2), c(0.2, 0.4), c(0.3, 0.6).")
+  split_1 <- h2o.splitFrame(hex, c(0.1, 0.2))
+  split_2 <- h2o.splitFrame(hex, c(0.2, 0.4))
+  split_3 <- h2o.splitFrame(hex, c(0.3, 0.6))
+
+  small_1 <- nrow(split_1[[1]])
+  large_1 <- nrow(split_1[[2]])
+  small_2 <- nrow(split_2[[1]])
+  large_2 <- nrow(split_2[[2]])
+  small_3 <- nrow(split_3[[1]])
+  large_3 <- nrow(split_3[[2]])
+
+  expect_equal(large_3, 3*large_1)
+  expect_equal(large_2, 2*large_1)
+  expect_equal(small_3, 3*small_1)
+  expect_equal(small_2, 2*small_1)
+
+  endTest()
+}
+
+doTest("Using Splitframe on Multiple Ratios", test.splitFrame.multiple.ratios)
