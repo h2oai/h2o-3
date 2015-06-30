@@ -81,9 +81,13 @@ abstract public class AST extends Iced {
 
     // Reducers
     init(new ASTMax());
+    init(new ASTMaxNA());
+    init(new ASTMean());
     init(new ASTMean());
     init(new ASTMin());
+    init(new ASTMinNA());
     init(new ASTSum());
+    init(new ASTSumNA());
 
     // Generic data mungers
     init(new ASTCBind());

@@ -134,7 +134,7 @@ public class CurrentsTest extends TestUtil {
 
   @Test public void testApply() {
     // Sum, reduction.  1 row result
-    String tree = "(apply a.hex 2 {x . (sum x FALSE)})";
+    String tree = "(apply a.hex 2 {x . (sum x)})";
     checkTree(tree);
 
     // Return ID column results.  Shared data result.
@@ -146,7 +146,7 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
 
     // Return two results
-    tree = "(apply a.hex 2 {x . (rbind (sum x FALSE) (mean x 0 FALSE))})";
+    tree = "(apply a.hex 2 {x . (rbind (sumNA x) (mean x 0 FALSE))})";
     checkTree(tree);
   }
 
