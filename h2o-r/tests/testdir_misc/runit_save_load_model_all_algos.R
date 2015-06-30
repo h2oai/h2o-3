@@ -151,7 +151,7 @@ test.save.all.algos <- function(conn) {
   expect_equal(pros.nv.drf, pros.no_val.drf)
   expect_equal(pros.v.drf, pros.val.drf)
 
-  endTest()
+  testEnd()
 }
 
 doTest("Saving Models of All Algos with/without Validation", test.save.all.algos)
