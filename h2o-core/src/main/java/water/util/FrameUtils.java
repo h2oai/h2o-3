@@ -241,6 +241,9 @@ public class FrameUtils {
         _wsum += w;
       }
     }
-    @Override public void reduce(WeightedMean mrt) { _wresponse += mrt._wresponse; }
+    @Override public void reduce(WeightedMean mrt) {
+      _wresponse += mrt._wresponse;
+      _wsum += mrt._wsum;
+    }
   }
 }
