@@ -15,7 +15,7 @@ def vi_toy_test(ip,port):
 
     ranking = [rf._model_json['output']['variable_importances'].cell_values[v][0] for v in range(toy_data.ncol()-1)]
     print(ranking)
-    assert tuple(ranking) == tuple(["V3","V2","V6","V1","V5","V4"]), "expected specific variable importance ranking"
+    assert tuple(ranking) == tuple(["V3","V2","V6","V5","V1","V4"]), "expected specific variable importance ranking"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, vi_toy_test)

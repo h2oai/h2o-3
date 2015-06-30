@@ -859,7 +859,7 @@ class H2O(object):
         gridParams = parameters
         gridParams['grid_parameters'] = json.dumps(hyperParameters)
 
-        result = self.__do_json_request('/3/Grid/' + algo, cmd='post', postData=gridParams, raiseIfNon200=False)
+        result = self.__do_json_request('/99/Grid/' + algo, cmd='post', postData=gridParams, raiseIfNon200=False)
 
         if asynchronous:
             return result

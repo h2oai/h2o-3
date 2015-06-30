@@ -211,4 +211,9 @@ public class MathUtils {
     return new double[] {min,max,mean,stddev};
   }
 
+  public static double sign(double d) {
+    if(d == 0)return 0;
+    return d < 0?-1:1;
+  }
+
 }

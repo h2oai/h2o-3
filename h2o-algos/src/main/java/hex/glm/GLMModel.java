@@ -3,12 +3,7 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.TransformType;
 import hex.glm.GLMModel.GLMParameters.Family;
-import jsr166y.RecursiveAction;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.DTask.DKeyTask;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -16,15 +11,12 @@ import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Created by tomasnykodym on 8/27/14.
  */
-public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
-  public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs) {
+public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+  public GLMModel(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs, boolean hasWeights, boolean hasOffset) {
     super(selfKey, parms, null);
 
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
@@ -57,7 +49,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if(domain == null && _parms._family == Family.binomial)
       domain = new String[]{"0","1"};
-    return new GLMValidation(domain,_parms._intercept,_parms._intercept?_ymu:_parms._family == Family.binomial?.5:0, _parms, rank(beta()), _output._threshold, true);
+    return new GLMValidation(domain,_parms._intercept, _ymu, _parms, rank(beta()), _output._threshold, true);
   }
 
   public double [] beta() { return _output._global_beta;}
@@ -65,25 +57,26 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
 
 
-  public static class GLMParameters extends SupervisedModel.SupervisedParameters {
+  public static class GLMParameters extends Model.Parameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
     public Link _link = Link.family_default;
     public Solver _solver = Solver.IRLSM;
-    public final double _tweedie_variance_power;
-    public final double _tweedie_link_power;
+    public double _tweedie_variance_power;
+    public double _tweedie_link_power;
     public double [] _alpha = null;
     public double [] _lambda = null;
     public double _prior = -1;
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
+    public boolean _non_negative = false;
     public boolean _exactLambdas = false;
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
     public int _n_folds;
-    boolean _intercept = true;
+    public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = 1e-5;
     public double _gradient_epsilon = 1e-4;
@@ -95,11 +88,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public void validate(GLM glm) {
       if(_n_folds < 0) glm.error("n_folds","must be >= 0");
       if(_n_folds == 1)_n_folds = 0; // 0 or 1 means no n_folds
+      if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
+        glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
         if(_nlambdas == -1)
           _nlambdas = 100;
         else
           _exactLambdas = false;
+      if(_family != Family.tweedie)
+        glm.hide("tweedie_variance_power","Only applicable with Tweedie family");
+      _tweedie_link_power = 1 - _tweedie_variance_power;
       if(_beta_constraints != null) {
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
@@ -152,10 +150,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
             if (_link != Link.inverse && _link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only inverse, log and identity links are allowed for family=gamma.");
             break;
-//          case tweedie:
-//            if (_link != Link.tweedie)
-//              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
-//            break;
+          case tweedie:
+            if (_link != Link.tweedie)
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
+            break;
           default:
             H2O.fail();
         }
@@ -167,22 +165,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       assert _link == Link.family_default;
     }
     public GLMParameters(Family f){this(f,f.defaultLink);}
-    public GLMParameters(Family f, Link l){this(f,l,null, null);}
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
-      this._family = f;
-      this._lambda = lambda;
-      this._alpha = alpha;
-      _tweedie_link_power = Double.NaN;
-      _tweedie_variance_power = Double.NaN;
-      _link = l;
-    }
-    public GLMParameters(Family f, double [] lambda, double [] alpha, double twVar, double twLnk){
+    public GLMParameters(Family f, Link l){this(f,l, null, null, 0, 1);}
+
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
       this._tweedie_link_power = twLnk;
       _family = f;
-      _link = f.defaultLink;
+      _link = l;
     }
 
     public final double variance(double mu){
@@ -195,10 +186,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return mu;
         case gamma:
           return mu * mu;
-//        case tweedie:
-//          return Math.pow(mu, _tweedie_variance_power);
+        case tweedie:
+          return Math.pow(mu, _tweedie_variance_power);
         default:
-          throw new RuntimeException("unknown family Id " + this);
+          throw new RuntimeException("unknown family Id " + this._family);
       }
     }
 
@@ -220,12 +211,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public final double deviance(double yr, double ym){
+      double y1 = yr == 0?.1:yr;
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
         case binomial:
-//          if(yr == ym) return 0;
-//          return 2*( -yr * eta - Math.log(1 - ym));
           return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
         case poisson:
           if( yr == 0 ) return 2 * ym;
@@ -233,44 +223,23 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-//        case tweedie:
-//          // Theory of Dispersion Models: Jorgensen
-//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-//          double one_minus_p = 1 - _tweedie_variance_power;
-//          double two_minus_p = 2 - _tweedie_variance_power;
-//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        case tweedie:
+          double theta = _tweedie_variance_power == 1
+            ?Math.log(y1/ym)
+            :(Math.pow(y1,1.-_tweedie_variance_power) - Math.pow(ym,1 - _tweedie_variance_power))/(1-_tweedie_variance_power);
+          double kappa = _tweedie_variance_power == 2
+            ?Math.log(y1/ym)
+            :(Math.pow(yr,2-_tweedie_variance_power) - Math.pow(ym,2-_tweedie_variance_power))/(2 - _tweedie_variance_power);
+          return 2 * (yr * theta - kappa);
         default:
           throw new RuntimeException("unknown family " + _family);
       }
     }
     public final double deviance(float yr, float ym){
-      switch(_family){
-        case gaussian:
-          return (yr - ym) * (yr - ym);
-        case binomial:
-//          if(yr == ym) return 0;
-//          return 2*( -yr * eta - Math.log(1 - ym));
-          return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
-        case poisson:
-          if( yr == 0 ) return 2 * ym;
-          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
-        case gamma:
-          if( yr == 0 ) return -2;
-          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-//        case tweedie:
-//          // Theory of Dispersion Models: Jorgensen
-//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-//          double one_minus_p = 1 - _tweedie_variance_power;
-//          double two_minus_p = 2 - _tweedie_variance_power;
-//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
-        default:
-          throw new RuntimeException("unknown family " + _family);
-      }
+     return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double yr, double eta, double ym){
+    public final double likelihood(double yr, double ym){
       switch(_family){
         case gaussian:
           return .5 * (yr - ym) * (yr - ym);
@@ -280,7 +249,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 //          double res = Math.log(1 + Math.exp((1 - 2*yr) * eta));
 //          assert Math.abs(res - .5 * deviance(yr,eta,ym)) < 1e-8:res + " != " + .5*deviance(yr,eta,ym) +" yr = "  + yr + ", ym = " + ym + ", eta = " + eta;
 //          return res;
-//
 //          double res = -yr * eta - Math.log(1 - ym);
 //          return res;
         case poisson:
@@ -289,18 +257,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-//        case tweedie:
-//          // Theory of Dispersion Models: Jorgensen
-//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-//          double one_minus_p = 1 - _tweedie_variance_power;
-//          double two_minus_p = 2 - _tweedie_variance_power;
-//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        case tweedie:
+          return deviance(yr,ym); //fixme: not really correct, not sure what the likelihood is right now
         default:
           throw new RuntimeException("unknown family " + _family);
       }
     }
-
 
     public final double link(double x) {
       switch(_link) {
@@ -314,14 +276,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
-//        case tweedie:
-//          return Math.pow(x, _tweedie_link_power);
+        case tweedie:
+          return _tweedie_link_power == 0?Math.log(x):Math.pow(x, _tweedie_link_power);
         default:
           throw new RuntimeException("unknown link function " + this);
       }
     }
 
-    public final double linkDeriv(double x) {
+    public final double linkDeriv(double x) { // note: compute an inverse of what R does
       switch(_link) {
         case logit:
           double div = (x * (1 - x));
@@ -333,8 +295,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return 1.0 / x;
         case inverse:
           return -1.0 / (x * x);
-//        case tweedie:
-//          return _tweedie_link_power * Math.pow(x, _tweedie_link_power - 1);
+        case tweedie:
+//          double res = _tweedie_link_power == 0
+//            ?Math.max(2e-16,Math.exp(x))
+//            // (1/lambda) * eta^(1/lambda - 1)
+//            :(1.0/_tweedie_link_power) * Math.pow(link(x), 1.0/_tweedie_link_power - 1.0);
+
+          return _tweedie_link_power == 0
+            ?1.0/Math.max(2e-16,x)
+            :_tweedie_link_power * Math.pow(x,_tweedie_link_power-1);
         default:
           throw H2O.unimpl();
       }
@@ -351,8 +320,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
-//        case tweedie:
-//          return Math.pow(x, 1/ _tweedie_link_power);
+        case tweedie:
+          return _tweedie_link_power == 0
+            ?Math.max(2e-16,Math.exp(x))
+            :Math.pow(x, 1/ _tweedie_link_power);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -383,13 +354,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     // supported families
     public enum Family {
       gaussian(Link.identity), binomial(Link.logit), poisson(Link.log),
-      gamma(Link.inverse)/*, tweedie(Link.tweedie)*/;
+      gamma(Link.inverse), tweedie(Link.tweedie);
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
-    public static enum Link {family_default, identity, logit, log,inverse,/* tweedie*/}
+    public static enum Link {family_default, identity, logit, log,inverse, tweedie}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT}
+    public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -440,7 +411,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public final double _ySigma;
   public final long   _nobs;
 
-  public static class GLMOutput extends SupervisedModel.SupervisedOutput {
+  public static class GLMOutput extends Model.Output {
     Submodel[] _submodels;
     DataInfo _dinfo;
     String[] _coefficient_names;
@@ -461,6 +432,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
+      super(dinfo._weights, dinfo._offset);
       _dinfo = dinfo;
       _names = column_names;
       _domains = domains;
@@ -472,7 +444,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public GLMOutput() { }
+    public GLMOutput() {_isSupervised = true;}
 
     public GLMOutput(GLM glm) {
       super(glm);
@@ -616,7 +588,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     parms._standardize = false;
     parms._prior = -1;
     parms._train = null;
-    GLMModel m = new GLMModel(Key.make(),parms,null, fam == Family.binomial?.5:0,Double.NaN,Double.NaN,-1);
+    GLMModel m = new GLMModel(Key.make(),parms,null, fam == Family.binomial?.5:0,Double.NaN,Double.NaN,-1, false, false);
     predictors = ArrayUtils.append(predictors, new String[]{response});
     m._output._names = predictors;
     m._output._coefficient_names = predictors;
@@ -694,24 +666,30 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     return preds;
   }
 
-  @Override protected double[] score0(double[] data, double[] preds) {
+  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
+  @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
     double eta = 0.0;
     final double [] b = beta();
-    for(int i = 0; i < dinfo()._catOffsets.length-1; ++i) {
+    final DataInfo dinfo = _output._dinfo;
+    for(int i = 0; i < dinfo._cats; ++i) {
+      if(Double.isNaN(data[i])) {
+        eta = Double.NaN;
+        break;
+      }
       int ival = (int) data[i];
       if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
-      ival += dinfo()._catOffsets[i];
+      ival += dinfo._catOffsets[i];
       if (!_parms._use_all_factor_levels)
         --ival;
       // can get values out of bounds for cat levels not seen in training
-      if (ival >= 0 && ival < dinfo()._catOffsets[i + 1])
+      if (ival >= dinfo._catOffsets[i] && ival < dinfo._catOffsets[i + 1])
         eta += b[ival];
     }
-    int noff = dinfo().numStart() - dinfo()._cats;
-    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*data[i];
-    eta += b[b.length-1]; // reduce intercept
-    double mu = _parms.linkInv(eta);
+    int noff = dinfo.numStart();
+    for(int i = 0; i < dinfo._nums; ++i)
+      eta += b[noff+i]*data[dinfo._cats + i];
+    eta += b[b.length-1]; // add intercept
+    double mu = _parms.linkInv(eta + o);
     preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){

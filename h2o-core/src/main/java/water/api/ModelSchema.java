@@ -26,7 +26,7 @@ public class ModelSchema<M extends Model<M, P, O>,
                                   PS extends ModelParametersSchema<P, PS>,
                                   O extends Model.Output,
                                   OS extends ModelOutputSchema<O, OS>>
-  extends ModelSchemaBase<M, S, P, PS, O, OS> {
+  extends ModelSchemaBase<M, S> {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

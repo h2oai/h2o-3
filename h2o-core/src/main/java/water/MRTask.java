@@ -17,42 +17,226 @@ import water.fvec.Vec.VectorGroup;
  * way back to the invoking node. When the last reduce method has been called, fields
  * of the initial MRTask instance contains the computation results.</p>
  * <p>
- * Apart from small reduced POJO returned to the calling node, MRtask2 can
+ * Apart from small reduced POJO returned to the calling node, MRTask can
  * produce output vector(s) as a result.  These will have chunks co-located
  * with the input dataset, however, their number of lines will generally
  * differ, (so they won't be strictly compatible with the original). To produce
  * output vectors, call doAll.dfork version with required number of outputs and
  * override appropriate <code>map</code> call taking required number of
  * NewChunks.  MRTask will automatically close the new Appendable vecs and
- * produce an output frame with newly created Vecs.</p>
+ * produce an output frame with newly created Vecs.
+ * </p>
+ *
+ * <p><b>Overview</b>
+ *
+ *  Distributed computation may be invoked by an MRTask instance via the
+ *  <code>doAll</code>, <code>dfork</code>, or <code>asyncExec</code> calls. A call to
+ *  <code>doAll</code> is blocking, yet <code>doAll</code> does pass control to
+ *  <code>dfork</code> and <code>asyncExec</code>, both of which are non-blocking.
+ *  Computation only occurs on instances of Frame, Vec, and Key. The amount of work to do
+ *  depends on the mode of computation: the first mode is over an array of Chunk instances;
+ *  the second is over an array Key instances. In both modes, divide-conquer-combine using
+ *  ForkJoin is the computation paradigm, which is manifested by the <code>compute2</code>
+ *  call.
+ * </p>
+ *
+ * <p><b>MRTask Method Overriding</b>
+ *
+ *  Computation is tailored primarily by overriding the <code>map</code> call, with any
+ *  additional customization done by overriding the <code>reduce</code>,
+ *  <code>setupLocal</code>, <code>closeLocal</code>, or <code>postGlobal</code> calls.
+ *  An overridden <code>setupLocal</code> is invoked during the call to
+ *  <code>setupLocal0</code>.
+ * </p>
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
+
+  /*
+  * Technical note to developers:
+  *
+  *   There are several internal flags and counters used throughout. They are gathered in
+  *   this note to help you reason about the execution of an MRTask.
+  *
+  *    internal "top-level" fields
+  *    ---------------------------
+  *     - RPC<T> _nleft, _nrite: "child" node/JVMs that are doing work
+  *     - boolean _topLocal    : "root" MRTask on a local machine
+  *     - boolean _topGlobal   : "root" MRTask on the "root" node
+  *     - T _left, _rite       : "child" MRTasks on a local machine
+  *     - T _res               : "result" MRTask (everything reduced into here)
+  *     - int _nlo,_nhi        : range of nodes to do remote work on (divide-conquer; see Diagram 2)
+  *     - Futures _fs          : _topLocal task blocks on _fs for _left and _rite to complete
+  *
+  *       Diagram 1: N is for Node; T is for Task
+  *       -------------------------------------
+  *              3 node cloud              Inside one of the 'N' nodes:
+  *                   N1                               T  _topLocal**
+  *                 /   \                            /  \
+  *         N2 (_nleft)  N3 (_nrite)         T (_left)   T (_rite)
+  *
+  *                  **: T is also _topGlobal if N==N1
+  *
+  *    These fields get set in the <code>SetupLocal0<code> call. Let's see what it does:
+  *
+  *     Diagram 2:
+  *     ----------
+  *       asyncExec on N1
+  *         - _topGlobal=true
+  *         - _nlo=0
+  *         - _nhi=CLOUD_SIZE
+  *                ||
+  *                ||
+  *                ||
+  *                ==>       setupLocal0 on N1
+  *                            - topLocal=true
+  *                            - _fs = new Futures()
+  *                            - nmid = (_nlo + _nhi) >> 1 => split the range of nodes (divide-conquer)
+  *                            - _nleft = remote_compute(_nlo,nmid) => chooses a node in range and does new RPC().call()
+  *                            - _nrite = remote_compute(nmid,_nhi)    serializing MRTask and call dinvoke on remote.
+  *                           /                                 \
+  *                         /                                     \
+  *                       /                                         \
+  *                  dinvoke on N2                              dinvoke on N3
+  *                   setupLocal0 on N2                           setupLocal0 on N3
+  *                     - topLocal=true                             - topLocal=true
+  *                     - _fs = new Futures()                       - _fs = new Futures()
+  *                     - (continue splitting)                      - (continue splitting)
+  *                   H2O.submitTask(this) => compute2            H2O.submitTask(this) => compute2
+  *
+  *
+  *
+  */
+
+
   public MRTask() {}
   protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
 
-  /** The Vectors (or Keys) to work on. */
+  /**
+   * This Frame instance is the handle for computation over a set of Vec instances. Recall
+   * that a Frame is a collection Vec instances, so this includes any invocation of
+   * <code>doAll</code> with Frame and Vec[] instances. Top-level calls to
+   * <code>doAll</code> wrap Vec instances into a new Frame instance and set this into
+   * <code>_fr</code> during a call to <code>asyncExec</code>.
+   */
   public Frame _fr;
+
+  /**
+   * This <code>Key[]</code> instance is the handle used for computation when an MRTask is
+   * invoked over an array of <code>Key</code>instances.
+   */
   public Key[] _keys;
-  // appendables are treated separately (roll-ups computed in map/reduce style, can not be passed via K/V store).
-  protected AppendableVec [] _appendables;
-  private int _vid;
+
+  /** The number of output Vec instances produced by an MRTask.
+   *  If this number is 0, then there are no outputs. Additionally, if _noutputs is 0,
+   *  _appendables will be null, and calls to <code>outputFrame</code> will return null.
+   */
   private int _noutputs;
-  // If TRUE, run entirely local - which will pull all the data locally.
-  private boolean _run_local;
 
-  private byte _priority;
+  /**
+   * Accessor for the protected array of AppendableVec instances. If <code>_nouputs</code>
+   * is 0, then the return result is null. Additionally, if <code>outputFrame</code> is
+   * not called and <code>_noutputs > 0</code>, then these <code>AppendableVec</code>
+   * instances must be closed by the caller.
+   *
+   *
+   * @return the set of AppendableVec instances or null if _noutputs==0
+   */
+  public AppendableVec[] appendables() { return _appendables; }
+
+  /** Appendables are treated separately (roll-ups computed in map/reduce style, can not be passed via K/V store).*/
+  protected AppendableVec[] _appendables;
+
+  /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
+  transient protected RPC<T> _nleft, _nrite;
+
+  /** Internal field to track if this is a top-level local call */
+  transient protected boolean _topLocal; // Top-level local call, returning results over the wire
+
+  /** Internal field to track if this is a top-level call. */
+  transient boolean _topGlobal = false;
+
+  /** Internal field to track the left &amp; right sub-range of chunks to work on */
+  transient protected T _left, _rite; // In-progress execution tree
+
+  /** Internal field upon which all reduces occur. */
+  transient private T _res;           // Result
+
+  /** The range of Nodes to work on remotely */
+  protected short _nlo, _nhi;
+
+  /** Internal field to track a range of local Chunks to work on */
+  transient protected int _lo, _hi;
+
+  /** We can add more things to block on - in case we want a bunch of lazy
+   *  tasks produced by children to all end before this top-level task ends.
+   *  Semantically, these will all complete before we return from the top-level
+   *  task.  Pragmatically, we block on a finer grained basis. */
+  transient protected Futures _fs; // More things to block on
+
+  /**
+   * If _noutputs is 0, then _vid is never set. Otherwise, _noutput Keys are reserved in
+   * the VectorGroup associated with the Vec instances in _fr.
+   *
+   * This is the first index of such reserved Keys.
+   */
+  private int _vid;
+
+  /** If true, run entirely local - which will pull all the data locally. */
+  protected boolean _run_local;
+
+  public String profString() { return _profile.toString(); }
+  MRProfile _profile;
+
+  public void setProfile(boolean b) {_doProfile = b;}
+  private boolean _doProfile = false;
+
+  /**
+   * @return priority of this MRTask
+   */
   @Override public byte priority() { return _priority; }
+  private byte _priority;
 
+  /**
+   *
+   * Get the resulting Frame from this invoked MRTask. <b>This Frame is not in the DKV.</b>
+   * AppendableVec instances are closed into Vec instances, which then appear in the DKV.
+   *
+   * @return null if _noutputs is 0, otherwise returns the resulting Frame from the MRTask
+   */
   public Frame outputFrame() { return outputFrame(null,null,null); }
+
+  /**
+   * Get the resulting Frame from this invoked MRTask. <b>This Frame is not in the DKV.</b>
+   * AppendableVec instances are closed into Vec instances, which then appear in the DKV.
+   *
+   * @param names The names of the columns in the resulting Frame.
+   * @param domains The domains of the columns in the resulting Frame.
+   * @return null if _noutputs is 0, otherwise returns a Frame
+   */
   public Frame outputFrame(String [] names, String [][] domains){ return outputFrame(null,names,domains); }
+
+  /**
+   *
+   * Get the resulting Frame from this invoked MRTask. If the passed in <code>key</code>
+   * is not null, then the resulting Frame will appear in the DKV. AppendableVec instances
+   * are closed into Vec instances, which then appear in the DKV.
+   *
+   * @param key If null, then the Frame will not appear in the DKV. Otherwise, this result
+   *            will appear in the DKV under this key.
+   * @param names The names of the columns in the resulting Frame.
+   * @param domains The domains of the columns in the resulting Frame.
+   * @return null if _noutputs is 0, otherwise returns a Frame.
+   */
   public Frame outputFrame(Key key, String [] names, String [][] domains){
     Futures fs = new Futures();
-    Frame res = outputFrame(key, names, domains, fs);
+    Frame res = closeFrame(key, names, domains, fs);
     fs.blockForPending();
     return res;
   }
-  public Frame outputFrame(Key key, String [] names, String [][] domains, Futures fs){
-    if(_noutputs == 0)return null;
+
+  // the work-horse for the outputFrame calls
+  private Frame closeFrame(Key key, String [] names, String [][] domains, Futures fs) {
+    if(_noutputs == 0) return null;
     Vec [] vecs = new Vec[_noutputs];
     for(int i = 0; i < _noutputs; ++i) {
       if( _appendables==null )  // Zero rows?
@@ -66,8 +250,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( key != null ) DKV.put(fr,fs);
     return fr;
   }
-  public AppendableVec[] appendables() { return _appendables; }
-  
 
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
@@ -116,27 +298,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  this object, for disposing of node-local shared data structures.  */
   protected void closeLocal() { }
 
-  /** Internal field to track a range of remote nodes/JVMs to work on */
-  protected short _nxx, _nhi;   // Range of Nodes to work on - remotely
-  private int addShift( int x ) { x += _nxx; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
-  private int subShift( int x ) { x -= _nxx; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
+  /** Compute a permissible node index on which to launch remote work. */
+  private int addShift( int x ) { x += _nlo; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
+  private int subShift( int x ) { x -= _nlo; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
   private short selfidx() { int idx = H2O.SELF.index(); if( idx>= 0 ) return (short)idx; assert H2O.SELF._heartbeat._client; return 0; }
-  /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
-  transient protected RPC<T> _nleft, _nrite;
-  /** Internal field to track if this is a top-level local call */
-  transient protected boolean _topLocal; // Top-level local call, returning results over the wire
-  /** Internal field to track a range of local Chunks to work on */
-  transient protected int _lo, _hi;   // Range of Chunks to work on - locally
-  /** Internal field to track the left &amp; right sub-range of chunks to work on */
-  transient protected T _left, _rite; // In-progress execution tree
-
-  transient private T _res;           // Result
-
-  /** We can add more things to block on - in case we want a bunch of lazy
-   *  tasks produced by children to all end before this top-level task ends.
-   *  Semantically, these will all complete before we return from the top-level
-   *  task.  Pragmatically, we block on a finer grained basis. */
-  transient protected Futures _fs; // More things to block on
 
   // Profiling support.  Time for each subpart of a single M/R task, plus any
   // nested MRTasks.  All numbers are CTM stamps or millisecond times.
@@ -200,16 +365,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       return sb;
     }
   }
-  MRProfile _profile;
-  public String profString() { return _profile.toString(); }
 
   // Support for fluid-programming with strong types
-  private T self() { return (T)this; }
+  protected T self() { return (T)this; }
 
   /** Invokes the map/reduce computation over the given Vecs.  This call is
    *  blocking. */
   public final T doAll( Vec... vecs ) { return doAll(0,vecs); }
   public final T doAll(int outputs, Vec... vecs ) { return doAll(outputs,new Frame(vecs), false); }
+  public final T doAll( Vec vec, boolean run_local ) { return doAll(0,vec, run_local); }
+  public final T doAll(int outputs, Vec vec, boolean run_local ) { return doAll(outputs,new Frame(vec), run_local); }
 
   /** Invokes the map/reduce computation over the given Frame.  This call is
    *  blocking.  */
@@ -219,6 +384,79 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T doAll( int outputs, Frame fr, boolean run_local) {
     dfork(outputs,fr, run_local);
     return getResult();
+  }
+
+  // Special mode doing 1 map per key.  No frame
+  public T doAll( Key... keys ) {
+    // Raise the priority, so that if a thread blocks here, we are guaranteed
+    // the task completes (perhaps using a higher-priority thread from the
+    // upper thread pools).  This prevents thread deadlock.
+    _priority = nextThrPriority();
+    _topGlobal = true;
+    _keys = keys;
+    _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
+    setupLocal0();              // Local setup
+    H2O.submitTask(this);       // Begin normal execution on a FJ thread
+    return getResult();         // Block For All
+  }
+  // Special mode to run once-per-node
+  public T doAllNodes() { return doAll((Key[])null); }
+
+  /**
+   * Invokes the map/reduce computation over the given Frame instance. This call is
+   * asynchronous. It returns 'this', on which <code>getResult</code> may be invoked
+   * by the caller to block for pending computation to complete. This call produces no
+   * output Vec instances or Frame instances.
+   *
+   * @param fr Perform the computation on this Frame instance.
+   * @return this
+   */
+   public T dfork( Frame fr ){ return dfork(0,fr,false); }
+
+  /**
+   * Invokes the map/reduce computation over the given array of Vec instances. This call
+   * is asynchronous. It returns 'this', on which <code>getResult</code> may be invoked
+   * by the caller to block for pending computation to complete. This call produces no
+   * output Vec instances or Frame instances.
+   *
+   * @param vecs Perform the computation on this array of Vec instances.
+   * @return this
+   */
+  public final T dfork( Vec... vecs ) { return dfork(0,vecs); }
+
+  /**
+   * Invokes the map/reduce computation over the given Vec instances and produces
+   * <code>outputs</code> Vec instances. This call is asynchronous. It returns 'this', on
+   * which <code>getResult</code> may be invoked by the caller to block for pending
+   * computation to complete.
+   *
+   * @param outputs The number of output Vec instances to create.
+   * @param vecs The input set of Vec instances upon which computation is performed.
+   * @return this
+   */
+  public final T dfork( int outputs, Vec... vecs) { return dfork(outputs,new Frame(vecs),false); }
+
+  /**
+   * Invokes the map/reduce computation over the given Vec instances and produces
+   * <code>outputs</code> Vec instances. This call is asynchronous. It returns 'this', on
+   * which <code>getResult</code> may be invoked by the caller to block for pending
+   * computation to complete.
+   *
+   * @param outputs The number of output Vec instances to create.
+   * @param fr The input Frame instances upon which computation is performed.
+   * @param run_local If <code>true</code>, then all data is pulled to the calling
+   *                  <code>H2ONode</code> and all computation is performed locally. If
+   *                  <code>false</code>, then each <code>H2ONode</code> performs
+   *                  computation over its own node-local data.
+   * @return this
+   */
+  public final T dfork( int outputs, Frame fr, boolean run_local) {
+    // Raise the priority, so that if a thread blocks here, we are guaranteed
+    // the task completes (perhaps using a higher-priority thread from the
+    // upper thread pools).  This prevents thread deadlock.
+    _priority = nextThrPriority();
+    asyncExec(outputs,fr,run_local);
+    return self();
   }
 
   public final T asyncExec(Vec... vecs){asyncExec(0,new Frame(vecs),false); return self();}
@@ -235,26 +473,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // Use first readable vector to gate home/not-home
     if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
     _fr = fr;                   // Record vectors to work on
-    _nxx = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
+    _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
-  }
-  /** Invokes the map/reduce computation over the given Frame.  This call is
-   *  asynchronous.  It returns 'this', on which getResult() can be invoked
-   *  later to wait on the computation.  */
-  public final T dfork( Vec...vecs ) {return dfork(0,vecs);}
-  public T dfork( Frame fr ) {return dfork(0,fr,false);}
-  public final T dfork( int outputs, Vec... vecs) {
-    return dfork(outputs,new Frame(vecs),false);
-  }
-  public final T dfork( int outputs, Frame fr, boolean run_local) {
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
-    _priority = nextThrPriority();
-    asyncExec(outputs,fr,run_local);
-    return self();
   }
 
   /** Block for &amp; get any final results from a dfork'd MRTask.
@@ -286,28 +508,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     H2O.submitTask(this);
   }
 
-  // Special mode to run once-per-node
-  public T doAllNodes() { return doAll((Key[])null); }
-
-  // Special mode doing 1 map per key.  No frame
-  public T doAll( Key... keys ) {
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
-    _priority = nextThrPriority();
-    _topGlobal = true;
-    _keys = keys;
-    _nxx = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
-    setupLocal0();              // Local setup
-    H2O.submitTask(this);       // Begin normal execution on a FJ thread
-    return getResult();         // Block For All
-  }
-
-  private boolean _doProfile = false;
-  public void setProfile(boolean b) {_doProfile = b;}
-
-  // Setup for local work: fire off any global work to cloud neighbors; do all
-  // chunks; call user's init.
+  /*
+   * Set top-level fields and fire off remote work (if there is any to do) to 2 selected
+   * child JVM/nodes. Setup for local work: fire off any global work to cloud neighbors; do all
+   * chunks; call user's init.
+   */
   private void setupLocal0() {
     assert _profile==null;
     _fs = new Futures();
@@ -325,13 +530,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( H2O.ARGS.client ) {
       if(_doProfile)
         _profile._rpcLstart = System.currentTimeMillis();
-      _nleft = remote_compute(nlo ,nmid);
+      _nleft = _run_local ? null : remote_compute(nlo ,nmid);
       if(_doProfile)
         _profile._rpcRstart = System.currentTimeMillis();
-      _nrite = remote_compute(nmid,_nhi);
+      _nrite = _run_local ? null : remote_compute(nmid,_nhi);
       if(_doProfile)
         _profile._rpcRdone  = System.currentTimeMillis();
-      setupLocal();               // Setup any user's shared local structures
+      setupLocal();               // Setup any user's shared local structures; want this for possible reduction ONTO client
       if(_doProfile)
         _profile._localdone = System.currentTimeMillis();
       return;
@@ -364,16 +569,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Make an RPC call to some node in the middle of the given range.  Add a
   // pending completion to self, so that we complete when the RPC completes.
   private RPC<T> remote_compute( int nlo, int nhi ) {
-    // No remote work?
-    if( !(nlo < nhi) ) return null;
-    int node = addShift(nlo);
-    assert node != H2O.SELF.index(); // Not the same as selfidx() if this is a client
-    T mrt = copyAndInit();
-    mrt._nhi = (short)nhi;
-    addToPendingCount(1);       // Not complete until the RPC returns
-    // Set self up as needing completion by this RPC: when the ACK comes back
-    // we'll get a wakeup.
-    return new RPC<>(H2O.CLOUD._memary[node], mrt).addCompleter(this).call();
+    if( nlo < nhi ) {  // have remote work
+      int node = addShift(nlo);
+      assert node != H2O.SELF.index(); // Not the same as selfidx() if this is a client
+      T mrt = copyAndInit();
+      mrt._nhi = (short) nhi;
+      addToPendingCount(1);       // Not complete until the RPC returns
+      // Set self up as needing completion by this RPC: when the ACK comes back
+      // we'll get a wakeup.
+      return new RPC<>(H2O.CLOUD._memary[node], mrt).addCompleter(this).call();
+    }
+    return null; // nlo >= nhi => no remote work
   }
 
   /** Called from FJ threads to do local work.  The first called Task (which is
@@ -381,35 +587,27 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  internal by F/J.  Not expected to be user-called.  */
   @Override public final void compute2() {
     assert _left == null && _rite == null && _res == null;
-    if(_doProfile)
-      _profile._mapstart = System.currentTimeMillis();
-    if( _hi-_lo >= 2 ) { // Multi-chunk case: just divide-and-conquer to 1 chunk
+    if(_doProfile) _profile._mapstart = System.currentTimeMillis();
+    if( (_hi-_lo) >= 2 ) { // Multi-chunk case: just divide-and-conquer to 1 chunk
       final int mid = (_lo+_hi)>>>1; // Mid-point
       _left = copyAndInit();
       _rite = copyAndInit();
-      if(_doProfile) {
-        _left._profile = new MRProfile(this);
-        _rite._profile = new MRProfile(this);
-      }
       _left._hi = mid;          // Reset mid-point
       _rite._lo = mid;          // Also set self mid-point
       addToPendingCount(1);     // One fork awaiting completion
       _left.fork();             // Runs in another thread/FJ instance
       _rite.compute2();         // Runs in THIS F/J thread
-      if(_doProfile)
-        _profile._mapdone = System.currentTimeMillis();
+      if(_doProfile) _profile._mapdone = System.currentTimeMillis();
       return;                   // Not complete until the fork completes
     }
     // Zero or 1 chunks, and further chunk might not be homed here
     if( _fr==null ) {           // No Frame, so doing Keys?
       if( _keys == null ||     // Once-per-node mode
           _hi > _lo && _keys[_lo].home() ) {
-        if(_doProfile)
-          _profile._userstart = System.currentTimeMillis();
+        if(_doProfile) _profile._userstart = System.currentTimeMillis();
         if( _keys != null ) map(_keys[_lo]);
         _res = self();        // Save results since called map() at least once!
-        if(_doProfile)
-          _profile._closestart = System.currentTimeMillis();
+        if(_doProfile) _profile._closestart = System.currentTimeMillis();
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
       Vec v0 = _fr.anyVec();
@@ -508,7 +706,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Gather/reduce remote work.
   // Block for other queued pending tasks.
   // Copy any final results into 'this', such that a return of 'this' has the results.
-  private void postLocal() {
+  protected void postLocal() {
     reduce3(_nleft);            // Reduce global results from neighbors.
     reduce3(_nrite);
     if(_doProfile)
@@ -584,13 +782,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
     // Since blocking can throw (generally the same exception, again and again)
     // catch & ignore, keeping only the first one we already got.
-    if( _nleft != null ) try { _nleft.get(); } catch( Throwable _ ) { } _nleft = null;
-    if( _nrite != null ) try { _nrite.get(); } catch( Throwable _ ) { } _nrite = null;
+    if( _nleft != null ) try { _nleft.get(); } catch( Throwable ignore ) { } _nleft = null;
+    if( _nrite != null ) try { _nrite.get(); } catch( Throwable ignore ) { } _nrite = null;
 
     return super.onExceptionalCompletion(ex, caller);
   }
 
-  transient boolean _topGlobal = false;
   // Make copy, setting final-field completer and clearing out a bunch of fields 
   private T copyAndInit() { 
     T x = clone();
@@ -600,7 +797,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     x._nleft = x._nrite = null;
     x. _left = x. _rite = null;
     x._fs = _fs;
-    x._profile = null;    // Clone needs its own profile
+    if( _doProfile )  x._profile = new MRProfile(this);
+    else              x._profile = null;    // Clone needs its own profile
     x.setPendingCount(0); // Volatile write for completer field; reset pending count also
     return x;
   }

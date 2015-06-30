@@ -2,21 +2,703 @@
 
 ##H2O
 
-###Shannon (3.0.0.#) - 5/22/15
+###Shannon (3.0.0.26) - 6/30/15
+
+####New Features
+
+The following changes represent features that have been added since the previous release:
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/fd19d6b21a35338c481455f3ca0974cc98c4957d): add h2o.shutdown to python client
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ce3a94cba9c00ae6beb9e45870fad9c7e0dbb575): add h2o.hist and respective pyunit
 
 ####Enhancements
+
 The following changes are improvements to existing features (which includes changed default values):
 
+#####Algorithms
+
+- [PUBDEV-1494](https://0xdata.atlassian.net/browse/PUBDEV-1494): GBM : Weights math correctness tests in R
+- [PUBDEV-1523](https://0xdata.atlassian.net/browse/PUBDEV-1523): GLM w tweedie: for attached data, R giving much better res dev than h2o 
+- [PUBDEV-1396](https://0xdata.atlassian.net/browse/PUBDEV-1396): Offsets/Weights: Math correctness for GLM
+- [PUBDEV-1496](https://0xdata.atlassian.net/browse/PUBDEV-1496): RF : Weights Math correctness tests in R
+- [HEXDEV-366](https://0xdata.atlassian.net/browse/HEXDEV-366): remove weights option from DRF and GBM in REST API, Python, R
+- [PUBDEV-1553](https://0xdata.atlassian.net/browse/PUBDEV-1553): Threshold in GLM is hardcoded to 0
+- [GitHub](https://github.com/h2oai/h2o-3/commit/dc379b117cc5f26c38ae276aba82b6bb3d0fef2b): Make min_rows a double instead of int: Is now weighted number of observations (min_obs in R). 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/7cf9ba765c0fe8f1394439db69bc2aa54e004b75): Don't use sample weighted variance, but full weighted variance.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/bf9838e84f527b52756de45a752bd321a62ba6e4): Fix R^2 computation.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b9cccbe02017a01167afed5ca1a64198d499fa0b): Skip rows with missing response in weighted mean computation.
+
+#####API
+
+- [PUBDEV-1491](https://0xdata.atlassian.net/browse/PUBDEV-1491): generated REST API POJOS should be compiled and jar'd up as part of the build
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/7295701c1b1fa45817aab2fba39d209f37185d6b): is factor returns TRUE/FALSE cast to scalar 1/0
+- [GitHub](https://github.com/h2oai/h2o-3/commit/4f932f4775ce7844114e84e9cfd8086c06cffb96): take a slightly different syntactic approach to dropping column
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c001961bf39a75e9d44b3b98a5567ca13aa09b85): better list comp in interaction call
+
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/62937f80722011a07dc07d6c32c95fbe3c64ba7c): better ref handling in the [<- for python and R
+- [GitHub](https://github.com/h2oai/h2o-3/commit/231632b832c85305b92098a24ec87cba7af013fc): Pass binomial_double_trees in the R wrapper for DRF.
+
+#####System
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b3b7dab9fe7cf7ef7dab0a7dc08985c028183f4a): allow for no y in model_builder
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c1b302914157c55ad7ef778ec49e07e01b03e79d): Enable auto-flag for Java6 generation.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ac1a079e968e24b7f12471406b74ebb5c3785ac0): better compression in split frame
+
+
+#####Web UI
+
+- [PUBDEV-1545](https://0xdata.atlassian.net/browse/PUBDEV-1545): Flow => Build model => ignored columns table => should have column width resizing based on column names width => looks odd if column names are short
+- [PUBDEV-1546](https://0xdata.atlassian.net/browse/PUBDEV-1546): Flow : Build model => Search for 1 column => select it  => build model shows list of columns instead of 1 column
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+#####Algorithms
+
+- [PUBDEV-1554](https://0xdata.atlassian.net/browse/PUBDEV-1554): dl with offset: when offset same as response, do not get 0 mse
+- [PUBDEV-1555](https://0xdata.atlassian.net/browse/PUBDEV-1555): h2oR: dl with offset giving : Error in args$x_ignore : object of type 'closure' is not subsettable
+- [PUBDEV-1487](https://0xdata.atlassian.net/browse/PUBDEV-1487): gbm weights: give different terminal node predictions than R for attached data
+
+#####Python
+
+- [PUBDEV-1538](https://0xdata.atlassian.net/browse/PUBDEV-1538): h2o.save_model fails on windoz due to path nonsense 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/27d3e1f1258a3ac1224b1a2dc5b58fa340d9d301): python leaked key check for Vecs, Chunks, and Frames
+
+#####System
+
+- [PUBDEV-1514](https://0xdata.atlassian.net/browse/PUBDEV-1514): Large number of columns (~30000) on importFile (flow) is slow / unresponsive for long time
+- [PUBDEV-841](https://0xdata.atlassian.net/browse/PUBDEV-841): Split frame : Flow should not show raw frames for SplitFrame dialog (water.exceptions.H2OIllegalArgumentException)
+- [PUBDEV-1459](https://0xdata.atlassian.net/browse/PUBDEV-1459): bug in GLM POJO: seems threshold for binary predictions is always 0
+
+#####Web UI
+
+- [HEXDEV-54](https://0xdata.atlassian.net/browse/HEXDEV-54): Flow : Import file 100k.svm => Something went wrong while displaying page
+
+
+---
+
+###Shannon (3.0.0.25) - 6/25/15
+
+
+####Enhancements
+
+#####API 
+
+- [PUBDEV-1452](https://0xdata.atlassian.net/browse/PUBDEV-1452): branch 3.0.0.2 to REGRESSION_REST_API_3 and cherry-pick the /99/Rapids changes to it
+
+#####Web UI
+
+- [PUBDEV-1545](https://0xdata.atlassian.net/browse/PUBDEV-1545): Flow => Build model => ignored columns table => should have column width resizing based on column names width => looks odd if column names are short
+- [PUBDEV-1546](https://0xdata.atlassian.net/browse/PUBDEV-1546): Flow : Build model => Search for 1 column => select it  => build model shows list of columns instead of 1 column
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+#####Algorithms
+
+- [PUBDEV-1487](https://0xdata.atlassian.net/browse/PUBDEV-1487): gbm weights: give different terminal node predictions than R for attached data
+- [GitHub](https://github.com/h2oai/h2o-3/commit/f17dc5e033ffb0ebd7e8fe16f37bca24aec197a4): Fix offset for DL.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/f1547e6a0497519646358bc39c73cf25c7935919): Gracefully handle 0 weight for GBM.
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b9bf679f27baec53cd5e5a46202b4e58cc0108f8): Fix R wrapper for DL for weights/offset.
+
+#####Web UI
+
+- [PUBDEV-1528](https://0xdata.atlassian.net/browse/PUBDEV-1528): Flow model builder: the na filter does not select all ignored columns; just the first 100.
+
+
+---
+
+###Shannon (3.0.0.24) - 6/25/15
+
+####New Features
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/cd7011b4810f11316a06fe33df0fd7d540268bce): Allow validation for unsupervised models.
+
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/2a22657e5788be6b7b85362923c3de02ae4c0b16): Added runit GBM weights
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8f0b9dc95a155fbdf9a373a9181c80a3eb3e1ed6): Updated runit_GBM_weights.R
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/0606097d95a7accce3460a73daec463ad7ea4165): add h2o.set_timezone h2o.get_timezone and h2o.list_timezones to python client and respective pyunit. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/1eabf6db7cb45166ea6fbd01997b52eb41c6079d): add h2o.save_model and h2o.load_model to python client and respective pyunit
+
+
+####Enhancements
+
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b358eb0a5f12e0dab006f012a8a8e9ea7e51d46c): Fix weights for GBM - add weight correction to Gamma computation.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8b646239e9433c719d390b03ba475715cf3b4f5e): Skip rows with weight 0.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c6f11a9069d3553694dee3e33f574f482567613d): x_ignore must be set when autoencoder is TRUE
+
+
+#####System
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c11201060001be2da98fb101dbdd8ffbe18e85bf): Fix Java bindings generator to generate code under project's location.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8768ba503b79d7f485c7c757f056dc170c9aca45): Adds input parameter check to ParseSetup.
+
+####Bug Fixes 
+
+
+
+#####Algorithms
+
+- [PUBDEV-1529](https://0xdata.atlassian.net/browse/PUBDEV-1529): dl with ae: get ava.lang.UnsupportedOperationException: Trying to predict with an unstable model.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b5869fce2ff51c5afbad397324e220942f0490c3): Bring back accidentally removed hiding of classification-related fields for unsupervised models.
+
+#####API
+
+- [PUBDEV-1456](https://0xdata.atlassian.net/browse/PUBDEV-1456): fix REST API POJO generation for enums, + java.util.map import
+
+---
+
+###Shannon (3.0.0.23) - 6/19/15
+
+####New Features
+
+#####Algorithms
+
+- [HEXDEV-21](https://0xdata.atlassian.net/browse/HEXDEV-21): Offset for GLM
+- [HEXDEV-208](https://0xdata.atlassian.net/browse/HEXDEV-208): Add observation weights to GLM (was HEXDEV-4)
+- [PUBDEV-677](https://0xdata.atlassian.net/browse/PUBDEV-677): Add observation weights to all metrics
+- [PUBDEV-675](https://0xdata.atlassian.net/browse/PUBDEV-675): Pass a weight Vec as input to all algos
+- [HEXDEV-6](https://0xdata.atlassian.net/browse/HEXDEV-6): Add observation weights to GBM
+- [HEXDEV-7](https://0xdata.atlassian.net/browse/HEXDEV-7): Add observation weights to DL
+- [HEXDEV-10](https://0xdata.atlassian.net/browse/HEXDEV-10): Add observation weights to DRF
+- [PUBDEV-291](https://0xdata.atlassian.net/browse/PUBDEV-291): Add observation weights to GLM, GBM, DRF, DL (classification)
+- [HEXDEV-332](https://0xdata.atlassian.net/browse/HEXDEV-323): Support Offsets for DL [GitHub](https://github.com/h2oai/h2o-3/commit/c6d6dc953c477aeaa5fed3c40af1b5583f590386)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/e72ba587c0aace574b0f600f0e3c72c2f551df80): Use weights/offsets in GBM.
+
+
+#####API
+
+- [PUBDEV-61](https://0xdata.atlassian.net/browse/PUBDEV-61): do back-end work to allow document navigation from one Schema to another
+- [PUBDEV-133](https://0xdata.atlassian.net/browse/PUBDEV-133): doing summary means calling it with each columns name, index not supported?
+
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/220c71470e40de92e7c5a94833ce71bb8addcd00): add num_iterations accessor to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/4206cda35543bef6ff8c930a3a66a5bfe01d30ba): add score_history accessor to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/709afea1e9d3edef1ebaead58d33aeb6bdc08da3): add hit ratio table accessor to python interface and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/04b4d82345d10578070ca3cbd558dab82b09807b): add h2o.naivebayes and respective pyunits
+- [GitHub](https://github.com/h2oai/h2o-3/commit/46571731b0ad92829b8775a62e93bb7a51307b4e): add h2o.prcomp and respective pyunits.
+- [PUBDEV-681](https://0xdata.atlassian.net/browse/PUBDEV-681): Add user-given input weight parameters to Python
+- [GitHub](https://github.com/h2oai/h2o-3/commit/483fe5c8dc8d80a93c8ff2688221e3eb802d92cf): add h2o.create_frame to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/f1b0c315cdafa0bca76330e65cfca3462db29dc7): add h2o.interaction and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/fba655b02f6c33a0d5c4d74de25fa21b96d7c364): add h2o.strplit to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/09bec2687d32c717ea8e86331591acf1ba75b67a): add h2o.toupper and h2o.tolower to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/d370a2f4dc2aa73f6df7139d13c705b00d30ce1a): add h2o.sub and h2o.gsub to python interface and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/5496d10baa1ca1cb420f198b0a98e81cdbe000ec): add h2o.trim() to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/dfe0e8ed44e1c64824779d1cbc2322c159668a46): add h2o.rep_len to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/4cde35ac1dc3b96833206860c974e4ad9d099d27): add h2o.svd to python client and respective golden pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/e45ea385eea19f5c5964d96e5acae8c7c7b201b9): add scree plot functionality to python client and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/d583778e72cde01f73fbfaa30d10f8e3d3a6ab0e): add plotting functionality to python client and respective pyunit
+
+#####R 
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/edf3cfafc49307226425c38a4c5bef6fdd5ed7a9): added h2o.weights and h2o.biases accessors to R client and update respective runit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/06413c20912e36d41a9a158e28cbb697f4542d34): add h2o.centroid_stats to R client and respective runit 
+- [PUBDEV-680](https://0xdata.atlassian.net/browse/PUBDEV-680): Add user-given input weight parameters to R
+- [GitHub](https://github.com/h2oai/h2o-3/commit/3c5a80edcfe274294d43c837e7d6abb2216834e4): Add offset/weights to DRF/GBM R wrappers.
+
+
+#####Web UI
+
+- [PUBDEV-1513](https://0xdata.atlassian.net/browse/PUBDEV-1513): Add cancelJob() routine to Flow
+
+
+####Enhancements
+
+#####Algorithms
+
+- [PUBDEV-676](https://0xdata.atlassian.net/browse/PUBDEV-676): Use the user-given weight Vec as observation weights for all algos
+- [GitHub](https://github.com/h2oai/h2o-3/commit/42abac7758390f5f7b0b59fadddb0b07294d238e): Refactor the code to let the caller compute the weighted sigma.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/1025e08abff8200c4106b4a46aaf2175dfee6734): Modify prior class distribution to be computed from weighted response.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/eec4f863fc198adaf774314897bd8d3fb8df411e): Put back the defaultThreshold that's based on training/validation metrics. Was accidentally removed together with SupervisedModel.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/a9f5261991f96a511f1cf8d0863a9c9b1c14caf0): Always sample to at least #class labels when doing stratified sampling.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/4e30718943840d0bf8cde77d95d0211034ece15b): Cutout for NAs in GLM score0(data[],...), same as for score0(Chunk[],…)
+
+
+#####R
+
+- [PUBDEV-856](https://0xdata.atlassian.net/browse/PUBDEV-856): All h2o things in R should have an `h2o.something` version so it's unambiguous [GitHub](https://github.com/h2oai/h2o-3/commit/e488674502f3d02e853ecde93497c327f91ddad6)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b99163db673b29eaa187d261a28365f80c0efdb9): export clusterIsUp and clusterInfo commands
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b514dd703904097feb1f0f6a8dc732948da5f4ec): update accessors in the shim
+- [GitHub](https://github.com/h2oai/h2o-3/commit/62ef0590b1bb5b231ea98a3aea8a358bda9631b5): gbm with async exec
+
+
+#####System
+
+- [HEXDEV-361](https://0xdata.atlassian.net/browse/HEXDEV-361): Wide frame handling for model builders
+- [GitHub](https://github.com/h2oai/h2o-3/commit/f408e1a3306c7b7768bbfeae1d3a90edfc583039): Remove application plugin from assembly to speedup build process.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c3e91c670b69698d94dcf123511dc595b2d61927): add byteSize to ls
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ac10731a5695f699a45a8bfbd807a42432c82aec): option to launch randomForest async
+- [GitHub](https://github.com/h2oai/h2o-3/commit/d986952c6328b8b831a20231bffa129067e3cc03): Return HDFS persist manager for URIs starting with s3n and s3a
+- [GitHub](https://github.com/h2oai/h2o-3/commit/889a6573d6ff05616dc7a8d578e83444d64df184): quote strings when writing to disk
+
+
+####Bug Fixes
+
+#####Algorithms
+
+- [PUBDEV-1217](https://0xdata.atlassian.net/browse/PUBDEV-1217): pca: when cancel the job the key remains locked
+- [PUBDEV-1468](https://0xdata.atlassian.net/browse/PUBDEV-1468): Error in GBM if response column is constant [GitHub](https://github.com/h2oai/h2o-3/commit/5c9bfa7d72107baff323e255930e0b461498f744)
+- [PUBDEV-1476](https://0xdata.atlassian.net/browse/PUBDEV-1476): dl with obs weights: nas in weights cause  'java.lang.AssertionError [GitHub](https://github.com/h2oai/h2o-3/commit/d296d7429d3a6b53ac12497b2c344ef6387c94e7)
+- [PUBDEV-1458](https://0xdata.atlassian.net/browse/PUBDEV-1458): pca: data with nas, v2 vs v3 slightly different results [GitHub](https://github.com/h2oai/h2o-3/commit/c289d8731f99bf096975df2839f0223886dfef33)
+- [PUBDEV-1477](https://0xdata.atlassian.net/browse/PUBDEV-1477): dl w/obs wts: when all wts are zero, get java.lang.AssertionError [GitHub](https://github.com/h2oai/h2o-3/commit/cf3e5e4fdf94bd278105b2bbca0d6e106913577e)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/959fe1d845db59086a9980c0baa97dbdccbe41c8): Fix check for offset (allow offset for logistic regression).
+- [GitHub](https://github.com/h2oai/h2o-3/commit/10174b8a2199578b475a5588405db434026d4fe8): Gracefully handle exception when launching single-node DRF/GBM in client mode. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/a082d08f36d1e0b7cafd9492711feb0d5772f697): Hack around the fact that hasWeights()/hasOffset() isn't available on remote nodes and that SharedTree is sent to remote nodes and its private internal classes need access to the above methods...
+- [GitHub](https://github.com/h2oai/h2o-3/commit/11b276c478944cac3a7010c6d9ee3871d83d1b71): Fix scoring when NAs are predicted.
+
+#####Python
+
+- [PUBDEV-1469](https://0xdata.atlassian.net/browse/PUBDEV-1469): pyunit_citi_bike_large.py : test failing consistently on regression jobs
+- [PUBDEV-1472](https://0xdata.atlassian.net/browse/PUBDEV-1472): Regression job : Pyunit small tests groupie and pub_444_spaces failing consistently
+- [PUBDEV-1372](https://0xdata.atlassian.net/browse/PUBDEV-1372): Regression of pyunit_small,  Groupby.py
+- [PUBDEV-1386](https://0xdata.atlassian.net/browse/PUBDEV-1386): intermittent fail in pyunit_citi_bike_small.py: -Unimplemented- failed lookup on token
+- [PUBDEV-1471](https://0xdata.atlassian.net/browse/PUBDEV-1471): pyunit_citi_bike_small.py : failing consistently on regression jobs
+- [PUBDEV-1466](https://0xdata.atlassian.net/browse/PUBDEV-1466): matplotlib.pyplot import failure on MASTER jenkins pyunit small jobs [GitHub](https://github.com/h2oai/h2o-3/commit/b2edebe88984ff71782c6524c7d5e4cb18fb1f11)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/0bfbee20cf3fc9321ba9f7c22bb0914c7f830cd9): minor fix to python's h2o.create_frame
+- [GitHub](https://github.com/h2oai/h2o-3/commit/e5b7ad8515999b90f841219357ebf03d2caccfce): update the path to jar in connection.py
+
+#####R
+
+- [PUBDEV-1475](https://0xdata.atlassian.net/browse/PUBDEV-1475): Client mode failed tests : runit_GBM_one_node.R, runit_RF_one_node.R, runit_v_3_apply.R, runit_v_4_createfunctions.R [GitHub](https://github.com/h2oai/h2o-3/commit/f270c3c99931f211303046c5bc2b36db004a170b)
+- [PUBDEV-1235](https://0xdata.atlassian.net/browse/PUBDEV-1235): Split Frame causes AIOOBE on Chicago crimes data [GitHub](https://github.com/h2oai/h2o-3/commit/869926304eecb4be2e0d64c6d1fbf43e37a62cb6)
+- [PUBDEV-746](https://0xdata.atlassian.net/browse/PUBDEV-746): runit_demo_NOPASS_h2o_impute_R : h2o.impute() is missing. seems like we want that?
+- [PUBDEV-582](https://0xdata.atlassian.net/browse/PUBDEV-582): H2O-R-  does not give the full column summary
+- [PUBDEV-1473](https://0xdata.atlassian.net/browse/PUBDEV-1473): Regression : Runit small jobs failing on tests : 
+- [PUBDEV-741](https://0xdata.atlassian.net/browse/PUBDEV-741): runit_NOPASS_pub-668 R tests uses all() ...h2o says all is unimplemented
+- [PUBDEV-1506](https://0xdata.atlassian.net/browse/PUBDEV-1506): R: h2o.ls() needs to return data sizes
+- [PUBDEV-1436](https://0xdata.atlassian.net/browse/PUBDEV-1436): Intermitent runit fail : runit_GBM_ecology.R [GitHub](https://github.com/h2oai/h2o-3/commit/ccc11bc30a68bf82028b83d7e53e43d48cd67c50)
+- [PUBDEV-1464](https://0xdata.atlassian.net/browse/PUBDEV-1464): R: toupper/tolower don't work [GitHub](https://github.com/h2oai/h2o-3/commit/26d7a37e50714a2ad025acbb561f2c7e52b1b9cb) [GitHub](https://github.com/h2oai/h2o-3/commit/8afa2ff12b0a3343dd902f3912f9f9d509e775ca)
+- [PUBDEV-1194](https://0xdata.atlassian.net/browse/PUBDEV-1194): R: dataset is imported but can't return head of frame
+
+#####Sparkling Water
+
+- [PUBDEV-975](https://0xdata.atlassian.net/browse/PUBDEV-975): Download page for Sparkling Water should point to the right R-client and Python client
+- [PUBDEV-1428](https://0xdata.atlassian.net/browse/PUBDEV-1428): Sparkling water => Flow => Million song/KDD Cup path issues [GitHub](https://github.com/h2oai/h2o-3/commit/9cd11646e5ea4b1e4ea4120ebe7ece8d049140a7)
+
+## Web UI
+- [PUBDEV-1433](https://0xdata.atlassian.net/browse/PUBDEV-1433): Flow UI: Change Help > FAQ link to h2o-docs/index.html#FAQ
+
+
+
+---
+
+###Shannon (3.0.0.22) - 6/13/15
+
+
+####New Features
+
+#####API
+
+- [PUBDEV-633](https://0xdata.atlassian.net/browse/PUBDEV-633): Generate Java bindings for REST API: POJOs for the entities (schemas)
+
+#####Python 
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/9ab55a5e612af9d807f069863a50667dd6970484): added h2o.anyfactor() and respective pyunit
+- [GitHub](https://github.com/h2oai/h2o-3/commit/6fa028bab1eb81800dabc0167b05bb7a4fc12731): add h2o.scale and respective pyunit 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/700fbfff9a835a964e6d62ea1c52853160e11902): added levels, nlevels, setLevel and setLevels and respective pyunit...PUBDEV-1434 PUBDEV-1437 PUBDEV-1434 PUBDEV-1345 PUBDEV-1311
+- [GitHub](https://github.com/h2oai/h2o-3/commit/688da52517ab5582fbb6527c03950dbb365ce037): add H2OFrame.as_date and pyunit addition. H2OFrame.setLevel should return a H2OFrame not a H2OVec.
+
+####Enhancements
+
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/34f4110ac2d5a7fb6b47f1919851ade2e9f8f279): Add `_build_tree_one_node` option to GBM
+
+##### API
+
+- [HEXDEV-352](https://0xdata.atlassian.net/browse/HEXDEV-352): Additional attributes on /Frames and /Frames/foo/summary
+
+
+#####R
+
+- [PUBDEV-706](https://0xdata.atlassian.net/browse/PUBDEV-706): Release h2o-dev to CRAN
+- Adding parameter `parse_type` to upload/import file [(GitHub)](https://github.com/h2oai/h2o-3/commit/7074685e0cea8ea956c98ebd02883045b52df63b)
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/9c697c0bc55195ae13365250b587efd49fd9cace): print out where h2o jar is looked for
+- [GitHub](https://github.com/h2oai/h2o-3/commit/8e16c258324223a492ef9b39003082709b5715fa):add h2o.ls and respective pyunit
+
+
+#####System
+
+- [PUBDEV-717](https://0xdata.atlassian.net/browse/PUBDEV-717): refector the duplicated code in FramesV2
+- [PUBDEV-1281](https://0xdata.atlassian.net/browse/PUBDEV-1281): Add horizontal pagination of frames to Flow [GitHub](https://github.com/h2oai/h2o-3/commit/5b9f0b84e79aa4dc09c7350c9b37c27d954b4c14)
+- [PUBDEV-607](https://0xdata.atlassian.net/browse/PUBDEV-607): Add Xmx reporting to GA
+- [GitHub](https://github.com/h2oai/h2o-3/commit/60a6e5d6705e04a2d8b7a6e45e13ae8a34013587):Added support for Freezable[][][] in serialization (added addAAA to auto buffer and DocGen, DocGen will just throw H2O.fail())
+- [GitHub](https://github.com/h2oai/h2o-3/commit/75f6a6c87e943d2222597755788c8d9a23e8013f): No longer set yyyy-MM-dd and dd-MMM-yy dates that precede the epoch to be NA. Negative time values are fine. This unifies these two time formats with the behavior of as.Date.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/0bb1e10b5c888a7fd1274991348ea214302728db): Reduces the verbosity of parse tracing messages. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/04566d7a9efd15418885e46f3db9eba1d52b04d8): Rename AUTO->GUESS for figuring out file type.
+
+##### Web UI
+
+- [HEXDEV-276](https://0xdata.atlassian.net/browse/HEXDEV-276): Add frame pagination
+- [PUBDEV-1405](https://0xdata.atlassian.net/browse/PUBDEV-1405): Flow : Decision to be made on display of number of columns for wider datasets for Parse and Frame summary
+- [PUBDEV-1404](https://0xdata.atlassian.net/browse/PUBDEV-1404): Usability improvements
+- [PUBDEV-244](https://0xdata.atlassian.net/browse/PUBDEV-244): "View Data" display may need to be modified/shortened.
+
+
+####Bug Fixes
+
+
+#####Algorithms 
+
+- [PUBDEV-1365](https://0xdata.atlassian.net/browse/PUBDEV-1365): GLM: Buggy when likelihood equals infinity
+- [PUBDEV-1394](https://0xdata.atlassian.net/browse/PUBDEV-1394): GLM: Some offsets hang
+- [PUBDEV-1268](https://0xdata.atlassian.net/browse/PUBDEV-1268): GLM: get java.lang.AssertionError at hex.glm.GLM$GLMSingleLambdaTsk.compute2 for attached data
+- [PUBDEV-1403](https://0xdata.atlassian.net/browse/PUBDEV-1403): pca: h2o-3 reporting incorrect proportion of variance and cum prop [GitHub](https://github.com/h2oai/h2o-3/commit/1c874f38b4927b3f9d2a30560dc697a78a2bfe13)
+- [HEXDEV-281](https://0xdata.atlassian.net/browse/HEXDEV-281): GLM - beta constraints with categorical variables fails with AIOOB
+- [HEXDEV-280](https://0xdata.atlassian.net/browse/HEXDEV-280): GLM - gradient not within tolerance when specifying beta_constraints w/ and w/o prior values
+
+
+
+##### Python
+
+- [PUBDEV-1425](https://0xdata.atlassian.net/browse/PUBDEV-1425): Class Cast Exception ValStr to ValNum [GitHub](https://github.com/h2oai/h2o-3/commit/7ed0befac7b47e867c017e4a52f9e4036e5f2aad)
+- [PUBDEV-1421](https://0xdata.atlassian.net/browse/PUBDEV-1421): python client parse fail on hdfs /datasets/airlines/airlines.test.csv
+- [PUBDEV-1153](https://0xdata.atlassian.net/browse/PUBDEV-1153): Demo: Airlines Demo in Python [GitHub](https://github.com/h2oai/h2o-3/commit/8f82d1de294c83f2fa9f2ab9e05ab0f829b8ec7f)
+- [PUBDEV-1286](https://0xdata.atlassian.net/browse/PUBDEV-1286): Python ifelse on H2OFrame never finishes
+- [PUBDEV-1435](https://0xdata.atlassian.net/browse/PUBDEV-1435): Run.py modify to accept phantomjs timeout command line option [GitHub](https://github.com/h2oai/h2o-3/commit/d720f4441e26bcd2715fb40b14370013a126d7c0)
+
+##### R
+
+- [PUBDEV-1154](https://0xdata.atlassian.net/browse/PUBDEV-1154): Demo: Chicago Crime Demo in R
+- [PUBDEV-1240](https://0xdata.atlassian.net/browse/PUBDEV-1240): Merge causes IllegalArgumentException
+- [PUBDEV-1447](https://0xdata.atlassian.net/browse/PUBDEV-1447): R: no argument parser_type in h2o.uploadFile/h2o.importFile [(GitHub)](https://github.com/h2oai/h2o-3/commit/b7a608d0031b25b23b869fdf9b0dd7ab4dc78fc6)
+
+
+##### System
+
+- [PUBDEV-1423](https://0xdata.atlassian.net/browse/PUBDEV-1423): Phantomjs : Add timeout command line option 
+- [PUBDEV-1401](https://0xdata.atlassian.net/browse/PUBDEV-1401): Flow : Import file 15 M Rows 2.2K cols=> Parse these files => Change first column type => Unknown => Try to change other columns => Kind of hangs 
+- [PUBDEV-1406](https://0xdata.atlassian.net/browse/PUBDEV-1406): make the ParseSetup / Parse API more efficient for high column counts [GitHub](https://github.com/h2oai/h2o-3/commit/4cc459401afbd7598d5c9a79a4b858237d91fc4f)
+
+
+---
+
+###Shannon (3.0.0.21) - 6/12/15
+
+####New Features
+
+##### Python
+- [HEXDEV-29](https://0xdata.atlassian.net/browse/HEXDEV-29): The ability to define features as categorical or continuous in the web UI and in the python API
+
+
+####Enhancements
+
+
+#####Algorithms
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/d39f0c885a02c9dafcabc78d4a108f7c8465eb32) Made intercept option public and added it to field list in parameter schema
+- [GitHub](https://github.com/h2oai/h2o-3/commit/3ee8264d549f5cc62fe29e1b50e7e3d67ac6dde2) GLM: Updated null model intercept fit.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/74e7f6de084c69bdb54093d19fdb089401359ca2) GLM: Updated null-model constant term fitting when running with offset
+- [GitHub](https://github.com/h2oai/h2o-3/commit/75903da9d1d1da3f34eb64024c1ff7d6955536de)  glm update
+- [GitHub](https://github.com/h2oai/h2o-3/commit/3a6fab716dbc9a98106076c7a02d91291c1da88c) DL code refactoring to reduce file sizes
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/865e78d3b129df7dd776aca9d0a8d8824aab8287) add h2o.round() and h2o.signif() and additional pyunit checks
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c70f5a7b8eac16a0d00e1959346cab6ea28991e1) add h2o.all() and respective pyunit checks
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b25b2b3ce97ba1f87146850a472dc7166e1ef694) added intercept option top R 
+
+
+#####System
+
+- [PUBDEV-607](https://0xdata.atlassian.net/browse/PUBDEV-607): Add Xmx reporting to GA [GitHub](https://github.com/h2oai/h2o-3/commit/ba6ce79f679efb49ac4e77a462cc1bb080f9c64b)
+
+##### Web UI
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/385e0c2a2d008c3ee347441b0ab840c3a819c8b2) Add horizontal pagination of /Frames to handle UI navigation of wide datasets more efficiently. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/d9c9a202a2f254ab004787e27d3bfe716ee76198) Only show the top 7 metrics for the max metrics table
+- [GitHub](https://github.com/h2oai/h2o-3/commit/157c15833bdb8096e9e6f52286a6e557c59b8561) Make the max metrics table entries be called `max f1` etc. 
+
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+
+##### Algorithms
+- [PUBDEV-1365](https://0xdata.atlassian.net/browse/PUBDEV-1365): GLM: Buggy when likelihood equals infinity [GitHub](https://github.com/h2oai/h2o-3/commit/d9512529da2e4feed0d2d8847626a0c85e385cbe)
+- [PUBDEV-1394](https://0xdata.atlassian.net/browse/PUBDEV-1394): GLM: Some offsets hang
+- [PUBDEV-1268](https://0xdata.atlassian.net/browse/PUBDEV-1268): GLM: get java.lang.AssertionError at hex.glm.GLM$GLMSingleLambdaTsk.compute2 for attached data
+- [PUBDEV-1382](https://0xdata.atlassian.net/browse/PUBDEV-1382): pca: giving wrong std- dev for mentioned data
+- [PUBDEV-1383](https://0xdata.atlassian.net/browse/PUBDEV-1383): pca: std dev numbers differ for v2 and v3 for attached data [GitHub](https://github.com/h2oai/h2o-3/commit/3b02b5b1dcc9c6401823f3f0ba00e1578e3b4826)
+- [PUBDEV-1381](https://0xdata.atlassian.net/browse/PUBDEV-1381): GBM, RF: get an NPE when run with a validation set with no response [GitHub](https://github.com/h2oai/h2o-3/commit/fe4dd15b6931bc92065884a36969d7bd519e5ec0)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/900929e99eeda7c885a984fe8bcc790c0339dbbe) GLM fix - fixed fitting of null model constant term
+- [GitHub](https://github.com/h2oai/h2o-3/commit/fdebe7ade04cb1e0bf1c488e268815c46cbf2052) Fix remote bug
+- [GitHub](https://github.com/h2oai/h2o-3/commit/2e679013a5c2a39023240f38890690658411be08) Remove elastic averaging parameters from Flow.
+- [PUBDEV-1398](https://0xdata.atlassian.net/browse/PUBDEV-1398): pca: predictions on the attached data from v2 and v3 differ
+ 
+
+##### Python
+- [PUBDEV-1286](https://0xdata.atlassian.net/browse/PUBDEV-1286): Python ifelse on H2OFrame never finishes [GitHub](https://github.com/h2oai/h2o-3/commit/e64909d307aaa80524ed38d25fc9152af9594879)
+
+##### R
+- [PUBDEV-761](https://0xdata.atlassian.net/browse/PUBDEV-761): Save model and restore model (from R)
+- [PUBDEV-1236](https://0xdata.atlassian.net/browse/PUBDEV-1236): h2o-r/tests/testdir_misc/runit_mergecat.R failure (client mode only)
+
+##### System
+- [PUBDEV-1402](https://0xdata.atlassian.net/browse/PUBDEV-1402): move Rapids to /99 since it's going to be in flux for a while [GitHub](https://github.com/h2oai/h2o-3/commit/cc908d2bc16f270e190f889cb4e67a3884b2ac74)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ea61945a2185e3201ec23aed4bebeaa86f2cc05a) Fixes an operator precedence issue, and replaces debug GA target with actual one.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/40d13b4bb8c2342ac4022e3017490e651b6c9a9b) Fix log download bug where all nodes were getting the same zip file. 
+
+
+
+---
+
+###Shannon (3.0.0.18) - 6/9/15
+
+####New Features
+
+#####System
+
+- [PUBDEV-1163](https://0xdata.atlassian.net/browse/PUBDEV-1163): implement h2o1-style model save/restore in h2o-3 [GitHub](https://github.com/h2oai/h2o-3/commit/204695c288d5d8fd833274461c3ee6ef19a65711)
+
+#####Python
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/baa8ac01fc93dac36b519ffbada962665c1ba802): Added --h2ojar option
+
+
+####Enhancements
+
+
+##### Python
+- [PUBDEV-277](https://0xdata.atlassian.net/browse/PUBDEV-277): Make python equivalent of as.h2o() work for numpy array and pandas arrays
+
+
+####Bug Fixes
+
+#####Algorithms
+
+- [PUBDEV-1371](https://0xdata.atlassian.net/browse/PUBDEV-1371): pca: get java.lang.AssertionError at hex.svd.SVD$SVDDriver.compute2(SVD.java:198)
+- [PUBDEV-1376](https://0xdata.atlassian.net/browse/PUBDEV-1376): pca: predictions from h2o-3 and h2o-2 differs for attached data
+- [PUBDEV-1380](https://0xdata.atlassian.net/browse/PUBDEV-1380): DL: when try to access the training frame from the link in the dl model get: Object not found
+
+##### R
+- [PUBDEV-761](https://0xdata.atlassian.net/browse/PUBDEV-761): Save model and restore model (from R) [GitHub](https://github.com/h2oai/h2o-3/commit/391ba5ba296aeb4b50ebf5658d90ab87f4bb2d49)
+
+
+---
+
+###Shannon (3.0.0.17) - 6/8/15
+
+####New Features
+
+
+##### Algorithms
+
+- [HEXDEV-209](https://0xdata.atlassian.net/browse/HEXDEV-209):Poisson distributions for GLM
+- [HEXDEV-210](https://0xdata.atlassian.net/browse/HEXDEV-210): Gamma distributions for GLM
+
+##### Python
+
+- [PUBDEV-1270](https://0xdata.atlassian.net/browse/PUBDEV-1270): Python Interface needs H2O Cut Function [GitHub](https://github.com/h2oai/h2o-3/commit/f67341a2fa1b59d8365c9cf1600b21c85343ce03)
+- [PUBDEV-1242](https://0xdata.atlassian.net/browse/PUBDEV-1242): Need equivalent of as.Date feature in Python [GitHub](https://github.com/h2oai/h2o-3/commit/99430c1fb5921365d9a2242f4c4d02a751e9e024)
+- [PUBDEV-1165](https://0xdata.atlassian.net/browse/PUBDEV-1165): H2O Python needs Modulus Operations
+- [HEXDEV-29](https://0xdata.atlassian.net/browse/HEXDEV-29): The ability to define features as categorical or continuous in the web UI and in the python API
+- [PUBDEV-1237](https://0xdata.atlassian.net/browse/PUBDEV-1237): environment variable to disable the strict version check in the R and Python bindings
+
+
+##### Web UI
+
+- [PUBDEV-1175](https://0xdata.atlassian.net/browse/PUBDEV-1175): Flow:  Good interactive confusion matrix for binomial
+- [PUBDEV-1176](https://0xdata.atlassian.net/browse/PUBDEV-1176): Flow:  Good confusion matrix for multinomial
+
+####Enhancements
+
+
+
+#####Algorithms 
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c308d5e2bed30378ea9e0032831e73ad4bc09f7a): GLM weights fix: regularize by sum of weights rather than number of observations
+- [GitHub](https://github.com/h2oai/h2o-3/commit/6f23ac2ed1d3b36652e4b7d8ecf80c68a0b2e37c): GLM fix: added line search (and limited number of iterations) to constant term model fitting with offset (could enter infinite loop)
+- [GitHub](https://github.com/h2oai/h2o-3/commit/fb4a82dbf74c49f9c55d5653dd8e2e038f9a998b): No longer warn if `binomial_double_trees` option is enabled for `_nclass`!=2
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ed7ec99e3f1ebb4c92ac21ea4016369a9f5b85d6): Fix CM table to have integer entries unless there are real-valued entries 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/acbaa4806e70e0fb2868e7bedfba6eda21469424): Add extra assertion for `train_samples_per_iteration`
+- [GitHub](https://github.com/h2oai/h2o-3/commit/1f3c110915b8c281df19cd21b0f09571fa30e618): Update model during runtime of algorithm.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/67c894f6af9064bdcfa9feb877b3f5abd1fc22db): Changes to glm forloop to add offsets and add NOPASS/NOFEATURE functionality back to run.py
+
+
+#####R
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ab7cf2948c70b68de07e48d346d8e9c264263a16): month was off by one, runit test edited
+- [GitHub](https://github.com/h2oai/h2o-3/commit/e450d67f2d4e7fefa79e63f92c1fd9212f463a8d): Comments to clarify the policy on dates in H2O.
+
+
+#####System
+
+- [HEXDEV-344](https://0xdata.atlassian.net/browse/HEXDEV-344): Logs should include JVM launch parameters
+
+
+##### Web UI
+
+- [PUBDEV-467](https://0xdata.atlassian.net/browse/PUBDEV-467): Show Frames for DL weights/biases in Flow
+- [PUBDEV-1221](https://0xdata.atlassian.net/browse/PUBDEV-1221): add a "I like this" style button with LinkedIn or Github (beside the Flow Assist Me button)
+- [PUBDEV-1245](https://0xdata.atlassian.net/browse/PUBDEV-1245): Flow: use new `_exclude_fields` query parameter to speed up REST API usage
+
+####Bug Fixes
+
+
+#####Algorithms
+
+- [PUBDEV-1353](https://0xdata.atlassian.net/browse/PUBDEV-1353): GLM: model with weights different in R than in H2o for attached data 
+- [PUBDEV-1358](https://0xdata.atlassian.net/browse/PUBDEV-1358): GLM: when run with -ive weights, would be good to tell the user that -ive weights not allowed instead of throwing exception
+- [PUBDEV-1264](https://0xdata.atlassian.net/browse/PUBDEV-1264): GLM: reporting incorrect null deviance [GitHub](https://github.com/h2oai/h2o-3/commit/8117c82014db5a5da461f3051a84fdda0de56fcc)
+- [PUBDEV-1362](https://0xdata.atlassian.net/browse/PUBDEV-1362): GLM: when run with weights and offset get wrong ans
+- [PUBDEV-1263](https://0xdata.atlassian.net/browse/PUBDEV-1263): GLM: name ordering for the coefficients is incorrect [GitHub](https://github.com/h2oai/h2o-3/commit/368d649246a019a629f020bfd69f3e0bf7d8983c)
+- [PUBDEV-1261](https://0xdata.atlassian.net/browse/PUBDEV-1261): pca: wrong std dev for data with nas rest numeric cols [GitHub](https://github.com/h2oai/h2o-3/commit/ac0b63e86934bfa363a539fcf5760d40ca10ed7a)
+- [PUBDEV-1218](https://0xdata.atlassian.net/browse/PUBDEV-1218): pca: progress bar not showing progress just the initial and final progress status [GitHub](https://github.com/h2oai/h2o-3/commit/519f2326587efd7bcea7fb8459e2883bfd0915db)
+- [PUBDEV-1204](https://0xdata.atlassian.net/browse/PUBDEV-1204): pca: from flow when try to invoke build model, displays-ERROR FETCHING INITIAL MODEL BUILDER STATE
+- [PUBDEV-1212](https://0xdata.atlassian.net/browse/PUBDEV-1212): pca: with enum column reporting (some junk) wrong stdev/ rotation [GitHub](https://github.com/h2oai/h2o-3/commit/91b1a954c6f9959bf4aabc440bef4c917bf649ee)
+- [PUBDEV-1228](https://0xdata.atlassian.net/browse/PUBDEV-1228): pca: no std dev getting reported for attached data
+- [PUBDEV-1233](https://0xdata.atlassian.net/browse/PUBDEV-1233): pca: std dev for attached data differ when run on  h2o-3 and h2o-2
+- [PUBDEV-1258](https://0xdata.atlassian.net/browse/PUBDEV-1258): h2o.glm with offset column: get Error in .h2o.startModelJob(conn, algo, params) :    Offset column 'logInsured' not found in the training frame.
+
+##### R
+
+- [PUBDEV-1234](https://0xdata.atlassian.net/browse/PUBDEV-1234): h2o.setTimezone throwing an error [GitHub](https://github.com/h2oai/h2o-3/commit/6dbecb2707b9483218d40a95d717729db72f587b)
+- [PUBDEV-1229](https://0xdata.atlassian.net/browse/PUBDEV-1229): R: Most GLM accessors fail [GitHub](https://github.com/h2oai/h2o-3/commit/790c5f4850362712e39b83c4489f315fc5ca89b8)
+- [PUBDEV-1227](https://0xdata.atlassian.net/browse/PUBDEV-1227): R: Cannot extract an enum value using data[row,col] [GitHub](https://github.com/h2oai/h2o-3/commit/7704a16e510458c3e4b7cf539fb35bd93163dcde)
+- [HEXDEV-339](https://0xdata.atlassian.net/browse/HEXDEV-339): Feature engineering: log (1+x) fails [GitHub](https://github.com/h2oai/h2o-3/commit/ab13a9229a7fb93eace068efe3f99eb248359fa7)
+- [PUBDEV-1249](https://0xdata.atlassian.net/browse/PUBDEV-1249): h2o.glm: no way to specify offset or weights from h2o R [GitHub](https://github.com/h2oai/h2o-3/commit/9245e785614f9748344990df5000ebeec3bea398)
+- [PUBDEV-1255](https://0xdata.atlassian.net/browse/PUBDEV-1255): create_frame: hangs with following msg in the terminal, java.lang.IllegalArgumentException: n must be positive  
+- [PUBDEV-1361](https://0xdata.atlassian.net/browse/PUBDEV-1361): runit_hex_1841_asdate_datemanipulation.R fails intermittently [GitHub](https://github.com/h2oai/h2o-3/commit/b95e094c45630eca07d2f99e5a27ac9409603e28) 
+- [PUBDEV-1361](https://0xdata.atlassian.net/browse/PUBDEV-1361): runit_hex_1841_asdate_datemanipulation.R fails intermittently
+
+
+##### Sparkling Water
+
+- [PUBDEV-692](https://0xdata.atlassian.net/browse/PUBDEV-692): Upgrade SparklingWater to Spark 1.3
+
+
+#####System
+
+- [PUBDEV-1288](https://0xdata.atlassian.net/browse/PUBDEV-1288): Confusion Matrix: class java.lang.ArrayIndexOutOfBoundsException', with msg '2' java.lang.ArrayIndexOutOfBoundsException: 2 at hex.ConfusionMatrix.createConfusionMatrixHeader [Github](https://github.com/h2oai/h2o-3/commit/63efca9d0a1a30074cc78bde90c564f9b8c766ff)
+- [HEXDEV-323](https://0xdata.atlassian.net/browse/HEXDEV-323): SVMLight Parse Bug [GitHub](https://github.com/h2oai/h2o-3/commit/f60e97f4f913769de5a36b34a802057e7bb68db2)
+- [PUBDEV-1207](https://0xdata.atlassian.net/browse/PUBDEV-1207): implement JSON field-filtering features: `_exclude_fields`
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c7892ce1a3bcb7f745f80f5f3fd5d7a14bc1f345): Fix a missing field update in Job. 
+- [PUBDEV-65](https://0xdata.atlassian.net/browse/PUBDEV-65): Handling of strings columns in summary is broken
+- [PUBDEV-1230](https://0xdata.atlassian.net/browse/PUBDEV-1230): Parse: get AIOOB when parses the attached file with first two cols as enum while h2o-2 does fine
+- [PUBDEV-1377](https://0xdata.atlassian.net/browse/PUBDEV-1377): Get AIOOBE when parsing a file with fewer column names than columns [GitHub](https://github.com/h2oai/h2o-3/commit/17b975b11c91ffd33d42b8b087e691e5f4ba0416)
+- [PUBDEV-1364](https://0xdata.atlassian.net/browse/PUBDEV-1364): Variable importance Object
+
+
+#####Web UI
+
+- [PUBDEV-1198](https://0xdata.atlassian.net/browse/PUBDEV-1198): Flow: Selecting "Cancel" for "Load Notebook" prompt clears current notebook anyway
+- [PUBDEV-1172](https://0xdata.atlassian.net/browse/PUBDEV-1172): Model builder takes forever to load the column names in Flow, hence cannot build any models
+- [PUBDEV-1248](https://0xdata.atlassian.net/browse/PUBDEV-1248): Flow GLM: from Flow the drop down with column names does not show up and hence not able to select the offset column
+- [PUBDEV-1380](https://0xdata.atlassian.net/browse/PUBDEV-1380): DL: when try to access the training frame from the link in the dl model get: Object not found [GitHub](https://github.com/h2oai/h2o-3/commit/dee129ce73d24a54107f9634cc3fcfa18a783664)
+
+
+
+---
+
+###Shannon (3.0.0.13) - 5/30/15
+
+####New Features
+
+
+#####Algorithms
+
+- [HEXDEV-260](https://0xdata.atlassian.net/browse/HEXDEV-260): Add Random Forests for regression
+
+##### Python
+
+- [PUBDEV-1166](https://0xdata.atlassian.net/browse/PUBDEV-1166): Converting H2OFrame into Python object
+- [PUBDEV-1165](https://0xdata.atlassian.net/browse/PUBDEV-1165): H2O Python needs Modulus Operations
+
+#####R
+
+- [PUBDEV-1188](https://0xdata.atlassian.net/browse/PUBDEV-1188): Merge should handle non-numeric columns [(github)](https://github.com/h2oai/h2o-3/commit/3ef148bd93c053c06eeb8414bc9290a394d082f8)
+- [PUBDEV-1096](https://0xdata.atlassian.net/browse/PUBDEV-1096): R: add weekdays() function in addition to month() and year()
+
+
+####Enhancements
+
+#####Algorithms
+
+- [github](https://github.com/h2oai/h2o-3/commit/09e5d53b6b1b3a1bfb45b6e5a12e1a05d877102f): Updated weights handling, test. 
+- [HEXDEV-324](https://0xdata.atlassian.net/browse/HEXDEV-324)poor GBM performance on KDD Cup 2009 competition dataset [(github)](https://github.com/h2oai/h2o-3/commit/36b99ed538218d8f675266f97e2816b877c189bf)
+- [HEXDEV-326](https://0xdata.atlassian.net/browse/HEXDEV-326): varImp() function for DRF and GBM [(github)](https://github.com/h2oai/h2o-3/commit/4bc6f08e8fbc55c2d5795fd30f0bc4d0481e2499)
+- [github](https://github.com/h2oai/h2o-3/commit/201f8d11c1773cb3119c0294784bf47c08cf42ba): Change some of the defaults
+
+#####API
+
+- [PUBDEV-669](https://0xdata.atlassian.net/browse/PUBDEV-669): have the /Frames/{key}/summary API call Vec.startRollupStats
+
+#####R/Python
+
+- [PUBDEV-479](https://0xdata.atlassian.net/browse/PUBDEV-479): Port MissingInserter to R/Python
+- [PUBDEV-632](https://0xdata.atlassian.net/browse/PUBDEV-632): Display TwoDimTable of HitRatios in R/Python
+- [github](https://github.com/h2oai/h2o-3/commit/6ed0f24693ab872179336289207345517d6925de): minor change to h2o.demo()
+- [github](https://github.com/h2oai/h2o-3/commit/a7fbe9f0734cfece37ab408eb644c853a344b964): add h2o.demo() facility to python package, along with some built-in (small) data
+- [github](https://github.com/h2oai/h2o-3/commit/3475e47fd2271e317d167c07755561d19c6b8fc8): remove cols param
+
+
+####Bug Fixes
+
+#####Algorithms
+
+- [PUBDEV-1211](https://0xdata.atlassian.net/browse/PUBDEV-1211): pca: descaled pca, std dev seems to be wrong for attached data [github](https://github.com/h2oai/h2o-3/commit/edfa4e30e72ecb02cc4c99c8d8a02313b58c0f63)
+- [PUBDEV-1213](https://0xdata.atlassian.net/browse/PUBDEV-1213): pca: would be good to have the std dev numbered bec difficult to relate to the principle components [(github)](https://github.com/h2oai/h2o-3/commit/90ef7c083823fca05a0f94bf8c7e451ea64b646a)
+- [PUBDEV-1201](https://0xdata.atlassian.net/browse/PUBDEV-1201): pca: get ArrayIndexOutOfBoundsException [(github)](https://github.com/h2oai/h2o-3/commit/1390a4bd4de3adcdb924658e9122f230f7521fea)
+- [PUBDEV-1203](https://0xdata.atlassian.net/browse/PUBDEV-1203): pca: giving wrong std dev/rotation-labels for iris with species as enum [(github)](https://github.com/h2oai/h2o-3/commit/7ae347fcd26e96cdbd8b5fa3a42585cb5530fe01)
+- [PUBDEV-1199](https://0xdata.atlassian.net/browse/PUBDEV-1199): DL with <1 epochs has wrong initial estimated time [(github)](https://github.com/h2oai/h2o-3/commit/5b6854954f037b645002accbf35f0670b01df41f)
+- [github](https://github.com/h2oai/h2o-3/commit/5cbd138e06797954e6aa6996c5733a1eaf927316): Fix missing AUC for training data in DL. 
+- [github](https://github.com/h2oai/h2o-3/commit/761b6ef5d75d7327d446e0b23e1fe74bc509b6a3): Add the seed back to GBM imbalanced test (was set to 0 by default before, now explicit) 
+
+
+#####R
+
+- [PUBDEV-1189](https://0xdata.atlassian.net/browse/PUBDEV-1189): R: h2o.hist broken for breaks that is a list of the break intervals [(github)](https://github.com/h2oai/h2o-3/commit/6118b04367cfc58c54f0c5ff51faf9b72a06088a)
+- [PUBDEV-1206](https://0xdata.atlassian.net/browse/PUBDEV-1206): Frame summary from R and Python need to use the Frame summary endpoint [(github)](https://github.com/h2oai/h2o-3/commit/1ed38e5a4686e7ea4da56752d270e4d07450f402)
+- [PUBDEV-1177](https://0xdata.atlassian.net/browse/PUBDEV-1177): R summary() is slow when large number of columns
+- [PUBDEV-1097](https://0xdata.atlassian.net/browse/PUBDEV-1097): R: R should be able to take a of paths similar to how python does
+
+---
+
+###Shannon (3.0.0.11) - 5/22/15
+
+####Enhancements
 
 #####Algorithms
 
 - [PUBDEV-1179](https://0xdata.atlassian.net/browse/PUBDEV-1179): DRF: investigate if larger seeds giving better models
 - [PUBDEV-1178](https://0xdata.atlassian.net/browse/PUBDEV-1178): Add logloss/AUC/Error to GBM/DRF Logs & ScoringHistory
-- [PUBDEV-1169](https://0xdata.atlassian.net/browse/PUBDEV-1169): Use only 1 tree for DRF binomial
+- [PUBDEV-1169](https://0xdata.atlassian.net/browse/PUBDEV-1169): Use only 1 tree for DRF binomial [(github)](https://github.com/h2oai/h2o-3/commit/84fce9cfab37a6c4fd73a22e9258685bc2fb124e)
 - [PUBDEV-1170](https://0xdata.atlassian.net/browse/PUBDEV-1170): Wrong ROC is shown for DRF (Training ROC, even though Validation is given)
 - [PUBDEV-1162](https://0xdata.atlassian.net/browse/PUBDEV-1162): Speed up sorting of histograms with O(N log N) instead of O(N^2)
-
-
 
 #####System
 
@@ -25,13 +707,11 @@ The following changes are improvements to existing features (which includes chan
 
 ####Bug Fixes
 
-The following changes are to resolve incorrect software behavior: 
-
-
 #####Algorithms
 
 - [HEXDEV-253](https://0xdata.atlassian.net/browse/HEXDEV-253): model output consistency
 - [HEXDEV-319](https://0xdata.atlassian.net/browse/HEXDEV-319): DRF in h2o 3.0 is worse than in h2o 2.0 for Airline
+- [PUBDEV-1180](https://0xdata.atlassian.net/browse/PUBDEV-1180): DRF has wrong training metrics when validation is given
 
 
 
@@ -39,6 +719,11 @@ The following changes are to resolve incorrect software behavior:
 
 - [PUBDEV-501](https://0xdata.atlassian.net/browse/PUBDEV-501): H2OPredict: does not complain when you build a model with one dataset and predict on completely different dataset
 
+#####Python
+
+- [PUBDEV-1183](https://0xdata.atlassian.net/browse/PUBDEV-1183): Python version check should fail hard by default
+- [PUBDEV-1185](https://0xdata.atlassian.net/browse/PUBDEV-1185): Python binding version mismatch check should fail hard and be on by default
+- [HEXDEV-138](https://0xdata.atlassian.net/browse/HEXDEV-138): Port Python tests for Deep Learning
 
 
 #####R
@@ -50,6 +735,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1174](https://0xdata.atlassian.net/browse/PUBDEV-1174): R: h2o.hist FD implementation broken
 - [PUBDEV-1167](https://0xdata.atlassian.net/browse/PUBDEV-1167): R: h2o.group_by broken
 - [HEXDEV-318](https://0xdata.atlassian.net/browse/HEXDEV-318): the fix to H2O startup for the host unreachable from R causes a security hole
+- [PUBDEV-1187](https://0xdata.atlassian.net/browse/PUBDEV-1187): FramesHandler.summary() needs to run summary on all Vecs concurrently.
 
 
 #####System
@@ -57,6 +743,11 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-862](https://0xdata.atlassian.net/browse/PUBDEV-862): Building a model without training file -> NPE
 - [HEXDEV-315](https://0xdata.atlassian.net/browse/HEXDEV-315): importFile fails: Error in fromJSON(txt, ...) : unexpected character: A
 - [PUBDEV-1137](https://0xdata.atlassian.net/browse/PUBDEV-1137): Parse: upload and import gives different chunk compression on the same file
+- [PUBDEV-1054](https://0xdata.atlassian.net/browse/PUBDEV-1054): Parse: h2o parses arff file incorrectly
+- [PUBDEV-1181](https://0xdata.atlassian.net/browse/PUBDEV-1181): Rapids should queue and block on the back-end to prevent overlapping calls
+- [PUBDEV-1184](https://0xdata.atlassian.net/browse/PUBDEV-1184): importFile fails for paths containing spaces
+
+
 
 #####Web UI
 - [PUBDEV-1182](https://0xdata.atlassian.net/browse/PUBDEV-1182): Flow: when upload file fails, the control does not come back to the flow screen, and have to refresh the whole page to get it back

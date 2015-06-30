@@ -4,10 +4,7 @@ This tutorial describes how to create a Generalized Linear Analysis (GLM) model 
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-
-For more details on the math behind H2O's implementation of GLM, refer to <a href="http://docs.h2o.ai/datascience/glm.html" target="_blank">GLM Data Science</a>. 
-
-**Note**: GLM in H2O-Dev may provide slightly different coefficient values when applying an L1 penalty in comparison with H2O1.
+**Note**: GLM in the current version may provide slightly different coefficient values when applying an L1 penalty in comparison with previous versions of H2O.
 
 ###Using GLM
 Use GLM when the variable of interest relates to predictions or inferences about a rate, an event, or a continuous measurement or for questions about how a set of environmental conditions influence the dependent variable.
@@ -19,24 +16,26 @@ Here are some examples:
 - "How many customers will contact help support in a given time frame?"
 
 
-
 ### Getting Started
 This tutorial uses a publicly available data set that can be found at the UCI Machine Learning Repository: <a href="http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/" target="_blank">http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/</a>.
 
 The original data are the Abalone data, available from UCI Machine Learning Repository. They are composed of 4177 observations on 9 attributes. All attributes are real valued, and continuous, except for Sex and Rings, found in columns 0 and 8 respectively.
 Sex is categorical with 3 levels (male, female, and infant), and Rings is an integer valued count.
 
-To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
+If you don't have any data of your own to work with, you can find some example datasets here: 
 
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
 
 
 ####Importing Data
 Before creating a model, import data into H2O:
 
-0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
- ![Assist Me button](../images/AssistButton.png)
+0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the file drop.  
+ ![Assist Me button](../images/Flow_AssistMeButton.png)
+
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field.  
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
 
   ![Importing Files](../images/GLM_ImportFile.png)
@@ -57,11 +56,11 @@ Now, parse the imported data:
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
 
-0. Review the data in the **Data Preview** section, then click the **Parse** button.  
+0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/GLM_Parse.png)
 
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  **NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 
 ### Building a Model
@@ -85,8 +84,16 @@ Now, parse the imported data:
 
 ### GLM Results
 
-To view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when
-standardization is requested). The output also displays AIC, AUC, and deviance rates.  
+To view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when standardization is requested). The output also includes: 
+
+- Model parameters (hidden)
+- A graph of the scoring history (objective vs. iteration) 
+- Output (model category, validation metrics, and standardized coefficients magnitude)
+- GLM model summary (family, link, regularization, number of total predictors, number of active predictors, number of iterations, training frame)
+-  Scoring history in tabular form (timestamp, duration, iteration, log likelihood, objective)
+-  Training metrics (model, model checksum, frame, frame checksum, description, model category, scoring time, predictions, MSE, r2, residual deviance, null deviance, AIC, null degrees of freedom, residual degrees of freedom) 
+-  Coefficients
+-  Preview POJO
 
 ![GLM Results](../images/GLM_ModelResults.png)
 

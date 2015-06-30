@@ -118,6 +118,7 @@ public class ASTFunc extends ASTFuncDef {
     fs.blockForPending();
     Key local_key = Key.make();
     Frame fr = new Frame(local_key, null, vecs);
+    env.addRef(fr);
 //    if( !env.isGlobal() ) {
 //      if( env._local==null ) env._local = env.newTable();
 //    }

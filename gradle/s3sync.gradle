@@ -41,7 +41,7 @@ task syncBigdataServer {
   group = "Datasets"
   description = "Downloads large test data sets from s3 bucket to a local directory.  Data sets are big enough to stress a cluster."
   doLast {
-      syncData('bigdata/bigserver');
+      syncData('bigdata/server');
   }
 }
 

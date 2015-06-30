@@ -14,7 +14,7 @@ function(p) {
 # what packages did the h2o_master_DEV_test need?
 packages <- c("R.utils", "R.oo", "R.methodsS3", "RCurl", "rjson", "statmod", "testthat", "bitops", "tools", "LiblineaR",
               "gdata", "caTools", "ROCR", "digest", "penalized", "rgl", "randomForest", "expm", "Matrix", "glmnet",
-              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust", "e1071")
+              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust", "e1071", "ade4")
 
 invisible(lapply(packages, usePackage))
 

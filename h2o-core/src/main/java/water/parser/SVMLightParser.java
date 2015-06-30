@@ -59,7 +59,7 @@ class SVMLightParser extends Parser {
       long number = 0;
       int zeros = 0;
       int exp = 0;
-      int sgn_exp = 1;
+      int sgnExp = 1;
       boolean decimal = false;
       int fractionDigits = 0;
       int colIdx = 0;
@@ -143,7 +143,6 @@ class SVMLightParser extends Parser {
             } else if(c == 'q'){
               lstate = QID0;
             } else { // failed, skip the line
-              Log.warn("Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'  Skipping line.");
               dout.invalidLine("Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'");
               lstate = SKIP_LINE;
               continue MAIN_LOOP;
@@ -163,7 +162,7 @@ class SVMLightParser extends Parser {
               break;
             } else if ((c == 'e') || (c == 'E')) {
               lstate = NUMBER_EXP_START;
-              sgn_exp = 1;
+              sgnExp = 1;
               break;
             }
             if (exp == -1) {
@@ -186,16 +185,15 @@ class SVMLightParser extends Parser {
                     // or too small (col ids currently must fit into int)
                     String err;
                     if(number <= colIdx)
-                      Log.warn("Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ".  Skipping entry.");
+                      err = "Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ".";
                     else if(exp != 0)
-                      Log.warn("Got non-integer as column id: " + number*PrettyPrint.pow10(exp) + ".  Skipping entry");
+                      err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp);
                     else
-                      Log.warn("Column index out of range, " + number + " does not fit into integer.  Skipping entry");
-                    dout.invalidLine("Invalid column id.");
+                      err = "column index out of range, " + number + " does not fit into integer.";
+                    dout.invalidLine("invalid column id:" + err);
                     lstate = SKIP_LINE;
                   }
                 } else { // we're probably out of sync, skip the rest of the line
-                  Log.warn("Unexpected character after column id: " + c + ".  Skipping entry.");
                   dout.invalidLine("Unexpected character after column id: " + c);
                   lstate = SKIP_LINE;
                 }
@@ -217,7 +215,6 @@ class SVMLightParser extends Parser {
               if (number < LARGEST_DIGIT_NUMBER) {
                 number = (number*PrettyPrint.pow10i(zeros+1))+(c-'0');
               } else {
-                Log.warn("Number " + number + " is out of bounds.  Skipping entry.");
                 dout.invalidLine("number " + number + " is out of bounds.");
                 lstate = SKIP_LINE;
               }
@@ -227,7 +224,7 @@ class SVMLightParser extends Parser {
               if (decimal)
                 fractionDigits = offset - zeros - 1 - fractionDigits;
               lstate = NUMBER_EXP_START;
-              sgn_exp = 1;
+              sgnExp = 1;
               zeros = 0;
               break;
             }
@@ -247,7 +244,7 @@ class SVMLightParser extends Parser {
             }
             exp = 0;
             if (c == '-') {
-              sgn_exp *= -1;
+              sgnExp *= -1;
               break;
             } else if (c == '+'){
               break;
@@ -263,14 +260,13 @@ class SVMLightParser extends Parser {
               exp = (exp*10)+(c-'0');
               break;
             }
-            exp *= sgn_exp;
+            exp *= sgnExp;
             lstate = NUMBER_END;
             continue MAIN_LOOP;
           // ---------------------------------------------------------------------
           case INVALID_NUMBER:
             if(gstate == TGT) { // invalid tgt -> skip the whole row
               lstate = SKIP_LINE;
-              Log.warn("Invalid number (expecting target).  Skipping row.");
               dout.invalidLine("invalid number (expecting target)");
               continue MAIN_LOOP;
             }
@@ -350,7 +346,7 @@ class SVMLightParser extends Parser {
     public SVMLightInspectParseWriter() {
       for (int i = 0; i < MAX_PREVIEW_LINES;++i)
         _data[i] = new String[MAX_PREVIEW_COLS];
-      for (String[] a_data : _data) Arrays.fill(a_data, "0");
+      for (String[] datum : _data) Arrays.fill(datum, "0");
     }
 
     // Expand columns on-demand

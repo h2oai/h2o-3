@@ -21,7 +21,7 @@ public class AboutHandler extends Handler {
     public String value;
   }
 
-  public static class AboutV3 extends Schema<Iced, AboutV3> {
+  public static class AboutV3 extends RequestSchema<Iced, AboutV3> {
     @API(help="List of properties about this running H2O instance", direction = API.Direction.OUTPUT)
     public AboutEntryV3 entries[];
   }

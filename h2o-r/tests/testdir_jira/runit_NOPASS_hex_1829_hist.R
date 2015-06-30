@@ -34,16 +34,15 @@ test.hex_1829 <- function(conn){
     }    
     
     Log.info("Check histogram components")
-    expect_equal(h2o_hist$breaks[-1], r_hist$breaks)
-    expect_equal(sum(h2o_hist$counts), sum(r_hist$counts))
-    expect_equal(sum(h2o_hist$density), sum(r_hist$density))
-    expect_equal(sum(h2o_hist$density), sum(r_hist$density))
+    expect_equal(h2o_hist$breaks, r_hist$breaks)
+    expect_equal(h2o_hist$counts, r_hist$counts)
+    expect_equal(h2o_hist$density, r_hist$density)
     expect_equal(h2o_hist$mids, r_hist$mids)
-    expect_equal(sum(h2o_hist$density), sum(r_hist$density))
   }
 
-  run_check_hist(age, age.R, "AGE")
   run_check_hist(vol, vol.R, "VOL")
+  run_check_hist(age, age.R, "AGE")
+  run_check_hist(age, age.R, "AGE", breaks = c(43, 60, 70, 80))
   run_check_hist(vol, vol.R, "VOL", breaks = as.numeric(qx))
   
   testEnd()

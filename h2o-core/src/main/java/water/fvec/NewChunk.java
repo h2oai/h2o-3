@@ -298,9 +298,9 @@ public class NewChunk extends Chunk {
   }
 
   private void append_ss(ValueString str) {
-    int strlen = str.get_length();
-    int off = str.get_off();
-    byte b[] = str.get_buf();
+    int strlen = str.length();
+    int off = str.getOffset();
+    byte b[] = str.getBuffer();
 
     if (_ss == null) {
       _ss = MemoryManager.malloc1((strlen + 1) * 4);

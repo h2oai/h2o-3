@@ -379,16 +379,17 @@
             <p class="terminal">
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.2.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.3.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.4.2.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.2.zip<br/> 
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip<br/> 
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
             </p>
-            <p>2. Unpack the zip file and launch a 1g instance of H<sub>2</sub>O: </p>
+            <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
             <p class="terminal">
                 unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
                 cd h2o-SUBST_PROJECT_VERSION-*<br/>
-                hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName<br/>
+                hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName<br/>
             </p>
             <p>3. Point your browser to one of the H2O nodes (i.e. "H2O node ... reports H2O cluster size" in the output below):</p>
             <p class="terminal">
@@ -436,6 +437,7 @@ dependencies {</br>
             <li><a id="doc-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
             <li><a id="doc-py" href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
             <li><a id="doc-sparkling-water" href="docs-website/h2o-docs/index.html#Welcome%20to%20H2O%203.0-Sparkling%20Water%20Users">Sparkling Water Readme</a></li>
+            <li><a id="doc-migration" href="docs-website/h2o-docs/index.html#Migrating%20to%20H2O%203.0">Migrating to H2O 3.0</a></li>
           </ul>
           <h2>Developer Documentation</h2>
           <ul>

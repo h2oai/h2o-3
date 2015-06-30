@@ -1,26 +1,26 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pcascore.golden <- function(H2Oserver) {
+test.australia.golden <- function(H2Oserver) {
   # Import data: 
-  Log.info("Importing USArrests.csv data...") 
-  arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  Log.info("Importing AustraliaCoast.csv data...") 
+  australiaR <- read.csv(locate("smalldata/pca_test/AustraliaCoast.csv"), header = TRUE)
+  australiaH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/AustraliaCoast.csv"), destination_frame = "australiaH2O")
   
-  Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
-  fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
-  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'DEMEAN', max_iterations = 2000)
+  Log.info("Compare with PCA when center = FALSE, scale. = FALSE")
+  fitR <- prcomp(australiaR, center = FALSE, scale. = FALSE)
+  fitH2O <- h2o.prcomp(australiaH2O, k = 8, transform = 'NONE', max_iterations = 2000)
   isFlipped1 <- checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   Log.info("Compare Projections into PC space")
-  predR <- predict(fitR, arrestsR)
-  predH2O <- predict(fitH2O, arrestsH2O)
+  predR <- predict(fitR, australiaR)
+  predH2O <- predict(fitH2O, australiaH2O)
   Log.info("R Projection:"); print(head(predR))
   Log.info("H2O Projection:"); print(head(predH2O))
-  isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-5)
+  isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-4)
   expect_equal(isFlipped1, isFlipped2)
   
   testEnd()
 }
 
-doTest("PCA Golden Test: USArrests with Scoring", test.pcascore.golden)
+doTest("PCA Golden Test: AustraliaCoast with Scoring", test.australia.golden)

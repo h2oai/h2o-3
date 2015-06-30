@@ -1,7 +1,7 @@
 (jde-project-file-version "1.0")
 (jde-set-variables
  '(jde-global-classpath (quote ("./build/classes/main" "./build/classes/test" "./../h2o-core/build/classes/main" "./../h2o-genmodel/build/classes/main" "./../h2o-core/build/classes/test" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.15.jar")))
- '(jde-run-working-directory "$DESK/h2o-dev")
+ '(jde-run-working-directory "$DESK/h2o-3")
  '(jde-run-option-classpath (quote ("./build/classes/main" "./build/classes/test" "./../h2o-core/build/classes/main" "./../h2o-genmodel/build/classes/main" "./../h2o-core/build/classes/test" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.15.jar" "./../lib/gson-2.2.4.jar")))
  '(jde-compile-option-directory "./build/classes/main")
  '(jde-run-option-application-args (quote ("hex.deeplearning.DeepLearningProstateTest")))

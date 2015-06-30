@@ -2,6 +2,7 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma) {
@@ -25,24 +26,28 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
 
     // ds[0] has the prediction and ds[1] is ignored
-    @Override public double[] perRow(double ds[], float[] yact, Model m) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
+    @Override public double[] perRow(double ds[], float[] yact, double w, double o,  Model m) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Double.isNaN(ds[0])) return ds; // No errors if prediction is missing
-
+      if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
+      if(w == 0 || Double.isNaN(w)) return ds;
       // Compute error
       double err = yact[0] - ds[0]; // Error: distance from the actual
-      _sumsqe += err*err;       // Squared error
+      _sumsqe += w*err*err;       // Squared error
       assert !Double.isNaN(_sumsqe);
       _count++;
+      _wcount += w;
+      _wY += w*yact[0];
+      _wYY += w*yact[0]*yact[0];
       return ds;                // Flow coding
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      double mse = _sumsqe / _count;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, sigma));
+    public ModelMetrics makeModelMetrics( Model m, Frame f) {
+      double mse = _sumsqe / _wcount;
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma()));
     }
 
-    public String toString() {return " mse = " + _sumsqe / _count;}
+    public String toString() {return " mse = " + _sumsqe / _wcount;}
   }
 }

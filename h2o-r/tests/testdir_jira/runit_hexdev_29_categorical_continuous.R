@@ -1,0 +1,52 @@
+################################################################################
+##
+## Verifying that R can define features as categorical or continuous
+##
+################################################################################
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+test.continuous.or.categorical <- function(conn) {
+  aa <- data.frame(
+    h1 = c( 1, 8, 4, 3, 6),
+    h2 = c('fish', 'cat', 'fish', 'dog', 'bird'),
+    h3 = c( 0, 1, 0, 0, 1)
+    )
+
+  df.hex <- as.h2o(aa)
+
+  print(df.hex)
+  print(summary(df.hex))
+
+  expect_false(is.factor(df.hex$h1))
+  expect_true(is.factor(df.hex$h2))
+  expect_false(is.factor(df.hex$h3))
+
+  Log.info("Converting to categorical")
+  df.hex$h1 <- as.factor(df.hex$h1)
+  df.hex$h2 <- as.factor(df.hex$h2)
+  df.hex$h3 <- as.factor(df.hex$h3)
+
+  print(df.hex)
+  print(summary(df.hex))
+
+  expect_true(is.factor(df.hex$h1))
+  expect_true(is.factor(df.hex$h2))
+  expect_true(is.factor(df.hex$h3))
+
+  Log.info("Converting to continuous")
+  df.hex$h1 <- as.numeric(df.hex$h1)
+  df.hex$h2 <- as.numeric(df.hex$h2)
+  df.hex$h3 <- as.numeric(df.hex$h3)
+
+  expect_false(is.factor(df.hex$h1))
+  expect_false(is.factor(df.hex$h2))
+  expect_false(is.factor(df.hex$h3))
+
+  print(df.hex)
+  print(summary(df.hex))
+
+  testEnd()
+}
+
+doTest("Testing Conversions to Categorical and Continuous Values", test.continuous.or.categorical)

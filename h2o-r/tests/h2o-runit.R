@@ -13,10 +13,11 @@ if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
 if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
 tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Oops. Couldn't install `rgl` package...") })
 if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
+if (!"AUC" %in% rownames(installed.packages())) install.packages("AUC")
 if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
 library(R.utils)
 
-PROJECT.ROOT <- "h2o-dev"
+PROJECT.ROOT <- "h2o-3"
 SUBPROJECT.ROOT <- "h2o-r"
 
 #'

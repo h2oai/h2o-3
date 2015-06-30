@@ -61,7 +61,7 @@ def bernoulli_synthetic_data_mediumGBM(ip,port):
     auc_h2o = gbm_perf.auc()
 
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
-    assert abs(auc_h2o - auc_sci) < 5e-3, "h2o (auc) performance degradation, with respect to scikit. h2o auc: {0} " \
+    assert abs(auc_h2o - auc_sci) < 1e-2, "h2o (auc) performance degradation, with respect to scikit. h2o auc: {0} " \
                                "scickit auc: {1}".format(auc_h2o, auc_sci)
 
 if __name__ == "__main__":

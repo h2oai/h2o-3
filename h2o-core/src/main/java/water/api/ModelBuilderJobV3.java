@@ -21,7 +21,7 @@ public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJob
   public int error_count;
 
   @Override
-  public ModelBuilderJobV3 fillFromImpl(ModelBuilder builder) {
+  public S fillFromImpl(ModelBuilder builder) {
     super.fillFromImpl((Job)builder);
 
     this.messages = new ValidationMessageBase[builder._messages.length];
@@ -35,6 +35,6 @@ public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJob
 
     ModelBuilderSchema s = (ModelBuilderSchema)Schema.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);
     parameters = s.parameters;
-    return this;
+    return (S) this;
   }
 }

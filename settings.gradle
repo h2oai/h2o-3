@@ -13,12 +13,15 @@ include 'h2o-docs'
 include 'h2o-hadoop:h2o-mapreduce-generic'
 include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
+include 'h2o-java-rest-bindings'
 
 if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HADOOP") != null) {
     include 'h2o-hadoop:h2o-cdh5.2'
     include 'h2o-hadoop:h2o-cdh5.2-assembly'
     include 'h2o-hadoop:h2o-cdh5.3'
     include 'h2o-hadoop:h2o-cdh5.3-assembly'
+    include 'h2o-hadoop:h2o-cdh5.4.2'
+    include 'h2o-hadoop:h2o-cdh5.4.2-assembly'
     include 'h2o-hadoop:h2o-hdp2.1'
     include 'h2o-hadoop:h2o-hdp2.1-assembly'
     include 'h2o-hadoop:h2o-hdp2.2'
@@ -30,4 +33,5 @@ if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HA
 }
 
 include 'h2o-test-integ'
+include 'h2o-testng'
 

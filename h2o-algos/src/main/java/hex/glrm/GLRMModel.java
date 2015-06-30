@@ -24,7 +24,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
     public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _loading_key;               // Key to save X matrix
-    public boolean _recover_pca = false;          // Recover principal components of XY at the end?
+    public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
 
     public enum Loss {
       L2, L1, Huber, Poisson, Hinge, Logistic
@@ -175,26 +175,31 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Final step size
     public double _step_size;
 
-    // PCA output on XY
-    // Principal components (eigenvectors) of XY
-    public double[/*feature*/][/*k*/] _eigenvectors_raw;
-    public TwoDimTable _eigenvectors;
-
-    // Standard deviation of each principal component
-    public double[] _std_deviation;
-
-    // Importance of principal components
-    // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
-    public TwoDimTable _pc_importance;
+    // SVD of output XY
+    public double[/*feature*/][/*k*/] _eigenvectors;
+    public double[] _singular_vals;
 
     // Frame key of X matrix
     public Key<Frame> _loading_key;
+
+    // Number of categorical and numeric columns
+    public int _ncats;
+    public int _nnums;
+
+    // Categorical offset vector
+    public int[] _catOffsets;
 
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 
     // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
+
+    // Permutation matrix mapping training col indices to adaptedFrame
+    public int[] _permutation;
+
+    // Expanded column names of adapted training frame
+    public String[] _names_expanded;
 
     public GLRMOutput(GLRM b) { super(b); }
 
@@ -232,7 +237,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
 
       @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+      public ModelMetrics makeModelMetrics(Model m, Frame f) {
         return m._output.addModelMetrics(new ModelMetricsGLRM(m, f));
       }
     }

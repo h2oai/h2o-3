@@ -3,7 +3,6 @@ package hex.deeplearning;
 import static hex.deeplearning.Neurons.*;
 
 import org.junit.*;
-import hex.deeplearning.Neurons.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -46,14 +45,14 @@ public class NeuronsTest extends water.TestUtil {
           a[off+col] = ((float)(row+col))/cols;
       }
     }
-    DenseRowMatrix dra = new DenseRowMatrix(a, rows, cols);
-    DenseColMatrix dca = new DenseColMatrix(dra, rows, cols);
-    SparseRowMatrix sra = new SparseRowMatrix(dra, rows, cols);
-    SparseColMatrix sca = new SparseColMatrix(dca, rows, cols);
-    DenseVector dx = new DenseVector(x);
-    DenseVector dy = new DenseVector(y);
-    DenseVector dres = new DenseVector(res);
-    SparseVector sx = new SparseVector(x);
+    Storage.DenseRowMatrix dra = new Storage.DenseRowMatrix(a, rows, cols);
+    Storage.DenseColMatrix dca = new Storage.DenseColMatrix(dra, rows, cols);
+    Storage.SparseRowMatrix sra = new Storage.SparseRowMatrix(dra, rows, cols);
+    Storage.SparseColMatrix sca = new Storage.SparseColMatrix(dca, rows, cols);
+    Storage.DenseVector dx = new Storage.DenseVector(x);
+    Storage.DenseVector dy = new Storage.DenseVector(y);
+    Storage.DenseVector dres = new Storage.DenseVector(res);
+    Storage.SparseVector sx = new Storage.SparseVector(x);
 
     /**
      * warmup
@@ -193,11 +192,11 @@ public class NeuronsTest extends water.TestUtil {
 
   @Test
   public void sparseTester() {
-    DenseVector dv = new DenseVector(20);
+    Storage.DenseVector dv = new Storage.DenseVector(20);
     dv.set(3,0.21f);
     dv.set(7,0.13f);
     dv.set(18,0.14f);
-    SparseVector sv = new SparseVector(dv);
+    Storage.SparseVector sv = new Storage.SparseVector(dv);
     assert(sv.size() == 20);
     assert(sv.nnz() == 3);
 
@@ -206,33 +205,33 @@ public class NeuronsTest extends water.TestUtil {
       Log.info("sparse [" + i + "] = " + sv.get(i));
 
     // sparse treatment
-    for (SparseVector.Iterator it=sv.begin(); !it.equals(sv.end()); it.next()) {
+    for (Storage.SparseVector.Iterator it=sv.begin(); !it.equals(sv.end()); it.next()) {
 //      Log.info(it.toString());
       Log.info(it.index() + " -> " + it.value());
     }
 
-    DenseColMatrix dcm = new DenseColMatrix(3,5);
+    Storage.DenseColMatrix dcm = new Storage.DenseColMatrix(3,5);
     dcm.set(2,1,3.2f);
     dcm.set(1,3,-1.2f);
     assert(dcm.get(2,1)==3.2f);
     assert(dcm.get(1,3)==-1.2f);
     assert(dcm.get(0,0)==0f);
 
-    DenseRowMatrix drm = new DenseRowMatrix(3,5);
+    Storage.DenseRowMatrix drm = new Storage.DenseRowMatrix(3,5);
     drm.set(2,1,3.2f);
     drm.set(1,3,-1.2f);
     assert(drm.get(2,1)==3.2f);
     assert(drm.get(1,3)==-1.2f);
     assert(drm.get(0,0)==0f);
 
-    SparseColMatrix scm = new SparseColMatrix(3,5);
+    Storage.SparseColMatrix scm = new Storage.SparseColMatrix(3,5);
     scm.set(2,1,3.2f);
     scm.set(1,3,-1.2f);
     assert(scm.get(2,1)==3.2f);
     assert(scm.get(1,3)==-1.2f);
     assert(scm.get(0,0)==0f);
 
-    SparseRowMatrix srm = new SparseRowMatrix(3,5);
+    Storage.SparseRowMatrix srm = new Storage.SparseRowMatrix(3,5);
     srm.set(2,1,3.2f);
     srm.set(1,3,-1.2f);
     assert(srm.get(2,1)==3.2f);

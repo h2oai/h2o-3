@@ -127,30 +127,24 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         addInvalidCol(colIdx);
         return;
       }
-      if(_ctypes[colIdx] == Vec.T_BAD && ParseTime.attemptTimeParse(str) > 0)
+      if(_ctypes[colIdx] == Vec.T_BAD && ParseTime.isTime(str))
         _ctypes[colIdx] = Vec.T_TIME;
-      if( _ctypes[colIdx] == Vec.T_BAD ) { // Attempt UUID parse
-        int old = str.get_off();
-        ParseTime.attemptUUIDParse0(str);
-        ParseTime.attemptUUIDParse1(str);
-        if( str.get_off() != -1 ) _ctypes[colIdx] = Vec.T_UUID;
-        str.setOff(old);
-      }
+      if( _ctypes[colIdx] == Vec.T_BAD && ParseUUID.isUUID(str))
+        _ctypes[colIdx] = Vec.T_UUID;
 
       if( _ctypes[colIdx] == Vec.T_TIME ) {
         long l = ParseTime.attemptTimeParse(str);
         if( l == Long.MIN_VALUE ) addInvalidCol(colIdx);
         else {
-          int time_pat = ParseTime.decodePat(l); // Get time pattern
+          int timePat = ParseTime.decodePat(l); // Get time pattern
           l = ParseTime.decodeTime(l);           // Get time
           addNumCol(colIdx, l, 0);               // Record time in msec
-          _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
+          _nvs[_col]._timCnt[timePat]++; // Count histo of time parse patterns
         }
       } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
-        long lo = ParseTime.attemptUUIDParse0(str);
-        long hi = ParseTime.attemptUUIDParse1(str);
-        if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
-        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
+        long[] uuid = ParseUUID.attemptUUIDParse(str);
+        // FIXME: what if colIdx > _nCols
+        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(uuid[0], uuid[1]);
       } else if( _ctypes[colIdx] == Vec.T_STR ) {
         _nvs[_col = colIdx].addStr(str);
       } else { // Enums

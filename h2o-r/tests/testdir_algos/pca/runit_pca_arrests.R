@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-# Test PCA on arrests.csv
+# Test PCA on USArrests.csv
 test.pca.arrests <- function(conn) {
-  Log.info("Importing arrests.csv data...\n")
+  Log.info("Importing USArrests.csv data...\n")
   arrests.hex <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"))
   arrests.sum <- summary(arrests.hex)
   print(arrests.sum)

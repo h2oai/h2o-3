@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.ArrayList;
 
 import water.*;
+import water.api.FSIOException;
 import water.fvec.NFSFileVec;
 import water.util.Log;
 
@@ -107,5 +108,56 @@ final class PersistFS extends Persist {
   @Override
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     assert false;
+  }
+
+  @Override
+  public OutputStream create(String path, boolean overwrite) {
+    File f = new File(URI.create(path));
+    if (f.exists() && !overwrite)
+      throw new FSIOException(path, "File already exists");
+
+    try {
+      return new FileOutputStream(f, false);
+    } catch (IOException e) {
+      throw new FSIOException(path, e);
+    }
+  }
+
+  @Override
+  public PersistEntry[] list(String path) {
+    File f = new File(URI.create(path));
+    if (f.isFile()) {
+      return new PersistEntry[] { getPersistEntry(f) };
+    } else if (f.isDirectory()) {
+      File[] files = f.listFiles();
+      PersistEntry[] entries = new PersistEntry[files.length];
+      for (int i = 0; i < files.length; i++) {
+        entries[i] = getPersistEntry(files[i]);
+      }
+      return entries;
+    }
+
+    throw H2O.unimpl();
+  }
+
+  @Override
+  public InputStream open(String path) {
+    try {
+      File f = new File(URI.create(path));
+      return new FileInputStream(f);
+    } catch (FileNotFoundException e) {
+      throw new FSIOException(path, "File not found");
+    } catch (Exception e) {
+      throw new FSIOException(path, e);
+    }
+  }
+
+  @Override
+  public boolean mkdirs(String path) {
+    return new File(URI.create(path)).mkdirs();
+  }
+
+  private PersistEntry getPersistEntry(File f) {
+    return new PersistEntry(f.getName(), f.length(), f.lastModified());
   }
 }

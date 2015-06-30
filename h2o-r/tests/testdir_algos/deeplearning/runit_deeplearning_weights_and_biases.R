@@ -11,13 +11,13 @@ check.deeplearning_imbalanced <- function(conn) {
                             reproducible=T, seed=1234, export_weights_and_biases=T)
   #print(dlmodel)
 
-  weights1 <- h2o.getFrame(conn, dlmodel@model$weights[[1]]$name)
-  weights2 <- h2o.getFrame(conn, dlmodel@model$weights[[2]]$name)
-  weights3 <- h2o.getFrame(conn, dlmodel@model$weights[[3]]$name)
+  weights1 <- h2o.getFrame(conn, h2o.weights(dlmodel,matrix_id=1)$name)
+  weights2 <- h2o.getFrame(conn, h2o.weights(dlmodel,matrix_id=2)$name)
+  weights3 <- h2o.getFrame(conn, h2o.weights(dlmodel,matrix_id=3)$name)
 
-  biases1 <- h2o.getFrame(conn, dlmodel@model$biases[[1]]$name)
-  biases2 <- h2o.getFrame(conn, dlmodel@model$biases[[2]]$name)
-  biases3 <- h2o.getFrame(conn, dlmodel@model$biases[[3]]$name)
+  biases1 <- h2o.getFrame(conn, h2o.biases(dlmodel,vector_id=1)$name)
+  biases2 <- h2o.getFrame(conn, h2o.biases(dlmodel,vector_id=2)$name)
+  biases3 <- h2o.getFrame(conn, h2o.biases(dlmodel,vector_id=3)$name)
 
   checkTrue(ncol(weights1) == 52, "wrong dimensionality!")
   checkTrue(nrow(weights1) == 17, "wrong dimensionality!")

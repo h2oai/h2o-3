@@ -654,6 +654,12 @@ public class ArrayUtils {
         return true;
     return false;
   }
+  public static final boolean hasNaNs(double [] ary){
+    for(double d:ary)
+      if(Double.isNaN(d))
+        return true;
+    return false;
+  }
 
   public static final boolean hasNaNsOrInfs(float [] ary){
     for(float d:ary)

@@ -98,11 +98,11 @@ public class WordCountTask extends MRTask<WordCountTask> {
 
     int strLen = 0;
     for (ValueStringCount val : VOCABHM.values())
-      strLen += val.get_length();
+      strLen += val.length();
     ab.put1(0); // not killed
     ab.put4(strLen);  //length of string buffer
     for (ValueStringCount val : VOCABHM.values())
-      ab.put2((char) val.get_length()).putA1(val.get_buf(), val.get_off(), val.get_off() + val.get_length()).put8(val._cnt);
+      ab.put2((char) val.length()).putA1(val.getBuffer(), val.getOffset(), val.getOffset() + val.length()).put8(val._cnt);
     return ab.put2((char) 65535); // End of map marker
   }
 

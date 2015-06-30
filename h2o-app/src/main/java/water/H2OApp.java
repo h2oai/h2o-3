@@ -73,9 +73,10 @@ public class H2OApp {
     H2O.registerPOST("/3/ModelBuilders/naivebayes", NaiveBayesBuilderHandler.class, "train",                                          "Train a Naive Bayes model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/naivebayes/parameters", NaiveBayesBuilderHandler.class, "validate_parameters",                 "Validate a set of Naive Bayes model builder parameters.");
 
-    H2O.registerPOST("/3/Grid/gbm", GBMGridSearchHandler.class, "train",                                                              "Run grid search for GBM model.");
-    H2O.registerPOST("/3/Grid/drf", DRFGridSearchHandler.class, "train",                                                              "Run grid search for DRF model.");
-    H2O.registerPOST("/3/Grid/kmeans", KMeansGridSearchHandler.class, "train",                                                         "Run grid search for KMeans model.");
+    // Grid search is experimental feature
+    H2O.registerPOST("/99/Grid/gbm", GBMGridSearchHandler.class, "train",                                                              "Run grid search for GBM model.");
+    H2O.registerPOST("/99/Grid/drf", DRFGridSearchHandler.class, "train",                                                              "Run grid search for DRF model.");
+    H2O.registerPOST("/99/Grid/kmeans", KMeansGridSearchHandler.class, "train",                                                        "Run grid search for KMeans model.");
 
     // ModelBuilder.registerModelBuilder("word2vec", Word2Vec.class);
     // H2O.registerPOST("/3/ModelBuilders/word2vec", Word2VecBuilderHandler.class, "train",                                              "Train a Word2Vec model on the specified Frame.");

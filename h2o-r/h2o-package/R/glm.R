@@ -41,9 +41,12 @@
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
+#' @param offset_column Specify the offset column.
+#' @param weights_column Specify the weights column.
 #' @param nfolds (Currently Unimplemented)
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
+#' @param intercept Logical, include constant term (intercept) in the model
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -101,6 +104,9 @@ h2o.glm <- function(x, y, training_frame, id, validation_frame,
                     lambda_min_ratio = -1.0,
                     nfolds,
                     beta_constraints = NULL,
+                    offset_column = NULL,
+                    weights_column = NULL,
+                    intercept = TRUE,
                     ...
                     )
 {
@@ -125,40 +131,29 @@ h2o.glm <- function(x, y, training_frame, id, validation_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(validation_frame))
-    parms$validation_frame <- validation_frame
-  if(!missing(id))
-    parms$id <- id
-  if(!missing(max_iterations))
-    parms$max_iterations <- max_iterations
-  if(!missing(beta_epsilon))
-    parms$beta_epsilon <- beta_epsilon
-  if(!missing(solver))
-    parms$solver <- solver
-  if(!missing(standardize))
-    parms$standardize <- standardize
-  if(!missing(family))
-    parms$family <- family
-  if(!missing(link))
-    parms$link <- link
-  if(!missing(tweedie_variance_power))
-    parms$tweedie_variance_power <- tweedie_variance_power
-  if(!missing(tweedie_link_power))
-    parms$tweedie_link_power <- tweedie_link_power
-  if(!missing(alpha))
-    parms$alpha <- alpha
-  if(!missing(prior))
-    parms$prior <- prior
-  if(!missing(lambda))
-    parms$lambda <- lambda
-  if(!missing(lambda_search))
-    parms$lambda_search <- lambda_search
-  if(!missing(nlambdas))
-    parms$nlambdas <- nlambdas
-  if(!missing(lambda_min_ratio))
-    parms$lambda_min_ratio <- lambda_min_ratio
+  if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
+  if( !missing(id) )                        parms$id                     <- id
+  if( !missing(max_iterations) )            parms$max_iterations         <- max_iterations
+  if( !missing(beta_epsilon) )              parms$beta_epsilon           <- beta_epsilon
+  if( !missing(solver) )                    parms$solver                 <- solver
+  if( !missing(standardize) )               parms$standardize            <- standardize
+  if( !missing(family) )                    parms$family                 <- family
+  if( !missing(link) )                      parms$link                   <- link
+  if( !missing(tweedie_variance_power) )    parms$tweedie_variance_power <- tweedie_variance_power
+  if( !missing(tweedie_link_power) )        parms$tweedie_link_power     <- tweedie_link_power
+  if( !missing(alpha) )                     parms$alpha                  <- alpha
+  if( !missing(prior) )                     parms$prior                  <- prior
+  if( !missing(lambda) )                    parms$lambda                 <- lambda
+  if( !missing(lambda_search) )             parms$lambda_search          <- lambda_search
+  if( !missing(nlambdas) )                  parms$nlambdas               <- nlambdas
+  if( !missing(lambda_min_ratio) )          parms$lambda_min_ratio       <- lambda_min_ratio
+  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+  if( !missing(weights_column) )            parms$weights_column         <- weights_column
+  if( !missing(intercept) )                 parms$intercept              <- intercept
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.

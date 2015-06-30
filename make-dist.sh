@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1"
+HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -22,6 +22,9 @@ function make_zip_common {
   mkdir $IMAGEDIR/python
 
   cp h2o-py/dist/*whl $IMAGEDIR/python
+
+  mkdir -p $IMAGEDIR/bindings/java
+  cp h2o-java-rest-bindings/build/libs/h2o-java-rest-bindings-*.jar $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
@@ -109,6 +112,10 @@ cp h2o-py/dist/*whl target/Python
 
 cd h2o-py && sphinx-build -b html docs/ docs/docs/
 cd ..
+
+# Add Java bindings Jar to target.
+mkdir -p target/bindings/java
+cp -p h2o-java-rest-bindings/build/libs/*.jar target/bindings/java
 
 # Add Maven repo to target.
 mkdir target/maven

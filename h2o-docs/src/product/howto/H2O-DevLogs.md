@@ -12,7 +12,7 @@ Copy and email the logs to support@h2o.ai or submit them to h2ostream@googlegrou
 - If you are using Hadoop and the job is not running, view the logs by using the `yarn logs -applicationId` command. When you start an H2O instance, the complete command displays in the output: 
 
 ```
-	jessica@mr-0x8:~/h2o-3.1.0.3008-cdh5.2$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName
+	jessica@mr-0x8:~/h2o-3.1.0.3008-cdh5.2$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 Determining driver host interface for mapper->driver callback...
     [Possible callback IP address: 172.16.2.178]
     [Possible callback IP address: 127.0.0.1]
@@ -62,21 +62,21 @@ If you are using Hadoop and the job is still running:
 
 - Use YARN to obtain the `stdout` and `stderr` logs that are used for troubleshooting. To learn how to access YARN based on management software, version, and job status, see [Accessing YARN](#AccessYARN).
 
-0. Click the **Applications** link to view all jobs, then click the **ApplicationMaster** link for the job. 
+ 0. Click the **Applications** link to view all jobs, then click the **ApplicationMaster** link for the job. 
 	
-	![YARN - Application Master](images/YARN_AllApps_AppMaster.png)
+	 ![YARN - Application Master](images/YARN_AllApps_AppMaster.png)
 
-0. Select the job from the list of active jobs. 
+ 0. Select the job from the list of active jobs. 
 	
-	![YARN - Application Master](images/YARN_AppMaster_Job.png)
+	 ![YARN - Application Master](images/YARN_AppMaster_Job.png)
 	
-0. Click the **logs** link. 
+ 0. Click the **logs** link. 
 	
-	 ![YARN - Application Master](images/YARN_AppMaster_Logs.png)
+	  ![YARN - Application Master](images/YARN_AppMaster_Logs.png)
 	
-0. 	Send the contents of the displayed files to support@h2o.ai. 
+ 0. Send the contents of the displayed files to support@h2o.ai. 
 	
-	![YARN - Application Master](images/YARN_AppMaster_Logs2.png)
+	 ![YARN - Application Master](images/YARN_AppMaster_Logs2.png)
 	
 ---
 
@@ -223,16 +223,16 @@ If you are not using Hadoop and the job is still running:
 
 - To view the REST API logs from R: 
 
-1. In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs: 
+  0. In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs: 
 
-	```		
-	> h2o.startLogging()
-	Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
-	```
+		```		
+		> h2o.startLogging()
+		Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
+		```
 		
-2. Copy the displayed file path. 
+  0. Copy the displayed file path. 
 	 Enter `less` and paste the file path. 
-3. Press Enter. A time-stamped log of all REST API transactions displays. 
+  0. Press Enter. A time-stamped log of all REST API transactions displays. 
 
 ```		
 		------------------------------------------------------------

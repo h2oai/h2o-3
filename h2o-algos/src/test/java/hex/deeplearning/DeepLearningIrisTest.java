@@ -1,8 +1,8 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import hex.deeplearning.DeepLearningParameters.Activation;
+import hex.deeplearning.DeepLearningParameters.InitialWeightDistribution;
+import hex.deeplearning.DeepLearningParameters.Loss;
 import hex.genmodel.GenModel;
 import org.junit.*;
 import water.*;
@@ -11,7 +11,6 @@ import water.util.*;
 
 import java.util.Random;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static hex.deeplearning.DeepLearningModel.DeepLearningScoring;
 
 public class DeepLearningIrisTest extends TestUtil {
@@ -172,6 +171,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._sparse = sparse;
                                 p._col_major = col_major;
                                 p._epochs = 0;
+                                p._elastic_averaging = false;
                                 DeepLearning dl = new DeepLearning(p);
                                 try {
                                   mymodel = dl.trainModel().get();

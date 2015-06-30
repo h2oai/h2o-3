@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.schemas.ModelBuilderSchema;
 import org.reflections.Reflections;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -15,7 +16,7 @@ import java.util.regex.Pattern;
 
 
 /**
- * Base Schema Class.  All REST API Schemas inherit from here.
+ * Base Schema class.  All REST API Schemas inherit from here.
  * <p>
  * The purpose of Schemas is to provide a stable, versioned interface to
  * the functionality in H2O, which allows the back end implementation to
@@ -87,6 +88,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
   private static final int EXPERIMENTAL_VERSION = 99;
+  public static final String EXCLUDE_FIELDS = "__exclude_fields";
+  public static final String INCLUDE_FIELDS = "__include_fields";
 
   public static final class Meta extends Iced {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,11 +235,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       }
 
       int version = extractVersion(clz.getSimpleName());
-      if (version > getHighestSupportedVersion())
+      if (version > getHighestSupportedVersion() && version != EXPERIMENTAL_VERSION)
         throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
 
       // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBase, so that we can fetch the metadata for them.
-      if (version > -1) {
+      if (version > -1 && version != EXPERIMENTAL_VERSION) {
         // Track highest version of all schemas; only valid after all are registered at startup time.
         if (version > HIGHEST_SUPPORTED_VERSION)
           throw H2O.fail("Found a schema with a version greater than the highest supported version of: " + getHighestSupportedVersion() + ": " + clz);
@@ -263,7 +266,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
           String name = field_meta.name;
 
-          if ("__meta".equals(name) || "__http_status".equals(name))
+          if ("__meta".equals(name) || "__http_status".equals(name) || "_exclude_fields".equals(name) || "_include_fields".equals(name))
             continue;
           if ("Gini".equals(name)) // proper name
             continue;
@@ -320,7 +323,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Convenience helper which creates and fill an impl. */
   final public I createAndFillImpl() {
-    return this.fillImpl(this.createImpl());
+    return (I)this.fillImpl(this.createImpl());
   }
 
   // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
@@ -653,12 +656,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     String[] packages = new String[] { "water", "hex", /* Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: "" */};
 
     // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
-    Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
+    Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelBuilderSchema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
 
     for (String pkg :  packages) {
       Reflections reflections = new Reflections(pkg);
 
       for (Class<? extends Schema> clz : clzs) {
+        // NOTE: Reflections sees ModelOutputSchema but not ModelSchema. Another bug to work around:
+        Log.debug("Registering: " + clz.toString() + " in package: " + pkg);
+        if (!Modifier.isAbstract(clz.getModifiers()))
+          Schema.register(clz);
+
+        // Register the subclasses:
         Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
         for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
           if (!Modifier.isAbstract(schema_class.getModifiers()))
@@ -737,6 +746,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return schema(version, impl_class.getSimpleName());
   }
 
+  // FIXME: can be parameterized by type: public static <T extends Schema> T newInstance(Class<T> clz)
   public static Schema newInstance(Class<? extends Schema> clz) {
     Schema s = null;
     try {

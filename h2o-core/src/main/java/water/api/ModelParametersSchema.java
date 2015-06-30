@@ -69,7 +69,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Ignore constant columns", direction=API.Direction.INOUT)
   public boolean ignore_const_cols;
 
-  @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT)
+  @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT, level = API.Level.secondary)
   public boolean score_each_iteration;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {

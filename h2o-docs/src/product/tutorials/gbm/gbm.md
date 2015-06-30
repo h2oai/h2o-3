@@ -4,8 +4,6 @@ The purpose of this tutorial is to walk new users through a GBM analysis in H2O 
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-For more details on the math behind H2O's implementation of GBM, refer to <a href="http://docs.h2o.ai/datascience/gbm.html" target="_blank">GBM Data Science</a>. 
-
 
 ## Getting Started
 
@@ -13,18 +11,21 @@ This tutorial uses a publicly available data set that can be found at:
 <ahref="http://archive.ics.uci.edu/ml/datasets/Arrhythmia" target="_blank">http://archive.ics.uci.edu/ml/datasets/Arrhythmia</a>.
 
 The original data are the Arrhythmia data set made available by UCI
-Machine Learning repository. They are composed of
-452 observations and 279 attributes.
+Machine Learning repository. They are composed of 452 observations and 279 attributes.
 
-To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
+If you don't have any data of your own to work with, you can find some example datasets here: 
+
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
 
 
 ###Importing Data
 Before creating a model, import data into H2O:
 
-0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
-  ![Assist Me button](../images/AssistButton.png)
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the drop. 
+0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
+
+ ![Assist Me button](../images/Flow_AssistMeButton.png)
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
   ![Importing Files](../images/GBM_ImportFile.png)
 
@@ -34,14 +35,16 @@ Before creating a model, import data into H2O:
 Now, parse the imported data: 
 
 0. Click the **Parse these files...** button. 
-**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
+
+ >**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
+
 0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
 0. If the data uses a separator, select it from the drop-down **Separator** list. 
 0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
+  >**NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
 
 
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  
@@ -49,7 +52,7 @@ Now, parse the imported data:
   ![Parsing Data](../images/GBM_Parse.png)
 
 
-  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
+  **NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
 
 
@@ -75,11 +78,18 @@ Now, parse the imported data:
 
 The output for GBM includes the following: 
 
-- Output (model category, validation metrics if applicable, and initf)
+- Model parameters (hidden)
+- A graph of the scoring history (training MSE vs number of trees)
+- A graph of the variable importances
+- Output (model category, validation metrics, initf)
 - Model summary (number of trees, min. depth, max. depth, mean depth, min. leaves, max. leaves, mean leaves)
-- Scoring history (number of the trees with training MSE for each tree)
-- Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, and R2)
-- Variable importances (variables, relative importance, scaled importance, and percentage)
+- Scoring history in tabular format
+- Training metrics (model name, model checksum name, frame name, description, model category, duration in ms, scoring time, predictions, MSE, R2)
+- Variable importances in tabular format
+- POJO Preview
+
+  ![GBM Model Results](../images/GBM_ModelResults.png)
+
 
 For classification models, the MSE is based on the classification error within the tree. For regression models, MSE is calculated from the squared deviances, as it is in standard regressions.
 

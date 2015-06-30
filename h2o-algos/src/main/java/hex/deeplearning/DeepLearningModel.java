@@ -17,11 +17,9 @@ import water.util.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
-import static java.lang.Double.isNaN;
 
 /**
  * The Deep Learning model
@@ -29,542 +27,29 @@ import static java.lang.Double.isNaN;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
+public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
-  public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
-
-    @Override public double missingColumnsType() { return _sparse ? 0 : Double.NaN; }
-
-    // public int _n_folds;
-    public int getNumFolds() { return 0; }
-
-    public boolean _keep_cross_validation_splits;
-
-    /**
-     * A model key associated with a previously trained Deep Learning
-     * model. This option allows users to build a new model as a
-     * continuation of a previously generated model.
-     */
-    public Key _checkpoint;
+  /**
+   * The Deep Learning model output contains a few extra fields in addition to the metrics in Model.Output
+   * 1) Scoring history (raw data)
+   * 2) weights/biases (raw data)
+   * 3) variable importances (TwoDimTable)
+   */
+  public static class DeepLearningModelOutput extends Model.Output {
 
     /**
-     * If enabled, store the best model under the destination key of this model at the end of training.
-     * Only applicable if training is not cancelled.
+     * For autoencoder, there's no response.
+     * Otherwise, there's 1 response at the end, and no other reserved columns in the data
+     * @return Number of features (possible predictors)
      */
-    public boolean _overwrite_with_best_model = true;
-
-    public boolean _autoencoder = false;
-
-    public boolean _use_all_factor_levels = true;
-
-  /*Neural Net Topology*/
-    /**
-     * The activation function (non-linearity) to be used the neurons in the hidden layers.
-     * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
-     * Rectifier: Chooses the maximum of (0, x) where x is the input value.
-     * Maxout: Choose the maximum coordinate of the input vector.
-     * With Dropout: Zero out a random user-given fraction of the
-     *      incoming weights to each hidden layer during training, for each
-     *      training row. This effectively trains exponentially many models at
-     *      once, and can improve generalization.
-     */
-    public Activation _activation = Activation.Rectifier;
-
-    /**
-     * The number and size of each hidden layer in the model.
-     * For example, if a user specifies "100,200,100" a model with 3 hidden
-     * layers will be produced, and the middle hidden layer will have 200
-     * neurons.
-     */
-    public int[] _hidden = new int[] { 200, 200 };
-
-    /**
-     * The number of passes over the training dataset to be carried out.
-     * It is recommended to start with lower values for initial experiments.
-     * This value can be modified during checkpoint restarts and allows continuation
-     * of selected models.
-     */
-    public double _epochs = 10;
-
-    /**
-     * The number of training data rows to be processed per iteration. Note that
-     * independent of this parameter, each row is used immediately to update the model
-     * with (online) stochastic gradient descent. This parameter controls the
-     * synchronization period between nodes in a distributed environment and the
-     * frequency at which scoring and model cancellation can happen. For example, if
-     * it is set to 10,000 on H2O running on 4 nodes, then each node will
-     * process 2,500 rows per iteration, sampling randomly from their local data.
-     * Then, model averaging between the nodes takes place, and scoring can happen
-     * (dependent on scoring interval and duty factor). Special values are 0 for
-     * one epoch per iteration, -1 for processing the maximum amount of data
-     * per iteration (if **replicate training data** is enabled, N epochs
-     * will be trained per iteration on N nodes, otherwise one epoch). Special value
-     * of -2 turns on automatic mode (auto-tuning).
-     */
-    public long _train_samples_per_iteration = -2;
-
-    public double _target_ratio_comm_to_comp = 0.02;
-
-    /**
-     * The random seed controls sampling and initialization. Reproducible
-     * results are only expected with single-threaded operation (i.e.,
-     * when running on one node, turning off load balancing and providing
-     * a small dataset that fits in one chunk).  In general, the
-     * multi-threaded asynchronous updates to the model parameters will
-     * result in (intentional) race conditions and non-reproducible
-     * results. Note that deterministic sampling and initialization might
-     * still lead to some weak sense of determinism in the model.
-     */
-    public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
-
-  /*Adaptive Learning Rate*/
-    /**
-     * The implemented adaptive learning rate algorithm (ADADELTA) automatically
-     * combines the benefits of learning rate annealing and momentum
-     * training to avoid slow convergence. Specification of only two
-     * parameters (rho and epsilon)  simplifies hyper parameter search.
-     * In some cases, manually controlled (non-adaptive) learning rate and
-     * momentum specifications can lead to better results, but require the
-     * specification (and hyper parameter search) of up to 7 parameters.
-     * If the model is built on a topology with many local minima or
-     * long plateaus, it is possible for a constant learning rate to produce
-     * sub-optimal results. Learning rate annealing allows digging deeper into
-     * local minima, while rate decay allows specification of different
-     * learning rates per layer.  When the gradient is being estimated in
-     * a long valley in the optimization landscape, a large learning rate
-     * can cause the gradient to oscillate and move in the wrong
-     * direction. When the gradient is computed on a relatively flat
-     * surface with small learning rates, the model can converge far
-     * slower than necessary.
-     */
-    public boolean _adaptive_rate = true;
-
-    /**
-     * The first of two hyper parameters for adaptive learning rate (ADADELTA).
-     * It is similar to momentum and relates to the memory to prior weight updates.
-     * Typical values are between 0.9 and 0.999.
-     * This parameter is only active if adaptive learning rate is enabled.
-     */
-    public double _rho = 0.99;
-
-    /**
-     * The second of two hyper parameters for adaptive learning rate (ADADELTA).
-     * It is similar to learning rate annealing during initial training
-     * and momentum at later stages where it allows forward progress.
-     * Typical values are between 1e-10 and 1e-4.
-     * This parameter is only active if adaptive learning rate is enabled.
-     */
-    public double _epsilon = 1e-8;
-
-  /*Learning Rate*/
-    /**
-     * When adaptive learning rate is disabled, the magnitude of the weight
-     * updates are determined by the user specified learning rate
-     * (potentially annealed), and are a function  of the difference
-     * between the predicted value and the target value. That difference,
-     * generally called delta, is only available at the output layer. To
-     * correct the output at each hidden layer, back propagation is
-     * used. Momentum modifies back propagation by allowing prior
-     * iterations to influence the current update. Using the momentum
-     * parameter can aid in avoiding local minima and the associated
-     * instability. Too much momentum can lead to instabilities, that's
-     * why the momentum is best ramped up slowly.
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public double _rate = .005;
-
-    /**
-     * Learning rate annealing reduces the learning rate to "freeze" into
-     * local minima in the optimization landscape.  The annealing rate is the
-     * inverse of the number of training samples it takes to cut the learning rate in half
-     * (e.g., 1e-6 means that it takes 1e6 training samples to halve the learning rate).
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public double _rate_annealing = 1e-6;
-
-    /**
-     * The learning rate decay parameter controls the change of learning rate across layers.
-     * For example, assume the rate parameter is set to 0.01, and the rate_decay parameter is set to 0.5.
-     * Then the learning rate for the weights connecting the input and first hidden layer will be 0.01,
-     * the learning rate for the weights connecting the first and the second hidden layer will be 0.005,
-     * and the learning rate for the weights connecting the second and third hidden layer will be 0.0025, etc.
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public double _rate_decay = 1.0;
-
-  /*Momentum*/
-    /**
-     * The momentum_start parameter controls the amount of momentum at the beginning of training.
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public double _momentum_start = 0;
-
-    /**
-     * The momentum_ramp parameter controls the amount of learning for which momentum increases
-     * (assuming momentum_stable is larger than momentum_start). The ramp is measured in the number
-     * of training samples.
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public double _momentum_ramp = 1e6;
-
-    /**
-     * The momentum_stable parameter controls the final momentum value reached after momentum_ramp training samples.
-     * The momentum used for training will remain the same for training beyond reaching that point.
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public double _momentum_stable = 0;
-
-    /**
-     * The Nesterov accelerated gradient descent method is a modification to
-     * traditional gradient descent for convex functions. The method relies on
-     * gradient information at various points to build a polynomial approximation that
-     * minimizes the residuals in fewer iterations of the descent.
-     * This parameter is only active if adaptive learning rate is disabled.
-     */
-    public boolean _nesterov_accelerated_gradient = true;
-
-  /*Regularization*/
-    /**
-     * A fraction of the features for each training row to be omitted from training in order
-     * to improve generalization (dimension sampling).
-     */
-    public double _input_dropout_ratio = 0.0;
-
-    /**
-     * A fraction of the inputs for each hidden layer to be omitted from training in order
-     * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
-     */
-    public double[] _hidden_dropout_ratios;
-
-    /**
-     * A regularization method that constrains the absolute value of the weights and
-     * has the net effect of dropping some weights (setting them to zero) from a model
-     * to reduce complexity and avoid overfitting.
-     */
-    public double _l1 = 0.0;
-
-    /**
-     *  A regularization method that constrdains the sum of the squared
-     * weights. This method introduces bias into parameter estimates, but
-     * frequently produces substantial gains in modeling as estimate variance is
-     * reduced.
-     */
-    public double _l2 = 0.0;
-
-    /**
-     *  A maximum on the sum of the squared incoming weights into
-     * any one neuron. This tuning parameter is especially useful for unbound
-     * activation functions such as Maxout or Rectifier.
-     */
-    public float _max_w2 = Float.POSITIVE_INFINITY;
-
-  /*Initialization*/
-    /**
-     * The distribution from which initial weights are to be drawn. The default
-     * option is an optimized initialization that considers the size of the network.
-     * The "uniform" option uses a uniform distribution with a mean of 0 and a given
-     * interval. The "normal" option draws weights from the standard normal
-     * distribution with a mean of 0 and given standard deviation.
-     */
-    public InitialWeightDistribution _initial_weight_distribution = InitialWeightDistribution.UniformAdaptive;
-
-    /**
-     * The scale of the distribution function for Uniform or Normal distributions.
-     * For Uniform, the values are drawn uniformly from -initial_weight_scale...initial_weight_scale.
-     * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
-     */
-    public double _initial_weight_scale = 1.0;
-
-    /**
-     * The loss (error) function to be minimized by the model.
-     * Cross Entropy loss is used when the model output consists of independent
-     * hypotheses, and the outputs can be interpreted as the probability that each
-     * hypothesis is true. Cross entropy is the recommended loss function when the
-     * target values are class labels, and especially for imbalanced data.
-     * It strongly penalizes error in the prediction of the actual class label.
-     * Mean Square loss is used when the model output are continuous real values, but can
-     * be used for classification as well (where it emphasizes the error on all
-     * output classes, not just for the actual class).
-     */
-    public Loss _loss = Loss.Automatic;
-
-  /*Scoring*/
-    /**
-     * The minimum time (in seconds) to elapse between model scoring. The actual
-     * interval is determined by the number of training samples per iteration and the scoring duty cycle.
-     */
-    public double _score_interval = 5;
-
-    /**
-     * The number of training dataset points to be used for scoring. Will be
-     * randomly sampled. Use 0 for selecting the entire training dataset.
-     */
-    public long _score_training_samples = 10000l;
-
-    /**
-     * The number of validation dataset points to be used for scoring. Can be
-     * randomly sampled or stratified (if "balance classes" is set and "score
-     * validation sampling" is set to stratify). Use 0 for selecting the entire
-     * training dataset.
-     */
-    public long _score_validation_samples = 0l;
-
-    /**
-     * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
-     * and on diagnostics such as computation of feature importances (i.e., not on training).
-     */
-    public double _score_duty_cycle = 0.1;
-
-    /**
-     * The stopping criteria in terms of classification error (1-accuracy) on the
-     * training data scoring dataset. When the error is at or below this threshold,
-     * training stops.
-     */
-    public double _classification_stop = 0;
-
-    /**
-     * The stopping criteria in terms of regression error (MSE) on the training
-     * data scoring dataset. When the error is at or below this threshold, training
-     * stops.
-     */
-    public double _regression_stop = 1e-6;
-
-    /**
-     * Enable quiet mode for less output to standard output.
-     */
-    public boolean _quiet_mode = false;
-
-    /**
-     * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
-     */
-    public ClassSamplingMethod _score_validation_sampling = ClassSamplingMethod.Uniform;
-
-  /*Misc*/
-    /**
-     * Gather diagnostics for hidden layers, such as mean and RMS values of learning
-     * rate, momentum, weights and biases.
-     */
-    public boolean _diagnostics = true;
-
-    /**
-     * Whether to compute variable importances for input features.
-     * The implemented method (by Gedeon) considers the weights connecting the
-     * input features to the first two hidden layers.
-     */
-    public boolean _variable_importances = false;
-
-    /**
-     * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
-     */
-    public boolean _fast_mode = true;
-
-    /**
-     * Increase training speed on small datasets by splitting it into many chunks
-     * to allow utilization of all cores.
-     */
-    public boolean _force_load_balance = true;
-
-    /**
-     * Replicate the entire training dataset onto every node for faster training on small datasets.
-     */
-    public boolean _replicate_training_data = true;
-
-    /**
-     * Run on a single node for fine-tuning of model parameters. Can be useful for
-     * checkpoint resumes after training on multiple nodes for fast initial
-     * convergence.
-     */
-    public boolean _single_node_mode = false;
-
-    /**
-     * Enable shuffling of training data (on each node). This option is
-     * recommended if training data is replicated on N nodes, and the number of training samples per iteration
-     * is close to N times the dataset size, where all nodes train will (almost) all
-     * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
-     * times the dataset size or larger).
-     */
-    public boolean _shuffle_training_data = false;
-
-    public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
-
-    public boolean _sparse = false;
-
-    public boolean _col_major = false;
-
-    public double _average_activation = 0;
-
-    public double _sparsity_beta = 0;
-
-    /**
-     * Max. number of categorical features, enforced via hashing (Experimental)
-     */
-    public int _max_categorical_features = Integer.MAX_VALUE;
-
-    /**
-     * Force reproducibility on small data (will be slow - only uses 1 thread)
-     */
-    public boolean _reproducible = false;
-
-    public boolean _export_weights_and_biases = false;
-
-    public enum MissingValuesHandling {
-      Skip, MeanImputation
+    public DeepLearningModelOutput() { super(); autoencoder = false;}
+    public DeepLearningModelOutput(DeepLearning b) {
+      super(b);
+      autoencoder = b._parms._autoencoder;
+      assert b.isSupervised() == !autoencoder;
     }
+    final boolean autoencoder;
 
-    public enum ClassSamplingMethod {
-      Uniform, Stratified
-    }
-
-    public enum InitialWeightDistribution {
-      UniformAdaptive, Uniform, Normal
-    }
-
-    /**
-     * Activation functions
-     */
-    public enum Activation {
-      Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
-    }
-
-    /**
-     * Loss functions
-     * Absolute, MeanSquare, Huber for regression
-     * Absolute, MeanSquare, Huber or CrossEntropy for classification
-     */
-    public enum Loss {
-      Automatic, MeanSquare, CrossEntropy, Huber, Absolute
-    }
-
-    void validate( DeepLearning dl, boolean expensive ) {
-      dl.hide("_score_each_iteration", "Not used by Deep Learning.");
-      boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
-      if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
-
-      for( int h : _hidden ) if( h<=0 ) dl.error("_hidden", "Hidden layer size must be positive.");
-
-      if (!_autoencoder) {
-        if (_valid == null)
-          dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
-
-        if (classification) {
-          dl.hide("_regression_stop", "regression_stop is used only with regression.");
-        } else {
-          dl.hide("_classification_stop", "classification_stop is used only with classification.");
-//          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-//          dl.hide("_balance_classes", "balance_classes is used only with classification.");
-        }
-//        if( !classification || !_balance_classes )
-//          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
-        if (!classification && _valid != null || _valid == null)
-          dl.hide("_score_validation_sampling", "score_validation_sampling requires classification and a validation frame.");
-      }
-
-      if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
-        dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
-      if (_hidden_dropout_ratios == null) {
-        // ok - nothing to check
-      }
-      else if (_hidden_dropout_ratios.length != _hidden.length) {
-        dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
-      }
-      else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
-        if (!_quiet_mode) dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
-      }
-      else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
-        dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
-      }
-      if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
-        dl.error("_input_dropout_ratio", "Input dropout must be >= 0 and <1.");
-      if (_score_duty_cycle < 0 || _score_duty_cycle > 1)
-        dl.error("_score_duty_cycle", "Score duty cycle must be >= 0 and <=1.");
-      if (_l1 < 0)
-        dl.error("_l1", "L1 penalty must be >= 0.");
-      if (_l2 < 0)
-        dl.error("_l2", "L2 penalty must be >= 0.");
-      if (H2O.CLOUD.size() == 1 && _replicate_training_data)
-        dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
-      if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data))
-        dl.hide("_single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
-      if (_autoencoder)
-        dl.hide("_use_all_factor_levels", "use_all_factor_levels is mandatory in combination with autoencoder.");
-      if (getNumFolds() != 0)
-        dl.hide("_overwrite_with_best_model", "overwrite_with_best_model is unsupported in combination with n-fold cross-validation.");
-      if (_adaptive_rate) {
-        dl.hide("_rate", "rate is not used with adaptive_rate.");
-        dl.hide("_rate_annealing", "rate_annealing is not used with adaptive_rate.");
-        dl.hide("_rate_decay", "rate_decay is not used with adaptive_rate.");
-        dl.hide("_momentum_start", "momentum_start is not used with adaptive_rate.");
-        dl.hide("_momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
-        dl.hide("_momentum_stable", "momentum_stable is not used with adaptive_rate.");
-        dl.hide("_nesterov_accelerated_gradient", "nesterov_accelerated_gradient is not used with adaptive_rate.");
-      } else {
-        // ! adaptive_rate
-        dl.hide("_rho", "rho is only used with adaptive_rate.");
-        dl.hide("_epsilon", "epsilon is only used with adaptive_rate.");
-      }
-      if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
-        dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
-      }
-      if (getNumFolds() != 0)
-        dl.error("_n_folds", "n_folds is not yet implemented.");
-
-      if (_loss == null) {
-        if (expensive || dl._nclass != 0) {
-          dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
-        }
-        //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
-      } else if (_loss != Loss.Automatic) {
-        if (_autoencoder && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
-        if (!classification && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
-      }
-      if (!classification && _loss == Loss.CrossEntropy)
-        dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
-      if (_score_training_samples < 0)
-        dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
-      if (_score_validation_samples < 0)
-        dl.error("_score_validation_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
-      if(_autoencoder && _sparsity_beta > 0) {
-        if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout) {
-          if (_average_activation >= 1 || _average_activation <= -1)
-            dl.error("_average_activation", "Tanh average activation must be in (-1,1).");
-        }
-        else if (_activation == Activation.Rectifier || _activation == Activation.RectifierWithDropout) {
-          if (_average_activation <= 0)
-            dl.error("_average_activation", "Rectifier average activation must be positive.");
-        }
-      }
-      if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
-
-      // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (_autoencoder && _activation == Activation.Maxout) dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
-      if (_max_categorical_features < 1) dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
-
-      if (!_sparse && _col_major) {
-        dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
-      }
-      if (expensive) {
-        if (!classification && _balance_classes) {
-          dl.error("_balance_classes", "balance_classes requires classification.");
-        }
-        if (_class_sampling_factors != null && !_balance_classes) {
-          dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
-        }
-        if (_replicate_training_data && null != train() && train().byteSize() > 1e10) {
-          dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
-        }
-      }
-    }
-  }
-
-  public static class DeepLearningModelOutput extends SupervisedModel.SupervisedOutput {
-    @Override public int nfeatures() {
-      return _names.length - (autoencoder ? 0 : 1);
-    }
-    public DeepLearningModelOutput() { super(); }
-    public DeepLearningModelOutput(DeepLearning b) { super(b); }
-    boolean autoencoder;
     DeepLearningScoring errors;
     Key[] weights;
     Key[] biases;
@@ -574,16 +59,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
 
-    @Override public boolean isSupervised() { return !autoencoder; }
+    @Override public boolean isSupervised() {
+      return !autoencoder;
+    }
   }
 
   // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
-  private volatile DeepLearningModelInfo model_info;
-  void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
+  void set_model_info(DeepLearningModelInfo mi) { assert(mi != null); model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
   final public VarImp varImp() { return _output.errors.variable_importances; }
+
+  private volatile DeepLearningModelInfo model_info;
 
   public long run_time;
   private long start_time;
@@ -604,6 +92,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   private float _bestError = Float.POSITIVE_INFINITY;
 
   public Key actual_best_model_key;
+  public Key model_info_key;
 
   // return the most up-to-date model metrics
   DeepLearningScoring last_scored() { return errors == null ? null : errors[errors.length-1]; }
@@ -649,7 +138,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
 
     public double epoch_counter;
-    public long training_samples;
+    public double training_samples;
     public long training_time_ms;
 
     //training/validation sets
@@ -749,7 +238,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
-    colHeaders.add("Samples"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
     if (!_output.autoencoder) {
@@ -849,559 +338,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return table;
   }
 
-
-  // This describes the model, together with the parameters
-  // This will be shared: one per node
-  public static class DeepLearningModelInfo extends Iced {
-
-    public TwoDimTable summaryTable;
-    private DataInfo data_info;
-    public DataInfo data_info() { return data_info; }
-
-    // model is described by parameters and the following arrays
-    private Neurons.DenseRowMatrix[] dense_row_weights; //one 2D weight matrix per layer (stored as a 1D array each)
-    private Neurons.DenseColMatrix[] dense_col_weights; //one 2D weight matrix per layer (stored as a 1D array each)
-    private Neurons.DenseVector[] biases; //one 1D bias array per layer
-    private Neurons.DenseVector[] avg_activations; //one 1D array per hidden layer
-
-    // helpers for storing previous step deltas
-    // Note: These two arrays *could* be made transient and then initialized freshly in makeNeurons() and in DeepLearningTask.initLocal()
-    // But then, after each reduction, the weights would be lost and would have to restart afresh -> not *exactly* right, but close...
-    private Neurons.DenseRowMatrix[] dense_row_weights_momenta;
-    private Neurons.DenseColMatrix[] dense_col_weights_momenta;
-    private Neurons.DenseVector[] biases_momenta;
-
-    // helpers for AdaDelta
-    private Neurons.DenseRowMatrix[] dense_row_ada_dx_g;
-    private Neurons.DenseColMatrix[] dense_col_ada_dx_g;
-    private Neurons.DenseVector[] biases_ada_dx_g;
-
-    // compute model size (number of model parameters required for making predictions)
-    // momenta are not counted here, but they are needed for model building
-    public long size() {
-      long siz = 0;
-      for (Neurons.Matrix w : dense_row_weights) if (w != null) siz += w.size();
-      for (Neurons.Matrix w : dense_col_weights) if (w != null) siz += w.size();
-      for (Neurons.Vector b : biases) siz += b.size();
-      return siz;
-    }
-
-    // accessors to (shared) weights and biases - those will be updated racily (c.f. Hogwild!)
-    boolean has_momenta() { return get_params()._momentum_start != 0 || get_params()._momentum_stable != 0; }
-    boolean adaDelta() { return get_params()._adaptive_rate; }
-    public final Neurons.Matrix get_weights(int i) { return dense_row_weights[i] == null ? dense_col_weights[i] : dense_row_weights[i]; }
-    public final Neurons.DenseVector get_biases(int i) { return biases[i]; }
-    public final Neurons.Matrix get_weights_momenta(int i) { return dense_row_weights_momenta[i] == null ? dense_col_weights_momenta[i] : dense_row_weights_momenta[i]; }
-    public final Neurons.DenseVector get_biases_momenta(int i) { return biases_momenta[i]; }
-    public final Neurons.Matrix get_ada_dx_g(int i) { return dense_row_ada_dx_g[i] == null ? dense_col_ada_dx_g[i] : dense_row_ada_dx_g[i]; }
-    public final Neurons.DenseVector get_biases_ada_dx_g(int i) { return biases_ada_dx_g[i]; }
-    //accessor to shared parameter defining avg activations
-    public final Neurons.DenseVector get_avg_activations(int i) { return avg_activations[i]; }
-
-    private DeepLearningParameters parameters;
-    public final DeepLearningParameters get_params() { return parameters; }
-
-    private float[] mean_rate;
-
-    private float[] rms_rate;
-
-    private float[] mean_bias;
-
-    private float[] rms_bias;
-
-    private float[] mean_weight;
-
-    public float[] rms_weight;
-
-    public float[] mean_a;
-
-    private volatile boolean unstable = false;
-    public boolean unstable() { return unstable; }
-    public void set_unstable() { if (!unstable) computeStats(); unstable = true; }
-
-    private long processed_global;
-    public synchronized long get_processed_global() { return processed_global; }
-    public synchronized void set_processed_global(long p) { processed_global = p; }
-    public synchronized void add_processed_global(long p) { processed_global += p; }
-
-    private long processed_local;
-    public synchronized long get_processed_local() { return processed_local; }
-    public synchronized void set_processed_local(long p) { processed_local = p; }
-    public synchronized void add_processed_local(long p) { processed_local += p; }
-
-    public synchronized long get_processed_total() { return processed_global + processed_local; }
-
-    // package local helpers
-    int[] units; //number of neurons per layer, extracted from parameters and from datainfo
-
-    final boolean _classification; // Classification cache (nclasses>1)
-    final Frame _train;         // Prepared training frame
-    final Frame _valid;         // Prepared validation frame
-
-    public DeepLearningModelInfo() {
-      _classification = false;
-      _train = _valid = null;
-    }
-
-    public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo, boolean classification, Frame train, Frame valid) {
-      _classification = classification;
-      _train = train;
-      _valid = valid;
-      data_info = dinfo;
-      parameters = (DeepLearningParameters)params.clone();
-      modifyParms(parameters, parameters, _classification);
-
-      final int num_input = dinfo.fullN();
-      final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
-      assert(num_input > 0);
-      assert(num_output > 0);
-      if (has_momenta() && adaDelta()) throw new IllegalArgumentException("Cannot have non-zero momentum and adaptive rate at the same time.");
-      final int layers=get_params()._hidden.length;
-      // units (# neurons for each layer)
-      units = new int[layers+2];
-      if (get_params()._max_categorical_features <= Integer.MAX_VALUE - dinfo._nums)
-        units[0] = Math.min(dinfo._nums + get_params()._max_categorical_features, num_input);
-      else
-        units[0] = num_input;
-      System.arraycopy(get_params()._hidden, 0, units, 1, layers);
-      units[layers+1] = num_output;
-
-      boolean printLevels = units[0] > 1000L;
-      boolean warn = units[0] > 100000L;
-      if (printLevels) {
-        final String[][] domains = dinfo._adaptedFrame.domains();
-        int[] levels = new int[domains.length];
-        for (int i=0; i<levels.length; ++i) {
-          levels[i] = domains[i] != null ? domains[i].length : 0;
-        }
-        Arrays.sort(levels);
-        if (warn) {
-          Log.warn("===================================================================================================================================");
-          Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
-        }
-        if (levels[levels.length-1] > 0) {
-          int levelcutoff = levels[levels.length-1-Math.min(10, levels.length-1)];
-          int count = 0;
-          for (int i=0; i<dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
-            if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
-              if (warn) {
-                Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
-              } else {
-                Log.info("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
-              }
-            }
-            count++;
-          }
-        }
-        if (warn) {
-          Log.warn("Suggestions:");
-          Log.warn(" *) Limit the size of the first hidden layer");
-          if (dinfo._cats > 0) {
-            Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features'");
-            Log.warn(" *) Run h2o.interaction(...,pairwise=F) on high-cardinality categorical columns to limit the factor count, see http://learn.h2o.ai");
-          }
-          Log.warn("===================================================================================================================================");
-        }
-      }
-
-      // weights (to connect layers)
-      dense_row_weights = new Neurons.DenseRowMatrix[layers+1];
-      dense_col_weights = new Neurons.DenseColMatrix[layers+1];
-
-      // decide format of weight matrices row-major or col-major
-      if (get_params()._col_major) dense_col_weights[0] = new Neurons.DenseColMatrix(units[1], units[0]);
-      else dense_row_weights[0] = new Neurons.DenseRowMatrix(units[1], units[0]);
-      for (int i = 1; i <= layers; ++i)
-        dense_row_weights[i] = new Neurons.DenseRowMatrix(units[i + 1] /*rows*/, units[i] /*cols*/);
-
-      // biases (only for hidden layers and output layer)
-      biases = new Neurons.DenseVector[layers+1];
-      for (int i=0; i<=layers; ++i) biases[i] = new Neurons.DenseVector(units[i+1]);
-      // average activation (only for hidden layers)
-      if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
-        avg_activations = new Neurons.DenseVector[layers];
-        mean_a = new float[layers];
-        for (int i = 0; i < layers; ++i) avg_activations[i] = new Neurons.DenseVector(units[i + 1]);
-      }
-      fillHelpers();
-      // for diagnostics
-      mean_rate = new float[units.length];
-      rms_rate = new float[units.length];
-      mean_bias = new float[units.length];
-      rms_bias = new float[units.length];
-      mean_weight = new float[units.length];
-      rms_weight = new float[units.length];
-    }
-
-    // deep clone all weights/biases
-    DeepLearningModelInfo deep_clone() {
-      AutoBuffer ab = new AutoBuffer();
-      this.write(ab);
-      ab.flipForReading();
-      return (DeepLearningModelInfo) new DeepLearningModelInfo().read(ab);
-    }
-
-    void fillHelpers() {
-      if (has_momenta()) {
-        dense_row_weights_momenta = new Neurons.DenseRowMatrix[dense_row_weights.length];
-        dense_col_weights_momenta = new Neurons.DenseColMatrix[dense_col_weights.length];
-        if (dense_row_weights[0] != null)
-          dense_row_weights_momenta[0] = new Neurons.DenseRowMatrix(units[1], units[0]);
-        else
-          dense_col_weights_momenta[0] = new Neurons.DenseColMatrix(units[1], units[0]);
-        for (int i=1; i<dense_row_weights_momenta.length; ++i) dense_row_weights_momenta[i] = new Neurons.DenseRowMatrix(units[i+1], units[i]);
-
-        biases_momenta = new Neurons.DenseVector[biases.length];
-        for (int i=0; i<biases_momenta.length; ++i) biases_momenta[i] = new Neurons.DenseVector(units[i+1]);
-      }
-      else if (adaDelta()) {
-        dense_row_ada_dx_g = new Neurons.DenseRowMatrix[dense_row_weights.length];
-        dense_col_ada_dx_g = new Neurons.DenseColMatrix[dense_col_weights.length];
-        //AdaGrad
-        if (dense_row_weights[0] != null) {
-          dense_row_ada_dx_g[0] = new Neurons.DenseRowMatrix(units[1], 2*units[0]);
-        } else {
-          dense_col_ada_dx_g[0] = new Neurons.DenseColMatrix(2*units[1], units[0]);
-        }
-        for (int i=1; i<dense_row_ada_dx_g.length; ++i) {
-          dense_row_ada_dx_g[i] = new Neurons.DenseRowMatrix(units[i+1], 2*units[i]);
-        }
-        biases_ada_dx_g = new Neurons.DenseVector[biases.length];
-        for (int i=0; i<biases_ada_dx_g.length; ++i) {
-          biases_ada_dx_g[i] = new Neurons.DenseVector(2*units[i+1]);
-        }
-      }
-    }
-
-    public TwoDimTable createSummaryTable() {
-      Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
-      long byte_size = new AutoBuffer().put(this).buf().length;
-      TwoDimTable table = new TwoDimTable(
-              "Status of Neuron Layers",
-                  (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
-                          (get_params()._autoencoder ? "auto-encoder" :
-                                  _classification ? (units[units.length-1] + "-class classification") : "regression" )
-                          + ", " + get_params()._loss.toString() + " loss, "
-                          + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size),
-              new String[neurons.length],
-              new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
-                      "Mean Rate", "Rate RMS", "Momentum",
-                      "Mean Weight", "Weight RMS",
-                      "Mean Bias", "Bias RMS"
-              },
-              new String[]{"int", "int", "string", "double", "double", "double",
-                           "double", "double", "double",
-                      "double", "double",
-                      "double", "double"
-              },
-              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
-              "");
-
-      final String format = "%7g";
-      for (int i = 0; i < neurons.length; ++i) {
-        table.set(i, 0, i + 1);
-        table.set(i, 1, neurons[i].units);
-        table.set(i, 2, neurons[i].getClass().getSimpleName());
-
-        if (i == 0) {
-          table.set(i, 3, neurons[i].params._input_dropout_ratio*100);
-          continue;
-        } else if (i < neurons.length - 1) {
-          if (neurons[i].params._hidden_dropout_ratios == null) {
-            table.set(i, 3, 0);
-          } else {
-            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]*100);
-          }
-        }
-        table.set(i, 4, neurons[i].params._l1);
-        table.set(i, 5, neurons[i].params._l2);
-        table.set(i, 6, (get_params()._adaptive_rate ? mean_rate[i] : neurons[i].rate(get_processed_total())));
-        table.set(i, 7, (get_params()._adaptive_rate ? rms_rate[i] : 0));
-        table.set(i, 8, get_params()._adaptive_rate ? 0 : neurons[i].momentum(get_processed_total()));
-        table.set(i, 9, mean_weight[i]);
-        table.set(i, 10, rms_weight[i]);
-        table.set(i, 11, mean_bias[i]);
-        table.set(i, 12, rms_bias[i]);
-      }
-      summaryTable = table;
-      return summaryTable;
-    }
-
-    @Override public String toString() {
-      StringBuilder sb = new StringBuilder();
-      if (get_params()._diagnostics && !get_params()._quiet_mode) {
-        if (get_params()._sparsity_beta > 0) {
-          for (int k = 0; k < get_params()._hidden.length; k++) {
-            sb.append("Average activation in hidden layer ").append(k).append(" is  ").append(mean_a[k]).append(" \n");
-          }
-        }
-        createSummaryTable();
-        sb.append(summaryTable.toString(1));
-      }
-      return sb.toString();
-    }
-
-    // DEBUGGING
-    public String toStringAll() {
-      StringBuilder sb = new StringBuilder();
-      sb.append(toString());
-
-      for (int i=0; i<units.length-1; ++i)
-        sb.append("\nweights[").append(i).append("][]=").append(Arrays.toString(get_weights(i).raw()));
-      for (int i=0; i<units.length-1; ++i) {
-        sb.append("\nbiases[").append(i).append("][]=").append(Arrays.toString(get_biases(i).raw()));
-      }
-      if (has_momenta()) {
-        for (int i=0; i<units.length-1; ++i)
-          sb.append("\nweights_momenta[").append(i).append("][]=").append(Arrays.toString(get_weights_momenta(i).raw()));
-      }
-      if (biases_momenta != null) {
-        for (int i=0; i<units.length-1; ++i) {
-          sb.append("\nbiases_momenta[").append(i).append("][]=").append(Arrays.toString(biases_momenta[i].raw()));
-        }
-      }
-      sb.append("\nunits[]=").append(Arrays.toString(units));
-      sb.append("\nprocessed global: ").append(get_processed_global());
-      sb.append("\nprocessed local:  ").append(get_processed_local());
-      sb.append("\nprocessed total:  ").append(get_processed_total());
-      sb.append("\n");
-      return sb.toString();
-    }
-
-    void initializeMembers() {
-      randomizeWeights();
-      //TODO: determine good/optimal/best initialization scheme for biases
-      // hidden layers
-      for (int i=0; i<get_params()._hidden.length; ++i) {
-        if (get_params()._activation == DeepLearningParameters.Activation.Rectifier
-                || get_params()._activation == DeepLearningParameters.Activation.RectifierWithDropout
-                || get_params()._activation == DeepLearningParameters.Activation.Maxout
-                || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout
-                ) {
-//          Arrays.fill(biases[i], 1.); //old behavior
-          Arrays.fill(biases[i].raw(), i == 0 ? 0.5f : 1f); //new behavior, might be slightly better
-        }
-        else if (get_params()._activation == DeepLearningParameters.Activation.Tanh || get_params()._activation == DeepLearningParameters.Activation.TanhWithDropout) {
-          Arrays.fill(biases[i].raw(), 0f);
-        }
-      }
-      Arrays.fill(biases[biases.length-1].raw(), 0f); //output layer
-    }
-    public void add(DeepLearningModelInfo other) {
-      for (int i=0;i<dense_row_weights.length;++i)
-        ArrayUtils.add(get_weights(i).raw(), other.get_weights(i).raw());
-      for (int i=0;i<biases.length;++i) ArrayUtils.add(biases[i].raw(), other.biases[i].raw());
-      if (avg_activations != null)
-        for (int i=0;i<avg_activations.length;++i)
-          ArrayUtils.add(avg_activations[i].raw(), other.biases[i].raw());
-      if (has_momenta()) {
-        assert(other.has_momenta());
-        for (int i=0;i<dense_row_weights_momenta.length;++i)
-          ArrayUtils.add(get_weights_momenta(i).raw(), other.get_weights_momenta(i).raw());
-        for (int i=0;i<biases_momenta.length;++i)
-          ArrayUtils.add(biases_momenta[i].raw(),  other.biases_momenta[i].raw());
-      }
-      if (adaDelta()) {
-        assert(other.adaDelta());
-        for (int i=0;i<dense_row_ada_dx_g.length;++i) {
-          ArrayUtils.add(get_ada_dx_g(i).raw(), other.get_ada_dx_g(i).raw());
-        }
-      }
-      add_processed_local(other.get_processed_local());
-    }
-    protected void div(float N) {
-      for (int i=0; i<dense_row_weights.length; ++i)
-        ArrayUtils.div(get_weights(i).raw(), N);
-      for (Neurons.Vector bias : biases) ArrayUtils.div(bias.raw(), N);
-      if (avg_activations != null)
-        for (Neurons.Vector avgac : avg_activations)
-          ArrayUtils.div(avgac.raw(), N);
-      if (has_momenta()) {
-        for (int i=0; i<dense_row_weights_momenta.length; ++i)
-          ArrayUtils.div(get_weights_momenta(i).raw(), N);
-        for (Neurons.Vector bias_momenta : biases_momenta) ArrayUtils.div(bias_momenta.raw(), N);
-      }
-      if (adaDelta()) {
-        for (int i=0;i<dense_row_ada_dx_g.length;++i) {
-          ArrayUtils.div(get_ada_dx_g(i).raw(), N);
-        }
-      }
-    }
-    double uniformDist(Random rand, double min, double max) {
-      return min + rand.nextFloat() * (max - min);
-    }
-    void randomizeWeights() {
-      for (int w=0; w<dense_row_weights.length; ++w) {
-        final Random rng = water.util.RandomUtils.getRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
-        final double range = Math.sqrt(6. / (units[w] + units[w+1]));
-        for( int i = 0; i < get_weights(w).rows(); i++ ) {
-          for( int j = 0; j < get_weights(w).cols(); j++ ) {
-            if (get_params()._initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.UniformAdaptive) {
-              // cf. http://machinelearning.wustl.edu/mlpapers/paper_files/AISTATS2010_GlorotB10.pdf
-              if (w==dense_row_weights.length-1 && _classification)
-                get_weights(w).set(i,j, (float)(4.*uniformDist(rng, -range, range))); //Softmax might need an extra factor 4, since it's like a sigmoid
-              else
-                get_weights(w).set(i,j, (float)uniformDist(rng, -range, range));
-            }
-            else if (get_params()._initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Uniform) {
-              get_weights(w).set(i,j, (float)uniformDist(rng, -get_params()._initial_weight_scale, get_params()._initial_weight_scale));
-            }
-            else if (get_params()._initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Normal) {
-              get_weights(w).set(i,j, (float)(rng.nextGaussian() * get_params()._initial_weight_scale));
-            }
-          }
-        }
-      }
-    }
-
-    // TODO: Add "subset randomize" function
-//        int count = Math.min(15, _previous.units);
-//        double min = -.1f, max = +.1f;
-//        //double min = -1f, max = +1f;
-//        for( int o = 0; o < units; o++ ) {
-//          for( int n = 0; n < count; n++ ) {
-//            int i = rand.nextInt(_previous.units);
-//            int w = o * _previous.units + i;
-//            _w[w] = uniformDist(rand, min, max);
-//          }
-//        }
-
-    /**
-     * Compute Variable Importance, based on
-     * GEDEON: DATA MINING OF INPUTS: ANALYSING MAGNITUDE AND FUNCTIONAL MEASURES
-     * @return variable importances for input features
-     */
-    public float[] computeVariableImportances() {
-      float[] vi = new float[units[0]];
-      Arrays.fill(vi, 0f);
-
-      float[][] Qik = new float[units[0]][units[2]]; //importance of input i on output k
-      float[] sum_wj = new float[units[1]]; //sum of incoming weights into first hidden layer
-      float[] sum_wk = new float[units[2]]; //sum of incoming weights into output layer (or second hidden layer)
-      for (float[] Qi : Qik) Arrays.fill(Qi, 0f);
-      Arrays.fill(sum_wj, 0f);
-      Arrays.fill(sum_wk, 0f);
-
-      // compute sum of absolute incoming weights
-      for( int j = 0; j < units[1]; j++ ) {
-        for( int i = 0; i < units[0]; i++ ) {
-          float wij = get_weights(0).get(j, i);
-          sum_wj[j] += Math.abs(wij);
-        }
-      }
-      for( int k = 0; k < units[2]; k++ ) {
-        for( int j = 0; j < units[1]; j++ ) {
-          float wjk = get_weights(1).get(k,j);
-          sum_wk[k] += Math.abs(wjk);
-        }
-      }
-      // compute importance of input i on output k as product of connecting weights going through j
-      for( int i = 0; i < units[0]; i++ ) {
-        for( int k = 0; k < units[2]; k++ ) {
-          for( int j = 0; j < units[1]; j++ ) {
-            float wij = get_weights(0).get(j,i);
-            float wjk = get_weights(1).get(k,j);
-            //Qik[i][k] += Math.abs(wij)/sum_wj[j] * wjk; //Wong,Gedeon,Taggart '95
-            Qik[i][k] += Math.abs(wij)/sum_wj[j] * Math.abs(wjk)/sum_wk[k]; //Gedeon '97
-          }
-        }
-      }
-      // normalize Qik over all outputs k
-      for( int k = 0; k < units[2]; k++ ) {
-        float sumQk = 0;
-        for( int i = 0; i < units[0]; i++ ) sumQk += Qik[i][k];
-        for( int i = 0; i < units[0]; i++ ) Qik[i][k] /= sumQk;
-      }
-      // importance for feature i is the sum over k of i->k importances
-      for( int i = 0; i < units[0]; i++ ) vi[i] = ArrayUtils.sum(Qik[i]);
-
-      //normalize importances such that max(vi) = 1
-      ArrayUtils.div(vi, ArrayUtils.maxValue(vi));
-      return vi;
-    }
-
-    // compute stats on all nodes
-    public void computeStats() {
-      float[][] rate = get_params()._adaptive_rate ? new float[units.length-1][] : null;
-
-      if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
-        for (int k = 0; k < get_params()._hidden.length; k++) {
-          mean_a[k] = 0;
-          for (int j = 0; j < avg_activations[k].size(); j++)
-            mean_a[k] += avg_activations[k].get(j);
-          mean_a[k] /= avg_activations[k].size();
-        }
-      }
-
-      for( int y = 1; y < units.length; y++ ) {
-        mean_rate[y] = rms_rate[y] = 0;
-        mean_bias[y] = rms_bias[y] = 0;
-        mean_weight[y] = rms_weight[y] = 0;
-        for(int u = 0; u < biases[y-1].size(); u++) {
-          mean_bias[y] += biases[y-1].get(u);
-        }
-        if (rate != null) rate[y-1] = new float[get_weights(y-1).raw().length];
-        for(int u = 0; u < get_weights(y-1).raw().length; u++) {
-          mean_weight[y] += get_weights(y-1).raw()[u];
-          if (rate != null) {
-//            final float RMS_dx = (float)Math.sqrt(ada[y-1][2*u]+(float)get_params().epsilon);
-//            final float invRMS_g = (float)(1/Math.sqrt(ada[y-1][2*u+1]+(float)get_params().epsilon));
-            final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y-1).raw()[2*u]+(float)get_params()._epsilon);
-            final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y-1).raw()[2*u+1]+(float)get_params()._epsilon);
-            rate[y-1][u] = RMS_dx*invRMS_g; //not exactly right, RMS_dx should be from the previous time step -> but close enough for diagnostics.
-            mean_rate[y] += rate[y-1][u];
-          }
-        }
-
-
-        mean_bias[y] /= biases[y-1].size();
-
-        mean_weight[y] /= get_weights(y-1).size();
-        if (rate != null) mean_rate[y] /= rate[y-1].length;
-
-        for(int u = 0; u < biases[y-1].size(); u++) {
-          final double db = biases[y-1].get(u) - mean_bias[y];
-          rms_bias[y] += db * db;
-        }
-        for(int u = 0; u < get_weights(y-1).size(); u++) {
-          final double dw = get_weights(y-1).raw()[u] - mean_weight[y];
-          rms_weight[y] += dw * dw;
-          if (rate != null) {
-            final double drate = rate[y-1][u] - mean_rate[y];
-            rms_rate[y] += drate * drate;
-          }
-        }
-        rms_bias[y] = MathUtils.approxSqrt(rms_bias[y]/biases[y-1].size());
-        rms_weight[y] = MathUtils.approxSqrt(rms_weight[y] / get_weights(y - 1).size());
-        if (rate != null) rms_rate[y] = MathUtils.approxSqrt(rms_rate[y]/rate[y-1].length);
-//        rms_bias[y] = (float)Math.sqrt(rms_bias[y]/biases[y-1].length);
-//        rms_weight[y] = (float)Math.sqrt(rms_weight[y]/weights[y-1].length);
-//        if (rate != null) rms_rate[y] = (float)Math.sqrt(rms_rate[y]/rate[y-1].length);
-
-        // Abort the run if weights or biases are unreasonably large (Note that all input values are normalized upfront)
-        // This can happen with Rectifier units when L1/L2/max_w2 are all set to 0, especially when using more than 1 hidden layer.
-        final double thresh = 1e10;
-        unstable |= mean_bias[y] > thresh  || isNaN(mean_bias[y])
-                || rms_bias[y] > thresh    || isNaN(rms_bias[y])
-                || mean_weight[y] > thresh || isNaN(mean_weight[y])
-                || rms_weight[y] > thresh  || isNaN(rms_weight[y]);
-      }
-    }
-
-    // unique identifier for this model's state
-    protected long checksum_impl() {
-      long cs = parameters._seed;
-      cs ^= size() * get_processed_total();
-      cs ^= (long)(2234.3424*ArrayUtils.sum(mean_bias));
-      cs *= (long)(9234.1343*ArrayUtils.sum(rms_bias));
-      cs ^= (long)(9723.9734*ArrayUtils.sum(mean_weight));
-      cs *= (long)(9234.1783*ArrayUtils.sum(rms_weight));
-      cs ^= (long)(4273.2344*ArrayUtils.sum(mean_rate));
-      cs *= (long)(3378.1999*ArrayUtils.sum(rms_rate));
-      return cs;
-    }
-  }
-
   /**
    * Helper to allocate keys for output frames for weights and biases
    * @param destKey
@@ -1442,6 +378,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
 //      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
+    DKV.put(dataInfo);
     assert(model_info().get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
@@ -1469,6 +406,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
+  /**
+   * Regular constructor (from scratch)
+   * @param destKey
+   * @param parms
+   * @param output
+   * @param train
+   * @param valid
+   */
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
     super(destKey, parms, output);
     boolean classification = train.lastVec().isEnum();
@@ -1477,8 +422,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
-    DKV.put(dinfo._key,dinfo);
+    DKV.put(dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
+    model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms.getNumFolds() != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -1506,97 +452,37 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       throw new IllegalArgumentException("Model is too large: PUBDEV-941");
   }
 
-  /**
-   * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
-   * @param fromParms raw user-given parameters from the REST API
-   * @param toParms modified set of parameters, with defaults filled in
-   * @param classification
-   */
-  public static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, boolean classification) {
-    if (fromParms._hidden_dropout_ratios == null) {
-      if (fromParms._activation == DeepLearningParameters.Activation.TanhWithDropout
-              || fromParms._activation == DeepLearningParameters.Activation.MaxoutWithDropout
-              || fromParms._activation == DeepLearningParameters.Activation.RectifierWithDropout) {
-        toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
-        if (!fromParms._quiet_mode)
-          Log.info("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");
-        Arrays.fill(toParms._hidden_dropout_ratios, 0.5);
-      }
-    } else {
-      toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
-    }
-    if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
-      Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
-      toParms._replicate_training_data = false;
-    }
-    if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
-      Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
-      toParms._single_node_mode = false;
-    }
-    if (!fromParms._use_all_factor_levels && fromParms._autoencoder ) {
-      Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
-      toParms._use_all_factor_levels = true;
-    }
-    if(fromParms._overwrite_with_best_model && fromParms.getNumFolds() != 0) {
-      Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
-      toParms._overwrite_with_best_model = false;
-    }
-    if (fromParms._adaptive_rate) {
-      Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-              + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
-      toParms._rate = 0;
-      toParms._rate_decay = 0;
-      toParms._rate_annealing = 0;
-      toParms._momentum_start = 0;
-      toParms._momentum_ramp = 0;
-      toParms._momentum_stable = 0;
-      toParms._nesterov_accelerated_gradient = false;
-    } else {
-      Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
-              + "rho, epsilon.");
-      toParms._rho = 0;
-      toParms._epsilon = 0;
-    }
-    if (fromParms.getNumFolds() != 0) {
-      if (fromParms._overwrite_with_best_model) {
-        Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
-        toParms._overwrite_with_best_model = false;
-      }
-    }
-    if (fromParms._loss == DeepLearningParameters.Loss.Automatic) {
-        toParms._loss = (classification && !fromParms._autoencoder) ? DeepLearningParameters.Loss.CrossEntropy : DeepLearningParameters.Loss.MeanSquare;
-        Log.info("_loss: Automatically setting loss function to " + toParms._loss);
-    }
-    if (fromParms._reproducible) {
-      Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                      +"and setting train_samples_per_iteration to -1 to enforce reproducibility.");
-      toParms._force_load_balance = true;
-      toParms._single_node_mode = false;
-      toParms._train_samples_per_iteration = -1;
-      toParms._replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
-      //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
-    }
-  }
-
   public long _timeLastScoreEnter; //not transient: needed for HTML display page
   transient private long _timeLastScoreStart;
   transient private long _timeLastScoreEnd;
   transient private long _timeLastPrintStart;
+
   /**
-   *
+   * Score this DeepLearning model
    * @param ftrain potentially downsampled training data for scoring
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
    * @param progressKey key of the progress
+   * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
+    final long now = System.currentTimeMillis();
+    epoch_counter = (double)model_info().get_processed_total()/training_rows;
+    final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
+    run_time += time_last_iter_millis;
+
+    // First update Job progress based on the number of trained samples for the last iteration
+    // and update the progress message
+    Job.Progress prog = DKV.getGet(progressKey);
+    float progress = prog == null ? 0 : prog.progress();
+    String msg = "Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
+            + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
+    ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
+    if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
+
     boolean keep_running;
     try {
-      final long now = System.currentTimeMillis();
-      epoch_counter = (float)model_info().get_processed_total()/training_rows;
-      final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
-
       // Auto-tuning
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
       // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
@@ -1613,7 +499,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
       }
 
-      run_time += time_last_iter_millis;
       _timeLastScoreEnter = now;
       keep_running = (epoch_counter < model_info().get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
@@ -1621,9 +506,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
+          if (iteration>=1)
+            Log.info("Map/Reduce iteration #" + String.format("%,d", iteration));
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
                   + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-                  + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+                  + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+          Log.info(msg);
         }
       }
 
@@ -1633,7 +521,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                       &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
         if (progressKey != null) {
           new Job.ProgressUpdate("Scoring on " + ftrain.numRows() + " training samples" +
-                  (ftest != null ? (", " + ftest.numRows() + " validation samples)") : ")")
+                  (ftest != null ? (", " + ftest.numRows() + " validation samples") : "")
           ).fork(progressKey);
         }
         final boolean printme = !get_params()._quiet_mode;
@@ -1642,7 +530,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
-        err.training_samples = model_info().get_processed_total();
+        err.training_samples = (double)model_info().get_processed_total();
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
         err.classification = _output.isClassifier();
@@ -1684,14 +572,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
+            err.training_AUC = mm._auc;
             err.train_confusion_matrix = mm.cm();
           }
           else if (mm1 instanceof ModelMetricsMultinomial) {
             ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
             err.train_confusion_matrix = mm.cm();
           }
-          if (get_params()._score_training_samples != 0 && get_params()._score_training_samples < ftrain.numRows()) {
-            _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
+          if (ftrain.numRows() != training_rows) {
+            _output._training_metrics._description = "Metrics reported on temporary training frame with " + ftrain.numRows() + " samples";
+          } else if (ftrain._key != null && ftrain._key.toString().contains("chunks")){
+            _output._training_metrics._description = "Metrics reported on temporary (load-balanced) training frame";
+          } else {
+            _output._training_metrics._description = "Metrics reported on full training frame";
           }
 
           if (ftest != null) {
@@ -1711,11 +604,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mtest;
                 err.valid_confusion_matrix = mm.cm();
               }
-              if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {
-                _output._validation_metrics._description = "Metrics reported on " + ftest.numRows() + " validation set samples";
+              if (ftest.numRows() != validation_rows) {
+                _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + ftest.numRows() + " samples";
                 if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
                   _output._validation_metrics._description += " (stratified sampling)";
                 }
+              } else if (ftest._key != null && ftest._key.toString().contains("chunks")){
+                _output._validation_metrics._description = "Metrics reported on temporary (load-balanced) validation frame";
+              } else {
+                _output._validation_metrics._description = "Metrics reported on full validation frame";
               }
             }
           }
@@ -1747,7 +644,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           for (int i = 0; i < _output.biases.length; ++i) {
             model_info.get_biases(i).toFrame(_output.biases[i]);
           }
-          Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
+          if (!_parms._quiet_mode)
+            Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         }
         _output._scoring_history = createScoringHistoryTable(errors);
         _output._variable_importances = calcVarImp(last_scored().variable_importances);
@@ -1774,8 +672,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             //  final Frame bestPredict = bestModel.score(fr);
             //  final Frame hitRatio_bestPredict = new Frame(bestPredict);
             //  final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-            //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC(null,null) : null, null);
-            //  if (_output.isClassifier())
+            //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _mymodel.isClassifier() && _mymodel.nclasses() == 2 ? new AUC(null,null) : null, null);
+            //  if (_mymodel.isClassifier())
             //    assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
             //  else
             //    assert (ftest != null ? Math.abs(err.validation_MSE - err3) < 1e-5 : Math.abs(err.training_MSE - err3) < 1e-5);
@@ -1792,7 +690,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //        }
 
           // print the freshly scored model to ASCII
-          if (keep_running)
+          if (keep_running && printme)
             for (String s : toString().split("\n")) Log.info(s);
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
@@ -1856,9 +754,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
       DKV.put(f);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
+      makeMetricBuilder(null).makeModelMetrics(this, orig);
       return f;
     }
+  }
+
+  @Override
+  protected double[] score0(double[] data, double[] preds) {
+    return score0(data, preds, 1, 0);
   }
 
   /**
@@ -1867,14 +770,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public double[] score0(double[] data, double[] preds) {
+  @Override
+  public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
-    DeepLearningTask.step(-1, neurons, model_info, false, null);
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
     float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
@@ -1894,6 +798,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return preds;
   }
 
+
   /**
    * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
    * @param frame Original data (can contain response, will be ignored)
@@ -1906,7 +811,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Frame adaptFrm = new Frame(frame);
     Vec v0 = adaptFrm.anyVec().makeZero();
     Scope.enter();
-    adaptTestForTrain(adaptFrm,true);
+    adaptTestForTrain(adaptFrm,true, false);
     adaptFrm.add("Reconstruction.MSE", v0);
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
@@ -1925,7 +830,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    makeMetricBuilder(null).makeModelMetrics(this, frame, res.vecs()[0].mean());
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean()));
     return res;
   }
 
@@ -1934,7 +839,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return super.score(fr, destination_key);
     else {
       Frame adaptFr = new Frame(fr);
-      adaptTestForTrain(adaptFr, true);   // Adapt
+      adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
       Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
       cleanup_adapt( adaptFr, fr );
       return output;
@@ -1966,7 +871,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(_output._names, null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
@@ -1977,8 +882,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
-          DeepLearningTask.step(-1, neurons, model_info, false, null);
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
+          DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
@@ -2017,8 +922,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data); // expands categoricals inside
-    DeepLearningTask.step(-1, neurons, model_info, false, null); // reconstructs data in expanded space
+    ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
     float[] in  = neurons[0]._a.raw(); //input (expanded)
     float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
@@ -2067,6 +972,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
+    if (model_info().get_params()._elastic_averaging) {
+      DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());
+      if (eamodel != null)
+        DKV.put(bestModel.model_info().elasticAverageModelInfoKey(), eamodel);
+    }
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
   }
@@ -2080,7 +990,18 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
       }
     }
+    DKV.remove(model_info().data_info()._key);
+    deleteElasticAverageModels();
     super.delete();
+  }
+
+  void deleteElasticAverageModels() {
+    if (model_info().get_params()._elastic_averaging) {
+      DKV.remove(model_info().elasticAverageModelInfoKey());
+      for (H2ONode node : H2O.CLOUD._memary) {
+        DKV.remove(model_info().localModelInfoKey(node));
+      }
+    }
   }
 
   void delete_xval_models( ) {

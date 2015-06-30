@@ -45,5 +45,5 @@ public def convertOnlyWhen(String ... taskNames) {
 
 // FIXME: should be installed by a caller not here in plugin definition
 // Install Java6 bytecode converter only if tasks are in execution DAG
-convertOnlyWhen("install", "uploadArchives")
+convertOnlyWhen("build", "install", "uploadArchives")
 

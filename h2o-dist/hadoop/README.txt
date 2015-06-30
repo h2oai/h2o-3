@@ -16,7 +16,7 @@ For more information, see the online help:
 EXAMPLE OF HOW TO START AN H2O CLUSTER ON HADOOP
 ------------------------------------------------
 
-$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName
+$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
 
     -nodes       The number of H2O nodes to start in the H2O cluster.
@@ -24,7 +24,7 @@ $ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName
 
     -mapperXmx   The amount of Java memory each node gets.
                  Be sure to choose a large enough value for your data size.
-                 In this example, 1g is 1 Gigabyte.
+                 In this example, 6g is 6 Gigabytes.
 
     -output      A unique directory in hdfs where some intermediate files get
                  stored.  These are not typically useful for H2O, but part of

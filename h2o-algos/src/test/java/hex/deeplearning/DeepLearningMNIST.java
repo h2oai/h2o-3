@@ -11,13 +11,11 @@ import water.util.Log;
 
 import java.io.File;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-
 /**
  * Simple Deep Neural Network on MNIST
  * Note: requires './gradlew syncBigDataLaptop'
  *
- * 7 hours on i7 5820k to get to 0.91% test set error (World-record: 0.83%)
+ * 7 hours on i7 5820k to get to 0.91% test set error (or wait longer to get to world-record test set error: 0.83%)
  *
  *    Duration     Training Speed      Epochs   Samples  Training MSE  Training R^2  Training LogLoss  Training Classification Error  Validation MSE  Validation R^2  Validation LogLoss  Validation Classification Error
  * 6:59:29.885  2384.428 rows/sec  1000.26288  60015771       0.00005       0.99999           0.00016                        0.00010         0.00823         0.99902             0.05626                          0.00910
@@ -71,6 +69,8 @@ public class DeepLearningMNIST extends TestUtil {
         p._hidden = new int[]{1024, 1024, 2048};
         p._train_samples_per_iteration = -2;
         p._input_dropout_ratio = 0.2;
+//        p._score_interval = 0;
+//        p._score_duty_cycle = 1;
         p._l1= 1e-5;
         p._max_w2= 10;
         p._epochs = 1000;
@@ -106,7 +106,7 @@ public class DeepLearningMNIST extends TestUtil {
           }
         }
       } else {
-        Log.info("Please run ./gradlew syncBigDataLaptop in the top-level directory of h2o-dev.");
+        Log.info("Please run ./gradlew syncBigDataLaptop in the top-level directory of h2o-3.");
       }
     } catch (Throwable t) {
       t.printStackTrace();

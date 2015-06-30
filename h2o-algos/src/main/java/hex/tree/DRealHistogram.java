@@ -6,8 +6,6 @@ import water.util.AtomicUtils;
 import water.util.IcedBitSet;
 import water.util.MathUtils;
 
-import java.util.Comparator;
-
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>Sums and sums-of-squares of floats
@@ -17,18 +15,17 @@ import java.util.Comparator;
 public class DRealHistogram extends DHistogram<DRealHistogram> {
   private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
-  public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
-    super(name,nbins,isInt,min,maxEx,nelems);
+  public DRealHistogram(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx) {
+    super(name,nbins, nbins_cats, isInt, min, maxEx);
   }
-  @Override boolean isBinom() { return false; }
 
   @Override public double mean(int b) {
-    int n = _bins[b];
+    double n = _bins[b];
     return n>0 ? _sums[b]/n : 0;
   }
   @Override public double var (int b) {
-    int n = _bins[b];
-    if( n<=1 ) return 0;
+    double n = _bins[b];
+    if( n==0 ) return 0;
     return (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1);
   }
 
@@ -41,12 +38,12 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   // Add one row to a bin found via simple linear interpolation.
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
-  @Override void incr0( int b, double y ) {
-    AtomicUtils.DoubleArray.add(_sums,b,y);
-    AtomicUtils.DoubleArray.add(_ssqs,b,y*y);
+  @Override void incr0( int b, double y, double w ) {
+    AtomicUtils.DoubleArray.add(_sums,b,w*y);
+    AtomicUtils.DoubleArray.add(_ssqs,b,w*y*y);
   }
   // Same, except square done by caller
-  void incr1( int b, double y, double yy ) {
+  void incr1( int b, double y, double yy) {
     AtomicUtils.DoubleArray.add(_sums,b,y);
     AtomicUtils.DoubleArray.add(_ssqs,b,yy);
   }
@@ -62,7 +59,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  @Override public DTree.Split scoreMSE( int col, int min_rows ) {
+  @Override public DTree.Split scoreMSE( int col, double min_rows ) {
     final int nbins = nbins();
     assert nbins > 1;
 
@@ -71,7 +68,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // unordered predictor, i.e. categorical predictor).
     double[] sums = _sums;
     double[] ssqs = _ssqs;
-    int  [] bins = _bins;
+    double[] bins = _bins;
     int idxs[] = null;          // and a reverse index mapping
 
     // For categorical (unordered) predictors, sort the bins by average
@@ -90,7 +87,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       // its original order.
       sums = MemoryManager.malloc8d(nbins);
       ssqs = MemoryManager.malloc8d(nbins);
-      bins = MemoryManager.malloc4 (nbins);
+      bins = MemoryManager.malloc8d(nbins);
       for( int i=0; i<nbins; i++ ) {
         sums[i] = _sums[idxs[i]];
         ssqs[i] = _ssqs[idxs[i]];
@@ -101,17 +98,17 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
     double sums0[] = MemoryManager.malloc8d(nbins+1);
     double ssqs0[] = MemoryManager.malloc8d(nbins+1);
-    long     ns0[] = MemoryManager.malloc8 (nbins+1);
+    double   ns0[] = MemoryManager.malloc8d(nbins+1);
     for( int b=1; b<=nbins; b++ ) {
       double m0 = sums0[b-1],  m1 = sums[b-1];
       double s0 = ssqs0[b-1],  s1 = ssqs[b-1];
-      long   k0 = ns0  [b-1],  k1 = bins[b-1];
+      double k0 = ns0  [b-1],  k1 = bins[b-1];
       if( k0==0 && k1==0 ) continue;
       sums0[b] = m0+m1;
       ssqs0[b] = s0+s1;
       ns0  [b] = k0+k1;
     }
-    long tot = ns0[nbins];
+    double tot = ns0[nbins];
     // Is any split possible with at least min_obs?
     if( tot < 2*min_rows ) return null;
     // If we see zero variance, we must have a constant response in this
@@ -127,16 +124,16 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double sums1[] = MemoryManager.malloc8d(nbins+1);
     double ssqs1[] = MemoryManager.malloc8d(nbins+1);
-    long     ns1[] = MemoryManager.malloc8 (nbins+1);
+    double   ns1[] = MemoryManager.malloc8d(nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      double m0 = sums1[b+1],  m1 = sums[b];
-      double s0 = ssqs1[b+1],  s1 = ssqs[b];
-      long   k0 = ns1  [b+1],  k1 = bins[b];
+      double m0 = sums1[b+1], m1 = sums[b];
+      double s0 = ssqs1[b+1], s1 = ssqs[b];
+      double k0 = ns1  [b+1], k1 = bins[b];
       if( k0==0 && k1==0 ) continue;
       sums1[b] = m0+m1;
       ssqs1[b] = s0+s1;
       ns1  [b] = k0+k1;
-      assert ns0[b]+ns1[b]==tot;
+      assert MathUtils.compare(ns0[b]+ns1[b],tot,1e-5,1e-5);
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -176,7 +173,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         _maxEx-_min > 2 && idxs==null ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
         if( bins[b] < min_rows ) continue; // Ignore too small splits
-        long N =         ns0[b  ] + ns1[b+1];
+        double N = ns0[b] + ns1[b+1];
         if( N < min_rows ) continue; // Ignore too small splits
         double sums2 = sums0[b  ]+sums1[b+1];
         double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
@@ -209,8 +206,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( best==0 ) return null;  // No place to split
     double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
-    long   n0 = equal != 1 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal != 1 ?   ns1[best] :  bins[best]              ;
+    double n0 = equal != 1 ?   ns0[best] :   ns0[best]+  ns1[best+1];
+    double n1 = equal != 1 ?   ns1[best] :  bins[best]              ;
     double p0 = equal != 1 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal != 1 ? sums1[best] :  sums[best]              ;
     if( MathUtils.equalsWithinOneSmallUlp((float)(p0/n0),(float)(p1/n1)) ) return null; // No difference in predictions, which are all at 1 float ULP

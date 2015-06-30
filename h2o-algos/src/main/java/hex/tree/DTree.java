@@ -25,9 +25,10 @@ import java.util.*;
 public class DTree extends Iced {
   final String[] _names; // Column names
   final int _ncols;      // Active training columns
-  final char _nbins;     // Max number of bins to split over
+  final char _nbins;     // Numerical columns: Max number of bins to split over
+  final char _nbins_cats; // Categorical columns: Max number of bins to split over
   final char _nclass;    // #classes, or 1 for regression trees
-  public final int _min_rows;   // Fewest allowed rows in any split
+  public final double _min_rows;   // Fewest allowed (weighted) rows in any split
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   public int _len;       // Resizable array
@@ -35,9 +36,9 @@ public class DTree extends Iced {
   public int _leaves;
   public int _depth;
 
-  public DTree( String[] names, int ncols, char nbins, char nclass, int min_rows ) { this(names,ncols,nbins,nclass,min_rows,-1); }
-  public DTree( String[] names, int ncols, char nbins, char nclass, int min_rows, long seed ) {
-    _names = names; _ncols = ncols; _nbins=nbins; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed; 
+  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, double min_rows ) { this(names,ncols,nbins,nbins_cats,nclass,min_rows,-1); }
+  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, long seed ) {
+    _names = names; _ncols = ncols; _nbins=nbins; _nbins_cats=nbins_cats; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed;
   }
 
   public final Node root() { return _ns[0]; }
@@ -101,10 +102,10 @@ public class DTree extends Iced {
     final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
     final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
-    final long   _n0,  _n1;     // Rows in each final split
+    final double _n0,  _n1;     // (Weighted) Rows in each final split
     final double _p0,  _p1;     // Predicted value for each split
 
-    public Split( int col, int bin, IcedBitSet bs, byte equal, double se, double se0, double se1, long n0, long n1, double p0, double p1 ) {
+    public Split( int col, int bin, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1 ) {
       _col = col;  _bin = bin;  _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
@@ -156,8 +157,8 @@ public class DTree extends Iced {
     // has constant data, or was not being tracked by a prior DHistogram
     // (for being constant data from a prior split), then that column will be
     // null in the returned array.
-    public DHistogram[] split( int way, char nbins, int min_rows, DHistogram hs[], float splat ) {
-      long n = way==0 ? _n0 : _n1;
+    public DHistogram[] split(int way, char nbins, char nbins_cats, double min_rows, DHistogram hs[], float splat) {
+      double n = way==0 ? _n0 : _n1;
       if( n < min_rows || n <= 1 ) return null; // Too few elements
       double se = way==0 ? _se0 : _se1;
       if( se <= 1e-30 ) return null; // No point in splitting a perfect prediction
@@ -168,7 +169,7 @@ public class DTree extends Iced {
       for( int j=0; j<hs.length; j++ ) { // For every column in the new split
         DHistogram h = hs[j];            // old histogram of column
         if( h == null ) continue;        // Column was not being tracked?
-        int adj_nbins  = Math.max(h.nbins()>>1,nbins);
+        int adj_nbins      = Math.max(h.nbins()>>1,nbins);
         // min & max come from the original column data, since splitting on an
         // unrelated column will not change the j'th columns min/max.
         // Tighten min/max based on actual observed data for tracked columns
@@ -209,7 +210,7 @@ public class DTree extends Iced {
         if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h.isBinom());
+        nhists[j] = DHistogram.make(h._name,adj_nbins, nbins_cats, h._isInt, min, maxEx);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
@@ -364,11 +365,12 @@ public class DTree extends Iced {
       }
       _splat = (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1; // Split-at value (-1 for group-wise splits)
       final char nbins   = _tree._nbins;
-      final int min_rows = _tree._min_rows;
+      final char nbins_cats = _tree._nbins_cats;
+      final double min_rows = _tree._min_rows;
 
       for( int b=0; b<2; b++ ) { // For all split-points
         // Setup for children splits
-        DHistogram nhists[] = _split.split(b,nbins,min_rows,hs,_splat);
+        DHistogram nhists[] = _split.split(b,nbins, nbins_cats, min_rows, hs, _splat);
         assert nhists==null || nhists.length==_tree._ncols;
         _nids[b] = nhists == null ? -1 : makeUndecidedNode(nhists)._nid;
       }

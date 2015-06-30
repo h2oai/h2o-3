@@ -12,7 +12,7 @@
 #' automatically.
 #'
 #' Other than \code{h2o.uploadFile}, if the given path is relative, then it will be relative to the
-#' start location of the H2O instance. Addtionally, the file must be on the same machine as the H2O
+#' start location of the H2O instance. Additionally, the file must be on the same machine as the H2O
 #' cloud. In the case of \code{h2o.uploadFile}, a relative path will resolve relative to the working
 #' directory of the current R session.
 #'
@@ -44,7 +44,9 @@
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.
 #' @param na.strings (Optional) H2O will interpret these strings as missing.
-#' @param progressBar (Optional) When FALSE, tell H2O parse call to block 
+#' @param parse_type (Optional) Specify which parser type H2O will use.
+#'        Valid types are "ARFF", "XLS", "CSV", "SVMLight"
+#' @param progressBar (Optional) When FALSE, tell H2O parse call to block
 #'        synchronously instead of polling.  This can be faster for small
 #'        datasets but loses the progress bar.
 #' @examples
@@ -58,8 +60,7 @@
 h2o.importFolder <- function(path, pattern = "",
                              destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, na.strings=NULL) {
-  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
-    stop("`path` must be a non-empty character string")
+  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
@@ -97,8 +98,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
 #' @rdname h2o.importFile
 #' @export
 h2o.importURL <- function(path, destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
-  .Deprecated("h2o.importFolder")
-  h2o.importFile(path, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
+  .Deprecated("h2o.importFile")
 }
 
 
@@ -106,7 +106,6 @@ h2o.importURL <- function(path, destination_frame = "", parse = TRUE, header = N
 #' @export
 h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
   .Deprecated("h2o.importFolder")
-  h2o.importFolder(path, pattern, destination_frame, parse, header, sep, col.names, na.strings=na.strings)
 }
 
 
@@ -132,7 +131,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
 
   rawData <- .newH2ORawData(srcKey)
   if (parse) {
-    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar)
+    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
   } else {
     rawData
   }
@@ -141,7 +140,8 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
-#' Load a saved H2O model from disk. Currnetly not implemented.
+#' Load a saved H2O model from disk.
+#'
 #' @param path The path of the H2O Model to be imported.
 #'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
@@ -155,14 +155,15 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' # prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # glmmodel.path = h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel.path = h2o.saveModel(prostate.glm, dir = "/Users/UserName/Desktop")
 #' # glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
 #' }
 #' @export
 h2o.loadModel <- function(path) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
-  stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(.h2o.__PAGE_LoadModel, path = path)
-  # h2o.getModel(res$model$'_key')
+
+  res <- .h2o.__remoteSend(conn, .h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
+  res
+  h2o.getModel(res$model_id$name, conn)
 }

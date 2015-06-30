@@ -23,7 +23,7 @@ import java.util.Random;
  *
  * @author <a href="mailto:cliffc@h2o.ai"></a>
  */
-public final class AutoBuffer {
+public /* final */ class AutoBuffer {
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;
@@ -738,7 +738,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA(fs[i]);
     return this;
   }
-  @SuppressWarnings("unused") AutoBuffer putAAA(Freezable[][][] fs) {
+  @SuppressWarnings("unused") public AutoBuffer putAAA(Freezable[][][] fs) {
     //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -779,7 +779,7 @@ public final class AutoBuffer {
     for( int i = x; i < x+y; ++i ) ts[i] = getA(tc);
     return ts;
   }
-  @SuppressWarnings("unused")  <T extends Freezable> T[][][] getAAA(Class<T> tc) {
+  @SuppressWarnings("unused") public <T extends Freezable> T[][][] getAAA(Class<T> tc) {
     //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -1442,7 +1442,7 @@ public final class AutoBuffer {
       if( b[i] == '\r' ) { putA1(b,off,i); put1('\\'); put1('r'); off=i+1; continue;}
       if( b[i] == '\t' ) { putA1(b,off,i); put1('\\'); put1('t'); off=i+1; continue;}
       // ASCII Control characters
-      if( b[i] == 127 ) { putA1(b,off,i); put1('\\'); put1('u'); put1('0'); put1('0'); put1('0'); put1(b[i]); off=i+1; continue;}
+      if( b[i] == 127 ) { putA1(b,off,i); put1('\\'); put1('u'); put1('0'); put1('0'); put1('7'); put1('f'); off=i+1; continue;}
       if( b[i] >= 0 && b[i] < 32 ) {
         String hexStr = Integer.toHexString(b[i]);
         putA1(b, off, i); put1('\\'); put1('u');
@@ -1498,7 +1498,7 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  private AutoBuffer putJSONAA( Freezable fs[][]) {
+  public AutoBuffer putJSONAA( Freezable fs[][]) {
     if( fs == null ) return putJNULL();
     put1('[');
     for( int i=0; i<fs.length; i++ ) {
@@ -1507,9 +1507,22 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
+
+  public AutoBuffer putJSONAAA( Freezable fs[][][]) {
+    if( fs == null ) return putJNULL();
+    put1('[');
+    for( int i=0; i<fs.length; i++ ) {
+      if( i>0 ) put1(',');
+      putJSONAA(fs[i]);
+    }
+    return put1(']');
+  }
+
   @SuppressWarnings("unused")  public AutoBuffer putJSON  ( String name, Freezable f   ) { return putJSONStr(name).put1(':').putJSON  (f); }
   public AutoBuffer putJSONA ( String name, Freezable f[] ) { return putJSONStr(name).put1(':').putJSONA (f); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
+
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAAA( String name, Freezable f[][][]){ return putJSONStr(name).put1(':').putJSONAAA(f); }
 
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJStr("" + value); }
 

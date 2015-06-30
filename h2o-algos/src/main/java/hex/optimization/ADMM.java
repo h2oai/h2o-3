@@ -102,7 +102,7 @@ public class ADMM {
       double [] beta_given = MemoryManager.malloc8d(N);
       double [] kappa = MemoryManager.malloc8d(rho.length);
       if(l1pen > 0)
-        for(int i = 0; i < N-ii; ++i)
+        for(int i = 0; i < N-1; ++i)
           kappa[i] = l1pen/rho[i];
       int i;
       double orlx = 1.0; // over-relaxation
@@ -113,7 +113,7 @@ public class ADMM {
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
         boolean allzeros = true;
-        for (int j = 0; j < N - ii; ++j) {
+        for (int j = 0; j < N - 1; ++j) {
           double xj = x[j];
           double zjold = z[j];
           double x_hat = xj * orlx + (1 - orlx) * zjold;
@@ -158,7 +158,7 @@ public class ADMM {
             abstol *= .1;
             reltol *= .1;
             continue;
-          } 
+          }
           if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
           iter = i;
           Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
@@ -207,12 +207,9 @@ public class ADMM {
         }
         rho *= .25;
       }
-      // upper nad lower bounds have different rho requirements.
-      if(!Double.isInfinite(ub) || !Double.isInfinite(lb)) {
-        double lx = (x - lb);
-        double ux = (ub - x);
-        double xx = Math.min(lx,ux);
-        rho = Math.max(rho,xx <= .5*x?1:1e-4);
+      if(!Double.isInfinite(lb) || !Double.isInfinite(ub)) {
+        boolean oob = -Math.min(x - lb, ub - x) > -1e-4;
+        rho = oob?10:1e-1;
       }
       return rho;
     }

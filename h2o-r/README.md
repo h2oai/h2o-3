@@ -1,95 +1,83 @@
-# Using h2o-dev from R
+# Using H2O from R
 
 
 ## Downloading
 
-We don't yet have a downloadable R artifact for h2o-dev.
-You have to build it yourself.
+We don't yet have a downloadable R artifact for the latest version of H2O. You will need to build it yourself.
 
 
 ## Building it yourself
 
 The R package is built as part of the normal build process.
-In the top-level h2o-dev directory use `$ ./gradlew build`.
+In the top-level h2o-3 directory, use `$ ./gradlew build`.
 
 To build the R component by itself, first type `$ cd h2o-r` and then type `$ ../gradlew build`.
 
-The output of the build is an CRAN-like layout in the R directory.
+The output of the build is a CRAN-like layout in the R directory.
 
 
-## Installation
+## Installing
 
-### 1.  Installation from the command line
+###  Installation from the command line
 
-\# Make sure your current directory is the h2o-dev top directory.
-`$ R CMD INSTALL h2o-r/R/src/contrib/h2o_0.1.23.99999.tar.gz`
+0. Navigate to the top-level `h2o-3` directory: `cd ~/h2o-3`. 
+0. Install the H2O package for R: `R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz`
 
-```
-* installing to library ‘/Users/tomk/.Rlibrary’
-* installing *source* package ‘h2o’ ...
-** R
-** demo
-** inst
-** preparing package for lazy loading
-Creating a generic function for 't' from package 'base' in package 'h2o'
-Creating a generic function for 'match' from package 'base' in package 'h2o'
-Creating a generic function for '%in%' from package 'base' in package 'h2o'
-Creating a generic function for 'colnames<-' from package 'base' in package 'h2o'
-Creating a generic function for 'nrow' from package 'base' in package 'h2o'
-Creating a generic function for 'ncol' from package 'base' in package 'h2o'
-Creating a generic function for 'colnames' from package 'base' in package 'h2o'
-Creating a generic function for 'head' from package 'utils' in package 'h2o'
-Creating a generic function for 'tail' from package 'utils' in package 'h2o'
-Creating a generic function for 'is.factor' from package 'base' in package 'h2o'
-Creating a generic function for 'summary' from package 'base' in package 'h2o'
-Creating a generic function for 'mean' from package 'base' in package 'h2o'
-Creating a generic function for 'var' from package 'stats' in package 'h2o'
-Creating a generic function for 'sd' from package 'stats' in package 'h2o'
-Creating a generic function for 'as.factor' from package 'base' in package 'h2o'
-Creating a generic function for 'ifelse' from package 'base' in package 'h2o'
-Creating a generic function for 'apply' from package 'base' in package 'h2o'
-Creating a generic function for 'sapply' from package 'base' in package 'h2o'
-** help
-*** installing help indices
-** building package indices
-** testing if installed package can be loaded
-* DONE (h2o)
-```
+   **Note**: Do not copy and paste the command above. You must replace the asterisks (*) with the current H2O .tar version number. Look in the `h2o-3/h2o-r/R/src/contrib/` directory for the version number. 
 
-### 2.  Installation from within R
+###  Installation from within R
 
-\# Detach any currently loaded H2O package for R.  
+0. Detach any currently loaded H2O package for R.  
 `if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }`  
 
-```
-[ Output not interesting... ]
-```
+	```
+	Removing package from ‘/Users/H2O_User/.Rlibrary’
+	(as ‘lib’ is unspecified)
+	```
 
-\# Remove any previously installed H2O package for R.  
+0. Remove any previously installed H2O package for R.  
 `if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }`
 
 
-```
-[ Output not interesting... ]
-```
+	```
+	Removing package from ‘/Users/H2O_User/.Rlibrary’
+	(as ‘lib’ is unspecified)
+	```
 
-\# Install the H2O R package from your build directory.  
-`install.packages("h2o", repos=c("file:///.../h2o-dev/h2o-R/R", getOption("repos")))`
+0. Install the dependencies for H2O.
+   
+   **Note**: This list may change as new capabilities are added to H2O. The commands are reproduced below, but we strongly recommend visiting the H2O download page at [h2o.ai/download](http://h2o.ai/download) for the most up-to-date list of dependencies. 
+   
+	```
+  	if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
+	if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
+	if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
+	if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
+	if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+	if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+	if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
+	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+	```
 
-```
-Installing package into ‘/Users/tomk/.Rlibrary’
-(as ‘lib’ is unspecified)
-source repository is unavailable to check versions
+0. Install the H2O R package from your build directory.  
+  `install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/****/R")))`
 
-The downloaded binary packages are in
+   **Note**: Do not copy and paste the command above. You must replace the asterisks (*) with the current H2O build number. Refer to the H2O download page at [h2o.ai/download](http://h2o.ai/download) for latest build number. 
+
+	```
+	Installing package into ‘/Users/tomk/.Rlibrary’
+	(as ‘lib’ is unspecified)
+	source repository is unavailable to check versions
+	
+	The downloaded binary packages are in
 	/var/folders/tt/g5d7cr8d3fg84jmb5jr9dlrc0000gn/T//RtmpU2C3LG/downloaded_packages
-```
+	```
 
 ## Running
 
-### 1.  Start H2O from the command line
+###  Start H2O from the command line
 
-\# Make sure your current directory is the h2o-dev top directory.
+Make sure your current directory is the h2o-3 top directory.
 `$ java -jar h2o-app/build/libs/h2o-app.jar`  
 
 ```
@@ -121,12 +109,11 @@ The downloaded binary packages are in
 ```
 
 
-### 2.  Connect to H2O from within R
+###  Connect to H2O from within R
 
-`library(h2o)`  
+To load the H2O package in R, use `library(h2o)`  
 
 ```
-Loading required package: statmod
 
 ----------------------------------------------------------------------
 
@@ -138,23 +125,43 @@ For H2O package documentation, ask for help:
     > ??h2o
 
 After starting H2O, you can use the Web UI at http://localhost:54321
-For more information visit http://docs.0xdata.com
+For more information visit http://docs.h2o.ai
 
 ----------------------------------------------------------------------
 
 ```
 
 
-`localH2O = h2o.init()`  
+To launch H2O, use `localH2O = h2o.init(nthreads = - 1)`  
+
+**Note**: The `nthreads = -1` parameter launches H2O using all available CPUs and is only applicable if you launch H2O locally using R. If you start H2O locally outside of R or start H2O on Hadoop, the `nthreads = -1` parameter is not applicable. 
+
 
 ```
-Successfully connected to http://127.0.0.1:54321 
+H2O is not running yet, starting it now...
+
+Note:  In case of errors look at the following log files:
+    /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKkZY3r/h2o_H2O_User_started_from_r.out
+    /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKkZY3r/h2o_H2O_User_started_from_r.err
+
+java version "1.8.0_25"
+Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
+Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
+
+.Successfully connected to http://127.0.0.1:54321/ 
+
 R is connected to H2O cluster:
-    H2O cluster uptime:        1 minutes 20 seconds 
-    H2O cluster version:       (unknown) 
-    H2O cluster name:          tomk 
-    H2O cluster total nodes:   1 
-    H2O cluster total memory:  3.56 GB 
-    H2O cluster total cores:   8 
-    H2O cluster healthy:       TRUE 
+    H2O cluster uptime:         1 seconds 405 milliseconds 
+    H2O cluster version:        3.1.0.3031 
+    H2O cluster name:           H2O_started_from_R_H2O_User_nqf165 
+    H2O cluster total nodes:    1 
+    H2O cluster total memory:   3.56 GB 
+    H2O cluster total cores:    8 
+    H2O cluster allowed cores:  2 
+    H2O cluster healthy:        TRUE 
+
+Note:  As started, H2O is limited to the CRAN default of 2 CPUs.
+       Shut down and restart H2O as shown below to use all your CPUs.
+           > h2o.shutdown(localH2O)
+           > localH2O = h2o.init(nthreads = -1)
 ```

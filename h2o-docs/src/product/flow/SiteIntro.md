@@ -16,6 +16,8 @@ We welcome your feedback! Please let us know if you have any questions or commen
 
 If you're just getting started with H2O, here are some links to help you learn more: 
 
+- <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+
 - <a href="http://h2o.ai/download/" target="_blank">Downloads page</a>: First things first - download a copy of H2O <a href="http://h2o.ai/download/" target="_blank">here</a> by selecting a build under "Download H2O" (the "Bleeding Edge" build contains the latest changes, while the latest alpha release represents a more stable build), then use the installation instruction tabs to install H2O on your client of choice ([standalone](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html), [R](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R), [Python](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Python), [Hadoop](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Hadoop), or [Maven](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Maven)) . 
 
 	For first-time users, we recommend downloading the latest alpha release and the default standalone option (the first tab) as the installation method. Make sure to install Java if it is not already installed.
@@ -46,6 +48,8 @@ If you're just getting started with H2O, here are some links to help you learn m
 
 If you've used previous versions of H2O, the following links will help guide you through the process of upgrading to H2O 3.0. 
 
+- <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/Migration.md" target="_blank">Migration Guide</a>: This document provides a comprehensive guide to assist users in upgrading to H2O 3.0. It gives an overview of the changes to the algorithms and the web UI introduced in this version and describes the benefits of upgrading for users of R, APIs, and Java. 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md" target="_blank">Porting R Scripts</a>: This document is designed to assist users who have created R scripts using previous versions of H2O. Due to the many improvements in R, scripts created using previous versions of H2O need some revision to work with H2O 3.0. This document provides a side-by-side comparison of the changes in R for each algorithm, as well as overall structural enhancements R users should be aware of, and provides a link to a tool that assists users in upgrading their scripts. 
@@ -66,7 +70,9 @@ If you've used previous versions of H2O, the following links will help guide you
 
 If you're considering using H2O in an enterprise environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
 
-The following video provides step-by-step instructions on how to start H2O on Hadoop: 
+- <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+ 
+- The following video provides step-by-step instructions on how to start H2O on Hadoop: 
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/B1ax_k_sSoY?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
 
@@ -91,6 +97,12 @@ Sparkling Water is a gradle project with the following submodules:
 The best way to get started is to modify the core module or create a new module, which extends a project. 
 
 Users of our Spark-compatible solution, Sparkling Water, should be aware that Sparkling Water is only supported with the latest version of H2O. For more information about Sparkling Water, refer to the following links. 
+
+Sparkling Water is versioned according to the Spark versioning: 
+
+- Use Sparkling Water 1.2 for Spark 1.2
+- Use Sparkling Water 1.3 for Spark 1.3+
+- Sparkling Water 1.4 is currently in development is scheduled for release at the end of July 
 
 ###Getting Started with Sparkling Water
 
@@ -193,6 +205,14 @@ For Java developers, the following resources will help you create your own custo
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-algos/javadoc/index.html" target="_blank">H2O Algos Java Developer Documentation</a>: The definitive Java API guide for the algorithms used by H2O. 
 
+###SDK Information
+
+The Java API is generated and accessible from the [download page](http://h2o.ai/download). 
+
+- [Central repository](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)
+- [View code on Github](https://github.com/h2oai/h2o-3/tree/{{last_commit_hash}})
+- [Apache License](https://github.com/h2oai/h2o-3/blob/master/LICENSE)
+
 ---
 
 <a name="Dev"></a>
@@ -212,6 +232,10 @@ Use class path of module: h2o-app
 
 After starting multiple "worker" node processes in addition to the JUnit test process, they will cloud up and run the multi-node JUnit tests. 
 
+- <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+
+- <a href="https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start" target="_blank">Developer Documentation</a>: Detailed instructions on how to build and launch H2O, including how to clone the repository, how to pull from the repository, and how to install required dependencies. 
+
 - <a href="https://github.com/h2oai/h2o-3/blob/master/build.gradle" target="_blank">Maven install</a>: This page provides information on how to build a version of H2O that generates the correct IDE files.
  
 - <a href="http://apps.h2o.ai" target="_blank">apps.h2o.ai</a>: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights. 
@@ -219,6 +243,12 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="https://github.com/h2oai/h2o-droplets" target="_blank">H2O Project Templates</a>: This page provides template info for projects created in Java, Scala, or Sparkling Water. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-scala/scaladoc/index.html" target="_blank">H2O Scala API Developer Documentation</a>: The definitive Scala API guide for H2O. 
+
+
+- <a href="http://h2o.ai/blog/2014/16/Hacking/Algos/" target="_blank">Hacking Algos</a>: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples. 
+
+- <a href="http://0xdata.com/blog/2014/05/kv-store-memory-analytics-part-2-2/" target="_blank">KV Store Guide</a>: Learn more about performance characteristics when implementing new algorithms. 
+
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. 
 

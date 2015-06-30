@@ -2,6 +2,7 @@ package hex.tree;
 
 import water.MRTask;
 import water.H2O.H2OCountedCompleter;
+import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.util.AtomicUtils;
 
@@ -32,18 +33,20 @@ import water.util.AtomicUtils;
 public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final int   _k;    // Which tree
   final int   _ncols;// Active feature columns
-  final int   _nbins;// Number of bins in each histogram
+  final int   _nbins;// Numerical columns: Number of bins in each histogram
+  final int   _nbins_cats;// Categorical columns: Number of bins in each histogram
   final DTree _tree; // Read-only, shared (except at the histograms in the Nodes)
   final int   _leaf; // Number of active leaves (per tree)
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
   final boolean _subset;      // True if working a subset of cols
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram hcs[][], boolean subset) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset) {
     super(cc);
     _k    = k;
     _ncols= ncols;
     _nbins= nbins;
+    _nbins_cats= nbins_cats;
     _tree = tree;
     _leaf = leaf;
     _hcs  = hcs;
@@ -82,9 +85,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override public void map( Chunk[] chks ) {
-    assert chks.length==_ncols+4;
     final Chunk wrks = chks[_ncols+2];
     final Chunk nids = chks[_ncols+3];
+    final Chunk weight = chks.length >= _ncols+5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
@@ -99,8 +102,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         if( isDecidedRow((int)nids.atd(row)) ) nnids[row] = -1;
 
     // Pass 2: accumulate all rows, cols into histograms
-    if( _subset ) accum_subset(chks,wrks,nnids);
-    else          accum_all   (chks,wrks,nnids);
+    if( _subset ) accum_subset(chks,wrks,weight,nnids);
+    else          accum_all   (chks,wrks,weight,nnids);
   }
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
@@ -154,16 +157,19 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   // All rows, some cols, accumulate histograms
-  private void accum_subset(Chunk chks[], Chunk wrks, int nnids[]) {
+  private void accum_subset(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];                     // Get Node to decide from
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
         assert !Double.isNaN(wrks.atd(row)); // Already marked as sampled-away
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-        for( int col : sCols ) // For tracked cols
-          //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
-          nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
+        //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
+        for( int col : sCols ) { // For tracked cols
+          double w = weight.atd(row);
+          if (w == 0) continue;
+          nhs[col].incr((float) chks[col].atd(row), wrks.atd(row), w); // Histogram row/col
+        }
       }
     }
   }
@@ -175,7 +181,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // order.  The hot-part of this code updates the histograms racily (via
   // atomic updates) - once-per-row.  This optimized version updates the
   // histograms once-per-NID, but requires pre-sorting the rows by NID.
-  private void accum_all(Chunk chks[], Chunk wrks, int nnids[]) {
+  private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
     int nh[] = new int[_hcs.length+1];
@@ -189,17 +195,17 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         rows[nh[nnids[row]]++] = row;
     // rows[] has Chunk-local ROW-numbers now, in-order, grouped by NID.
     // nh[] lists the start of each new NID, and is indexed by NID+1.
-    accum_all2(chks,wrks,nh,rows);
+    accum_all2(chks,wrks,weight,nh,rows);
   }
 
   // For all columns, for all NIDs, for all ROWS...
-  private void accum_all2(Chunk chks[], Chunk wrks, int nh[], int[] rows) {
+  private void accum_all2(Chunk chks[], Chunk wrks, Chunk weight, int nh[], int[] rows) {
     final DHistogram hcs[][] = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
-    int    bins[] = new int   [_nbins];
-    double sums[] = new double[_nbins];
-    double ssqs[] = new double[_nbins];
+    double bins[] = new double[Math.max(_nbins, _nbins_cats)];
+    double sums[] = new double[Math.max(_nbins, _nbins_cats)];
+    double ssqs[] = new double[Math.max(_nbins, _nbins_cats)];
     // For All Columns
     for( int c=0; c<_ncols; c++) { // for all columns
       Chunk chk = chks[c];
@@ -216,7 +222,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         // the (few) splits) so it's safe to bin more; also categoricals want
         // to split one bin-per-level no matter how many levels).
         if( rh._bins.length >= bins.length ) { // Grow bins if needed
-          bins = new int   [rh._bins.length];
+          bins = new double[rh._bins.length];
           sums = new double[rh._bins.length];
           ssqs = new double[rh._bins.length];
         }
@@ -229,17 +235,19 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data < min ) min = col_data;
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
-          bins[b]++;                // Bump count in bin
           double resp = wrks.atd(row);
-          sums[b] += resp;
-          ssqs[b] += resp*resp;
+          double w = weight.atd(row);
+          if (w == 0) continue;
+          bins[b] += w;                // Bump count in bin
+          sums[b] += w*resp;
+          ssqs[b] += w*resp*resp;
         }
 
         // Add all the data into the Histogram (atomically add)
         rh.setMin(min);       // Track actual lower/upper bound per-bin
         rh.setMax(max);
         for( int b=0; b<rh._bins.length; b++ ) { // Bump counts in bins
-          if( bins[b] != 0 ) { AtomicUtils.IntArray.add(rh._bins,b,bins[b]); bins[b]=0; }
+          if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rh._bins,b,bins[b]); bins[b]=0; }
           if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
         }
       }

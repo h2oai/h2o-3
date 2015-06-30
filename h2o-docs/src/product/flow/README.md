@@ -1,6 +1,6 @@
 #Flow Web UI ...
 
-H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
+H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document. 
 
 With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment. 
 
@@ -29,7 +29,7 @@ The following help window displays:
 
 To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. You can also access this list of shortcuts by clicking the **Help** menu and selecting **Keyboard Shortcuts**. 
 
-For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button. 
+For additional help, click **Help** > **Assist Me** or click the **Assist Me!** button in the row of buttons below the menus. 
 
 ![Assist Me](images/Flow_AssistMeButton.png) 
 
@@ -37,9 +37,20 @@ You can also type `assist` in a blank cell and press **Ctrl+Enter**. A list of c
 
  ![Assist Me links](images/Flow_assist.png)
  
-There are multiple resources to help you get started with Flow in the **Help** sidebar. To access this document, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+There are multiple resources to help you get started with Flow in the **Help** sidebar. 
 
-You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows, click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
+>**Note**: To hide the sidebar, click the **>>** button above it. ![Flow - Hide Sidebar](images/Flow_SidebarHide.png)
+>
+>To display the sidebar if it is hidden, click the **<<** button. ![Flow - Hide Sidebar](images/Flow_SidebarDisplay.png)
+
+To access this documentation, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+
+You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows:
+
+- Click the **view example Flows** link below the **Quickstart Videos** button in the **Help** sidebar 
+  ![Flow - View Example Flows link](images/Flow_ViewExampleFlows.png)
+  or 
+- Click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
 
   ![Flow Packs](images/Flow_ExampleFlows.png)
 
@@ -49,7 +60,7 @@ To view the REST API documentation, click the **Help** tab in the sidebar and th
 
  ![REST API documentation](images/Flow_REST_docs.png)
 
-Before getting started with H2O Flow, make sure you understand the different cell modes. 
+Before getting started with H2O Flow, make sure you understand the different cell modes. Certain actions can only be performed when the cell is in a specific mode. 
 
 ---
 
@@ -58,7 +69,7 @@ Before getting started with H2O Flow, make sure you understand the different cel
 
 There are two modes for cells: edit and command. 
 
-
+<a name="EditMode"></a>
 ###Using Edit Mode
 In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
@@ -66,12 +77,17 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 ![Edit Mode](images/Flow_EditMode.png)
  
 <a name="CmdMode"></a>
-##Using Command Mode
+###Using Command Mode
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
 - **MD**: Markdown 
    
-   **Note**: Markdown formatting is not applied until you run the cell by clicking the **Run** button or clicking the **Run** menu and selecting **Run**. 
+   >**Note**: Markdown formatting is not applied until you run the cell by:
+   > 
+   >- clicking the **Run** button
+        > or
+      
+   >- pressing **Ctrl+Enter**
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
@@ -87,7 +103,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 
  ![Flow - Heading Levels](images/Flow_headinglevels.png)
 
-**NOTE**: If there is an error in the cell, the flag is red. 
+>**NOTE**: If there is an error in the cell, the flag is red. 
 
  ![Cell error](images/Flow_redflag.png)
  
@@ -111,13 +127,35 @@ Heading 4     | `4`
 Heading 5     | `5`
 Heading 6     | `6` 
 
+
+###Running Cells
+
+
+The series of buttons at the top of the page below the menus run cells in a flow. 
+ 
+ ![Flow - Run Buttons](images/Flow_RunButtons.png)
+
+- To run all cells in the flow, click the **Flow** menu, then click **Run All Cells**. 
+- To run the current cell and all subsequent cells, click the **Flow** menu, then click **Run All Cells Below**. 
+- To run an individual cell in a flow, confirm the cell is in [Edit Mode](#EditMode), then: 
+
+ - press **Ctrl+Enter**
+
+     or
+  
+ - click the **Run** button 
+ 
+      ![Flow - Run Button](images/Flow_RunButton.png)
+
+
+
 ###Running Flows
 When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
 
   ![Flow Progress Bar](images/Flow_progressbar.png)
 
 When the flow is complete, a message displays in the upper right. 
-**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
+>**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
 
   ![Flow - Completed Successfully](images/Flow_run_pass.png)
   ![Flow - Did Not Complete](images/Flow_run_fail.png) 
@@ -139,6 +177,18 @@ The following commands must be entered in [command mode](#CmdMode).
 
 You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar. 
 
+###Using Variables in Cells
+
+Variables can be used to store information such as download locations. To use a variable in Flow: 
+
+0. Define the variable in a code cell (for example, `locA = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv"`). 
+  ![Flow variable definition](images/Flow_VariableDefinition.png)
+0. Run the cell. H2O validates the variable. 
+  ![Flow variable validation](images/Flow_VariableValidation.png)
+0. Use the variable in another code cell (for example, `importFiles [locA]`). 
+  ![Flow variable example](images/Flow_VariableExample.png)
+To further simplify your workflow, you can save the cells containing the variables and definitions as [clips](#Clips). 
+
 
 ###Using Flow Buttons
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
@@ -148,7 +198,7 @@ There are also a series of buttons at the top of the page below the flow name th
 You can also use the menus at the top of the screen to edit the order of the cells, toggle specific format types (such as input or output), create models, or score models. You can also access troubleshooting information or obtain help with Flow.  
  ![Flow menus](images/Flow_menus.png)
 
-**Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**. 
+>**Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**. 
 
 Now that you are familiar with the cell modes, let's import some data. 
 
@@ -157,27 +207,24 @@ Now that you are familiar with the cell modes, let's import some data.
 <a name="ImportData"></a>
 # ... Importing Data
 
-If you don't have any of your own data to work with, you can find some example datasets here: 
+If you don't have any data of your own to work with, you can find some example datasets here: 
 
-- <a href="http://docs.h2o.ai/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/resources/publicdata.html </a>
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
 - <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
 
 
 There are multiple ways to import data in H2O flow:
 
-- Click the **Assist Me!** button in the **Help** sidebar, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
+- Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
+ ![Flow - Import Files Auto-Suggest](images/Flow_Import_AutoSuggest.png)
  
-- You can also drag and drop the file onto the **Search** field in the cell.
-  
- ![Flow - Import Files](images/Flow_Import_DragDrop.png)
-
 - In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
+![Import Files](images/Flow_import.png)
+>**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. Please note that .zip files containing multiple files are not currently supported. 
 
-**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. 
 
- ![Import Files](images/Flow_import.png)
 
 - To import the selected file(s), click the **Import** button. 
 
@@ -218,6 +265,8 @@ Select the parser type (if necessary) from the drop-down **Parser** list. For mo
 - CSV
 - SVMLight
 
+   >**Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order. 
+
 If a separator or delimiter is used, select it from the **Separator** list. 
 
 Select a column header option, if applicable: 
@@ -231,10 +280,15 @@ Select any necessary additional options:
 - **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum. This option is not selected by default. 
 - **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
-A preview of the data displays in the "Data Preview" section. 
+A preview of the data displays in the "Edit Column Names and Types" section. 
  ![Flow - Parse options](images/Flow_parse_setup.png)
 
-**Note**: To change the column type, select the drop-down list at the top of the column and select the data type. The options are: 
+To change or add a column name, edit or enter the text in the column's entry field. In the screenshot below, the entry field for column 16 is highlighted in red.  
+  
+ ![Flow - Column Name Entry Field](images/Flow_ColNameEntry.png)
+
+To change the column type, select the drop-down list to the right of the column name entry field and select the data type. The options are: 
+  
   - Unknown
   - Numeric
   - Enum
@@ -243,6 +297,11 @@ A preview of the data displays in the "Data Preview" section.
   - String
   - Invalid
 
+You can search for a column by entering it in the *Search by column name...* entry field above the first column name entry field. As you type, H2O displays the columns that match the specified search terms.
+
+To navigate the data preview, click the **<- Previous page** or **-> Next page** buttons.  
+
+  ![Flow - Pagination buttons](images/Flow_PageButtons.png)
 
 After making your selections, click the **Parse** button. 
 
@@ -291,7 +350,7 @@ The following information displays:
 - Run time
 - Progress
 
-**NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
+>**NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
  
 Ok, now that you understand how to find jobs in H2O, let's submit a new one by building a model. 
 
@@ -302,7 +361,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 
 To build a model: 
 
-- Click the **Assist Me!** button and select **buildModel**
+- Click the **Assist Me!** button in the row of buttons below the menus and select **buildModel**
 
   or 
 
@@ -317,7 +376,7 @@ To build a model:
 - Click the drop-down **Model** menu and select the model type from the list
 
 
-The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). 
+The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). The following image depicts the K-Means model type. Available options vary depending on model type. 
 
 
  ![Model Builder](images/Flow_ModelBuilder.png)
@@ -352,54 +411,68 @@ The available options vary depending on the selected model. If an option is only
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 
-  **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
-
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **->** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **<-** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
-**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
+>**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
 
-- **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
+- **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale.  
 
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF), [Naïve Bayes](#NB)) Select the column to use as the independent variable.
 
-- **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is IRLSM. 
+- **Solver**: [(GLM)](#GLM) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
 
-- **Ntrees**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of trees. The default value is 50. 
+- **Ntrees**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of trees.  
 
-- **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth. For GBM, the default value is 5. For DRF, the default value is 20. 
+- **Max\_depth**: [(GBM](#GBM), [DRF)](#DRF) Specify the maximum tree depth.  
 
-- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10.
+- **Min\_rows**: [(GBM](#GBM), [DRF)](#DRF) Specify the minimum number of observations for a leaf ("nodesize" in R). 
 
-- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) Specify the number of bins for the histogram. The default value is 20. 
+- **Nbins**: [(GBM](#GBM), [DRF)](#DRF) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.   
 
-- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
+- **Nbins_cats**: [(GBM](#GBM), [DRF)](#DRF) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
 
-- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.632. 
+- **R2_stopping**: [(GBM](#GBM), [DRF)](#DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
-- **Build\_tree\_one\_node**: [(DRF)](#DRF) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
+- **Mtries**: [(DRF)](#DRF) Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).   
+   
+- **Sample\_rate**: [(DRF)](#DRF) Specify the sample rate. The range is 0 to 1.0. 
 
-- **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
+- **Build\_tree\_one\_node**: [(DRF](#DRF), [GBM)](#GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
-- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
+- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
+
+- **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
+
+- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
-- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
+- **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM), [GLM](#GLM)) To score during each iteration of the model training, check this checkbox. 
 
-- **K**: [(K-Means)](#Kmeans), [(PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
+- **K**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
 
-- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. The default is 0. 
+- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. 
 
-- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA),[GLM)](#GLM) Specify the number of training iterations. For K-Means and PCA, the default is 1000. For GLM, the default is -1. 
+- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA), [GLM)](#GLM) Specify the number of training iterations. 
  
+- **Intercept**: [(GLM)](#GLM) To include a constant term in the model, check this checkbox. This option is selected by default. 
+
+- **Objective_epsilon**: [(GLM)](#GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
+
 - **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
+
+- **Gradient_epsilon**: [(GLM)](#GLM) (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
 - **Init**: [(K-Means](#Kmeans), [PCA)](#PCA) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
 
-  **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+  >**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+
+- **Offset_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
+
+- **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
@@ -407,19 +480,23 @@ The available options vary depending on the selected model. If an option is only
 
 - **Hidden**: [(DL)](#DL) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. The specified value(s) must be positive. 
 
-- **Epochs**: ([DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0. 
+- **Epochs**: ([DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction.  
 
 - **Variable_importances**: ([DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **Laplace**: [(Naïve Bayes)](#NB) Specify the Laplace smoothing parameter. The default value is 0. 
+- **Laplace**: [(Naïve Bayes)](#NB) Specify the Laplace smoothing parameter. 
 
-- **Min\_sdev**: [(Naïve Bayes)](#NB) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
+- **Min\_sdev**: [(Naïve Bayes)](#NB) Specify the minimum standard deviation to use for observations without enough data.  
 
-- **Eps\_sdev**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_sdev**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.  
 
-- **Min\_prob**: [(Naïve Bayes)](#NB) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
+- **Min\_prob**: [(Naïve Bayes)](#NB) Specify the minimum probability to use for observations without enough data.  
 
-- **Eps\_prob**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 0. 
+- **Eps\_prob**: [(Naïve Bayes)](#NB) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. 
+
+- **Compute_metrics**: [(Naïve Bayes)](#NB) To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction. 
+
+- **Non-negative**: [(GLM)](#GLM) To force coefficients to be non-negative, check this checkbox. 
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
@@ -428,32 +505,32 @@ The available options vary depending on the selected model. If an option is only
 **Advanced Options**
 
 
-- **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model (e.g., by a grid search).
+- **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
 
 - **Use\_all\_factor\_levels**: ([DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
-- **Train\_samples\_per\_iteration**: [(DL)](#DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2. The default is -2. 
+- **Train\_samples\_per\_iteration**: [(DL)](#DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2. 
 
 - **Adaptive_rate**: [(DL)](#DL) Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. If this option is enabled, the following parameters are ignored: `rate`, `rate_decay`, `rate_annealing`, `momentum_start`, `momentum_ramp`, `momentum_stable`, and `nesterov_accelerated_gradient`. 
 
-- **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1 and the default value is 0. 
+- **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1. 
 
-- **L1**: [(DL)](#DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. The default value is 0. 
+- **L1**: [(DL)](#DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. 
 
-- **L2**: [(DL)](#DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. The default value is 0.
+- **L2**: [(DL)](#DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
 
-- **Score_interval**: [(DL)](#DL) Specify the shortest time interval (in seconds) to wait between model scoring. The default value is 5. 
+- **Score_interval**: [(DL)](#DL) Specify the shortest time interval (in seconds) to wait between model scoring.  
 
-- **Score\_training\_samples**: [(DL)](#DL) Specify the number of training set samples for scoring. To use all training samples, enter 0. The default value is 10000. 
+- **Score\_training\_samples**: [(DL)](#DL) Specify the number of training set samples for scoring. To use all training samples, enter 0.  
 
-- **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) Specify the number of validation set samples for scoring. To use all validation set samples, enter 0. The default value is 0. This option is applicable to classification only. 
+- **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.  
 
-- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The default value is 0.1.
+- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring.
 
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
-   **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
+   >**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#DRF), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [Naïve Bayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
 - **Max\_confusion\_matrix\_size**: ([DRF](#DRF), [Naïve Bayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -461,51 +538,47 @@ The available options vary depending on the selected model. If an option is only
 
 - **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
 
-- **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2. The default value is 0.5. 
+- **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2.  
 
-- **Lambda**: [(GLM)](#GLM) Specify the regularization strength. There is no default value.  
+- **Lambda**: [(GLM)](#GLM) Specify the regularization strength.  
 
 - **Lambda_search**: [(GLM)](#GLM) Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
 
-- **Rate**: [(DL)](#DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. The default value is 0.005. Not applicable if **adaptive_rate** is enabled. 
+- **Rate**: [(DL)](#DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. Not applicable if **adaptive_rate** is enabled. 
 
-- **Rate_annealing**: [(DL)](#DL) Specify the learning rate annealing. The formula is rate/(1+rate\_annealing value \* samples). The default value is 10.000001. Not applicable if **adaptive_rate** is enabled.
+- **Rate_annealing**: [(DL)](#DL) Specify the learning rate annealing. The formula is rate/(1+rate\_annealing value \* samples). Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_start**: [(DL)](#DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. The default value is 0. Not applicable if **adaptive_rate** is enabled.
+- **Momentum_start**: [(DL)](#DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. The default value is 1000000. Not applicable if **adaptive_rate** is enabled.
+- **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_stable**: [DL](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
+- **Momentum_stable**: [(DL)](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
 
 - **Nesterov\_accelerated\_gradient**: [(DL)](#DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. Not applicable is **adaptive_rate** is enabled. 
 
 - **Hidden\_dropout\_ratios**: [(DL)](#DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer, each value between 0 and 1 (exclusive). There is no default value. This option is applicable only if *TanhwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list. 
 
-
-
 **Expert Options**
-
-- **Keep_cross_validation_splits**: [(DL)](#DL) Check this checkbox to keep the cross-validation frames. This option is not selected by default.
 
 - **Overwrite\_with\_best\_model**: [(DL)](#DL) Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
-- **Target\_ratio\_comm\_to\_comp**: [(DL)](#DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). The default value is 0.02. 
+- **Target\_ratio\_comm\_to\_comp**: [(DL)](#DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning).  
 
-- **Rho**: [(DL)](#DL) Specify the adaptive learning rate time decay factor. The default value is 0.99. This option is only applicable if **adaptive_rate** is enabled. 
+- **Rho**: [(DL)](#DL) Specify the adaptive learning rate time decay factor. This option is only applicable if **adaptive_rate** is enabled. 
 
-- **Epsilon**: [(DL)](#DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. The default value is 1.0E-8. This option is only applicable if **adaptive_rate** is enabled. 
+- **Epsilon**: [(DL)](#DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option is only applicable if **adaptive_rate** is enabled. 
 
-- **Max_W2**: [(DL)](#DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). The default value is infinity. 
+- **Max_W2**: [(DL)](#DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). 
 
-- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). The default is Uniform Adaptive. If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
+- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
  
-- **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. The default value is 1.0. If Uniform Adaptive is selected as the **initial\_weight\_distribution**, the **initial\_weight\_scale** parameter is not applicable.
+- **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. If Uniform Adaptive is selected as the **initial\_weight\_distribution**, the **initial\_weight\_scale** parameter is not applicable.
 
-- **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1. The default value is 0.0. 
+- **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1.  
 
-- **Max\_hit\_ratio\_k**: [(DL,)](#DL)[GLM](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0. The default value is 10. 
+- **Max\_hit\_ratio\_k**: [(DL](#DL),[GLM)](#GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0.  
 
-- **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1. The default value is 0.000001. 
+- **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.  
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -521,7 +594,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Shuffle\_training\_data**: [(DL)](#DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip or MeanImputation). The default value is MeanImputation. 
+- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip or MeanImputation). 
 
 - **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
@@ -529,21 +602,23 @@ The available options vary depending on the selected model. If an option is only
 
 - **Col_major**: [(DL)](#DL) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
-- **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. The default value is 0. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
+- **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
-- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. The default value is 0. 
+- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. 
 
-- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. The default is unlimited.
+- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. 
 
 - **Reproducible**: [(DL)](#DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
 
 - **Export\_weights\_and\_biases**: [(DL)](#DL) To export the neural network weights and biases as H2O frames, check this checkbox. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+
+- **Max\_after\_balance\_size**: [(DRF](#DRF), [GBM](#GBM), [DL)](#DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is -1. 
+- **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  
 
 - **Max\_active\_predictors**: [(GLM)](#GLM) Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
@@ -566,11 +641,10 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
  A summary of the model's parameters displays. To display more details, click the **Show All Parameters** button. 
  
-   **NOTE**: The **Clone this model...** button will be supported in a future version. 
- 
+
 To delete a model, click the **Delete** button. 
 
-To generate a POJO to be able to use the model outside of H2O, click the **Preview POJO** button. 
+To generate a POJO to be able to use the model outside of H2O, click the **Download POJO** button. 
 
 To learn how to make predictions, continue to the next section. 
 
@@ -580,7 +654,7 @@ To learn how to make predictions, continue to the next section.
 # ... Making Predictions
 
 After creating your model, click the key link for the model, then click the **Predict** button. 
-Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
+Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame:** menu, then click the **Predict** button. 
 
  ![Making Predictions](images/Flow_makePredict.png)
 
@@ -602,7 +676,7 @@ You can also view predictions by clicking the drop-down **Score** menu and selec
 <a name="ViewFrame"></a>
 ## Viewing Frames
 
-To view a specific frame, click the "Key" link for the specified frame, or enter `getFrameSummary "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
+To view a specific frame, click the "Key" link for the specified frame, or enter `getFrameSummary "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`).
 
  ![Viewing specified frame](images/Flow_getFrame.png) 
 
@@ -654,11 +728,12 @@ Datasets can be split within Flow for use in model training and testing.
  ![splitFrame cell](images/Flow_splitFrame.png)
 
 0. To split a frame, click the **Assist Me** button, then click **splitFrame**.
-  **Note**: You can also click the drop-down **Data** menu and select **Split Frame...**.
+  
+  >**Note**: You can also click the drop-down **Data** menu and select **Split Frame...**.
 0. From the drop-down **Frame:** list, select the frame to split. 
 0. In the second **Ratio** entry field, specify the fractional value to determine the split. The first **Ratio** field is automatically calculated based on the values entered in the second **Ratio** field. 
    
-  **Note**: Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
+  >**Note**: Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
 0. In the **Key** entry field, specify a name for the new frame. 
 0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
 0. Click the **Create** button.  
@@ -667,6 +742,8 @@ Datasets can be split within Flow for use in model training and testing.
 ### Creating Frames
 
 To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
+
+  ![Flow - Creating Frames](images/Flow_CreateFrame.png)
 
 ---
 
@@ -690,7 +767,9 @@ Select the type of plot (point, path, or rect) from the drop-down **Type** menu,
 
 Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
 
-**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
+ ![Flow - Plotting Frames](images/Flow_Plot.png)
+
+>**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
 
 ---
 
@@ -720,18 +799,18 @@ To use a clip in a workflow, click the "Clips" tab in the sidebar on the right.
 
 All saved clips, including the default system clips (such as `assist`, `importFiles`, and `predict`), are listed. Clips you have created are listed under the "My Clips" heading. To select a clip to insert, click the circular button to the left of the clip name. To delete a clip, click the trashcan icon to right of the clip name. 
 
-**NOTE**: The default clips listed under "System" cannot be deleted. 
+>**NOTE**: The default clips listed under "System" cannot be deleted. 
 
 Deleted clips are stored in the trash. To permanently delete all clips in the trash, click the **Empty Trash** button. 
 
-**NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
+>**NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
 ---
 
 <a name="Outline"></a>
 ## Viewing Outlines
 
-The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
+The **Outline** tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
 
 - To jump to a specific cell, click the cell description. 
 - To delete a cell, select it and press the X key on your keyboard. 
@@ -743,7 +822,7 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 <a name="SaveFlow"></a>
 ## Saving Flows
 
-You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
+You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save Flow." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
 
  ![Renaming Flows](images/Flow_rename.png)
@@ -774,20 +853,20 @@ where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified locatio
 
 ### Saving Flows on a Hadoop cluster
 
-**Note**: If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
+If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using `-flow_dir`:
 
-`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
+`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
 
 The location specified in `flow_dir` may be either an hdfs or regular filesystem directory.  If the directory does not exist, it will be created the first time you save a flow.
 
 ### Copying Flows
 
-To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
+To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to `Copy of <FlowName>` (where `<FlowName>` is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save Flow**, or [rename it](#SaveFlow) before saving. 
 
 
 ### Downloading Flows
 
-After saving a flow as a notebook, click the **Flow** menu, then select **Download...**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
+After saving a flow as a notebook, click the **Flow** menu, then select **Download this Flow**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as `<filename>.flow`, where `<filename>` is the name specified when the flow was saved. 
 
 **Caution**: You must have an active internet connection to download flows. 
 
@@ -799,12 +878,13 @@ To load a saved flow, click the **Flows** tab in the sidebar at the right. In th
 
 After clicking **Load Notebook**, the saved flow is loaded. 
 
-To load an exported flow, click the **Flow** menu and select **Open...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button. 
+To load an exported flow, click the **Flow** menu and select **Open Flow...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button. 
 
  ![Open Flow](images/Flow_Open.png)
 
-**Notes**: 
-- Only exported flows using the default .flow filetype are supported. Other filetypes will not open. 
+>**Notes**: 
+
+>- Only exported flows using the default .flow filetype are supported. Other filetypes will not open. 
 - If the current notebook has the same name as the selected file, a pop-up confirmation appears to confirm that the current notebook should be overwritten. 
 
 ---
@@ -814,7 +894,7 @@ To load an exported flow, click the **Flow** menu and select **Open...**. In the
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
-**NOTE**: To view the current version, click the **Help** menu, then click **About**. 
+>**NOTE**: To view the current H2O Flow version, click the **Help** menu, then click **About**. 
 
 ## Viewing Cluster Status
 
@@ -824,7 +904,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
   
-  **Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
+  >**Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
 - H2O version
 - Number of used and available nodes
 - When the cluster was created
@@ -863,6 +943,7 @@ To view the logs for a specific node, select it from the drop-down **Select Node
 
 ---
 
+<a name="DL_Logs"></a>
 ## Downloading Logs
 
 To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to [support@h2o.ai](mailto:support@h2o.ai) for issue resolution. 
@@ -916,8 +997,39 @@ To obtain the most recent information, click the **Refresh** button.
 
 ---
 
+##Reporting Issues
+
+If you experience an error with Flow, you can submit a JIRA ticket to notify our team. 
+
+0. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.  
+0. Click the **Help** menu, then click **Report an issue**. This will open our JIRA page where you can file your ticket.  
+0. Click the **Create** button at the top of the JIRA page. 
+0. Attach the log file from the first step, write a description of the error you experienced, then click the **Create** button at the bottom of the page. Our team will work to resolve the issue and you can track the progress of your ticket in JIRA. 
+
+---
+
+##Requesting Help
+
+If you have a Google account, you can submit a request for assistance with H2O on our Google Groups page, [H2Ostream](https://groups.google.com/forum/#!forum/h2ostream). 
+
+To access H2Ostream from Flow:
+
+0. Click the **Help** menu.
+0. Click **Forum/Ask a question**. 
+0. Click the red **New topic** button.
+0. Enter your question and click the red **Post** button. If you are requesting assistance for an error you experienced, be sure to include your [logs](#DL_Logs). 
+
+
+You can also email your question to [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
+
+
+---
+
+
+
 ## Shutting Down H2O
 
 To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 
 
+d

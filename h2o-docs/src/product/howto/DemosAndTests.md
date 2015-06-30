@@ -24,7 +24,7 @@ Tests exercise every capability of H2O in detail using appropriate datasets and 
 
 ###Scala
 
-- [Scala Demos](https://github.com/h2oai/h2o-3/tree/master/h2o-scala/src): Contains Scala demos, including H2OFrame, MRTask, and MapReduce. 
+- [Scala Demos](https://github.com/h2oai/sparkling-water/tree/master/examples/scripts): Contains Scala demos used at meetups to demonstrate Sparkling Water. 
 
 
 ###Java

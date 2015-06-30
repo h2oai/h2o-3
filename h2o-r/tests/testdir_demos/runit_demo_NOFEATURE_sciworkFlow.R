@@ -21,19 +21,23 @@ print("Print quantile of a column")
 print(quantile(pros.hex$AGE,probs=seq(0,1,.1)))
 
 print("split frame into test train")
- a <- h2o.splitFrame(pros.hex,ratios=c(.2),shuffle=T)
-print("print dimension and assign to test and train")
-print(dim(a[[1]]))
-print(dim(a[[2]]))
-pros.train <- a[[2]]
-pros.test <- a[[1]]
+#  a <- h2o.splitFrame(pros.hex,ratios=c(.2),shuffle=T)
+# print("print dimension and assign to test and train")
+# print(dim(a[[1]]))
+# print(dim(a[[2]]))
+# pros.train <- a[[2]]
+# pros.test <- a[[1]]
+sid <- h2o.runif(pros.hex)
+pros.train <- pros.hex[sid > 0.2, ]
+pros.test <- pros.hex[sid <= 0.2, ]
 
 myX <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
 myY <- "CAPSULE"
 
 #GLM
-print("Build GLM model")   
-my.glm <- h2o.glm(x=myX, y=myY, training_frame=pros.train, family="binomial",standardize=T,use_all_factor_levels=TRUE,lambda_search=T)
+print("Build GLM model")
+my.glm <- h2o.glm(x=myX, y=myY, training_frame=pros.train, family="binomial",standardize=T,
+  lambda_search=T) #TODO: something return_all_lambdas = T?
 print(my.glm)
 
 print("This is the best model")
@@ -71,13 +75,13 @@ print(glm_best_model)
 
 #GBM
 print("Grid search gbm")
-pros.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", data = pros.train, n.trees = c(50,100),n.minobsinnode=1, 
-                    interaction.depth = c(2,3), shrinkage = c(0.01,.001), n.bins = c(20), importance = F) 
+pros.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", data = pros.train, n.trees = c(50,100),n.minobsinnode=1,
+                    interaction.depth = c(2,3), shrinkage = c(0.01,.001), n.bins = c(20), importance = F)
 pros.rf <- h2o.randomForest(x=myX,y=myY,data=pros.train,classification=T,ntree=c(5,10),depth=10,mtries=c(2,5),importance=F, type = "BigData")
 print(pros.gbm)
 pros.gbm@sumtable
 print("number of models built")
-num_models <- length(pros.gbm@sumtable) 
+num_models <- length(pros.gbm@sumtable)
 print(num_models)
 
 print("Scoring")
@@ -86,17 +90,17 @@ for ( i in 1:num_models ) {
   model <- pros.gbm@model[[i]]
   pred <- predict( model, pros.test )
   perf <- h2o.performance ( pred$'1', pros.test$CAPSULE, measure="F1" )
-  
+
   print ( paste ( pros.gbm@sumtable[[i]]$model_key, " trees:", pros.gbm@sumtable[[i]]$n.trees,
                   " depth:", pros.gbm@sumtable[[i]]$interaction.depth,
                   " shrinkage:", pros.gbm@sumtable[[i]]$shrinkage,
-                  " min row: ", pros.gbm@sumtable[[i]]$n.minobsinnode, 
+                  " min row: ", pros.gbm@sumtable[[i]]$n.minobsinnode,
                   " bins:", pros.gbm@sumtable[[i]]$nbins,
                   " AUC:", round(perf@model$AUC, digits=4), sep=''), quote=F)
 }
 
 print(" Performance measure on a test set ")
-model <- pros.gbm@model[[1]] #  my.glm@models[[80]], pros.rf@model[[1]] 
+model <- pros.gbm@model[[1]] #  my.glm@models[[80]], pros.rf@model[[1]]
 pred <- predict ( model, pros.test )
 perf <- h2o.performance ( pred$'1', pros.test$CAPSULE, measure="F1" )
 print(perf)

@@ -28,6 +28,9 @@ import java.util.Arrays;
 
 /**
  * Generalized Low Rank Models
+ * This is an algorithm for dimensionality reduction of a dataset. It is a general, parallelized
+ * optimization algorithm that applies to a variety of loss and regularization functions.
+ * Categorical columns are handled by expansion into 0/1 indicator columns for each level.
  * <a href = "http://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Models</a>
  * @author anqi_fu
  */
@@ -47,7 +50,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   @Override public Job<GLRMModel> trainModel() {
-    return start(new GLRMDriver(), 0);
+    return start(new GLRMDriver(), _parms._max_iterations);
   }
 
   @Override public ModelCategory[] can_build() {
@@ -57,7 +60,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
 
   public enum Initialization {
-    SVD, PlusPlus, User
+    Random, SVD, PlusPlus, User
   }
 
   // Called from an http request
@@ -85,6 +88,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     int k_min = (int) Math.min(_train.numCols(), _train.numRows());
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
+      if (_parms._init != GLRM.Initialization.User)
+        error("init", "init must be 'User' if providing user-specified points");
+
       if (_parms._user_points.get().numCols() != _train.numCols())
         error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       else if (_parms._user_points.get().numRows() != _parms._k)
@@ -186,13 +192,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
         centers_exp = expandCats(centers, dinfo);
 
+      } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
+        return ArrayUtils.gaussianArray(_parms._k, _ncolY);
+
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
-        parms._useAllFactorLevels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
+        parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
@@ -289,8 +298,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return regularizedCholesky(gram, 10);
     }
 
-    // Recover eigenvalues and eigenvectors of XY
-    public void recoverPCA(GLRMModel model, DataInfo xinfo) {
+    // Recover singular values and eigenvectors of XY
+    public void recoverSVD(GLRMModel model, DataInfo xinfo) {
       // NOTE: Gram computes X'X/n where n = nrow(A) = number of rows in training set
       GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
       Cholesky xxchol = regularizedCholesky(xgram._gram);
@@ -307,41 +316,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Eigenvectors are V'Z' = (ZV)'
       Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
-      model._output._eigenvectors_raw = eigvec.getArray();
+      model._output._eigenvectors = eigvec.getArray();
 
-      String[] colTypes = new String[_parms._k];
-      String[] colFormats = new String[_parms._k];
-      String[] colHeaders = new String[_parms._k];
-      Arrays.fill(colTypes, "double");
-      Arrays.fill(colFormats, "%5f");
-      for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
-      model._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
-              colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], model._output._eigenvectors_raw);
-
-      // Calculate standard deviations from \Sigma
-      // Note: Singular values ordered in weakly descending order by algorithm
-      double[] sval = rrsvd.getSingularValues();
-      double[] sdev = new double[sval.length];
-      double[] pcvar = new double[sval.length];
-      double tot_var = 0;
-      double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
-      for(int i = 0; i < sval.length; i++) {
-        sdev[i] = dfcorr * sval[i];   // Correct since degrees of freedom = n-1
-        pcvar[i] = sdev[i] * sdev[i];
-        tot_var += pcvar[i];
-      }
-      model._output._std_deviation = sdev;
-
-      // Calculate proportion of variance explained
-      double[] prop_var = new double[sval.length];    // Proportion of total variance
-      double[] cum_var = new double[sval.length];    // Cumulative proportion of total variance
-      for(int i = 0; i < sval.length; i++) {
-        prop_var[i] = pcvar[i] / tot_var;
-        cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
-      }
-      model._output._pc_importance = new TwoDimTable("Importance of components", null,
-              new String[] { "Standard deviation", "Proportion of Variance", "Cumulative Proportion" },
-              colHeaders, colTypes, colFormats, "", new String[3][], new double[][] { sdev, prop_var, cum_var });
+      // Singular values ordered in weakly descending order by algorithm
+      model._output._singular_vals = rrsvd.getSingularValues();
     }
 
     @Override protected void compute2() {
@@ -350,13 +328,30 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Frame fr = null, x = null;
 
       try {
+        init(true);   // Initialize parameters
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
-        init(true);
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_key);
+
+        // Save adapted frame info for scoring later
+        tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
+        DKV.put(tinfo._key, tinfo);
+
+        // Save standardization vectors for use in scoring later
+        model._output._normSub = tinfo._normSub == null ? new double[tinfo._nums] : tinfo._normSub;
+        if(tinfo._normMul == null) {
+          model._output._normMul = new double[tinfo._nums];
+          Arrays.fill(model._output._normMul, 1.0);
+        } else
+          model._output._normMul = tinfo._normMul;
+        model._output._permutation = tinfo._permutation;
+        model._output._nnums = tinfo._nums;
+        model._output._ncats = tinfo._cats;
+        model._output._catOffsets = tinfo._catOffsets;
+        model._output._names_expanded = tinfo.coefNames();
 
         // 0) a) Initialize X matrix to random numbers
         // Jam A and X into a single frame for distributed computation
@@ -365,22 +360,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
         for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeRand(_parms._seed);
         fr = new Frame(null, vecs);
-        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
-
-        // Save standardization vectors for use in scoring later
-        model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
-        if(dinfo._normMul == null) {
-          model._output._normMul = new double[dinfo._nums];
-          Arrays.fill(model._output._normMul, 1.0);
-        } else
-          model._output._normMul = dinfo._normMul;
 
         // 0) b) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false);
-        DKV.put(tinfo._key, tinfo);
         double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
         // Compute initial objective function
@@ -398,7 +383,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(dinfo, _parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
           xtsk.doAll(dinfo._adaptedFrame);
-
+          
           // 2) Update Y matrix given fixed X
           UpdateY ytsk = new UpdateY(dinfo, _parms, yt, step/_ncolA, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
           double[][] ytnew = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
@@ -431,14 +416,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Vec[] xvecs = new Vec[_ncolX];
         for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
         x = new Frame(_parms._loading_key, null, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false);
+        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;
 
         model._output._archetypes = yt;
         model._output._step_size = step;
-        if (_parms._recover_pca) recoverPCA(model, xinfo);
+        if (_parms._recover_svd) recoverSVD(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
         // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);
@@ -588,7 +573,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Numeric columns
         for(int j = _dinfo._cats; j < _ncolA; j++) {
-          int yidx = idx_ynum(j-_dinfo._cats,_dinfo);
+          int js = j - _dinfo._cats;
+          int yidx = idx_ynum(js,_dinfo);
           a[j] = cs[j].atd(row);
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
@@ -598,7 +584,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xold(cs,k,_ncolA).atd(row) * _yt[yidx][k];
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = _parms.lgrad(xy, (a[j] - _normSub[j]) * _normMul[j]);
+          double weight = _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             grad[k] += weight * _yt[yidx][k];
         }
@@ -621,9 +607,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Numeric columns
         for(int j = _dinfo._cats; j < _ncolA; j++) {
+          int js = j - _dinfo._cats;
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          double xy = ArrayUtils.innerProduct(xnew, _yt[idx_ynum(j-_dinfo._cats,_dinfo)]);
-          _loss += _parms.loss(xy, a[j]);
+          double xy = ArrayUtils.innerProduct(xnew, _yt[idx_ynum(js,_dinfo)]);
+          _loss += _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
         }
       }
     }
@@ -697,7 +684,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Numeric columns
       for(int j = _dinfo._cats; j < _ncolA; j++) {
-        int yidx = idx_ynum(j-_dinfo._cats,_dinfo);
+        int js = j - _dinfo._cats;
+        int yidx = idx_ynum(js,_dinfo);
 
         // Compute gradient of objective at column
         for(int row = 0; row < cs[0]._len; row++) {
@@ -710,7 +698,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold[yidx][k];
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = _parms.lgrad(xy, (a - _normSub[j]) * _normMul[j]);
+          double weight = _parms.lgrad(xy, (a - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
         }
@@ -796,9 +784,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Inner product x_i * y_j
           double xy = 0;
+          int js = j - _dinfo._cats;
           for(int k = 0; k < _ncolX; k++)
-            xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ynum(j-_dinfo._cats,_dinfo)][k];
-          _loss += _parms.loss(xy, (a - _normSub[j]) * _normMul[j]);
+            xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ynum(js,_dinfo)][k];
+          _loss += _parms.loss(xy, (a - _normSub[js]) * _normMul[js]);
         }
 
         // Calculate regularization term for old X if requested
@@ -813,7 +802,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // Computes XY where X is n by k, Y is k by p, and k <= p
-  //  Resulting matrix Z = XY will have dimensions n by p
+  // The resulting matrix Z = XY will have dimensions n by p
   private static class BMulTask extends FrameTask<BMulTask> {
     double[][] _yt;   // _yt = Y' (transpose of Y)
 

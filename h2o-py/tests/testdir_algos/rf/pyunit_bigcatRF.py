@@ -18,8 +18,8 @@ def bigcatRF(ip,port):
     #bigcat.summary()
 
     # Train H2O DRF Model:
-    #Log.info("H2O DRF (Naive Split) with parameters:\nclassification = TRUE, ntree = 1, depth = 1, nbins = 100\n")
-    model = h2o.random_forest(x=bigcat[["X"]], y=bigcat["y"], ntrees=1, max_depth=1, nbins=100)
+    #Log.info("H2O DRF (Naive Split) with parameters:\nclassification = TRUE, ntree = 1, depth = 1, nbins = 100, nbins_cats=10\n")
+    model = h2o.random_forest(x=bigcat[["X"]], y=bigcat["y"], ntrees=1, max_depth=1, nbins=100, nbins_cats=10)
     model.show()
 
 if __name__ == "__main__":

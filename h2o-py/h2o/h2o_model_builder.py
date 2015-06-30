@@ -3,9 +3,9 @@ This file builds H2O model
 """
 
 from connection import H2OConnection
-from frame2      import H2OFrame
+from frame      import H2OFrame
 from job        import H2OJob
-import h2o
+
 
 # Response variable model building
 def supervised_model_build(x,y,validation_x,validation_y,algo_url,kwargs):
@@ -32,17 +32,16 @@ def unsupervised_model_build(x,validation_x,algo_url,kwargs):
 # Sanity check features and response variable.
 def _check_frame(x,y,response):
   if not isinstance(x,H2OFrame):
-    if not isinstance(x,list):
-      raise ValueError("`x` must be an H2OFrame or a list of H2OVecs. Got: " + str(type(x)))
-    x = H2OFrame(vecs=x)
-  if y is not None:
-    # if not isinstance(y,H2OVec):
-    #   raise ValueError("`y` must be an H2OVec. Got: " + str(type(y)))
-    for v in x._vecs:
-      if y._name == v._name:
-        raise ValueError("Found response "+y._name+" in training `x` data")
-    x[response._name] = y
+    if not isinstance(x,list): raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
+  if y is not None and not isinstance(y,H2OFrame): raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))
+  if y is not None: x[response._col_names[0]] = y
   return x
+
+# Add the weights column to the training and/or validation data
+def _add_weights_col(target, source, weights_column):
+  if not isinstance(weights_column, str): raise ValueError("`weights_column` must be a column name, but got "
+                                                           "{0}".format(weights_column))
+  target[weights_column] = source[weights_column]
 
 # Build an H2O model
 def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
@@ -55,20 +54,31 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
         algo_url="deeplearning"
   if not x:  raise ValueError("Missing features")
   x = _check_frame(x,y,y)
-  if validation_x:
-    validation_x = _check_frame(validation_x,validation_y,y)
+  if validation_x is not None: validation_x = _check_frame(validation_x,validation_y,y)
+
+  if "weights_column" in kwargs.keys():
+    # training_frame
+    if kwargs["weights_column"] not in x._col_names:
+      if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `weights`"
+                                                                 "not part of `x`")
+      _add_weights_col(x, kwargs["training_frame"], kwargs["weights_column"])
+      assert kwargs["weights_column"] in x._col_names
+
+    # validation_frame
+    if validation_x is not None:
+      if kwargs["weights_column"] not in validation_x._col_names:
+        if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
+                                                                     "`weights` not part of `validation_x`")
+        _add_weights_col(validation_x, kwargs["validation_frame"], kwargs["weights_column"])
+        assert kwargs["weights_column"] in validation_x._col_names
 
   # Send frame descriptions to H2O cluster
-  train_key = x.send_frame()
-  kwargs['training_frame']=train_key
-  if validation_x is not None:
-    valid_key = validation_x.send_frame()
-    kwargs['validation_frame']=valid_key
+  kwargs['training_frame']=x._id
+  if validation_x is not None: kwargs['validation_frame']=validation_x._id
 
-  if y:
-    kwargs['response_column']=y._name
+  if y is not None: kwargs['response_column']=y._col_names[0]
 
-  kwargs = dict([(k, kwargs[k]) for k in kwargs if kwargs[k] is not None])
+  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
 
   # launch the job and poll
   job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
@@ -94,14 +104,11 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
     from model.autoencoder import H2OAutoEncoderModel
     model = H2OAutoEncoderModel(job.dest_key,model_json)
 
+  elif model_type=="DimReduction":
+    from model.dim_reduction import H2ODimReductionModel
+    model = H2ODimReductionModel(job.dest_key,model_json)
+
   else:
     print model_type
     raise NotImplementedError
-
-  # Cleanup
-  h2o.removeFrameShallow(train_key)
-  if validation_x:
-    h2o.removeFrameShallow(valid_key)
-
   return model
-

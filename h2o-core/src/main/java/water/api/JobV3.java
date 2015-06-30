@@ -3,6 +3,7 @@ package water.api;
 import water.*;
 import water.api.KeyV3.JobKeyV3;
 import water.util.DocGen.HTML;
+import water.util.Log;
 import water.util.PojoUtils;
 import water.util.PrettyPrint;
 import water.util.ReflectionUtils;
@@ -44,7 +45,16 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
 
   // Version&Schema-specific filling into the impl
   @SuppressWarnings("unchecked")
-  @Override public J createImpl( ) { return (J) new Job(key.key(), description); }
+  @Override public J createImpl( ) {
+    try {
+      Key k = key == null?Key.make():key.key();
+      return this.getImplClass().getConstructor(new Class[]{Key.class,String.class}).newInstance(k,description);
+    }catch (Exception e) {
+      String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
+      Log.err(msg + ": " + e);
+      throw H2O.fail(msg, e);
+    }
+  }
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl(Job job) {

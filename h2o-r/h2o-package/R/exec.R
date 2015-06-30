@@ -205,4 +205,3 @@ function(ast, id) {
   gc()
   .h2o.getGCFrame(id)
 }
-

@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.VarImp;
 import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -30,15 +31,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=tmp.length;
-    for( int i=0; i<tmp.length; i++ )
-      tmp[i] = chks[i].atd(row_in_chunk);
-    return score0(tmp,preds);
-  }
-
-  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
+    super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
     if( _parms._distribution == GBMParameters.Family.bernoulli ) {
       double fx = preds[1] + _output._init_f;
       preds[2] = 1.0/(1.0+Math.exp(-fx));

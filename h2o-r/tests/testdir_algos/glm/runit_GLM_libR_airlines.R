@@ -80,14 +80,14 @@ test.LiblineaR.airlines <- function(conn) {
   }
   
   Log.info("Importing Airlines test/train data...\n")
-  exdir         <- locate("smalldata/airlines/unzipped")
+  exdir         <- locate("Rsandbox_runit_GLM_libR_airlines.R")
   airlinesTrain <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
   airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
   aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
   aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
   trainhex      <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
   testhex       <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
-  remove_exdir(exdir)
+  # remove_exdir(exdir)
   
   print(trainhex)
 

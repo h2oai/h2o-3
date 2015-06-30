@@ -43,7 +43,7 @@ def dim_checks(ip,port):
 
   h2oColAmpFive = h2o_slice & 5
 
-  assert len(h2oColAmpFive) == h2o_rows, "expected the number of rows to remain unchanged"
+  assert h2oColAmpFive.nrow() == h2o_rows, "expected the number of rows to remain unchanged"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, dim_checks)

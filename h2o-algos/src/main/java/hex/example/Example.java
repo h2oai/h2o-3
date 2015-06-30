@@ -1,7 +1,9 @@
 package hex.example;
 
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SupervisedModelBuilder;
+import hex.example.ExampleModel.ExampleOutput;
+import hex.example.ExampleModel.ExampleParameters;
 import hex.schemas.ExampleV3;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O.H2OCountedCompleter;
@@ -15,7 +17,7 @@ import java.util.Arrays;
 /**
  *  Example model builder... building a trivial ExampleModel
  */
-public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
+public class Example extends ModelBuilder<ExampleModel,ExampleParameters,ExampleOutput> {
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{

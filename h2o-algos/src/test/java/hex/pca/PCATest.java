@@ -1,5 +1,6 @@
 package hex.pca;
 
+import hex.pca.PCAModel.PCAParameters;
 import hex.DataInfo;
 import hex.SplitFrame;
 import org.junit.Assert;
@@ -9,7 +10,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.concurrent.ExecutionException;
 
@@ -47,6 +47,7 @@ public class PCATest extends TestUtil {
           parms._k = 4;
           parms._transform = std;
           parms._max_iterations = 1000;
+          parms._pca_method = PCAParameters.Method.Power;
 
           PCA job = new PCA(parms);
           try {
@@ -70,8 +71,8 @@ public class PCATest extends TestUtil {
           throw new RuntimeException(t);
         } finally {
           if( model != null ) {
-            if (model._parms._keep_loading)
-              model._parms._loading_key.get().delete();
+            if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
+              model._output._loading_key.get().delete();
             model.delete();
           }
         }
@@ -98,6 +99,7 @@ public class PCATest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
+      parms._pca_method = PCAParameters.Method.GramSVD;
 
       try {
         job = new PCA(parms);
@@ -125,8 +127,8 @@ public class PCATest extends TestUtil {
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
       if (model != null) {
-        if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -152,7 +154,8 @@ public class PCATest extends TestUtil {
       parms._train = train._key;
       parms._k = 7;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._useAllFactorLevels = true;
+      parms._use_all_factor_levels = true;
+      parms._pca_method = PCAParameters.Method.Power;
 
       try {
         job = new PCA(parms);
@@ -180,8 +183,8 @@ public class PCATest extends TestUtil {
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
       if (model != null) {
-        if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -197,7 +200,7 @@ public class PCATest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       SplitFrame sf = new SplitFrame(Key.make());
       sf.dataset = fr;
-      sf.ratios = new double[] { 0.5 };
+      sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
 
       // Invoke the job
@@ -210,7 +213,8 @@ public class PCATest extends TestUtil {
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._k = 4;
-      parms._max_iterations = 10;
+      parms._max_iterations = 1000;
+      parms._pca_method = PCAParameters.Method.GramSVD;
 
       try {
         job = new PCA(parms);
@@ -231,8 +235,8 @@ public class PCATest extends TestUtil {
       if( tr  != null ) tr .delete();
       if( te  != null ) te .delete();
       if (model != null) {
-        if (model._parms._keep_loading)
-          model._parms._loading_key.get().delete();
+        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
+          model._output._loading_key.get().delete();
         model.delete();
       }
     }

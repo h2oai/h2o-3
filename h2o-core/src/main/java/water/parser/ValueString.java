@@ -27,19 +27,19 @@ public class ValueString extends Iced implements Comparable<ValueString> {
 
    @Override public int hashCode(){
      int hash = 0;
-     int n = get_off() + get_length();
-     for (int i = get_off(); i < n; ++i)
-       hash = 31 * hash + get_buf()[i];
+     int n = getOffset() + length();
+     for (int i = getOffset(); i < n; ++i)
+       hash = 31 * hash + getBuffer()[i];
      return hash;
    }
 
    void addChar(){_len++;}
 
    void addBuff(byte [] bits){
-     byte [] buf = new byte[get_length()];
-     int l1 = get_buf().length-get_off();
-     System.arraycopy(get_buf(), get_off(), buf, 0, l1);
-     System.arraycopy(bits, 0, buf, l1, get_length()-l1);
+     byte [] buf = new byte[length()];
+     int l1 = getBuffer().length- getOffset();
+     System.arraycopy(getBuffer(), getOffset(), buf, 0, l1);
+     System.arraycopy(bits, 0, buf, l1, length()-l1);
      _off = 0;
      _buf = buf;
    }
@@ -80,20 +80,20 @@ public class ValueString extends Iced implements Comparable<ValueString> {
   @Override public boolean equals(Object o){
     if(o instanceof ValueString) {
       ValueString str = (ValueString) o;
-      if (str.get_length() != get_length()) return false;
-      for (int i = 0; i < get_length(); ++i)
-        if (get_buf()[get_off() + i] != str.get_buf()[str.get_off() + i]) return false;
+      if (str.length() != length()) return false;
+      for (int i = 0; i < length(); ++i)
+        if (getBuffer()[getOffset() + i] != str.getBuffer()[str.getOffset() + i]) return false;
       return true;
     } else if (o instanceof String) {
       String str = (String) o;
-      if (str.length() != get_length()) return false;
-      for (int i = 0; i < get_length(); ++i)
-        if (get_buf()[get_off() + i] != str.charAt(i)) return false;
+      if (str.length() != length()) return false;
+      for (int i = 0; i < length(); ++i)
+        if (getBuffer()[getOffset() + i] != str.charAt(i)) return false;
       return true;
     }
     return false; //FIXME find out if this is required for some case or if an exception can be thrown
   }
-  public final byte [] get_buf() {return _buf;}
-  public final int get_off() {return _off;}
-  public final int get_length() {return _len;}
+  public final byte [] getBuffer() {return _buf;}
+  public final int getOffset() {return _off;}
+  public final int length() {return _len;}
 }

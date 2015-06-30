@@ -1,8 +1,9 @@
-import sys, os, timeit
+import sys, os, timeit,time
 sys.path.insert(1, "../../../h2o-py")
 import h2o
 
 def s3timings(ip, port):
+  t = time.time()
   # connect to cluster
   h2o.init(ip, port)
 
@@ -58,7 +59,9 @@ def s3timings(ip, port):
   arc_first   =   arc_run.timeit(number=1)
 
   # Clear kvstore and run again
+  s = time.time()
   h2o.remove_all()
+  print "Elapsed Time for RemoveAll: " + str(time.time() - s) + " (s)."
   air_second   =   air_run.timeit(number=1)
   bigx_second  =  bigx_run.timeit(number=1)
   higg_second  =  higg_run.timeit(number=1)
@@ -75,6 +78,10 @@ def s3timings(ip, port):
   print("KDD Cup98: " + str(cup_first) + " vs " + str(cup_second))
   print("Mnist: " + str(mnist_first) + " vs " + str(mnist_second))
   print("Arcene: " + str(arc_first) + " vs " + str(arc_second))
+  s = time.time()
+  h2o.remove_all()
+  print "Elapsed Time for RemoveAll: " + str(time.time() - s) + " (s)."
+  print "Exiting scope... Test elapsed time: " + str(time.time() - t) + " (s)."
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, s3timings)

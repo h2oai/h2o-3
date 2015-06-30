@@ -394,10 +394,7 @@ public final class PersistHdfs extends Persist {
       FileStatus[] arr1 = fs.listStatus(p);
       PersistEntry[] arr2 = new PersistEntry[arr1.length];
       for (int i = 0; i < arr1.length; i++) {
-        arr2[i] = new PersistEntry();
-        arr2[i]._name = arr1[i].getPath().getName();
-        arr2[i]._size = arr1[i].getLen();
-        arr2[i]._timestamp_millis = arr1[i].getModificationTime();
+        arr2[i] = new PersistEntry(arr1[i].getPath().getName(), arr1[i].getLen(), arr1[i].getModificationTime());
       }
       return arr2;
     }

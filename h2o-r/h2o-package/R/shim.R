@@ -645,19 +645,19 @@ h2o.shim <- function(enable = TRUE) {
       model$auc <- model$AUC
     }
     if(identical(algo, "deeplearning")) {
-      model$train_class_error <- model$training_metrics$MSE
-      model$valid_class_error <- model$validation_metrics$MSE
+      model$train_class_error <- model@training_metrics$MSE
+      model$valid_class_error <- model@validation_metrics$MSE
     }
     if (class(old) %in% c("H2OBinomialModel", "H2OMultinomialModel")) {
       model$priorDistribution <- warning("priorDistribution output field is no longer supported", call.=FALSE)
       model$classification <- TRUE
       warning("classification is no longer a supported output field")
-      model$confusion <- model$training_metrics$cm$table
+      model$confusion <- model@training_metrics$cm$table
       if (inherits(old, "H2OBinomialModel"))
       {
         warning("Most binomial model methods are now accessible by h2o.performance() now.")
         if(algo %in% c("drf", "gbm")) {
-          metrics <- model$training_metrics
+          metrics <- model@training_metrics
           model$auc <- metrics$AUC
           model$gini <- metrics$Gini
           model$best_cutoff <- warning("best_cutoff output field is no longer supported", call. = FALSE)

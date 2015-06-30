@@ -3,7 +3,7 @@ package water.api;
 import water.Iced;
 import water.util.DocGen.HTML;
 
-public class TutorialsV3 extends Schema<Iced,TutorialsV3> {
+public class TutorialsV3 extends RequestSchema<Iced,TutorialsV3> {
   // This Schema has no inputs
   // This Schema has no outputs
 

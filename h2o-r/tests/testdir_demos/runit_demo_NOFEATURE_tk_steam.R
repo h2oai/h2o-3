@@ -11,11 +11,11 @@
 if (TRUE) {
   # Set working directory so that the source() below works.
   setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-  
+
   if (FALSE) {
     setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
   }
-  
+
   source('../h2o-runit.R')
   options(echo=TRUE)
   filePath <- normalizePath(locate("smalldata/airlines/allyears2k_headers.zip"))
@@ -23,7 +23,7 @@ if (TRUE) {
   stop("need to hardcode ip and port")
   # myIP = "127.0.0.1"
   # myPort = 54321
-  
+
   library(h2o)
   PASS_BANNER <- function() { cat("\nPASS\n\n") }
   filePath <- "https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
@@ -47,27 +47,24 @@ myX <- c("Year", "Month", "DayofMonth", "DayOfWeek", "CRSDepTime", "CRSArrTime",
 myY <- "IsDepDelayed"
 
 air.gbm <- h2o.gbm(training_frame = air.train, validation_frame = air.valid,
-                  x = myX, y = myY, loss = "multinomial", 
-                  ntrees = c(5, 10), max_depth = c(3, 5),
-                  variable_importance = TRUE)
+                  x = myX, y = myY, distribution = "multinomial",
+                  ntrees = c(5, 10), max_depth = c(3, 5))
 
-air.drf <- h2o.randomForest(data = air.train, validation = air.valid,
+air.drf <- h2o.randomForest(training_frame = air.train, validation_frame = air.valid,
                            x = myX, y = myY,
-                           ntree = c(5, 10), depth = c(5, 10),
-                           importance = TRUE,
-                           type = "BigData")
+                           ntrees = c(5, 10), depth = c(5, 10))
 
-air.srf <- h2o.randomForest(data = air.train, validation = air.valid,
-                           x = myX, y = myY,
-                           ntree = c(5, 10), depth = c(5, 10),
-                           importance = TRUE,
-                           type = "fast")
+# air.srf <- h2o.randomForest(data = air.train, validation = air.valid,
+#                            x = myX, y = myY,
+#                            ntree = c(5, 10), depth = c(5, 10),
+#                            importance = TRUE,
+#                            type = "fast")
 
 air.glm <- h2o.glm(training_frame = air.train,
                   x = myX, y = myY,
                   family = "binomial",
                   alpha = c(0.1, 0.2, 0.5),
-                  use_all_factor_levels = TRUE)
+                  standardize =)
 
 air.dl <- h2o.deeplearning(training_frame = air.train, validation_frame = air.valid,
                           x = myX, y = myY,
@@ -75,9 +72,6 @@ air.dl <- h2o.deeplearning(training_frame = air.train, validation_frame = air.va
                           activation = c("Tanh", "Rectifier"),
                           hidden = list(c(5, 5), c(10,10)),
                           use_all_factor_levels = TRUE, variable_importances = TRUE)
-
-# Scrub out Last.value's so the Store View isn't cluttered.
-h2o.rm(conn, grep(pattern = "Last.value", x = h2o.ls(conn)$Key, value = TRUE))
 
 message <- sprintf("%sPoint your web browser to:  http://%s:%s/steam/index.html\n%s",
                   "----------\n\n",

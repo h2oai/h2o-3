@@ -1,19 +1,28 @@
 package hex.schemas;
 
 import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningParameters;
 import water.api.API;
+import water.api.FrameV3.ColSpecifierV3;
 import water.api.KeyV3.ModelKeyV3;
-import water.api.SupervisedModelParametersSchema;
+import water.api.ModelParametersSchema;
 
-public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
+public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
 
-  public static final class DeepLearningParametersV3 extends SupervisedModelParametersSchema<DeepLearningParameters, DeepLearningParametersV3> {
+  public static final class DeepLearningParametersV3 extends ModelParametersSchema<DeepLearningParameters, DeepLearningParametersV3> {
 
     // Determines the order of parameters in the GUI
     static public String[] own_fields = new String[] {
 //        "n_folds",
 //        "keep_cross_validation_splits",
+        "response_column",
+        "weights_column",
+        "offset_column",
+        "balance_classes",
+        "class_sampling_factors",
+        "max_after_balance_size",
+        "max_confusion_matrix_size",
+        "max_hit_ratio_k",
         "checkpoint",
         "overwrite_with_best_model",
         "use_all_factor_levels",
@@ -64,9 +73,62 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
         "sparsity_beta",
         "max_categorical_features",
         "reproducible",
-        "export_weights_and_biases"
+        "export_weights_and_biases",
+//        "elastic_averaging",
+//        "elastic_averaging_moving_rate",
+//        "elastic_averaging_regularization"
     };
 
+    /// Supervised params
+    // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
+    // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
+    // column names are related to training_frame.
+    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 response_column;
+
+    // todo move this up in the hierarchy when there is weights support?
+    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 weights_column;
+
+    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
+    public ColSpecifierV3 offset_column;
+
+  /*Imbalanced Classes*/
+    /**
+     * For imbalanced data, balance training data class counts via
+     * over/under-sampling. This can result in improved predictive accuracy.
+     */
+    @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public boolean balance_classes;
+
+    /**
+     * Desired over/under-sampling ratios per class (lexicographic order).
+     * Only when balance_classes is enabled.
+     * If not specified, they will be automatically computed to obtain class balance during training.
+     */
+    @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
+    public float[] class_sampling_factors;
+
+    /**
+     * When classes are balanced, limit the resulting dataset size to the
+     * specified multiple of the original dataset size.
+     */
+    @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires balance_classes.", /* dmin=1e-3, */ level = API.Level.expert, direction = API.Direction.INOUT)
+    public float max_after_balance_size;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public int max_confusion_matrix_size;
+
+    /**
+     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+     */
+    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    public int max_hit_ratio_k;
+
+    /////////////////////
 
 //    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
 //    public int n_folds;
@@ -485,5 +547,14 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
 
     @API(help = "Whether to export Neural Network weights and biases to H2O Frames", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean export_weights_and_biases;
+
+//    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public boolean elastic_averaging;
+//
+//    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public double elastic_averaging_moving_rate;
+//
+//    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public double elastic_averaging_regularization;
   }
 }

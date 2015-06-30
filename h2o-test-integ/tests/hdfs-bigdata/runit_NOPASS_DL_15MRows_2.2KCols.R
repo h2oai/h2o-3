@@ -27,7 +27,8 @@ hdfs_data_file = "/datasets/15Mx2.2k.csv"
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
-paste("Time it took to parse", parse_time[[1]])
+print("Time it took to parse")
+print(parse_time)
 
 response=1 #1:1000 imbalance
 predictors=c(3:ncol(data.hex))
@@ -36,7 +37,8 @@ predictors=c(3:ncol(data.hex))
 # DL
 dl_time <- system.time(mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5)))
 mdl.dl
-paste("Time it took to build DL ", dl_time[[1]])
+print("Time it took to build DL")
+print(dl_time)
 
 PASS_BANNER()
 

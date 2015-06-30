@@ -2,9 +2,11 @@ package hex.coxph;
 
 
 import hex.DataInfo;
+import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsRegression;
-import hex.SupervisedModel;
+import hex.coxph.CoxPHModel.CoxPHOutput;
+import hex.coxph.CoxPHModel.CoxPHParameters;
 import hex.schemas.CoxPHModelV3;
 import water.Key;
 import water.MemoryManager;
@@ -17,8 +19,8 @@ import water.fvec.Vec;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
-  public static class CoxPHParameters extends SupervisedModel.SupervisedParameters {
+public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
+  public static class CoxPHParameters extends Model.Parameters {
     // get destination_key  from SupervisedModel.SupervisedParameters from Model.Parameters
     // get training_frame   from SupervisedModel.SupervisedParameters from Model.Parameters
     // get validation_frame from SupervisedModel.SupervisedParameters from Model.Parameters
@@ -37,7 +39,7 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
     public int iter_max = 20;
   }
 
-  public static class CoxPHOutput extends SupervisedModel.SupervisedOutput {
+  public static class CoxPHOutput extends Model.Output {
     public CoxPHOutput( CoxPH b ) { super(b); }
 
     DataInfo data_info;

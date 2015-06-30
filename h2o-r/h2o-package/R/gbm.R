@@ -19,16 +19,21 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate An \code{interger} from \code{0.0} to \code{1.0}
-#' @param nbins Number of bins to use in building histogram.
+#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
+#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
 #' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
 #'        than 1.0)
-#' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+#' @param seed Seed for random numbers (affects sampling when balance_classes=T)
+#' @param build_tree_one_node Run on one node only; no network overhead but
+#'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty. **Currently not supported**
 #' @param score_each_iteration Attempts to score each tree.
+#' @param offset_column Specify the offset column.
+#' @param weights_column Specify the weights column.
 #' @param ... extra arguments to pass on (currently no implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -52,12 +57,16 @@ h2o.gbm <- function(x, y, training_frame,
                     min_rows = 10,
                     learn_rate = 0.1,
                     nbins = 20,
+                    nbins_cats = 1024,
                     validation_frame = NULL,
                     balance_classes = FALSE,
                     max_after_balance_size = 1,
                     seed,
+                    build_tree_one_node = FALSE,
                     nfolds,
-                    score_each_iteration,
+                    score_each_iteration = FALSE,
+                    offset_column = NULL,
+                    weights_column = NULL,
                     ...)
 {
   # Required maps for different names params, including deprecated params
@@ -65,8 +74,12 @@ h2o.gbm <- function(x, y, training_frame,
                 "y" = "response_column")
 
   # Pass over ellipse parameters
-  if(length(list(...)) > 0)
-    dots <- .model.ellipses(list(...))
+  do_future <- FALSE
+  if (length(list(...)) > 0) {
+#    browser()
+    dots <- list(...) #.model.ellipses( list(...))
+    if( !is.null(dots$future) ) do_future <- TRUE
+  }
 
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -86,6 +99,8 @@ h2o.gbm <- function(x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if (!missing(id))
@@ -102,6 +117,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$learn_rate <- learn_rate
   if (!missing(nbins))
     parms$nbins <- nbins
+  if(!missing(nbins_cats))
+    parms$nbins_cats <- nbins_cats
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if (!missing(balance_classes))
@@ -110,11 +127,16 @@ h2o.gbm <- function(x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(seed))
     parms$seed <- seed
+  if(!missing(build_tree_one_node))
+    parms$build_tree_one_node <- build_tree_one_node
   if (!missing(nfolds) && nfolds > 1)
     stop("Nfolds > 1 not currently implemented.", call. = FALSE)
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if( !missing(offset_column) )             parms$offset_column          <- offset_column
+  if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  .h2o.createModel(training_frame@conn, 'gbm', parms)
+  if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
+  else            .h2o.createModel(training_frame@conn, 'gbm', parms)
 }
 

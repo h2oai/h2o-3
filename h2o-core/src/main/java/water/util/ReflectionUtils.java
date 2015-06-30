@@ -105,4 +105,29 @@ public class ReflectionUtils {
     throw H2O.fail();
   }
 
+  /**
+   *  Return the Field for the specified name.
+   *  <p>
+   *  Java reflection will either give you all the public fields all the way up the class hierarchy (getField()),
+   *  or will give you all the private/protected/public only in the single class (getDeclaredField()).
+   *  This method uses the latter but walks up the class hierarchy.
+   */
+  public static Field findNamedField(Object o, String field_name) {
+    Class clz = o.getClass();
+    Field f = null;
+    do {
+      try {
+        f = clz.getDeclaredField(field_name);
+        f.setAccessible(true);
+        return f;
+      }
+      catch (NoSuchFieldException e) {
+        // fall through and try our parent
+      }
+
+      clz = clz.getSuperclass();
+    } while (clz != Object.class);
+    return null;
+  }
+
 }

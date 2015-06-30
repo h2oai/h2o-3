@@ -25,12 +25,13 @@ buildscript {
     }
 
     dependencies {
-        classpath 'eu.appsatori:gradle-fatjar-plugin:0.2'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.1'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'de.undercouch:gradle-download-task:1.1'
-        classpath 'joda-time:joda-time:2.2'
+        classpath 'joda-time:joda-time:2.3'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
+        classpath 'org.testng:testng:6.8'
     }
 }
 
@@ -47,7 +48,8 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala'),
       project(':h2o-persist-hdfs'),
-      project(':h2o-genmodel')
+      project(':h2o-genmodel'),
+      project(':h2o-java-rest-bindings')
     ]
 
     javaProjects = [
@@ -57,7 +59,9 @@ ext {
       project(':h2o-app'),
       project(':h2o-persist-hdfs'),
       project(':h2o-test-integ'),
-      project(':h2o-genmodel')
+      project(':h2o-testng'),
+      project(':h2o-genmodel'),
+      project(':h2o-java-rest-bindings'),
     ]
 
     scalaProjects = [
@@ -133,6 +137,9 @@ subprojects {
     // to all projects
     if (project in publishedProjects) {
       apply from: "$rootDir/gradle/publish.gradle"
+      if (project.hasProperty("doJava6Bytecode")) {
+          apply from: "$rootDir/gradle/java6bytecode.gradle"
+      }
     }
 
     apply from: "$rootDir/gradle/makeSupport.gradle"

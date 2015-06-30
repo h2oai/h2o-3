@@ -6,6 +6,8 @@ import water.*;
 import water.fvec.*;
 import water.util.Log;
 
+import java.io.File;
+
 public class ParserTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
@@ -551,7 +553,7 @@ public class ParserTest extends TestUtil {
 
   // Test of parsing numbers with many digits
   @Test public void testParseManyDigits1() {
-    String pows10 = 
+    String pows10 =
       "1\n"+
       "10\n"+
       "100\n"+
@@ -589,7 +591,7 @@ public class ParserTest extends TestUtil {
 
   // Test of parsing numbers with many digits
   @Test public void testParseManyDigits2() {
-    String pows10 = 
+    String pows10 =
       "9\n"+
       "99\n"+
       "999\n"+
@@ -648,7 +650,7 @@ public class ParserTest extends TestUtil {
 
   // Test of parsing numbers with many digits
   @Test public void testParseManyDigits3() {
-    String pows10 = 
+    String pows10 =
       "0.00000000000001\n"+
       "1000001\n"+
       "2000001\n"+
@@ -666,7 +668,7 @@ public class ParserTest extends TestUtil {
 
   // Test of parsing numbers with many digits
   @Test public void testParseManyDigits4() {
-    String pows10 = 
+    String pows10 =
       "3\n"+
       "1e-18\n"+
       "1e-34\n"+
@@ -781,6 +783,16 @@ public class ParserTest extends TestUtil {
           }
         }
       }
+    }
+  }
+
+  @Ignore //PUBDEV-1384 fails for cloudsize > 1
+  @Test public void parseMNIST() {
+    File train = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+    if (train != null) {
+      NFSFileVec trainfv = NFSFileVec.make(train);
+      Frame frame = ParseDataset.parse(Key.make(), trainfv._key);
+      frame.delete();
     }
   }
 }

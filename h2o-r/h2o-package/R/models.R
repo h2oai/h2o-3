@@ -47,6 +47,7 @@
     if( length(x_ignore) == 0L ) x_ignore <- ''
     return(list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i))
   } else {
+    x_ignore <- setdiff(cc, x)
     if( !missing(y) ) stop("`y` should not be specified for autoencoder=TRUE, remove `y` input")
     return(list(x=x,x_i=x_i,x_ignore=x_ignore))
   }
@@ -616,6 +617,44 @@ h2o.scoreHistory <- function(object, ...) {
 }
 
 #'
+#' Retrieve the respective weight matrix
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.weights <- function(object, matrix_id=1, ...){
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$weights[[matrix_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No weights for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
+#' Return the respective bias vector
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
+#' @param vector_id An integer, ranging from 1 to number of layers + 1, that specifies the bias vector to return.
+#' @param \dots further arguments to be passed to/from this method.
+#' @export
+h2o.biases <- function(object, vector_id=1, ...){
+  o <- object
+  if( is(o, "H2OModel") ) {
+    sh <- o@model$biases[[vector_id]]
+    if( is.null(sh) ) return(NULL)
+    sh
+  } else {
+    warning( paste0("No biases for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
 #' Retrieve the Hit Ratios
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -803,7 +842,7 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  max_metrics[match(metric,max_metrics$metric),"threshold"]
+  max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
 }
 
 #
@@ -886,7 +925,7 @@ h2o.betweenss <- function(object, valid=FALSE, ...) {
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.totss <- function(object,valid=FALSE, ...) {
-  model.parts <- .model.parts(objects)
+  model.parts <- .model.parts(object)
   if( valid ) {
     if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
     else                          return( model.parts$vm@metrics$totss )
@@ -900,6 +939,21 @@ h2o.totss <- function(object,valid=FALSE, ...) {
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
+
+#'
+#' Retrieve the centroid statistics
+#'
+#' @param object An \linkS4class{H2OClusteringModel} object.
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed on (currently unimplemented)
+#' @export
+h2o.centroid_stats <- function(object, valid=FALSE, ...) {
+  model.parts <- .model.parts(object)
+  if( valid ) {
+    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+    else                          return( model.parts$vm@metrics$centroid_stats )
+  } else                          return( model.parts$tm@metrics$centroid_stats )
+}
 
 #'
 #' Retrieve the cluster sizes
@@ -927,7 +981,7 @@ h2o.cluster_sizes <- function(object, valid=FALSE, ...) {
 h2o.null_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_deviance )
@@ -944,7 +998,7 @@ h2o.null_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_deviance <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_deviance )
@@ -962,7 +1016,7 @@ h2o.residual_deviance <- function(object, valid=FALSE, ...) {
 h2o.residual_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$residual_degrees_of_freedom )
@@ -979,7 +1033,7 @@ h2o.residual_dof <- function(object, valid=FALSE, ...) {
 h2o.null_dof <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
   else {
-    model.parts <- .model.parts(objects)
+    model.parts <- .model.parts(object)
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( model.parts$vm@metrics$null_degrees_of_freedom )
@@ -1146,38 +1200,21 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
 
 #' @export
 screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...) {
-  # if(x@algorithm != "pca") stop("x must be a H2O PCA model")
-  if(x@algorithm == "pca") {
+    if(x@algorithm != "pca") stop("x must be a H2O PCA model")
     if(missing(npcs))
       npcs = min(10, x@model$parameters$k)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
       stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
 
-
+    sdevH2O <- as.numeric(x@model$pc_importance[1,])
     if(missing(main))
       main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
     if(type == "barplot")
-      barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+      barplot(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else if(type == "lines")
-      lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+      lines(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else
       stop("type must be either 'barplot' or 'lines'")
-  } else if(x@algorithm == "svd") {
-    if(is.null(x@model$std_deviation))
-      stop("PCA results not found in SVD model!")
-    if(missing(npcs))
-      npcs = min(10, x@model$parameters$nv)
-    else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$nv)
-      stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$nv, "inclusive"))
-    if(missing(main))
-      main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
-    if(type == "barplot")
-      barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
-    else if(type == "lines")
-      lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
-    else
-      stop("type must be either 'barplot' or 'lines'")
-  }
 }
 
 # Handles ellipses

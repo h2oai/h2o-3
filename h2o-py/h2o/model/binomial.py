@@ -4,6 +4,7 @@ Binomial Models
 
 from metrics_base import *
 
+
 class H2OBinomialModel(ModelBase):
   """
   Class for Binomial models.
@@ -87,7 +88,7 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
     if tm is None: return None
-    return 1 - tm.metric("accuracy", thresholds=thresholds)
+    return [[acc[0],1-acc[1]] for acc in tm.metric("accuracy", thresholds=thresholds)]
 
   def precision(self, thresholds=None, train=False, valid=False):
     """
@@ -294,6 +295,19 @@ class H2OBinomialModel(ModelBase):
       metrics.append([t,row[midx]])
     return metrics
 
+  def plot(self, type="roc", train=False, valid=False, **kwargs):
+    """
+    Produce the desired metric plot
+    :param type: the type of metric plot (currently, only ROC supported)
+    :param train: Return the max per class error for training data.
+    :param valid: Return the max per class error for the validation data.
+    :param show: if False, the plot is not shown. matplotlib show method is blocking.
+    :return: None
+    """
+    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
+    if tm is None: return None
+    tm.plot(type=type, **kwargs)
+
   def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False):
     """
     Get the confusion matrix for the specified metrics/thresholds
@@ -324,7 +338,7 @@ class H2OBinomialModel(ModelBase):
     if tm is None: return None
     crit2d = tm._metric_json['max_criteria_and_metric_scores']
     for e in crit2d.cell_values:
-      if e[0]==metric:
+      if e[0]=="max "+metric:
         return e[1]
     raise ValueError("No metric "+str(metric))
 

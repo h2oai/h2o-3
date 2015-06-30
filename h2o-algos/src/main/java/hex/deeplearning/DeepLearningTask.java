@@ -2,8 +2,8 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.FrameTask;
+import water.DKV;
 import water.H2O;
-import water.H2O.H2OCountedCompleter;
 import water.Key;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -13,76 +13,149 @@ import java.util.Random;
 
 public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final private boolean _training;
-  private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _input;
-  hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _output;
-  final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _output; }
-
+  private DeepLearningModelInfo _localmodel; //per-node state (to be reduced)
+  private DeepLearningModelInfo _sharedmodel; //input/output
   transient Neurons[] _neurons;
   transient Random _dropout_rng;
-
   int _chunk_node_count = 1;
 
-  public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(jobKey, input,fraction,null);}
-  private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
-    super(jobKey,input.data_info(),cmp);
+  /**
+   * Accessor to the object containing the (final) state of the Deep Learning model
+   * Should only be queried after calling this.doAll(Frame training)
+   * @return "The" final model after one Map/Reduce iteration
+   */
+  final public DeepLearningModelInfo model_info() {
+    assert(_sharedmodel != null);
+    return _sharedmodel;
+  }
+
+  /**
+   * The only constructor
+   * @param jobKey
+   * @param inputModel Initial model state
+   * @param fraction Fraction of rows of the training to train with
+   * @param iteration
+   */
+  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration){
+    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration);
+    assert(inputModel.get_processed_local() == 0);
     _training=true;
-    _input=input;
+    _sharedmodel = inputModel;
+//    if (model_info().get_params()._elastic_averaging)
+//      DKV.put(_sharedmodel.elasticAverageModelInfoKey(), _sharedmodel);
     _useFraction=fraction;
-    _shuffle = _input.get_params()._shuffle_training_data;
-    assert(_output == null);
+    _shuffle = model_info().get_params()._shuffle_training_data;
   }
 
-  // transfer ownership from input to output (which will be worked on)
+  /**
+   * Transfer ownership from global (shared) model to local model which will be worked on
+   */
   @Override protected void setupLocal(){
+    assert(_localmodel == null);
     super.setupLocal();
-    _output = _input; //faster, good enough in this case (since the input was freshly deserialized by the Weaver)
-    _input = null;
-    _output.set_processed_local(0l);
+    if (model_info().get_params()._elastic_averaging) {
+      //Load my local model from DKV, to continue training
+      _localmodel = DKV.getGet(_sharedmodel.localModelInfoKey(H2O.SELF));
+      if (_localmodel != null) {
+        if (!Arrays.equals(_localmodel.units, _sharedmodel.units)) {
+          _localmodel = _sharedmodel.deep_clone();
+        } else {
+          //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
+          _localmodel.set_params(_sharedmodel.get_params());
+          _localmodel.set_processed_global(_sharedmodel.get_processed_global());
+        }
+      }
+      else {
+        // first time around - use the randomized initial weights and don't spread the shared (random) model
+        _localmodel = _sharedmodel.deep_clone();
+        _sharedmodel = null;
+      }
+    } else {
+      _localmodel = _sharedmodel;
+      _sharedmodel = null;
+    }
+    _localmodel.set_processed_local(0);
   }
 
-  // create local workspace (neurons)
-  // and link them to shared weights
-  @Override protected void chunkInit(){
-    _neurons = makeNeuronsForTraining(_output);
+  // Create local workspace (neurons) and link them to shared weights
+  @Override protected boolean chunkInit(){
+    if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
+      return false;
+    _neurons = makeNeuronsForTraining(_localmodel);
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
+    return true;
   }
 
+  /**
+   * Process one training row at a time (online learning)
+   * @param seed Seed is only used if reproducible mode is enabled
+   * @param r Row (must be dense for now)
+   */
   @Override public final void processRow(long seed, DataInfo.Row r){
     assert !r.isSparse():"Deep learning does not support sparse rows.";
-    if (model_info().get_params()._reproducible) {
-      seed += model_info().get_processed_global(); //avoid periodicity
+    if (_localmodel.get_params()._reproducible) {
+      seed += _localmodel.get_processed_global(); //avoid periodicity
     } else {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
-    step(seed, _neurons, _output, _training, r.response);
+    step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
   }
 
+  /**
+   * After each chunk, add the number of processed rows to the counter
+   * @param n Number of processed rows
+   */
   @Override protected void chunkDone(long n) {
-    if (_training) _output.add_processed_local(n);
+    if (_training) _localmodel.add_processed_local(n);
   }
 
+  /**
+   * After all maps are done on a node, this is called to store the per-node model into DKV (for elastic averaging)
+   * Otherwise, do nothing.
+   */
+  @Override protected void postLocal() {
+    if (_localmodel.get_params()._elastic_averaging) {
+      // store local model, as it will be reduced in the following, and hence averaged with other models
+      DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel);
+    }
+    _sharedmodel = null; //avoid serialization overhead
+    super.postLocal();
+  }
+
+  /**
+   * Average the per-node models (for elastic averaging, already wrote them to DKV in postLocal())
+   * This is a no-op between F/J worker threads (operate on the same weights/biases)
+   * @param other
+   */
   @Override public void reduce(DeepLearningTask other){
-    if (other._output.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
-            && other._output != _output) //other NNTask worked on a different model_info
+    if (_localmodel != null && other._localmodel != null && other._localmodel.get_processed_local() > 0 //other DLTask was active (its model_info should be used for averaging)
+            && other._localmodel != _localmodel) //other DLTask worked on a different model_info
     {
       // avoid adding remote model info to unprocessed local data, still random
       // (this can happen if we have no chunks on the master node)
-      if (_output.get_processed_local() == 0) {
-        _output = other._output;
+      if (_localmodel.get_processed_local() == 0) {
+        _localmodel = other._localmodel;
         _chunk_node_count = other._chunk_node_count;
       } else {
-        _output.add(other._output);
+        _localmodel.add(other._localmodel);
         _chunk_node_count += other._chunk_node_count;
       }
+      if (other._localmodel.unstable()) _localmodel.set_unstable();
     }
-    if (other._output.unstable()) _output.set_unstable();
   }
+
 
   static long _lastWarn;
   static long _warnCount;
+  /**
+   * After all reduces are done, the driver node calls this method to clean up
+   * This is only needed if we're not inside a DeepLearningTask2 (which will do the reduction between replicated data workers).
+   * So if replication is disabled, and every node works on partial data, then we have work to do here (model averaging).
+   */
   @Override protected void postGlobal(){
-    if (H2O.CLOUD.size() > 1 && !_output.get_params()._replicate_training_data) {
+    DeepLearningParameters dlp = _localmodel.get_params();
+    if (H2O.CLOUD.size() > 1 && !dlp._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
 //        Log.info("Synchronizing across " + _chunk_node_count + " H2O node(s).");
@@ -92,25 +165,37 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _warnCount++;
       }
     }
-    if (!_output.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) {
-      _output.div(_chunk_node_count);
-      _output.add_processed_global(_output.get_processed_local());
-      _output.set_processed_local(0l);
+    // Check that we're not inside a DeepLearningTask2
+    assert ((!dlp._replicate_training_data || H2O.CLOUD.size() == 1) == !_run_local);
+    if (!_run_local) {
+      _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
+      _localmodel.set_processed_local(0l);
+      // model averaging
+      if (_chunk_node_count > 1)
+        _localmodel.div(_chunk_node_count);
+      if (_localmodel.get_params()._elastic_averaging)
+        _sharedmodel = DeepLearningModelInfo.timeAverage(_localmodel);
+    } else {
+      //Get ready for reduction in DeepLearningTask2
+      //Just swap the local and global models
+      _sharedmodel = _localmodel;
     }
-    assert(_input == null);
+    if (_sharedmodel == null)
+      _sharedmodel = _localmodel;
+    _localmodel = null;
   }
 
-  public static Neurons[] makeNeuronsForTraining(final DeepLearningModel.DeepLearningModelInfo minfo) {
+  public static Neurons[] makeNeuronsForTraining(final DeepLearningModelInfo minfo) {
     return makeNeurons(minfo, true);
   }
-  public static Neurons[] makeNeuronsForTesting(final DeepLearningModel.DeepLearningModelInfo minfo) {
+  public static Neurons[] makeNeuronsForTesting(final DeepLearningModelInfo minfo) {
     return makeNeurons(minfo, false);
   }
 
   // Helper
-  private static Neurons[] makeNeurons(final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
+  private static Neurons[] makeNeurons(final DeepLearningModelInfo minfo, boolean training) {
     DataInfo dinfo = minfo.data_info();
-    final DeepLearningModel.DeepLearningParameters params = minfo.get_params();
+    final DeepLearningParameters params = minfo.get_params();
     final int[] h = params._hidden;
     Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
     // input
@@ -157,9 +242,18 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     return neurons;
   }
 
-  // forward/backward propagation
-  // assumption: layer 0 has _a filled with (horizontalized categoricals) double values
-  public static void step(long seed, Neurons[] neurons, DeepLearningModel.DeepLearningModelInfo minfo, boolean training, double[] responses) {
+  /**
+   * Forward/Backward propagation
+   * assumption: layer 0 has _a filled with (horizontalized categoricals) double values
+   * @param seed
+   * @param neurons
+   * @param minfo
+   * @param consensus_minfo
+   * @param training
+   * @param responses
+   */
+  public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
+                          DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double offset) {
     try {
       for (int i=1; i<neurons.length-1; ++i) {
         neurons[i].fprop(seed, training);
@@ -172,6 +266,12 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           }
         }
       } else {
+        if (consensus_minfo != null) {
+          for (int i = 1; i < neurons.length; i++) {
+            neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
+            neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
+          }
+        }
         if (minfo._classification) {
           ((Neurons.Softmax) neurons[neurons.length - 1]).fprop();
           if (training) {
@@ -189,6 +289,11 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           }
         } else {
           ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
+          if (offset > 0) {
+            double mul = minfo.data_info()._normRespMul[0];
+            double sub = minfo.data_info()._normRespSub[0];
+            neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
+          }
           if (training) {
             for (int i = 1; i < neurons.length - 1; i++)
               Arrays.fill(neurons[i]._e.raw(), 0);
@@ -207,10 +312,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         }
       }
     }
-    catch(RuntimeException ex) {
+    catch(Throwable ex) {
       Log.warn(ex.getMessage());
       minfo.set_unstable();
-      throw new RuntimeException("Canceling job due to numerical instability.");
+      throw ex;
     }
   }
 

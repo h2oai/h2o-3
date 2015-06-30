@@ -3,7 +3,6 @@ package hex.deeplearning;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.util.ArrayUtils;
 import java.util.Arrays;
@@ -17,7 +16,7 @@ public class DropoutTest extends water.TestUtil {
   public void test() throws Exception {
     final int units = 1000;
 
-    Neurons.DenseVector a = new Neurons.DenseVector(units);
+    Storage.DenseVector a = new Storage.DenseVector(units);
     double sum1=0, sum2=0, sum3=0, sum4=0;
 
     final int loops = 10000;

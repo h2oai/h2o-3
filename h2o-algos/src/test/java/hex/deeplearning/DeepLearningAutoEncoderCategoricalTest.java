@@ -3,7 +3,6 @@ package hex.deeplearning;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -24,7 +23,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     NFSFileVec  nfs = NFSFileVec.make(find_test_file(PATH));
     Frame train = ParseDataset.parse(Key.make("train.hex"), nfs._key);
 
-    DeepLearningModel.DeepLearningParameters p = new DeepLearningModel.DeepLearningParameters();
+    DeepLearningParameters p = new DeepLearningParameters();
     p._train = train._key;
     p._autoencoder = true;
     p._response_column = train.names()[train.names().length-1];
@@ -35,10 +34,10 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
 //    p._ignored_columns = new String[]{n[0],n[1],n[2],n[3],n[6],n[7],n[8],n[10]}; //Optional: ignore all categoricals
 //    p._ignored_columns = new String[]{train.names()[4], train.names()[5], train.names()[9]}; //Optional: ignore all numericals
     p._l1 = 1e-4;
-    p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+    p._activation = DeepLearningParameters.Activation.Tanh;
     p._max_w2 = 10;
     p._train_samples_per_iteration = -1;
-    p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
+    p._loss = DeepLearningParameters.Loss.Huber;
     p._epochs = 0.2;
     p._force_load_balance = true;
     p._score_training_samples = 0;
@@ -79,7 +78,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     }
     Log.info(sb.toString());
 
-    Assert.assertEquals(mymodel.mse(), l2vec.mean(), 1e-8*mymodel.mse());
+    Assert.assertEquals(l2vec.mean(), mymodel.mse(), 1e-8*mymodel.mse());
 
     // Create reconstruction
     Log.info("Creating full reconstruction.");

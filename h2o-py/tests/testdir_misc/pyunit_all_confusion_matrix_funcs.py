@@ -7,14 +7,19 @@ def all_confusion_matrix_funcs(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
-    metrics = ["min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy",
-               "f0point5", "f2", "f1"]
+    metrics = ["min_per_class_accuracy", "absolute_MCC", "precision", "accuracy", "f0point5", "f2", "f1"]
     train = [True, False]
     valid = [True, False]
 
+    print "PARSING TRAINING DATA"
     air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+
+    print "PARSING TESTING DATA"
     air_test = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
+    print
+    print "RUNNING FIRST GBM: "
+    print
     gbm_bin = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth","fDayOfWeek"]],
                       y=air_train["IsDepDelayed"].asfactor(),
                       validation_x=air_test[["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
@@ -22,6 +27,9 @@ def all_confusion_matrix_funcs(ip,port):
                       validation_y=air_test["IsDepDelayed"].asfactor(),
                       distribution="bernoulli")
 
+    print
+    print "RUNNING SECOND GBM: "
+    print
     gbm_mult = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth",
                                     "fMonth"]],
                       y=air_train["fDayOfWeek"].asfactor(),

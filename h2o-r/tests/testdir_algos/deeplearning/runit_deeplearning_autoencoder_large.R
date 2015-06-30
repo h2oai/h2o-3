@@ -52,7 +52,7 @@ check.deeplearning_autoencoder <- function(conn) {
      myY = nfeatures+1
      # Now train DRF on extracted feature space, first need to add response back
      train_supervised_drf <- h2o.cbind(train_supervised_features, as.factor(train_supervised_labels))
-     drf_model <- h2o.randomForest(training_frame=train_supervised_drf, x=myX, y=myY, ntrees=10, seed=1234)
+     drf_model <- h2o.randomForest(training_frame=train_supervised_drf, x=myX, y=myY, ntrees=10, seed=1234, min_rows=10)
 
      # Now test the DRF model on the test set (first need to process into the reduced feature space)
      test_features <- h2o.deepfeatures(ae_model, test, layer=1)

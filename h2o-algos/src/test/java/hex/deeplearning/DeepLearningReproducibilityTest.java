@@ -8,12 +8,10 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.FrameUtils;
 import water.util.Log;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static org.junit.Assert.assertTrue;
 
 public class DeepLearningReproducibilityTest extends TestUtil {

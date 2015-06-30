@@ -3,15 +3,11 @@ package hex;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -27,6 +23,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key);
     Frame scoreDeepFeatures(Frame frame, final int layer);
+  }
+
+  /**
+   * Default threshold for assigning class labels to the target class (for binomial models)
+   * @return threshold in 0...1
+   */
+  public final double defaultThreshold() {
+    if (_output.nclasses() != 2 || _output._training_metrics == null)
+      return 0.5;
+    if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultThreshold();
+    if (_output._training_metrics != null && ((ModelMetricsBinomial)_output._training_metrics)._auc != null)
+      return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
+    return 0.5;
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
@@ -51,13 +61,43 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _ignore_const_cols;    // True if dropping constant cols
-
+    public String _weights_column;
+    public String _offset_column;
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
     // scored every so many major model iterations - throttled to limit scoring
     // costs to less than 10% of the build time.  This flag forces scoring for
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
+
+    /** Supervised models have an expected response they get to train with! */
+    public String _response_column; // response column name
+
+    /** Should all classes be over/under-sampled to balance the class
+     *  distribution? */
+    public boolean _balance_classes = false;
+
+    /** When classes are being balanced, limit the resulting dataset size to
+     *  the specified multiple of the original dataset size.  Maximum relative
+     *  size of the training data after balancing class counts (can be less
+     *  than 1.0) */
+    public float _max_after_balance_size = 5.0f;
+
+    /**
+     * Desired over/under-sampling ratios per class (lexicographic order).
+     * Only when balance_classes is enabled.
+     * If not specified, they will be automatically computed to obtain class balance during training.
+     */
+    public float[] _class_sampling_factors;
+
+    /** The maximum number (top K) of predictions to use for hit ratio
+     *  computation (for multi-class only, 0 to disable) */
+    public int _max_hit_ratio_k = 10;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -181,8 +221,38 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
+
+    public Output(){this(false,false);}
+    public Output(boolean hasWeights, boolean hasOffset) {
+      _hasWeights = hasWeights;
+      _hasOffset = hasOffset;
+    }
+
+    /** Any final prep-work just before model-building starts, but after the
+     *  user has clicked "go".  E.g., converting a response column to an enum
+     *  touches the entire column (can be expensive), makes a parallel vec
+     *  (Key/Data leak management issues), and might throw IAE if there are too
+     *  many classes. */
+    public Output( ModelBuilder b ) {
+      if( b == null ) {
+        _hasOffset = false;
+        _hasWeights = false;
+        return;
+      }
+      _isSupervised = b.isSupervised();
+      if( b.error_count() > 0 )
+        throw new IllegalArgumentException(b.validationErrors());
+      // Capture the data "shape" the model is valid on
+      _names  = b._train.names  ();
+      _domains= b._train.domains();
+      _hasOffset = b.hasOffset();
+      _hasWeights = b.hasWeights();
+      _distribution = b._distribution;
+      _priorClassDist = b._priorClassDist;
+    }
+
     /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
-    public int nfeatures() { return _names.length; }
+    public int nfeatures() { return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (isSupervised()?1:0);}
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
@@ -218,42 +288,58 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public TwoDimTable _scoring_history;
 
-    /** Any final prep-work just before model-building starts, but after the
-     *  user has clicked "go".  E.g., converting a response column to an enum
-     *  touches the entire column (can be expensive), makes a parallel vec
-     *  (Key/Data leak management issues), and might throw IAE if there are too
-     *  many classes. */
-    public Output( ModelBuilder b ) {
-      if( b == null ) return;
-      if( b.error_count() > 0 )
-        throw new IllegalArgumentException(b.validationErrors());
-      // Capture the data "shape" the model is valid on
-      _names  = b._train.names  ();
-      _domains= b._train.domains();
+    protected boolean _isSupervised;
+
+
+
+    public boolean isSupervised() { return _isSupervised; }
+    /** The name of the response column (which is always the last column). */
+    protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
+    protected final boolean _hasWeights;// only need to know if we have them
+    public boolean hasOffset  () { return _hasOffset;}
+    public boolean hasWeights () { return _hasWeights;}
+    public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
+    public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
+    public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
+    // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
+    public int weightsIdx     () {
+      if(!_hasWeights) return -1;
+      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1;
+    }
+    public int offsetIdx      () {
+      if(!_hasOffset) return -1;
+      return _names.length - (isSupervised()?1:0) - 1;
+    }
+    public int responseIdx    () {
+      if(!isSupervised()) return -1;
+      return _names.length-1;
     }
 
-    public boolean isSupervised() { return false; }
-    /** The name of the response column (which is always the last column). */
-    public String responseName() { return (getModelCategory() == ModelCategory.Regression || isClassifier()) ?  _names[  _names.length-1] : null; }
     /** The names of the levels for an enum (categorical) response column. */
-    public String[] classNames() { assert isSupervised(); return _domains[_domains.length-1]; }
+    public String[] classNames() { assert isSupervised();
+      return _domains[_domains.length-1];
+    }
     /** Is this model a classification model? (v. a regression or clustering model) */
-    public boolean isClassifier() { return isSupervised() && classNames() != null ; }
+    public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
     public int nclasses() {
       assert isSupervised();
       String cns[] = classNames();
       return cns==null ? 1 : cns.length;
     }
-
+    public double [] _distribution;
+    public double [] _modelClassDist;
+    public double [] _priorClassDist;
     // Note: some algorithms MUST redefine this method to return other model categories
     public ModelCategory getModelCategory() {
-      return (isClassifier() ?
-              (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
-              ModelCategory.Regression);
+      if(isSupervised())
+        return (isClassifier() ?
+                (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
+                ModelCategory.Regression);
+      return ModelCategory.Unknown;
     }
 
-    // TODO: Needs to be Atomic update, not just synchronized
     public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
+      DKV.put(mm);
       for( Key key : _model_metrics ) // Dup removal
         if( key==mm._key ) return mm;
       _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
@@ -344,14 +430,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Throws {@code IllegalArgumentException} if no columns are in common, or
    *  if any factor column has no levels in common.
    */
-  public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain(_output._names, _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive); }
+  public String[] adaptTestForTrain( Frame test, boolean expensive, boolean computeMetrics) {
+    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics);
+  }
   /**
    *  @param names Training column names
-   *  @param colNameToSkip Name of column (typically the response) to NOT fill in if missing in test frame
+   *  @param weights  Name of column with observation weights, weights are NOT filled in if missing in test frame
+   *  @param offset   Name of column with offset, if not null (i.e. trained with offset), offset MUST be present in test data as well, otherwise can not scorew and IAE is thrown.
+   *  @param response Name of response column,  response is NOT filled in if missing in test frame
+   *
    *  @param domains Training column levels
    *  @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain( String[] names, String colNameToSkip, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain( String[] names, String weights, String offset, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -369,13 +460,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
       Vec vec = test.vec(names[i]); // Search in the given validation set
-
       // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
-      boolean isResponse = colNameToSkip != null && names[i].equals(colNameToSkip);
-      boolean skipCol = (isResponse && vec == null);
+      boolean isResponse = response != null && names[i].equals(response);
+      boolean isWeights = weights != null && names[i].equals(weights);
+      boolean isOffset = offset != null && names[i].equals(offset);
 
+      if(vec == null && isResponse && computeMetrics)
+        throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
+      if(vec == null && isOffset)
+        throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
+      if(vec == null && isWeights && computeMetrics)
+        throw new IllegalArgumentException("Test dataset is missing weights vector '" + weights + "'");
       // If a training set column is missing in the validation set, complain and fill in with NAs.
-      if( vec == null && !skipCol) {
+      if( vec == null) {
         String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
           str = str + ": substituting in a column of NAs";
@@ -415,7 +512,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Validation set has no columns in common with the training set");
-    if( good == names.length || (colNameToSkip != null && test.find(colNameToSkip) == -1 && good == names.length - 1) )  // Only update if got something for all columns
+    if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);
   }
@@ -449,27 +546,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr,true);   // Adapt
+    boolean computeMetrics = adaptFr.find(_output.responseName()) != -1;
+    adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     Frame output = scoreImpl(fr,adaptFr, destination_key); // Score
-
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
-    if( _output.isClassifier() && adaptFr.find(_output.responseName()) != -1) {
+    if(_output.isClassifier() && computeMetrics) {
 //      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < ((SupervisedModel.SupervisedParameters)_parms)._max_confusion_matrix_size/*Print size limitation*/ ) {
+        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
           Log.info(cm.table().toString(1));
         }
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
       }
-
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
@@ -503,8 +599,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
-    assert Arrays.equals(computeMetrics ? _output._names : Arrays.copyOf(_output._names, _output._names.length-1), adaptFrm._names);
-
     // Build up the names & domains.
     final int nc = _output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
@@ -523,10 +617,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),computeMetrics).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
     if (computeMetrics)
-      bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
-    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
+      bs._mb.makeModelMetrics(this, fr);
+    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
   }
 
   private class BigScore extends MRTask<BigScore> {
@@ -535,31 +629,52 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
     final boolean _computeMetrics;  // Column means of test frame
+    final boolean _hasWeights;
 
-    BigScore( String[] domain, int ncols, double[] mean, boolean computeMetrics ) { _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; }
+    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics ) {
+      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics;
+      if(_output._hasWeights && _computeMetrics && !testHasWeights)
+        throw new IllegalArgumentException("Missing weights when computing validation metrics.");
+      _hasWeights = testHasWeights;
+    }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      double[] tmp = new double[_output.nfeatures()];
+      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
+      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
+      Chunk responseChunk = null;
+      double [] tmp = new double[_output.nfeatures()];
+      float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
-      int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
+      if (_computeMetrics) {
+        if (isSupervised()) {
+          actual = new float[1];
+          responseChunk = chks[_output.responseIdx()];
+        } else
+          actual = new float[chks.length];
+      }
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        double[] p = score0(chks, row, tmp, preds);
+        double weight = weightsChunk.atd(row);
+        if (weight == 0) continue;
+        double offset = offsetChunk.atd(row);
+        double [] p = score0(chks, weight, offset, row, tmp, preds);
         if (_computeMetrics) {
-          float[] actual = new float[chks.length - startcol];
-          for (int c = startcol; c < chks.length; c++) {
-            actual[c - startcol] = (float) chks[c].atd(row);
+          if(isSupervised()) {
+            actual[0] = (float)responseChunk.atd(row);
+          } else {
+            for(int i = 0; i < actual.length; ++i)
+              actual[i] = (float)chks[i].atd(row);
           }
-          _mb.perRow(preds, actual, Model.this);
+          _mb.perRow(preds, actual, weight, offset, Model.this);
         }
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
     }
-    @Override public void reduce( BigScore bs ) { _mb.reduce(bs._mb); }
+    @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
 
-    @Override protected void postGlobal() { _mb.postGlobal(); }
+    @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
@@ -567,16 +682,36 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
+    return score0(chks, 1, 0, row_in_chunk, tmp, preds);
+  }
+  public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+    assert(_output.nfeatures() == tmp.length);
+    for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    return score0(tmp,preds);
+    double [] scored = score0(tmp, preds, weight, offset);
+    if(isSupervised()) {
+      // Correct probabilities obtained from training on oversampled data back to original distribution
+      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+      if( _output.isClassifier()) {
+        if (_parms._balance_classes)
+          GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
+        //assign label at the very end (after potentially correcting probabilities)
+        scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
+      }
+    }
+    return scored;
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
+
+  /**Override scoring logic for models that handle weight/offset**/
+  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
+    assert (weight == 1 && offset == 0) : "Override this method for non-trivial weight/offset!";
+    return score0(data, preds);
+  }
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double[] data){ return ArrayUtils.maxIndex(score0(data, new double[_output.nclasses()]));  }
@@ -649,7 +784,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
     toJavaInit(sb, fileContext).nl();
-    toJavaNAMES(sb);
+    toJavaNAMES(sb, fileContext);
     toJavaNCLASSES(sb);
     toJavaDOMAINS(sb, fileContext);
     toJavaPROB(sb);
@@ -674,8 +809,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected SB toJavaSuper( String modelName, SB sb ) {
     return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
   }
-  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names, _output.nfeatures()), "Names of columns used by model."); }
-  protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
+  private SB toJavaNAMES(SB sb, SB fileContextSB) {
+    String modelName = JCodeGen.toJavaId(_key.toString());
+    String namesHolderClassName = "NamesHolder_"+modelName;
+    sb.i().p("// ").p("Names of columns used by model.").nl();
+    sb.i().p("public static final String[] NAMES = "+namesHolderClassName+".VALUES;").nl();
+    // Generate class which fills the names into array
+    fileContextSB.i().p("// The class representing training column names").nl();
+    JCodeGen.toClassWithArray(fileContextSB, null, namesHolderClassName, Arrays.copyOf(_output._names, _output.nfeatures()));
+    return sb;
+  }
+  protected SB toJavaNCLASSES( SB sb ) {
+    return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb;
+  }
 
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     String modelName = JCodeGen.toJavaId(_key.toString());
@@ -686,15 +832,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String[] dom = _output._domains[i];
       String colInfoClazz = modelName+"_ColInfo_"+i;
       sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
-      sb.p(colInfoClazz).p(".VALUES");
+      if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
       if (i!=_output._domains.length-1) sb.p(',');
       sb.nl();
-      fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
-      JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
+      // Right now do not generate the class representing column
+      // since it does not hold any interesting information except String array holding domain
+      if (dom != null) {
+        fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
+        JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
+      }
     }
     return sb.ip("};").nl();
   }
-  protected SB toJavaPROB( SB sb) { return sb; }
+  protected SB toJavaPROB( SB sb) {
+    if(isSupervised()) {
+      JCodeGen.toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
+      JCodeGen.toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
+    }
+    return sb;
+  }
   protected boolean toJavaCheckTooBig() {
     Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
     return true;
@@ -731,8 +887,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
     assert data.numRows()==model_predictions.numRows();
     final Frame fr = new Frame(data);
+    boolean computeMetrics = data.find(_output.responseName()) != -1;
     try {
-      String[] warns = adaptTestForTrain(fr,true);
+      String[] warns = adaptTestForTrain(fr,true, computeMetrics);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
       
@@ -758,7 +915,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);
         genmodel = (GenModel)clz.newInstance();
-      } catch( Exception e ) { throw H2O.fail("Internal POJO compilation failed",e); }
+      } catch (Exception e) {
+        throw H2O.fail("Internal POJO compilation failed",e);
+      }
 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
@@ -787,5 +946,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Remove temp keys.
       cleanup_adapt(fr, data);
     }
+  }
+
+  @Override
+  public List<Key> getPublishedKeys() {
+    List<Key> p = Arrays.asList(_output._model_metrics);
+    p.addAll(super.getPublishedKeys());
+    return p;
   }
 }

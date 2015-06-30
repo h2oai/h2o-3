@@ -463,8 +463,8 @@ public class h2odriver extends Configured implements Tool {
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
-                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDir\n" +
-                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -notify notify.txt -disown -output hdfsOutputDir\n" +
+                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDir\n" +
+                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -notify notify.txt -disown -output hdfsOutputDir\n" +
                     "\n" +
                     "Exit value:\n" +
                     "          0 means the cluster exited successfully with an orderly Shutdown.\n" +

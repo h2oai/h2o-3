@@ -95,3 +95,53 @@ checkSummary <- function(object, expected, tolerance = 1e-6) {
       expect_equal(vecH2O[j], vecR[j], tolerance = tolerance)
   })
 }
+
+genDummyCols <- function(df, use_all_factor_levels = TRUE) {  
+  NUM <- function(x) { x[,sapply(x, is.numeric)] }
+  FAC <- function(x) { x[,sapply(x, is.factor)]  }
+  FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}
+  
+  df_fac <- data.frame(FAC(df))
+  if(ncol(df_fac) == 0) {
+    DF <- data.frame(NUM(df))
+    names(DF) <- colnames(df)[which(sapply(df, is.numeric))]
+  } else {
+    if(!"ade4" %in% rownames(installed.packages())) install.packages("ade4")
+    require(ade4)
+    
+    df_fac_acm <- acm.disjonctif(df_fac)
+    if (!use_all_factor_levels) {
+      fac_offs <- cumsum(c(1, FAC_LEVS(df_fac)))
+      fac_offs <- fac_offs[-length(fac_offs)]
+      df_fac_acm <- data.frame(df_fac_acm[,-fac_offs])
+    }
+    DF <- data.frame(df_fac_acm, NUM(df))
+    fac_nams <- mapply(function(x, cname) { 
+      levs <- levels(x)
+      if(!use_all_factor_levels) levs <- levs[-1]
+      paste(cname, levs, sep = ".") }, 
+      df_fac, colnames(df)[which(sapply(df, is.factor))])
+    fac_nams <- as.vector(unlist(fac_nams))
+    fac_range <- 1:ncol(df_fac_acm)
+    names(DF)[fac_range] <- fac_nams
+    
+    if(ncol(NUM(df)) > 0) {
+      num_range <- (ncol(df_fac_acm)+1):ncol(DF)
+      names(DF)[num_range] <- colnames(df)[which(sapply(df, is.numeric))]
+    }
+  }
+  
+  return(DF)
+}
+
+alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRUE, use_all_factor_levels = TRUE) {
+  df.clone <- df
+  is_num <- sapply(df.clone, is.numeric)
+  df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
+  df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
+  if (ignore_const_cols) {
+    is_const <- sapply(df.clone, function(z) { var(z, na.rm = TRUE) == 0 })
+    df.clone <- df.clone[,!is_const]
+  }
+  genDummyCols(df.clone, use_all_factor_levels)
+}

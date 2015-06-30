@@ -448,7 +448,8 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   xx <- x
   for (j in seq_along(x)) {
     if( formats[j] == "%d" ) formats[j] <- "%f"
-    xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
+    if( is.na(x[[j]]) ) xx[[j]] <- ""
+    else                xx[[j]] <- sprintf(formats[j], x[[j]])
   }
 
   # drop empty columns
@@ -515,10 +516,9 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #' Determine if an H2O cluster is up or not
 #'
 #' @return TRUE if the cluster is up; FALSE otherwise
+#' @export
 h2o.clusterIsUp <- function(conn) {
   rv <- .h2o.doRawREST(conn, urlSuffix = "", method="GET")
-  !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
-}
 
 #'
 #' Dump the stack into the JVM's stdout.
@@ -531,7 +531,7 @@ h2o.killMinus3 <- function() {
 }
 
 #' Print H2O cluster info
-#'
+#' @export
 h2o.clusterInfo <- function() {
   conn = h2o.getConnection()
   if(! h2o.clusterIsUp(conn)) {

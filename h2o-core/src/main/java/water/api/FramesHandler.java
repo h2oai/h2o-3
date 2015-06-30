@@ -54,8 +54,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Class which contains the internal representation of the frames list and params. */
   protected static final class Frames extends Iced {
     Key frame_id;
-    long offset;
-    int len;
+    long row_offset;
+    int row_count;
+    long column_offset;
+    int column_count;
     Frame[] frames;
     String column;
     public boolean find_compatible_models = false;
@@ -104,7 +106,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         if (frame_column_names.containsAll(model_cols)) {
           // See if adapt throws an exception or not.
           try {
-            if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
+            if( model.adaptTestForTrain(new Frame(frame), false, false).length == 0 )
               compatible_models.add(model);
           } catch( IllegalArgumentException e ) {
             // skip
@@ -207,7 +209,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, true);
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count, true);
     return s;
   }
 
@@ -236,7 +238,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, force_summary);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count, force_summary);  // TODO: Refactor with FrameBase
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());

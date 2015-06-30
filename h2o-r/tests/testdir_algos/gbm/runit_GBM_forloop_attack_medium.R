@@ -1,71 +1,93 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
+# Constants and setters
+bools <- c(TRUE, FALSE)
+set_x <- function(cols) {
+  if(sample(bools,1)) {
+    while (TRUE){
+      myX <- cols
+      for(i in 1:length(cols))
+        if (sample(bools, 1))
+          myX <- myX[-i]
+      if(length(myX) > 0)
+        break
+    }
+    return(myX)
+  } else
+    cols
+}
+set_y <- function(col) return(col)
+set_training_frame <- function(frame) return(frame)
+set_validation_frame <- function(frame) return(frame)
+set_distribution <- function(distribution) return(distribution)
+set_ntrees <- function() sample.int(50, 1)
+set_max_depth <- function() sample.int(30, 1)
+set_min_rows <- function() sample.int(20, 1)
+set_learn_rate <- function() runif(1)
+set_nbins <- function() sample(2:1000, 1)
+set_nbins_cats <- function() {}
+set_balance_classes <- function() sample(bools, 1)
+set_max_after_balance_size <- function(balance) {
+  if (sample(bools, 1))
+    return(runif(1, 1, 100))
+  else
+    return(runif(1, 0.1, 1))
+}
+set_nfolds <- function() {}
+set_score_each_iteration <- function() sample(bools, 1)
+
 randomParams <- function(distribution, train, test, x, y) {
   parms <- list()
-  # used to sample a T or F
-  bools <- c(TRUE, FALSE)
-  parms$training_frame <- train
-  Log.info(paste("Using training_frame:", deparse(substitute(train))))
-  # Remove some cols, or not
-  while (TRUE){
-    myX <- x
-    for(i in 1:length(x))
-      if (sample(bools, 1))
-        myX <- myX[-i]
-    if(length(myX) > 0)
-      break
-  }
-  parms$x <- myX
-  Log.info(paste("x:", paste(parms$x, collapse = ", ")))
-  parms$y <- y
-  Log.info(paste("y:", parms$y))
-  parms$distribution <- distribution
-  Log.info(paste("distribution:", parms$distribution))
-  # [1, 100,000]
-  parms$ntrees <- sample.int(50,1)
-  Log.info(paste("ntrees:", parms$ntrees))
-  # [1, maxInt]
-  parms$max_depth <- sample.int(30, 1)
-  Log.info(paste("max_depth:", parms$max_depth))
-  # [1, maxInt]
-  parms$min_rows <- sample.int(20, 1)
-  Log.info(paste("min_rows:", parms$min_rows))
-  # (0, 1]
-  parms$learn_rate <- runif(1)
-  Log.info(paste("learn_rate:", parms$learn_rate))
-  # [2, 1,000]  ## realistically important values, 1 shouldn't be acceptable
-  parms$nbins <- sample(2:1000, 1)
-  Log.info(paste("nbins:", parms$nbins))
-  if(sample(bools,1))
-    parms$validation_frame <- test
-    Log.info(paste("validation_frame:", deparse(substitute(test))))
-  # parms$score_each_iteration <- sample(bools, 1)
 
-  if(distribution %in% c("multinomial", "bernoulli")) {
-    parms$balance_classes <- sample(bools, 1)
-    Log.info(paste("balance_classes:", parms$balance_classes))
-  # if balance_classes TRUE, maybe max_size_after_balance
-    if (parms$balance_classes && sample(bools, 1))
-      # Pick either larger than initial size, or smaller
-      if (sample(bools, 1)) {
-        parms$max_after_balance_size <- runif(1, 1, 1000)
-        Log.info(paste("max_after_balance_size:", parms$max_after_balance_size))
-      } else {
-        parms$max_after_balance_size <- runif(1)
-        Log.info(paste("max_after_balance_size:", parms$max_after_balance_size))
-      }
-    hh <- do.call("h2o.gbm", parms)
+  parm_set <- function(parm, required = FALSE, dep = TRUE, ...) {
+    if (!dep)
+      return(NULL)
+    if (required || sample(bools,1)) {
+      val <- do.call(paste0("set_", parm), list(...))
+      if (!is.null(val))
+        if (is.vector(val))
+          Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
+        else if (inherits(val, "H2OFrame"))
+          Log.info(paste0(sub("_", " ", parm), ": ", val@frame_id))
+        else
+          Log.info(paste0(sub("_", " ", parm), ": ", val))
+      return(val)
+    }
+    return(NULL)
   }
-  else
-    hh <- do.call("h2o.gbm", parms)
+
+  parms$x <- parm_set("x", required = TRUE, cols = x)
+  parms$y <- parm_set("y", required = TRUE, col = y)
+  parms$training_frame <- parm_set("training_frame", required = TRUE, frame = train)
+  parms$validation_frame <- parm_set("validation_frame", frame = test)
+  parms$distribution <- parm_set("distribution", required = TRUE, distribution = distribution)
+  parms$ntrees <- parm_set("ntrees")
+  parms$max_depth <- parm_set("max_depth")
+  parms$min_rows <- parm_set("min_rows")
+  parms$learn_rate <- parm_set("learn_rate")
+  parms$nbins <- parm_set("nbins")
+  # parms$nbins_cats <- parm_set("nbins_cats")
+  parms$balance_classes <- parm_set("balance_classes",
+    dep = distribution %in% c("multinomial", "bernoulli"))
+  parms$max_after_balance_size <- parm_set("max_after_balance_size",
+    dep = !is.null(parms$balance_classes) && parms$balance_classes)
+  parms$score_each_iteration <- parm_set("score_each_iteration")
+
+  t <- system.time(hh <- do.call("h2o.gbm", parms))
+  print(hh)
 
   h2o.rm(hh@model_id)
+  print("#########################################################################################")
+  print("")
+  print(t)
+  print("")
+
 }
 
 test.GBM.rand_attk_forloop <- function(conn) {
   Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   # This as.factor is bugged
   # pros.hex[,4] <- as.factor(pros.hex[,4])

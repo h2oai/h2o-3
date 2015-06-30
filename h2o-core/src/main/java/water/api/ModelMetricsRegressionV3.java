@@ -9,9 +9,9 @@ public class ModelMetricsRegressionV3<I extends ModelMetricsRegression, S extend
 //  @API(help="The Standard Deviation of the response for this scoring run.", direction=API.Direction.OUTPUT)
 //  public double sigma;
 
-  @Override public ModelMetricsRegressionV3 fillFromImpl(ModelMetricsRegression modelMetrics) {
+  @Override public S fillFromImpl(ModelMetricsRegression modelMetrics) {
     super.fillFromImpl(modelMetrics);
     r2 = modelMetrics.r2();
-    return this;
+    return (S) this;
   }
 }

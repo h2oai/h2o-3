@@ -18,8 +18,6 @@ parser.add_argument('--host', help='hostname to attach to', default='localhost')
 parser.add_argument('--port', help='port to attach to', type=int, default=54321)
 parser.add_argument('--dest', help='destination directory', default=(here + '/../h2o-docs'))
 parser.add_argument('--generate_html', help='translate the Markdown to HTML', action='store_true', default=False)
-parser.add_argument('--github_user', help='github user, for Markdown -> HTML rendering')
-parser.add_argument('--github_password', help='github password, for Markdown -> HTML rendering')
 args = parser.parse_args()
 
 h2o.H2O.verbose = True if args.verbose else False

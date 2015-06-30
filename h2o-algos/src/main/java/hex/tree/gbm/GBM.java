@@ -9,7 +9,7 @@ import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
-import water.fvec.Vec;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -38,8 +38,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override public Job<GBMModel> trainModel() {
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
-
-  @Override public Vec vresponse() { return super.vresponse() == null ? response() : super.vresponse(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -82,6 +80,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       mean = _response.mean();
+      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1)) {
+        FrameUtils.WeightedMean wm = new FrameUtils.WeightedMean();
+        mean = (float) (hasOffset() ? wm.doAll(_response, _weights, _offset) : wm.doAll(_response, _weights)).weightedMean();
+      }
+
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
 
@@ -96,9 +99,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", "Binomial requires the response to be a 2-class categorical");
-      else if( _response != null ) 
+      else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         _initialPrediction = Math.log(mean / (1.0 - mean));
+        if (_offset != null) throw H2O.unimpl("Newton-Raphson iteration needed.");
+      }
       break;
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
@@ -124,12 +129,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if( init != 0.0 )       // Only non-zero for regression or bernoulli
         new MRTask() {
           @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-        }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
+        }.doAll(vec_tree(_train,0), _parms._build_tree_one_node); // Only setting tree-column 0
 
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
         Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, _model._output._treeKeys).doAll(_train);
+        new ResidualsCollector(_ncols, _nclass, (hasOffset()?1:0)+(hasWeights()?1:0),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
       }
 
@@ -138,7 +143,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms._checkpoint ) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, false, false);
+          double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error
         }
@@ -146,12 +151,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // ESL2, page 387
         // Step 2a: Compute prediction (prob distribution) from prior tree results:
         //   Work <== f(Tree)
-        new ComputeProb().doAll(_train);
+        new ComputeProb().doAll(_train, _parms._build_tree_one_node);
 
         // ESL2, page 387
         // Step 2b i: Compute residuals from the prediction (probability distribution)
         //   Work <== f(Work)
-        new ComputeRes().doAll(_train);
+        new ComputeRes().doAll(_train, _parms._build_tree_one_node);
 
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
@@ -161,7 +166,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
       }
       // Final scoring (skip if job was cancelled)
-      doScoringAndSaveModel(true, false, false);
+      doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
     }
 
     // --------------------------------------------------------------------------
@@ -184,7 +189,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         } else if( _nclass > 1 ) {       // Classification
           double fs[] = new double[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
-            double sum = score1(chks,fs,row);
+            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
+            double offset = hasOffset() ? chk_offset(chks).atd(row) : 0;
+            double sum = score1(chks, weight,offset,fs,row);
             if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
                 chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
@@ -249,9 +256,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
 
-      // Adjust nbins for the top-levels
-      final int top_level_extra_bins = 1<<10;
-      int nbins = Math.max(top_level_extra_bins,_parms._nbins);
+      // Adjust real bins for the top-levels
+      int adj_nbins = Math.max(_parms._nbins_top_level,_parms._nbins);
 
       for( int k=0; k<_nclass; k++ ) {
         // Initially setup as-if an empty-split had just happened
@@ -261,8 +267,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // inverse of the first.  This is false for DRF (and true for GBM) -
           // DRF picks a random different set of columns for the 2nd tree.
           if( k==1 && _nclass==2 ) continue;
-          ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_nclass,_parms._min_rows);
-          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,nbins,hcs[k][0],false) ); // The "root" node
+          ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_parms._nbins_cats, (char)_nclass,_parms._min_rows);
+          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,adj_nbins,_parms._nbins_cats,hcs[k][0]) ); // The "root" node
         }
       }
       int[] leafs = new int[_nclass]; // Define a "working set" of leaf splits, from here to tree._len
@@ -274,9 +280,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
         if( !isRunning() ) return;
-
-        hcs = buildLayer(_train, nbins, ktrees, leafs, hcs, false, false);
-
+        hcs = buildLayer(_train, adj_nbins, _parms._nbins_cats, ktrees, leafs, hcs, false, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
@@ -418,14 +422,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             assert !ress.isNA(row);
 
             // Compute numerator (rs) and denominator (gs) of gamma
+            double w = hasWeights() ? chk_weight(chks).atd(row) : 1;
             double res = ress.atd(row);
             double ares = Math.abs(res);
             if( _isBernoulli ) {
               double prob = resp.atd(row) - res;
-              gs[leafnid-leaf] += prob*(1-prob);
+              gs[leafnid-leaf] += w*prob*(1-prob);
             } else
-              gs[leafnid-leaf] += _nclass > 1 ? ares*(1-ares) : 1;
-            rs[leafnid-leaf] += res;
+              gs[leafnid-leaf] += w*(_nclass > 1 ? ares*(1-ares) : 1);
+            rs[leafnid-leaf] += w*res;
           }
         }
       }
@@ -496,7 +501,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
+  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
       fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
       fs[2] = 1.0-fs[1];

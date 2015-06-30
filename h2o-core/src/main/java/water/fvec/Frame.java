@@ -150,7 +150,7 @@ public class Frame extends Lockable<Frame> {
       lastName = pint(name);
     if( _lastNameBig && _names.length > 0 ) {
       String last = _names[_names.length-1];
-      if( last.charAt(0)=='C' && lastName == pint(last)+1 )
+      if( !last.equals("") && last.charAt(0)=='C' && lastName == pint(last)+1 )
         return name;
     }
     int cnt=0, again, max=0;
@@ -323,7 +323,8 @@ public class Frame extends Lockable<Frame> {
   /**   Finds the matching column index, or -1 if missing
    *  @return the matching column index, or -1 if missing */
   public int find( Vec vec ) {
-    Vec[] vecs = vecs();
+    Vec[] vecs = vecs(); //warning: side-effect
+    if (vec == null) return -1;
     for( int i=0; i<vecs.length; i++ )
       if( vec.equals(vecs[i]) )
         return i;
@@ -442,12 +443,39 @@ public class Frame extends Lockable<Frame> {
 
   // Add a bunch of vecs
   public void add( String[] names, Vec[] vecs) {
-    add(names, vecs, vecs.length);
+    bulkAdd(names, vecs);
   }
   public void add( String[] names, Vec[] vecs, int cols ) {
     if (null == vecs || null == names) return;
-    for( int i=0; i<cols; i++ )
-      add(names[i],vecs[i]);
+    if (cols == names.length && cols == vecs.length) {
+      bulkAdd(names, vecs);
+    } else {
+      for (int i = 0; i < cols; i++)
+        add(names[i], vecs[i]);
+    }
+  }
+
+  /** Append multiple named Vecs to the Frame.  Names are forced unique, by appending a
+   *  unique number if needed.
+   */
+  private void bulkAdd(String[] names, Vec[] vecs) {
+    String[] tmpnames = names.clone();
+    int N = names.length;
+    assert(names.length == vecs.length):"names = " + Arrays.toString(names) + ", vecs len = " + vecs.length;
+    for (int i=0; i<N; ++i) {
+      vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i])).anyVec() : null;
+      checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch
+    }
+
+    int ncols = _keys.length;
+    _names = Arrays.copyOf(_names, ncols+N);
+    _keys = Arrays.copyOf(_keys, ncols+N);
+    _vecs = Arrays.copyOf(_vecs, ncols+N);
+    for (int i=0; i<N; ++i) {
+      _names[ncols+i] = tmpnames[i];
+      _keys[ncols+i] = vecs[i]._key;
+      _vecs[ncols+i] = vecs[i];
+    }
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
@@ -898,32 +926,17 @@ public class Frame extends Lockable<Frame> {
       ff.delete();
       return fr2;
     }
-    Frame predVec = (Frame)orows;
-    Vec vrows = predVec.anyVec();
-    if( !isCompatible(predVec) ) {
-      vrows = makeCompatible(new Frame(predVec.anyVec())).anyVec();
-      DKV.put(vrows);
+    Frame frows = (Frame)orows;
+    // It's a compatible Vec; use it as boolean selector.
+    // Build column names for the result.
+    Vec [] vecs = new Vec[c2.length+1];
+    String [] names = new String[c2.length+1];
+    for(int i = 0; i < c2.length; ++i){
+      vecs[i] = _vecs[c2[i]];
+      names[i] = _names[c2[i]];
     }
-
-    // create a dummy cbound frame
-    Vec[] vecs;
-    String[] names;
-
-    if( ocols==null ) {
-      vecs = Arrays.copyOf(vecs(), numCols()+1);
-      vecs[vecs.length-1] = vrows;
-      names = Arrays.copyOf(names(),numCols()+1);
-      names[names.length-1] = "predicate"+Key.rand().substring(0,5);
-    } else {
-      vecs = new Vec[c2.length + 1];
-      names = new String[c2.length + 1];
-      for (int i = 0; i < c2.length; ++i) {
-        vecs[i] = _vecs[c2[i]];
-        names[i] = _names[c2[i]];
-      }
-      vecs[c2.length] = vrows;
-      names[c2.length] = "predicate";
-    }
+    vecs[c2.length] = frows.anyVec();
+    names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
     return new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
   }
@@ -1138,9 +1151,11 @@ public class Frame extends Lockable<Frame> {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
-            if( chk instanceof C16Chunk ) nchks[j].addUUID(chk, i);
-            else if(chk instanceof CStrChunk) nchks[j].addStr((chk.atStr(new ValueString(), i)));
-            else nchks[j].addNum(chk.atd(i));
+            if( chk.isNA(i) )                   nchks[j].addNA();
+            else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
+            else if(chk instanceof CStrChunk)   nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
+            else                                nchks[j].addNum(chk.at8(i),0);
           }
         }
       }
@@ -1224,7 +1239,7 @@ public class Frame extends Lockable<Frame> {
             if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
             else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
             else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-            else if (vs[i].isString()) sb.append(vs[i].atStr(new ValueString(), _row));
+            else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
             else {
               double d = vs[i].at(_row);
               // R 3.1 unfortunately changed the behavior of read.csv().

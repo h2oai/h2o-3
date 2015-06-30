@@ -7,12 +7,11 @@ YARN (Yet Another Resource Manager) is a resource management framework. H2O can 
 
 When you launch H2O on Hadoop using the `hadoop jar` command, YARN allocates the necessary resources to launch the requested number of nodes. H2O launches as a MapReduce (V2) task, where each mapper is an H2O node of the specified size. 
 
+`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName`
+
 Occasionally, YARN may reject a job request. This usually occurs because either there is not enough memory to launch the job or because of an incorrect configuration. 
 
-If YARN rejects the job request, try launching the job with less memory to see if that is the cause of the failure. Specify smaller values (we recommend `1`) for `-mapperXmx` and `-nodes` to confirm that H2O can launch successfully:
-
-`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName`
-
+If YARN rejects the job request, try launching the job with less memory to see if that is the cause of the failure. Specify smaller values for `-mapperXmx` (we recommend a minimum of `2g`) and `-nodes` (start with `1`) to confirm that H2O can launch successfully.
 
 To resolve configuration issues, adjust the maximum memory that YARN will allow when launching each mapper. If the cluster manager settings are configured for the default maximum memory size but the memory required for the request exceeds that amount, YARN will not launch and H2O will time out. If you are using the default configuration, change the configuration settings in your cluster manager to specify memory allocation when launching mapper tasks. To calculate the amount of memory required for a successful launch, use the following formula: 
 
@@ -66,11 +65,12 @@ To verify the values were changed, check the values for the following properties
 
 ##Limiting CPU Usage 
 
-To limit the number of CPUs used by H2O, use the `-nthreads` option and specify the maximum number of CPUs for a single container to use. The following example limits the number of CPUs to two:  
+To limit the number of CPUs used by H2O, use the `-nthreads` option and specify the maximum number of CPUs for a single container to use. The following example limits the number of CPUs to four:  
 
-`java -jar h2o.jar -nthreads 2`
+`hadoop jar h2odriver.jar -nthreads 4 -nodes 1 -mapperXmx 6g -output hdfsOutputDirName`
  
-The default is 4*the number of CPUs. 
+**Note**: The default is 4*the number of CPUs. You must specify at least four CPUs; otherwise, the following error message displays: 
+`ERROR: nthreads invalid (must be >= 4)` 
 
 ##Specifying Queues
 
@@ -82,7 +82,7 @@ To specify a queue with Hadoop, enter `-Dmapreduce.job.queuename=<queue name>`
 
 For example, 
 
-`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=default -nodes 1 -mapperXmx 1g -output hdfsOutputDirName`. 
+`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=default -nodes 1 -mapperXmx 6g -output hdfsOutputDirName` 
 
 
 

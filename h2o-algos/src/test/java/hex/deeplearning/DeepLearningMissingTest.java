@@ -27,18 +27,18 @@ public class DeepLearningMissingTest extends TestUtil {
     Frame train = null;
     Frame test = null;
     Frame data = null;
-    DeepLearningModel.DeepLearningParameters p;
+    DeepLearningParameters p;
     Log.info("");
     Log.info("STARTING.");
     Log.info("Using seed " + seed);
 
-    Map<DeepLearningModel.DeepLearningParameters.MissingValuesHandling,Double> sumErr = new TreeMap<>();
+    Map<DeepLearningParameters.MissingValuesHandling,Double> sumErr = new TreeMap<>();
 
     StringBuilder sb = new StringBuilder();
-    for (DeepLearningModel.DeepLearningParameters.MissingValuesHandling mvh :
-            new DeepLearningModel.DeepLearningParameters.MissingValuesHandling[]{
-            DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip,
-            DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation })
+    for (DeepLearningParameters.MissingValuesHandling mvh :
+            new DeepLearningParameters.MissingValuesHandling[]{
+            DeepLearningParameters.MissingValuesHandling.Skip,
+            DeepLearningParameters.MissingValuesHandling.MeanImputation })
     {
       double sumerr = 0;
       Map<Double,Double> map = new TreeMap<>();
@@ -69,14 +69,14 @@ public class DeepLearningMissingTest extends TestUtil {
           }
 
           // Build a regularized DL model with polluted training data, score on clean validation set
-          p = new DeepLearningModel.DeepLearningParameters();
+          p = new DeepLearningParameters();
           p._train = train._key;
           p._valid = test._key;
           p._response_column = train._names[train.numCols()-1];
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
-          p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
-          p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+          p._loss = DeepLearningParameters.Loss.Huber;
+          p._activation = DeepLearningParameters.Activation.Tanh;
           p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
@@ -84,6 +84,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._model_id = Key.make();
           p._reproducible = true;
           p._seed = seed;
+          p._elastic_averaging = false;
 
           // Convert response to categorical
           int ri = train.numCols()-1;
@@ -134,8 +135,8 @@ public class DeepLearningMissingTest extends TestUtil {
       sumErr.put(mvh, sumerr);
     }
     Log.info(sb.toString());
-    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip) > 2.4);
-    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1.0);
+    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip) > 2.3);
+    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1.0);
   }
 }
 

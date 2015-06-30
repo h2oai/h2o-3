@@ -1,15 +1,11 @@
 package water.api;
 
-import com.brsanthu.googleanalytics.ScreenViewHit;
 import water.*;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.util.GetLogsFromNode;
-import water.util.HttpResponseStatus;
-import water.util.Log;
-import water.util.RString;
+import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -18,8 +14,8 @@ import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -72,8 +68,8 @@ public class RequestServer extends NanoHTTPD {
 
   // An array of regexs-over-URLs and handling Methods.
   // The list is searched in-order, first match gets dispatched.
-  private static final LinkedHashMap<Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
-  private static final LinkedHashMap<Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
+  private static final LinkedHashMap<java.util.regex.Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
+  private static final LinkedHashMap<java.util.regex.Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
   public static final int numRoutes() { return _routes.size(); }
   public static final Collection<Route> routes() { return _routes.values(); }
 
@@ -179,6 +175,12 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll",
       "Delete all Models from the H2O distributed K/V store.");
 
+    // Model serialization - import/export calls
+    register("/99/Models.bin/(?<modelid>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel",                            new String[] {"model_id"},
+            "Import given binary model into H2O.");
+    register("/99/Models.bin/(?<modelid>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel",                            new String[] {"model_id"},
+            "Export given model.");
+
     register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility",
       "Set Model Builders visibility level.");
     register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
@@ -247,7 +249,8 @@ public class RequestServer extends NanoHTTPD {
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
-    register("/3/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/99/Rapids/isEval"                                   ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", new String[] { "key"}, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
@@ -377,7 +380,7 @@ public class RequestServer extends NanoHTTPD {
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
     Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
     Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params, handler_factory);
-    _routes.put(uri_pattern, route);
+    _routes.put(uri_pattern.pattern(), route);
     return route;
   }
 
@@ -422,7 +425,7 @@ public class RequestServer extends NanoHTTPD {
       String fallback_route_uri = "/" + i + "/" + route_m.group(2);
       Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
       Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params, fallback._handler_factory);
-      _fallbacks.put(fallback_route_pattern, generated);
+      _fallbacks.put(fallback_route_pattern.pattern(), generated);
     }
 
     // Better be there in the _fallbacks cache now!
@@ -468,28 +471,22 @@ public class RequestServer extends NanoHTTPD {
   }
 
     // Log all requests except the overly common ones
-  void maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
-    if (uri.endsWith(".css")) return;
-    if (uri.endsWith(".js")) return;
-    if (uri.endsWith(".png")) return;
-    if (uri.endsWith(".ico")) return;
+  boolean maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
+    if (uri.endsWith(".css") ||
+        uri.endsWith(".js") ||
+        uri.endsWith(".png") ||
+        uri.endsWith(".ico")) return false;
 
-    if (uri.contains("/Cloud")) return;
-    if (uri.contains("/Jobs") && method.equals("GET")) return;
-    if (uri.contains("/Log")) return;
-    if (uri.contains("/Progress")) return;
-    if (uri.contains("/Typeahead")) return;
-    if (uri.contains("/WaterMeterCpuTicks")) return;
+    if (uri.contains("/Cloud") ||
+        (uri.contains("/Jobs") && method.equals("GET")) ||
+        uri.contains("/Log") ||
+        uri.contains("/Progress") ||
+        uri.contains("/Typeahead") ||
+        uri.contains("/WaterMeterCpuTicks")) return false;
 
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
-
-    if (H2O.GA != null) {
-      if (header.getProperty("user-agent") != null)
-        H2O.GA.postAsync(new ScreenViewHit(uri).customDimension(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
-      else
-      H2O.GA.postAsync(new ScreenViewHit(uri));
-    }
+    return true;
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -573,13 +570,16 @@ public class RequestServer extends NanoHTTPD {
 
     // Load resources, or dispatch on handled requests
     try {
+      boolean logged;
       // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
       if (method.equals("GET") && uri.equals("/")) {
-        maybeLogRequest(method, uri, "", parms, header);
+        logged = maybeLogRequest(method, uri, "", parms, header);
+        if (logged) GAUtils.logRequest(uri, header);
         return redirectToFlow();
       }
       if (method.equals("GET") && uri.endsWith("/Logs/download")) {
-        maybeLogRequest(method, uri, "", parms, header);
+        logged = maybeLogRequest(method, uri, "", parms, header);
+        if (logged) GAUtils.logRequest(uri, header);
         return downloadLogs();
       }
       if (method.equals("GET")) {
@@ -608,8 +608,10 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
+        logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms, header);
+        if (logged) GAUtils.logRequest(uri, header);
         Schema s = handle(type, route, version, parms);
+        PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
         Response r = wrap(s, type);
         return r;
       }
@@ -853,13 +855,13 @@ public class RequestServer extends NanoHTTPD {
     }
     arl.add(new MenuItem(base_url, name));
     */
-    return route._url_pattern.pattern();
+    return route._url_pattern.namedPattern();
   }
 
   // Return URLs for things that want to appear Frame-inspection page
   static String[] frameChoices( int version, Frame fr ) {
     ArrayList<String> al = new ArrayList<>();
-    for( Pattern p : _routes.keySet() ) {
+    for( java.util.regex.Pattern p : _routes.keySet() ) {
       try {
         Method meth = _routes.get(p)._handler_method;
         Class clz0 = meth.getDeclaringClass();
@@ -934,7 +936,7 @@ public class RequestServer extends NanoHTTPD {
         boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
         if (healthy) {
           GetLogsFromNode g = new GetLogsFromNode();
-          g.nodeidx = 0;
+          g.nodeidx = i;
           g.doIt();
           bytes = g.bytes;
         } else {

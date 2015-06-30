@@ -4,6 +4,7 @@ import water.*;
 import water.api.FrameV3;
 import water.api.KeyV3;
 import water.api.Schema;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 
 import java.lang.reflect.Array;
@@ -19,6 +20,7 @@ public class PojoUtils {
     DEST_HAS_UNDERSCORES,
     ORIGIN_HAS_UNDERSCORES
   }
+
 
   /**
    * Copy properties "of the same name" from one POJO to the other.  If the fields are
@@ -302,5 +304,67 @@ public class PojoUtils {
         Log.err("Instantiation exception trying to copy field: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
       }
     }
+  }
+
+  /**
+   * Null out fields in this schema and its children as specified by parameters __exclude_fields and __include_fields.
+   * <b>NOTE: modifies the scheme tree in place.</b>
+   */
+  public static void filterFields(Object o, String includes, String excludes) {
+    if (null == excludes || "".equals(excludes))
+      return;
+
+    if (null != includes) // not yet implemented
+      throw new H2OIllegalArgumentException("_include_fields", "filterFields", includes);
+
+    String[] exclude_paths = excludes.split(",");
+    for (String path : exclude_paths) {
+      // for each path. . .
+
+      int slash = path.indexOf("/");
+      if (-1 == slash || slash == path.length()) { // NOTE: handles trailing slash
+        // we've hit the end: null the field, if it exists
+        Field f = ReflectionUtils.findNamedField(o, path);
+        if (null == f) throw new H2OIllegalArgumentException("_exclude_fields", "filterFields", path);
+
+        try {
+          f.set(o, null);
+        }
+        catch (IllegalAccessException e) {
+          throw new H2OIllegalArgumentException("_exclude_fields", "filterFields", path);
+        }
+      } // hit the end of the path
+      else {
+        String first = path.substring(0, slash);
+        String rest = path.substring(slash + 1);
+
+        Field f = ReflectionUtils.findNamedField(o, first);
+        if (null == f) throw new H2OIllegalArgumentException("_exclude_fields", "filterFields", path);
+
+        if (f.getType().isArray() && Object.class.isAssignableFrom(f.getType().getComponentType())) {
+          // recurse into the children with the "rest" of the path
+          try {
+            Object[] field_value = (Object[]) f.get(o);
+            for (Object child : field_value) {
+              filterFields(child, null, rest);
+            }
+          }
+          catch (IllegalAccessException e) {
+            throw new H2OIllegalArgumentException("_exclude_fields", "filterFields", path);
+          }
+        } else if (Object.class.isAssignableFrom(f.getType())) {
+          // recurse into the child with the "rest" of the path
+          try {
+            Object field_value = f.get(o);
+            filterFields(field_value, null, rest);
+          }
+          catch (IllegalAccessException e) {
+            throw new H2OIllegalArgumentException("_exclude_fields", "filterFields", path);
+          }
+        } else {
+          throw new H2OIllegalArgumentException("_exclude_fields", "filterFields", path);
+        }
+      } // need to recurse
+    } // foreach exclude_paths
   }
 }

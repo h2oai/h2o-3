@@ -9,7 +9,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 test <- function(h) {
 	#If you want to run the below code in R terminal, add the next two commented lines that inports h2o library into R and starts H2O cloud
-	#Then modify file path on line 16 to specify full path to the data file, like- "/Users/.../.." 
+	#Then modify file path on line 16 to specify full path to the data file, like- "/Users/.../.."
 	#Copy paste the code of the function in the R terminal
 	# library(h2o)
 	# h <- h2o.init()
@@ -36,8 +36,8 @@ test <- function(h) {
 	myY <- "medv"
 
 	#Build gbm models by running a grid over interaction depth
-	my_gbm <- h2o.gbm(x=myX,y=myY,loss="gaussian",data=BH_train,n.trees=500,
-	                      interaction.depth=c(2,3,4),shrinkage=0.01)
+	my_gbm <- h2o.gbm(x=myX,y=myY,distribution="gaussian",training_frame=BH_train,ntrees=500,
+	                      max_depth=c(2,3,4),learn_rate=0.01)
 	print(my_gbm)
 	#my_gbm is an S4 object and mse for all trees can be accessed for say, the first model, using following syntax
 	my_gbm@model[[1]]@model$err
@@ -47,16 +47,16 @@ test <- function(h) {
 
 	#Build randomForest models by running a grid over ntrees
 	# Note: at present fast mode(default) random forest does not support regression.Change mode to BigData, by setting type = "BigData" in the function call
-	# In BigData mode stat.type is ignored and only mse is used as the split measure. 
+	# In BigData mode stat.type is ignored and only mse is used as the split measure.
 	# Check ?h2o.randomForest for more info
-	my_rf <- h2o.randomForest(x=myX,y=myY,data=BH_train,classification=F,validation=BH_train,
-                         ntree=c(100,200,300),depth=10, type = "BigData")
+	my_rf <- h2o.randomForest(x=myX,y=myY,training_frame=BH_train,validation_frame=BH_train,
+                         ntrees=c(100,200,300),max_depth=10)
 	print(my_rf)
 	#Access mse's for the first model
 	my_rf@model[[1]]@model$mse
 
 
-	#Prediction 
+	#Prediction
 	print("Summary of gbm on Boston Housing dataset, MSE reported on test set")
 	for(i in 1:3){
   		model_obj <- my_gbm@model[[i]]
@@ -66,15 +66,15 @@ test <- function(h) {
   		gbm_pred
   		#Calculate the mean squared error for the test set
   		MSE <- mean(((BH_test$medv-gbm_pred)^2))
-  
+
   		#Access the params of the built model
   		trees <- model_obj@model$params$n.trees
   		shrinkage <- model_obj@model$params$shrinkage
   		depth <- model_obj@model$params$interaction.depth
-  
+
   		print(paste ("ntree=",trees, "  shrinkage=",shrinkage, "  interaction_depth=",
                depth, "  MSE_on_Test_set=", round(MSE,2), sep=''))
-	}  
+	}
 
 	print("Summary of randomForest on Boston Housing dataset, MSE reported on test set")
 	for(i in 1:3){
@@ -85,14 +85,14 @@ test <- function(h) {
   		rf_pred
   		#Calculate the mean squared error on the test set
   		MSE  <- mean(((BH_test$medv-rf_pred)^2))
-  
+
   		#Access the params of the model
   		trees <- model_obj@model$params$ntree
   		depth <- model_obj@model$params$depth
-  
+
   		print(paste ("ntree=",trees, "  depth=",
                depth, "  MSE_on_Test_set=", round(MSE,2), sep=''))
-	}	  
+	}
 
 testEnd()
 }
