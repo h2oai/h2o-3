@@ -12,7 +12,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     int _mtries = -1;
     float _sample_rate = 0.632f;
-    public boolean _binomial_double_trees = true;
+    public boolean _binomial_double_trees = false;
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
