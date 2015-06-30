@@ -20,7 +20,7 @@
 #'        column, "DESCALE": for dividing by the standard deviation of each
 #'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
 #'        for demeaning and dividing each column by its range (max - min).
-#' @param method A character string that indicates how PCA should be calculated.
+#' @param pca_method A character string that indicates how PCA should be calculated.
 #'        Possible values are "GramSVD": distributed computation of the Gram matrix
 #'        followed by a local SVD using the JAMA package, "Power": computation of
 #'        the SVD using the power iteration method, "GLRM": fit a generalized low
