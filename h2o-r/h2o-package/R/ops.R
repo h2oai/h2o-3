@@ -113,7 +113,9 @@ setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.nary_row_
 #' @export
 setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
   if( na.rm ) stop("Unimplemented, passing the NA flag")
-  .h2o.nary_scalar_op(.Generic, x, ...)
+  res <- .h2o.nary_scalar_op(.Generic, x, ...)
+  if( .Generic=="all" ) res <- as.logical(res)
+  res
 })
 
 ##`
