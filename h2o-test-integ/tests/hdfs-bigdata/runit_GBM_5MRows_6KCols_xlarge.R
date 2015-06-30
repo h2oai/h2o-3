@@ -19,7 +19,7 @@ heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
-hdfs_data_file = "/datasets/bigdata/5MRows6KCols.csv
+hdfs_data_file = "/datasets/bigdata/5MRows6KCols.csv"
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
