@@ -121,10 +121,14 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
       if(!use_all_factor_levels) levs <- levs[-1]
       paste(cname, levs, sep = ".") }, 
       df_fac, colnames(df)[which(sapply(df, is.factor))])
+    fac_nams <- as.vector(unlist(fac_nams))
     fac_range <- 1:ncol(df_fac_acm)
-    num_range <- (ncol(df_fac_acm)+1):ncol(DF)
     names(DF)[fac_range] <- fac_nams
-    names(DF)[num_range] <- colnames(df)[which(sapply(df, is.numeric))]
+    
+    if(ncol(NUM(df)) > 0) {
+      num_range <- (ncol(df_fac_acm)+1):ncol(DF)
+      names(DF)[num_range] <- colnames(df)[which(sapply(df, is.numeric))]
+    }
   }
   
   return(DF)

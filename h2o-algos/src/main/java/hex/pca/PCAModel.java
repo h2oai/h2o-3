@@ -14,7 +14,8 @@ import water.util.TwoDimTable;
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
   public static class PCAParameters extends Model.Parameters {
-    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
+    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
+    public Method _pca_method = Method.GramSVD;   // Method for computing PCA
     public int _k = 1;                // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
@@ -22,6 +23,10 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public String _loading_name;
     public boolean _keep_loading = true;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
+
+    public enum Method {
+      GramSVD, Power, GLRM
+    }
   }
 
   public static class PCAOutput extends Model.Output {
@@ -39,6 +44,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Number of categorical and numeric columns
     public int _ncats;
     public int _nnums;
+
+    // Total column variance for expanded and transformed data
+    public double _total_variance;
 
     // Categorical offset vector
     public int[] _catOffsets;
