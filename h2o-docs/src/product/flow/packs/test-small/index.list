@@ -3,8 +3,3 @@ delete_dl_model.flow
 delete_gbm_model.flow
 delete_glm_model.flow
 delete_rf_model.flow
-adult_2013_census.flow
-prostate.flow
-covtype_data.flow
-BigCross.flow
-airlines_all.flow
