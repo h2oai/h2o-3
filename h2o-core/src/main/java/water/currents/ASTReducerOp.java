@@ -1,13 +1,10 @@
 package water.currents;
 
-import water.H2O;
 import water.MRTask;
 import water.fvec.*;
-import water.parser.ValueString;
-import water.currents.Val.*;
 
 /** Subclasses take a Frame and produces a scalar.  NAs -> NAs */
-abstract class ASTRedOp extends ASTPrim {
+abstract class ASTReducerOp extends ASTPrim {
   @Override int nargs() { return 1+1; }
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -31,22 +28,6 @@ abstract class ASTRedOp extends ASTPrim {
     }
     @Override public void reduce( RedOp s ) { _d = op(_d,s._d); }
   }
-}
-
-class ASTSum  extends ASTRedOp { String str() { return "sum" ; } double op( double l, double r ) { return l+r; } }
-class ASTMin  extends ASTRedOp { String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } }
-class ASTMax  extends ASTRedOp { String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } }
-
-// ----------------------------------------------------------------------------
-/** Subclasses take a Frame and produces a scalar.  NAs are dropped */
-abstract class ASTNARedOp extends ASTPrim {
-  @Override int nargs() { return 1+1; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    return new ValNum(new NaRmRedOp().doAll(fr)._d);
-  }
-  /** Override to express a basic math primitive */
-  abstract double op( double l, double r );
 
   class NaRmRedOp extends MRTask<NaRmRedOp> {
     double _d;
@@ -67,24 +48,81 @@ abstract class ASTNARedOp extends ASTPrim {
     @Override public void reduce( NaRmRedOp s ) { _d = op(_d, s._d); }
   }
 }
-class ASTSumNA  extends ASTNARedOp { String str() { return "sumNA" ; } double op( double l, double r ) { return l+r; } }
-class ASTMinNA  extends ASTNARedOp { String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } }
-class ASTMaxNA  extends ASTNARedOp { String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } }
 
-
-// ----------------------------------------------------------------------------
-class ASTMean extends ASTReducerOp { String str() { return "mean"; } double op( double l, double r ) { return l+r; }
-  @Override int nargs() { return 1+3; } // mean ary trim narm
+/** Optimization for the RollupStats: use them directly */
+abstract class ASTRollupOp extends ASTReducerOp {
+  abstract double rup( Vec vec );
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    double trim = stk.track(asts[2].exec(env)).getNum();
-    double rmna = stk.track(asts[3].exec(env)).getNum();
-    if( rmna != 0 && rmna != 1 ) throw new IllegalArgumentException("Expected a 0/NAs propagate or 1/NAs ignored");
-    double sum = rmna==1 ? new NaRmRedOp(this).doAll(fr)._d : new RedOp(this).doAll(fr)._d;
-    long cnt = fr.numCols()*fr.numRows();
-    if( rmna == 1 )
-      for( Vec vec : fr.vecs() )
-        cnt -= vec.naCnt();
-    return new ValNum(sum/cnt);
+    Vec[] vecs = fr.vecs();
+    if( vecs.length==0 || vecs[0].naCnt() > 0 ) return new ValNum(Double.NaN);
+    double d = rup(vecs[0]);
+    for( int i=1; i<vecs.length; i++ ) {
+      if( vecs[i].naCnt() > 0 ) return new ValNum(Double.NaN);
+      d = op(d,rup(vecs[i]));
+    }
+    return new ValNum(d);
   }
 }
+
+class ASTSum  extends ASTRollupOp { String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
+class ASTMin  extends ASTRollupOp { String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMax  extends ASTRollupOp { String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+
+// Debugging primitive; takes either a scalar or a vector.  TRUE if all values are 1.
+class ASTAll extends ASTPrim { 
+  @Override String str() { return "all" ; }
+  @Override int nargs() { return 1+1; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val val = stk.track(asts[1].exec(env));
+    if( val.isNum() ) return new ValNum(val.getNum() == 0 ? 0 : 1);
+    for( Vec vec : val.getFrame().vecs() )
+      if( vec.min() != 1 || vec.max() != 1 )
+        return new ValNum(0);
+    return new ValNum(1);
+  }
+}
+
+// ----------------------------------------------------------------------------
+/** Subclasses take a Frame and produces a scalar.  NAs are dropped */
+abstract class ASTNARedOp extends ASTReducerOp {
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    return new ValNum(new NaRmRedOp().doAll(fr)._d);
+  }
+}
+
+/** Optimization for the RollupStats: use them directly */
+abstract class ASTNARollupOp extends ASTRollupOp {
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec[] vecs = fr.vecs();
+    if( vecs.length==0 ) return new ValNum(Double.NaN);
+    double d = rup(vecs[0]);
+    for( int i=1; i<vecs.length; i++ )
+      d = op(d,rup(vecs[i]));
+    return new ValNum(d);
+  }
+}
+
+class ASTSumNA extends ASTNARollupOp { String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
+class ASTMinNA extends ASTNARollupOp { String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+
+// ----------------------------------------------------------------------------
+// Unlike the other reducer ops, this one produces a Frame of 1 row back,
+// instead of a single scalar.
+class ASTMean extends ASTPrim { 
+  @Override int nargs() { return 1+1; }
+  @Override String str() { return "mean"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec vecs[] = new Vec[fr.numCols()];
+    for( int i=0; i<vecs.length; i++ ) {
+      Vec vec = fr.vecs()[i];
+      vecs[i] = Vec.makeCon(vec.naCnt() > 0 ? Double.NaN : vec.mean(),1);
+    }
+    return new ValFrame(new Frame(fr._names,vecs));
+  }
+}
+

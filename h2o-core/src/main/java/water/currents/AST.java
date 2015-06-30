@@ -78,8 +78,10 @@ abstract public class AST extends Iced {
     // Logical - includes short-circuit evaluation
     init(new ASTLAnd());
     init(new ASTLOr());
+    init(new ASTIfElse());
 
     // Reducers
+    init(new ASTAll());
     init(new ASTMax());
     init(new ASTMaxNA());
     init(new ASTMean());

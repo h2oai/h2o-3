@@ -120,7 +120,7 @@ public class Env {
     if( ast != null )
       return ast instanceof ASTNum ? ast.exec(this) : new ValFun(ast);
 
-    throw new IllegalArgumentException("Name lookup of "+id+" failed");
+    throw new IllegalArgumentException("Name lookup of '"+id+"' failed");
   }
 
   /*

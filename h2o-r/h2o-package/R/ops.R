@@ -112,7 +112,8 @@ setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.nary_row_
 #             \code{"max"}, \code{"min"}, \code{"range"}, \code{"prod"}, \code{"sum"}, \code{"any"}, \code{"all"}
 #' @export
 setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
-  .h2o.nary_scalar_op(.Generic, x, ..., na.rm)
+  if( na.rm ) stop("Unimplemented, passing the NA flag")
+  .h2o.nary_scalar_op(.Generic, x, ...)
 })
 
 ##`

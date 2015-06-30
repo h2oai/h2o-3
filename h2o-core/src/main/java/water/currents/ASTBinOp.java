@@ -194,3 +194,24 @@ class ASTLOr extends ASTBinOp {
     return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0); 
   } 
 }
+
+// IfElse.  Execute either 2nd or 3rd (but not both) according to 1st arg.
+// Neither if test is NaN.  Returns something of the same "shape" as the test -
+// scalar for scalar, frame for frame.  Elements of the result are picked from
+// either the true or false frame.
+class ASTIfElse extends ASTPrim { 
+  @Override int nargs() { return 1+3; } // test true false
+  String str() { return "ifelse"; } 
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val val = stk.track(asts[1].exec(env));
+    if( val.isNum() ) {         // Scalar test, scalar result
+      double d = val.getNum();
+      if( Double.isNaN(d) ) return new ValNum(Double.NaN);
+      Val res = stk.track(asts[d==0 ? 3 : 2].exec(env));
+      return res.isFrame() ? new ValNum(res.getFrame().vec(0).at(0)) : res;
+    }
+    // Frame test.  Frame result.
+    throw H2O.unimpl();
+  }
+}
+
