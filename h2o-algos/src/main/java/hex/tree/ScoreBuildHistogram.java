@@ -167,7 +167,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
         for( int col : sCols ) { // For tracked cols
           double w = weight.atd(row);
-          assert (w > 0.0);
+          if (w == 0) continue;
           nhs[col].incr((float) chks[col].atd(row), wrks.atd(row), w); // Histogram row/col
         }
       }
