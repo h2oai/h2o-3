@@ -7,9 +7,9 @@ import water.api.API;
 import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
-public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
+public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParametersV99> {
 
-  public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
+  public static final class GLRMParametersV99 extends ModelParametersSchema<GLRMParameters, GLRMParametersV99> {
     static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization_x",
             "regularization_y", "gamma_x", "gamma_y", "max_iterations", "init_step_size", "min_step_size", "seed",
             "init", "user_points", "recover_svd" };

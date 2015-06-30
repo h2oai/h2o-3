@@ -140,5 +140,5 @@ h2o.glrm <- function(training_frame, x, k,
   }
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'glrm', parms)
+  .h2o.createModel(training_frame@conn, 'glrm', parms, 99)
 }
