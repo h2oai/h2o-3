@@ -1,5 +1,7 @@
 package water.util;
 
+import water.Key;
+
 import java.io.*;
 import java.net.URI;
 
@@ -60,5 +62,10 @@ public class FileUtils {
     }
 
     return false;
+  }
+
+  /** Transform given key to a string which can be used as a file name. */
+  public static String keyToFileName(Key k) {
+    return k.toString().replaceAll("[^a-zA-Z0-9_\\-\\.]", "_");
   }
 }
