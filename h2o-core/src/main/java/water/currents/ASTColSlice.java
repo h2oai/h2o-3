@@ -193,8 +193,9 @@ class ASTCBind extends ASTPrim {
         if( vec == null ) vec = anyvec;
         else if( vec.length() != anyvec.length() ) 
           throw new IllegalArgumentException("cbind frames must have all the same rows, found "+vec.length()+" and "+anyvec.length()+" rows.");
-        else if( !vec.checkCompatible(anyvec) )
-          throw H2O.unimpl();   // Bad layout, needs reshuffle
+        else if( !vec.checkCompatible(anyvec) ) {
+          //throw H2O.unimpl();   // Bad layout, needs reshuffle
+        }
       } else numCols++;         // Expand scalars into all rows, 1 column
     }
     boolean clean = false;

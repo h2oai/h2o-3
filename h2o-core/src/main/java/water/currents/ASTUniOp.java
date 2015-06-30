@@ -36,8 +36,8 @@ class ASTCosh  extends ASTUniOp { String str() { return "cosh" ; } double op(dou
 class ASTExp   extends ASTUniOp { String str() { return "exp"  ; } double op(double d) { return Math.exp  (d); } }
 class ASTFloor extends ASTUniOp { String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
 class ASTLog   extends ASTUniOp { String str() { return "log"  ; } double op(double d) { return Math.log  (d); } }
-class ASTRound extends ASTUniOp { String str() { return "round"; } double op(double d) { return Math.round(d); } }
 class ASTSin   extends ASTUniOp { String str() { return "sin"  ; } double op(double d) { return Math.sin  (d); } }
 class ASTSqrt  extends ASTUniOp { String str() { return "sqrt" ; } double op(double d) { return Math.sqrt (d); } }
 class ASTTan   extends ASTUniOp { String str() { return "tan"  ; } double op(double d) { return Math.tan  (d); } }
 class ASTTanh  extends ASTUniOp { String str() { return "tanh" ; } double op(double d) { return Math.tanh (d); } }
+class ASTTrunc extends ASTUniOp { String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}

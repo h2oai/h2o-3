@@ -15,12 +15,12 @@ get.eval.result <- function(conn, expr) {
 #        h2o.startLogging()
 #        conn <- h2o.init()
 
-test.round_prec <- function(conn) {
+test.round_prec <- function() {
     a <- c(5.5, 2.5, 1.6, 1.1, 1.0, -1.0, -1.1, -1.6, -2.5, -5.5)
     b <- pi * 100^(-1:3)
     
-    A <- as.h2o(conn, a, "A")
-    B <- as.h2o(conn, b, "B")
+    A <- as.h2o(a, "A")
+    B <- as.h2o(b, "B")
     
     s1_t <- trunc(a); s1_r <- round(a); s1_s <- signif(a)
     s2_t <- trunc(b); s2_r <- round(b,3); s2_s <- signif(b,3)

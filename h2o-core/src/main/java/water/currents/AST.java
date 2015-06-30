@@ -66,10 +66,13 @@ abstract public class AST extends Iced {
     init(new ASTFloor ());
     init(new ASTLog   ());
     init(new ASTRound ());
+    init(new ASTRound ());
+    init(new ASTSignif());
     init(new ASTSin   ());
     init(new ASTSqrt  ());
     init(new ASTTan   ());
     init(new ASTTanh  ());
+    init(new ASTTrunc ());
 
     // Relational
     init(new ASTGE());
