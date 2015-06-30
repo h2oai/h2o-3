@@ -97,7 +97,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.User;
-      parms._recover_pca = false;
+      parms._recover_svd = false;
       parms._user_points = yinit._key;
       parms._seed = seed;
 
@@ -137,7 +137,7 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._min_step_size = 1e-5;
-      parms._recover_pca = false;
+      parms._recover_svd = false;
       parms._max_iterations = 2000;
 
       try {
@@ -162,13 +162,13 @@ public class GLRMTest extends TestUtil {
     }
   }
 
-  @Test public void testArrestsPCA() throws InterruptedException, ExecutionException {
+  @Test public void testArrestsSVD() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
     Frame yinit = frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
             ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
             ard(0.07163341, 1.4788032, 0.9989801, 1.042878388),
             ard(0.23234938, 0.2308680, -1.0735927, -0.184916602)));
-    double[] stddev = new double[] {1.5748783, 0.9948694, 0.5971291, 0.4164494};
+    double[] sval = new double[] {11.024148, 6.964086, 4.179904, 2.915146};
     double[][] eigvec = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
             ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
             ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
@@ -188,14 +188,14 @@ public class GLRMTest extends TestUtil {
       parms._user_points = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
-      parms._recover_pca = true;
+      parms._recover_svd = true;
 
       GLRM job = new GLRM(parms);
       try {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        // checkStddev(stddev, model._output._std_deviation, 1e-4);
-        // checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-4);
+        // checkStddev(sval, model._output._singular_vals, 1e-4);
+        // checkEigvec(eigvec, model._output._eigenvectors, 1e-4);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -216,8 +216,8 @@ public class GLRMTest extends TestUtil {
   }
 
   @Test public void testArrestsMissing() throws InterruptedException, ExecutionException {
-    // Expected eigenvectors and their standard deviations with standardized data
-    double[] stddev = new double[] {1.5748783, 0.9948694, 0.5971291, 0.4164494};
+    // Expected eigenvectors and their corresponding singular values with standardized data
+    double[] sval = new double[] {11.024148, 6.964086, 4.179904, 2.915146};
     double[][] eigvec = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
             ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
             ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
@@ -255,14 +255,14 @@ public class GLRMTest extends TestUtil {
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
         parms._seed = seed;
-        parms._recover_pca = true;
+        parms._recover_svd = true;
 
         GLRM job = new GLRM(parms);
         try {
           model = job.trainModel().get();
           Log.info(100 * missing_fraction + "% missing values: Objective = " + model._output._objective);
-          double sd_err = errStddev(stddev, model._output._std_deviation)/parms._k;
-          double ev_err = errEigvec(eigvec, model._output._eigenvectors_raw)/parms._k;
+          double sd_err = errStddev(sval, model._output._singular_vals)/parms._k;
+          double ev_err = errEigvec(eigvec, model._output._eigenvectors)/parms._k;
           Log.info("Avg SSE in Std Dev = " + sd_err + "\tAvg SSE in Eigenvectors = " + ev_err);
           sd_map.put(missing_fraction, sd_err);
           ev_map.put(missing_fraction, ev_err);
@@ -305,7 +305,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 4;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._recover_pca = true;
+      parms._recover_svd = true;
       parms._max_iterations = 1000;
 
       try {
@@ -350,7 +350,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 8;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._recover_pca = false;
+      parms._recover_svd = false;
       parms._max_iterations = 200;
 
       try {
