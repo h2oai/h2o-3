@@ -42,7 +42,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       return preds;
     }
     else { // classification
-      if (_output.nclasses() == 2 && !_parms._binomial_double_trees) {
+      if (_output.nclasses() == 2 && binomialOpt()) {
         preds[1] /= N; //average probability
         preds[2] = 1. - preds[1];
       } else {
@@ -60,7 +60,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
-      if( _output.nclasses()==2 && !_parms._binomial_double_trees) { // Kept the initial prediction for binomial
+      if( _output.nclasses()==2 && binomialOpt()) { // Kept the initial prediction for binomial
         body.ip("preds[1] /= " + _output._ntrees + ";").nl();
         body.ip("preds[2] = 1.0 - preds[1];").nl();
       } else {

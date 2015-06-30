@@ -551,7 +551,7 @@ public class DRFTest extends TestUtil {
         parms._nbins_cats = 1024;
         parms._ntrees = 7;
         parms._max_depth = 10;
-        parms._binomial_double_trees = true;
+        parms._binomial_double_trees = false;
         parms._mtries = -1;
         parms._min_rows = 1;
         parms._sample_rate = 0.632f;   // Simulated sampling with replacement
