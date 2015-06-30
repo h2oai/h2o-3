@@ -97,10 +97,10 @@
 
 
 
-.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params) {
+.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
-  ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
 
   params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
@@ -161,7 +161,7 @@
   })
 
   #---------- Validate parameters ----------#
-  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
+  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
@@ -178,7 +178,7 @@
   }
 
   #---------- Build! ----------#
-  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
+  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
 
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
@@ -186,7 +186,7 @@
   new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
  params$training_frame <- get("training_frame", parent.frame())
  tmp_train <- !.is.eval(params$training_frame)
  if( tmp_train ) {
@@ -203,12 +203,12 @@
     }
   }
 
-  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, h2oRestApiVersion), h2oRestApiVersion)
 }
 
-h2o.getFutureModel <- function(object) {
+h2o.getFutureModel <- function(object, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@model_id, object@conn)
+  h2o.getModel(object@model_id, object@conn, h2oRestApiVersion = h2oRestApiVersion)
 }
 
 #' Predict on an H2O Model

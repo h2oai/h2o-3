@@ -72,7 +72,11 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
 
   # launch the job and poll
   job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
-  model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]
+  if '_rest_version' in kwargs.keys():
+    model_json = H2OConnection.get_json("Models/"+job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+  else:
+    model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]
+
   model_type = model_json["output"]["model_category"]
   if model_type=="Binomial":
     from model.binomial import H2OBinomialModel
@@ -97,11 +101,4 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   else:
     print model_type
     raise NotImplementedError
-
-  # Cleanup
-  h2o.removeFrameShallow(train_key)
-  if validation_x:
-    h2o.removeFrameShallow(valid_key)
-
   return model
-

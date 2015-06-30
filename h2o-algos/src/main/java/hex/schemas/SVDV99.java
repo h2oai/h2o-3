@@ -7,10 +7,10 @@ import water.api.API;
 import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
-public class SVDV3 extends ModelBuilderSchema<SVD,SVDV3,SVDV3.SVDParametersV3> {
+public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV99> {
 
-  public static final class SVDParametersV3 extends ModelParametersSchema<SVDModel.SVDParameters, SVDParametersV3> {
-    static public String[] own_fields = new String[] { "transform", "nv", "max_iterations", "seed",  "keep_u", "u_key" };
+  public static final class SVDParametersV99 extends ModelParametersSchema<SVDModel.SVDParameters, SVDParametersV99> {
+    static public String[] own_fields = new String[] { "transform", "nv", "max_iterations", "seed",  "keep_u", "u_name", "use_all_factor_levels" };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;

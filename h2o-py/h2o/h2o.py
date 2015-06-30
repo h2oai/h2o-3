@@ -529,6 +529,147 @@ def ddply(frame,cols,fun):
 def group_by(frame,cols,aggregates):
   return frame.group_by(cols,aggregates)
 
+  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
+  is provided.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
+  for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+  for demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included
+  in each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of
+  every categorical variable will be dropped. Defaults to FALSE.
+  :return: a new dim reduction model
+  """
+  kwargs['_rest_version'] = 99
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
+
+
+def svd(x,validation_x=None,**kwargs):
+  """
+  Singular value decomposition of a H2O dataset using the power method.
+
+  :param nv: The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame),
+  nrow(training_frame)) inclusive.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
+  1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
+  and 1e6 inclusive.
+  :param transform: A character string that indicates how the training data should be transformed before running PCA.
+  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
+  dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE": for
+  demeaning and dividing each column by its range (max - min).
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
+  method iteration.
+  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included in
+  each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of every
+  categorical variable will be dropped. Defaults to TRUE.
+  :return: a new dim reduction model
+  """
+  kwargs['_rest_version'] = 99
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"svd",kwargs)
+
+
+def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
+  Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.
+  When building a naive Bayes classifier, every row in the training dataset that contains at least one NA will be
+  skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability
+  calculation during prediction.
+
+  :param laplace: A positive number controlling Laplace smoothing. The default zero disables smoothing.
+  :param threshold: The minimum standard deviation to use for observations without enough data. Must be at least 1e-10.
+  :param eps: A threshold cutoff to deal with numeric instability, must be positive.
+  :param compute_metrics: A logical value indicating whether model metrics should be computed. Set to FALSE to reduce
+  the runtime of the algorithm.
+  :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"naivebayes",kwargs)
+
+
+def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,
+                 categorical_fraction = 0.2, factors = 100, integer_fraction = 0.2, integer_range = 100,
+                 binary_fraction = 0.1, binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
+                 has_response = False, seed=None):
+  """
+  Data Frame Creation in H2O.
+  Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
+
+  :param id: A string indicating the destination key. If empty, this will be auto-generated by H2O.
+  :param rows: The number of rows of data to generate.
+  :param cols: The number of columns of data to generate. Excludes the response column if has_response == True}.
+  :param randomize: A logical value indicating whether data values should be randomly generated. This must be TRUE if
+  either categorical_fraction or integer_fraction is non-zero.
+  :param value: If randomize == FALSE, then all real-valued entries will be set to this value.
+  :param real_range: The range of randomly generated real values.
+  :param categorical_fraction:  The fraction of total columns that are categorical.
+  :param factors: The number of (unique) factor levels in each categorical column.
+  :param integer_fraction: The fraction of total columns that are integer-valued.
+  :param integer_range: The range of randomly generated integer values.
+  :param binary_fraction: The fraction of total columns that are binary-valued.
+  :param binary_ones_fraction: The fraction of values in a binary column that are set to 1.
+  :param missing_fraction: The fraction of total entries in the data frame that are set to NA.
+  :param response_factors: If has_response == TRUE, then this is the number of factor levels in the response column.
+  :param has_response: A logical value indicating whether an additional response column should be pre-pended to the
+  final H2O data frame. If set to TRUE, the total number of columns will be cols+1.
+  :param seed: A seed used to generate random values when randomize = TRUE.
+  :return: the H2OFrame that was created
+  """
+  parms = {"dest": _py_tmp_key() if id is None else id,
+           "rows": rows,
+           "cols": cols,
+           "randomize": randomize,
+           "value": value,
+           "real_range": real_range,
+           "categorical_fraction": categorical_fraction,
+           "factors": factors,
+           "integer_fraction": integer_fraction,
+           "integer_range": integer_range,
+           "binary_fraction": binary_fraction,
+           "binary_ones_fraction": binary_ones_fraction,
+           "missing_fraction": missing_fraction,
+           "response_factors": response_factors,
+           "has_response": has_response,
+           "seed": -1 if seed is None else seed,
+           }
+  H2OJob(H2OConnection.post_json("CreateFrame", **parms), "Create Frame").poll()
+  return get_frame(parms["dest"])
+
+
+def interaction(data, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
+  """
+  Categorical Interaction Feature Creation in H2O.
+  Creates a frame in H2O with n-th order interaction features between categorical columns, as specified by
+  the user.
+
+  :param data: the H2OFrame that holds the target categorical columns.
+  :param factors: factors Factor columns (either indices or column names).
+  :param pairwise: Whether to create pairwise interactions between factors (otherwise create one
+  higher-order interaction). Only applicable if there are 3 or more factors.
+  :param max_factors: Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all
+  factor will be made)
+  :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
+  :param destination_frame: A string indicating the destination key. If empty, this will be auto-generated by H2O.
+  :return: H2OFrame
+  """
+  data._eager()
+  factors = [data.names()[n] if isinstance(n,int) else n for n in factors]
+  parms = {"dest": _py_tmp_key() if destination_frame is None else destination_frame,
+           "source_frame": data._id,
+           "factor_columns": [_quoted(f) for f in factors],
+           "pairwise": pairwise,
+           "max_factors": max_factors,
+           "min_occurrence": min_occurrence,
+           }
+  H2OJob(H2OConnection.post_json("Interaction", **parms), "Interactions").poll()
+  return get_frame(parms["dest"])
+
+
 def network_test():
   res = H2OConnection.get_json(url_suffix="NetworkTest")
   res["table"].show()
