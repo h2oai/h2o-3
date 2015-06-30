@@ -26,6 +26,10 @@ abstract public class AST extends Iced {
   // arguments", but short-circuit evaluation may not execute all args.
   Val apply( Env env, Env.StackHelp stk, AST asts[] ) { throw water.H2O.fail(); }
 
+  // Row-wise apply.  All arguments evaluated down to an array of primitive
+  // doubles.  Only allowed to return a simple double.
+  double rowApply( Env env, double ds[] ) { throw water.H2O.fail(); }
+
   // Short name (there's lots of the simple math primtives, and we want them to
   // fit on one line)
   abstract String str();

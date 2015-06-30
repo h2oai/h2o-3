@@ -47,6 +47,13 @@ abstract class ASTReducerOp extends ASTPrim {
     }
     @Override public void reduce( NaRmRedOp s ) { _d = op(_d, s._d); }
   }
+
+  @Override double rowApply( Env env, double ds[] ) {
+    double d = ds[0];
+    for( int i=1; i<ds.length; i++ )
+      d = op(d,ds[i]);
+    return d;
+  }
 }
 
 /** Optimization for the RollupStats: use them directly */

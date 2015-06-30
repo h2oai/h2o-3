@@ -1,8 +1,8 @@
 package water.currents;
 
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.Key;
+import water.MRTask;
 
 /** Apply a Function to a frame
  *  Typically, column-by-column, produces a 1-row frame as a result
@@ -16,23 +16,30 @@ class ASTApply extends ASTPrim {
     AST fun      = stk.track(asts[3].exec(env)).getFun();
 
     switch( (int)margin ) {
-    case 1:  return rowwise(env,fr,fun); 
-    case 2:  return colwise(env,fr,fun); 
+    case 1:  return rowwise(env,stk,fr,fun); 
+    case 2:  return colwise(env,stk,fr,fun); 
     default: throw new IllegalArgumentException("Only row-wise (margin 1) or col-wise (margin 2) allowed");
     }
   }
    
-  private Val rowwise( Env env, Frame fr, AST fun ) { throw water.H2O.unimpl(); }
-  private Val colwise( Env env, Frame fr, AST fun ) {
+  // --------------------------------------------------------------------------
+  private Val colwise( Env env, Env.StackHelp stk, Frame fr, AST fun ) {
     
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
     Vec vecs[] = fr.vecs();
     Val vals[] = new Val[vecs.length];
+    int nargs = fun.nargs();
+    if( nargs != -1 && nargs != 2 )
+      throw new IllegalArgumentException("Incorrect number of arguments; '"+fun+"' expects "+nargs+" but was passed "+2);
+    AST asts[] = new AST[2];
+    asts[0] = fun;
     for( int i=0; i<vecs.length; i++ ) {
-      Frame f1 = new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]});
-      vals[i] = new ASTExec(fun,new ASTFrame(f1)).exec(env);
+      asts[1] = new ASTFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
+      try (Env.StackHelp stk_inner = env.stk()) {
+          vals[i] = stk.track(stk_inner.returning(fun.apply(env,stk_inner,asts)));
+        }
     }
     
     // All the resulting Vals must be the same scalar type (and if ValFrames,
@@ -61,7 +68,54 @@ class ASTApply extends ASTPrim {
     }
     return new ValFrame(new Frame(fr._names,ovecs));
   }
+
+  // --------------------------------------------------------------------------
+  private Val rowwise( final Env env, Env.StackHelp stk, Frame fr, final AST ast ) {
+    int nargs = ast.nargs();
+    if( nargs != -1 && nargs != 2 )
+      throw new IllegalArgumentException("Incorrect number of arguments; '"+ast+"' expects "+nargs+" but was passed "+2);
+
+    // Common case of executing a user-defined function (not primitive).
+    // Extend the environment for this function for all rows, all at once,
+    // instead of doing it per-row.
+    ASTFun old = env._scope;
+    if( ast instanceof ASTFun ) {
+      final ASTFun fun = (ASTFun)ast;
+      env._scope = new ASTFun(fun,null/*no args*/,fun._parent);
+      // Iterate over the frame, applying 'ast' per-row.
+      // Limited to simple scalar return
+      ValFrame res = new ValFrame(new MRTask() {
+          @Override public void map( Chunk chks[], NewChunk nc ) {
+            double ds[] = new double[chks.length];
+            for( int row=0; row<chks[0]._len; row++ ) {
+              for( int col=0; col<chks.length; col++ )
+                ds[col] = chks[col].atd(row);
+              nc.addNum(fun._body.rowApply(env,ds));
+            }
+          }
+        }.doAll(1,fr).outputFrame());
+      // Pop back to the old scope
+      env._scope = old;
+      return res;
+    }
+
+    // Primitives:
+    // Iterate over the frame, applying 'ast' per-row.
+    // Limited to simple scalar return
+    return new ValFrame(new MRTask() {
+        @Override public void map( Chunk chks[], NewChunk nc ) {
+          double ds[] = new double[chks.length];
+          for( int row=0; row<chks[0]._len; row++ ) {
+            for( int col=0; col<chks.length; col++ )
+              ds[col] = chks[col].atd(row);
+            nc.addNum(ast.rowApply(env,ds));
+          }
+        }
+      }.doAll(1,fr).outputFrame());
+
+  }
 }
+
 
 /** Evaluate any number of expressions, returning the last one */
 class ASTComma extends ASTPrim {
