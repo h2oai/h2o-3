@@ -63,3 +63,14 @@ class ASTApply extends ASTPrim {
   }
 }
 
+/** Evaluate any number of expressions, returning the last one */
+class ASTComma extends ASTPrim {
+  @Override int nargs() { return -1; } // variable args
+  @Override public String str() { return ","; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val val = new ValNum(0);
+    for( int i=1; i<asts.length; i++ )
+      val = stk.track(asts[i].exec(env)); // Evaluate all expressions for side-effects
+    return val;                           // Return the last one
+  }
+}

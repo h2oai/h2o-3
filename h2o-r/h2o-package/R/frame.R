@@ -2375,26 +2375,22 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
     # handle anon fcn
-    fun.ast <- .fun.to.ast(.fun, "anon")
-    a <- invisible(.h2o.post.function(fun.ast))
-    if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+    fun.ast <- .fun.to.ast(.fun)
   # else named function get the ast
   } else {
     if (.is.op(substitute(FUN))) {
-      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+      fun.ast <- new("ASTFun", arguments="", body=new("ASTBody", statements=list()))
     } else {
       if( is(FUN, "standardGeneric")) {
         fun_name <- FUN@generic[[1]]
-        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
+        fun.ast  <- new("ASTFun", arguments="", body=new("ASTBody", statements=list()))
       } else if( is.primitive(FUN) ) {
         fun_name <- gsub("\\\"\\)","",gsub(".Primitive\\(\\\"","",deparse(FUN)))
-        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
+        fun.ast  <- new("ASTFun", arguments="", body=new("ASTBody", statements=list()))
       } else {
         fun_name <- as.character(substitute(FUN))
         fun <- match.fun(FUN)
-        fun.ast <- .fun.to.ast(fun, fun_name)
-        a <- invisible(.h2o.post.function(fun.ast))
-        if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+        fun.ast <- .fun.to.ast(fun)
       }
     }
   }
@@ -2498,19 +2494,15 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
     # handle anon fcn
-    fun.ast <- .fun.to.ast(FUN, "anon")
-    a <- invisible(.h2o.post.function(fun.ast))
-    if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+    fun.ast <- .fun.to.ast(FUN)
   # else named function get the ast
   } else {
     if (.is.op(substitute(FUN))) {
-      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
-    } else {
       fun_name <- as.character(myfun)
+      fun.ast <- new("ASTEmpty", key=fun_name);
+    } else {
       fun <- match.fun(myfun)
-      fun.ast <- .fun.to.ast(fun, fun_name)
-      a <- invisible(.h2o.post.function(fun.ast))
-      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+      fun.ast <- .fun.to.ast(fun)
     }
   }
 
@@ -2558,28 +2550,20 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
     # handle anon fcn
-    fun.ast <- .fun.to.ast(FUN, "anon")
-    invisible(.h2o.post.function(fun.ast))
+    fun.ast <- .fun.to.ast(FUN)
   # else named function get the ast
   } else {
     if (.is.op(substitute(FUN))) {
-      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+      fun.ast <- new("ASTFun", arguments="", body=new("ASTBody", statements=list()))
     } else {
       fun_name <- as.character(FUN)
       fun <- match.fun(FUN)
-      fun.ast <- .fun.to.ast(FUN, fun_name)
-      invisible(.h2o.post.function(fun.ast))
+      fun.ast <- .fun.to.ast(FUN)
     }
   }
-
   if (is.null(fun.ast)) stop("argument FUN was invalid")
-
-  invisible(.h2o.post.function(fun.ast))
-
-  if(length(l) == 0L)
-    .h2o.nary_frame_op("sapply", X, fun.ast)
-  else
-    .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+  if(length(l) == 0L) .h2o.nary_frame_op("sapply", X, fun.ast)
+  else                .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
 #'

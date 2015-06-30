@@ -146,7 +146,7 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
 
     // Return two results
-    tree = "(apply a.hex 2 {x . (rbind (sum x FALSE) (mean x FALSE))})";
+    tree = "(apply a.hex 2 {x . (rbind (sum x FALSE) (mean x 0 FALSE))})";
     checkTree(tree);
   }
 

@@ -141,7 +141,7 @@ function(expr, envir, neg) {
 function(a, name=NULL) {
   if (is(a, "H2OFrame"))      .get(a)
   else if (is(a, "ASTNode"))  a
-  else if (is(a, "ASTFun"))   paste0('%', a@name)
+  else if (is(a, "ASTFun"))   .fun.visitor(a)
   else if (is(a, "ASTEmpty")) paste0('%', a@key)
   else {
     res <- eval(a)

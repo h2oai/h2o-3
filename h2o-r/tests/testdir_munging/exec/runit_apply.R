@@ -22,12 +22,12 @@ test.apply <- function() {
   print(hex)
 
   Log.info("Now try some misc. apply calls")
-  print(apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/var(x[1:20,])*x ) }))
+  print(apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/mean(x[1:20,])*x ) }))
 
   print(h2o.ls())
 
 
-  f <- function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/var(x[1:20,])*x ) }
+  f <- function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/mean(x[1:20,])*x ) }
   apply(hex, 2, f)
   gc()
   print(h2o.ls())

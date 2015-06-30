@@ -258,9 +258,10 @@ function(stmnt) {
     else
       cols <- .eval(substitute(j), parent.frame())
   }
-  op <- new("ASTApply", op = "[")
-  x <- paste0("%", deparse(stmnt_list[[2L]]))
-  new("ASTNode", root = op, children = list(x, rows, cols))
+  ast <- deparse(stmnt_list[[2L]])
+  if( !identical(cols,"()") ) ast <- new("ASTNode", root = new("ASTApply", op = "cols"), children = list(ast, cols))
+  if( !identical(rows,"()") ) ast <- new("ASTNode", root = new("ASTApply", op = "rows"), children = list(ast, rows))
+  ast  
 }
 
 .process.if.stmnt<-
@@ -346,10 +347,9 @@ function(b, is.single = FALSE) {
 #`
 #` Transmogrify A User Defined Function Into A Rapids AST
 #`
-#` A function has three parts:
-#`  1. A name
-#`  2. Arguments
-#`  3. A body
+#` A function has two parts:
+#`  1. Arguments
+#`  2. A body
 #`
 #` At this point, it's been determined that `fun` is a user defined function, and it must become an AST.
 #` Pack the function call up into an AST.
@@ -370,19 +370,19 @@ function(b, is.single = FALSE) {
 #`
 #`
 #` The result is something like the following:
-#` (def "f" (slist arg1 arg2 arg3) (, (stmnt1) (stmnt2) (stmnt3) (stmnt4)))
+#` (arg1 arg2 arg3 . body)
 .fun.to.ast<-
-function(fun, name) {
-  args <- paste0('(slist ', paste0(unlist(lapply(names(formals(fun)), deparse)), collapse=" "), ')')
+function(fun) {
+  args <- paste0(names(formals(fun)), collapse=" ")
   b <- body(fun)
   stmnts <- .process.body(b)
-  new("ASTFun", name = deparse(name), arguments = args, body = stmnts)
+  new("ASTFun", arguments = args, body = stmnts)
 }
 
 .fun.visitor<-
 function(astfun) {
-  body <- paste0("(,", unlist(.body.visitor(astfun@body), use.names = FALSE), ")", collapse = " ")
-  list(ast = paste0("(def ", astfun@name, " ", astfun@arguments, " ", body , ")"))
+  body <- paste0("(,", paste0(unlist(.body.visitor(astfun@body), use.names = FALSE), collapse=" "), ")")
+  list(ast = paste0("{", astfun@arguments, " . ", body , "}"))
 }
 
 .body.visitor <- function(b) lapply(b@statements, .stmnt.visitor)

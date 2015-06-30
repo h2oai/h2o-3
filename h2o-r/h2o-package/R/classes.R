@@ -175,7 +175,7 @@ setClass("ASTEmpty",  representation(key="character"), contains="Node")
 setClass("ASTBody",   representation(statements="list"), contains="Node")
 #' @rdname Node-class
 #' @export
-setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
+setClass("ASTFun",    representation(arguments="character", body="ASTBody"), contains="Node")
 #' @rdname Node-class
 #' @export
 setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")

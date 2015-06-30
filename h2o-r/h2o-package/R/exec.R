@@ -206,13 +206,3 @@ function(ast, id) {
   .h2o.getGCFrame(id)
 }
 
-#'
-#' Have H2O Learn A New Function
-#'
-#' Convenient to have a POST function method.
-.h2o.post.function<-
-function(fun.ast) {
-  gc()
-  expr <- .fun.visitor(fun.ast)
-  .h2o.__remoteSend(.h2o.__RAPIDS, fun=expr$ast, method = "POST")
-}

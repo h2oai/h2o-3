@@ -95,6 +95,7 @@ abstract public class AST extends Iced {
 
     // Functional data mungers
     init(new ASTApply());
+    init(new ASTComma());
 
     // Cluster management
     init(new ASTLs());
