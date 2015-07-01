@@ -71,6 +71,7 @@ class H2OConnection(object):
       cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root,jar_path)
     else:
       try:
+        time.sleep(3);
         cld = self._connect(size)
       except:
         # try to start local jar or re-raise previous exception
