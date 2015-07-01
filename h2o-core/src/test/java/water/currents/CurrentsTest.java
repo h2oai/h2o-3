@@ -150,6 +150,14 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void testRowApply() {
+    String tree = "(apply a.hex 1 sum)";
+    checkTree(tree);
+
+    tree = "(apply a.hex 1 max)";
+    checkTree(tree);
+  }
+
   @Test public void testMath() {
     for( String s : new String[] {"abs", "cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "round", "sqrt", "tan", "tanh"} )
       checkTree("("+s+" a.hex)");

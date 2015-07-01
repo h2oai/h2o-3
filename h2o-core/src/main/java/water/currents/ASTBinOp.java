@@ -66,7 +66,7 @@ abstract class ASTBinOp extends ASTPrim {
   }
 
   /** Auto-widen the scalar to every element of the frame */
-  private ValFrame frame_op_scalar( Frame fr, final double d ) {
+  ValFrame frame_op_scalar( Frame fr, final double d ) {
     for( Vec vec : fr.vecs() )
       if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
     return new ValFrame(new MRTask() {
@@ -145,12 +145,56 @@ class ASTPlus extends ASTBinOp { String str() { return "+" ; } double op( double
 class ASTPow  extends ASTBinOp { String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
 class ASTSub  extends ASTBinOp { String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
 
+class ASTRound extends ASTBinOp { 
+  String str() { return "round"; } 
+  double op(double x, double digits) { 
+    // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
+    if(Double.isNaN(x)) return x;
+    double sgn = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    double power_of_10 = (int)Math.pow(10, (int)digits);
+    return sgn*(digits == 0
+                // go to the even digit
+                ? (x % 1 >= 0.5 && !(Math.floor(x)%2==0))
+                ? Math.ceil(x)
+                : Math.floor(x)
+                : Math.floor(x * power_of_10 + 0.5) / power_of_10);
+  }
+}
+
+class ASTSignif extends ASTBinOp { 
+  String str() { return "signif"; } 
+  double op(double x, double digits) { 
+    if(Double.isNaN(x)) return x;
+    java.math.BigDecimal bd = new java.math.BigDecimal(x);
+    bd = bd.round(new java.math.MathContext((int)digits, java.math.RoundingMode.HALF_EVEN));
+    return bd.doubleValue();
+  }
+}
+
+
 class ASTGE   extends ASTBinOp { String str() { return ">="; } double op( double l, double r ) { return l>=r?1:0; } }
 class ASTGT   extends ASTBinOp { String str() { return ">" ; } double op( double l, double r ) { return l> r?1:0; } }
 class ASTLE   extends ASTBinOp { String str() { return "<="; } double op( double l, double r ) { return l<=r?1:0; } }
 class ASTLT   extends ASTBinOp { String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
+
 class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double l, double r ) { return l==r?1:0; } 
-  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); } }
+  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); } 
+  @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
+    return new ValFrame(new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+          for( int c=0; c<chks.length; c++ ) {
+            Chunk chk = chks[c];
+            NewChunk cres = cress[c];
+            if( !chk.vec().isNumeric() ) cres.addZeros(chk._len);
+            else 
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(op(chk.atd(i),d));
+          }
+        }
+      }.doAll(fr.numCols(),fr).outputFrame());
+  }
+}
 class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double l, double r ) { return l!=r?1:0; } 
   double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } }
 
@@ -204,14 +248,61 @@ class ASTIfElse extends ASTPrim {
   String str() { return "ifelse"; } 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
+
     if( val.isNum() ) {         // Scalar test, scalar result
       double d = val.getNum();
       if( Double.isNaN(d) ) return new ValNum(Double.NaN);
-      Val res = stk.track(asts[d==0 ? 3 : 2].exec(env));
+      Val res = stk.track(asts[d==0 ? 3 : 2].exec(env)); // exec only 1 of false and true
       return res.isFrame() ? new ValNum(res.getFrame().vec(0).at(0)) : res;
     }
+
     // Frame test.  Frame result.
-    throw H2O.unimpl();
+    Frame tst = val.getFrame();
+
+    // If all zero's, return false and never execute true.
+    Frame fr = new Frame(tst);
+    Frame tfr = null;
+    for( Vec vec : tst.vecs() )
+      if( vec.min()!=0 || vec.max()!= 0 ) {
+        fr.add(tfr = exec_check(env,stk,tst,asts[2])); // Need true side sometimes
+        break;
+      }
+    final boolean has_t = tfr!=null;
+
+    // If all nonzero's (or NA's), then never execute false.
+    Frame ffr = null;
+    for( Vec vec : tst.vecs() )
+      if( vec.nzCnt()+vec.naCnt() < vec.length() ) {
+        fr.add(ffr = exec_check(env,stk,tst,asts[3])); // Need false side sometimes
+        break;
+      }
+    final boolean has_f = ffr!=null;
+
+    // Now pick from left-or-right in the new frame
+    assert tfr != null || ffr != null;
+    Frame res = new MRTask() {
+        @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+          assert nchks.length+(has_t ? nchks.length : 0)+(has_f ? nchks.length : 0) == chks.length;
+          for( int i=0; i<nchks.length; i++ ) {
+            Chunk ctst = chks[i];
+            NewChunk res = nchks[i];
+            for( int row=0; row<ctst._len; row++ ) {
+              double d = ctst.isNA(row) 
+                ? Double.NaN    // Not from either side
+                : chks[i+nchks.length+((ctst.atd(row)==0 && has_t) ? nchks.length : 0)].atd(row);
+              res.addNum(d);
+            }
+          }
+        }
+      }.doAll(tst.numCols(),fr).outputFrame();
+    return new ValFrame(res);
+  }
+
+  Frame exec_check( Env env, Env.StackHelp stk, Frame tst, AST ast ) {
+    Frame fr = stk.track(ast.exec(env)).getFrame();
+    if( tst.numCols() != fr.numCols() || tst.numRows() != fr.numRows() )
+      throw new IllegalArgumentException("ifelse test frame and other frames must match dimensions, found "+tst+" and "+fr);
+    return fr;
   }
 }
 

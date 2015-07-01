@@ -32,8 +32,8 @@ test.pub.668 <- function(conn) {
     a.h2o.R <- as.data.frame(a.h2o)
     a
     a.h2o.R
-    expect_that(as.logical(all(a == a.h2o.R)), equals(T))
-    expect_that(as.logical(all(d == dd     )), equals(T))
+    expect_that(all(a == a.h2o.R), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     a <- a_initial
@@ -44,8 +44,8 @@ test.pub.668 <- function(conn) {
     a.h2o.R <- as.data.frame(a.h2o)
     a
     a.h2o.R
-    expect_that(as.logical(all(a == a.h2o.R)), equals(T))
-    expect_that(as.logical(all(d == dd     )), equals(T))
+    expect_that(all(a == a.h2o.R), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     a <- a_initial
@@ -55,8 +55,8 @@ test.pub.668 <- function(conn) {
     a.h2o.R <- as.data.frame(a.h2o)
     a
     a.h2o.R
-    expect_that(as.logical(all(a == a.h2o.R)), equals(T))
-    expect_that(as.logical(all(d == dd     )), equals(T))
+    expect_that(all(a == a.h2o.R), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     a <- a_initial
@@ -66,8 +66,8 @@ test.pub.668 <- function(conn) {
     a.h2o.R <- as.data.frame(a.h2o)
     a
     a.h2o.R
-    expect_that(as.logical(all(a == a.h2o.R)), equals(T))
-    expect_that(as.logical(all(d == dd     )), equals(T))
+    expect_that(all(a == a.h2o.R), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     testEnd()
