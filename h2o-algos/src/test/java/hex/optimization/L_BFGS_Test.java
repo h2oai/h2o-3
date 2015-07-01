@@ -47,9 +47,9 @@ public class L_BFGS_Test  extends TestUtil {
       }
 
       @Override
-      public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
+      public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
         double [] res = new double[nSteps];
-        double step = 1;
+        double step = initialStep;
         for(int i = 0; i < res.length; ++i) {
           double x = beta[0] + pk[0]*step;
           double y = beta[1] + pk[1]*step;

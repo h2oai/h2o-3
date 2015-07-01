@@ -938,6 +938,16 @@ final public class H2O {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth,summary),base_url,label,menu);
   }
+
+  static public void registerGET( String url_pattern, Class hclass, String hmeth, String summary ) {
+    registerGET(url_pattern, hclass, hmeth, null, summary);
+  }
+
+  static public void registerGET( String url_pattern, Class hclass, String hmeth, String doc_method, String summary ) {
+    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
+    RequestServer.register(url_pattern,"GET", hclass, hmeth, doc_method, summary);
+  }
+
   static public void registerPOST( String url_pattern, Class hclass, String hmeth, String summary ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.register(url_pattern,"POST",hclass,hmeth,summary);

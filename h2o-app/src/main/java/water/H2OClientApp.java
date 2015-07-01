@@ -1,7 +1,5 @@
 package water;
 
-import static water.H2OApp.register;
-
 /**
  * Simple client application wrapper.
  *
@@ -15,18 +13,20 @@ import static water.H2OApp.register;
  *  2. Start H2O Clouds
  */
 public class H2OClientApp {
-  public static void main2( String relpath ) { driver(new String[0],relpath); }
-
   public static void start() { main(new String[0]); }
 
-  public static void main( String[] args  ) { driver(args,System.getProperty("user.dir")); }
+  public static void main( String[] args ) { driver(args,System.getProperty("user.dir")); }
+
+  @SuppressWarnings("unused")
+  public static void main2( String relpath ) { driver(new String[0],relpath); }
 
   private static void driver( String[] args, String relpath ) {
     H2OClient.main(args);
-
-    register(relpath);
+    H2OApp.register(relpath);
+    H2O.finalizeRegistration();
   }
 
+  @SuppressWarnings("unused")
   public static void waitForCloudSize(int x, long ms) {
     H2O.waitForCloudSize(x, ms);
   }
