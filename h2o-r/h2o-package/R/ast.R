@@ -139,7 +139,7 @@ function(expr, envir, neg) {
 #'                      .h2o.nary_op("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
-  if (is(a, "H2OFrame"))      .get(a)
+  if (is(a, "H2OFrame"))      a
   else if (is(a, "ASTNode"))  a
   else if (is(a, "ASTFun"))   .fun.visitor(a)
   else if (is(a, "ASTEmpty")) paste0('%', a@key)
