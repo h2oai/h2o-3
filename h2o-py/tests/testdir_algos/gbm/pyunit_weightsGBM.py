@@ -13,39 +13,39 @@ def weights_check(ip,port):
                                   y=data1["economy"],
                                   min_rows=5,
                                   ntrees=5,
-                                  max_depth=2)
+                                  max_depth=5)
         gbm2_regression = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
                                   y=data2["economy"],
                                   min_rows=5*min_rows_scale,
                                   weights_column="weights",
                                   ntrees=5,
-                                  max_depth=2)
+                                  max_depth=5)
         gbm1_binomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
                                 y=data1["economy_20mpg"],
                                 min_rows=5,
                                 distribution="bernoulli",
                                 ntrees=5,
-                                max_depth=2)
+                                max_depth=5)
         gbm2_binomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
                                 y=data2["economy_20mpg"],
                                 weights_column="weights",
                                 min_rows=5*min_rows_scale,
                                 distribution="bernoulli",
                                 ntrees=5,
-                                max_depth=2)
+                                max_depth=5)
         gbm1_multinomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
                                    y=data1["cylinders"],
                                    min_rows=5,
                                    distribution="multinomial",
                                    ntrees=5,
-                                   max_depth=2)
+                                   max_depth=5)
         gbm2_multinomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
                                    y=data2["cylinders"],
                                    weights_column="weights",
                                    min_rows=5*min_rows_scale,
                                    distribution="multinomial",
                                    ntrees=5,
-                                   max_depth=2)
+                                   max_depth=5)
 
         reg1_mse = gbm1_regression.mse()
         reg2_mse = gbm2_regression.mse()
@@ -67,6 +67,7 @@ def weights_check(ip,port):
     h2o_cars_data["cylinders"] = h2o_cars_data["cylinders"].asfactor()
 
     # uniform weights same as no weights
+    random.seed(2222)
     weight = random.randint(1,10)
     uniform_weights = [[weight] for r in range(406)]
     h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)
