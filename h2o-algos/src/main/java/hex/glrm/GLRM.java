@@ -22,6 +22,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -437,7 +438,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         model._output._archetypes = yt;
         model._output._step_size = step;
-        if (_parms._recover_pca) recoverPCA(model, xinfo);
+        if (_parms._recover_svd) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
         // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);

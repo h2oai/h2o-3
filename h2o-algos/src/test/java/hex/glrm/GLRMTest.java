@@ -4,7 +4,6 @@ import hex.DataInfo;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -96,7 +95,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 0.5;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._recover_pca = false;
+      parms._recover_svd = false;
       parms._user_points = yinit._key;
       parms._seed = seed;
 
@@ -136,7 +135,7 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._min_step_size = 1e-5;
-      parms._recover_pca = false;
+      parms._recover_svd = false;
       parms._max_iterations = 2000;
 
       try {
@@ -186,7 +185,7 @@ public class GLRMTest extends TestUtil {
       parms._user_points = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
-      parms._recover_pca = true;
+      parms._recover_svd = true;
 
       GLRM job = new GLRM(parms);
       try {
@@ -253,7 +252,7 @@ public class GLRMTest extends TestUtil {
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
         parms._seed = seed;
-        parms._recover_pca = true;
+        parms._recover_svd = true;
 
         GLRM job = new GLRM(parms);
         try {
@@ -303,7 +302,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 4;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._recover_pca = true;
+      parms._recover_svd = true;
       parms._max_iterations = 1000;
 
       try {
@@ -348,7 +347,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 8;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._recover_pca = false;
+      parms._recover_svd = false;
       parms._max_iterations = 200;
 
       try {

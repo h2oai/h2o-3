@@ -529,6 +529,8 @@ def ddply(frame,cols,fun):
 def group_by(frame,cols,aggregates):
   return frame.group_by(cols,aggregates)
 
+def pca(x,validation_x=None,**kwargs):
+  """
   :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
   nrow(training_frame)) inclusive.
   :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
