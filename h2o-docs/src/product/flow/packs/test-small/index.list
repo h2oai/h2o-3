@@ -4,3 +4,8 @@ delete_dl_model.flow
 delete_gbm_model.flow
 delete_glm_model.flow
 delete_rf_model.flow
+dl_iris.flow
+dl_airline.flow
+gbm_chess.flow
+glm_prostate.flow
+glm_prostate_cat.flow
