@@ -475,6 +475,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
           _nobs = ymut._nobs;
+          if(ymut._comupteWeightedSigma) { // got weights, need to recompute standardization
+            double [] sigmas = MemoryManager.malloc8d(_dinfo._nums);
+            double [] mean = MemoryManager.malloc8d(_dinfo._nums);
+            for(int i = 0; i < _dinfo._nums; ++i) {
+              sigmas[i] = MathUtils.weightedSigma(ymut._nobs, ymut._wsum, ymut._xsum[i], ymut._xxsum[i]);
+              mean[i] = ymut._xsum[i]/ymut._wsum;
+            }
+            _dinfo.updateWeightedSigmaAndMean(sigmas, mean);
+          }
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});
@@ -494,14 +503,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_bc._betaStart == null)
           _bc.setBetaStart(beta);
         // compute the lambda_max
-        _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / _nobs, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
+        _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / _wsum, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
         if(_validDinfo != null) {
           InitTsk.this.addToPendingCount(1);
           _gtNullTest = new GLMGradientTask(_validDinfo, _parms, 0, beta, 1.0, null, InitTsk.this).setValidate(_ymu,true).asyncExec(_validDinfo._adaptedFrame);
         }
         if (beta != _bc._betaStart) {
           InitTsk.this.addToPendingCount(1);
-          _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / _nobs, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
+          _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / _wsum, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
         }
       }
     }
@@ -658,7 +667,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private final double lmax(GLMGradientTask gLmax) {
-    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-2,_parms._alpha[0]);
+    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-3,_parms._alpha[0]);
   }
 
   /**
@@ -1288,8 +1297,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         if(t > MINLINE_SEARCH_STEP) {
           getCompleter().addToPendingCount(1);
+          t /= LINE_SEARCH_STEP;
           // GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
-          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._reg, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, lst._rowFilter, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length-1])).asyncExec(_activeData._adaptedFrame);
+          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._reg, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, lst._rowFilter, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length - 1])).asyncExec(_activeData._adaptedFrame);
           return;
         }
         // no line step worked => converge

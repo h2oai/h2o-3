@@ -13,7 +13,6 @@ import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
 
 import java.util.Arrays;
 
@@ -39,18 +38,38 @@ public abstract class GLMTask  {
 
    final int _weightId;
    final int _offsetId;
+   final int _nums; // number of numeric columns
+   final int _numOff;
+
+   final boolean _comupteWeightedSigma = true;
+
+   double [] _xsum; // weighted sum of x
+   double [] _xxsum; // weighted sum of x^2
+
 
    public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
      super(cmp);
      _fVec = mVec;
+     _nums = dinfo._nums;
+     _numOff = dinfo._cats;
      _responseId = dinfo.responseChunkId();
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
      _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
+//     _comupteWeightedSigma = dinfo._weights && dinfo._predictor_transform.isSigmaScaled() ||  dinfo._predictor_transform.isMeanAdjusted();
    }
 
-   @Override public void setupLocal(){
-     _fVec.preWriting();
-   }
+   @Override public void setupLocal(){_fVec.preWriting();}
+
+
+
+//   public double _wY; // (Weighted) sum of the response
+//   public double _wYY; // (Weighted) sum of the squared response
+//
+//   public  double weightedSigma() {
+////      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
+//     double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
+//     return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
+//   }
 
    @Override public void map(Chunk [] chunks) {
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
@@ -59,12 +78,23 @@ public abstract class GLMTask  {
          skip[r] |= chunks[i].isNA(r);
      Chunk response = chunks[_responseId];
      Chunk weight = _weightId >= 0?chunks[_weightId]:new C0DChunk(1,chunks[0]._len);
+     if(_comupteWeightedSigma) {
+       _xsum = MemoryManager.malloc8d(_nums);
+       _xxsum = MemoryManager.malloc8d(_nums);
+     }
      for(int r = 0; r < response._len; ++r) {
        if(skip[r]) continue;
        double w = weight.atd(r);
        if(w == 0) {
          skip[r] = true;
          continue;
+       }
+       if(_comupteWeightedSigma) {
+         for(int i = 0; i < _nums; ++i) {
+           double d = chunks[i+_numOff].atd(r);
+           _xsum[i]  += w*d;
+           _xxsum[i] += w*d*d;
+         }
        }
        _wsum += w;
        double d = w*response.atd(r);
@@ -95,12 +125,18 @@ public abstract class GLMTask  {
          _yMin = ymt._yMin;
        if(_yMax < ymt._yMax)
          _yMax = ymt._yMax;
+       if(_comupteWeightedSigma) {
+         ArrayUtils.add(_xsum, ymt._xsum);
+         ArrayUtils.add(_xxsum, ymt._xxsum);
+       }
      } else if (_nobs == 0) {
        _wsum = ymt._wsum;
        _ymu = ymt._ymu;
        _nobs = ymt._nobs;
        _yMin = ymt._yMin;
        _yMax = ymt._yMax;
+       _xsum = ymt._xsum;
+       _xxsum = ymt._xxsum;
      }
    }
  }
@@ -287,7 +323,7 @@ public abstract class GLMTask  {
         _likelihood += row.weight*_params.likelihood(row.response(0), mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
-        double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
+        double gval =row.weight * (mu-row.response(0)) / (var * _params.linkDeriv(mu));
         // categoricals
         for(int i = 0; i < row.nBins; ++i)
           g[row.binIds[i]] += gval;
