@@ -503,14 +503,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_bc._betaStart == null)
           _bc.setBetaStart(beta);
         // compute the lambda_max
-        _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / _nobs, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
+        _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / _wsum, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
         if(_validDinfo != null) {
           InitTsk.this.addToPendingCount(1);
           _gtNullTest = new GLMGradientTask(_validDinfo, _parms, 0, beta, 1.0, null, InitTsk.this).setValidate(_ymu,true).asyncExec(_validDinfo._adaptedFrame);
         }
         if (beta != _bc._betaStart) {
           InitTsk.this.addToPendingCount(1);
-          _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / _nobs, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
+          _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / _wsum, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
         }
       }
     }
@@ -667,7 +667,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private final double lmax(GLMGradientTask gLmax) {
-    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-2,_parms._alpha[0]);
+    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-3,_parms._alpha[0]);
   }
 
   /**

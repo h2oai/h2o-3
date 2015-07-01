@@ -323,7 +323,7 @@ public abstract class GLMTask  {
         _likelihood += row.weight*_params.likelihood(row.response(0), mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
-        double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
+        double gval =row.weight * (mu-row.response(0)) / (var * _params.linkDeriv(mu));
         // categoricals
         for(int i = 0; i < row.nBins; ++i)
           g[row.binIds[i]] += gval;
