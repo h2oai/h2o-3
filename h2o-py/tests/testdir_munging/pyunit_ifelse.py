@@ -15,7 +15,7 @@ def insert_missing(ip,port):
   mins2 = data["CRSDepTime"] % 100
   depTime = hour2*60 + mins2
 
-  data["TravelTime"] = h2o.ifelse((arrTime-depTime)>0,(arrTime-depTime),None)[0]
+  data["TravelTime"] = h2o.ifelse((arrTime-depTime)>0,(arrTime-depTime),float("nan"))[0]
 
   data.show()
 

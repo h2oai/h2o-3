@@ -15,6 +15,7 @@ tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl")
 if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
 if (!"AUC" %in% rownames(installed.packages())) install.packages("AUC")
 if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
+if (!"HDtweedie" %in% rownames(installed.packages())) install.packages("HDtweedie")
 library(R.utils)
 
 PROJECT.ROOT <- "h2o-3"

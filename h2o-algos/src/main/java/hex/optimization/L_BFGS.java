@@ -1,5 +1,6 @@
 package hex.optimization;
 
+import hex.glm.GLM;
 import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
@@ -105,7 +106,7 @@ public final class L_BFGS extends Iced {
      * @param pk   - search direction
      * @return objective values evaluated at k line-search points beta + pk*step[k]
      */
-    public abstract double [] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec);
+    public abstract double [] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec);
 
 
     /**
@@ -117,12 +118,15 @@ public final class L_BFGS extends Iced {
      * @return
      */
     public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, int nSteps, double tdec) {
-      double [] objVals = getObjVals(beta, direction, nSteps, tdec);
+      double [] objVals = null;
       double t = 1;
-      for (int i = 0; i < objVals.length; ++i) {
-        if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
-          return new LineSearchSol(true, objVals[i], t);
-        t *= tdec;
+      while(t > GLM.MINLINE_SEARCH_STEP) {
+        objVals = getObjVals(beta, direction, nSteps, t, tdec);
+        for (int i = 0; i < objVals.length; ++i) {
+          if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
+            return new LineSearchSol(true, objVals[i], t);
+          t *= tdec;
+        }
       }
       return new LineSearchSol(objVals[objVals.length-1] < ginfo._objVal, objVals[objVals.length-1], t/tdec);
     }

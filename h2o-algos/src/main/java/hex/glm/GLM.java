@@ -40,7 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
-  static final double LINE_SEARCH_STEP = .5;
+  static final double LINE_SEARCH_STEP = .75;
+  public static final double MINLINE_SEARCH_STEP = 1e-6;
   static final int NUM_LINE_SEARCH_STEPS = 16;
 
   public boolean isSupervised(){return true;}
@@ -474,6 +475,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
           _nobs = ymut._nobs;
+          if(ymut._comupteWeightedSigma) { // got weights, need to recompute standardization
+            double [] sigmas = MemoryManager.malloc8d(_dinfo._nums);
+            double [] mean = MemoryManager.malloc8d(_dinfo._nums);
+            for(int i = 0; i < _dinfo._nums; ++i) {
+              sigmas[i] = MathUtils.weightedSigma(ymut._nobs, ymut._wsum, ymut._xsum[i], ymut._xxsum[i]);
+              mean[i] = ymut._xsum[i]/ymut._wsum;
+            }
+            _dinfo.updateWeightedSigmaAndMean(sigmas, mean);
+          }
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});
@@ -493,14 +503,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_bc._betaStart == null)
           _bc.setBetaStart(beta);
         // compute the lambda_max
-        _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / _nobs, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
+        _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / _wsum, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
         if(_validDinfo != null) {
           InitTsk.this.addToPendingCount(1);
           _gtNullTest = new GLMGradientTask(_validDinfo, _parms, 0, beta, 1.0, null, InitTsk.this).setValidate(_ymu,true).asyncExec(_validDinfo._adaptedFrame);
         }
         if (beta != _bc._betaStart) {
           InitTsk.this.addToPendingCount(1);
-          _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / _nobs, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
+          _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / _wsum, _rowFilter, InitTsk.this).setValidate(_ymu,true).asyncExec(_dinfo._adaptedFrame);
         }
       }
     }
@@ -657,7 +667,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private final double lmax(GLMGradientTask gLmax) {
-    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-2,_parms._alpha[0]);
+    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-3,_parms._alpha[0]);
   }
 
   /**
@@ -1177,7 +1187,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // nedded line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
           LogDebug("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
-          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
+          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
           _sc.addIterationScore(_taskInfo._iter - 1, logl, objVal);
@@ -1221,7 +1231,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if(_taskInfo._lineSearch || _activeData.fullN() > 1000 || _activeData._adaptedFrame.numCols() > 100){
               getCompleter().addToPendingCount(1);
               LogDebug("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
-              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
+              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, glmt._beta, ArrayUtils.subtract(newBeta, glmt._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new H2OCallback<GLMLineSearchTask>((H2OCountedCompleter)getCompleter()) {
                 @Override
                 public void callback(GLMLineSearchTask lst) {
                   assert lst._nobs == _taskInfo._nobs;
@@ -1273,8 +1283,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       public void callback(final GLMLineSearchTask lst) {
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
         assert (Double.isNaN(_expectedLikelihood) || Double.isInfinite(_expectedLikelihood)) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
-        double t = 1;
-        for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
+        double t = lst._initStep;
+        for (int i = 0; i < lst._likelihoods.length && t >= MINLINE_SEARCH_STEP; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
           double newObj = objVal(lst._likelihoods[i], beta, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
           if (_taskInfo._objVal > newObj) {
@@ -1284,6 +1294,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _parms._intercept?_taskInfo._ymu:.5, _rowFilter, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
             return;
           }
+        }
+        if(t > MINLINE_SEARCH_STEP) {
+          getCompleter().addToPendingCount(1);
+          t /= LINE_SEARCH_STEP;
+          // GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
+          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._reg, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, lst._rowFilter, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length - 1])).asyncExec(_activeData._adaptedFrame);
+          return;
         }
         // no line step worked => converge
         LogInfo("converged (step size too small(1))");
@@ -1519,8 +1536,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
-      double [] objs = _solver.getObjVals(beta,pk, nSteps, stepDec);
+    public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
+      double [] objs = _solver.getObjVals(beta,pk, nSteps, initialStep, stepDec);
       double step = 1;
       assert objs.length == nSteps;
       for (int i = 0; i < objs.length; ++i, step *= stepDec) {
@@ -1655,8 +1672,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    public double[] getObjVals(double[] beta, double[] direction, int nSteps, double stepDec) {
-      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0, beta, direction, stepDec, nSteps, _rowFilter).setFasterMetrics(true).doAll(_dinfo._adaptedFrame)._likelihoods;
+    public double[] getObjVals(double[] beta, double[] direction, int nSteps, double initialStep, double stepDec) {
+      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0, beta, direction, initialStep, stepDec, nSteps, _rowFilter).setFasterMetrics(true).doAll(_dinfo._adaptedFrame)._likelihoods;
       double step = 1;
       for (int i = 0; i < objs.length; ++i, step *= stepDec) {
         objs[i] *= _reg;

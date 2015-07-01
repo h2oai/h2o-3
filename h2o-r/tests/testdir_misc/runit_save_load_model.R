@@ -23,9 +23,13 @@ test.save_load_dlmodel <- function(conn) {
   prostate.dl2 = h2o.loadModel(conn, prostate.dl.path)
 
   expect_equal(class(prostate.dl), class(prostate.dl2))
-  expect_equal(prostate.dl@data, prostate.dl2@data)
+  expect_equal(prostate.dl@allparameters, prostate.dl2@allparameters)
+  # FIXME there is no field data in the model
+  ## expect_equal(prostate.dl@data, prostate.dl2@data)
+  # FIXME models cannot be compared
   expect_equal(prostate.dl@model, prostate.dl2@model)
-  expect_equal(prostate.dl@valid, prostate.dl2@valid)
+  # FIXME there is no field valid in the model
+  ## expect_equal(prostate.dl@valid, prostate.dl2@valid)
 
   testEnd()
 }

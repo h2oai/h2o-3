@@ -5,6 +5,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Iced;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 
 import java.util.Map;
 
@@ -47,7 +48,15 @@ class ModelBuildersHandler extends Handler {
     for (Map.Entry<String, Class<? extends ModelBuilder>> entry : builders.entrySet()) {
         String algo = entry.getKey();
         ModelBuilder builder = ModelBuilder.createModelBuilder(algo);
-        m.model_builders.put(algo, (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
+
+        ModelBuilderSchema schema = null;
+        try {
+          schema = (ModelBuilderSchema)Schema.schema(version, builder);
+        }
+        catch (H2ONotFoundArgumentException e) {
+          schema = (ModelBuilderSchema)Schema.schema(Schema.getExperimentalVersion(), builder);
+        }
+        m.model_builders.put(algo, schema.fillFromImpl(builder));
     }
     return m;
   }

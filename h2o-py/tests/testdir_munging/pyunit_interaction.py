@@ -9,13 +9,13 @@ def interaction_check(ip,port):
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # add a couple of factor columns to iris
-    iris = h2o.cbind(iris, iris[4] == "Iris-setosa")
+    iris = iris.cbind(iris[4] == "Iris-setosa")
     iris[5] = iris[5].asfactor()
-    iris[5].setName("C6")
+    iris.setName(5,"C6")
 
-    iris = h2o.cbind(iris, iris[4] == "Iris-virginica")
+    iris = iris.cbind(iris[4] == "Iris-virginica")
     iris[6] = iris[6].asfactor()
-    iris[6].setName("C7")
+    iris.setName(6, name="C7")
 
     # create a frame of the two-way interactions
     two_way_interactions = h2o.interaction(iris, factors=[4,5,6], pairwise=True, max_factors=10000, min_occurrence=1)
@@ -37,8 +37,7 @@ def interaction_check(ip,port):
 
 
     # do the same thing, but set 'factors' arg to list of column names
-    two_way_interactions = h2o.interaction(iris, factors=["C5","C6","C7"], pairwise=True, max_factors=10000,
-                                           min_occurrence=1)
+    two_way_interactions = h2o.interaction(iris, factors=["C5","C6","C7"], pairwise=True, max_factors=10000, min_occurrence=1)
     assert two_way_interactions.nrow() == 150 and two_way_interactions.ncol() == 3, \
         "Expected 150 rows and 3 columns, but got {0} rows and {1} " \
         "columns".format(two_way_interactions.nrow(), two_way_interactions.ncol())

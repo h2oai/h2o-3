@@ -18,9 +18,6 @@ def binop_pipe(ip,port):
     res = iris | 1
     rows, cols = res.dim()
     assert rows == rows and cols == cols, "dimension mismatch"
-    for c in range(cols-1):
-        for r in range(rows):
-            assert res[r,c], "value error"
 
     # vec/vec
     res = iris[0] | iris[1]
@@ -29,13 +26,13 @@ def binop_pipe(ip,port):
 
     # vec/scaler
     res = iris[0] | 1
-    rows = len(res)
+    rows = res.nrow()
     assert rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == rows, "wrong number of rows returned"
 
     res = 1 | iris[1]
-    rows = len(res)
+    rows = res.nrow()
     assert rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == rows, "wrong number of rows returned"

@@ -137,7 +137,12 @@ subprojects {
     // to all projects
     if (project in publishedProjects) {
       apply from: "$rootDir/gradle/publish.gradle"
+      // Generate Java6 bytecode only if specified
       if (project.hasProperty("doJava6Bytecode")) {
+        if (project.doJava6Bytecode == "true"
+            || (project.doJava6Bytecode == "auto"
+                && System.getProperty("user.name").equals("jenkins")
+                && System.getenv("JAVA_6_HOME")))
           apply from: "$rootDir/gradle/java6bytecode.gradle"
       }
     }

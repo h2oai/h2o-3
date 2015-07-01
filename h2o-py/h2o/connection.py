@@ -86,7 +86,7 @@ class H2OConnection(object):
           cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path)
         else:
           print "No jar file found. Could not start local instance."
-          print "No h2o jar found at: " + path_to_jar
+          print "No h2o jar found at: " + jar_path
           raise
     __H2OCONN__._cld = cld
 

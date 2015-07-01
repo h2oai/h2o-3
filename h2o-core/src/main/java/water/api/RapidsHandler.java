@@ -76,8 +76,6 @@ class RapidsHandler extends Handler {
                 rapids.string = null;
                 rapids.result_type = RapidsV99.ARYNUM;
               }
-//            fr.delete();        // Auto-demoted to scalar: source frame dies here    .... nope, up to the client to handle lifetimes
-
             } else {
               rapids.result_type = RapidsV99.ARY;
               String[][] head = rapids.head = new String[Math.min(200, fr.numCols())][(int) Math.min(100, fr.numRows())];

@@ -100,10 +100,12 @@
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
-#'
-#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
+#' iris.hex <- as.h2o(iris)
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
+#'
+#' # now make a prediction
+#' predictions <- h2o.predict(iris.dl, iris.hex)
+#'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",

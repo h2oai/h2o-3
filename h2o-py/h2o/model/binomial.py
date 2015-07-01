@@ -4,6 +4,7 @@ Binomial Models
 
 from metrics_base import *
 
+
 class H2OBinomialModel(ModelBase):
   """
   Class for Binomial models.

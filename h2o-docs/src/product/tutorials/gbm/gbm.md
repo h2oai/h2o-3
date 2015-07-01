@@ -13,6 +13,10 @@ This tutorial uses a publicly available data set that can be found at:
 The original data are the Arrhythmia data set made available by UCI
 Machine Learning repository. They are composed of 452 observations and 279 attributes.
 
+If you don't have any data of your own to work with, you can find some example datasets here: 
+
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
 
 
 ###Importing Data

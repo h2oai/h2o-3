@@ -27,22 +27,22 @@ def expr_reducers(ip,port):
                 print "check unsuccessful! h2o computed {0} and numpy computed {1}".format(h2o_val,num_val)
         return success
 
-    h2o_val = h2o.min(h2o_data)
+    h2o_val = h2o_data.min()
     num_val = np.min(np_data)
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal min values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o.max(h2o_data)
+    h2o_val = h2o_data.max()
     num_val = np.max(np_data)
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal max values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o.sum(h2o_data)
+    h2o_val = h2o_data.sum()
     num_val = np.sum(np_data)
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o.np_comparison_check(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1), 10), \
+    h2o.np_comparison_check(h2o_data.var(), np.cov(np_data, rowvar=0, ddof=1), 10), \
         "expected equal var values between h2o and numpy"
 
 if __name__ == "__main__":

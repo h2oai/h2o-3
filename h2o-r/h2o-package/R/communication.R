@@ -457,7 +457,8 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   xx <- x
   for (j in seq_along(x)) {
     if( formats[j] == "%d" ) formats[j] <- "%f"
-    xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
+    if( is.na(x[[j]]) ) xx[[j]] <- ""
+    else                xx[[j]] <- sprintf(formats[j], x[[j]])
   }
 
   # drop empty columns
