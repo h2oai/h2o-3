@@ -88,5 +88,5 @@ h2o.prcomp <- function(training_frame, x, k,
     parms$use_all_factor_levels <- use_all_factor_levels
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'pca', parms)
+  .h2o.createModel(training_frame@conn, 'pca', parms, 99)
 }
