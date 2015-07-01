@@ -29,26 +29,26 @@ abstract class ASTReducerOp extends ASTPrim {
     @Override public void reduce( RedOp s ) { _d = op(_d,s._d); }
   }
 
-  class NaRmRedOp extends MRTask<NaRmRedOp> {
-    double _d;
-    @Override public void map( Chunk chks[] ) {
-      int rows = chks[0]._len;
-      for( Chunk C : chks ) {
-        if( !C.vec().isNumeric() ) throw new IllegalArgumentException("Numeric columns only");
-        double sum = _d;
-        for( int r = 0; r < rows; r++ ) {
-          double d = C.atd(r);
-          if( !Double.isNaN(d) )
-            sum = op(sum, d);
-        }
-        _d = sum;
-        if( Double.isNaN(sum) ) break; // Shortcut if the reduction is already NaN
-      }
-    }
-    @Override public void reduce( NaRmRedOp s ) { _d = op(_d, s._d); }
-  }
+//  class NaRmRedOp extends MRTask<NaRmRedOp> {
+//    double _d;
+//    @Override public void map( Chunk chks[] ) {
+//      int rows = chks[0]._len;
+//      for( Chunk C : chks ) {
+//        if( !C.vec().isNumeric() ) throw new IllegalArgumentException("Numeric columns only");
+//        double sum = _d;
+//        for( int r = 0; r < rows; r++ ) {
+//          double d = C.atd(r);
+//          if( !Double.isNaN(d) )
+//            sum = op(sum, d);
+//        }
+//        _d = sum;
+//        if( Double.isNaN(sum) ) break; // Shortcut if the reduction is already NaN
+//      }
+//    }
+//    @Override public void reduce( NaRmRedOp s ) { _d = op(_d, s._d); }
+//  }
 
-  @Override double rowApply( Env env, double ds[] ) {
+  @Override double rowApply( double ds[] ) {
     double d = ds[0];
     for( int i=1; i<ds.length; i++ )
       d = op(d,ds[i]);
@@ -92,12 +92,12 @@ class ASTAll extends ASTPrim {
 
 // ----------------------------------------------------------------------------
 /** Subclasses take a Frame and produces a scalar.  NAs are dropped */
-abstract class ASTNARedOp extends ASTReducerOp {
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    return new ValNum(new NaRmRedOp().doAll(fr)._d);
-  }
-}
+//abstract class ASTNARedOp extends ASTReducerOp {
+//  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+//    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+//    return new ValNum(new NaRmRedOp().doAll(fr)._d);
+//  }
+//}
 
 /** Optimization for the RollupStats: use them directly */
 abstract class ASTNARollupOp extends ASTRollupOp {

@@ -28,7 +28,7 @@ abstract public class AST extends Iced {
 
   // Row-wise apply.  All arguments evaluated down to an array of primitive
   // doubles.  Only allowed to return a simple double.
-  double rowApply( Env env, double ds[] ) { throw water.H2O.fail(); }
+  double rowApply( double ds[] ) { throw water.H2O.fail(); }
 
   // Short name (there's lots of the simple math primtives, and we want them to
   // fit on one line)
@@ -158,7 +158,5 @@ class ASTId extends AST {
 /** A primitive operation.  Execution just returns the function.  *Application*
  *  (not execution) applies the function to the arguments. */
 abstract class ASTPrim extends AST {
-  final ValFun _fun;
-  ASTPrim( ) { _fun = new ValFun(this); }
-  @Override Val exec( Env env ) { return _fun; }
+  @Override Val exec( Env env ) { return new ValFun(this); }
 }

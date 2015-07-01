@@ -198,20 +198,15 @@ class ASTCBind extends ASTPrim {
     // Compute the variable args.  Find the common row count
     Val vals[] = new Val[asts.length];
     Vec vec = null;
-    int numCols = 0;
     for( int i=1; i<asts.length; i++ ) {
       vals[i] = stk.track(asts[i].exec(env));
       if( vals[i].isFrame() ) {
-        numCols +=   vals[i].getFrame().numCols();
         Vec anyvec = vals[i].getFrame().anyVec();
         if( anyvec == null ) continue; // Ignore the empty frame
         if( vec == null ) vec = anyvec;
         else if( vec.length() != anyvec.length() ) 
           throw new IllegalArgumentException("cbind frames must have all the same rows, found "+vec.length()+" and "+anyvec.length()+" rows.");
-        else if( !vec.checkCompatible(anyvec) ) {
-          //throw H2O.unimpl();   // Bad layout, needs reshuffle
-        }
-      } else numCols++;         // Expand scalars into all rows, 1 column
+      }
     }
     boolean clean = false;
     if( vec == null ) { vec = Vec.makeZero(1); clean = true; } // Default to length 1
@@ -258,7 +253,7 @@ class ASTRBind extends ASTPrim {
         else if( fr.numCols() != fr0.numCols() ) 
           throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
         else if( !Arrays.deepEquals(fr._names,fr0._names) )
-          throw new IllegalArgumentException("rbind frames must have all the same column names, found "+fr._names+" and "+fr0._names);
+          throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
       } else numRows++;         // Expand scalars into all columns, 1 row
     }
     int numCols = fr==null ? 1 : fr.numCols();

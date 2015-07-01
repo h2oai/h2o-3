@@ -65,7 +65,7 @@ public class Env {
     // that are dying in this opcode will be deleted out from under it.
     @Override public void close() {
       Futures fs = null;
-      int i, sp = sp();
+      int sp = sp();
       while( sp > _sp ) {
         Frame fr = _refcnt.remove(--sp);
         for( Vec vec : fr.vecs() )

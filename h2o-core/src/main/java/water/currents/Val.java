@@ -1,9 +1,10 @@
 package water.currents;
 
 import water.fvec.Frame;
+import water.Iced;
 
 /** Generic execution values for the untyped stack */
-abstract public class Val {
+abstract public class Val extends Iced {
   // Things on the execution stack
   final public static int NUM = 1;     // scalar
   final public static int STR = 2;     // string scalar

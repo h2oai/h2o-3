@@ -1,7 +1,6 @@
 package water.currents;
 
 import water.fvec.*;
-import water.Key;
 import water.MRTask;
 
 /** Apply a Function to a frame
@@ -16,7 +15,7 @@ class ASTApply extends ASTPrim {
     AST fun      = stk.track(asts[3].exec(env)).getFun();
 
     switch( (int)margin ) {
-    case 1:  return rowwise(env,stk,fr,fun); 
+    case 1:  return rowwise(env,    fr,fun);
     case 2:  return colwise(env,stk,fr,fun); 
     default: throw new IllegalArgumentException("Only row-wise (margin 1) or col-wise (margin 2) allowed");
     }
@@ -70,7 +69,7 @@ class ASTApply extends ASTPrim {
   }
 
   // --------------------------------------------------------------------------
-  private Val rowwise( final Env env, Env.StackHelp stk, Frame fr, final AST ast ) {
+  private Val rowwise( final Env env, Frame fr, final AST ast ) {
     int nargs = ast.nargs();
     if( nargs != -1 && nargs != 2 )
       throw new IllegalArgumentException("Incorrect number of arguments; '"+ast+"' expects "+nargs+" but was passed "+2);
@@ -90,7 +89,7 @@ class ASTApply extends ASTPrim {
             for( int row=0; row<chks[0]._len; row++ ) {
               for( int col=0; col<chks.length; col++ )
                 ds[col] = chks[col].atd(row);
-              nc.addNum(fun._body.rowApply(env,ds));
+              nc.addNum(fun._body.rowApply(ds));
             }
           }
         }.doAll(1,fr).outputFrame());
@@ -108,7 +107,7 @@ class ASTApply extends ASTPrim {
           for( int row=0; row<chks[0]._len; row++ ) {
             for( int col=0; col<chks.length; col++ )
               ds[col] = chks[col].atd(row);
-            nc.addNum(ast.rowApply(env,ds));
+            nc.addNum(ast.rowApply(ds));
           }
         }
       }.doAll(1,fr).outputFrame());
