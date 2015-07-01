@@ -71,7 +71,6 @@ class H2OConnection(object):
       cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root,jar_path)
     else:
       try:
-        time.sleep(3);
         cld = self._connect(size)
       except:
         # try to start local jar or re-raise previous exception
@@ -140,16 +139,21 @@ class H2OConnection(object):
     :return: The JSON response from a "stable" cluster.
     """
     max_retries = max_retries
+    unhealthy_retries = 0
     retries = 0
 
     while True:
       retries += 1
+      unhealthy_retries += 1;
       if print_dots:
         self._print_dots(retries)
       try:
         cld = H2OConnection.get_json(url_suffix="Cloud")
         if not cld['cloud_healthy']:
-          raise ValueError("Cluster reports unhealthy status", cld)
+          if unhealthy_retries > max_retries:
+            raise ValueError("Cluster reports unhealthy status", cld)
+          else:
+            time.sleep(5)
         if cld['cloud_size'] >= size and cld['consensus']:
           if print_dots: print " Connection sucessful!"
           return cld
