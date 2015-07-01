@@ -78,13 +78,13 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
     for (Solver s : GLMParameters.Solver.values()) {
-      if(s != Solver.IRLSM)continue; //fixme: does not pass for other than IRLSM now
+//      if(s != Solver.IRLSM)continue; //fixme: does not pass for other than IRLSM now
       System.out.println("===============================================================");
       System.out.println("Solver = " + s);
       System.out.println("===============================================================");
       try {
         parms._lambda = null;
-        parms._alpha = new double[]{.5};
+        parms._alpha = null;
         parms._train = _weighted._key;
         parms._solver = s;
         parms._weights_column = "weights";
@@ -95,7 +95,7 @@ public class GLMBasicTestRegression extends TestUtil {
         parms._train = _upsampled._key;
         parms._weights_column = null;
         parms._lambda = null;
-        parms._alpha = new double[]{.5};
+        parms._alpha = null;
         job2 = new GLM(Key.make("prostate_model"), "glm test", parms);
         model2 = job2.trainModel().get();
         HashMap<String, Double> coefs2 = model2.coefficients();
