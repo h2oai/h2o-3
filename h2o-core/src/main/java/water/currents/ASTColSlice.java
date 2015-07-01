@@ -104,15 +104,15 @@ class ASTRowSliceAssign extends ASTPrim {
     // Sanity check src vs dst; then assign into dst.
     Val vsrc = stk.track(asts[2].exec(env));
     switch( vsrc.type() ) {
-    case Val.NUM:  assign_frame_scalar(dst,rows,vsrc.getNum()  );  break;
-    case Val.FRM:  assign_frame_frame (dst,rows,vsrc.getFrame());  break;
+    case Val.NUM:  assign_frame_scalar(stk,dst,rows,vsrc.getNum()  );  break;
+    case Val.FRM:  assign_frame_frame (stk,dst,rows,vsrc.getFrame());  break;
     default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
     }
     return new ValFrame(dst);
   }
 
 
-  private void assign_frame_frame(Frame dst, ASTNumList rows, Frame src) {
+  private void assign_frame_frame(Env.StackHelp stk, Frame dst, ASTNumList rows, Frame src) {
     if( dst.numCols() != src.numCols() )
       throw new IllegalArgumentException("Source and destination frames must have the same count and type of columns");
     Vec[] dvecs = dst.vecs();
@@ -128,26 +128,41 @@ class ASTRowSliceAssign extends ASTPrim {
     // Handle fast small case
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
-      for( int col=0; col<dvecs.length; col++ )
+      for( int col=0; col<dvecs.length; col++ ) {
+        if( stk.inUse(dvecs[col]) ) throw H2O.unimpl(); // Copy-on-write
         dvecs[col].set(drow, svecs[col].at(0));
+      }
       return;
     }
+
+    // Trivial all rows case.  Share Vecs.
+    if( dst.numRows() == nrows && rows.isDense() ) {
+      System.arraycopy(svecs,0,dvecs,0,svecs.length);
+      return;
+    }
+
 
     // Handle large case
     throw H2O.unimpl();
   }
 
 
-  private void assign_frame_scalar(Frame dst, final ASTNumList rows, final double src) {
+  private void assign_frame_scalar(Env.StackHelp stk, Frame dst, final ASTNumList rows, final double src) {
     Vec[] dvecs = dst.vecs();
     long nrows = rows.cnt();
     // Number fill
     // Handle fast small case
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
-      for( Vec vec : dvecs )
+      for( Vec vec : dvecs ) {
+        if( stk.inUse(vec) ) throw H2O.unimpl(); // Copy-on-write
         vec.set(drow, src);
+      }
       return;
+    }
+
+    if( dst.numRows() == nrows && rows.isDense() ) {
+      throw H2O.unimpl();       // Use constant vecs
     }
 
     // Handle large case
@@ -259,8 +274,10 @@ class ASTRBind extends ASTPrim {
       case Val.STR:  throw H2O.unimpl();
       case Val.NUM:  
         // Auto-expand scalars to fill every column
-        for( int c=0; c<numCols; c++ )
+        for( int c=0; c<numCols; c++ ) {
+          if( stk.inUse(res.vec(c)) ) throw H2O.unimpl(); // Copy on write
           res.vec(c).set(i-1,vals[i].getNum());
+        }
         break;
       default: throw H2O.unimpl();
       }

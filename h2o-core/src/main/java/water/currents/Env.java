@@ -68,18 +68,23 @@ public class Env {
       int i, sp = sp();
       while( sp > _sp ) {
         Frame fr = _refcnt.remove(--sp);
-        for( Vec vec : fr.vecs() ) {
-          if( _globals.contains(vec) ) continue;
-          for( i=0; i<_sp; i++ )
-            if( _refcnt.get(i).find(vec) != -1 )
-              break;
-          if( i==_sp && (_ret_fr==null || _ret_fr.find(vec)== -1) ) {
+        for( Vec vec : fr.vecs() )
+          if( !inUse(vec) ) {
             if( fs == null ) fs = new Futures();
             vec.remove(fs);
           }
-        }
       }
       if( fs != null ) fs.blockForPending();
+    }
+
+    // True if this Vec is alive on the current execution stack somewhere, not
+    // counting the current stack frame.
+    boolean inUse(Vec vec) {
+      if( _globals.contains(vec) ) return true;
+      for( int i=0; i<_sp; i++ )
+        if( _refcnt.get(i).find(vec) != -1 )
+          return true;
+      return _ret_fr!=null && _ret_fr.find(vec)!= -1;
     }
   }
 

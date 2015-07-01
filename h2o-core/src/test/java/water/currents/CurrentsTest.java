@@ -159,7 +159,7 @@ public class CurrentsTest extends TestUtil {
   }
 
   @Test public void testMath() {
-    for( String s : new String[] {"abs", "cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "round", "sqrt", "tan", "tanh"} )
+    for( String s : new String[] {"abs", "cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "sqrt", "tan", "tanh"} )
       checkTree("("+s+" a.hex)");
   }
 

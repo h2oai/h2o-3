@@ -102,6 +102,8 @@ class ASTNumList extends AST {
   double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
   double min() { return _bases[0]; }
   long cnt() { return water.util.ArrayUtils.sum(_cnts); }
+  boolean isDense() { return _cnts.length==1 && _bases[0]==0 && _strides[0]==1; }
+
 
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
