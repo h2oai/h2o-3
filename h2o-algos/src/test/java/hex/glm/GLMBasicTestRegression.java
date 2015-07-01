@@ -28,6 +28,8 @@ import static org.junit.Assert.assertTrue;
 public class GLMBasicTestRegression extends TestUtil {
   static Frame _canCarTrain;
   static Frame _earinf;
+  static Frame _weighted;
+  static Frame _upsampled;
   static Vec _merit, _class;
 
   @BeforeClass
@@ -48,10 +50,70 @@ public class GLMBasicTestRegression extends TestUtil {
     outputKey = Key.make("earinf.hex");
     _earinf = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_earinf._key,_earinf);
+
+    f = find_test_file_static("smalldata/glm_test/weighted.csv");
+    assert f.exists();
+    nfs = NFSFileVec.make(f);
+    outputKey = Key.make("weighted.hex");
+    _weighted = ParseDataset.parse(outputKey, nfs._key);
+    DKV.put(_weighted._key,_weighted);
+
+    f = find_test_file_static("smalldata/glm_test/upsampled.csv");
+    assert f.exists();
+    nfs = NFSFileVec.make(f);
+    outputKey = Key.make("upsampled.hex");
+    _upsampled = ParseDataset.parse(outputKey, nfs._key);
+    DKV.put(_upsampled._key,_upsampled);
   }
 
+  @Test public void  testWeights() {
+    GLM job1 = null, job2 = null;
+    GLMModel model1 = null, model2 = null;
+    GLMParameters parms = new GLMParameters(Family.gaussian);
+    parms._train = _weighted._key;
+    parms._ignored_columns = new String[]{_weighted.name(0)};
+    parms._response_column = _weighted.name(1);
+    parms._standardize = true;
+    parms._objective_epsilon = 0;
+    parms._gradient_epsilon = 1e-10;
+    parms._max_iterations = 1000;
+    for (Solver s : GLMParameters.Solver.values()) {
+//      if(s != Solver.IRLSM)continue; //fixme: does not pass for other than IRLSM now
+      System.out.println("===============================================================");
+      System.out.println("Solver = " + s);
+      System.out.println("===============================================================");
+      try {
+        parms._lambda = null;
+        parms._alpha = null;
+        parms._train = _weighted._key;
+        parms._solver = s;
+        parms._weights_column = "weights";
+        job1 = new GLM(Key.make("prostate_model"), "glm test", parms);
+        model1 = job1.trainModel().get();
+        HashMap<String, Double> coefs1 = model1.coefficients();
+        System.out.println("coefs1 = " + coefs1);
+        parms._train = _upsampled._key;
+        parms._weights_column = null;
+        parms._lambda = null;
+        parms._alpha = null;
+        job2 = new GLM(Key.make("prostate_model"), "glm test", parms);
+        model2 = job2.trainModel().get();
+        HashMap<String, Double> coefs2 = model2.coefficients();
+        System.out.println("coefs2 = " + coefs2);
+        System.out.println("mse1 = " + model1._output._training_metrics.mse() + ", mse2 = " + model2._output._training_metrics.mse());
+        System.out.println( model1._output._training_metrics);
+        System.out.println( model2._output._training_metrics);
+        assertEquals(model2._output._training_metrics.mse(), model1._output._training_metrics.mse(),1e-6);
+      } finally {
+        if(job1 != null)job1.remove();
+        if(model1 != null) model1.delete();
+        if(job2 != null)job2.remove();
+        if(model2 != null) model2.delete();
+      }
+    }
+  }
 
-  @Test public void testTweedie(){
+  @Test public void testTweedie() {
     GLM job = null;
     GLMModel model = null;
     Frame scoreTrain = null;
@@ -250,5 +312,9 @@ public class GLMBasicTestRegression extends TestUtil {
       _class.remove();
     if(_earinf != null)
       _earinf.delete();
+    if(_weighted != null)
+      _weighted.delete();
+    if(_upsampled != null)
+      _upsampled.delete();
   }
 }
