@@ -67,16 +67,13 @@ test.save.all.algos <- function(conn) {
   pros.v.path.dl <- h2o.saveModel(pros.val.dl, tmp_dir)
 
   Log.info("Saving glm models...")
-  cars.no_val.glm <- h2o.glm(x = 3:8, y = 2, training_frame = cars.train)
+  cars.no_val.glm <- h2o.getModel(h2o.glm(x = 3:8, y = 2, training_frame = cars.train)@"model_id")
   cars.nv.path.glm <- h2o.saveModel(cars.no_val.glm, tmp_dir)
-  cars.val.glm <- h2o.glm(x = 3:8, y = 2, training_frame = cars.train,
-                          validation_frame = cars.test)
+  cars.val.glm <- h2o.getModel(h2o.glm(x = 3:8, y = 2, training_frame = cars.train, validation_frame = cars.test)@"model_id")
   cars.v.path.glm <- h2o.saveModel(cars.val.glm, tmp_dir)
-  pros.no_val.glm <- h2o.glm(x = 3:9, y = 2, training_frame = pros.train,
-                             family = "binomial")
+  pros.no_val.glm <- h2o.getModel(h2o.glm(x = 3:9, y = 2, training_frame = pros.train, family = "binomial")@"model_id")
   pros.nv.path.glm <- h2o.saveModel(pros.no_val.glm, tmp_dir)
-  pros.val.glm <- h2o.glm(x = 3:9, y = 2, training_frame = pros.train,
-                          validation_frame = pros.test, family = "binomial")
+  pros.val.glm <- h2o.getModel(h2o.glm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, family = "binomial")@"model_id")
   pros.v.path.glm <- h2o.saveModel(pros.val.glm, tmp_dir)
 
 
@@ -151,7 +148,7 @@ test.save.all.algos <- function(conn) {
   expect_equal(pros.nv.drf, pros.no_val.drf)
   expect_equal(pros.v.drf, pros.val.drf)
 
-  endTest()
+  testEnd()
 }
 
 doTest("Saving Models of All Algos with/without Validation", test.save.all.algos)

@@ -41,7 +41,7 @@ test.splitframe <- function(conn) {
     print("")
   }
 
-  endTest()
+  testEnd()
 }
 
 doTest("Splitframe Testing with Timings vs Parsing", test.splitframe)

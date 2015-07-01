@@ -21,21 +21,21 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   final ModelCategory _model_category;
   final long _model_checksum;
   final long _frame_checksum;
-  transient Model _model;
-  transient Frame _frame;
   public final long _scoring_time;
-//  public long _duration_in_ms;
+
+  // Cached fields - cached them when needed
+  private transient Model _model;
+  private transient Frame _frame;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
   public ModelMetrics(Model model, Frame frame, double MSE, String desc) {
     super(buildKey(model, frame));
     _description = desc;
+    // Do not cache fields now
     _modelKey = model._key;
     _frameKey = frame._key;
     _model_category = model._output.getModelCategory();
-    _model = model;
-    _frame = frame;
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
     _MSE = MSE;
