@@ -44,8 +44,8 @@ public class Register extends AbstractRegister {
     H2O.registerPOST("/3/ModelBuilders/naivebayes/parameters", NaiveBayesBuilderHandler.class, "validate_parameters",                 "Validate a set of Naive Bayes model builder parameters.");
 
     ModelBuilder.registerModelBuilder("glrm", "Beta - Generalized Low Rank Model", GLRM.class);
-    H2O.registerPOST("/99/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                        "Train a GLRM model on the specified Frame.");
-    H2O.registerPOST("/99/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLRM model builder parameters.");
+    H2O.registerPOST("/99/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                     "Train a GLRM model on the specified Frame.");
+    H2O.registerPOST("/99/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                            "Validate a set of GLRM model builder parameters.");
 
     ModelBuilder.registerModelBuilder("pca", "Beta - Principal Component Analysis", PCA.class);
     H2O.registerPOST("/99/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
