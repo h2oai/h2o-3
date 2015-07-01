@@ -87,7 +87,7 @@ function(cur.dir, root, root.parent = NULL) {
     }
 
   # root.parent is not null
-  } else {
+    } else {
 
     # first check if cur.dir is root
     if (basename(cur.dir) == root && parent.name == root.parent) return(normalizePath(cur.dir))
@@ -171,4 +171,4 @@ if (exists("TEST_ROOT_DIR")) {
 # Clean up any temporary variables to avoid polluting the user's workspace.
 options(echo=.origEchoValue)
 options(scipen=999)
-rm(list=c(".origEchoValue"))
+rm(list=c(".origEchoValue"))		

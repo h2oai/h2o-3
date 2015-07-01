@@ -20,6 +20,8 @@ if (! exists("myIP")) {
 
 conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
+test.cm_roc.demo <- function (conn) {
+
 #uploading data file to h2o
 air <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
@@ -74,4 +76,10 @@ h2o.accuracy(perf.glm)
 h2o.auc(perf.glm)
 plot(perf.glm,type="roc")
 
-PASS_BANNER()
+testEnd()
+
+}
+
+doTest("Test Confusion Matrix Airlines Demo", test.cm_roc.demo)
+
+#PASS_BANNER()
