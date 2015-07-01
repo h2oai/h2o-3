@@ -155,6 +155,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
       stop(message)
     else
       warning(message)
+  }
 
   if (warnNthreads) {
     cat("Note:  As started, H2O is limited to the CRAN default of 2 CPUs.\n")

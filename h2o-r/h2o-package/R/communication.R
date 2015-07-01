@@ -519,6 +519,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #' @export
 h2o.clusterIsUp <- function(conn) {
   rv <- .h2o.doRawREST(conn, urlSuffix = "", method="GET")
+}
 
 #'
 #' Dump the stack into the JVM's stdout.
@@ -581,7 +582,7 @@ h2o.clusterInfo <- function() {
 .h2o.__checkConnectionHealth <- function() {
   rv <- .h2o.doGET(urlSuffix = .h2o.__CLOUD)
 
-  conn = h2o.getConnection()
+  conn <- h2o.getConnection()
   if (rv$curlError) {
     ip = conn@ip
     port = conn@port
@@ -622,9 +623,7 @@ h2o.clusterInfo <- function() {
 #-----------------------------------------------------------------------------------------------------------------------
 
 .h2o.__waitOnJob <- function(job_key, pollInterval = 1, progressBar = TRUE) {
-  if (progressBar) {
-    pb <- txtProgressBar(style = 3L)
-  }
+  if (progressBar) pb <- txtProgressBar(style = 3L)
 
   keepRunning <- TRUE
   tryCatch({

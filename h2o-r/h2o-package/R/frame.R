@@ -1175,7 +1175,7 @@ h2o.colnames <- function(x) {
 
 #' @rdname h2o.colnames
 #' @export
-setMethod("names", "H2OFrame", function(x) {
+h2o.names <- function(x) {
   .h2o.eval.frame(x)
   x@mutable$col_names
 }
@@ -1200,7 +1200,7 @@ setMethod("names", "H2OFrame", h2o.names)
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' length(iris.hex)
 #' @export
-setMethod("length", "H2OFrame", function(x) {
+h2o.length <- function(x) {
   .h2o.eval.frame(x)
   nc <- ncol(x)
   if (!is.na(nc) && nc == 1L) nrow(x)
