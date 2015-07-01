@@ -987,11 +987,8 @@ class H2OFrame:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
       if pytmp:
-        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
-        # t = res["result_type"]
-        # if t in [1,3]:   sb = ["#{} ".format(res["scalar"])]
-        # elif t in [2,4]: sb = ["\"{}\"".format(res["string"])]
-        sb = ["%", self._id," "]
+        h2o.rapids(ExprNode._collapse_sb(sb), self._id)
+        sb = [self._id," "]
         self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
 

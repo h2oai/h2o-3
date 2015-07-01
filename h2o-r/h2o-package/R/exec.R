@@ -134,7 +134,7 @@ function(op, ..., .args = list(...)) {
 
 .h2o.raw_expr_op<-
 function(expr, ..., .args=list(...), key = .key.make("raw_expr_op")) {
-  invisible(.h2o.__remoteSend(.h2o.__RAPIDS, ast=expr, id=key, method = "POST"))
+  invisible(.h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=expr, id=key, method = "POST"))
 }
 
 #'
@@ -155,7 +155,7 @@ function(ast) {
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   if (!is.null(res$string)) {
@@ -180,7 +180,7 @@ function(fr) {
   ast <- .visitor(fr@mutable$ast)
 
   # Execute the AST on H2O
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, id=fr@id, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=ast, id=fr@id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   # Get rows, cols, col_names
   res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", fr@id))$frames[[1]]
@@ -200,7 +200,7 @@ function(ast, id) {
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
   .h2o.getGCFrame(id)

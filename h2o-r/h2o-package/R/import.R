@@ -113,7 +113,7 @@ h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = T
 #' @export
 h2o.uploadFile <- function(path, destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
-                           col.types = NULL, na.strings = NULL, progressBar = FALSE) {
+                           col.types = NULL, na.strings = NULL, progressBar = FALSE, parse_type=NULL) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   .key.validate(destination_frame)
@@ -136,7 +136,6 @@ h2o.uploadFile <- function(path, destination_frame = "",
     rawData
   }
 }
-
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'

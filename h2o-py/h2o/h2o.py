@@ -388,12 +388,7 @@ def rapids(expr, id=None):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  if isinstance(expr, list): expr = ExprNode._collapse_sb(expr)
-  expr = "(= !{} {})".format(id,expr) if id is not None else expr
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
-  if result['error'] is not None:
-    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
-  return result
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id, _rest_version=99)
 
 def ls():
   """

@@ -18,6 +18,5 @@ function() {
 src()
 
 
-h <- h2o.init()
-conn <- h2o.init()   # convenient for copy-pasting from tests using "conn" rather than h
+h <- conn <- h2o.init()
 #hex <- as.h2o(iris, h)
