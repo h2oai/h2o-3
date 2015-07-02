@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"/home/0xdiag/bigdata/server/flow-tests/adult_2013_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"/home/0xdiag/bigdata/server/flow-tests/adult_2013_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"/home/0xdiag/bigdata/server/flow-tests/adult_2013_train.csv\"]\n  destination_frame: \"adult_2013_train.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 19\n  single_quotes: false\n  column_names: [\"AGEP\",\"COW\",\"SCHL\",\"MAR\",\"INDP\",\"RELP\",\"RAC1P\",\"SEX\",\"WKHP\",\"POBP\",\"WAGP\",\"CAPGAIN\",\"CAPLOSS\",\"LOG_CAPGAIN\",\"LOG_CAPLOSS\",\"LOG_WAGP\",\"CENT_WAGP\",\"TOP2_WAGP\",\"RELP_SCHL\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 524288"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"/home/0xdiag/bigdata/server/flow-tests/adult_2013_test.csv\"]\n"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"/home/0xdiag/bigdata/server/flow-tests/adult_2013_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"/home/0xdiag/bigdata/server/flow-tests/adult_2013_test.csv\"]\n  destination_frame: \"adult_2013_test.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 19\n  single_quotes: false\n  column_names: [\"AGEP\",\"COW\",\"SCHL\",\"MAR\",\"INDP\",\"RELP\",\"RAC1P\",\"SEX\",\"WKHP\",\"POBP\",\"WAGP\",\"CAPGAIN\",\"CAPLOSS\",\"LOG_CAPGAIN\",\"LOG_CAPLOSS\",\"LOG_WAGP\",\"CENT_WAGP\",\"TOP2_WAGP\",\"RELP_SCHL\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 131072"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\",\"training_frame\":\"adult_2013_train.hex\",\"validation_frame\":\"adult_2013_test.hex\",\"response_column\":\"LOG_WAGP\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"distribution\":\"gaussian\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\", predictions_frame: \"prediction-2b7c627c-ac9b-4cf2-9281-90b004161c89\""
+    }
+  ]
+}
