@@ -576,6 +576,16 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("cbind", False, self, data))
 
+  def rbind(self, data):
+    """
+    Combine H2O Datasets by Rows.
+    Takes a sequence of H2O data sets and combines them by rows.
+    :param data: an H2OFrame
+    :return: self, with data appended (row-wise)
+    """
+    if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
+    return H2OFrame(expr=ExprNode("rbind", self, data))
+
   def split_frame(self, ratios=[0.75], destination_frames=""):
     """
     Split a frame into distinct subsets of size determined by the given ratios.
