@@ -33,7 +33,7 @@ test.splitframe <- function(conn) {
 
     # Parse time should be the upper bound for split frame
     # TODO: we commented-out this check because "performance" checks should be done in a non resource-contested
-    # environment 
+    # environment
     #expect_true(parse.time[3] >= split.time[3])
 
     # Remove unecessary datasets
