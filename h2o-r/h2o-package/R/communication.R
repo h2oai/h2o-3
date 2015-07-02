@@ -438,6 +438,11 @@
   processTables(res)
 }
 
+.format.helper <- function(x, format) {
+    if( is.list(x) ) lapply(x, .format.helper, format)
+    else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+}
+
 #' Print method for H2OTable objects
 #'
 #' This will print a truncated view of the table if there are more than 20 rows.
@@ -451,11 +456,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
-  for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%i"
-    xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
-  }
 
+  for (j in seq_along(x)) {
+    if( formats[j] == "%d" ) formats[j] <- "%f"
+    xx[[j]] <- .format.helper(x[[j]], formats[j])
+  }
   # drop empty columns
   nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
   xx <- xx[nz]
