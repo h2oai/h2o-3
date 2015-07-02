@@ -139,8 +139,16 @@ class ASTRowSliceAssign extends ASTPrim {
     // Trivial all rows case.  Bulk copy all rows.
     // TODO: COW optimization
     if( dst.numRows() == nrows && rows.isDense() ) {
-      for( int i=0; i<dvecs.length; i++ )
-        DKV.put(dvecs[i] = dvecs[i].doCopy()); // big clone, and put new Vec in DKV
+      new MRTask(){
+        @Override public void map(Chunk[] cs) {
+          int len = cs.length>>1;
+          for( int i=0; i<len; i++ ) {
+            Chunk cdst = cs[i    ];
+            Chunk csrc = cs[i+len];
+            cdst.replaceAll(csrc.deepCopy());
+          }
+        }
+      }.doAll(new Frame().add(dst).add(src));
       if( dst._key != null ) throw H2O.unimpl(); // modified 'dst' need to update DKV?
       return;
     }

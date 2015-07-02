@@ -80,7 +80,8 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@id)
+  conn = h2o.getConnection()
+  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?src_key=', data@id)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -152,7 +153,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   else
     path <- file.path(dir, name)
 
-  res <- .h2o.__remoteSend(object@conn, .h2o.__SAVE_MODEL(object@model_id), h2oRestApiVersion = 99, dir=path, force=force)
+  res <- .h2o.__remoteSend(.h2o.__SAVE_MODEL(object@model_id), h2oRestApiVersion = 99, dir=path, force=force)
   # return the path
   res$dir
 }

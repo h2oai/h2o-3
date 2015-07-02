@@ -1433,7 +1433,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
-  fr.sum <- .h2o.__remoteSend(object@conn, paste0("Frames/", object@frame_id, "/summary"), method = "GET")$frames[[1]]
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", object@id, "/summary"), method = "GET")$frames[[1]]
   col.sums <- fr.sum$columns
   cols <- sapply(col.sums, function(col) {
     col.sum <- col

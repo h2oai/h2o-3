@@ -369,6 +369,15 @@ public abstract class Chunk extends Iced implements Cloneable {
     assert _chk2._chk2 == null; // Replacement has NOT been written into
   }
 
+  public Chunk deepCopy() {
+    Chunk c2 = (Chunk)clone();
+    c2._vec=null;
+    c2._start=-1;
+    c2._cidx=-1;
+    c2._mem = _mem.clone();
+    return c2;
+  }
+
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
