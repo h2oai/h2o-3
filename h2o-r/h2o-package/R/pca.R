@@ -75,5 +75,5 @@ h2o.prcomp <- function(training_frame, x, k, retx = TRUE,
     parms$seed <- seed
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'pca', parms)
+  .h2o.createModel(training_frame@conn, 'pca', parms, 99)
 }

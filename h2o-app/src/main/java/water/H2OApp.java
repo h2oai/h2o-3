@@ -57,21 +57,21 @@ public class H2OApp {
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
     H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
 
-    ModelBuilder.registerModelBuilder("glrm", "Beta - Generalized Low Rank Model", GLRM.class);
-    H2O.registerPOST("/3/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                        "Train a GLRM model on the specified Frame.");
-    H2O.registerPOST("/3/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLRM model builder parameters.");
-
-    ModelBuilder.registerModelBuilder("pca", "Beta - Principal Component Analysis", PCA.class);
-    H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
-    H2O.registerPOST("/3/ModelBuilders/pca/parameters", PCABuilderHandler.class, "validate_parameters",                               "Validate a set of PCA model builder parameters.");
-
-    ModelBuilder.registerModelBuilder("svd", "Beta - Singular Value Decomposition", SVD.class);
-    H2O.registerPOST("/3/ModelBuilders/svd", SVDBuilderHandler.class, "train",                                                        "Train a SVD model on the specified Frame.");
-    H2O.registerPOST("/3/ModelBuilders/svd/parameters", SVDBuilderHandler.class, "validate_parameters",                               "Validate a set of SVD model builder parameters.");
-
     ModelBuilder.registerModelBuilder("naivebayes", "Naive Bayes", NaiveBayes.class);
     H2O.registerPOST("/3/ModelBuilders/naivebayes", NaiveBayesBuilderHandler.class, "train",                                          "Train a Naive Bayes model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/naivebayes/parameters", NaiveBayesBuilderHandler.class, "validate_parameters",                 "Validate a set of Naive Bayes model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("glrm", "Beta - Generalized Low Rank Model", GLRM.class);
+    H2O.registerPOST("/99/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                        "Train a GLRM model on the specified Frame.");
+    H2O.registerPOST("/99/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLRM model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("pca", "Beta - Principal Component Analysis", PCA.class);
+    H2O.registerPOST("/99/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
+    H2O.registerPOST("/99/ModelBuilders/pca/parameters", PCABuilderHandler.class, "validate_parameters",                               "Validate a set of PCA model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("svd", "Beta - Singular Value Decomposition", SVD.class);
+    H2O.registerPOST("/99/ModelBuilders/svd", SVDBuilderHandler.class, "train",                                                        "Train a SVD model on the specified Frame.");
+    H2O.registerPOST("/99/ModelBuilders/svd/parameters", SVDBuilderHandler.class, "validate_parameters",                               "Validate a set of SVD model builder parameters.");
 
     H2O.registerPOST("/3/Grid/gbm", GBMGridSearchHandler.class, "train",                                                              "Run grid search for GBM model.");
     H2O.registerPOST("/3/Grid/drf", DRFGridSearchHandler.class, "train",                                                              "Run grid search for DRF model.");

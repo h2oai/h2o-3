@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -122,7 +123,12 @@ class ModelMetricsHandler extends Handler {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ ) {
           ModelMetrics mm = mml._model_metrics[i];
-          this.model_metrics[i] = (ModelMetricsBase) Schema.schema(3, mm.getClass()).fillFromImpl(mm);
+          try {
+            this.model_metrics[i] = (ModelMetricsBase)Schema.schema(3, mm.getClass()).fillFromImpl(mm);
+          }
+          catch (H2ONotFoundArgumentException e) {
+            this.model_metrics[i] = (ModelMetricsBase)Schema.schema(Schema.getExperimentalVersion(), mm.getClass()).fillFromImpl(mm);
+          }
         }
       } else {
         this.model_metrics = new ModelMetricsBase[0];

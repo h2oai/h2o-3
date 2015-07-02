@@ -5,7 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.SVDV3;
+import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
@@ -33,7 +33,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
   @Override public ModelBuilderSchema schema() {
-    return new SVDV3();
+    return new SVDV99();
   }
 
   @Override public Job<SVDModel> trainModel() {

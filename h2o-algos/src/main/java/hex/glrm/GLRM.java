@@ -9,7 +9,7 @@ import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.schemas.GLRMV3;
+import hex.schemas.GLRMV99;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
 import hex.svd.SVD;
@@ -43,7 +43,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private transient int _ncolX;
 
   @Override public ModelBuilderSchema schema() {
-    return new GLRMV3();
+    return new GLRMV99();
   }
 
   @Override public Job<GLRMModel> trainModel() {
@@ -438,7 +438,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         model._output._archetypes = yt;
         model._output._step_size = step;
-        if (_parms._recover_pca) recoverPCA(model, xinfo);
+        if (_parms._recover_svd) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
         // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);

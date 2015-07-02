@@ -81,7 +81,7 @@ datetest <- function(conn){
   rdf$days9 <- as.Date(as.factor(rdf$ds9), format='%Y%m%d')
   rdf$days10 <- as.Date(rdf$ds10, format='%Y_%m_%d')
 
-  months <- data.frame(lapply(rdf[,11:20], function(x) as.POSIXlt(x)$mon))
+  months <- data.frame(lapply(rdf[,11:20], function(x) as.POSIXlt(x)$mon+1))
   years <- data.frame(lapply(rdf[,11:20], function(x) as.POSIXlt(x)$year))
   idx <- 12*years + months
 

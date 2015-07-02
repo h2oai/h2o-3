@@ -68,5 +68,5 @@ h2o.svd <- function(training_frame, x, nv,
     parms$seed <- seed
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'svd', parms)
+  .h2o.createModel(training_frame@conn, 'svd', parms, 99)
 }

@@ -24,7 +24,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
     public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _loading_key;               // Key to save X matrix
-    public boolean _recover_pca = false;          // Recover principal components of XY at the end?
+    public boolean _recover_svd = false;          // Recover principal components of XY at the end?
 
     public enum Loss {
       L2, L1, Huber, Poisson, Hinge, Logistic
