@@ -1,0 +1,113 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": ""
+    },
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/prostate/prostate.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/prostate/prostate.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/prostate/prostate.csv\"]\n  destination_frame: \"prostate.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrame \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-f3096748-1ed4-402e-8599-4579458ee71a\",\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"solver\":\"IRLSM\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":false,\"link\":\"family_default\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-f3096748-1ed4-402e-8599-4579458ee71a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-f3096748-1ed4-402e-8599-4579458ee71a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-f3096748-1ed4-402e-8599-4579458ee71a\", frame: \"prostate.hex\", predictions_frame: \"prediction-8550a972-ed15-4519-8e63-956ab98ec24e\""
+    },
+    {
+      "type": "cs",
+      "input": "inspect getPrediction model: \"glm-f3096748-1ed4-402e-8599-4579458ee71a\", frame: \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "grid inspect \"Prediction\", getPrediction model: \"glm-f3096748-1ed4-402e-8599-4579458ee71a\", frame: \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-563619d0-1775-4d9d-a58d-58a090b45c24\",\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-563619d0-1775-4d9d-a58d-58a090b45c24\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-563619d0-1775-4d9d-a58d-58a090b45c24\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-563619d0-1775-4d9d-a58d-58a090b45c24\", frame: \"prostate.hex\", predictions_frame: \"prediction-33435056-fb0a-4204-af4a-fb51364f8804\""
+    },
+    {
+      "type": "cs",
+      "input": "inspect getPrediction model: \"gbm-563619d0-1775-4d9d-a58d-58a090b45c24\", frame: \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "grid inspect \"Prediction\", getPrediction model: \"gbm-563619d0-1775-4d9d-a58d-58a090b45c24\", frame: \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-4cfad5f8-b4f0-4d5c-a3d3-e109b2d08a31\",\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"activation\":\"Rectifier\",\"hidden\":[50,50],\"epochs\":\"1\",\"variable_importances\":false,\"replicate_training_data\":true,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"rho\":0.99,\"epsilon\":1e-8,\"input_dropout_ratio\":0,\"hidden_dropout_ratios\":[],\"l1\":0,\"l2\":0,\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"autoencoder\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":-5061612826329160000,\"rate\":0.005,\"rate_annealing\":0.000001,\"rate_decay\":1,\"momentum_start\":0,\"momentum_ramp\":1000000,\"momentum_stable\":0,\"nesterov_accelerated_gradient\":true,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"initial_weight_scale\":1,\"loss\":\"Automatic\",\"score_duty_cycle\":0.1,\"classification_stop\":0,\"regression_stop\":0.000001,\"max_hit_ratio_k\":10,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"ignore_const_cols\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"max_confusion_matrix_size\":20,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-4cfad5f8-b4f0-4d5c-a3d3-e109b2d08a31\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-0d78cfc6-4e79-4325-a75a-de53b7803e9d\",\"training_frame\":\"prostate.hex\",\"response_column\":\"CAPSULE\",\"ntrees\":50,\"max_depth\":20,\"min_rows\":10,\"nbins\":20,\"mtries\":-1,\"sample_rate\":0.6666667,\"build_tree_one_node\":false,\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-0d78cfc6-4e79-4325-a75a-de53b7803e9d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-0d78cfc6-4e79-4325-a75a-de53b7803e9d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-0d78cfc6-4e79-4325-a75a-de53b7803e9d\", frame: \"prostate.hex\", predictions_frame: \"prediction-05e354cb-a2ce-484d-8a74-4f3023597b71\""
+    },
+    {
+      "type": "cs",
+      "input": "inspect getPrediction model: \"drf-0d78cfc6-4e79-4325-a75a-de53b7803e9d\", frame: \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "grid inspect \"Prediction\", getPrediction model: \"drf-0d78cfc6-4e79-4325-a75a-de53b7803e9d\", frame: \"prostate.hex\""
+    }
+  ]
+}

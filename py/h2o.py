@@ -10,6 +10,7 @@ class H2O(object):
     json_url_history = []
     python_test_name = inspect.stack()[1][1]
     verbose = False
+    experimental_algos = ["pca", "svd", "glrm"]
 
     ## TODO: support api_version parameter for all api calls!
     # Also a global in the H2O object set at creation time.
@@ -626,7 +627,11 @@ class H2O(object):
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', H2O.verbose)
 
         if algo:
-            result = self.__do_json_request('3/ModelBuilders/' + algo, timeout=timeoutSecs, params=params_dict)
+            if algo in H2O.experimental_algos:
+               _rest_version = 99
+            else:
+              _rest_version = 3
+            result = self.__do_json_request(str(_rest_version)+'/ModelBuilders/' + algo, timeout=timeoutSecs, params=params_dict)
         else:
             result = self.__do_json_request('3/ModelBuilders', timeout=timeoutSecs, params=params_dict)
         return result
@@ -654,7 +659,11 @@ class H2O(object):
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
-        result = self.__do_json_request('/3/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
+        if algo in H2O.experimental_algos:
+          _rest_version = 99
+        else:
+          _rest_version = 3
+        result = self.__do_json_request('/' + str(_rest_version) + '/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
 
         H2O.verboseprint("model parameters validation: " + repr(result))
         return result

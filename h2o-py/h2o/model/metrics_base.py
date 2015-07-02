@@ -441,6 +441,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     :return: the threshold at which the given metric is maximum.
     """
     crit2d = self._metric_json['max_criteria_and_metric_scores']
+
     for e in crit2d.cell_values:
       if e[0]=="max "+metric:
         return e[1]

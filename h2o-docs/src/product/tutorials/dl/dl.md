@@ -30,7 +30,11 @@ H2O’s Deep Learning functionalities include:
 ### Getting Started
 This tutorial uses the publicly available <a href="http://yann.lecun.com/exdb/mnist/" target="_blank"> MNIST</a> data set of hand-written digits, where each row contains the 28^(2)=784 raw gray-scale pixel values from 0 to 255 of the digitized digits (0 to 9). 
 
-To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
+If you don't have any data of your own to work with, you can find some example datasets here: 
+
+- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+
 
 
 ####Importing Data

@@ -53,6 +53,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     DeepLearningScoring errors;
     Key[] weights;
     Key[] biases;
+    double[] normmul;
+    double[] normsub;
+    double[] normrespmul;
+    double[] normrespsub;
+    int[] catoffsets;
     public TwoDimTable _variable_importances;
 
     @Override public ModelCategory getModelCategory() {
@@ -346,6 +351,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (!model_info.get_params()._export_weights_and_biases) {
       _output.weights = null;
       _output.biases = null;
+      _output.normmul = null;
+      _output.normsub = null;
+      _output.normrespmul = null;
+      _output.normrespsub = null;
+      _output.catoffsets = null;
     } else {
       _output.weights = new Key[model_info.get_params()._hidden.length + 1];
       for (int i = 0; i < _output.weights.length; ++i) {
@@ -355,6 +365,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       for (int i = 0; i < _output.biases.length; ++i) {
         _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
       }
+      _output.normmul = model_info.data_info._normMul;
+      _output.normsub = model_info.data_info._normSub;
+      _output.normrespmul = model_info.data_info._normRespMul;
+      _output.normrespsub = model_info.data_info._normRespSub;
+      _output.catoffsets = model_info.data_info._catOffsets;
     }
   }
 
@@ -635,6 +650,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           errors = err2;
         }
         _output.errors = last_scored();
+        makeWeightsBiases(_key);
         water.util.Timer t = new Timer();
         // store weights and matrices to Frames
         if (_output.weights != null && _output.biases != null) {

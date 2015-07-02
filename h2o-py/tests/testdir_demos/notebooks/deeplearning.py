@@ -1,0 +1,10 @@
+import h2o
+prostate = h2o.upload_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+prostate.describe()
+prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+model = h2o.deeplearning(x = prostate[list(set(prostate.col_names()) - set(["ID","CAPSULE"]))], y = prostate["CAPSULE"], training_frame = prostate, activation = "Tanh", hidden = [10, 10, 10], epochs = 10000)
+model.show()
+predictions = model.predict(prostate)
+predictions.show()
+performance = model.model_performance(prostate)
+performance.show()

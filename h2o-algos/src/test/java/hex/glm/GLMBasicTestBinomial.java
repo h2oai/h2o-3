@@ -556,7 +556,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._weights_column = "weights";
     params._lambda = new double[]{0};
     params._alpha = new double[]{0};
-    params._standardize = false;
+    //params._standardize = false;
     params._objective_epsilon = 0;
     params._gradient_epsilon = 1e-6;
     params._beta_epsilon = 1e-6;
@@ -585,7 +585,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           System.out.println(modelUpsampled._output._training_metrics);
           for (int i = 0; i < cfs1.length; ++i) {
             System.out.println("cfs = " + cfs1[i]);
-            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-10:1e-6);
+            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-5:1e-5);
             assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
           }
           assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);

@@ -385,7 +385,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   void score2(Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double sum = score1(chks, weight, offset, fs, row);
     if( isClassifier()) {
-      if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
+      if( !Double.isInfinite(sum) && sum>0f && sum!=1f) ArrayUtils.div(fs, sum);
       if (_parms._balance_classes)
         GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }

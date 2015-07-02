@@ -167,7 +167,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
         for( int col : sCols ) { // For tracked cols
           double w = weight.atd(row);
-          assert (w > 0.0);
+          if (w == 0) continue;
           nhs[col].incr((float) chks[col].atd(row), wrks.atd(row), w); // Histogram row/col
         }
       }
@@ -231,13 +231,13 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         // Gather min/max, sums and sum-squares.
         for( int xrow=lo; xrow<hi; xrow++ ) {
           int row = rows[xrow];
+          double w = weight.atd(row);
+          if (w == 0) continue;
           float col_data = (float)chk.atd(row);
           if( col_data < min ) min = col_data;
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           double resp = wrks.atd(row);
-          double w = weight.atd(row);
-          if (w == 0) continue;
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
           ssqs[b] += w*resp*resp;

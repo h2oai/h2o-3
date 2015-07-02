@@ -139,7 +139,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       setMin(col_data);
       setMax(col_data);
     }
-    if( y != 0 ) incr0(b,y,w);
+    if( y != 0 && w != 0) incr0(b,y,w);
   }
 
   // Merge two equal histograms together.  Done in a F/J reduce, so no

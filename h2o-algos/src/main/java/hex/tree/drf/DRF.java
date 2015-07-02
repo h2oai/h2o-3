@@ -232,7 +232,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // The Boolean Optimization
           // This optimization assumes the 2nd tree of a 2-class system is the
           // inverse of the first (and that the same columns were picked)
-          if( k==1 && _nclass==2 && !_parms._binomial_double_trees) continue;
+          if( k==1 && _nclass==2 && _model.binomialOpt()) continue;
           ktrees[k] = new DRFTree(fr, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, mtrys, rseed);
           new DRFUndecidedNode(ktrees[k], -1, DHistogram.initialHist(fr, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
         }
@@ -330,19 +330,18 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         final Chunk   oobt  = chk_oobt(chks); // Out-of-bag rows counter over all trees
         // Iterate over all rows
         for( int row=0; row<oobt._len; row++ ) {
-          boolean wasOOBRow = false;
+          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
+
           // For all tree (i.e., k-classes)
           for( int k=0; k<_nclass; k++ ) {
             final DTree tree = _trees[k];
             if( tree == null ) continue; // Empty class is ignored
-            final Chunk ct   = chk_tree(chks,k); // k-tree working column holding votes for given row
             final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
             int nid = (int)nids.at8(row);         // Get Node to decide from
             // Update only out-of-bag rows
             // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
-            if( ScoreBuildHistogram.isOOBRow(nid) ) { // The row should be OOB for all k-trees !!!
-              assert k==0 || wasOOBRow : "Something is wrong: k-class trees oob row computing is broken! All k-trees should agree on oob row!";
-              wasOOBRow = true;
+            if( wasOOBRow) {
+              final Chunk ct   = chk_tree(chks,k); // k-tree working column holding votes for given row
               nid = ScoreBuildHistogram.oob2Nid(nid);
               if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
                 nid = tree.node(nid).pid();                 // Then take parent's decision
@@ -360,17 +359,13 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
               double prediction = ((LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
               if (importance) rpred[1 + k] = (float) prediction; // for both regression and classification
-              double count = oobt.atd(row);
-              if (isClassifier())
-                ct.set(row, (float) (ct.atd(row)*count + prediction)/(count+1)); //store avg prediction
-              else
-                ct.set(row, (float) (ct.atd(row) + prediction));
-              // For this tree this row is out-of-bag - i.e., a tree voted for this row
-              oobt.set(row, oobt.atd(row) + 1); // track number of trees
+              ct.set(row, (float) (ct.atd(row) + prediction));
             }
             // reset help column for this row and this k-class
             nids.set(row, 0);
           } /* end of k-trees iteration */
+          // For this tree this row is out-of-bag - i.e., a tree voted for this row
+          if (wasOOBRow) oobt.set(row, oobt.atd(row) + 1); // track number of trees
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
@@ -435,7 +430,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // ---
   // DRF DTree undecided node: same as the normal UndecidedNode, but specifies
   // a list of columns to score on now, and then decide over later.
-  // DRF algo: use all columns
   static class DRFUndecidedNode extends UndecidedNode {
     DRFUndecidedNode( DTree tree, int pid, DHistogram hs[] ) { super(tree,pid,hs); }
     // Randomly select mtry columns to 'score' in following pass over the data.
@@ -494,12 +488,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double sum = 0;
-    if (_nclass > 2 || (_nclass == 2 && _parms._binomial_double_trees) ) { //multinomial or binomial with 1 tree per class
+    if (_nclass > 2 || (_nclass == 2 && !_model.binomialOpt())) {
       for (int k = 0; k < _nclass; k++)
-        sum += (fs[k+1] = chk_tree(chks, k).atd(row));
+        sum += (fs[k+1] = chk_tree(chks, k).atd(row) / chk_oobt(chks).atd(row));
     }
-    else if (_nclass==2 && !_parms._binomial_double_trees) { //binomial optimization
-      fs[1] = chk_tree(chks, 0).atd(row);
+    else if (_nclass==2 && _model.binomialOpt()) {
+      fs[1] = chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
       assert(fs[1] >= 0 && fs[1] <= 1);
       fs[2] = 1. - fs[1];
     }

@@ -14,8 +14,8 @@ test.pca.prostate <- function(conn) {
   prostate.sum <- summary(prostate.hex)
   print(prostate.sum)
   
-  Log.info("PCA on columns 3 to 9 with k = 3, retx = FALSE, transform = 'STANDARDIZE'")
-  fitPCA <- h2o.prcomp(training_frame = prostate.hex, x = 3:9, k = 3, transform = "NONE")
+  Log.info("PCA on columns 3 to 9 with k = 3, transform = 'STANDARDIZE', pca_method = 'Power'")
+  fitPCA <- h2o.prcomp(training_frame = prostate.hex, x = 3:9, k = 3, transform = "STANDARDIZE", pca_method = "Power")
   pred1 <- predict(fitPCA, prostate.hex)
   pred2 <- h2o.getFrame(fitPCA@model$loading_key$name)
   
