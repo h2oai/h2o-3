@@ -2,9 +2,7 @@ package water.currents;
 
 import java.util.Arrays;
 
-import water.DKV;
-import water.H2O;
-import water.MRTask;
+import water.*;
 import water.fvec.*;
 
 /** Column slice */
@@ -117,27 +115,15 @@ class ASTRowSliceAssign extends ASTPrim {
   private void assign_frame_frame(Frame dst, ASTNumList rows, Frame src) {
     // Sanity check
     if( dst.numCols() != src.numCols() )
-      throw new IllegalArgumentException("Source and destination frames must have the same count and type of columns");
-    Vec[] dvecs = dst.vecs();
-    Vec[] svecs = src.vecs();
-    for( int col=0; col<dvecs.length; col++ )
-      if( dvecs[col].get_type() != svecs[col].get_type() )
-        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
+      throw new IllegalArgumentException("Source and destination frames must have the same count of columns");
     long nrows = rows.cnt();
     if( src.numRows() != nrows )
       throw new IllegalArgumentException("Requires same count of rows in the number-list ("+nrows+") as in the source ("+src.numRows()+")");
-    
-    // Frame fill
-    // Handle fast small case
-    if( nrows==1 ) {
-      long drow = (long)rows.expand()[0];
-      for( int col=0; col<dvecs.length; col++ )
-        dvecs[col].set(drow, svecs[col].at(0));
-      return;
-    }
 
     // Trivial all rows case.  Bulk copy all rows.
     // TODO: COW optimization
+    Vec[] dvecs = dst.vecs();
+    Vec[] svecs = src.vecs();
     if( dst.numRows() == nrows && rows.isDense() ) {
       new MRTask(){
         @Override public void map(Chunk[] cs) {
@@ -149,10 +135,28 @@ class ASTRowSliceAssign extends ASTPrim {
           }
         }
       }.doAll(new Frame().add(dst).add(src));
+      // Now update all the header info; enums & types
+      Futures fs = new Futures();
+      for( int col=0; col<dvecs.length; col++ )
+        dvecs[col].copyMeta(svecs[col],fs);
+      fs.blockForPending();
       if( dst._key != null ) throw H2O.unimpl(); // modified 'dst' need to update DKV?
       return;
     }
 
+    // Partial update; needs to preserve type
+    for( int col=0; col<dvecs.length; col++ )
+      if( dvecs[col].get_type() != svecs[col].get_type() )
+        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
+    
+    // Frame fill
+    // Handle fast small case
+    if( nrows==1 ) {
+      long drow = (long)rows.expand()[0];
+      for( int col=0; col<dvecs.length; col++ )
+        dvecs[col].set(drow, svecs[col].at(0));
+      return;
+    }
     // Handle large case
     throw H2O.unimpl();
   }

@@ -286,6 +286,12 @@ public class Vec extends Keyed<Vec> {
     RollupStats rs = rollupStats();
     return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
   }
+
+  public void copyMeta( Vec src, Futures fs ) {
+    _domain = src._domain;
+    _type = src._type;
+    DKV.put(this,fs);
+  }
   
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
