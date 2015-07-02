@@ -7,7 +7,7 @@ Author: Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
 Description: This package implements the Super Learner ensemble (stacking) algorithm using the H2O R interface to provide base learning algorithms.   
 License: Apache License (== 2.0)
-Depends: R (>= 2.13.0), h2o (>= 3.1.0.99999)
+Depends: R (>= 2.13.0), h2o (>= 3.0.0)
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.6)
 Suggests: SuperLearner, cvAUC
