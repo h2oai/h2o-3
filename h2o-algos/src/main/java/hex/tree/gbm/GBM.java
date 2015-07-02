@@ -8,6 +8,7 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -93,6 +94,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass == 2) _parms._distribution = GBMModel.GBMParameters.Family.bernoulli;
         if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
       }
+      if (hasOffset() && isClassifier() && _parms._distribution != GBMModel.GBMParameters.Family.bernoulli) {
+        error("_offset_column", "Offset is only supported for regression or binary classification with the Bernoulli distribution.");
+      }
+      if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
+        if (_offset.max() > 1)
+          error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
+      }
     }
 
     switch( _parms._distribution) {
@@ -101,8 +109,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         error("_distribution", "Binomial requires the response to be a 2-class categorical");
       else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
-        _initialPrediction = Math.log(mean / (1.0 - mean));
-        if (_offset != null) throw H2O.unimpl("Newton-Raphson iteration needed.");
+        _initialPrediction = Math.log(mean / (1.0 - mean)); // mean can be weighted mean
       }
       break;
     case multinomial:
@@ -125,11 +132,33 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
 
     @Override protected void buildModel() {
-      final double init = _initialPrediction;
-      if( init != 0.0 )       // Only non-zero for regression or bernoulli
+      if( _initialPrediction != 0.0 ) {      // Only non-zero for regression or bernoulli
+
+        if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
+          Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
+          Log.info("Iteration 0: initial value: " + _initialPrediction + " (starting value)");
+          double delta;
+          int count=0;
+          int N=100;
+          do {
+            double newInit = new NewtonRaphson(_initialPrediction).doAll(_train).value();
+            delta = Math.abs(_initialPrediction - newInit);
+            _initialPrediction = newInit;
+            Log.info("Iteration " + ++count + ": initial value: " + _initialPrediction);
+          } while (delta > 1e-6 || count > N /*bail out*/);
+          if (count > N) Log.warn("Newton-Raphson iteration didn't converge after " + count + " iterations.");
+          else Log.info("Newton-Raphson iteration converged. Final residual: " + delta);
+          _model._output._init_f = _initialPrediction;
+        }
+
+        final double init = _initialPrediction;
         new MRTask() {
-          @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-        }.doAll(vec_tree(_train,0), _parms._build_tree_one_node); // Only setting tree-column 0
+          @Override
+          public void map(Chunk tree) {
+            for (int i = 0; i < tree._len; i++) tree.set(i, init);
+          }
+        }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
+      }
 
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
@@ -169,6 +198,40 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
     }
 
+
+    /**
+     * Iteration to find a consistent initial value for bernoulli with offsets
+     */
+    private class NewtonRaphson extends MRTask<NewtonRaphson> {
+      double _init;
+      double _num;
+      double _denom;
+      public double value() {
+        return _init + _num/_denom;
+      }
+      NewtonRaphson(double init) { _init = init; }
+      @Override public void map( Chunk chks[] ) {
+        Chunk ys = chk_resp(chks);
+        Chunk offset = chk_offset(chks);
+        Chunk weight = hasWeights() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+        for( int row = 0; row < ys._len; row++) {
+          double w = weight.atd(row);
+          if (ys.isNA(row)) continue;
+          double y = ys.atd(row);
+          double o = offset.atd(row);
+          double p = 1./(1.+Math.exp(-(o+_init)));
+          _num += w*(y-p);
+          _denom += w*p*(1.-p);
+        }
+      }
+
+      @Override
+      public void reduce(NewtonRaphson mrt) {
+        _num += mrt._num;
+        _denom += mrt._denom;
+      }
+    }
+
     // --------------------------------------------------------------------------
     // Compute Prediction from prior tree results.
     // Classification (multinomial): Probability Distribution of loglikelyhoods
@@ -180,18 +243,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     class ComputeProb extends MRTask<ComputeProb> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
+        Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
           Chunk tr = chk_tree(chks,0);
           Chunk wk = chk_work(chks,0);
           for( int row = 0; row < ys._len; row++)
             // wk.set(row, 1.0f/(1f+Math.exp(-tr.atd(row))) ); // Prob_1
-            wk.set(row, 1.0f / (1f + Math.exp(tr.atd(row))));     // Prob_0
+            wk.set(row, 1.0f / (1f + Math.exp(tr.atd(row) + offset.atd(row))));     // Prob_0
         } else if( _nclass > 1 ) {       // Classification
           double fs[] = new double[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
             double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
-            double offset = hasOffset() ? chk_offset(chks).atd(row) : 0;
-            double sum = score1(chks, weight,offset,fs,row);
+            double sum = score1(chks, weight,0.0 /*offset*/,fs,row);
             if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
                 chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
@@ -203,7 +266,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           Chunk tr = chk_tree(chks,0); // Prior tree sums
           Chunk wk = chk_work(chks,0); // Predictions
           for( int row=0; row<ys._len; row++ )
-            wk.set(row,(float)tr.atd(row));
+            wk.set(row,(float)(tr.atd(row) + offset.atd(row)));
         }
       }
     }
@@ -508,7 +571,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
     if( _nclass == 1 ) // Regression
-      return fs[0]=chk_tree(chks,0).atd(row);
+      return fs[0]=chk_tree(chks,0).atd(row) + offset;
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree

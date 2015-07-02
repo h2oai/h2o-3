@@ -73,6 +73,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
+    if (hasOffset())
+      error("_offset_column", "Offsets are not yet supported for DRF.");
+    if (hasOffset() && isClassifier()) {
+      error("_offset_column", "Offset is only supported for regression.");
+    }
   }
 
   // A standard DTree with a few more bits.  Support for sampling during
