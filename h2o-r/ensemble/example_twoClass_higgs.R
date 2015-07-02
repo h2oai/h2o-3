@@ -1,56 +1,58 @@
 # An example of binary classification using h2o.ensemble
 # This example is also included in the R package documentation for h2o.ensemble
 
-library(h2oEnsemble)
+
+library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
 library(SuperLearner)  # For metalearner such as "SL.glm"
 library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
-localH2O <-  h2o.init(ip = "localhost", port = 54321, startH2O = TRUE, nthreads = -1)
+localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
 # Import a sample binary outcome train/test set into R
-train <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_5k.csv", sep=",")
+train <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv", sep=",")
 test <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv", sep=",")
 
 
 # Convert R data.frames into H2O parsed data objects
-data <- as.h2o(localH2O, train)
-newdata <- as.h2o(localH2O, test)
+training_frame <- as.h2o(localH2O, train)
+validation_frame <- as.h2o(localH2O, test)
 y <- "V1"
-x <- setdiff(names(data), y)
+x <- setdiff(names(training_frame), y)
 family <- "binomial"
+training_frame[,c(y)] <- as.factor(training_frame[,c(y)])  #Force Binary classification
+validation_frame[,c(y)] <- as.factor(validation_frame[,c(y)])  # check to validate that this guarantees the same 0/1 mapping?
 
 
-# Create a custom base learner library & specify the metalearner
-h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) h2o.randomForest.wrapper(..., ntrees = ntrees, nbins = nbins, seed = seed)
-h2o.deeplearning.1 <- function(..., hidden = c(500,500), activation = "Rectifier", seed = 1)  h2o.deeplearning.wrapper(..., hidden = hidden, activation = activation, seed = seed)
-h2o.deeplearning.2 <- function(..., hidden = c(200,200,200), activation = "Tanh", seed = 1)  h2o.deeplearning.wrapper(..., hidden = hidden, activation = activation, seed = seed)
-learner <- c("h2o.randomForest.1", "h2o.deeplearning.1", "h2o.deeplearning.2")
-metalearner <- c("SL.glm")
+# Specify the base learner library & the metalearner
+learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
+             "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
+metalearner <- "SL.glm"
 
 
-# Train the ensemble using 4-fold CV to generate level-one data
+# Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
-fit <- h2o.ensemble(x = x, y = y, data = data, family = family, 
-                    learner = learner, metalearner = metalearner,
-                    cvControl = list(V=4))
+fit <- h2o.ensemble(x = x, y = y, 
+                    training_frame = training_frame, 
+                    family = family, 
+                    learner = learner, 
+                    metalearner = metalearner,
+                    cvControl = list(V = 5, shuffle = TRUE))
 
 
 # Generate predictions on the test set
-pred <- predict(fit, newdata)
-labels <- as.data.frame(newdata[,c(y)])[,1]
+pred <- predict.h2o.ensemble(fit, validation_frame)
+labels <- as.data.frame(validation_frame[,c(y)])[,1]
 
 
 # Ensemble test AUC 
 AUC(predictions=as.data.frame(pred$pred)[,1], labels=labels)
-# 0.7681649
+# 0.7889155
 
 
 # Base learner test AUC (for comparison)
 L <- length(learner)
 sapply(seq(L), function(l) AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
-# 0.7583084 0.7145333 0.7123253
-
+# 0.6871342 0.7743299 0.7816997 0.7344790
 
 # Note that the ensemble results above are not reproducible since 
 # h2o.deeplearning is not reproducible when using multiple cores.
-# For reproducible results, pass reproducible=TRUE to h2o.deeplearning()
