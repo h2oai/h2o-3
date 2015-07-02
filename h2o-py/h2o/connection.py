@@ -153,7 +153,7 @@ class H2OConnection(object):
           if unhealthy_retries > max_retries:
             raise ValueError("Cluster reports unhealthy status", cld)
           else:
-            time.sleep(5)
+            time.sleep(10)
             continue
         if cld['cloud_size'] >= size and cld['consensus']:
           if print_dots: print " Connection sucessful!"
