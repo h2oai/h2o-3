@@ -1557,8 +1557,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
 #' @export
 h2o.mean <- function(x, ...) {
   if(ncol(x) != 1L) stop("can only compute the mean of a single column")
-  if (na.rm) .h2o.nary_scalar_op("meanNA", x)
-  else       .h2o.nary_scalar_op("mean"  , x)
+  .h2o.nary_scalar_op("mean"  , x)
 }
 
 #' @rdname h2o.mean
@@ -1624,9 +1623,9 @@ setMethod("var", "H2OFrame", h2o.var)
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' sd(prostate.hex$AGE)
 #' @export
-h2o.sd <- function(x, na.rm = FALSE) {
+h2o.sd <- function(x) {
   if(ncol(x) != 1L) stop("can only compute sd of a single column.")
-  .h2o.nary_scalar_op("sd", x, na.rm)
+  .h2o.nary_scalar_op("sd", x)
 }
 
 #' @rdname h2o.sd

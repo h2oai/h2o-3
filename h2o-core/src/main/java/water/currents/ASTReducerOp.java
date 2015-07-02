@@ -128,3 +128,12 @@ class ASTMean extends ASTPrim {
   }
 }
 
+class ASTSdev extends ASTPrim { 
+  @Override int nargs() { return 1+1; }
+  @Override String str() { return "sd"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() != 1 ) throw new IllegalArgumentException("mean only works on a single column");
+    return new ValNum(fr.anyVec().sigma());
+  }
+}

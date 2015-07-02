@@ -2,9 +2,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 #setupRandomSeed(1193410486)
-test.slice.colSummary <- function(conn) {
+test.slice.colSummary <- function() {
   Log.info("Importing iris.csv data...\n")
-  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
+  iris.hex <- h2o.importFile(locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
   Log.info("Check that summary works...")
   
   summary(iris.hex)

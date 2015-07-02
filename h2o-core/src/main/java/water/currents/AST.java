@@ -95,6 +95,7 @@ abstract public class AST extends Iced {
     init(new ASTMean());
     init(new ASTMin());
     init(new ASTMinNA());
+    init(new ASTSdev());
     init(new ASTSum());
     init(new ASTSumNA());
 
