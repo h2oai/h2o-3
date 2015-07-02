@@ -360,6 +360,15 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
   public boolean hasFloat(){return true;}
+
+  /** Replace all rows with this new chunk */
+  public void replaceAll( Chunk replacement ) {
+    assert _len == replacement._len;
+    _vec.preWriting();          // One-shot writing-init
+    _chk2 = replacement;
+    assert _chk2._chk2 == null; // Replacement has NOT been written into
+  }
+
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";

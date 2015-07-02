@@ -1555,12 +1555,10 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-h2o.mean <- function(x, trim = 0, na.rm = FALSE, ...) {
+h2o.mean <- function(x, ...) {
   if(ncol(x) != 1L) stop("can only compute the mean of a single column")
-  if (trim != 0) stop("unimplemented: trim must be 0", call.=FALSE)
-  if (trim < 0) trim <- 0
-  if (trim > .5) trim <- .5
-  .h2o.nary_scalar_op("mean", x, trim, na.rm, ...)
+  if (na.rm) .h2o.nary_scalar_op("meanNA", x)
+  else       .h2o.nary_scalar_op("mean"  , x)
 }
 
 #' @rdname h2o.mean

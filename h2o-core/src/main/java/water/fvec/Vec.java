@@ -371,7 +371,7 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  private Vec doCopy() {
+  public Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){

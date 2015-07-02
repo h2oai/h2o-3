@@ -185,12 +185,12 @@ function(stmnt) {
           l <- formals(as.list(as.list(getMethod(as.character(op), "H2OFrame"))[[3]][[2]])[[3]])[-1L]
         }
       }
-      if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
+      #if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
       if( as.character(op) == "log" ) l <- NULL   # special case for plain olde log
       l <- lapply(l, function(i)
-      if (length(i) != 0L) {
-        if(i == "") NULL else i
-      } else i)
+        if (length(i) != 0L) {
+          if(i == "") NULL else i
+        } else i)
       add_args <- l[names(l) != "..."]        # remove any '...' args
 
       # if some args were passed in then update those values in add_args

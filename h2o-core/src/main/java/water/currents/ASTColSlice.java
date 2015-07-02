@@ -1,6 +1,8 @@
 package water.currents;
 
 import java.util.Arrays;
+
+import water.DKV;
 import water.H2O;
 import water.MRTask;
 import water.fvec.*;
@@ -104,15 +106,16 @@ class ASTRowSliceAssign extends ASTPrim {
     // Sanity check src vs dst; then assign into dst.
     Val vsrc = stk.track(asts[2].exec(env));
     switch( vsrc.type() ) {
-    case Val.NUM:  assign_frame_scalar(stk,dst,rows,vsrc.getNum()  );  break;
-    case Val.FRM:  assign_frame_frame (stk,dst,rows,vsrc.getFrame());  break;
+    case Val.NUM:  assign_frame_scalar(dst,rows,vsrc.getNum()  );  break;
+    case Val.FRM:  assign_frame_frame (dst,rows,vsrc.getFrame());  break;
     default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
     }
     return new ValFrame(dst);
   }
 
-
-  private void assign_frame_frame(Env.StackHelp stk, Frame dst, ASTNumList rows, Frame src) {
+  // Rectangular array copy from src into dst
+  private void assign_frame_frame(Frame dst, ASTNumList rows, Frame src) {
+    // Sanity check
     if( dst.numCols() != src.numCols() )
       throw new IllegalArgumentException("Source and destination frames must have the same count and type of columns");
     Vec[] dvecs = dst.vecs();
@@ -128,41 +131,46 @@ class ASTRowSliceAssign extends ASTPrim {
     // Handle fast small case
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
-      for( int col=0; col<dvecs.length; col++ ) {
-        if( stk.inUse(dvecs[col]) ) throw H2O.unimpl(); // Copy-on-write
+      for( int col=0; col<dvecs.length; col++ )
         dvecs[col].set(drow, svecs[col].at(0));
-      }
       return;
     }
 
-    // Trivial all rows case.  Share Vecs.
+    // Trivial all rows case.  Bulk copy all rows.
+    // TODO: COW optimization
     if( dst.numRows() == nrows && rows.isDense() ) {
-      System.arraycopy(svecs,0,dvecs,0,svecs.length);
+      for( int i=0; i<dvecs.length; i++ )
+        DKV.put(dvecs[i] = dvecs[i].doCopy()); // big clone, and put new Vec in DKV
+      if( dst._key != null ) throw H2O.unimpl(); // modified 'dst' need to update DKV?
       return;
     }
-
 
     // Handle large case
     throw H2O.unimpl();
   }
 
 
-  private void assign_frame_scalar(Env.StackHelp stk, Frame dst, final ASTNumList rows, final double src) {
+  private void assign_frame_scalar(Frame dst, final ASTNumList rows, final double src) {
+
+    // Handle fast small case
     Vec[] dvecs = dst.vecs();
     long nrows = rows.cnt();
-    // Number fill
-    // Handle fast small case
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
-      for( Vec vec : dvecs ) {
-        if( stk.inUse(vec) ) throw H2O.unimpl(); // Copy-on-write
+      for( Vec vec : dvecs )
         vec.set(drow, src);
-      }
       return;
     }
 
+    // Bulk assign constant (probably zero) over a frame
     if( dst.numRows() == nrows && rows.isDense() ) {
-      throw H2O.unimpl();       // Use constant vecs
+      new MRTask(){
+        @Override public void map(Chunk[] cs) {
+          for( int i=0; i<cs.length; i++ )
+            cs[i].replaceAll(new C0DChunk(src,cs[i]._len));
+        }
+      }.doAll(dst);
+      return;
     }
 
     // Handle large case

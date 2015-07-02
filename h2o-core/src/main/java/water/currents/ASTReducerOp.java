@@ -117,19 +117,14 @@ class ASTMinNA extends ASTNARollupOp { String str() { return "minNA" ; } double 
 class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 // ----------------------------------------------------------------------------
-// Unlike the other reducer ops, this one produces a Frame of 1 row back,
-// instead of a single scalar.
+// Unlike the other reducer ops, this one only works on a single column
 class ASTMean extends ASTPrim { 
   @Override int nargs() { return 1+1; }
   @Override String str() { return "mean"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec vecs[] = new Vec[fr.numCols()];
-    for( int i=0; i<vecs.length; i++ ) {
-      Vec vec = fr.vecs()[i];
-      vecs[i] = Vec.makeCon(vec.naCnt() > 0 ? Double.NaN : vec.mean(),1);
-    }
-    return new ValFrame(new Frame(fr._names,vecs));
+    if( fr.numCols() != 1 ) throw new IllegalArgumentException("mean only works on a single column");
+    return new ValNum(fr.anyVec().mean());
   }
 }
 

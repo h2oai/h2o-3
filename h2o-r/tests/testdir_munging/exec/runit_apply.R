@@ -7,7 +7,7 @@ test.apply <- function() {
   Log.info("Perform apply on columns")
 
   kalls <- c("abs", "cos", "sin", "acos", "ceiling",
-             "floor", "cosh", "exp", "log", "round",
+             "floor", "cosh", "exp", "log",
              "sqrt", "tan", "tanh")
 
   lapply(kalls, function(call) { print(apply(hex, 2, call)); })
