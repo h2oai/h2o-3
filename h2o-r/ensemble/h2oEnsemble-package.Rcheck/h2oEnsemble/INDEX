@@ -1,0 +1,4 @@
+h2o.ensemble            H2O Ensemble
+h2o.glm.wrapper         Wrapper functions for h2o algorithms
+h2oEnsemble-package     H2O Ensemble Package
+predict.h2o.ensemble    Predict method for an 'h2o.ensemble' object.
