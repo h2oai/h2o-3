@@ -196,8 +196,11 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' @param model_id A string indicating the unique model_id of the model to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param linkToGC a logical value indicating whether to remove the underlying model
+#' @param linkToGC A logical value indicating whether to remove the underlying model
 #'        from the H2O cluster when the R proxy object is garbage collected.
+#' @param h2oRestApiVersion A number indicating the REST API version corresponding
+#'        to the type of H2O model. Defaults to the most recent version. Note that
+#'        version 99 is reserved for beta/experimental algorithms.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)

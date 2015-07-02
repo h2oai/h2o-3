@@ -11,15 +11,15 @@
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"hdfs://mr-0x6.0xdata.loc/datasets/covtype.data\" ]"
+      "input": "importFiles [ \"/home/0xdiag/smalldata/covtype/covtype.20k.data\" ]"
     },
     {
       "type": "cs",
-      "input": "setupParse paths: [ \"hdfs://mr-0x6.0xdata.loc/datasets/covtype.data\" ]"
+      "input": "setupParse paths: [ \"/home/0xdiag/smalldata/covtype/covtype.20k.data\" ]"
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"hdfs://mr-0x6.0xdata.loc/datasets/covtype.data\"]\n  destination_frame: \"covtype.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 55\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 131072"
+      "input": "parseFiles\n  paths: [\"/home/0xdiag/smalldata/covtype/covtype.20k.data\"]\n  destination_frame: \"covtype.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 55\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 131072"
     },
     {
       "type": "cs",
