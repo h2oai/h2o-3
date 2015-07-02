@@ -1,7 +1,7 @@
 package hex;
 
-import hex.schemas.PCAModelV99;
-import hex.schemas.PCAV99;
+import hex.schemas.PCAModelV3;
+import hex.schemas.PCAV3;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.H2O;
@@ -76,8 +76,8 @@ public class AAA_PreCloudLock extends TestUtil {
       new hex.schemas.MakeGLMModelV3();
       new hex.schemas.NaiveBayesModelV3();
       new hex.schemas.NaiveBayesV3();
-      new PCAModelV99();
-      new PCAV99();
+      new PCAModelV3();
+      new PCAV3();
       new hex.schemas.SharedTreeModelV3();
       new hex.schemas.SharedTreeV3();
       new hex.schemas.SynonymV3();

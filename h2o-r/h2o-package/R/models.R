@@ -203,12 +203,12 @@
     }
   }
 
-  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, h2oRestApiVersion), h2oRestApiVersion)
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, h2oRestApiVersion))
 }
 
-h2o.getFutureModel <- function(object, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@model_id, object@conn, h2oRestApiVersion = h2oRestApiVersion)
+  h2o.getModel(object@model_id, object@conn)
 }
 
 #' Predict on an H2O Model

@@ -5,7 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.SVDV99;
+import hex.schemas.SVDV3;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
@@ -33,7 +33,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
   @Override public ModelBuilderSchema schema() {
-    return new SVDV99();
+    return new SVDV3();
   }
 
   @Override public Job<SVDModel> trainModel() {
@@ -365,7 +365,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     @Override public void map(Chunk[] cs) {
       assert cs.length - _ncols == _parms._nv;
       _sval += l2norm2(cs, _svec, _k, _dinfo, _normSub, _normMul);    // Update \sigma_k and save u_k <- A_{k-1}v_k
-      div(chk_u(cs,_k-1,_ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
+      div(chk_u(cs, _k - 1, _ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
     }
 
     @Override protected void postGlobal() {

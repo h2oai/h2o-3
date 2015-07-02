@@ -5,7 +5,7 @@ import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV99;
+import hex.schemas.PCAV3;
 
 import hex.svd.SVD;
 import hex.svd.SVDModel;
@@ -31,7 +31,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV99();
+    return new PCAV3();
   }
 
   @Override

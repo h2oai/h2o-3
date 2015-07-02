@@ -9,7 +9,7 @@ import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.schemas.GLRMV99;
+import hex.schemas.GLRMV3;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
 import hex.svd.SVD;
@@ -43,7 +43,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private transient int _ncolX;
 
   @Override public ModelBuilderSchema schema() {
-    return new GLRMV99();
+    return new GLRMV3();
   }
 
   @Override public Job<GLRMModel> trainModel() {

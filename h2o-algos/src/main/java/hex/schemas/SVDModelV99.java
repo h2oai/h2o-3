@@ -3,7 +3,7 @@ package hex.schemas;
 import hex.svd.SVDModel;
 import water.api.*;
 
-public class SVDModelV99 extends ModelSchema<SVDModel, SVDModelV99, SVDModel.SVDParameters, SVDV99.SVDParametersV99, SVDModel.SVDOutput, SVDModelV99.SVDModelOutputV99> {
+public class SVDModelV99 extends ModelSchema<SVDModel, SVDModelV99, SVDModel.SVDParameters, SVDV3.SVDParametersV3, SVDModel.SVDOutput, SVDModelV99.SVDModelOutputV99> {
   public static final class SVDModelOutputV99 extends ModelOutputSchema<SVDModel.SVDOutput, SVDModelOutputV99> {
     // Output fields; input fields are in the parameters list
     @API(help = "Right singular vectors")
@@ -17,7 +17,7 @@ public class SVDModelV99 extends ModelSchema<SVDModel, SVDModelV99, SVDModel.SVD
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
-  public SVDV99.SVDParametersV99 createParametersSchema() { return new SVDV99.SVDParametersV99(); }
+  public SVDV3.SVDParametersV3 createParametersSchema() { return new SVDV3.SVDParametersV3(); }
   public SVDModelOutputV99 createOutputSchema() { return new SVDModelOutputV99(); }
 
   // Version&Schema-specific filling into the impl
