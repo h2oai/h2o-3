@@ -7,6 +7,7 @@ import copy
 def weights_vi(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
+    random.seed(1234)
 
     ###### create synthetic dataset1 with 3 predictors: p1 predicts response ~90% of the time, p2 ~70%, p3 ~50%
     response = ['a' for y in range(10000)]
@@ -37,6 +38,7 @@ def weights_vi(ip,port):
                                       y=dataset1_h2o["response"],
                                       variable_importances=True,
                                       hidden=[1],
+                                      reproducible=True, seed=1234,
                                       activation="Tanh")
     varimp_dataset1 = tuple([p[0] for p in model_dataset1.varimp(return_list=True)])
     assert varimp_dataset1 == ('p1', 'p2', 'p3'), "Expected the following relative variable importance on dataset1: " \
@@ -46,6 +48,7 @@ def weights_vi(ip,port):
                                       y=dataset2_h2o["response"],
                                       variable_importances=True,
                                       hidden=[1],
+                                      reproducible=True, seed=1234,
                                       activation="Tanh")
     varimp_dataset2 = tuple([p[0] for p in model_dataset2.varimp(return_list=True)])
     assert varimp_dataset2 == ('p3', 'p1', 'p2'), "Expected the following relative variable importance on dataset2: " \
@@ -72,11 +75,12 @@ def weights_vi(ip,port):
                                               variable_importances=True,
                                               weights_column="weights",
                                               hidden=[1],
+                                              reproducible=True, seed=1234,
                                               activation="Tanh")
 
     varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
-    assert varimp_combined == ('p1', 'p2', 'p3'), "Expected the following relative variable importance on the combined " \
-                                                  "dataset: ('p1', 'p2', 'p3'), but got: {0}".format(varimp_combined)
+    assert varimp_combined == ('p1', 'p3', 'p2'), "Expected the following relative variable importance on the combined " \
+                                                  "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 
 
     ############ Test2 #############
@@ -100,6 +104,7 @@ def weights_vi(ip,port):
                                               variable_importances=True,
                                               weights_column="weights",
                                               hidden=[1],
+                                              reproducible=True, seed=1234,
                                               activation="Tanh")
 
     varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
