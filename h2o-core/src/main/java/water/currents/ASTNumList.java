@@ -1,8 +1,9 @@
 package water.currents;
 
-import water.util.SB;
-import water.H2O;
 import java.util.ArrayList;
+import java.util.Arrays;
+import water.H2O;
+import water.util.SB;
 
 /** A collection of base/stride/cnts.  Bases are monotonically increasing, and
  *  base+stride*cnt is always less than the next base.  This is a syntatic form
@@ -15,13 +16,12 @@ class ASTNumList extends AST {
     ArrayList<Double> bases  = new ArrayList<>();
     ArrayList<Double> strides= new ArrayList<>();
     ArrayList<Long>   cnts   = new ArrayList<>();
-    double last = -Double.MAX_VALUE;
 
     // Parse a number list
     while( true ) {
       char c = e.skipWS();
       if( c==']' ) break;
-      if( c=='#' ) { e._x++; c = e.peek(); }
+      if( c=='#' ) e._x++;
       double base = e.number(), cnt=1, stride=1;
       c = e.skipWS();
       if( c==':' ) {
@@ -38,10 +38,7 @@ class ASTNumList extends AST {
           c = e.skipWS();
         }
       }
-      if( base < last )
-        throw new IllegalArgumentException("Number lists must always increase, but "+last+" is not less than "+base);
-      last = base+(cnt-1)*stride; // last max value
-      bases.add(base);  
+      bases.add(base);
       cnts.add((long)cnt);  
       strides.add(stride);
       // Optional comma seperating span
@@ -49,14 +46,27 @@ class ASTNumList extends AST {
     }
     e.xpeek(']');
 
+    // Convert fixed-sized arrays
     _bases  = new double[bases.size()];
     _strides= new double[bases.size()];
     _cnts   = new long  [bases.size()];
+    boolean isList = true;
     for( int i=0; i<_bases.length; i++ ) {
       _bases  [i] = bases  .get(i);
       _cnts   [i] = cnts   .get(i);
       _strides[i] = strides.get(i);
+      if( _cnts[i] != 1 ) isList = false;
     }
+
+    // Sort bases; complain about dups unless it's the stride==cnt==1 case.
+    if( isList ) {
+      Arrays.sort(_bases);
+    } else {
+      for( int i=1; i<_bases.length; i++ )
+        if( _bases[i-1] >= _bases[i] )
+          throw new IllegalArgumentException("Bases must be monotonically increasing");
+    }
+
   }
 
   // A simple ASTNumList of 1 number

@@ -74,9 +74,9 @@ public class CurrentsTest extends TestUtil {
     // Checking `hex[c(1:5,7,9),6]`
     tree = "(cols (rows %a.hex [0:4 6 7]) [0])";
     checkTree(tree);
-    // Checking `hex[1,c(1:5,7,8)]`
-    //tree = "([ %a.hex #0 (llist (: #0 #4) #6 #7))";
-    //checkTree(tree);
+    // Checking `hex[c(8,1,1,7),1]`
+    tree = "(rows a.hex [8 1 1 7])";
+    checkTree(tree);
   }
 
   @Test public void testFun() {

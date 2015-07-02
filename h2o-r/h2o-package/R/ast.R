@@ -117,6 +117,13 @@ function(expr, envir, neg) {
     return(paste0(lb,':',cnt))
   }
   
+  # list of numbers
+  if( is.vector(expr) && is.numeric(expr) ) {
+    if( expr[1] < 0 ) stop("leading negative sign unhandled");
+    children <- lapply(expr, .ast.walker, envir, neg)
+    return(paste0(children,collapse=','))
+  }
+
   # expr := - expr
   if( expr1 == quote(`-`)) {
     if( length(expr) != 2L ) stop("Spans can negate exactly 1 expr")
