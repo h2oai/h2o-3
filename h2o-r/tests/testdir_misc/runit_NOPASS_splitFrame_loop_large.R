@@ -32,7 +32,9 @@ test.splitframe <- function(conn) {
     print(split.time)
 
     # Parse time should be the upper bound for split frame
-    expect_true(parse.time[3] >= split.time[3])
+    # TODO: we commented-out this check because "performance" checks should be done in a non resource-contested
+    # environment 
+    #expect_true(parse.time[3] >= split.time[3])
 
     # Remove unecessary datasets
     h2o.rm(hex)
