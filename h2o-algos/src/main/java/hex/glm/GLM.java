@@ -162,7 +162,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
-    _parms._tweedie_link_power = 1 - _parms._tweedie_variance_power;
     if (expensive) {
       // bail early if we have basic errors like a missing training frame
       if (error_count() > 0) return;
