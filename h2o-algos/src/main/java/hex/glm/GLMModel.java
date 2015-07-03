@@ -85,7 +85,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
     public boolean _intercept = true;
-    public double _beta_epsilon = 1e-4;
+    public double _beta_epsilon = 1e-5;
     public double _objective_epsilon = 1e-5;
     public double _gradient_epsilon = 1e-4;
 
@@ -373,7 +373,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log,inverse, tweedie}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT}
 
     // helper function
     static final double y_log_y(double y, double mu) {

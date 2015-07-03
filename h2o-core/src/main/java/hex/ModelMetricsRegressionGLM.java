@@ -32,4 +32,5 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression {
     sb.append(" AIC: " + (float)_AIC + "\n");
     return sb.toString();
   }
+
 }
