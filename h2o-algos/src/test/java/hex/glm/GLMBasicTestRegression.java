@@ -210,6 +210,7 @@ public class GLMBasicTestRegression extends TestUtil {
     for(int x = 0; x < varPow.length; ++x) {
       double p = varPow[x];
       parms._tweedie_variance_power = p;
+      parms._tweedie_link_power = 1 - p;
       for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
         try {
           parms._solver = s;

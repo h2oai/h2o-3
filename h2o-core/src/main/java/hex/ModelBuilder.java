@@ -5,6 +5,7 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.*;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.ReflectionUtils;
@@ -53,6 +54,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec response(){return _response;}
   /** Validation response vector. */
   public Vec vresponse(){return _vresponse;}
+
+  /**
+   * Compute the (weighted) mean of the response (subtracting possible offset terms)
+   * @return mean
+   */
+  protected double responseMean() {
+    if (hasWeights() || hasOffset()) {
+      return new FrameUtils.WeightedMean().doAll(
+              _response,
+              hasWeights() ? _weights : _response.makeCon(1),
+              hasOffset() ? _offset : _response.makeCon(0)
+      ).weightedMean();
+    }
+    return _response.mean();
+  }
 
 
 
@@ -388,10 +404,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         hide("_max_after_balance_size", "Max after balance size is only applicable to classification problems.");
         hide("_max_confusion_matrix_size", "Max confusion matrix size is only applicable to classification problems.");
       }
-      else {
-        if (_offset != null && !this.getAlgo().equals("glm"))
-          error("_offset", "Offset only applies to regression and logistic regression.");
-      }
       if (_nclass <= 2) {
         hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
         hide("_max_confusion_matrix_size", "Only for multi-class classification problems.");
@@ -456,8 +468,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         builder._messages = ModelBuilder.this._messages;
         return builder;
       }
-      // Run the onCancelled code synchronously, right now
-      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
     }
 

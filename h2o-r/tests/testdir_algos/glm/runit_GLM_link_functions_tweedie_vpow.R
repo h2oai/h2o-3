@@ -34,6 +34,7 @@ test_tweedie <- function(conn) {
                       family = "tweedie",
                       link = "tweedie",
                       tweedie_variance_power = vpow,
+                      tweedie_link_power=1-vpow,
                       alpha = 0.5, 
                       lambda = 0, 
                       nfolds = 0)
