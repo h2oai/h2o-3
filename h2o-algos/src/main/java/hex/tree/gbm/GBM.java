@@ -132,18 +132,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Log.info("Iteration 0: initial value: " + _initialPrediction + " (starting value)");
         double delta;
         int count=0;
-        int N=100;
+        double tol = 1e-4;
+        int N=1; //one step is enough - same as R
+        //From R GBM vignette:
+        //For speed, gbm() does only one step of the Newton-Raphson algorithm
+        //rather than iterating to convergence. No appreciable loss of accuracy
+        //since the next boosting iteration will simply correct for the prior iterations
+        //inadequacy.
         _initialPrediction = 0;
         do {
           double newInit = new NewtonRaphson(_initialPrediction).doAll(_train).value();
           delta = Math.abs(_initialPrediction - newInit);
           _initialPrediction = newInit;
           Log.info("Iteration " + ++count + ": initial value: " + _initialPrediction);
-        } while (delta > 1e-6 || count > N /*bail out*/);
-        if (count > N) Log.warn("Newton-Raphson iteration didn't converge after " + count + " iterations.");
-        else Log.info("Newton-Raphson iteration converged. Final residual: " + delta);
+        } while (count < N && delta >= tol);
+        if (delta > tol) Log.warn("Not fully converged.");
+        Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
       }
-
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
       if( _initialPrediction != 0.0 ) {      // Only non-zero for regression or bernoulli
