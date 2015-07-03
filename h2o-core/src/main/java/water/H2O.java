@@ -479,6 +479,36 @@ final public class H2O {
     ABV = abv;
   }
 
+  //-------------------------------------------------------------------------------------------------------------------
+
+  public static class AboutEntry {
+    private String name;
+    private String value;
+
+    public String getName() { return name; }
+    public String getValue() { return value; }
+
+    AboutEntry(String n, String v) {
+      name = n;
+      value = v;
+    }
+  }
+
+  private static ArrayList<AboutEntry> aboutEntries = new ArrayList<>();
+
+  @SuppressWarnings("unused")
+  public static void addAboutEntry(String name, String value) {
+    AboutEntry e = new AboutEntry(name, value);
+    aboutEntries.add(e);
+  }
+
+  @SuppressWarnings("unused")
+  public static ArrayList<AboutEntry> getAboutEntries() {
+    return aboutEntries;
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
   // Atomically set once during startup.  Guards against repeated startups.
   public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
