@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(1, "..")
+sys.path.insert(1, "../../")
 import h2o
 
 def runif_check(ip, port):
