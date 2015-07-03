@@ -6,8 +6,8 @@ test.upload.import.small <- function(conn) {
                             "smalldata/prostate/prostate_woheader.csv.gz")
 
     for(dataset in various_datasets){
-        uploaded_frame <- h2o.uploadFile(conn, locate("bigdata/laptop/mnist/train.csv.gz"))
-        imported_frame <- h2o.importFile(conn, locate("bigdata/laptop/mnist/train.csv.gz"))
+        uploaded_frame <- h2o.uploadFile(conn, locate(dataset))
+        imported_frame <- h2o.importFile(conn, locate(dataset))
 
         rows_u <- nrow(uploaded_frame)
         rows_i <- nrow(imported_frame)

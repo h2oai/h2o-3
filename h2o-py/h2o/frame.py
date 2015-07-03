@@ -777,7 +777,7 @@ class H2OFrame:
 
     total = frame["counts"].sum()
     densities = [(frame["counts"][i,:]/total)._scalar()*(1/(frame["breaks"][i,:]._scalar()-frame["breaks"][i-1,:]._scalar())) for i in range(1,frame["counts"].nrow())]
-    densities.insert(0,float("nan"))
+    densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.setNames(["density"])
     frame = frame.cbind(densities_frame)
