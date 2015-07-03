@@ -571,8 +571,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       fs[2] = 1.0-fs[1];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
-    if( _nclass == 1 ) // Regression
-      return fs[0]=chk_tree(chks,0).atd(row) + offset;
+    if( _nclass == 1 ) { // Regression
+      return fs[0] = chk_tree(chks, 0).atd(row) + offset;
+    }
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree

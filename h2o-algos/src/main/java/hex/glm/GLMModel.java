@@ -96,8 +96,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         else
           _exactLambdas = false;
       if(_family != Family.tweedie) {
-        glm.hide("tweedie_variance_power","Only applicable with Tweedie family");
-        glm.hide("tweedie_link_power","Only applicable with Tweedie family");
+        glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
+        glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
       }
 
       if(_beta_constraints != null) {
