@@ -36,7 +36,7 @@ test.GBM <- function(conn) {
   expect_true(h2o.mse(gbm) < 0.11, "MSE too big with offset for bernoulli")
 
   model <- gbm(CAPSULE~.-CAPSULE-ID + offset(offset), data=as.data.frame(df), distribution="bernoulli")
-  expect_true(abs((gbm@model$init_f - model$initF)/model$initF) < 0.03, "initF mismatch with offset for bernoulli")
+  expect_true(abs((gbm@model$init_f - model$initF)/model$initF) < 1e-6, "initF mismatch with offset for bernoulli")
 
   testEnd()
 }
