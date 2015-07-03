@@ -197,31 +197,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  final private static class ConfMat extends ConfusionMatrix {
-    final private double _err;
-    final private double _f1;
-    public ConfMat(double err, double f1) {
-      super(null, null);
-      _err=err;
-      _f1=f1;
-    }
-    @Override public double err() { return _err; }
-    @Override public double F1() { return _f1; }
-  }
-
   public ConfusionMatrix cm() {
     final DeepLearningScoring lasterror = last_scored();
     if (lasterror == null) return null;
     ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
             lasterror.train_confusion_matrix;
-    if (cm == null ) {
-      if (lasterror.validation || lasterror.num_folds > 0) {
-        return new ConfMat(lasterror.scored_valid._classError, lasterror.validation_AUC != null ? lasterror.validation_AUC.maxF1() : 0);
-      } else {
-        return new ConfMat(lasterror.scored_train._classError, lasterror.training_AUC != null ? lasterror.training_AUC.maxF1() : 0);
-      }
-    }
     return cm;
   }
 
