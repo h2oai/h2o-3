@@ -468,8 +468,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         builder._messages = ModelBuilder.this._messages;
         return builder;
       }
-      // Run the onCancelled code synchronously, right now
-      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
     }
 
