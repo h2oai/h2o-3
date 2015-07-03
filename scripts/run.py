@@ -595,7 +595,12 @@ class Test:
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
-                   self.ip + ":" + str(self.port), str(g_phantomjs_to)]
+                   "--host",
+                   self.ip + ":" + str(self.port), 
+                   "--timeout",
+                   str(g_phantomjs_to),
+                   "--packs",
+                   g_phantomjs_packs]
         else:
             print("")
             print("ERROR: Test runner failure with test: " + self.test_name)
@@ -1518,6 +1523,7 @@ g_path_to_tar = None
 g_path_to_whl = None
 g_produce_unit_reports = True
 g_phantomjs_to = 3600
+g_phantomjs_packs = "examples"
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1692,6 +1698,7 @@ def parse_args(argv):
     global g_path_to_whl
     global g_produce_unit_reports
     global g_phantomjs_to
+    global g_phantomjs_packs
 
     i = 1
     while (i < len(argv)):
@@ -1781,6 +1788,9 @@ def parse_args(argv):
         elif s == "--pto":
             i += 1
             g_phantomjs_to = int(argv[i])
+        elif s == "--ptt":
+            i += 1
+            g_phantomjs_packs = argv[i]
         elif s == "--tar":
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])

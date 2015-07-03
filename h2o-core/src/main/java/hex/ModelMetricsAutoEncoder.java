@@ -21,8 +21,8 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double mse) {
-      return m._output.addModelMetrics(new ModelMetricsAutoEncoder(m, f, mse));
+    public ModelMetrics makeModelMetrics( Model m, Frame f) {
+      return m._output.addModelMetrics(new ModelMetricsAutoEncoder(m, f));
     }
   }
 }

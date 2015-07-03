@@ -8,10 +8,10 @@ def deep_learning_metrics_test(ip, port):
 
     df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
-    del df['ID']                               # remove ID
+    df.drop("ID")                              # remove ID
     df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical
     vol = df['VOL']
-    vol[vol == 0] = None                       # 0 VOL means 'missing'
+    vol[vol == 0] = float("nan")               # 0 VOL means 'missing'
 
     r = vol.runif()                            # random train/test split
     train = df[r < 0.8]
@@ -26,7 +26,6 @@ def deep_learning_metrics_test(ip, port):
     test.tail()
 
     # Run DeepLearning
-
     print "Train a Deeplearning model: "
     dl = h2o.deeplearning(x           = train[1:],
                           y           = train['CAPSULE'],
@@ -36,7 +35,6 @@ def deep_learning_metrics_test(ip, port):
     print "Binomial Model Metrics: "
     print
     dl.show()
-    # print dl._model_json
     dl.model_performance(test).show()
 
 

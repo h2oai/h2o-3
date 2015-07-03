@@ -82,7 +82,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make());
           Vec l2_test = l2_frame_test.anyVec();
           sb.append("Mean reconstruction error (test): ").append(l2_test.mean()).append("\n");
-          Assert.assertEquals(mymodel.mse(), l2_test.mean(), 1e-7);
+          Assert.assertEquals(l2_test.mean(), mymodel.mse(), 1e-7);
           Assert.assertTrue("too big a reconstruction error: " + l2_test.mean(), l2_test.mean() < 2.0);
           l2_test.remove();
 

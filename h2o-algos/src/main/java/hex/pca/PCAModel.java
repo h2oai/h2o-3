@@ -14,7 +14,8 @@ import water.util.TwoDimTable;
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
   public static class PCAParameters extends Model.Parameters {
-    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
+    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
+    public Method _pca_method = Method.GramSVD;   // Method for computing PCA
     public int _k = 1;                // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
@@ -22,6 +23,10 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public String _loading_name;
     public boolean _keep_loading = true;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
+
+    public enum Method {
+      GramSVD, Power, GLRM
+    }
   }
 
   public static class PCAOutput extends Model.Output {
@@ -39,6 +44,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Number of categorical and numeric columns
     public int _ncats;
     public int _nnums;
+
+    // Total column variance for expanded and transformed data
+    public double _total_variance;
 
     // Categorical offset vector
     public int[] _catOffsets;
@@ -98,7 +106,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
+    makeMetricBuilder(null).makeModelMetrics(this, orig);
     return f;
   }
 
@@ -111,8 +119,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       preds[i] = 0;
       for (int j = 0; j < _output._ncats; j++) {
         double tmp = data[_output._permutation[j]];
-        int last_cat = _output._catOffsets[j+1]-_output._catOffsets[j]-1;   // Missing categorical values are mapped to extra (last) factor
-        int level = Double.isNaN(tmp) ? last_cat : (int)tmp - (_parms._use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
+        if (Double.isNaN(tmp)) continue;    // Missing categorical values are skipped
+        int last_cat = _output._catOffsets[j+1]-_output._catOffsets[j]-1;
+        int level = (int)tmp - (_parms._use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
         if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
         preds[i] += _output._eigenvectors_raw[_output._catOffsets[j]+level][i];
       }
@@ -162,8 +171,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Categorical columns
     bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
     bodySb.i(2).p("double d = data[PERMUTE[j]];").nl();
+    bodySb.i(2).p("if(Double.isNaN(d)) continue;").nl();
     bodySb.i(2).p("int last = CATOFFS[j+1]-CATOFFS[j]-1;").nl();
-    bodySb.i(2).p("int c = Double.isNaN(d) ? last : (int)d").p(_parms._use_all_factor_levels ? ";":"-1;").nl();
+    bodySb.i(2).p("int c = (int)d").p(_parms._use_all_factor_levels ? ";":"-1;").nl();
     bodySb.i(2).p("if(c < 0 || c > last) continue;").nl();
     bodySb.i(2).p("preds[i] += EIGVECS[CATOFFS[j]+c][i];").nl();
     bodySb.i(1).p("}").nl();

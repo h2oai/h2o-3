@@ -48,8 +48,8 @@
 #'        from k-means++ initialization, or "SVD": for initialization using the 
 #'        first k right singular vectors. Additionally, the user may specify the 
 #'        initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
-#' @param recover_pca A logical value indicating whether the principal components should
-#'        be recovered during post-processing of the generalized low rank decomposition.
+#' @param recover_svd A logical value indicating whether the singular values and eigenvectors
+#'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
@@ -75,7 +75,7 @@ h2o.glrm <- function(training_frame, x, k,
                      init_step_size = 1.0,
                      min_step_size = 0.001,
                      init = c("Random", "PlusPlus", "SVD"),
-                     recover_pca = FALSE,
+                     recover_svd = FALSE,
                      seed)
 {
   # Required args: training_frame
@@ -126,8 +126,8 @@ h2o.glrm <- function(training_frame, x, k,
     parms$min_step_size <- min_step_size
   if(!missing(init))
     parms$init <- init
-  if(!missing(recover_pca))
-    parms$recover_pca <- recover_pca
+  if(!missing(recover_svd))
+    parms$recover_svd <- recover_svd
   if(!missing(seed))
     parms$seed <- seed
   
@@ -154,5 +154,5 @@ h2o.glrm <- function(training_frame, x, k,
   }
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'glrm', parms)
+  .h2o.createModel(training_frame@conn, 'glrm', parms, 99)
 }

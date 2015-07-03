@@ -97,7 +97,7 @@ public class IcedBitSetTest extends TestUtil {
   }
 
   @Test (expected = IndexOutOfBoundsException.class) public void outOfBounds() {
-    int len = 10 + (int) (10000 * new Random().nextDouble());
+    int len = 32 + (int) (10000 * new Random().nextDouble());
     IcedBitSet bs = new IcedBitSet(len);
     bs.set(len);
   }

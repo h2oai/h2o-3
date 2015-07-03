@@ -40,26 +40,26 @@ def binop_neq(ip,port):
 
     #vec/vec
     res = iris[0] != iris[1]
-    res_rows = len(res)
+    res_rows = res.nrow()
     assert res_rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == rows, "wrong number of rows returned"
 
     res = iris[2] != iris[2]
-    res_rows = len(res)
+    res_rows = res.nrow()
     assert res_rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == 0, "wrong number of rows returned"
 
     #vec/scaler
     res = iris[0] != 4.7
-    res_rows = len(res)
+    res_rows = res.nrow()
     assert res_rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == 148, "wrong number of rows returned"
 
     res = 3.5 != iris[1]
-    res_rows = len(res)
+    res_rows = res.nrow()
     assert res_rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == 144, "wrong number of rows returned"

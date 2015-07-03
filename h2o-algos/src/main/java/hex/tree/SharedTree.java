@@ -77,8 +77,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
     _hasWeights = super.hasWeights();
     _hasOffset = super.hasOffset();
-    if (_hasOffset)
-      error("_offset_column", "Offsets are not yet supported for GBM/DRF.");
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode");
     if(_vresponse != null)
@@ -108,9 +106,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_cats <= 1) error ("_nbins_cats", "_nbins_cats must be > 1.");
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "_nbins_cats must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
-    if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
-    if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
-      error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows + " , number of rows: " + _train.numRows() + " < 2*" + _parms._min_rows);
+    if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    if (_train != null) {
+      double sumWeights = _train.numRows() * (hasWeights() ? _train.vec(_parms._weights_column).mean() : 1);
+      if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
+      error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
+              + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
+    }
     if( _train != null )
       _ncols = _train.numCols()-1-(_parms._weights_column!=null?1:0)-(_parms._offset_column!=null?1:0);
   }
@@ -381,7 +383,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   void score2(Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double sum = score1(chks, weight, offset, fs, row);
     if( isClassifier()) {
-      if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
+      if( !Double.isInfinite(sum) && sum>0f && sum!=1f) ArrayUtils.div(fs, sum);
       if (_parms._balance_classes)
         GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
@@ -463,7 +465,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
                   + "): " + _nclass + " classes.");
         }
-        Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }
       _timeLastScoreEnd = System.currentTimeMillis();
     }
@@ -490,6 +491,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
   }
 
+  //FIXME: Use weights
   double initial_MSE( Vec train, Vec test ) {
     if( train.isEnum() ) {
       // Guess the class of the most populous class; call the fraction of those

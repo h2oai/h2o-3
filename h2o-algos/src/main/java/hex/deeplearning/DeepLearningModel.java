@@ -53,6 +53,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     DeepLearningScoring errors;
     Key[] weights;
     Key[] biases;
+    double[] normmul;
+    double[] normsub;
+    double[] normrespmul;
+    double[] normrespsub;
+    int[] catoffsets;
     public TwoDimTable _variable_importances;
 
     @Override public ModelCategory getModelCategory() {
@@ -192,31 +197,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  final private static class ConfMat extends ConfusionMatrix {
-    final private double _err;
-    final private double _f1;
-    public ConfMat(double err, double f1) {
-      super(null, null);
-      _err=err;
-      _f1=f1;
-    }
-    @Override public double err() { return _err; }
-    @Override public double F1() { return _f1; }
-  }
-
   public ConfusionMatrix cm() {
     final DeepLearningScoring lasterror = last_scored();
     if (lasterror == null) return null;
     ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
             lasterror.train_confusion_matrix;
-    if (cm == null ) {
-      if (lasterror.validation || lasterror.num_folds > 0) {
-        return new ConfMat(lasterror.scored_valid._classError, lasterror.validation_AUC != null ? lasterror.validation_AUC.maxF1() : 0);
-      } else {
-        return new ConfMat(lasterror.scored_train._classError, lasterror.training_AUC != null ? lasterror.training_AUC.maxF1() : 0);
-      }
-    }
     return cm;
   }
 
@@ -346,6 +332,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (!model_info.get_params()._export_weights_and_biases) {
       _output.weights = null;
       _output.biases = null;
+      _output.normmul = null;
+      _output.normsub = null;
+      _output.normrespmul = null;
+      _output.normrespsub = null;
+      _output.catoffsets = null;
     } else {
       _output.weights = new Key[model_info.get_params()._hidden.length + 1];
       for (int i = 0; i < _output.weights.length; ++i) {
@@ -355,6 +346,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       for (int i = 0; i < _output.biases.length; ++i) {
         _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
       }
+      _output.normmul = model_info.data_info._normMul;
+      _output.normsub = model_info.data_info._normSub;
+      _output.normrespmul = model_info.data_info._normRespMul;
+      _output.normrespsub = model_info.data_info._normRespSub;
+      _output.catoffsets = model_info.data_info._catOffsets;
     }
   }
 
@@ -635,6 +631,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           errors = err2;
         }
         _output.errors = last_scored();
+        makeWeightsBiases(_key);
         water.util.Timer t = new Timer();
         // store weights and matrices to Frames
         if (_output.weights != null && _output.biases != null) {
@@ -754,7 +751,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
       f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
       DKV.put(f);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
+      makeMetricBuilder(null).makeModelMetrics(this, orig);
       return f;
     }
   }
@@ -830,7 +827,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    makeMetricBuilder(null).makeModelMetrics(this, frame, res.vecs()[0].mean());
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean()));
     return res;
   }
 

@@ -78,7 +78,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     }
     Log.info(sb.toString());
 
-    Assert.assertEquals(mymodel.mse(), l2vec.mean(), 1e-8*mymodel.mse());
+    Assert.assertEquals(l2vec.mean(), mymodel.mse(), 1e-8*mymodel.mse());
 
     // Create reconstruction
     Log.info("Creating full reconstruction.");

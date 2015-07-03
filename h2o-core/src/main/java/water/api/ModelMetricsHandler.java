@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 

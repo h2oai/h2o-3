@@ -75,5 +75,5 @@ h2o.svd <- function(training_frame, x, nv,
     parms$use_all_factor_levels <- use_all_factor_levels
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'svd', parms)
+  .h2o.createModel(training_frame@conn, 'svd', parms, 99)
 }

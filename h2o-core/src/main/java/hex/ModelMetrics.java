@@ -21,26 +21,25 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   final ModelCategory _model_category;
   final long _model_checksum;
   final long _frame_checksum;
-  transient Model _model;
-  transient Frame _frame;
   public final long _scoring_time;
-//  public long _duration_in_ms;
+
+  // Cached fields - cached them when needed
+  private transient Model _model;
+  private transient Frame _frame;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
   public ModelMetrics(Model model, Frame frame, double MSE, String desc) {
     super(buildKey(model, frame));
     _description = desc;
+    // Do not cache fields now
     _modelKey = model._key;
     _frameKey = frame._key;
     _model_category = model._output.getModelCategory();
-    _model = model;
-    _frame = frame;
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
     _MSE = MSE;
     _scoring_time = System.currentTimeMillis();
-    DKV.put(this);
   }
 
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
@@ -67,7 +66,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return calcVarImp(dbl_rel_imp, coef_names);
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {
-    return calcVarImp(rel_imp, coef_names, "Variable Importances", new String[] {"Relative Importance", "Scaled Importance", "Percentage"});
+    return calcVarImp(rel_imp, coef_names, "Variable Importances", new String[]{"Relative Importance", "Scaled Importance", "Percentage"});
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names, String table_header, String[] col_headers) {
     if(rel_imp == null) return null;
@@ -140,8 +139,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     transient public double[] _work;
     public double _sumsqe;      // Sum-squared-error
     public long _count;
-    public double _wsum;
+    public double _wcount;
+    public double _wY; // (Weighted) sum of the response
+    public double _wYY; // (Weighted) sum of the squared response
 
+    public  double weightedSigma() {
+//      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
+      double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
+      return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
+    }
     abstract public double[] perRow(double ds[], float yact[], Model m);
     public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
       assert(weight==1 && offset == 0);
@@ -150,11 +156,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
-      _wsum += mb._wsum;
+      _wcount += mb._wcount;
+      _wY += mb._wY;
+      _wYY += mb._wYY;
     }
 
     public void postGlobal() {}
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public abstract ModelMetrics makeModelMetrics( Model m, Frame f, double sigma);
+    public abstract ModelMetrics makeModelMetrics( Model m, Frame f);
   }
 }

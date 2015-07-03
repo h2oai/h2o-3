@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(1, "../../")
 import h2o
-from h2o.expr import Expr
+
 
 def expr_as_list(ip,port):
     # Connect to h2o

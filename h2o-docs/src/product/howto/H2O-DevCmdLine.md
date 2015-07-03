@@ -2,6 +2,8 @@
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O 3.0. When you launch from the command line, you can include additional instructions to H2O 3.0, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 
+>**Note**: H2O requires some space in the `/tmp` directory to launch. If you cannot launch H2O, try freeing up some space in the `/tmp` directory, then try launching H2O again. 
+
 For more detailed instructions on how to build and launch H2O, including how to clone the repository, how to pull from the repository, and how to install required dependencies, refer to the [developer documentation](https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start). 
 
 There are two different argument types:

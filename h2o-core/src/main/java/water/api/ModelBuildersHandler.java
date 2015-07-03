@@ -5,6 +5,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Iced;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 
 import java.util.Map;
 

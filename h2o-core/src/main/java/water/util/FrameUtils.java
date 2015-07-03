@@ -220,38 +220,21 @@ public class FrameUtils {
   public static class WeightedMean extends MRTask<WeightedMean> {
     private double _wresponse;
     private double _wsum;
-    public  double weightedMean() {return _wsum == 0 ? 0 : _wresponse / _wsum; }
-    @Override public void map(Chunk response, Chunk weight) {
+    public  double weightedMean() {
+      return _wsum == 0 ? 0 : _wresponse / _wsum;
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
       for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
         double w = weight.atd(i);
         if (w == 0) continue;
-        _wresponse += w*response.atd(i);
+        _wresponse += w*(response.atd(i)-offset.atd(i));
         _wsum += w;
       }
     }
-    @Override public void reduce(WeightedMean mrt) { _wresponse += mrt._wresponse; }
-  }
-
-  // TODO: improve numerical stability
-  public static class WeightedSigma extends MRTask<WeightedSigma> {
-    private double _w;
-    private double _wY;
-    private double _wYY;
-
-    public  double weightedSigma() { return Math.sqrt(1./(_w-1.)*_wYY-(1./(_w-1.)/_w*_wY*_wY)); }
-    @Override public void map(Chunk cY, Chunk cW) {
-      for (int i=0;i<cY._len;++i) {
-        double Y = cY.atd(i);
-        double w = cW.atd(i);
-        _w += w;
-        _wY += w*Y;
-        _wYY += w*Y*Y;
-      }
-    }
-    @Override public void reduce(WeightedSigma mrt) {
-      _w += mrt._w;
-      _wY += mrt._wY;
-      _wYY += mrt._wYY;
+    @Override public void reduce(WeightedMean mrt) {
+      _wresponse += mrt._wresponse;
+      _wsum += mrt._wsum;
     }
   }
 }

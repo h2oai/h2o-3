@@ -100,10 +100,12 @@
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
-#'
-#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
+#' iris.hex <- as.h2o(iris)
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
+#'
+#' # now make a prediction
+#' predictions <- h2o.predict(iris.dl, iris.hex)
+#'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
@@ -187,11 +189,11 @@ h2o.deeplearning <- function(x, y, training_frame,
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
-  colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
+  args <- .verify_dataxy(training_frame, x, y, autoencoder)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  parms$response_column <- colargs$y
-  parms$ignored_columns <- colargs$x_ignore
+  parms$response_column <- args$y
+  parms$ignored_columns <- args$x_ignore
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(overwrite_with_best_model))

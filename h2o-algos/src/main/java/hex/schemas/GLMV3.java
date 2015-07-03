@@ -22,6 +22,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "weights_column",
             "family",
             "tweedie_variance_power",
+            "tweedie_link_power",
             "solver",
             "alpha",
             "lambda",
@@ -65,6 +66,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Tweedie variance power", level = Level.critical)
     public double tweedie_variance_power;
+
+    @API(help = "Tweedie link power", level = Level.critical)
+    public double tweedie_link_power;
 
     @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
     public Solver solver;

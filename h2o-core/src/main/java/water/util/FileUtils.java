@@ -1,5 +1,7 @@
 package water.util;
 
+import water.Key;
+
 import java.io.*;
 import java.net.URI;
 
@@ -34,9 +36,17 @@ public class FileUtils {
   }
 
   public static URI getURI(String path) {
-    if (path.startsWith("/") || path.startsWith("./"))
-      path = "file://" + path;
-    return URI.create(path);
+    File[] roots = File.listRoots();
+    if (path.startsWith("./")) { // It is relative path
+      return new File(path).toURI();
+    } else {
+      for (File root : roots) { // It is local absolute path
+        if (path.startsWith(root.getAbsolutePath())) {
+          return new File(path).toURI();
+        }
+      }
+      return URI.create(path);
+    }
   }
 
   public static boolean delete(File file) {
@@ -52,5 +62,10 @@ public class FileUtils {
     }
 
     return false;
+  }
+
+  /** Transform given key to a string which can be used as a file name. */
+  public static String keyToFileName(Key k) {
+    return k.toString().replaceAll("[^a-zA-Z0-9_\\-\\.]", "_");
   }
 }

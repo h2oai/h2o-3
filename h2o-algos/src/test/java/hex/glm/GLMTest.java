@@ -237,7 +237,7 @@ public class GLMTest  extends TestUtil {
         beta[i] = 1 - 2 * rnd.nextDouble();
         pk[i] = 10 * (1 - 2 * rnd.nextDouble());
       }
-      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, 1, beta, pk, .7, 16, null).doAll(dinfo._adaptedFrame);
+      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, 1, beta, pk, 1, .7, 16, null).doAll(dinfo._adaptedFrame);
       double step = 1, stepDec = .7;
       for (int i = 0; i < glst._nSteps; ++i) {
         double[] b = beta.clone();
@@ -1089,8 +1089,8 @@ public class GLMTest  extends TestUtil {
     public void postGlobal() {
       System.out.println("val1 = " + _val.toString());
       System.out.println("val2 = " + _val2.toString());
-      ModelMetrics mm1 = _val.makeModelMetrics(_m, _dinfo._adaptedFrame, Double.NaN);
-      ModelMetrics mm2 = _val2.makeModelMetrics(_m, _dinfo._adaptedFrame, Double.NaN);
+      ModelMetrics mm1 = _val.makeModelMetrics(_m, _dinfo._adaptedFrame);
+      ModelMetrics mm2 = _val2.makeModelMetrics(_m, _dinfo._adaptedFrame);
       System.out.println("mm1 = " + mm1.toString());
       System.out.println("mm2 = " + mm2.toString());
       assert mm1.equals(mm2);

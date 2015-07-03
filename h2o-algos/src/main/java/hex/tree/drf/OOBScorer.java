@@ -19,8 +19,8 @@ import water.fvec.Chunk;
 
   /* @IN */ final protected float _rate;
 
-  public OOBScorer(int ncols, int nclass, float rate, Key[][] treeKeys) {
-    super(ncols,nclass,treeKeys);
+  public OOBScorer(int ncols, int nclass, int skip, float rate, Key[][] treeKeys) {
+    super(ncols,nclass,skip,treeKeys);
     _rate = rate;
   }
 

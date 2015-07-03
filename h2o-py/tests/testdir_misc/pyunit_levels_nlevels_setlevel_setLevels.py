@@ -2,6 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o
 
+
 def levels_nlevels_setlevel_setLevels_test(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
@@ -51,7 +52,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
 
     ################### reimport, set new domains, rerun tests ###################################
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
-    iris[4].setLevels(levels=["a", "b", "c"])
+    iris[4] = iris[4].setLevels(levels=["a", "b", "c"])
 
     # frame (default)
     levels = iris.levels()
@@ -94,7 +95,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert levels == None, "Expected levels to be None, but got {0}".format(levels)
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
-    one_column_frame = h2o.H2OFrame(vecs=[iris[4]])
+    one_column_frame = iris[4]
     one_column_frame = one_column_frame.setLevel(level='c')
     assert one_column_frame[0,0] == 'c'
 

@@ -166,10 +166,10 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     else return "explained dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
   }
 
-  @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+  @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
     GLMModel gm = (GLMModel)m;
     computeAIC();
-    ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f, sigma):_metrics;
+    ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f):_metrics;
     if (_parms._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());

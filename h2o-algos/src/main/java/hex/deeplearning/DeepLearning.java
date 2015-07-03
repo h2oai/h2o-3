@@ -231,11 +231,16 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       }
       trainModel(cp);
 
-      // clean up, but don't delete the model and the (last) model metrics
+      // clean up, but don't delete the model and the training/validation model metrics
       List<Key> keep = new ArrayList<>();
       keep.add(dest());
       keep.add(cp.model_info().data_info()._key);
-      if (cp._output._model_metrics.length != 0) keep.add(cp._output._model_metrics[cp._output._model_metrics.length-1]);
+      // Do not remove training metrics
+      keep.add(cp._output._training_metrics._key);
+      // And validation model metrics
+      if (cp._output._validation_metrics != null) {
+        keep.add(cp._output._validation_metrics._key);
+      }
       if (cp._output.weights != null && cp._output.biases != null) {
         for (Key k : Arrays.asList(cp._output.weights)) {
           keep.add(k);

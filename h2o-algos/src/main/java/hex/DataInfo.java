@@ -22,7 +22,36 @@ public class DataInfo extends Keyed {
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
 
-  public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE }
+  public enum TransformType {
+    NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
+
+    public boolean isMeanAdjusted(){
+      switch(this){
+        case NONE:
+        case DESCALE:
+        case NORMALIZE:
+          return false;
+        case STANDARDIZE:
+        case DEMEAN:
+          return true;
+        default:
+          throw H2O.unimpl();
+      }
+    }
+    public boolean isSigmaScaled(){
+      switch(this){
+        case NONE:
+        case DEMEAN:
+        case NORMALIZE:
+          return false;
+        case STANDARDIZE:
+        case DESCALE:
+          return true;
+        default:
+          throw H2O.unimpl();
+      }
+    }
+  }
   public TransformType _predictor_transform;
   public TransformType _response_transform;
   public boolean _useAllFactorLevels;
@@ -248,6 +277,21 @@ public class DataInfo extends Keyed {
     // do not put activeData into K/V - active data is recreated on each node based on active columns
     dinfo._activeCols = cols;
     return dinfo;
+  }
+
+  public void updateWeightedSigmaAndMean(double [] sigmas, double [] mean) {
+    if(_predictor_transform.isSigmaScaled()) {
+      if(sigmas.length != _normMul.length)
+        throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
+      for(int i = 0; i < sigmas.length; ++i)
+        _normMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
+    }
+    if(_predictor_transform.isMeanAdjusted()) {
+      if(sigmas.length != _normMul.length)
+        throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
+      for(int i = 0; i < sigmas.length; ++i)
+        _normSub[i] = mean[i];
+    }
   }
 
   private void setTransform(TransformType t, double [] normMul, double [] normSub, int vecStart, int n) {

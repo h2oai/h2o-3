@@ -2,12 +2,12 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O makes Hadoop do math! H2O scales statistics, machine learning and math over BigData. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Excel & JSON so that BigData enthusiasts & experts can explore, munge, model and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
 
-* [Downloading H2O Dev](#Downloading)
+* [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
 * [Using H2O Dev Artifacts](#Artifacts)
-* [Building H2O Dev](#Building)
+* [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
 * [Building H2O on Hadoop](#BuildingHadoop)
 * [Sparkling Water](#Sparkling)
@@ -15,23 +15,23 @@ H2O makes Hadoop do math! H2O scales statistics, machine learning and math over 
 * [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
 
 <a name="Downloading"></a>
-## 1. Downloading H2O Dev
+## 1. Downloading H2O-3
 
-While most of this README is oriented towards developers who do their own builds, most H2O users just download and use a pre-built version.  If that's you, just follow these steps:
+While most of this README is written for developers who do their own builds, most H2O users just download and use a pre-built version.  If that's you, just follow these steps:
 
 1.  Point to <http://h2o.ai>
 2.  Click on Download
-3.  Scroll down to find the section for H2O Dev
-4.  Click on the version you want (generally the latest numbered release)
+3.  Scroll down to find the section for H2O-3
+4.  Click the version you want (generally the latest numbered release)
 
 <a name="Resources"></a>
 ## 2. Open Source Resources
 
-*  Github
+*  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA (PUBDEV contains issues for the current H2O Dev project; PUB contains issues for the legacy H2O project)
+*  JIRA (PUBDEV contains issues for the current H2O-3 project; PUB contains issues for H2O-Classic)
     * <http://jira.h2o.ai>
-*  h2ostream community forum (this is where to ask a question)
+*  h2ostream community forum - ask your questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
     * Mail to: [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com)
 *  Documentation
@@ -47,9 +47,9 @@ While most of this README is oriented towards developers who do their own builds
 
 
 <a name="Artifacts"></a>
-## 3. Using H2O Dev Artifacts
+## 3. Using H2O-3 Artifacts
 
-Every nightly build publishes R, Python, Java and Scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
+Every nightly build publishes R, Python, Java, and Scala artifacts to a build-specific repository.  In particular, you can find Java artifacts in the maven/repo directory.
 
 Here is an example snippet of a gradle build file using h2o-3 as a dependency.  Replace x, y, z, and nnnn with valid numbers.
 
@@ -74,24 +74,25 @@ dependencies {
 }
 ```
 
-See the latest H2O Dev bleeding edge [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html) for information about installing nightly build artifacts.
+Refer to the latest H2O-3 bleeding edge [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html) for information about installing nightly build artifacts.
 
-See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use java artifacts with gradle.
+Refer to the [h2o-droplets GitHub repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use Java artifacts with gradle.
 
-> Note: Stable H2O Dev artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may lag substantially behind H2O Dev Bleeding Edge nightly builds.
+> Note: Stable H2O-3 artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may substantially lag behind H2O-3 Bleeding Edge nightly builds.
 
 -----
 
 <a name="Building"></a>
-## 4. Building H2O Dev
+## 4. Building H2O-3
 
-Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/technetwork/java/javase/downloads/), [Node.js](https://nodejs.org/), and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/technetwork/java/javase/downloads/), [Node.js](https://nodejs.org/), and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
 
 ### 4.1. Building from the command line (Quick Start)
 
-The assumption is the setup steps described in section 5.2 and beyond have been followed.
+To build H2O from the repository, perform the following steps. 
 
-#### Recipe 1:  Fresh clone and build, skipping tests, and run h2o
+
+#### Recipe 1: Clone fresh, build, skip tests, and run H2O
 
 ```
 # Build H2O
@@ -106,7 +107,7 @@ java -jar build/h2o.jar
 
 ```
 
-#### Recipe 2:  Fresh clone and build, running tests
+#### Recipe 2: Clone fresh, build, and run tests
 
 ```
 git clone https://github.com/h2oai/h2o-3.git
@@ -115,9 +116,9 @@ cd h2o-3
 ./gradlew build
 ```
 
-Note: Running tests starts 5 test JVMs that form an H2O cluster, and requires at least 8GB of RAM.  Preferably 16GB of RAM.
+>**Note**: Running tests starts five test JVMs that form an H2O cluster and requires at least 8GB of RAM (preferably 16GB of RAM).
 
-#### Recipe 3:  Pull, clean and build, running tests
+#### Recipe 3:  Pull, clean, build, and run tests
 
 ```
 git pull
@@ -128,15 +129,15 @@ git pull
 
 #### Notes
 
-A 'clean' is recommended after each git pull.
+A `./gradlew clean` is recommended after each `git pull`.
 
-Skip tests by putting '-x test' at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
+Skip tests by adding `-x test` at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
 
-Syncing smalldata is not strictly required after each pull, but if tests fail due to missing data files then this is the first troubleshooting step to try.  Syncing smalldata grabs data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check these files in.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
+Syncing smalldata is not required after each pull, but if tests fail due to missing data files, then try `./gradlew syncSmalldata` as the first troubleshooting step.  Syncing smalldata grabs data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check in these files.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
 
 ### 4.2. Setup on all Platforms
 
-##### Install required python packages (using `sudo` if necessary)
+##### Install required Python packages (prepending with `sudo` if unsuccessful)
 
     pip install grip
     pip install tabulate
@@ -145,7 +146,7 @@ Syncing smalldata is not strictly required after each pull, but if tests fail du
 ### 4.3. Setup on Windows
 
 ##### Step 1: Download and install [WinPython](https://winpython.github.io). 
-  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://github.com/winpython/winpython/wiki/Environment) with the WinPython path.
+  From the command line, validate `python` is using the newly installed package by using `which python` (or `sudo which python`). [Update the Environment variable](https://github.com/winpython/winpython/wiki/Environment) with the WinPython path.
   
 ###### Step 2: Install required Python packages:
 
@@ -180,8 +181,20 @@ Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64
 
 Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
 
-To manually install packages, download the releases of the following R packages: [bitops](http://cran.r-project.org/package=bitops), [devtools](http://cran.r-project.org/package=devtools), [digest](http://cran.r-project.org/package=digest), [Rcpp](http://cran.r-project.org/package=Rcpp), [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [roxygen2](http://cran.r-project.org/package=roxygen2), [statmod](http://cran.r-project.org/package=statmod), [stringr](http://cran.r-project.org/package=stringr), and [testthat](http://cran.r-project.org/package=testthat).
+To manually install packages, download the releases of the following R packages: 
 
+- [bitops](http://cran.r-project.org/package=bitops)
+- [devtools](http://cran.r-project.org/package=devtools)
+- [digest](http://cran.r-project.org/package=digest)
+- [Rcpp](http://cran.r-project.org/package=Rcpp)
+- [RCurl](http://cran.r-project.org/package=RCurl)
+- [rjson](http://cran.r-project.org/package=rjson)
+- [roxygen2](http://cran.r-project.org/package=roxygen2)
+- [statmod](http://cran.r-project.org/package=statmod)
+- [stringr](http://cran.r-project.org/package=stringr)
+- [testthat](http://cran.r-project.org/package=testthat).
+
+```
     cd Downloads
     R CMD INSTALL bitops_x.x-x.zip
     R CMD INSTALL RCurl_x.xx-x.x.zip
@@ -193,10 +206,10 @@ To manually install packages, download the releases of the following R packages:
     R CMD INSTALL stringr_x.x.x.zip
     R CMD INSTALL roxygen2_x.x.x.zip
     R CMD INSTALL devtools_x.x.x.zip
-
+```
 
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
-**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
+>**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
 ##### Step 6. Install [Cygwin](https://cygwin.com/setup-x86_64.exe)
 **NOTE**: During installation of Cygwin, deselect the Python packages to avoid a conflict with the Python.org package. 
@@ -208,7 +221,7 @@ If Cygwin is already installed, remove the Python packages or ensure that Native
 
 ##### Step 8. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
-If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
+If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads.  Make sure that command prompt support is enabled before the installation.
 
 Download and update h2o-3 source codes:
 
@@ -246,8 +259,16 @@ Install [R](http://www.r-project.org/) and add the bin directory to your PATH if
 
 <a name="InstallRPackagesInUnix"></a>
 
-Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), [devtools](http://cran.r-project.org/package=devtools), [roxygen2](http://cran.r-project.org/package=roxygen2) and [testthat](http://cran.r-project.org/package=testthat).
+Install the following R packages: 
 
+- [RCurl](http://cran.r-project.org/package=RCurl)
+- [rjson](http://cran.r-project.org/package=rjson)
+- [statmod](http://cran.r-project.org/package=statmod)
+- [devtools](http://cran.r-project.org/package=devtools)
+- [roxygen2](http://cran.r-project.org/package=roxygen2) 
+- [testthat](http://cran.r-project.org/package=testthat).
+
+```   
     cd Downloads
     R CMD INSTALL bitops_x.x-x.tgz
     R CMD INSTALL RCurl_x.xx-x.x.tgz
@@ -259,7 +280,7 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
     R CMD INSTALL stringr_x.x.x.tgz
     R CMD INSTALL roxygen2_x.x.x.tgz
     R CMD INSTALL devtools_x.x.x.tgz
-
+```
 To install these packages from within an R session:
 
     R> install.packages("RCurl")
@@ -269,7 +290,7 @@ To install these packages from within an R session:
 
 ##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
-OS X should have with Git installed. To download and update h2o-3 source codes:
+OS X should already have Git installed. To download and update h2o-3 source codes:
 
     git clone https://github.com/h2oai/h2o-3
 
@@ -315,7 +336,7 @@ Download and update h2o-3 source codes:
     cd h2o-3
     ./gradlew build
 
-> If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
+> If you encounter errors, run again using `--stacktrace` for more instructions on missing dependencies.
 
 > Make sure that you are not running as root, since `bower` will reject such a run.
 
@@ -356,45 +377,43 @@ For users of Eclipse, generate project files with:
 
 Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
 
-To build H2O with Hadoop support yourself, do the following from the top-level h2o-3 directory:
+To build H2O with Hadoop support yourself, enter the following from the top-level h2o-3 directory:
 
     (export BUILD_HADOOP=1; ./gradlew build -x test)
     ./gradlew dist
 
-This will create a directory called 'target' and generate zip files there.  Note that BUILD_HADOOP is the default behavior when the username is 'jenkins' (see settings.gradle); otherwise you have to ask for it, as shown above.
+This will create a directory called 'target' and generate zip files there.  Note that `BUILD_HADOOP` is the default behavior when the username is `jenkins` (refer to `settings.gradle`); otherwise you have to request it, as shown above.
 
 
 ### Adding support for a new version of Hadoop
 
-In the h2o-hadoop directory each hadoop version has a build directory for the driver and an assembly directory for the fatjar.
+In the `h2o-hadoop` directory, each Hadoop version has a build directory for the driver and an assembly directory for the fatjar.
 
 You need to:
 
-1.  Add a new driver directory and assembly directory (each with a build.gradle file) in h2o-hadoop
-2.  Add these new projects to h2o-3/settings.gradle
-3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
-4.  Add the new hadoop version to wget list in h2o-dist/index.html
+1.  Add a new driver directory and assembly directory (each with a `build.gradle` file) in `h2o-hadoop`
+2.  Add these new projects to `h2o-3/settings.gradle`
+3.  Add the new Hadoop version to `HADOOP_VERSIONS` in `make-dist.sh`
+4.  Add the new Hadoop version to the `wget` list in `h2o-dist/index.html`
 
 ### Debugging HDFS
 
 These are the required steps to debug HDFS in IDEA as a standalone H2O process.
 
-Debugging H2O on Hadoop as a `hadoop jar` hadoop mapreduce job is a non-trivial thing to do (read: I've never been able to do it and have no idea how; the obvious thing to try of attaching a remote debugger has never worked for me).
-
-However, what you can do relatively easily is tweak the gradle settings for the project so that H2OApp has HDFS as a dependency.  Here are the steps:
+Debugging H2O on Hadoop as a `hadoop jar` hadoop mapreduce job is a difficult thing to do. However, what you can do relatively easily is tweak the gradle settings for the project so that H2OApp has HDFS as a dependency.  Here are the steps:
 
 1.  Make the following changes to gradle build files below
-    *  Change hadoop-client version in h2o-persist-hdfs to the desired version     
-    *  Add h2o-persist-hdfs as a dependency to h2o-app
+    *  Change the `hadoop-client` version in `h2o-persist-hdfs` to the desired version     
+    *  Add `h2o-persist-hdfs` as a dependency to `h2o-app`
 1.  Close IDEA
-1.  ./gradlew cleanIdea
-1.  ./gradlew idea
+1.  `./gradlew cleanIdea`
+1.  `./gradlew idea`
 1.  Re-open IDEA
 1.  Run or debug H2OApp, and you will now be able to read from HDFS inside the IDE debugger
 
-h2o-persist-hdfs is normally only a dependency of the assembly modules, since those are not used by any downstream modules.  We want the final module to define its own version of hdfs if any is desired.
+`h2o-persist-hdfs` is normally only a dependency of the assembly modules, since those are not used by any downstream modules.  We want the final module to define its own version of HDFS if any is desired.
 
-Note this example is for MapR 4, which requires the additional org.json dependency to work properly.
+Note this example is for MapR 4, which requires the additional `org.json` dependency to work properly.
 
 ```
 $ git diff
@@ -428,14 +447,14 @@ index 41b96b2..6368ea9 100644
 <a name="Sparkling"></a>
 ## 7. Sparkling Water
 
-Sparkling Water combines two open source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest, accessible from Spark workflows. Spark users are provided with options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
+Sparkling Water combines two open-source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, K-Means, and Distributed Random Forest, accessible from Spark workflows. Spark users can select the best features from either platform to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independently of Spark for the model building process and post-process the results in Spark. 
 
-Here are links to resources for Sparkling Water:
+**Sparkling Water Resources**:
 
 * [Download page for pre-built packages](http://h2o.ai/download/) (Scroll down for Sparkling Water)
-* [Sparkling Water github repository](https://github.com/h2oai/sparkling-water)
+* [Sparkling Water GitHub repository](https://github.com/h2oai/sparkling-water)
 * [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
-* [Developer documentaton](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
+* [Developer documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
 
 <a name="Documentation"></a>
 ## 8. Documentation
@@ -451,17 +470,18 @@ To generate the REST API documentation, use the following commands:
 
 The default location for the generated documentation is `build/docs/REST`. 
 
+If the build fails, try `gradlew clean`, then `git clean -f`. 
+
 ### Bleeding edge build documentation
 
-Documentation for each bleeding edge nightly build is reachable from the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html).
+Documentation for each bleeding edge nightly build is available on the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html).
 
------
 -----
 
 <a name="Community"></a>
 ## 9. Community
 
-We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
+We will breathe & sustain a vibrant community with the focus of taking a software engineering approach to data science and empowering everyone interested in data to be able to hack data using math and algorithms.
 Join us on google groups [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
 
 Team & Committers
