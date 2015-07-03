@@ -68,10 +68,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     }
   }
 
-  public enum Initialization {
-    SVD, PlusPlus, User
-  }
-
   // Called from an http request
   public PCA(PCAModel.PCAParameters parms) {
     super("PCA", parms);
@@ -99,49 +95,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
-
-  /**
-   * Given a n by k matrix X, form its Gram matrix
-   * @param x Matrix of real numbers
-   * @param transpose If true, compute n by n Gram of rows = XX'
-   *                  If false, compute k by k Gram of cols = X'X
-   * @return A symmetric positive semi-definite Gram matrix
-   */
-  public static double[][] formGram(double[][] x, boolean transpose) {
-    if (x == null) return null;
-    int dim_in = transpose ? x[0].length : x.length;
-    int dim_out = transpose ? x.length : x[0].length;
-    double[][] xgram = new double[dim_out][dim_out];
-
-    // Compute all entries on and above diagonal
-    if(transpose) {
-      for (int i = 0; i < dim_in; i++) {
-        // Outer product = x[i] * x[i]', where x[i] is col i
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = j; k < dim_out; k++)
-            xgram[j][k] += x[j][i] * x[k][i];
-        }
-      }
-    } else {
-      for (int i = 0; i < dim_in; i++) {
-        // Outer product = x[i]' * x[i], where x[i] is row i
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = j; k < dim_out; k++)
-            xgram[j][k] += x[i][j] * x[i][k];
-        }
-      }
-    }
-
-    // Fill in entries below diagonal since Gram is symmetric
-    for (int i = 0; i < dim_in; i++) {
-      for (int j = 0; j < dim_out; j++) {
-        for (int k = 0; k < j; k++)
-          xgram[j][k] = xgram[k][j];
-      }
-    }
-    return xgram;
-  }
-  public static double[][] formGram(double[][] x) { return formGram(x, false); }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 

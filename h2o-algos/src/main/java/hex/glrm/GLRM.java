@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
@@ -286,6 +287,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return false;       // Not stopping
     }
 
+    // Regularized Cholesky decomposition using H2O implementation
     public Cholesky regularizedCholesky(Gram gram, int max_attempts) {
       int attempts = 0;
       double addedL2 = 0;   // TODO: Should I report this to the user?
@@ -295,16 +297,36 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         else addedL2 *= 10;
         ++attempts;
         gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
-        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of X Gram matrix");
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
         gram.cholesky(chol);
       }
       if(!chol.isSPD())
         throw new Gram.NonSPDMatrixException();
       return chol;
     }
-    public Cholesky regularizedCholesky(Gram gram) {
-      return regularizedCholesky(gram, 10);
+    public Cholesky regularizedCholesky(Gram gram) { return regularizedCholesky(gram, 10); }
+
+    // Regularized Cholesky decomposition using JAMA implementation
+    public CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts) {
+      int attempts = 0;
+      double addedL2 = 0;
+
+      Matrix gmat = new Matrix(gram);
+      CholeskyDecomposition chol = new CholeskyDecomposition(gmat);
+      while(!chol.isSPD() && attempts < max_attempts) {
+        if(addedL2 == 0) addedL2 = 1e-5;
+        else addedL2 *= 10;
+        ++attempts;
+
+        for(int i = 0; i < gram.length; i++) gmat.set(i,i,addedL2); // try to add L2 penalty to make the Gram SPD
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
+        chol = new CholeskyDecomposition(gmat);
+      }
+      if(!chol.isSPD())
+        throw new Gram.NonSPDMatrixException();
+      return chol;
     }
+    public CholeskyDecomposition regularizedCholesky(double[][] gram) { return regularizedCholesky(gram, 10); }
 
     // Recover singular values and eigenvectors of XY
     public void recoverSVD(GLRMModel model, DataInfo xinfo) {
@@ -361,7 +383,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._catOffsets = tinfo._catOffsets;
         model._output._names_expanded = tinfo.coefNames();
 
-        // 0) a) Initialize X matrix to random numbers
+        // 0) a) Initialize Y matrix
+        double nobs = _train.numRows() * _train.numCols();
+        // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
+        double[][] yt = ArrayUtils.transpose(initialY(tinfo));
+
+        // 0) b) Initialize X matrix to random numbers
         // Jam A and X into a single frame for distributed computation
         // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
         Vec[] vecs = new Vec[_ncolA + 2*_ncolX];
@@ -371,10 +398,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
 
-        // 0) b) Initialize Y matrix
-        double nobs = _train.numRows() * _train.numCols();
-        // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        double[][] yt = ArrayUtils.transpose(initialY(tinfo));
+        // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
+        if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
+                                                  && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
+          double[][] ygram = ArrayUtils.formGram(yt);
+          if (_parms._gamma_y > 0) {
+            for(int i = 0; i < ygram.length; i++)
+              ygram[i][i] += _parms._gamma_y;
+          }
+          CholeskyDecomposition yychol = regularizedCholesky(ygram);   // TODO: Proceed with random X or fail out if Cholesky is non-SPD? Implies numerically unstable results.
+          CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
+          cmtsk.doAll(dinfo._adaptedFrame);
+        }
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);
@@ -826,6 +861,78 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           assert idx == _ncolX;
           _xold_reg += _parms.regularize_x(xrow);
         }
+      }
+    }
+  }
+
+  // Solves XD = AY' for X where A is n by p, Y is k by p, D is k by k, and n >> p > k
+  // Resulting matrix X = (AY')D^(-1) will have dimensions n by k
+  private static class CholMulTask extends MRTask<CholMulTask> {
+    DataInfo _dinfo;
+    GLRMParameters _parms;
+    final double[][] _yt;     // _yt = Y' (transpose of Y)
+    final int _ncolA;         // Number of cols in training frame
+    final int _ncolX;         // Number of cols in X (k)
+    final double[] _normSub;  // For standardizing training data
+    final double[] _normMul;
+    CholeskyDecomposition _chol;   // Cholesky decomposition of D = D', since we solve D'X' = DX' = AY'
+
+    CholMulTask(DataInfo dinfo, GLRMParameters parms, CholeskyDecomposition chol, double[][] yt, double[] normSub, double[] normMul) {
+      this(dinfo, parms, chol, yt, yt.length, yt[0].length, normSub, normMul);
+    }
+
+    CholMulTask(DataInfo dinfo, GLRMParameters parms, CholeskyDecomposition chol, double[][] yt, int ncolA, int ncolX, double[] normSub, double[] normMul) {
+      assert yt != null && yt[0].length == ncolX;
+      _parms = parms;
+      _yt = yt;
+      _ncolA = ncolA;
+      _ncolX = ncolX;
+      _chol = chol;
+
+      assert dinfo._cats <= ncolA;
+      _dinfo = dinfo;
+      _normSub = normSub;
+      _normMul = normMul;
+    }
+
+    // [A,X,W] A is read-only training data, X is left matrix in A = XY decomposition, W is working copy of X
+    @Override public void map(Chunk[] cs) {
+      assert (_ncolA + 2*_ncolX) == cs.length;
+      double[] xrow = new double[_ncolX];
+
+      for(int row = 0; row < cs[0]._len; row++) {
+        // 1) Compute single row of AY'
+        for (int k = 0; k < _ncolX; k++) {
+          // Categorical columns
+          double x = 0;
+          for(int d = 0; d < _dinfo._cats; d++) {
+            double a = cs[d].atd(row);
+            if (Double.isNaN(a)) continue;
+            x += _yt[idx_ycat(d, (int)a, _dinfo)][k];
+          }
+
+          // Numeric columns
+          for (int d = _dinfo._cats; d < _ncolA; d++) {
+            int ds = d - _dinfo._cats;
+            double a = cs[d].atd(row);
+            if (Double.isNaN(a)) continue;
+            x += (a - _normSub[ds]) * _normMul[ds] * _yt[idx_ynum(ds,_dinfo)][k];
+          }
+          xrow[k] = x;
+        }
+
+        // 2) Cholesky solve for single row of X
+        // _chol.solve(xrow);
+        Matrix tmp = _chol.solve(new Matrix(new double[][] {xrow}).transpose());
+        xrow = tmp.getColumnPackedCopy();
+
+        // 3) Save row of solved values into X (and copy W = X)
+        int i = 0;
+        for(int d = _ncolA; d < _ncolA+_ncolX; d++) {
+          cs[d].set(row, xrow[i]);
+          cs[d+_ncolX].set(row, xrow[i++]);
+        }
+        assert i == xrow.length;
       }
     }
   }
