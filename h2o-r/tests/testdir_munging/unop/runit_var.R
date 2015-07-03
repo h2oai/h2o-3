@@ -8,8 +8,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.var <- function(conn) {
-  hex <- as.h2o(conn, iris)  
+test.var <- function() {
+  hex <- as.h2o(iris)  
 
   Log.info("Slice out iris[,1] and get the variance: ")
   Log.info(paste("R:", var(iris[,1]), "\tH2O:", var(hex[,1])))

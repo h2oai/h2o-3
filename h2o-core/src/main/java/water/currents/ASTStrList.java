@@ -5,6 +5,7 @@ import java.util.Arrays;
 import water.H2O;
 import water.DKV;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 /** A collection of Strings only.  This is a syntatic form only, and never
  *  executes and never gets on the execution stack.
@@ -56,4 +57,17 @@ class ASTColNames extends ASTPrim {
     if( fr._key != null ) DKV.put(fr); // Update names in DKV
     return new ValFrame(fr);
   }  
+}
+
+/** Convert to a factor/categorical */
+class ASTAsFactor extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (as.factor col)
+  @Override String str() { return "as.factor"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.factor requires a single column");
+    Vec v0 = fr.anyVec();
+    if( !v0.isEnum() ) v0 = v0.toEnum();
+    return new ValFrame(new Frame(fr._names, new Vec[]{v0}));
+  }
 }

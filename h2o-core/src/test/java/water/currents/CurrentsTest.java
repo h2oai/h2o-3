@@ -163,6 +163,11 @@ public class CurrentsTest extends TestUtil {
       checkTree("("+s+" a.hex)");
   }
 
+  @Test public void testVariance() {
+    // Checking variance
+    String tree = "(var %a.hex () FALSE \"everything\")";
+    checkTree(tree);
+  }
 
   private void checkTree(String tree) { checkTree(tree,false); }
   private void checkTree(String tree, boolean expectThrow) {

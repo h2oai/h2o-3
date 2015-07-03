@@ -123,7 +123,8 @@ class ASTMean extends ASTPrim {
   @Override String str() { return "mean"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 ) throw new IllegalArgumentException("mean only works on a single column");
+    if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
+      throw new IllegalArgumentException("mean only works on a single numeric column");
     return new ValNum(fr.anyVec().mean());
   }
 }
@@ -133,7 +134,8 @@ class ASTSdev extends ASTPrim {
   @Override String str() { return "sd"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 ) throw new IllegalArgumentException("mean only works on a single column");
+    if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
+      throw new IllegalArgumentException("sd only works on a single numeric column");
     return new ValNum(fr.anyVec().sigma());
   }
 }
