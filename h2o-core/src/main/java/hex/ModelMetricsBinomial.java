@@ -8,6 +8,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
   public final double _logloss;
 
+  @Override public String toString(){
+    return "auc = " + _auc._auc + ", logloss = " + _logloss;
+  }
   public ModelMetricsBinomial(Model model, Frame frame, double mse, String[] domain, double sigma, AUC2 auc, double logloss) {
     super(model, frame, mse, domain, sigma);
     _auc = auc;

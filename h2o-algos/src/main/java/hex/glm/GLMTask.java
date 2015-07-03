@@ -13,7 +13,6 @@ import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
 
 import java.util.Arrays;
 
@@ -609,63 +608,63 @@ public abstract class GLMTask  {
 
 
 
-  public static class GLMCoordinateDescentTask extends MRTask<GLMCoordinateDescentTask> {
-    final double [] _betaUpdate;
-    final double [] _beta;
-    final double _xOldSub;
-    final double _xOldMul;
-    final double _xNewSub;
-    final double _xNewMul;
-
-    double [] _xy;
-
-    public GLMCoordinateDescentTask(double [] betaUpdate, double [] beta, double xOldSub, double xOldMul, double xNewSub, double xNewMul) {
-      _betaUpdate = betaUpdate;
-      _beta = beta;
-      _xOldSub = xOldSub;
-      _xOldMul = xOldMul;
-      _xNewSub = xNewSub;
-      _xNewMul = xNewMul;
-    }
-
-    public void map(Chunk [] chks) {
-      Chunk xOld = chks[0];
-      Chunk xNew = chks[1];
-      if(xNew.vec().isEnum()){
-        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
-      } else
-      _xy = new double[1];
-      Chunk eta = chks[2];
-      Chunk weights = chks[3];
-      Chunk res = chks[4];
-      for(int i = 0; i < eta._len; ++i) {
-        double w = weights.atd(i);
-        double e = eta.atd(i);
-        if(_betaUpdate != null) {
-          if (xOld.vec().isEnum()) {
-            int cid = (int) xOld.at8(i);
-            e = +_betaUpdate[cid];
-          } else
-            e += _betaUpdate[0] * (xOld.atd(i) - _xOldSub) * _xOldMul;
-          eta.set(i, e);
-        }
-        int cid = 0;
-        double x = w;
-        if(xNew.vec().isEnum()) {
-          cid = (int) xNew.at8(i);
-          e -= _beta[cid];
-        } else {
-          x = (xNew.atd(i) - _xNewSub) * _xNewMul;
-          e -= _beta[0] * x;
-          x *= w;
-        }
-        _xy[cid] += x * (res.atd(i) - e);
-      }
-    }
-    @Override public void reduce(GLMCoordinateDescentTask t) {
-      ArrayUtils.add(_xy, t._xy);
-    }
-  }
+//  public static class GLMCoordinateDescentTask extends MRTask<GLMCoordinateDescentTask> {
+//    final double [] _betaUpdate;
+//    final double [] _beta;
+//    final double _xOldSub;
+//    final double _xOldMul;
+//    final double _xNewSub;
+//    final double _xNewMul;
+//
+//    double [] _xy;
+//
+//    public GLMCoordinateDescentTask(double [] betaUpdate, double [] beta, double xOldSub, double xOldMul, double xNewSub, double xNewMul) {
+//      _betaUpdate = betaUpdate;
+//      _beta = beta;
+//      _xOldSub = xOldSub;
+//      _xOldMul = xOldMul;
+//      _xNewSub = xNewSub;
+//      _xNewMul = xNewMul;
+//    }
+//
+//    public void map(Chunk [] chks) {
+//      Chunk xOld = chks[0];
+//      Chunk xNew = chks[1];
+//      if(xNew.vec().isEnum()){
+//        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
+//      } else
+//      _xy = new double[1];
+//      Chunk eta = chks[2];
+//      Chunk weights = chks[3];
+//      Chunk res = chks[4];
+//      for(int i = 0; i < eta._len; ++i) {
+//        double w = weights.atd(i);
+//        double e = eta.atd(i);
+//        if(_betaUpdate != null) {
+//          if (xOld.vec().isEnum()) {
+//            int cid = (int) xOld.at8(i);
+//            e = +_betaUpdate[cid];
+//          } else
+//            e += _betaUpdate[0] * (xOld.atd(i) - _xOldSub) * _xOldMul;
+//          eta.set(i, e);
+//        }
+//        int cid = 0;
+//        double x = w;
+//        if(xNew.vec().isEnum()) {
+//          cid = (int) xNew.at8(i);
+//          e -= _beta[cid];
+//        } else {
+//          x = (xNew.atd(i) - _xNewSub) * _xNewMul;
+//          e -= _beta[0] * x;
+//          x *= w;
+//        }
+//        _xy[cid] += x * (res.atd(i) - e);
+//      }
+//    }
+//    @Override public void reduce(GLMCoordinateDescentTask t) {
+//      ArrayUtils.add(_xy, t._xy);
+//    }
+//  }
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *
@@ -684,7 +683,6 @@ public abstract class GLMTask  {
     int [] _ti;
     public double _likelihood;
     final double _lambda;
-
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
@@ -693,6 +691,7 @@ public abstract class GLMTask  {
       _validate = validate;
       _lambda = lambda;
     }
+
 
     @Override public boolean handlesSparseData(){return true;}
 
@@ -726,7 +725,7 @@ public abstract class GLMTask  {
     }
 
     @Override
-    protected void processRow(Row r) {
+    protected void processRow(Row r) { // called for every row in the chunk
       if(r.bad || r.weight == 0) return;
       ++_nobs;
       final double y = r.response(0);
@@ -753,6 +752,9 @@ public abstract class GLMTask  {
       _likelihood += r.weight*_params.likelihood(y,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       double wz = w * z;
+
+      // cd expression instead
+
       _yy += wz * z;
       for(int i = 0; i < r.nBins; ++i)
         _xy[r.binIds[i]] += wz;
@@ -809,6 +811,257 @@ public abstract class GLMTask  {
       return ArrayUtils.hasNaNsOrInfs(_xy) || _gram.hasNaNsOrInfs();
     }
   }
+
+  public static class GLMCoordinateDescentTask extends FrameTask2<GLMCoordinateDescentTask> {
+    final GLMParameters _params;
+    final double [] _betaw;
+    final double [] _betacd;
+    public double [] _temp;
+    public double [] _varsum;
+    public double _ws=0;
+    long _nobs;
+    public double _likelihood;
+    public  GLMCoordinateDescentTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] betaw, double [] betacd, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
+      super(cmp,dinfo,jobKey,rowFilter);
+      _params = glm;
+      _betaw = betaw;
+      _betacd = betacd;
+    }
+
+
+    @Override public boolean handlesSparseData(){return false;}
+
+
+    @Override
+    public void chunkInit() {
+      _temp=MemoryManager.malloc8d(_dinfo.fullN()+1); // using h2o memory manager
+      _varsum=MemoryManager.malloc8d(_dinfo.fullN());
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      if(r.bad || r.weight == 0) return;
+      ++_nobs;
+      final double y = r.response(0);
+      assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+      assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+      final double w, eta, mu, var, z;
+      final int numStart = _dinfo.numStart();
+      double d = 1;
+      if( _params._family == Family.gaussian && _params._link == Link.identity){
+        w = r.weight;
+        z = y - r.offset;
+        mu = 0;
+        eta = mu;
+      } else {
+        eta = r.innerProduct(_betaw);
+        mu = _params.linkInv(eta + r.offset);
+        var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+        d = _params.linkDeriv(mu);
+        z = eta + (y-mu)*d;
+        w = r.weight/(var*d*d);
+      }
+      _likelihood += r.weight*_params.likelihood(y,mu);
+      assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
+
+      _ws+=w;
+      double xb = r.innerProduct(_betacd);
+      for(int i = 0; i < r.nBins; ++i)  { // go over cat variables
+        _temp[r.binIds[i]] += (z - xb + _betacd[r.binIds[i]])  *w;
+        _varsum[r.binIds[i]] += w ;
+      }
+      for(int i = 0; i < r.nNums; ++i){ // num vars
+        int id = r.numIds == null?(i + numStart):r.numIds[i];
+        _temp[id] += (z- xb + r.get(id)*_betacd[id] )*(r.get(id)*w);
+        _varsum[id] += w*r.get(id)*r.get(id);
+      }
+        _temp[_temp.length-1] += w*(z-r.innerProduct(_betacd)+_betacd[_betacd.length-1]);
+    }
+
+    @Override
+    public void reduce(GLMCoordinateDescentTask git){ // adding contribution of all the chunks
+      ArrayUtils.add(_temp, git._temp);
+      ArrayUtils.add(_varsum, git._varsum);
+      _ws+= git._ws;
+      _nobs += git._nobs;
+      _likelihood += git._likelihood;
+      super.reduce(git);
+    }
+
+  }
+
+  public static class GLMCoordinateDescentTaskSeq extends MRTask<GLMCoordinateDescentTaskSeq> {
+    final double [] _betaold; // current old value at j
+    final double [] _betanew; // global beta @ j-1 that was just updated.
+    public double [] _temp;
+    long _nobs;
+    boolean _interceptnew;
+    boolean _interceptold;
+
+    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, double [] betaold, double[] betanew) {
+      _betaold = betaold;
+      _betanew = betanew;
+      _interceptold=interceptold; // if updating beta_1, then the intercept is the previous column -> true
+      _interceptnew=interceptnew; // if currently updating the intercept value
+    }
+
+    @Override
+    public void map(Chunk [] chunks) {
+      int cnt = 0;
+      Chunk wChunk = chunks[cnt++];
+      Chunk zChunk = chunks[cnt++];
+      Chunk ztildaChunk = chunks[cnt++];
+      Chunk filterChunk = chunks[cnt++];
+      Chunk xpChunk=null, xChunk=null;
+      _temp = new double[1];
+      if (_interceptnew)
+        xpChunk = chunks[cnt++];
+      else {
+        if (_interceptold)
+          xChunk = chunks[cnt++];
+        else {
+          xChunk = chunks[cnt++];
+          xpChunk = chunks[cnt++];
+        }
+      }
+      ++_nobs;
+
+      for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+        if (filterChunk.atd(i) == 1) continue;
+        //updating the intercept (give j as length-2)
+        if (_interceptnew) {
+          ztildaChunk.set(i, ztildaChunk.atd(i ) - _betaold[_betaold.length - 1] + xpChunk.atd(i) * _betanew[0]);
+          _temp[0] = wChunk.at8(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+        }
+        else{
+          if (_interceptold) // updating beta_1 (give j as 0)
+            ztildaChunk.set(i, ztildaChunk.atd(i) - xChunk.atd(i) * _betaold[0] + _betanew[_betanew.length-1]);
+          else //updating any other beta_k
+            ztildaChunk.set(i, ztildaChunk.atd(i ) - xChunk.atd(i) * _betaold[0] + xpChunk.atd(i) * _betanew[0]);
+          _temp[0] = wChunk.at8(i) * xChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+        }
+     }
+    }
+
+    @Override
+    public void reduce(GLMCoordinateDescentTaskSeq git){ // adding contribution of all the chunks
+      ArrayUtils.add(_temp, git._temp);
+      _nobs += git._nobs;
+      super.reduce(git);
+    }
+
+  }
+
+
+
+  public static class GLMCoordinateDescentTaskSeqIntercept extends MRTask<GLMCoordinateDescentTaskSeqIntercept> {
+    final double [] _betaold;
+    public double _temp;
+    DataInfo _dinfo;
+
+    public  GLMCoordinateDescentTaskSeqIntercept( double [] betaold, DataInfo dinfo) {
+      _betaold = betaold;
+      _dinfo = dinfo;
+    }
+
+    @Override
+    public void map(Chunk [] chunks) {
+      int cnt = 0;
+      Chunk wChunk = chunks[cnt++];
+      Chunk zChunk = chunks[cnt++];
+      Chunk filterChunk = chunks[cnt++];
+      Row r = _dinfo.newDenseRow();
+      for(int i = 0; i < chunks[0]._len; ++i) {
+        if(filterChunk.atd(i)==1) continue;
+        _dinfo.extractDenseRow(chunks,i,r);
+        _temp = wChunk.at8(i)* (zChunk.atd(i)- r.innerProduct(_betaold) );
+      }
+
+    }
+
+    @Override
+    public void reduce(GLMCoordinateDescentTaskSeqIntercept git){ // adding contribution of all the chunks
+      _temp+= git._temp;
+      super.reduce(git);
+    }
+
+  }
+
+
+  public static class GLMGenerateWeightsTask extends MRTask<GLMGenerateWeightsTask> {
+    final GLMParameters _params;
+    final double [] _betaw;
+    double [] denums;
+    double wsum;
+    DataInfo _dinfo;
+
+    public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
+      _params = glm;
+      _betaw = betaw;
+      _dinfo = dinfo;
+    }
+
+    @Override
+    public void map(Chunk [] chunks) {
+      Chunk wChunk = chunks[chunks.length-4];
+      Chunk zChunk = chunks[chunks.length-3];
+      Chunk zTilda = chunks[chunks.length-2];
+      Chunk fChunk = chunks[chunks.length-1];
+      chunks = Arrays.copyOf(chunks,chunks.length-4);
+      denums = new double[_dinfo.fullN()+1];
+      Row r = _dinfo.newDenseRow();
+      for(int i = 0; i < chunks[0]._len; ++i) {
+        if(fChunk.at8(i) == 1) continue;
+        _dinfo.extractDenseRow(chunks,i,r);
+        if (r.bad || r.weight == 0) return;
+        final double y = r.response(0);
+        assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+        assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+        final double w, eta, mu, var, z;
+        final int numStart = _dinfo.numStart();
+        double d = 1;
+        eta = r.innerProduct(_betaw);
+        if (_params._family == Family.gaussian && _params._link == Link.identity) {
+          w = r.weight;
+          z = y - r.offset;
+          mu = 0;
+        } else {
+          mu = _params.linkInv(eta + r.offset);
+          var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+          d = _params.linkDeriv(mu);
+          z = eta + (y - mu) * d;
+          w = r.weight / (var * d * d);
+        }
+        zTilda.set(i,eta-_betaw[_betaw.length-1]);
+        assert w >= 0 || Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
+        wChunk.set(i,w);
+        zChunk.set(i,z);
+
+        wsum=w;
+
+        for(int j = 0; j < r.nBins; ++j)  { // go over cat variables
+          denums[r.binIds[j]] +=  w*r.get(r.binIds[j])*r.get(r.binIds[j]);
+        }
+        for(int j = 0; j < r.nNums; ++j){ // num vars
+          int id = r.numIds == null?(j + numStart):r.numIds[j];
+          denums[id]+= w*r.get(id)*r.get(id);
+        }
+
+      }
+    }
+
+    @Override
+    public void reduce(GLMGenerateWeightsTask git){ // adding contribution of all the chunks
+      ArrayUtils.add(denums, git.denums);
+      wsum+=git.wsum;
+      super.reduce(git);
+    }
+
+
+  }
+
+
+
 
 //  public static class GLMValidationTask<T extends GLMValidationTask<T>> extends MRTask<T> {
 //    protected final GLMModel _model;

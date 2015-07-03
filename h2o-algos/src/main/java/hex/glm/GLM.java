@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.BasicStats;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -156,12 +157,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override public void init(boolean expensive) {
     _t0 = System.currentTimeMillis();
     super.init(expensive);
+
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
-
     if (expensive) {
+      System.out.println(BasicStats.computeBasicStats(_train.lastVec()));
+      System.out.println("H2O got mean = " + _train.lastVec().mean() + ", min = " + _train.lastVec().min() + ",  _max = " + _train.lastVec().max());
       // bail early if we have basic errors like a missing training frame
       if (error_count() > 0) return;
       if(_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0)
@@ -337,7 +340,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       GLMGradientTask gtBetastart = itsk._gtBetaStart != null?itsk._gtBetaStart:itsk._gtNull;
       _bc.adjustGradient(itsk._gtNull._beta,itsk._gtNull._gradient);
       if(_parms._alpha == null)
-        _parms._alpha = new double[]{_parms._solver == Solver.IRLSM ?.5:0};
+        _parms._alpha = new double[]{_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT_SEQ ?.5:0};
       double lmax =  lmax(itsk._gtNull);
       double objval = gtBetastart._likelihood/gtBetastart._nobs;
       double l2pen = .5 * lmax * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gtBetastart._beta, _dinfo._intercept);
@@ -942,6 +945,115 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           break;
         }
+        case COORDINATE_DESCENT_SEQ: {
+          double wsum; // for intercept denum
+          double[] denums; // for all soft thresholding update denums
+          double[] beta = _taskInfo._beta.clone();
+          double[] betaold = _taskInfo._beta.clone();
+          assert beta.length == _activeData.fullN() + 1;
+          int iter1 = 0; // total cd iters
+
+          // get reweighted least squares vectors
+          Vec[] newVecs = _dinfo._adaptedFrame.anyVec().makeZeros(3);
+          Vec w = newVecs[0]; // fixed before each CD loop
+          Vec z = newVecs[1]; // fixed before each CD loop
+          Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
+
+          // generate new IRLS iteration
+          while (iter1 < 1) {
+
+            Frame fr = new Frame(_activeData._adaptedFrame);
+            fr.add("w", w); // fr has all data
+            fr.add("z", z);
+            fr.add("zTilda", zTilda);
+            fr.add("filter", _rowFilter); //rows with nas to be skipped
+            GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(GLM.this._key, _activeData, _parms, beta).doAll(fr);
+            denums = gt.denums;
+            wsum = gt.wsum;
+
+            // coordinate descent loop
+            while (iter1++ < 1) {
+              Frame fr2 = new Frame();
+              fr2.add("w", w);
+              fr2.add("z", z);
+              fr2.add("zTilda", zTilda);
+              fr2.add("filter", _rowFilter);//rows with nas to be skipped
+
+              // non expanded vars loop
+              for (int i = 0; i < _activeData._adaptedFrame.numCols() - 1; ++i) {
+                Frame fr3 = new Frame(fr2);
+                fr3.add("xj", _activeData._adaptedFrame.vec(i)); // add the current variable data column to be updated
+                boolean intercept = (i == 0); // distinguish between beta_1 update or any other beta_k update k>1
+                if (!intercept)
+                  fr3.add("xjm1", _activeData._adaptedFrame.vec(i - 1)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
+
+                GLMCoordinateDescentTaskSeq stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, beta, betaold).doAll(fr3);
+                beta[i] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0]) / (denums[i] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+              }
+
+              Frame fr3 = new Frame(fr2); // currently update intercept
+              fr3.add("xj", _activeData._adaptedFrame.vec(beta.length - 2)); // add last variable updated in cycle to the frame
+              GLMCoordinateDescentTaskSeq iupdate = new GLMCoordinateDescentTaskSeq(false, true, beta, betaold).doAll(fr);
+              beta[beta.length - 1] = iupdate._temp[0] / wsum;
+
+              double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
+              System.arraycopy(beta, 0, betaold, 0, beta.length);
+              if (linf < _parms._beta_epsilon)
+                break;
+            }
+
+            double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false);
+
+            if (linf < _parms._beta_epsilon)
+              break;
+
+            _taskInfo._beta = beta;
+
+          }
+          System.out.println("iter1 = " + iter1);
+          _taskInfo._iter = iter1;
+          for (Vec v : newVecs) v.remove();
+          break;
+        }
+        case COORDINATE_DESCENT_BULK:
+//          throw H2O.unimpl();
+          // _taskInfo._beta = new double[_dinfo.fullN()+1];
+
+          double[] beta = _taskInfo._beta.clone();
+          assert beta.length == _activeData.fullN() + 1;
+          int iter1=0;
+
+          while (iter1 <1000) {
+            // coordinate descent iterations
+            while (iter1++ < 1000 ) {
+
+              // return vector with temp values to be used in ST expression for each variable update - same task info beta given to all the nodes to generate the weights etc. active data has only the active columns.
+              GLMCoordinateDescentTask gcd = new GLMCoordinateDescentTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, beta.clone(), _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, null).doAll(_activeData._adaptedFrame);
+
+              // single cycle over all vars
+              for (int i = 0; i < beta.length - 1; ++i) {
+
+                beta[i] = ADMM.shrinkage(gcd._temp[i] / gcd._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0]) / (gcd._varsum[i] / gcd._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+              }
+              beta[beta.length - 1] = gcd._temp[gcd._temp.length - 1] / gcd._ws;
+
+              double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, gcd._betacd), false); // false to keep the intercept
+              if (linf < _parms._beta_epsilon)
+                break;
+            }
+
+            double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false);
+
+            if (linf < _parms._beta_epsilon)
+              break;
+
+            _taskInfo._beta=beta;
+
+          }
+          System.out.println("iter1 = " + iter1);
+          _taskInfo._iter=iter1;
+          break;
+
 //        case COORDINATE_DESCENT:
 //          double l1pen = _parms._alpha[0]*_parms._lambda[_lambdaId];
 //          double l2pen = (1-_parms._alpha[0])*_parms._lambda[_lambdaId];
@@ -1119,7 +1231,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }).setValidate(_parms._intercept?_taskInfo._ymu : _parms._family == Family.binomial?0.5:0, score).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
-    protected void compute2() {
+    protected void compute2() { // part of the outer loop to compute sol for lambda_k+1. keep active cols using strong rules and calls solve.
       if(!isRunning(_key)) throw new JobCancelledException();
       assert _rowFilter != null;
       _start_time = System.currentTimeMillis();

@@ -20,4 +20,9 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression {
     _nullDegressOfFreedom = nDof;
     _residualDegressOfFreedom = rDof;
   }
+
+  public String toString(){
+    return "DOF = " + _nullDegressOfFreedom + " : " + _residualDegressOfFreedom + ", dev = " + _nullDev + " : " + _resDev + ", " + super.toString();
+  }
+
 }

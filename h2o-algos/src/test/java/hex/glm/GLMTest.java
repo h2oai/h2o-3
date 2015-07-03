@@ -564,6 +564,64 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Test
+  public void testCoordinateDescent_airlines() {
+    GLMModel model = null;
+
+    Key parsed = Key.make("airlines_parsed");
+    Key modelKey = Key.make("airlines_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = new String[]{"IsDepDelayed_REC"};
+      params._train = fr._key;
+      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println(model._output._training_metrics);
+
+    } finally {
+      fr.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  @Test
+  public void testCoordinateDescent_anomaly() {
+    GLMModel model = null;
+    Key parsed = Key.make("anomaly_parsed");
+    Key modelKey = Key.make("anomaly_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.gaussian;
+      params._solver = Solver.COORDINATE_DESCENT_SEQ;//COORDINATE_DESCENT;
+      params._response_column = "C1";
+      params._train = fr._key;
+      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println(model._output._training_metrics);
+
+    } finally {
+      fr.delete();
+      if (model != null) model.delete();
+    }
+  }
+
 
   @Test
   public void testProximal() {

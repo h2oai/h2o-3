@@ -64,7 +64,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
-    @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
+    @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS","COORDINATE_DESCENT_BULK","COORDINATE_DESCENT_SEQ"}, level = Level.critical)
     public Solver solver;
 
     @API(help = "distribution of regularization between L1 and L2.", level = Level.critical)

@@ -384,7 +384,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log,inverse,/* tweedie*/}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_BULK, COORDINATE_DESCENT_SEQ}
 
     // helper function
     static final double y_log_y(double y, double mu) {
