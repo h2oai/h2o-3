@@ -110,6 +110,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
       break;
+    case poisson:
+      if (isClassifier()) error("_distribution", "Poisson requires the response to be numeric.");
+      break;
     case gaussian:
       if (isClassifier()) error("_distribution", "Gaussian requires the response to be numeric.");
       break;
@@ -571,8 +574,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       fs[2] = 1.0-fs[1];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
-    if( _nclass == 1 ) // Regression
-      return fs[0]=chk_tree(chks,0).atd(row) + offset;
+    if( _nclass == 1 ) { // Regression
+      if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) return fs[0] = chk_tree(chks, 0).atd(row) + offset;
+      else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) throw H2O.unimpl(); //return fs[0] = chk_tree(chks, 0).atd(row) + offset;
+    }
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree
