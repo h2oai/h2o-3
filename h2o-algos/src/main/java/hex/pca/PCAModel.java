@@ -20,7 +20,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
     // public Key<Frame> _loading_key;
-    public String _loading_name;
+    public String _loading_name;           // Loading only generated if pca_method = Power
     public boolean _keep_loading = true;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
 

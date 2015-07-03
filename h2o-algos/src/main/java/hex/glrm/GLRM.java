@@ -10,6 +10,8 @@ import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
+import hex.pca.PCA;
+import hex.pca.PCAModel;
 import hex.schemas.GLRMV99;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
@@ -204,34 +206,34 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
         return ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
-      } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
-        SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and use right singular vectors as initial Y
+        PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
-        parms._nv = _parms._k;
+        parms._k = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
         parms._seed = _parms._seed;
-        parms._only_v = true;
+        parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
 
-        SVDModel svd = null;
-        SVD job = null;
+        PCAModel pca = null;
+        PCA job = null;
         try {
-          job = new SVD(parms);
-          svd = job.trainModel().get();
+          job = new PCA(parms);
+          pca = job.trainModel().get();
         } finally {
           if (job != null) job.remove();
-          if (svd != null) svd.remove();
+          if (pca != null) pca.remove();
         }
 
         // Ensure SVD centers align with adapted training frame cols
-        assert svd._output._permutation.length == dinfo._permutation.length;
+        assert pca._output._permutation.length == dinfo._permutation.length;
         for(int i = 0; i < dinfo._permutation.length; i++)
-          assert svd._output._permutation[i] == dinfo._permutation[i];
-        centers_exp = ArrayUtils.transpose(svd._output._v);
+          assert pca._output._permutation[i] == dinfo._permutation[i];
+        centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
 
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -401,6 +403,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
         if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
                                                   && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
+          Log.info("Initializing X = AY'(YY' + gamma)^(-1) where A = training data");
           double[][] ygram = ArrayUtils.formGram(yt);
           if (_parms._gamma_y > 0) {
             for(int i = 0; i < ygram.length; i++)
