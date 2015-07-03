@@ -16,7 +16,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public enum Family {  AUTO, bernoulli, multinomial, gaussian  }
+    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson  }
     public Family _distribution = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
   }
@@ -34,7 +34,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
     super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
     if( _parms._distribution == GBMParameters.Family.bernoulli ) {
-      double fx = preds[1] + _output._init_f;
+      double fx = preds[1] + _output._init_f + offset;
       preds[2] = 1.0/(1.0+Math.exp(-fx));
       preds[1] = 1.0-preds[2];
       if (_parms._balance_classes)
@@ -44,7 +44,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     }
     if( _output.nclasses()==1 ) {
       // Prediction starts from the mean response, and adds predicted residuals
-      preds[0] += _output._init_f;
+      preds[0] += _output._init_f + offset;
       return preds;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
@@ -58,6 +58,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     return preds;
   }
 
+  // Note: POJO scoring code doesn't support per-row offsets (the scoring API would need to be changed to pass in offsets)
   @Override protected void toJavaUnifyPreds(SB body, SB file) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
