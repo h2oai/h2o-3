@@ -148,8 +148,9 @@ public abstract class ParseTime {
       if (id == cid) { // Canonical ID
         if (!tzMap.containsKey(key)) tzMap.put(key, "");
       }  else {// alias ID
-        if (!tzMap.containsKey(key)) tzMap.put(key, id);
-        else tzMap.put(key,  tzMap.get(key) + ", " + id);
+        if (!tzMap.containsKey(key))
+          tzMap.put(key, "");
+        tzMap.put(key,  tzMap.get(key) + ", " + id);
       }
     }
 
