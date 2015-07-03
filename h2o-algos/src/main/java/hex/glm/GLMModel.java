@@ -95,9 +95,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           _nlambdas = 100;
         else
           _exactLambdas = false;
-      if(_family != Family.tweedie)
+      if(_family != Family.tweedie) {
         glm.hide("tweedie_variance_power","Only applicable with Tweedie family");
-      _tweedie_link_power = 1 - _tweedie_variance_power;
+        glm.hide("tweedie_link_power","Only applicable with Tweedie family");
+      }
+
       if(_beta_constraints != null) {
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
