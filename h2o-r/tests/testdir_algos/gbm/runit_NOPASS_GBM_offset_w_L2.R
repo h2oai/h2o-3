@@ -21,9 +21,9 @@ test <- function(h) {
 	ph = as.data.frame(h2o.predict(hh,newdata = hdf))
 	expect_equal(fit2$initF, hh@model$init_f)
 	expect_equal( fit2$train.error[600], hh@model$training_metrics@metrics$MSE,tolerance=1e-6)
-	expect_equal(mean(pr), mean(ph[,1]),tolerance=1e-5 )
-	expect_equal(min(pr), min(ph[,1]) ,tolerance=1e-3)
-	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-3)
-	testEnd()
+	expect_equal(mean(pr), mean(ph[,1]) )
+	expect_equal(min(pr), min(ph[,1]) )
+	expect_equal(max(pr), max(ph[,1]) )
+	test.end()
 }
 doTest("GBM offset Test: GBM w/ offset L2 loss", test)
