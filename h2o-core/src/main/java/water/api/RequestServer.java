@@ -58,6 +58,7 @@ public class RequestServer extends NanoHTTPD {
   public static final int H2O_REST_API_VERSION = 3;
 
   static public RequestServer SERVER;
+  private RequestServer() {}
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
@@ -432,31 +433,14 @@ public class RequestServer extends NanoHTTPD {
     return lookup(http_method, uri);
   }
 
-
-  // Keep spinning until we get to launch the NanoHTTPD.  Launched in a
-  // seperate thread (I'm guessing here) so the startup process does not hang
-  // if the various web-port accesses causes Nano to hang on startup.
-  public static Runnable start() {
+  public static void finalizeRegistration() {
     Schema.registerAllSchemasIfNecessary();
-    Runnable run=new Runnable() {
-        @Override public void run()  {
-          while( true ) {
-            try {
-              // Try to get the NanoHTTP daemon started
-              synchronized(this) {
-                SERVER = new RequestServer(water.init.NetworkInit._apiSocket);
-                notifyAll();
-              }
-              break;
-            } catch( Exception ioe ) {
-              Log.err("Launching NanoHTTP server got ",ioe);
-              try { Thread.sleep(1000); } catch( InterruptedException ignore ) { } // prevent denial-of-service
-            }
-          }
-        }
-      };
-    new Thread(run, "Request Server launcher").start();
-    return run;
+
+    // Need a stub RequestServer to handle calls to serve() from Jetty.
+    // But no threads are started here anymore.
+    SERVER = new RequestServer();
+
+    H2O.getJetty().acceptRequests();
   }
 
   public static void alwaysLogRequest(String uri, String method, Properties parms) {

@@ -832,6 +832,14 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
+  private static JettyHTTPD jetty;
+  public static void setJetty(JettyHTTPD value) {
+    jetty = value;
+  }
+  public static JettyHTTPD getJetty() {
+    return jetty;
+  }
+
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
@@ -957,12 +965,11 @@ final public class H2O {
   }
 
   /** Start the web service; disallow future URL registration.
-   *  Returns a Runnable that will be notified once the server is up.  */
-  static public Runnable finalizeRegistration() {
-    if( _doneRequests ) return null;
+   *  Blocks until the server is up.  */
+  static public void finalizeRegistration() {
+    if (_doneRequests) return;
     _doneRequests = true;
-    // Start the Nano HTTP server thread
-    return water.api.RequestServer.start();
+    water.api.RequestServer.finalizeRegistration();
   }
 
   // --------------------------------------------------------------------------
