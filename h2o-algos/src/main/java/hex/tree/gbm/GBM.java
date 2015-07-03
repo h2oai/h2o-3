@@ -10,6 +10,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.Vec;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
@@ -79,13 +80,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         GBM.this.updateValidationMessages();
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
       }
-
-      mean = _response.mean();
-      if (_weights != null && (_weights.min() != 1 || _weights.max() != 1)) {
-        FrameUtils.WeightedMean wm = new FrameUtils.WeightedMean();
-        mean = (float) (hasOffset() ? wm.doAll(_response, _weights, _offset) : wm.doAll(_response, _weights)).weightedMean();
-      }
-
+      mean = responseMean();
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
 
@@ -132,25 +127,26 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
 
     @Override protected void buildModel() {
+      if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
+        Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
+        Log.info("Iteration 0: initial value: " + _initialPrediction + " (starting value)");
+        double delta;
+        int count=0;
+        int N=100;
+        _initialPrediction = 0;
+        do {
+          double newInit = new NewtonRaphson(_initialPrediction).doAll(_train).value();
+          delta = Math.abs(_initialPrediction - newInit);
+          _initialPrediction = newInit;
+          Log.info("Iteration " + ++count + ": initial value: " + _initialPrediction);
+        } while (delta > 1e-6 || count > N /*bail out*/);
+        if (count > N) Log.warn("Newton-Raphson iteration didn't converge after " + count + " iterations.");
+        else Log.info("Newton-Raphson iteration converged. Final residual: " + delta);
+      }
+
+      _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
+
       if( _initialPrediction != 0.0 ) {      // Only non-zero for regression or bernoulli
-
-        if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
-          Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
-          Log.info("Iteration 0: initial value: " + _initialPrediction + " (starting value)");
-          double delta;
-          int count=0;
-          int N=100;
-          do {
-            double newInit = new NewtonRaphson(_initialPrediction).doAll(_train).value();
-            delta = Math.abs(_initialPrediction - newInit);
-            _initialPrediction = newInit;
-            Log.info("Iteration " + ++count + ": initial value: " + _initialPrediction);
-          } while (delta > 1e-6 || count > N /*bail out*/);
-          if (count > N) Log.warn("Newton-Raphson iteration didn't converge after " + count + " iterations.");
-          else Log.info("Newton-Raphson iteration converged. Final residual: " + delta);
-          _model._output._init_f = _initialPrediction;
-        }
-
         final double init = _initialPrediction;
         new MRTask() {
           @Override

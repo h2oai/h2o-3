@@ -5,6 +5,7 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.*;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.ReflectionUtils;
@@ -53,6 +54,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec response(){return _response;}
   /** Validation response vector. */
   public Vec vresponse(){return _vresponse;}
+
+  /**
+   * Compute the (weighted) mean of the response (subtracting possible offset terms)
+   * @return mean
+   */
+  protected double responseMean() {
+    if (hasWeights() || hasOffset()) {
+      return new FrameUtils.WeightedMean().doAll(
+              _response,
+              hasWeights() ? _weights : _response.makeCon(1),
+              hasOffset() ? _offset : _response.makeCon(0)
+      ).weightedMean();
+    }
+    return _response.mean();
+  }
 
 
 
