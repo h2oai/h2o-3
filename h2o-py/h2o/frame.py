@@ -953,7 +953,7 @@ class H2OFrame:
     :param seed: A random seed. If None, then one will be generated.
     :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
     """
-    return H2OFrame(expr=ExprNode("h2o.runif", self, -1 if seed is None else random.randint(123456789, 999999999)))
+    return H2OFrame(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
 
   def match(self, table, nomatch=0):
     """
