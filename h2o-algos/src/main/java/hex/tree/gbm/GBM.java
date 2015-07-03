@@ -88,9 +88,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass == 1) _parms._distribution = GBMModel.GBMParameters.Family.gaussian;
         if (_nclass == 2) _parms._distribution = GBMModel.GBMParameters.Family.bernoulli;
         if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
+      } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
+        _initialPrediction = Double.NaN;
+        throw H2O.unimpl();
       }
-      if (hasOffset() && isClassifier() && _parms._distribution != GBMModel.GBMParameters.Family.bernoulli) {
-        error("_offset_column", "Offset is only supported for regression or binary classification with the Bernoulli distribution.");
+      if (hasOffset() && isClassifier() && _parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
+        error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
       if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
         if (_offset.max() > 1)
@@ -269,8 +272,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         } else {                  // Regression
           Chunk tr = chk_tree(chks,0); // Prior tree sums
           Chunk wk = chk_work(chks,0); // Predictions
-          for( int row=0; row<ys._len; row++ )
-            wk.set(row,(float)(tr.atd(row) + offset.atd(row)));
+          if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
+            for (int row = 0; row < ys._len; row++)
+              wk.set(row, (float) (tr.atd(row) + offset.atd(row)));
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
+            for (int row = 0; row < ys._len; row++)
+              wk.set(row, (float) Math.exp((tr.atd(row) + offset.atd(row))));
+          }
         }
       }
     }
@@ -303,7 +311,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             }
           }
 
-        } else {                  // Regression
+        } else {                  // Regression (for both gaussian and poisson)
           Chunk wk = chk_work(chks,0); // Prediction==>Residuals
           for( int row=0; row<ys._len; row++ )
             wk.set(row, (float)(ys.atd(row)-wk.atd(row)) );
@@ -382,12 +390,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b iii.  Compute the gammas, and store them back
       // into the tree leaves.  Includes learn_rate.
       // For classification (bernoulli):
-      //    gamma_i = sum res_i / sum p_i*(1 - p_i) where p_i = y_i - res_i
+      //    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i
       // For classification (multinomial):
       //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
       // For regression (gaussian):
       //    gamma_i = sum res_i / count(res_i)
-      GammaPass gp = new GammaPass(ktrees,leafs,_parms._distribution == GBMModel.GBMParameters.Family.bernoulli).doAll(_train);
+      GammaPass gp = new GammaPass(ktrees,leafs,_parms._distribution).doAll(_train);
       double m1class = _nclass > 1 && _parms._distribution != GBMModel.GBMParameters.Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
       for( int k=0; k<_nclass; k++ ) {
         final DTree tree = ktrees[k];
@@ -443,12 +451,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private class GammaPass extends MRTask<GammaPass> {
       final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
       final int   _leafs[]; // Number of active leaves (per tree)
-      final boolean _isBernoulli;
+      final GBMModel.GBMParameters.Family _dist;
       // Per leaf: sum(res);
       double _rss[/*tree/klass*/][/*tree-relative node-id*/];
       // Per leaf: multinomial: sum(|res|*1-|res|), gaussian: sum(1), bernoulli: sum((y-res)*(1-y+res))
       double _gss[/*tree/klass*/][/*tree-relative node-id*/];
-      GammaPass(DTree trees[], int leafs[], boolean isBernoulli) { _leafs=leafs; _trees=trees; _isBernoulli = isBernoulli; }
+      GammaPass(DTree trees[], int leafs[], GBMModel.GBMParameters.Family distribution) { _leafs=leafs; _trees=trees; _dist = distribution; }
       @Override public void map( Chunk[] chks ) {
         _gss = new double[_nclass][];
         _rss = new double[_nclass][];
@@ -492,11 +500,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             double w = hasWeights() ? chk_weight(chks).atd(row) : 1;
             double res = ress.atd(row);
             double ares = Math.abs(res);
-            if( _isBernoulli ) {
+            if( _dist == GBMModel.GBMParameters.Family.bernoulli ) {
               double prob = resp.atd(row) - res;
               gs[leafnid-leaf] += w*prob*(1-prob);
-            } else
-              gs[leafnid-leaf] += w*(_nclass > 1 ? ares*(1-ares) : 1);
+            } else if ( _dist == GBMModel.GBMParameters.Family.gaussian) {
+              gs[leafnid-leaf] += w;
+            } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
+              double prob = resp.atd(row) - res;
+              gs[leafnid-leaf] += w*prob;
+            } else if ( _dist == GBMModel.GBMParameters.Family.multinomial) {
+              gs[leafnid-leaf] += w*(ares*(1-ares));
+            }
             rs[leafnid-leaf] += w*res;
           }
         }
@@ -575,8 +589,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
     if( _nclass == 1 ) { // Regression
-      if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) return fs[0] = chk_tree(chks, 0).atd(row) + offset;
-      else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) throw H2O.unimpl(); //return fs[0] = chk_tree(chks, 0).atd(row) + offset;
+      if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian || _parms._distribution == GBMModel.GBMParameters.Family.poisson)
+        return fs[0] = chk_tree(chks, 0).atd(row) + offset;
+      else throw H2O.unimpl();
     }
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
