@@ -116,9 +116,7 @@ class H2OFrame:
     """
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
-    # blocking parse, first line is always a header (since "we" wrote the data out)
-    parse = h2o.parse(setup, _py_tmp_key(), first_line_is_header=1)
-    # a hack to get the column names correct since "parse" does not provide them
+    parse = h2o.parse(setup, _py_tmp_key())
     self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]
