@@ -10,9 +10,11 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestNGUtil;
@@ -120,7 +122,6 @@ public class GLMBasic extends TestNGUtil {
 			params._weights_column = weights_column;
 		}
 		params._non_negative = non_negative.equals("x");
-		// params._beta_constraints
 		params._intercept = intercept.equals("x");
 		if (!"".equals(prior)) {
 			params._prior = Double.parseDouble(prior);
@@ -132,8 +133,8 @@ public class GLMBasic extends TestNGUtil {
 			params._ignored_columns = new String[] { ignored_columns };
 		}
 
-		params._score_each_iteration = false;
-		params._max_iterations = -1;
+		// params._beta_constraints
+		// params._score_each_iteration = false;
 
 		Frame train = null;
 		Frame validate = null;
@@ -158,23 +159,33 @@ public class GLMBasic extends TestNGUtil {
 		}
 
 		// Build the appropriate glm, given the above parameters
+		Key modelKey = Key.make("model");
 		GLM job = null;
 		GLMModel model = null;
 		Frame score = null;
-		HashMap coef = null;
+		HashMap<String, Double> coef = null;
 
 		Scope.enter();
-		if (!"".equals(train_dataset_filename) && !"".equals(validate_dataset_filename)) {
-			job = new GLM(Key.make("model"), "basic glm test", params);
+
+		if ("".equals(train_dataset_filename) || "".equals(validate_dataset_filename)
+				|| "newsgroup_train1".equals(train_dataset_id)) {
+			// ignore those test case
+			throw new SkipException("Skipping this exception");
+		}
+		else {
+			job = new GLM(modelKey, "basic glm test", params);
 			model = job.trainModel().get();
+
+			model = DKV.get(modelKey).get();
 
 			coef = model.coefficients();
 			score = model.score(validate);
+			// Assert.assertTrue(model.testJavaScoring(score, train, 1e-15));
 		}
 
-		// if (train != null) {
-		// train.delete();
-		// }
+//		if (train != null) {
+//			train.delete();
+//		}
 		if (validate != null) {
 			validate.delete();
 		}
