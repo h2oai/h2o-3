@@ -26,4 +26,4 @@ test <- function(h) {
 	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-3)
 	testEnd()
 }
-doTest("GBM offset Test: GBM w/ offset L2 loss", test)
+doTest("GBM offset Test: GBM w/ offset insurance data", test)
