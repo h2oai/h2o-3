@@ -132,6 +132,7 @@ public class JettyHTTPD {
    */
   public void registerHandlers(HandlerWrapper s) {
     GateHandler gh = new GateHandler();
+    AddCommonResponseHeadersHandler rhh = new AddCommonResponseHeadersHandler();
 
     ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
@@ -143,7 +144,7 @@ public class JettyHTTPD {
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
-    Handler[] handlers = {gh, context};
+    Handler[] handlers = {gh, rhh, context};
     HandlerCollection hc = new HandlerCollection();
     hc.setHandlers(handlers);
     s.setHandler(hc);
@@ -165,14 +166,23 @@ public class JettyHTTPD {
     }
   }
 
+  public class AddCommonResponseHeadersHandler extends AbstractHandler {
+    public AddCommonResponseHeadersHandler() {}
+
+    public void handle( String target,
+                        Request baseRequest,
+                        HttpServletRequest request,
+                        HttpServletResponse response ) throws IOException, ServletException {
+      setCommonResponseHttpHeaders(response);
+    }
+  }
+
   public static class H2oNpsBinServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request,
                          HttpServletResponse response) throws IOException, ServletException {
       String uri = getDecodedUri(request);
       try {
-        setCommonResponseHttpHeaders(response);
-
         Pattern p = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
         Matcher m = p.matcher(uri);
         boolean b = m.matches();
@@ -203,8 +213,6 @@ public class JettyHTTPD {
                           HttpServletResponse response) throws IOException, ServletException {
       String uri = getDecodedUri(request);
       try {
-        setCommonResponseHttpHeaders(response);
-
         Pattern p = Pattern.compile(".*NodePersistentStorage.bin/([^/]+)/([^/]+)");
         Matcher m = p.matcher(uri);
         boolean b = m.matches();
@@ -244,8 +252,6 @@ public class JettyHTTPD {
       String uri = getDecodedUri(request);
 
       try {
-        setCommonResponseHttpHeaders(response);
-
         String destination_frame = request.getParameter("destination_frame");
         if (destination_frame == null) {
           destination_frame = "upload" + Key.rand();
