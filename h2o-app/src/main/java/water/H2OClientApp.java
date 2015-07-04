@@ -3,32 +3,24 @@ package water;
 /**
  * Simple client application wrapper.
  *
- *
- * A way to use:
- *  1. Start H2O cloud as usual
- *  2. Start H2OClientApp
- *
- *  Another way to use:
- *  1. Start H2OClient App
- *  2. Start H2O Clouds
+ * CAUTION:
+ * This is used by Sparkling Water and other environments where an H2O client node is needed.
+ * A client node is a node that can launch and monitor work, but doesn't do any work.
+ * Don't use this unless you know what you are doing.  You probably really just want to use
+ * H2OApp directly.
  */
 public class H2OClientApp {
-  public static void start() { main(new String[0]); }
+  public static void main(String[] args) {
+    // Prepend "-client" parameter.
+    String[] args2 = new String[args.length + 1];
+    args2[0] = "-client";
+    int i = 1;
+    for (String s : args) {
+      args2[i] = s;
+      i++;
+    }
 
-  public static void main( String[] args ) { driver(args,System.getProperty("user.dir")); }
-
-  @SuppressWarnings("unused")
-  public static void main2( String relpath ) { driver(new String[0],relpath); }
-
-  private static void driver( String[] args, String relpath ) {
-    H2OApp.registerExtensions();
-    H2OClient.main(args);
-    H2OApp.registerRestApis(relpath);
-    H2O.finalizeRegistration();
-  }
-
-  @SuppressWarnings("unused")
-  public static void waitForCloudSize(int x, long ms) {
-    H2O.waitForCloudSize(x, ms);
+    // Call regular H2OApp.
+    H2OApp.main(args2);
   }
 }
