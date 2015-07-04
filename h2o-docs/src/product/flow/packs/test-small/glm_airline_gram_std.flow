@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "assist"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/airlines/gram_std.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/airlines/gram_std.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/airlines/gram_std.csv\"]\n  destination_frame: \"gram_std.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 211\n  single_quotes: false\n  column_names: [\"Distance\",\"OriginABQ\",\"OriginACY\",\"OriginALB\",\"OriginATL\",\"OriginAUS\",\"OriginAVP\",\"OriginBDL\",\"OriginBGM\",\"OriginBHM\",\"OriginBNA\",\"OriginBOS\",\"OriginBTV\",\"OriginBUF\",\"OriginBUR\",\"OriginBWI\",\"OriginCAE\",\"OriginCHO\",\"OriginCHS\",\"OriginCLE\",\"OriginCLT\",\"OriginCMH\",\"OriginCOS\",\"OriginCRW\",\"OriginCVG\",\"OriginDAY\",\"OriginDCA\",\"OriginDEN\",\"OriginDFW\",\"OriginDSM\",\"OriginDTW\",\"OriginERI\",\"OriginEWR\",\"OriginFLL\",\"OriginGSO\",\"OriginHNL\",\"OriginIAD\",\"OriginIAH\",\"OriginICT\",\"OriginIND\",\"OriginISP\",\"OriginJAX\",\"OriginJFK\",\"OriginLAS\",\"OriginLAX\",\"OriginLEX\",\"OriginLGA\",\"OriginLIH\",\"OriginLYH\",\"OriginMCI\",\"OriginMCO\",\"OriginMDT\",\"OriginMDW\",\"OriginMFR\",\"OriginMHT\",\"OriginMIA\",\"OriginMKE\",\"OriginMLB\",\"OriginMRY\",\"OriginMSP\",\"OriginMSY\",\"OriginMYR\",\"OriginOAK\",\"OriginOGG\",\"OriginOMA\",\"OriginORD\",\"OriginORF\",\"OriginPBI\",\"OriginPHF\",\"OriginPHL\",\"OriginPHX\",\"OriginPIT\",\"OriginPSP\",\"OriginPVD\",\"OriginPWM\",\"OriginRDU\",\"OriginRIC\",\"OriginRNO\",\"OriginROA\",\"OriginROC\",\"OriginRSW\",\"OriginSAN\",\"OriginSBN\",\"OriginSCK\",\"OriginSDF\",\"OriginSEA\",\"OriginSFO\",\"OriginSJC\",\"OriginSJU\",\"OriginSLC\",\"OriginSMF\",\"OriginSNA\",\"OriginSRQ\",\"OriginSTL\",\"OriginSTX\",\"OriginSWF\",\"OriginSYR\",\"OriginTLH\",\"OriginTPA\",\"OriginTRI\",\"OriginTUS\",\"OriginTYS\",\"OriginUCA\",\"DestABQ\",\"DestACY\",\"DestALB\",\"DestATL\",\"DestAVP\",\"DestBDL\",\"DestBGM\",\"DestBNA\",\"DestBOS\",\"DestBTV\",\"DestBUF\",\"DestBUR\",\"DestBWI\",\"DestCAE\",\"DestCAK\",\"DestCHA\",\"DestCHO\",\"DestCHS\",\"DestCLE\",\"DestCLT\",\"DestCMH\",\"DestDAY\",\"DestDCA\",\"DestDEN\",\"DestDFW\",\"DestDTW\",\"DestELM\",\"DestERI\",\"DestEWR\",\"DestFAT\",\"DestFAY\",\"DestFLL\",\"DestFNT\",\"DestGEG\",\"DestGRR\",\"DestGSO\",\"DestGSP\",\"DestHNL\",\"DestHTS\",\"DestIAD\",\"DestIAH\",\"DestICT\",\"DestIND\",\"DestISP\",\"DestJAX\",\"DestJFK\",\"DestKOA\",\"DestLAS\",\"DestLAX\",\"DestLEX\",\"DestLGA\",\"DestLIH\",\"DestLYH\",\"DestMCI\",\"DestMCO\",\"DestMDT\",\"DestMDW\",\"DestMHT\",\"DestMIA\",\"DestMRY\",\"DestMSY\",\"DestOAJ\",\"DestOAK\",\"DestOGG\",\"DestOMA\",\"DestORD\",\"DestORF\",\"DestORH\",\"DestPBI\",\"DestPDX\",\"DestPHF\",\"DestPHL\",\"DestPHX\",\"DestPIT\",\"DestPSP\",\"DestPVD\",\"DestRDU\",\"DestRIC\",\"DestRNO\",\"DestROA\",\"DestROC\",\"DestRSW\",\"DestSAN\",\"DestSCK\",\"DestSDF\",\"DestSEA\",\"DestSFO\",\"DestSJC\",\"DestSMF\",\"DestSNA\",\"DestSTL\",\"DestSWF\",\"DestSYR\",\"DestTOL\",\"DestTPA\",\"DestTUS\",\"DestUCA\",\"UniqueCarrierCO\",\"UniqueCarrierDL\",\"UniqueCarrierHP\",\"UniqueCarrierPI\",\"UniqueCarrierPS\",\"UniqueCarrierTW\",\"UniqueCarrierUA\",\"UniqueCarrierUS\",\"UniqueCarrierWN\",\"Intercept\",\"xy\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"gram_std.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"gram_std.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-f52d48f0-cb22-4e44-a3db-e18b37919db4\",\"training_frame\":\"gram_std.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"xy\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-f52d48f0-cb22-4e44-a3db-e18b37919db4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-f52d48f0-cb22-4e44-a3db-e18b37919db4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-f52d48f0-cb22-4e44-a3db-e18b37919db4\", frame: \"gram_std.hex\", predictions_frame: \"prediction-1dc54da4-3dd0-447e-9811-9a4378bab99c\""
+    }
+  ]
+}
