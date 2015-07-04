@@ -2,7 +2,6 @@ package water.hadoop;
 
 import java.io.*;
 import java.net.*;
-import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -11,7 +10,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
-import water.H2OApp;
 
 import water.util.Log;
 
@@ -116,7 +114,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       char type = msg2.getType();
       if (type != DriverToMapperMessage.TYPE_FETCH_FLATFILE_RESPONSE) {
         int typeAsInt = (int)type & 0xff;
-        String str = new String("DriverToMapperMessage type unrecognized (" + typeAsInt + ")");
+        String str = "DriverToMapperMessage type unrecognized (" + typeAsInt + ")";
         Log.err(str);
         throw new Exception (str);
       }
@@ -200,50 +198,9 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   }
 
   /**
-   * Emit a bunch of logging output at the beginning of the map task.
-   * @throws IOException
-   * @throws InterruptedException
-   */
-  private void emitLogHeader(Context context, String mapredTaskId) throws IOException, InterruptedException {
-    Configuration conf = context.getConfiguration();
-    Text textId = new Text(mapredTaskId);
-
-    for (Map.Entry<String, String> entry: conf) {
-      StringBuilder sb = new StringBuilder();
-      sb.append(entry.getKey());
-      sb.append("=");
-      sb.append(entry.getValue());
-      context.write(textId, new Text(sb.toString()));
-    }
-
-    context.write(textId, new Text("----- Properties -----"));
-    String[] plist = {
-            "mapred.local.dir",
-            "mapred.child.java.opts",
-    };
-    for (String k : plist) {
-      String v = conf.get(k);
-      if (v == null) {
-        v = "(null)";
-      }
-      context.write(textId, new Text(k + " " + v));
-    }
-    String userDir = System.getProperty("user.dir");
-    context.write(textId, new Text("user.dir " + userDir));
-
-    try {
-      java.net.InetAddress localMachine = java.net.InetAddress.getLocalHost();
-      context.write(textId, new Text("hostname " + localMachine.getHostName()));
-    }
-    catch (java.net.UnknownHostException uhe) {
-      // handle exception
-    }
-  }
-
-  /**
    * Identify hadoop mapper counter
    */
-  public static enum H2O_MAPPER_COUNTER {
+  public enum H2O_MAPPER_COUNTER {
     HADOOP_COUNTER_HEARTBEAT
   }
 
@@ -262,6 +219,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
 
     @Override
+    @SuppressWarnings("all")
     public void run() {
       while (true) {
         _context.progress();
@@ -269,18 +227,13 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         try {
           Thread.sleep (TEN_SECONDS_MILLIS);
         }
-        catch (Exception e) {}
+        catch (Exception ignore) {}
       }
     }
   }
 
   private int run2(Context context) throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
-    String mapredTaskId = conf.get("mapred.task.id");
-    Text textId = new Text(mapredTaskId);
-
-    emitLogHeader(context, mapredTaskId);
-    Log.POST(10, "After emitLogHeader");
 
     Counter counter = context.getCounter(H2O_MAPPER_COUNTER.HADOOP_COUNTER_HEARTBEAT);
     Thread counterThread = new CounterThread(context, counter);
@@ -296,7 +249,6 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
 
     String jobtrackerName = conf.get(H2O_JOBTRACKERNAME_KEY);
-    context.write(textId, new Text("mapred.local.dir is " + ice_root));
     String driverIp = conf.get(H2O_DRIVER_IP_KEY);
     String driverPortString = conf.get(H2O_DRIVER_PORT_KEY);
     int driverPort = Integer.parseInt(driverPortString);
@@ -315,7 +267,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     ss.bind(sa);
     int localPort = ss.getLocalPort();
 
-    List<String> argsList = new ArrayList<String>();
+    List<String> argsList = new ArrayList<>();
 
     // Options used by H2O.
     argsList.add("-ice_root");
@@ -362,7 +314,11 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         Log.POST(102, b ? "exists" : "does not exist");
         if (! b) {
           Log.POST(103, "before mkdirs()");
-          f.mkdirs();
+          boolean success = f.mkdirs();
+          if (! success) {
+            Log.POST(103, "mkdirs failed()");
+            return -1;
+          }
           Log.POST(104, "after mkdirs()");
         }
         String fileName = ice_root + File.separator + "h2o_license.txt";
@@ -385,43 +341,25 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
     if (gaOptOut != null) argsList.add(gaOptOut);
 
-    context.write(textId, new Text("before water.H2O.main()"));
-    String[] args = (String[]) argsList.toArray(new String[0]);
+    String[] args = argsList.toArray(new String[argsList.size()]);
     try {
       _embeddedH2OConfig = new EmbeddedH2OConfig();
       _embeddedH2OConfig.setDriverCallbackIp(driverIp);
       _embeddedH2OConfig.setDriverCallbackPort(driverPort);
       _embeddedH2OConfig.setMapperCallbackPort(localPort);
       H2O.setEmbeddedH2OConfig(_embeddedH2OConfig);
-      Log.POST(11, "After register");
+      Log.POST(11, "After setEmbeddedH2OConfig");
+      //-------------------------------------------------------------
       water.H2OApp.main(args);
+      //-------------------------------------------------------------
       Log.POST(12, "After main");
     }
     catch (Exception e) {
       Log.POST(13, "Exception in main");
-      context.write(textId, new Text("exception in water.H2O.main()"));
-
-      String s = e.getMessage();
-      if (s == null) { s = "(null exception message)"; }
-      context.write(textId, new Text(s));
-
-      s = e.toString();
-      if (s == null) { s = "(null exception toString)"; }
-      context.write(textId, new Text(s));
-
-      StackTraceElement[] els = e.getStackTrace();
-      for (int i = 0; i < els.length; i++) {
-        StackTraceElement el = els[i];
-        s = el.toString();
-        context.write(textId, new Text("    " + s));
-      }
-    }
-    finally {
-      Log.POST(14, "Top of finally");
-      context.write(textId, new Text("after water.H2O.main()"));
+      Log.POST(13, e.toString());
     }
 
-    Log.POST(15, "Waiting for exit");
+    Log.POST(14, "Waiting for exit");
     // EmbeddedH2OConfig will send a one-byte exit status to this socket.
     Socket sock = ss.accept();
     System.out.println("Wait for exit woke up from accept");
@@ -449,11 +387,6 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       Log.POST(0, "Entered run");
 
       setup(context);
-
-      // "Consume" mapped input.
-      while (context.nextKeyValue()) {
-      }
-
       int exitStatus = run2(context);
       cleanup(context);
 
@@ -482,7 +415,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       m.run(null);
     }
     catch (Exception e) {
-      System.out.println (e);
+      e.printStackTrace();
     }
   }
 }
