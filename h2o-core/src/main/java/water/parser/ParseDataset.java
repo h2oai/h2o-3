@@ -39,23 +39,9 @@ public final class ParseDataset extends Job<Frame> {
   }
   public static ParseDataset parse(Key okey, Key[] keys, boolean deleteOnDone, ParseSetup globalSetup, boolean blocking) {
     ParseDataset job = forkParseDataset(okey, keys, globalSetup, deleteOnDone);
-    try { if( blocking ) job.get(); return job; } 
-    catch( Throwable ex ) {
-
-      // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
-      Futures fs = new Futures();
-      if( job != null ) {
-        Keyed.remove(job._dest,fs);
-        // Find & remove all partially-built output vecs & chunks
-        if( job._mfpt != null ) job._mfpt.onExceptionCleanup(fs);
-      }
-      // Assume the input is corrupt - or already partially deleted after
-      // parsing.  Nuke it all - no partial Vecs lying around.
-      for( Key k : keys ) Keyed.remove(k,fs);
-      fs.blockForPending();
-      assert DKV.<Job>getGet(job._key).isStopped();
-      throw ex;
-    }
+    if( blocking )
+      job.get();
+    return job;
   }
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
@@ -160,19 +146,39 @@ public final class ParseDataset extends Job<Frame> {
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       if( _job != null ) {
+        parseCleanup();
+        _job._mfpt = null;
         if (ex instanceof H2OParseException) {
-          _job._mfpt = null;
           _job.cancel();
           throw (H2OParseException) ex;
-        }
-        else {
-          _job._mfpt = null;
-          _job.failed(ex);
-        }
+        } else _job.failed(ex);
       }
       return true;
     }
-    @Override public void onCompletion(CountedCompleter caller) { _job._mfpt = null; _job.done(); }
+
+    @Override public void onCompletion(CountedCompleter caller) {
+      if (_job.isCancelledOrCrashed())
+        parseCleanup();
+      else
+        _job.done();
+      _job._mfpt = null;
+    }
+
+    private void parseCleanup() {
+      if( _job != null ) {
+        Futures fs = new Futures();
+        assert DKV.<Job>getGet(_job._key).isStopped();
+        // Find & remove all partially-built output vecs & chunks
+        if (_job._mfpt != null) _job._mfpt.onExceptionCleanup(fs);
+        // Assume the input is corrupt - or already partially deleted after
+        // parsing.  Nuke it all - no partial Vecs lying around.
+        for (Key k : _keys) Keyed.remove(k, fs);
+        Keyed.remove(_job._dest,fs);
+        _job._mfpt = null;
+        fs.blockForPending();
+        DKV.put(_job._key, _job);
+      }
+    }
   }
 
   private static class EnumMapping extends Iced {
@@ -196,6 +202,7 @@ public final class ParseDataset extends Job<Frame> {
     else job.update(0, "Ingesting file.");
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
+    if ( job.isCancelledOrCrashed()) return;
 /*    if (mfpt._errors != null) {
       job.cancel();
       //TODO replace with H2OParseException
@@ -563,6 +570,7 @@ public final class ParseDataset extends Job<Frame> {
 
     // Called once per file
     @Override public void map( Key key ) {
+      if (((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) return;
       ParseSetup localSetup = new ParseSetup(_parseSetup);
       ByteVec vec = getByteVec(key);
       final int chunkStartIdx = _fileChunkOffsets[_lo];
@@ -572,7 +580,7 @@ public final class ParseDataset extends Job<Frame> {
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
 
       if (localSetup._check_header == ParseSetup.HAS_HEADER) //check for header on local file
-        localSetup._check_header = localSetup.parser().fileHasHeader(ZipUtil.unzipBytes(zips,cpr, localSetup._chunk_size), localSetup);
+        localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(ZipUtil.unzipBytes(zips,cpr, localSetup._chunk_size), localSetup);
 
       // Parse the file
       try {
@@ -650,7 +658,7 @@ public final class ParseDataset extends Job<Frame> {
     // parse local chunks; distribute chunks later.
     private FVecParseWriter streamParse( final InputStream is, final ParseSetup localSetup, FVecParseWriter dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
-      Parser p = localSetup.parser();
+      Parser p = localSetup.parser(_jobKey);
       // assume 2x inflation rate
       if( localSetup._parse_type._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
       else                                            p.streamParse   (is, dout);
@@ -694,6 +702,7 @@ public final class ParseDataset extends Job<Frame> {
         _espc = MemoryManager.malloc8(_nchunks);
       }
       @Override public void map( Chunk in ) {
+        if (((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) return;
         //Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
@@ -706,11 +715,11 @@ public final class ParseDataset extends Job<Frame> {
           case ARFF:
           case CSV:
             Categorical [] enums = enums(_eKey,_setup._number_columns);
-            p = new CsvParser(_setup);
+            p = new CsvParser(_setup, _jobKey);
             dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), enums, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of enums
           break;
         case SVMLight:
-          p = new SVMLightParser(_setup);
+          p = new SVMLightParser(_setup, _jobKey);
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
           break;
         default:

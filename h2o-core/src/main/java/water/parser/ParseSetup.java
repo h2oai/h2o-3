@@ -137,12 +137,12 @@ public final class ParseSetup extends Iced {
     return types;
   }
 
-  public Parser parser() {
+  public Parser parser(Key jobKey) {
     switch(_parse_type) {
-      case CSV:      return new      CsvParser(this);
-      case XLS:      return new      XlsParser(this);
-      case SVMLight: return new SVMLightParser(this);
-      case ARFF:     return new     ARFFParser(this);
+      case CSV:      return new      CsvParser(this, jobKey);
+      case XLS:      return new      XlsParser(this, jobKey);
+      case SVMLight: return new SVMLightParser(this, jobKey);
+      case ARFF:     return new     ARFFParser(this, jobKey);
     }
     throw new H2OIllegalArgumentException("Unknown file type.  Parse cannot be completed.",
             "Attempted to invoke a parser for ParseType:" + _parse_type +", which doesn't exist.");
