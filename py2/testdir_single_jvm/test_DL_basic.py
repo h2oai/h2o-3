@@ -50,7 +50,7 @@ class Basic(unittest.TestCase):
                 'loss': 'CrossEntropy',
 
                 'validation_frame': parse_key, # KeyIndexed None
-                'ignored_columns': '[STR]', # string[] None
+                'ignored_columns': '["STR"]', # string[] None
                 'response_column': 'FNDX', # string None
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
