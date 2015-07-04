@@ -21,8 +21,9 @@ public class H2OClientApp {
   public static void main2( String relpath ) { driver(new String[0],relpath); }
 
   private static void driver( String[] args, String relpath ) {
+    H2OApp.registerExtensions();
     H2OClient.main(args);
-    H2OApp.register(relpath);
+    H2OApp.registerRestApis(relpath);
     H2O.finalizeRegistration();
   }
 

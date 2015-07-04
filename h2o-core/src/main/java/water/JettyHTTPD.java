@@ -32,10 +32,10 @@ import water.util.Log;
  * This is intended to be a singleton per H2O node.
  */
 public class JettyHTTPD {
-  // The actual port chosen port number.
-  private int _port;
-  private String _ip;
   private static volatile boolean _acceptRequests = false;
+
+  private String _ip;
+  private int _port;
 
   // Jetty server object.
   private Server _server;
@@ -47,11 +47,41 @@ public class JettyHTTPD {
   }
 
   /**
-   * Returns the actual chosen port number by the start() method.
+   * @return URI scheme
+   */
+  public String getScheme() {
+    return "http";
+  }
+
+  /**
    * @return Port number
    */
-  int getPort() {
+  public int getPort() {
     return _port;
+  }
+
+  /**
+   * @return IP address
+   */
+  public String getIp() {
+    return _ip;
+  }
+
+  /**
+   * @return Server object
+   */
+  public Server getServer() {
+    return _server;
+  }
+
+  public void setServer(Server value) {
+    _server = value;
+  }
+
+  public void setup(String ip, int port) {
+    _ip = ip;
+    _port = port;
+    System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
   }
 
   /**
@@ -59,10 +89,8 @@ public class JettyHTTPD {
    *
    * @throws Exception
    */
-  public void start(int port, String ip) throws Exception {
-    _port = port;
-    _ip = ip;
-    System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
+  public void start(String ip, int port) throws Exception {
+    setup(ip, port);
     startHttp();
   }
 
@@ -102,7 +130,7 @@ public class JettyHTTPD {
   /**
    * Hook up Jetty handlers.  Do this before start() is called.
    */
-  private void registerHandlers(HandlerWrapper s) {
+  public void registerHandlers(HandlerWrapper s) {
     GateHandler gh = new GateHandler();
 
     ServletContextHandler context = new ServletContextHandler(

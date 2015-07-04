@@ -4,6 +4,7 @@ import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+import org.apache.commons.math3.analysis.function.Abs;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -42,7 +43,7 @@ final public class H2O {
   /**
    * Print help about command line arguments.
    */
-  private static void printHelp() {
+  public static void printHelp() {
     String defaultFlowDirMessage;
     if (DEFAULT_FLOW_DIR() == null) {
       // If you start h2o on hadoop, you must set -flow_dir.
@@ -124,6 +125,10 @@ final public class H2O {
             "\n";
 
     System.out.print(s);
+
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.printHelp();
+    }
   }
 
   /**
@@ -247,7 +252,7 @@ final public class H2O {
     }
   }
 
-  private static void parseFailed(String message) {
+  public static void parseFailed(String message) {
     System.out.println("");
     System.out.println("ERROR: " + message);
     System.out.println("");
@@ -255,7 +260,7 @@ final public class H2O {
     H2O.exit(1);
   }
 
-  private static class OptString {
+  public static class OptString {
     String _s;
     String _lastMatchedFor;
 
@@ -311,6 +316,10 @@ final public class H2O {
    * Dead stupid argument parser.
    */
   private static void parseArguments(String[] args) {
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      args = e.parseArguments(args);
+    }
+
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
@@ -477,6 +486,18 @@ final public class H2O {
       abv = (AbstractBuildVersion) constructor.newInstance();
     } catch (Exception ignore) { }
     ABV = abv;
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  private static ArrayList<AbstractH2OExtension> extensions = new ArrayList<>();
+
+  public static void addExtension(AbstractH2OExtension e) {
+    extensions.add(e);
+  }
+
+  public static ArrayList<AbstractH2OExtension> getExtensions() {
+    return extensions;
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -883,6 +904,17 @@ final public class H2O {
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
 
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      String n = e.getExtensionName() + " ";
+      AbstractBuildVersion abv = e.getBuildVersion();
+      Log.info(n + "Build git branch: ", abv.branchName());
+      Log.info(n + "Build git hash: ", abv.lastCommitHash());
+      Log.info(n + "Build git describe: ", abv.describe());
+      Log.info(n + "Build project version: ", abv.projectVersion());
+      Log.info(n + "Built by: ", abv.compiledBy());
+      Log.info(n + "Built on: ", abv.compiledOn());
+    }
+
     Runtime runtime = Runtime.getRuntime();
     Log.info("Java availableProcessors: " + runtime.availableProcessors());
     Log.info("Java heap totalMemory: " + PrettyPrint.bytes(runtime.totalMemory()));
@@ -925,7 +957,7 @@ final public class H2O {
     Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
             "  1. Open a terminal and run 'ssh -L 55555:localhost:"
             + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-            "  2. Point your browser to http://localhost:55555");
+            "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
 
 
     // Create the starter Cloud with 1 member
@@ -1264,6 +1296,11 @@ final public class H2O {
 
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
+
+    // Validate extension arguments
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.validateArguments();
+    }
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
 

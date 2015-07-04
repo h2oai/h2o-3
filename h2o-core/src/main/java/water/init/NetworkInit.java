@@ -350,7 +350,7 @@ public class NetworkInit {
         TCPReceiverThread.SOCK.socket().bind(isa);
 
         _apiSocket.close();
-        H2O.getJetty().start(H2O.API_PORT, H2O.ARGS.ip);
+        H2O.getJetty().start(H2O.ARGS.ip, H2O.API_PORT);
         break;
       } catch (Exception e) {
         if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
@@ -368,7 +368,8 @@ public class NetworkInit {
       H2O.API_PORT += 2;
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
-    Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http://", H2O.getIpPortString() + "/");
+    Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
+             "Listening for HTTP and REST traffic on " + H2O.getJetty().getScheme() + "://", H2O.getIpPortString() + "/");
     try { Log.debug("Interface MTU: ",  (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
     } catch (SocketException se) { Log.debug("No MTU due to SocketException. "+se.toString()); }
 
