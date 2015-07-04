@@ -241,7 +241,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(_parms._weights_column != null) {
       Vec w = _train.remove(_parms._weights_column);
       if(w == null)
-        error("_weights_column","Offset column '" + _parms._weights_column  + "' not found in the training frame");
+        error("_weights_column","Weights column '" + _parms._weights_column  + "' not found in the training frame");
       else {
         if(!w.isNumeric())
           error("_weights_column","Invalid weights column '" + _parms._weights_column  + "', weights must be numeric");
