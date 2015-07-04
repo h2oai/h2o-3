@@ -224,8 +224,7 @@ public class Job<T extends Keyed> extends Keyed {
 
   private void changeJobState(final String msg, final JobState resultingState) {
     assert resultingState != JobState.RUNNING;
-    if( _state == JobState.CANCELLED )
-      Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
+    if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
     if( _state == resultingState ) return; // No change if already done
     final float finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
     final long done = System.currentTimeMillis();
