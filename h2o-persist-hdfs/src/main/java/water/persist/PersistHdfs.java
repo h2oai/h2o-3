@@ -47,13 +47,6 @@ public final class PersistHdfs extends Persist {
       Log.debug("resource ", p.getAbsolutePath(), " added to the hadoop configuration");
     } else {
       conf = new Configuration();
-      if( H2O.ARGS.hdfs != null && H2O.ARGS.hdfs.length() > 0 ) {
-        // setup default remote Filesystem - for version 0.21 and higher
-        conf.set("fs.defaultFS", H2O.ARGS.hdfs);
-        // To provide compatibility with version 0.20.0 it is necessary to setup the property
-        // fs.default.name which was in newer version renamed to 'fs.defaultFS'
-        conf.set("fs.default.name", H2O.ARGS.hdfs);
-      }
     }
     CONF = conf;
   }

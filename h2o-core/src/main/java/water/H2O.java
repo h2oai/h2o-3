@@ -188,9 +188,6 @@ final public class H2O {
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
-    /** -hdfs=hdfs; HDFS backend */
-    public String hdfs = null;
-
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
@@ -366,10 +363,6 @@ final public class H2O {
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
         ARGS.nthreads = s.parseInt(args[i]);
-      }
-      else if (s.matches("hdfs")) {
-        i = s.incrementAndCheck(i, args);
-        ARGS.hdfs = args[i];
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
