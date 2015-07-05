@@ -472,6 +472,11 @@ public class JettyHTTPD {
       OutputStream os = response.getOutputStream();
       InputStream is = resp.data;
       FileUtils.copyStream(is, os, 1024);
+
+      // Handle shutdown if it was requested.
+      if (H2O.getShutdownRequested()) {
+        H2O.shutdown(0);
+      }
     }
   }
 
