@@ -195,18 +195,13 @@ public final class ParseDataset extends Job<Frame> {
     if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
+    job.update(0, "Ingesting files.");
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,deleteOnDone);
-    if (fkeys.length > 1) job.update(0, "Ingesting files.");
-    else job.update(0, "Ingesting file.");
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
     if ( job.isCancelledOrCrashed()) return;
-/*    if (mfpt._errors != null) {
-      job.cancel();
-      //TODO replace with H2OParseException
-      throw new RuntimeException(mfpt._errors[0]);
-    }*/
+
     final AppendableVec [] avs = mfpt.vecs();
     setup._column_names = getColumnNames(avs.length, setup._column_names);
 
@@ -259,9 +254,15 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
+      // Check for job cancellation
+      if ( job.isCancelledOrCrashed()) return;
+
       job.update(0,"Compressing data.");
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
+
+      // Check for job cancellation
+      if ( job.isCancelledOrCrashed()) return;
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -289,6 +290,8 @@ public final class ParseDataset extends Job<Frame> {
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
     }
+    // Check for job cancellation
+    if ( job.isCancelledOrCrashed()) return;
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     if (setup._parse_type == ParserType.SVMLight)
@@ -702,7 +705,6 @@ public final class ParseDataset extends Job<Frame> {
       }
       @Override public void map( Chunk in ) {
         if (((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) return;
-        //Log.trace("Begin a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
@@ -730,7 +732,6 @@ public final class ParseDataset extends Job<Frame> {
 
         // remove parsed data right away
         freeMem(in);
-        //Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
       }
 
       /**
@@ -753,14 +754,9 @@ public final class ParseDataset extends Job<Frame> {
           }
         }
       }
-      @Override public void reduce(DistributedParse dp) {
-        //Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
-        _dout.reduce(dp._dout);
-        //Log.trace("Finished a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
-      }
+      @Override public void reduce(DistributedParse dp) { _dout.reduce(dp._dout); }
 
       @Override public void postGlobal() {
-        //Log.trace("Begin parsing chunk memory cleanup with start index "+_startChunkIdx+".");
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         _dout = null;           // Reclaim GC eagerly
@@ -775,7 +771,6 @@ public final class ParseDataset extends Job<Frame> {
           if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures()).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._jobKey);
         }
-        //Log.trace("Finished parsing chunk memory cleanup with start index "+_startChunkIdx+".");
       }
     }
 
