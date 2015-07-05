@@ -4,14 +4,14 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.ArrayList;
-
+import water.Key;
 import water.H2O;
 import water.exceptions.H2OParseException;
 import water.exceptions.H2OParseSetupException;
 import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
-  XlsParser( ParseSetup ps ) { super(ps); }
+  XlsParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
   @Override
   ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) { throw H2O.unimpl(); }
 
@@ -79,7 +79,7 @@ class XlsParser extends Parser {
   /** Try to parse the bytes as XLS format  */
   public static ParseSetup guessSetup( byte[] bytes ) {
     XlsParser p = new XlsParser(new ParseSetup(ParserType.XLS, ParseSetup.GUESS_SEP, false,
-                                ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null));
+                                ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null), null);
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     PreviewParseWriter dout = new PreviewParseWriter();

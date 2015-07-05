@@ -80,6 +80,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return  new FVecParseWriter(_vg, _cidx+1, _enums, _ctypes, _chunkSize, _vecs);
   }
 
+  /* never called
   private Vec [] closeVecs(){
     Futures fs = new Futures();
     _closedVecs = true;
@@ -99,7 +100,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     _vecs = null;  // Free for GC
     fs.blockForPending();
     return res;
-  }
+  } */
 
   @Override public void newLine() {
     if(_col >= 0){
