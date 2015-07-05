@@ -19,18 +19,16 @@ import water.util.Log;
  * mapper	mapred.local.dir=/tmp/hadoop-tomk/mapred/local/taskTracker/tomk/jobcache/job_local1117903517_0001/attempt_local1117903517_0001_m_000000_0
  */
 public class h2omapper extends Mapper<Text, Text, Text, Text> {
-  final static public String H2O_JOBTRACKERNAME_KEY = "h2o.jobtrackername";
   final static public String H2O_DRIVER_IP_KEY = "h2o.driver.ip";
   final static public String H2O_DRIVER_PORT_KEY = "h2o.driver.port";
-  final static public String H2O_NETWORK_KEY = "h2o.network";
-  final static public String H2O_BETA_KEY = "h2o.beta";
-  final static public String H2O_RANDOM_UDP_DROP_KEY = "h2o.random.udp.drop";
-  final static public String H2O_NTHREADS_KEY = "h2o.nthreads";
-  final static public String H2O_BASE_PORT_KEY = "h2o.baseport";
-  final static public String H2O_LICENSE_DATA_KEY = "h2o.license.data";
-  final static public String H2O_FLOW_DIR_KEY = "h2o.flow.dir";
-  final static public String H2O_HADOOP_VERSION = "h2o.hadoop.version";
-  final static public String H2O_GA_OPTOUT = "h2o.ga.optout";
+
+  final static public String H2O_MAPPER_ARGS_BASE = "h2o.mapper.args.";
+  final static public String H2O_MAPPER_ARGS_LENGTH = "h2o.mapper.args.length";
+
+  final static public String H2O_MAPPER_CONF_ARG_BASE = "h2o.mapper.conf.arg.";
+  final static public String H2O_MAPPER_CONF_BASENAME_BASE = "h2o.mapper.conf.basename.";
+  final static public String H2O_MAPPER_CONF_PAYLOAD_BASE = "h2o.mapper.conf.payload.";
+  final static public String H2O_MAPPER_CONF_LENGTH = "h2o.mapper.conf.length";
 
   static EmbeddedH2OConfig _embeddedH2OConfig;
 
@@ -248,98 +246,53 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       ice_root = mapredLocalDir;
     }
 
-    String jobtrackerName = conf.get(H2O_JOBTRACKERNAME_KEY);
     String driverIp = conf.get(H2O_DRIVER_IP_KEY);
     String driverPortString = conf.get(H2O_DRIVER_PORT_KEY);
     int driverPort = Integer.parseInt(driverPortString);
-    String network = conf.get(H2O_NETWORK_KEY);
-    String nthreadsString = conf.get(H2O_NTHREADS_KEY);
-    String basePortString = conf.get(H2O_BASE_PORT_KEY);
-    String betaString = conf.get(H2O_BETA_KEY);
-    String randomUdpDropString = conf.get(H2O_RANDOM_UDP_DROP_KEY);
-    String licenseData = conf.get(H2O_LICENSE_DATA_KEY);
-    String flowDir = conf.get(H2O_FLOW_DIR_KEY);
-    String hadoopVersion = conf.get(H2O_HADOOP_VERSION);
-    String gaOptOut = conf.get(H2O_GA_OPTOUT);
 
     ServerSocket ss = new ServerSocket();
     InetSocketAddress sa = new InetSocketAddress("127.0.0.1", 0);
     ss.bind(sa);
     int localPort = ss.getLocalPort();
 
-    List<String> argsList = new ArrayList<>();
+    List<String> argsList = new ArrayList<String>();
 
-    // Options used by H2O.
+    // Arguments set inside the mapper.
     argsList.add("-ice_root");
     argsList.add(ice_root);
-    argsList.add("-name");
-    argsList.add(jobtrackerName);
     argsList.add("-hdfs_skip");
-    if (network != null) {
-      if (network.length() > 0) {
-        argsList.add("-network");
-        argsList.add(network);
-      }
+
+    // Arguments passed by the driver.
+    int argsLength = Integer.parseInt(conf.get(H2O_MAPPER_ARGS_LENGTH));
+    for (int i = 0; i < argsLength; i++) {
+      String arg = conf.get(H2O_MAPPER_ARGS_BASE + Integer.toString(i));
+      argsList.add(arg);
     }
-    if (nthreadsString != null) {
-      if (nthreadsString.length() > 0) {
-        argsList.add("-nthreads");
-        int nthreads = Integer.parseInt(nthreadsString);
-        argsList.add(Integer.toString(nthreads));
-      }
-    }
-    if (basePortString != null) {
-      if (basePortString.length() > 0) {
-        argsList.add("-baseport");
-        int basePort = Integer.parseInt(basePortString);
-        argsList.add(Integer.toString(basePort));
-      }
-    }
-    if (betaString != null) {
-      if (betaString.length() > 0) {
-        argsList.add(betaString);
-      }
-    }
-    if (randomUdpDropString != null) {
-      if (randomUdpDropString.length() > 0) {
-        argsList.add(randomUdpDropString);
-      }
-    }
-    if (licenseData != null) {
-      if (licenseData.length() > 0) {
-        Log.POST(100, "Before writing license file");
-        Log.POST(101, ice_root);
-        File f = new File(ice_root);
-        boolean b = f.exists();
-        Log.POST(102, b ? "exists" : "does not exist");
-        if (! b) {
-          Log.POST(103, "before mkdirs()");
-          boolean success = f.mkdirs();
-          if (! success) {
-            Log.POST(103, "mkdirs failed()");
-            return -1;
-          }
-          Log.POST(104, "after mkdirs()");
+
+    // Config files passed by the driver.
+    int confLength = Integer.parseInt(conf.get(H2O_MAPPER_CONF_LENGTH));
+    for (int i = 0; i < confLength; i++) {
+      String arg = conf.get(H2O_MAPPER_CONF_ARG_BASE + Integer.toString(i));
+      argsList.add(arg);
+
+      String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(i));
+      File f = new File(ice_root);
+      boolean b = f.exists();
+      if (! b) {
+        boolean success = f.mkdirs();
+        if (! success) {
+          Log.POST(103, "mkdirs(" + f.toString() + ") failed");
+          return -1;
         }
-        String fileName = ice_root + File.separator + "h2o_license.txt";
-        PrintWriter out = new PrintWriter(fileName);
-        out.print(licenseData);
-        out.close();
-        argsList.add("-license");
-        argsList.add(fileName);
+        Log.POST(104, "after mkdirs()");
       }
+      String fileName = ice_root + File.separator + basename;
+      PrintWriter out = new PrintWriter(fileName);
+      String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(i));
+      out.print(payload);
+      out.close();
+      argsList.add(fileName);
     }
-    if (flowDir != null) {
-      if (flowDir.length() > 0) {
-        argsList.add("-flow_dir");
-        argsList.add(flowDir);
-      }
-    }
-    if (hadoopVersion != null) {
-      argsList.add("-ga_hadoop_ver");
-      argsList.add(hadoopVersion);
-    }
-    if (gaOptOut != null) argsList.add(gaOptOut);
 
     String[] args = argsList.toArray(new String[argsList.size()]);
     try {
