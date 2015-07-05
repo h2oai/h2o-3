@@ -728,19 +728,30 @@ public final class ParseDataset extends Job<Frame> {
         (_dout = dout).close(_fs);
         Job.update(in._len, _jobKey); // Record bytes parsed
 
-        // remove parsed data right away (each chunk is used by 2)
-        freeMem(in,0);
-        freeMem(in,1);
+        // remove parsed data right away
+        freeMem(in);
         //Log.trace("Finished a map stage parsing chunk " + in.cidx() + " with start index "+_startChunkIdx+".");
       }
 
-      private void freeMem(Chunk in, int off) {
-        final int cidx = in.cidx()+off;
-        if( _visited.add(cidx) ) return; // First visit; expect a 2nd so no freeing yet
-        Value v = H2O.get(in.vec().chunkKey(cidx));
-        if( v == null || !v.isPersisted() ) return; // Not found, or not on disk somewhere
-        v.freePOJO();           // Eagerly toss from memory
-        v.freeMem();
+      /**
+       * This marks parsed byteVec chunks as ready to be freed. If this is the second
+       * time a chunk has been marked, it is freed. The reason two marks are required
+       * is that each chunk parse typically needs to read the remaining bytes of the
+       * current row from the next chunk.  Thus each task typically touches two chunks.
+       *
+       * @param in - chunk to be marked and possibly freed
+       */
+      private void freeMem(Chunk in) {
+        int cidx = in.cidx();
+        for(int i=0; i < 2; i++) {  // iterate over this chunk and the next one
+          cidx += i;
+          if (!_visited.add(cidx)) { // Second visit
+            Value v = H2O.get(in.vec().chunkKey(cidx));
+            if (v == null || !v.isPersisted()) return; // Not found, or not on disk somewhere
+            v.freePOJO();           // Eagerly toss from memory
+            v.freeMem();
+          }
+        }
       }
       @Override public void reduce(DistributedParse dp) {
         //Log.trace("Begin a reduce stage for parsing chunks with start index "+_startChunkIdx+".");
