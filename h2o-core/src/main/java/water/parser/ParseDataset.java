@@ -146,12 +146,11 @@ public final class ParseDataset extends Job<Frame> {
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       if( _job != null ) {
+        _job.cancel();
         parseCleanup();
         _job._mfpt = null;
-        if (ex instanceof H2OParseException) {
-          _job.cancel();
-          throw (H2OParseException) ex;
-        } else _job.failed(ex);
+        if (ex instanceof H2OParseException) throw (H2OParseException) ex;
+        else _job.failed(ex);
       }
       return true;
     }
