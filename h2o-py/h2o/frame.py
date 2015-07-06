@@ -116,9 +116,7 @@ class H2OFrame:
     """
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
-    # blocking parse, first line is always a header (since "we" wrote the data out)
-    parse = h2o.parse(setup, _py_tmp_key(), first_line_is_header=1)
-    # a hack to get the column names correct since "parse" does not provide them
+    parse = h2o.parse(setup, _py_tmp_key())
     self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]
@@ -779,7 +777,7 @@ class H2OFrame:
 
     total = frame["counts"].sum()
     densities = [(frame["counts"][i,:]/total)._scalar()*(1/(frame["breaks"][i,:]._scalar()-frame["breaks"][i-1,:]._scalar())) for i in range(1,frame["counts"].nrow())]
-    densities.insert(0,float("nan"))
+    densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.setNames(["density"])
     frame = frame.cbind(densities_frame)

@@ -502,7 +502,9 @@ def save_model(model, dir="", name="", filename="", force=False):
 def load_model(path):
   """
   Load a saved H2O model from disk.
-  :param path: The full path of the H2O Model to be imported.
+  :param path: The full path of the H2O Model to be imported. For example, if the `dir` argument in h2o.saveModel was
+  set to "/Users/UserName/Desktop" then the `path` argument in h2o.loadModel should be set to something like
+  "/Users/UserName/Desktop/K-meansModel__a7cebf318ca5827185e209edf47c4052"
   :return: the model
   """
   if not isinstance(path, str): raise ValueError("`path` must be a non-empty character string")

@@ -4,6 +4,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
+import water.Key;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ class CsvParser extends Parser {
   private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
 
-  CsvParser( ParseSetup ps ) { super(ps); }
+  CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
@@ -703,7 +704,7 @@ MAIN_LOOP:
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
       InputStream is = new ByteArrayInputStream(bits);
-      CsvParser p = new CsvParser(resSetup);
+      CsvParser p = new CsvParser(resSetup, null);
       PreviewParseWriter dout = new PreviewParseWriter(resSetup._number_columns);
       try {
         p.streamParse(is, dout);

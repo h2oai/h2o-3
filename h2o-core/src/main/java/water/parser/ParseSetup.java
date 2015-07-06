@@ -137,12 +137,12 @@ public final class ParseSetup extends Iced {
     return types;
   }
 
-  public Parser parser() {
+  public Parser parser(Key jobKey) {
     switch(_parse_type) {
-      case CSV:      return new      CsvParser(this);
-      case XLS:      return new      XlsParser(this);
-      case SVMLight: return new SVMLightParser(this);
-      case ARFF:     return new     ARFFParser(this);
+      case CSV:      return new      CsvParser(this, jobKey);
+      case XLS:      return new      XlsParser(this, jobKey);
+      case SVMLight: return new SVMLightParser(this, jobKey);
+      case ARFF:     return new     ARFFParser(this, jobKey);
     }
     throw new H2OIllegalArgumentException("Unknown file type.  Parse cannot be completed.",
             "Attempted to invoke a parser for ParseType:" + _parse_type +", which doesn't exist.");
@@ -275,8 +275,8 @@ public final class ParseSetup extends Iced {
         else  // avoid numerical distortion of file size when not compressed
           _totalParseSize += bv.length();
 
-        // Check for supported encodings
-        checkEncoding(bits);
+        // Check for supported character encodings
+        checkCharEncoding(bits);
 
         // only preview 1 DFLT_CHUNK_SIZE for ByteVecs, UploadFileVecs, compressed, and small files
 /*        if (ice instanceof ByteVec
@@ -516,7 +516,7 @@ public final class ParseSetup extends Iced {
    *
    * @param bits data to be examined for encoding
    */
-  private static final void checkEncoding(byte[] bits) {
+  private static final void checkCharEncoding(byte[] bits) {
     if (bits.length >= 2) {
       if ((bits[0] == (byte) 0xff && bits[1] == (byte) 0xfe) /* UTF-16, little endian */ ||
               (bits[0] == (byte) 0xfe && bits[1] == (byte) 0xff) /* UTF-16, big endian */) {
