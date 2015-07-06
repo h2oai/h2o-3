@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.Distributions;
 import hex.ModelCategory;
 import hex.schemas.GBMV3;
 import hex.tree.*;
@@ -10,8 +11,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
-import water.fvec.Vec;
-import water.util.FrameUtils;
+import water.fvec.Frame;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -152,7 +152,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double w = weight.atd(i);
         if (w == 0) continue;
         _num += w*response.atd(i);
-        _denom += w*Math.max(1e-19,Math.min(1e19, Math.exp(offset.atd(i))));
+        _denom += w*Math.max(1e-19, Math.min(1e19, Math.exp(offset.atd(i))));
       }
     }
     @Override public void reduce(PoissonInitialValue mrt) {
@@ -166,30 +166,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override protected void buildModel() {
       if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
-        Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
-        Log.info("Iteration 0: initial value: " + _initialPrediction + " (starting value)");
-        double delta;
-        int count=0;
-        double tol = 1e-4;
-        int N=1; //one step is enough - same as R
-        //From R GBM vignette:
-        //For speed, gbm() does only one step of the Newton-Raphson algorithm
-        //rather than iterating to convergence. No appreciable loss of accuracy
-        //since the next boosting iteration will simply correct for the prior iterations
-        //inadequacy.
-        _initialPrediction = 0;
-        do {
-          double newInit = new NewtonRaphson(_initialPrediction).doAll(_train).value();
-          delta = Math.abs(_initialPrediction - newInit);
-          _initialPrediction = newInit;
-          Log.info("Iteration " + ++count + ": initial value: " + _initialPrediction);
-        } while (count < N && delta >= tol);
-        if (delta > tol) Log.warn("Not fully converged.");
-        Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
+        _initialPrediction = getInitialValueBernoulliOffset(_train);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
-      if( _initialPrediction != 0.0 ) {      // Only non-zero for regression or bernoulli
+      // Set the initial prediction into the tree column 0
+      if( _initialPrediction != 0.0 ) {
         final double init = _initialPrediction;
         new MRTask() {
           @Override
@@ -216,16 +198,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             return;             // Stop when approaching round-off error
         }
 
-        // ESL2, page 387
-        // Step 2a: Compute prediction (prob distribution) from prior tree results:
-        //   Work <== f(Tree)
-        new ComputeProb().doAll(_train, _parms._build_tree_one_node);
-
-        // ESL2, page 387
-        // Step 2b i: Compute residuals from the prediction (probability distribution)
-        //   Work <== f(Work)
+        // Compute predictions and resulting residuals for trees built so far
+        // ESL2, page 387, Steps 2a, 2b
         new ComputeRes().doAll(_train, _parms._build_tree_one_node);
 
+        // Build more trees, based on residuals above
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
         buildNextKTrees();
@@ -237,9 +214,37 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
     }
 
+    /**
+     * Helper to compute the initial value for Bernoulli for offset != 0
+     * @return
+     */
+    private double getInitialValueBernoulliOffset(Frame train) {
+      Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
+      double delta;
+      int count = 0;
+      double tol = 1e-4;
+
+      //From R GBM vignette:
+      //For speed, gbm() does only one step of the Newton-Raphson algorithm
+      //rather than iterating to convergence. No appreciable loss of accuracy
+      //since the next boosting iteration will simply correct for the prior iterations
+      //inadequacy.
+      int N = 1; //one step is enough - same as R
+
+      double init = 0; //start with initial value of 0 for convergence
+      do {
+        double newInit = new NewtonRaphson(init).doAll(train).value();
+        delta = Math.abs(init - newInit);
+        init = newInit;
+        Log.info("Iteration " + ++count + ": initial value: " + init);
+      } while (count < N && delta >= tol);
+      if (delta > tol) Log.warn("Not fully converged.");
+      Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
+      return init;
+    }
 
     /**
-     * Iteration to find a consistent initial value for bernoulli with offsets
+     * Newton-Raphson fixpoint iteration to find a self-consistent initial value
      */
     private class NewtonRaphson extends MRTask<NewtonRaphson> {
       double _init;
@@ -272,81 +277,41 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     // --------------------------------------------------------------------------
-    // Compute Prediction from prior tree results.
-    // Classification (multinomial): Probability Distribution of loglikelyhoods
-    //   Prob_k = exp(Work_k)/sum_all_K exp(Work_k)
-    // Classification (bernoulli): Probability of y = 1 given logit link function
-    //   Prob_0 = 1/(1 + exp(Work)), Prob_1 = 1/(1 + exp(-Work))
-    // Regression: Just prior tree results
-    // Work <== f(Tree)
-    class ComputeProb extends MRTask<ComputeProb> {
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-          Chunk tr = chk_tree(chks,0);
-          Chunk wk = chk_work(chks,0);
-          for( int row = 0; row < ys._len; row++)
-            // wk.set(row, 1.0f/(1f+Math.exp(-tr.atd(row))) ); // Prob_1
-            wk.set(row, 1.0f / (1f + Math.exp(tr.atd(row) + offset.atd(row))));     // Prob_0
-        } else if( _nclass > 1 ) {       // Classification
-          double fs[] = new double[_nclass+1];
-          for( int row=0; row<ys._len; row++ ) {
-            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
-            double sum = score1(chks, weight,0.0 /*offset*/,fs,row);
-            if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
-              for( int k=0; k<_nclass; k++ )
-                chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
-            else
-              for( int k=0; k<_nclass; k++ ) // Save as a probability distribution
-                chk_work(chks,k).set(row,(float)(fs[k+1]/sum));
-          }
-        } else {                  // Regression
-          Chunk tr = chk_tree(chks,0); // Prior tree sums
-          Chunk wk = chk_work(chks,0); // Predictions
-          if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
-            for (int row = 0; row < ys._len; row++)
-              wk.set(row, (float) (tr.atd(row) + offset.atd(row)));
-          } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
-            for (int row = 0; row < ys._len; row++)
-              wk.set(row, (float) Math.max(1e-19,Math.min(1e19, Math.exp((tr.atd(row) + offset.atd(row))))));
-          }
-        }
-      }
-    }
-
-    // --------------------------------------------------------------------------
-    // Compute Residuals from Actuals
-    // Work <== f(Work)
+    // Compute Residuals
     class ComputeRes extends MRTask<ComputeRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
-        if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-          for(int row = 0; row < ys._len; row++) {
-            if( ys.isNA(row) ) continue;
-            int y = (int)ys.at8(row); // zero-based response variable
-            Chunk wk = chk_work(chks,0);
-            // wk.set(row, y-(float)wk.atd(row));  // wk.atd(row) is Prob_1
-            wk.set(row, y-1f+(float)wk.atd(row));  // wk.atd(row) is Prob_0
-          }
-        } else if( _nclass > 1 ) {       // Classification
-
-          for( int row=0; row<ys._len; row++ ) {
-            if( ys.isNA(row) ) continue;
-            int y = (int)ys.at8(row); // zero-based response variable
-            // Actual is '1' for class 'y' and '0' for all other classes
-            for( int k=0; k<_nclass; k++ ) {
-              if( _model._output._distribution[k] != 0 ) {
-                Chunk wk = chk_work(chks,k);
-                wk.set(row, (y==k?1f:0f)-(float)wk.atd(row) );
+        Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
+        Chunk tr = chk_tree(chks,0); // Prior tree sums
+        Chunk wk = chk_work(chks,0); // Predictions
+        double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
+        for( int row = 0; row < wk._len; row++) {
+          if( ys.isNA(row) ) continue;
+          double f = tr.atd(row) + offset.atd(row);
+          double y = ys.at8(row);
+          if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
+            wk.set(row, (float)Distributions.Bernoulli.gradient(y, f)); //class 1
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
+            wk.set(row, (float)Distributions.Gaussian.gradient(y, f));
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
+            wk.set(row, (float)Distributions.Poisson.gradient(y, f));
+          } else if( _nclass > 1 ) {
+            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
+            double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
+            if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
+              for (int k = 0; k < _nclass; k++) {
+                wk = chk_work(chks, k);
+                wk.set(row, ((int)y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f));
+              }
+            } else {
+              for( int k=0; k<_nclass; k++ ) { // Save as a probability distribution
+                if( _model._output._distribution[k] != 0 ) {
+                  wk = chk_work(chks, k);
+                  wk.set(row, ((int)y == k ? 1f : 0f) - (float)(fs[k + 1] / sum));
+                }
               }
             }
-          }
-
-        } else {                  // Regression (for both gaussian and poisson)
-          Chunk wk = chk_work(chks,0); // Prediction==>Residuals
-          for( int row=0; row<ys._len; row++ )
-            wk.set(row, (float)(ys.atd(row)-wk.atd(row)) );
+          } else throw H2O.unimpl();
         }
       }
     }
@@ -433,9 +398,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final DTree tree = ktrees[k];
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
-          float gf = (float)(_parms._learn_rate * m1class * gp._rss[k][i] / gp._gss[k][i]);
-          if( gp._gss[k][i]==0 ) // Bad split; all corrections sum to zero
-            gf = (float)(Math.signum(gp._rss[k][i])*1e4);
+          float gf = (float)(_parms._learn_rate * m1class * gp.gamma(k,i));
+          if( gp._denom[k][i]==0 ) // Bad split; all corrections sum to zero
+            gf = (float)(Math.signum(gp._num[k][i])*1e4);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -477,21 +442,28 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _model._output.addKTrees(ktrees);
     }
 
-    // ---
+    // Set terminal node estimates (gamma)
     // ESL2, page 387.  Step 2b iii.
     // Nids <== f(Nids)
     private class GammaPass extends MRTask<GammaPass> {
       final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
       final int   _leafs[]; // Number of active leaves (per tree)
       final GBMModel.GBMParameters.Family _dist;
-      // Per leaf: sum(res);
-      double _rss[/*tree/klass*/][/*tree-relative node-id*/];
-      // Per leaf: multinomial: sum(|res|*1-|res|), gaussian: sum(1), bernoulli: sum((y-res)*(1-y+res))
-      double _gss[/*tree/klass*/][/*tree-relative node-id*/];
+      private double _num[/*tree/klass*/][/*tree-relative node-id*/];
+      private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
+      double gamma(int tree, int nid) {
+        double g = _num[tree][nid]/ _denom[tree][nid];
+        if (_dist != GBMModel.GBMParameters.Family.poisson) {
+          return g;
+        } else {
+          return Math.log(g);
+        }
+
+      }
       GammaPass(DTree trees[], int leafs[], GBMModel.GBMParameters.Family distribution) { _leafs=leafs; _trees=trees; _dist = distribution; }
       @Override public void map( Chunk[] chks ) {
-        _gss = new double[_nclass][];
-        _rss = new double[_nclass][];
+        _denom = new double[_nclass][];
+        _num = new double[_nclass][];
         final Chunk resp = chk_resp(chks); // Response for this frame
 
         // For all tree/klasses
@@ -501,8 +473,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if( tree == null ) continue; // Empty class is ignored
 
           // A leaf-biased array of all active Tree leaves.
-          final double gs[] = _gss[k] = new double[tree._len-leaf];
-          final double rs[] = _rss[k] = new double[tree._len-leaf];
+          final double denom[] = _denom[k] = new double[tree._len-leaf];
+          final double num[] = _num[k] = new double[tree._len-leaf];
           final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks,k); // Residuals for this tree/class
 
@@ -528,28 +500,34 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             nids.set(row, leafnid);
             assert !ress.isNA(row);
 
-            // Compute numerator (rs) and denominator (gs) of gamma
-            double w = hasWeights() ? chk_weight(chks).atd(row) : 1;
-            double res = ress.atd(row);
-            double ares = Math.abs(res);
+            // Compute numerator and denominator of terminal node estimate (gamma)
+            double w = hasWeights() ? chk_weight(chks).atd(row) : 1; //weight
+            double y = resp.atd(row); //response
+            double z = ress.atd(row); //residual
+            int idx=leafnid-leaf;
             if( _dist == GBMModel.GBMParameters.Family.bernoulli ) {
-              double prob = resp.atd(row) - res;
-              gs[leafnid-leaf] += w*prob*(1-prob);
+              double p = y - z;
+              denom[idx] += w*p*(1-p);
             } else if ( _dist == GBMModel.GBMParameters.Family.gaussian) {
-              gs[leafnid-leaf] += w;
+              denom[idx] += w;
             } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
-              double prob = resp.atd(row) - res;
-              gs[leafnid-leaf] += w*prob;
+              double expfx = y - z;
+              denom[idx] += w*expfx;
             } else if ( _dist == GBMModel.GBMParameters.Family.multinomial) {
-              gs[leafnid-leaf] += w*(ares*(1-ares));
+              double absz = Math.abs(z);
+              denom[idx] += w*(absz*(1-absz));
             }
-            rs[leafnid-leaf] += w*res;
+            if ( _dist == GBMModel.GBMParameters.Family.poisson) {
+              num[idx] += w * y;
+            } else {
+              num[idx] += w * z;
+            }
           }
         }
       }
       @Override public void reduce( GammaPass gp ) {
-        ArrayUtils.add(_gss,gp._gss);
-        ArrayUtils.add(_rss,gp._rss);
+        ArrayUtils.add(_denom,gp._denom);
+        ArrayUtils.add(_num,gp._num);
       }
     }
 
@@ -615,28 +593,29 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+    double f = chk_tree(chks,0).atd(row) + offset;
     if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
-      fs[2] = 1.0-fs[1];
+      fs[2] = Distributions.Bernoulli.invLink(f);
+      fs[1] = 1.0-fs[2];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
+      return fs[0] = Distributions.Gaussian.invLink(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson){
+      return fs[0] = Distributions.Poisson.invLink(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
+      if (_nclass == 2) {
+        // This optimization assumes the 2nd tree of a 2-class system is the
+        // inverse of the first.  Fill in the missing tree
+        fs[1] = Math.exp(chk_tree(chks, 0).atd(row));
+        fs[2] = 1.0 / fs[1]; // exp(-d) === 1/exp(d)
+        return fs[1] + fs[2];
+      }
+      // Multinomial loss function; sum(exp(data)).  Load tree data
+      for( int k=0; k<_nclass; k++ )
+        fs[k+1]=chk_tree(chks,k).atd(row);
+      // Rescale to avoid Infinities; return sum(exp(data))
+      return hex.genmodel.GenModel.log_rescale(fs);
     }
-    if( _nclass == 1 ) { // Regression
-      if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian || _parms._distribution == GBMModel.GBMParameters.Family.poisson)
-        return fs[0] = chk_tree(chks, 0).atd(row) + offset;
-      else throw H2O.unimpl("Distribution " + _parms._distribution + "not yet implemented.");
-    }
-    if( _nclass == 2 ) {        // The Boolean Optimization
-      // This optimization assumes the 2nd tree of a 2-class system is the
-      // inverse of the first.  Fill in the missing tree
-      fs[1] = Math.exp(chk_tree(chks,0).atd(row));
-      fs[2] = 1.0/fs[1]; // exp(-d) === 1/exp(d)
-      return fs[1]+fs[2];
-    }
-    // Multinomial loss function; sum(exp(data)).  Load tree data
-    for( int k=0; k<_nclass; k++ ) 
-      fs[k+1]=chk_tree(chks,k).atd(row);
-    // Rescale to avoid Infinities; return sum(exp(data))
-    return hex.genmodel.GenModel.log_rescale(fs);
+    throw H2O.unimpl();
   }
-
 }
