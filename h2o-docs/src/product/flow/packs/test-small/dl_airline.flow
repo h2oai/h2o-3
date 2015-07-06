@@ -3,14 +3,6 @@
   "cells": [
     {
       "type": "cs",
-      "input": "assist"
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
-    },
-    {
-      "type": "cs",
       "input": "importFiles [ \"../smalldata/airlines/AirlinesTrain.csv.zip\" ]"
     },
     {
@@ -24,10 +16,6 @@
     {
       "type": "cs",
       "input": "getFrameSummary \"AirlinesTrain2.hex\""
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
     },
     {
       "type": "cs",

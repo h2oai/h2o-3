@@ -3,14 +3,6 @@
   "cells": [
     {
       "type": "cs",
-      "input": "assist"
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
-    },
-    {
-      "type": "cs",
       "input": "importFiles [ \"../smalldata/airlines/allyears2k.zip\" ]"
     },
     {
@@ -31,19 +23,11 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-fe3556ed-5673-4983-9c57-7fe67b494ea1\",\"training_frame\":\"allyears2k.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C31\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-d8549b41-4c04-4ece-8c69-ce75341d7a90\",\"training_frame\":\"allyears2k.hex\",\"ignored_columns\":[\"C5\",\"C7\",\"C12\",\"C14\",\"C15\",\"C16\",\"C20\",\"C21\",\"C23\",\"C25\",\"C26\",\"C27\",\"C28\",\"C29\"],\"ignore_const_cols\":true,\"response_column\":\"C19\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",
-      "input": "getModel \"glm-fe3556ed-5673-4983-9c57-7fe67b494ea1\""
-    },
-    {
-      "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-fe3556ed-5673-4983-9c57-7fe67b494ea1\",\"training_frame\":\"allyears2k.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C31\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
-    },
-    {
-      "type": "cs",
-      "input": "getModel \"glm-fe3556ed-5673-4983-9c57-7fe67b494ea1\""
+      "input": "getModel \"glm-d8549b41-4c04-4ece-8c69-ce75341d7a90\""
     }
   ]
 }

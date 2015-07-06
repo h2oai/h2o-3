@@ -3,14 +3,6 @@
   "cells": [
     {
       "type": "cs",
-      "input": "assist"
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
-    },
-    {
-      "type": "cs",
       "input": "importFiles [ \"../smalldata/iris/iris_test.csv\" ]"
     },
     {
@@ -24,10 +16,6 @@
     {
       "type": "cs",
       "input": "getFrameSummary \"iris_test.hex\""
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
     },
     {
       "type": "cs",

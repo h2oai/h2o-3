@@ -3,14 +3,6 @@
   "cells": [
     {
       "type": "cs",
-      "input": "assist"
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
-    },
-    {
-      "type": "cs",
       "input": "importFiles [ \"../smalldata/chess/chess_2x2x1000/test.csv\" ]"
     },
     {
@@ -20,10 +12,6 @@
     {
       "type": "cs",
       "input": "parseFiles\n  paths: [\"../smalldata/chess/chess_2x2x1000/test.csv\"]\n  destination_frame: \"test2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"x\",\"y\",\"color\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
     },
     {
       "type": "cs",
