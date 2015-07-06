@@ -30,6 +30,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   public static class PCAOutput extends Model.Output {
+    // GLRM final value of L2 loss function
+    public double _objective;
+
     // Principal components (eigenvectors)
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;

@@ -294,6 +294,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       int attempts = 0;
       double addedL2 = 0;   // TODO: Should I report this to the user?
       Cholesky chol = gram.cholesky(null);
+
       while(!chol.isSPD() && attempts < max_attempts) {
         if(addedL2 == 0) addedL2 = 1e-5;
         else addedL2 *= 10;
@@ -309,12 +310,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     public Cholesky regularizedCholesky(Gram gram) { return regularizedCholesky(gram, 10); }
 
     // Regularized Cholesky decomposition using JAMA implementation
-    public CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts) {
+    public CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts, boolean throw_exception) {
       int attempts = 0;
       double addedL2 = 0;
-
       Matrix gmat = new Matrix(gram);
       CholeskyDecomposition chol = new CholeskyDecomposition(gmat);
+
       while(!chol.isSPD() && attempts < max_attempts) {
         if(addedL2 == 0) addedL2 = 1e-5;
         else addedL2 *= 10;
@@ -324,11 +325,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
         chol = new CholeskyDecomposition(gmat);
       }
-      if(!chol.isSPD())
+      if(!chol.isSPD() && throw_exception)
         throw new Gram.NonSPDMatrixException();
       return chol;
     }
-    public CholeskyDecomposition regularizedCholesky(double[][] gram) { return regularizedCholesky(gram, 10); }
+    public CholeskyDecomposition regularizedCholesky(double[][] gram) { return regularizedCholesky(gram, 10, true); }
 
     // Recover singular values and eigenvectors of XY
     public void recoverSVD(GLRMModel model, DataInfo xinfo) {
@@ -403,15 +404,19 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
         if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
                                                   && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
-          Log.info("Initializing X = AY'(YY' + gamma)^(-1) where A = training data");
+          Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
           double[][] ygram = ArrayUtils.formGram(yt);
           if (_parms._gamma_y > 0) {
             for(int i = 0; i < ygram.length; i++)
               ygram[i][i] += _parms._gamma_y;
           }
-          CholeskyDecomposition yychol = regularizedCholesky(ygram);   // TODO: Proceed with random X or fail out if Cholesky is non-SPD? Implies numerically unstable results.
-          CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
-          cmtsk.doAll(dinfo._adaptedFrame);
+          CholeskyDecomposition yychol = regularizedCholesky(ygram, 10, false);
+          if(!yychol.isSPD())
+            Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting X to a matrix of random numbers. Results will be numerically unstable");
+          else {
+            CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
+            cmtsk.doAll(dinfo._adaptedFrame);
+          }
         }
 
         // Compute initial objective function

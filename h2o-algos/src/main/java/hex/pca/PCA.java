@@ -154,6 +154,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._nnums = glrm._output._nnums;
       pca._output._ncats = glrm._output._ncats;
       pca._output._catOffsets = glrm._output._catOffsets;
+      pca._output._objective = glrm._output._objective;
 
       // Fill model with eigenvectors and standard deviations
       double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
@@ -270,11 +271,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
-
           parms._recover_svd = true;
+
           parms._loss = GLRMModel.GLRMParameters.Loss.L2;
           parms._gamma_x = 0;
           parms._gamma_y = 0;
+          parms._init = GLRM.Initialization.PlusPlus;
 
           GLRMModel glrm = null;
           GLRM job = null;
