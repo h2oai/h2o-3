@@ -182,6 +182,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # dict parameter to update columnTypeDict?
     # but we don't pass columnNames like this?
     ct = setup_result['column_types']
+    columnNames = setup_result['column_names']
     if columnTypeDict: 
         for k,v in columnTypeDict.iteritems():
             if isinstance(k, int):

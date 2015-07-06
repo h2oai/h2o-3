@@ -99,7 +99,7 @@ class Basic(unittest.TestCase):
                 'lambda_search': None,
                 'nlambdas': None,
                 'lambda_min_ratio': None,
-                'use_all_factor_levels': False,
+                # 'use_all_factor_levels': False,
             }
 
             model_key = 'benign_glm.hex'

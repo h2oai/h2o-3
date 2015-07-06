@@ -63,8 +63,12 @@ class OutputObj(AttrDict):
                     print "Not showing '__meta'"
                 elif k == 'vec_keys':
                     print "Not showing 'vec_keys'"
-                elif k == 'chunkSummary':
-                    print "Not showing 'chunkSummary'"
+                elif k == 'chunk_summary':
+                    print "Not showing 'chunk_summary'"
+                elif k == 'distribution_summary':
+                    print "Not showing 'distribution_summary'"
+                elif k == 'vec_ids':
+                    print "Not showing 'vec_ids'"
                 # this is if I drill into an inspect column with an object
                 elif k == 'domain' and self.name=='inspect_column': 
                     print "Not showing 'domain'"
