@@ -166,7 +166,7 @@ public class RequestServer extends NanoHTTPD {
       "Delete all Frames from the H2O distributed K/V store.");
     register("/3/Models/(?<modelid>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"model_id"},
       "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<modelid>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
+    register("/3/Models/(?<modelid>[^.]*)(\\..*)?"                   ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
       "Return all Models from the H2O distributed K/V store.");
