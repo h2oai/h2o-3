@@ -154,7 +154,8 @@ public final class ParseSetup extends Iced {
     if( _column_names ==null ) return conflictingNames;
     HashSet<String> uniqueNames = new HashSet<>();
     for( String n : _column_names)
-      (uniqueNames.contains(n) ? conflictingNames : uniqueNames).add(n);
+      if (n != null)
+        (uniqueNames.contains(n) ? conflictingNames : uniqueNames).add(n);
     return conflictingNames;
   }
 

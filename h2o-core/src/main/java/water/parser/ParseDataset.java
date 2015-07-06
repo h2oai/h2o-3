@@ -3,6 +3,7 @@ package water.parser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -52,29 +53,30 @@ public final class ParseDataset extends Job<Frame> {
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
   static String [] getColumnNames(int ncols, String[] colNames) {
-    String[] res = null;
-    int i = 0;
-    if (colNames != null) {
-      if (colNames.length == ncols)
-        return colNames;
-      else { // col names < cols, so start w/ names finish with generic
-        i = colNames.length;
-        res = Arrays.copyOf(colNames, ncols);
+    if(colNames == null) { // no names, generate
+      colNames = new String[ncols];
+      for(int i=0; i < ncols; i++ )
+        colNames[i] = "C" + String.valueOf(i+1);
+    } else { // some or all names exist, fill in blanks
+      HashSet<String> nameSet = new HashSet<>(Arrays.asList(colNames));
+      colNames = Arrays.copyOf(colNames, ncols);
+      for(int i=0; i < ncols; i++ ) {
+        if (colNames[i] == null || colNames[i].equals("")) {
+          String tmp = "C" + String.valueOf(i + 1);
+          while (nameSet.contains(tmp)) // keep building name until unique
+            tmp = tmp + tmp;
+          colNames[i] = tmp;
+        }
       }
     }
-    //FIXME we must first check if any existing columns use this naming scheme,
-    // otherwise duplicate names are possible, but the user won't know why
-    //fill in any empty columns with a generic column name
-    if (res == null) res = new String[ncols];
-    for (; i < res.length; ++i) res[i] = "C" + String.valueOf(i + 1);
-
-    return res;
+    return colNames;
   }
 
   // Same parse, as a backgroundable Job
   public static ParseDataset forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean deleteOnDone) {
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
+    if ( !x.equals(""))
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     long totalParseSize=0;
@@ -194,6 +196,13 @@ public final class ParseDataset extends Job<Frame> {
       setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
     if( fkeys.length == 0) { job.cancel();  return;  }
+
+    //create a list of keys that are greater than 0-bytes
+    List<Key> keyList = new ArrayList<>(fkeys.length);
+    for (int i=0; i < fkeys.length; i++)
+      if (getByteVec(fkeys[i]).length() > 0)
+        keyList.add(fkeys[i]);
+    fkeys = keyList.toArray(new Key[keyList.size()]);
 
     job.update(0, "Ingesting files.");
     VectorGroup vg = getByteVec(fkeys[0]).group();
