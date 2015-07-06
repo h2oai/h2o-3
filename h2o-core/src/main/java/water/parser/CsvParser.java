@@ -455,12 +455,12 @@ MAIN_LOOP:
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
-        for (int i = 0; hasHdr && i < _setup._column_names.length; ++i)
+        for (int i = 0; hasHdr && i < firstLine.length; ++i)
           hasHdr = _setup._column_names[i].equalsIgnoreCase(firstLine[i]);
       } else { // declared to have header, but no column names provided, assume header exist in all files
         _setup._column_names = firstLine;
       }
-    } else System.out.println("Foo"); //FIXME Throw exception
+    } // else FIXME Throw exception
     return hasHdr ? ParseSetup.HAS_HEADER: ParseSetup.NO_HEADER;
     // consider making insensitive to quotes
   }
@@ -676,7 +676,7 @@ MAIN_LOOP:
 
       // Asked to check for a header, so see if 1st line looks header-ish
       if( checkHeader == HAS_HEADER
-        || ( checkHeader == GUESS_HEADER && ParseSetup.hasHeader(data[0], data[1]) && data[0].length == ncols)) {
+        || ( checkHeader == GUESS_HEADER && ParseSetup.hasHeader(data[0], data[1]))) {
         checkHeader = HAS_HEADER;
         labels = data[0];
       } else {

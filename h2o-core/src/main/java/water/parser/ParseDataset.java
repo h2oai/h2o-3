@@ -52,23 +52,23 @@ public final class ParseDataset extends Job<Frame> {
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
   static String [] getColumnNames(int ncols, String[] colNames) {
-    String[] res = null;
-    int i = 0;
-    if (colNames != null) {
-      if (colNames.length == ncols)
-        return colNames;
-      else { // col names < cols, so start w/ names finish with generic
-        i = colNames.length;
-        res = Arrays.copyOf(colNames, ncols);
+    if(colNames == null) { // no names, generate
+      colNames = new String[ncols];
+      for(int i=0; i < ncols; i++ )
+        colNames[i] = "C" + String.valueOf(i+1);
+    } else { // some or all names exist, fill in blanks
+      HashSet<String> nameSet = new HashSet<>(Arrays.asList(colNames));
+      colNames = Arrays.copyOf(colNames, ncols);
+      for(int i=0; i < ncols; i++ ) {
+        if (colNames[i] == null || colNames[i].equals("")) {
+          String tmp = "C" + String.valueOf(i + 1);
+          while (nameSet.contains(tmp)) // keep building name until unique
+            tmp = tmp + tmp;
+          colNames[i] = tmp;
+        }
       }
     }
-    //FIXME we must first check if any existing columns use this naming scheme,
-    // otherwise duplicate names are possible, but the user won't know why
-    //fill in any empty columns with a generic column name
-    if (res == null) res = new String[ncols];
-    for (; i < res.length; ++i) res[i] = "C" + String.valueOf(i + 1);
-
-    return res;
+    return colNames;
   }
 
   // Same parse, as a backgroundable Job

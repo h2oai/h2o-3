@@ -1,5 +1,9 @@
 package water.api;
 
+import java.util.List;
+import java.util.Arrays;
+import com.google.common.collect.Lists;
+
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -13,7 +17,7 @@ class ParseHandler extends Handler {
   // Entry point for parsing.
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV3 parse(int version, ParseV3 parse) {
-    ParseSetup setup = new ParseSetup(parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, parse.column_names, ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, parse.chunk_size);
+    ParseSetup setup = new ParseSetup(parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, delNulls(parse.column_names), ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, parse.chunk_size);
 
     Key[] srcs = new Key[parse.source_frames.length];
     for (int i = 0; i < parse.source_frames.length; i++)
@@ -37,5 +41,11 @@ class ParseHandler extends Handler {
       }
     }
     return parse;
+  }
+
+  String[] delNulls(String[] names) {
+    for(int i=0; i < names.length; i++)
+      if (names[i].equals("null")) names[i] = null;
+    return names;
   }
 }
