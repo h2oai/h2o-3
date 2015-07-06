@@ -198,10 +198,10 @@ public final class ParseDataset extends Job<Frame> {
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     //create a list of keys that are greater than 0-bytes
-    List<Key> keyList = Arrays.asList(fkeys);
+    List<Key> keyList = new ArrayList<>(fkeys.length);
     for (int i=0; i < fkeys.length; i++)
-      if (getByteVec(fkeys[i]).length() == 0)
-        keyList.remove(fkeys[i]);
+      if (getByteVec(fkeys[i]).length() > 0)
+        keyList.add(fkeys[i]);
     fkeys = keyList.toArray(new Key[keyList.size()]);
 
     job.update(0, "Ingesting files.");
