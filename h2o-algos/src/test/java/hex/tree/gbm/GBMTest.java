@@ -84,7 +84,11 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, Family.gaussian);
-    
+
+    basicGBM("./smalldata/junit/cars.csv",
+            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            false, Family.poisson);
+
     // Classification tests
     basicGBM("./smalldata/junit/test_tree.csv",
             new PrepData() { int prep(Frame fr) { return 1; }
@@ -100,6 +104,11 @@ public class GBMTest extends TestUtil {
             new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
             },
             false, Family.bernoulli);
+
+    basicGBM("./smalldata/logreg/prostate.csv",
+            new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
+            },
+            false, Family.multinomial);
 
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }

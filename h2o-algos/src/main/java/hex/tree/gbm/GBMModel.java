@@ -69,8 +69,13 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       return;
     }
     if( _output.nclasses() == 1 ) { // Regression
-      // Prediction starts from the mean response, and adds predicted residuals
-      body.ip("preds[0] += ").p(_output._init_f).p(";");
+      if( _parms._distribution == GBMParameters.Family.gaussian) {
+        // Prediction starts from the mean response, and adds predicted residuals
+        body.ip("preds[0] += ").p(_output._init_f).p(";");
+      } else if( _parms._distribution == GBMParameters.Family.poisson) {
+        body.ip("preds[0] += ").p(_output._init_f).p(";");
+        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+      }
       return;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
