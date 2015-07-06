@@ -307,12 +307,12 @@ class H2OFrame:
     self._eager()
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
-    colnames = self.names()[0:ncols]
     start_idx = max(self.nrow()-nrows,0)
     tail = self[start_idx:(start_idx+nrows),:]
     res = tail.as_data_frame(False)
+    colnames = res.pop(0)
     print "Last {} rows and first {} columns: ".format(nrows,ncols)
-    h2o.H2ODisplay(res,["Row ID"]+colnames)
+    h2o.H2ODisplay(res,colnames)
     return tail
 
   def levels(self, col=None):
