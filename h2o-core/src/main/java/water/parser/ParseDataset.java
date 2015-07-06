@@ -3,6 +3,7 @@ package water.parser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -75,6 +76,7 @@ public final class ParseDataset extends Job<Frame> {
   public static ParseDataset forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean deleteOnDone) {
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
+    if ( !x.equals(""))
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     long totalParseSize=0;
@@ -194,6 +196,13 @@ public final class ParseDataset extends Job<Frame> {
       setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
     if( fkeys.length == 0) { job.cancel();  return;  }
+
+    //create a list of keys that are greater than 0-bytes
+    List<Key> keyList = Arrays.asList(fkeys);
+    for (int i=0; i < fkeys.length; i++)
+      if (getByteVec(fkeys[i]).length() == 0)
+        keyList.remove(fkeys[i]);
+    fkeys = keyList.toArray(new Key[keyList.size()]);
 
     job.update(0, "Ingesting files.");
     VectorGroup vg = getByteVec(fkeys[0]).group();
