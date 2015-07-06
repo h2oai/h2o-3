@@ -273,6 +273,27 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return centers_exp;
     }
 
+    // Initialize X matrix
+    public void initialX(DataInfo dinfo, double[][] yt, double[] normSub, double[] normMul) {
+      // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
+      if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
+              && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
+        Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
+        double[][] ygram = ArrayUtils.formGram(yt);
+        if (_parms._gamma_y > 0) {
+          for(int i = 0; i < ygram.length; i++)
+            ygram[i][i] += _parms._gamma_y;
+        }
+        CholeskyDecomposition yychol = regularizedCholesky(ygram, 10, false);
+        if(!yychol.isSPD())
+          Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting X to a matrix of random numbers. Results will be numerically unstable");
+        else {
+          CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, normSub, normMul);
+          cmtsk.doAll(dinfo._adaptedFrame);
+        }
+      }
+    }
+
     // Stopping criteria
     private boolean isDone(GLRMModel model, int steps_in_row, double step) {
       if (!isRunning()) return true;  // Stopped/cancelled
@@ -400,24 +421,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
-
-        // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
-        if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
-                                                  && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
-          Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
-          double[][] ygram = ArrayUtils.formGram(yt);
-          if (_parms._gamma_y > 0) {
-            for(int i = 0; i < ygram.length; i++)
-              ygram[i][i] += _parms._gamma_y;
-          }
-          CholeskyDecomposition yychol = regularizedCholesky(ygram, 10, false);
-          if(!yychol.isSPD())
-            Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting X to a matrix of random numbers. Results will be numerically unstable");
-          else {
-            CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul);
-            cmtsk.doAll(dinfo._adaptedFrame);
-          }
-        }
+        initialX(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);

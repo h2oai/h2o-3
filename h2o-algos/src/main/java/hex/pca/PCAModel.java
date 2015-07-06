@@ -23,6 +23,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public String _loading_name;           // Loading only generated if pca_method = Power
     public boolean _keep_loading = true;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
+    public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
 
     public enum Method {
       GramSVD, Power, GLRM
