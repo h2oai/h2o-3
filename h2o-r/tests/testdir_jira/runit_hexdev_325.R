@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.parse.mismatching.col.length <- function(conn){
 
   df <- h2o.importFile(locate("smalldata/jira/hexdev_325.csv"), header = TRUE)
-  expected <- c("Dogs", "Cats", "C3C3", "C3", "C5")
+  expected <- c("C3", "Cats", "C3C3", "C4", "Mouse", "C6")
   actual <- colnames(df)
 
   expect_equal(expected, actual)
