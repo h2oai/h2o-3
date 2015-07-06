@@ -46,7 +46,7 @@ check.deeplearning_MNIST <- function(conn) {
   
   # 2) Compute test set error
   print(h2o.performance(dl_model, test_hex))
-  checkTrue(h2o.mse(dl_model) <= 0.05, "test set MSE is worse than 0.05!")
+  checkTrue(h2o.mse(dl_model) <= 0.10, "test set MSE is worse than 0.10!")
   
   testEnd()
 }

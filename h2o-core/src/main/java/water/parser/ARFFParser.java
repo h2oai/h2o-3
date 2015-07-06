@@ -2,14 +2,14 @@ package water.parser;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-
+import water.Key;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 
 class ARFFParser extends CsvParser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
 
-  ARFFParser(ParseSetup ps) { super(ps); }
+  ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
 
   /** Try to parse the bytes as ARFF format  */
   static ParseSetup guessSetup(byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {

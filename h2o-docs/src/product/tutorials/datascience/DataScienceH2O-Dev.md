@@ -180,7 +180,11 @@ The GLM suite includes:
 
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 
-- **Family**: Select the model type (Gaussian, Binomial, Poisson, or Gamma).
+- **Family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+
+- **Tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
+
+- **Tweedie_link_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
 - **Solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
 
@@ -414,7 +418,7 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
-- **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
+- **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
@@ -649,9 +653,6 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 <a name="PCA"></a>
 ##PCA
 
-  >PCA is currently in progress in H2O. Once implementation of this algorithm is complete, this section of the document will be updated. 
-
-<!---
 ###Introduction
 
 Principal Components Analysis (PCA) is closely related to Principal Components Regression. The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
@@ -660,14 +661,25 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 ###Defining a PCA Model
 
-- **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
 - **Training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default.   
+
+- **PCA_method**: Select the algorithm to use for computing the principal components: 
+	- *GramSVD*: Computes the Gram matrix of the training frame, then calculates a local SVD on the result using the JAMA package
+	- *Power*: Computes the SVD using the power iteration method
+	- *GLRM*: Builds a generalized low-rank model with L1 loss function and no regularization, then recovers the SVD from the resulting X and Y matrices
+
+- **Use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first factor level of each categorical column when expanding into indicator columns. 
+
+- **Loading_name**: (Applicable only if *Power* is selected for **PCA_method**) Specify a name for the frame to save left singular vectors from SVD. 
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -675,22 +687,14 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 - **K**: Specify the rank of matrix approximation. The default is 1.  
 
-- **Gamma**: Specify the regularization weight for PCA. The default is 0. 
-
 - **Max_iterations**: Specify the number of training iterations. The default is 1000.
 
 - **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Init**: Select the initialization mode. The options are PlusPlus or User. 
-**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the PlusPlus algorithm. 
-
-- **User_points**: Specify the initial Y matrix. 
-**Note**: The **User_points** parameter should only be used by advanced users for testing purposes.  
-
 
 ###Interpreting a PCA Model
 
-PCA output returns a table displaying the number of components indicated by whichever criteria was more restrictive in this particular case. In this example, a maximum of 100 components were requested, and a tolerance set to .5.
+PCA output returns a table displaying the number of components specified by the value for `k`.
 
 Scree and cumulative variance plots for the components are returned as well. Users can access them by clicking on the black button labeled "Scree and Variance Plots" at the top left of the results page. A scree plot shows the variance of each component, while the cumulative variance plot shows the total variance accounted for by the set of components.
 
@@ -707,13 +711,38 @@ The output for PCA includes the following:
 
 ###FAQ
 
-- How does the algo handle missing values during training?
-- How does the algo handle missing values during testing?
-- What happens during prediction if the new sample has categorical levels not seen in training?
-- Does it matter if the data is sorted? 
-- Should data be shuffled before training?
-- What if there are a large number of columns?
-- What if there are a large number of categorical factor levels?
+- **How does the algorithm handle missing values during scoring?**
+
+For the GramSVD and Power methods, all rows containing missing values are ignored during training. For the GLRM method, missing values are excluded from the sum over the loss function in the objective. For more information, refer to section 4 Generalized Loss Functions, equation (13), in ["Generalized Low Rank Models"](https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf) by Boyd et al.
+
+  
+- **How does the algorithm handle missing values during testing?**
+
+  During scoring, the test data is right-multiplied by the eigenvector matrix produced by PCA. Missing categorical values are skipped in the row product-sum. Missing numeric values propagate an entire row of NAs in the resulting projection matrix.
+
+
+- **What happens during prediction if the new sample has categorical levels not seen in training?**
+
+  Categorical levels in the test data not present in the training data are skipped in the row product-sum.
+
+
+- **Does it matter if the data is sorted?**
+  
+  No, sorting data does not affect the model. 
+  
+- **Should data be shuffled before training?**
+
+  No, shuffling data does not affect the model. 
+
+
+- **What if there are a large number of columns?**
+
+  Calculating the SVD will be slower, since computations on the Gram matrix are handled locally. 
+
+- **What if there are a large number of categorical factor levels?**
+
+  Each factor level (with the exception of the first, depending on whether **use\_all\_factor\_levels** is enabled) is assigned an indicator column. The indicator column is 1 if the observation corresponds to a particular factor; otherwise, it is 0. As a result, many factor levels result in a large Gram matrix and slower computation of the SVD. 
+
 
 ###PCA Algorithm
 
@@ -757,13 +786,66 @@ For each eigenvalue \(\lambda\) \((C-{x}-\lambda I)x =0\) where \(x\) is the eig
 
 Solve for \(x\) by Gaussian elimination. 
 
+####Recovering SVD from GLRM
 
+GLRM gives \(x\)  and \(y\), where \(x \in \rm \Bbb I \!\Bbb R ^{n * k}\) and \( y \in \rm \Bbb I \!\Bbb R ^{k*m} \)
+
+&nbsp;&nbsp;&nbsp;- \(n\)= number of rows (A)
+
+&nbsp;&nbsp;&nbsp;- \(m\)= number of columns (A)
+
+&nbsp;&nbsp;&nbsp;- \(k\)= user-specified rank
+&nbsp;&nbsp;&nbsp;- \(A\)= training matrix
+
+It is assumed that the \(x\) and \(y\) columns are independent. 
+
+First, perform QR decomposition of \(x\) and \(y^T\): 
+
+&nbsp;&nbsp;&nbsp;\(x = QR\) 
+
+&nbsp;&nbsp;&nbsp; \(y^T = ZS\), where \(Q^TQ = I = Z^TZ\)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Call JAMA QR Decomposition directly on \(y^T\) to get \( Z \in \rm \Bbb I \! \Bbb R\), \( S \in \Bbb I \! \Bbb R \)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\( R \) from QR decomposition of \( x \) is the upper triangular factor of Cholesky of \(X^TX\) Gram
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\( X^TX = LL^T, X = QR \)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\( X^TX= (R^TQ^T) QR = R^TR \), since \(Q^TQ=I \) => \(R=L^T\) (transpose lower triangular)
+
+**Note**: In code, \(X^TX \over n\) = \( LL^T \)
+
+&nbsp;&nbsp;&nbsp;\( X^TX = (L \sqrt{n})(L \sqrt{n})^T =R^TR \)
+
+&nbsp;&nbsp;&nbsp;\( R = L^T \sqrt{n} \in \rm \Bbb I \! \Bbb R^{k * k} \) reduced QR decomposition. 
+
+For more information, refer to the [Rectangular matrix](https://en.wikipedia.org/wiki/QR_decomposition#Rectangular_matrix) section of "QR Decomposition" on Wikipedia. 
+
+\( XY = QR(ZS)^T = Q(RS^T)Z^T \)
+
+**Note**: \( (RS^T) \in \rm \Bbb I \!\Bbb R \)
+
+Find SVD (locally) of \( RS^T \)
+
+\( RS^T = U \sum V^T, U^TU = I = V^TV \) orthogonal 
+
+\( XY = Q(RS^T)Z^T = (QU \sum (V^T Z^T) SVD \)
+
+&nbsp;&nbsp;&nbsp;\( (QU)^T(QU) = U^T Q^TQU U^TU = I\)
+
+&nbsp;&nbsp;&nbsp;\( (ZV)^T(ZV) = V^TZ^TZV = V^TV =I \)
+
+Right singular vectors: \( ZV \in \rm \Bbb I \!\Bbb R^{m * k} \)
+
+Singular values: \( \sum \in \rm \Bbb I \!\Bbb R^{k * k} \) diagonal
+
+Left singular vectors: \( (QU) \in \rm \Bbb I \!\Bbb R^{n * k}\)
 
 ###References
 
 Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and Its Applications)." (2010): 566-567. 
 
--->
+
 ---
 
 <a name="GBM"></a>
@@ -891,6 +973,15 @@ For \(m=1\) to \(M:\)
 
 Output \(\:\hat{f_{k}}(x)=f_{kM}(x),\:k=1,2,…,K.\) 
 
+Be aware that the column type affects how the histogram is created and the column type depends on whether rows are excluded or assigned a weight of 0. For example:
+
+val weight
+1      1
+0.5    0
+5      1
+3.5    0
+
+The above vec has a real-valued type if passed as a whole, but if the zero-weighted rows are sliced away first, the integer weight is used. The resulting histogram is either kept at full `nbins` resolution or potentially shrunk to the discrete integer range, which affects the split points. 
 
 ###References
 
