@@ -848,7 +848,7 @@ public class GLMTest  extends TestUtil {
     Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
     Vec xy = frG.remove("xy");
-    frMM.remove("").remove();
+    frMM.remove("C1").remove();
     frMM.add("IsDepDelayed", frMM.remove("IsDepDelayed"));
     DKV.put(frMM._key, frMM);
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;

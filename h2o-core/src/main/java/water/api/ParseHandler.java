@@ -40,6 +40,7 @@ class ParseHandler extends Handler {
   }
 
   String[] delNulls(String[] names) {
+    if (names == null) return null;
     for(int i=0; i < names.length; i++)
       if (names[i].equals("null")) names[i] = null;
     return names;
