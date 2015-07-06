@@ -89,8 +89,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass == 2) _parms._distribution = GBMModel.GBMParameters.Family.bernoulli;
         if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
       } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
-        _initialPrediction = Double.NaN;
-        throw H2O.unimpl();
+        _initialPrediction = poissonInitialValue();
       }
       if (hasOffset() && isClassifier() && _parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
@@ -127,6 +126,39 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
+  }
+
+  /**
+   * Compute the inital value for Poisson distribution
+   * @return initial value
+   */
+  private double poissonInitialValue() {
+    return new PoissonInitialValue().doAll(
+            _response,
+            hasWeights() ? _weights : _response.makeCon(1),
+            hasOffset() ? _offset : _response.makeCon(0)
+    ).initialValue();
+  }
+
+  private static class PoissonInitialValue extends MRTask<PoissonInitialValue> {
+    private double _num;
+    private double _denom;
+    public  double initialValue() {
+      return Math.log(_num / _denom);
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        _num += w*response.atd(i);
+        _denom += w*Math.max(1e-19,Math.min(1e19, Math.exp(offset.atd(i))));
+      }
+    }
+    @Override public void reduce(PoissonInitialValue mrt) {
+      _num += mrt._num;
+      _denom += mrt._denom;
+    }
   }
 
   // ----------------------
@@ -277,7 +309,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               wk.set(row, (float) (tr.atd(row) + offset.atd(row)));
           } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
             for (int row = 0; row < ys._len; row++)
-              wk.set(row, (float) Math.exp((tr.atd(row) + offset.atd(row))));
+              wk.set(row, (float) Math.max(1e-19,Math.min(1e19, Math.exp((tr.atd(row) + offset.atd(row))))));
           }
         }
       }
@@ -591,7 +623,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     if( _nclass == 1 ) { // Regression
       if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian || _parms._distribution == GBMModel.GBMParameters.Family.poisson)
         return fs[0] = chk_tree(chks, 0).atd(row) + offset;
-      else throw H2O.unimpl();
+      else throw H2O.unimpl("Distribution " + _parms._distribution + "not yet implemented.");
     }
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
