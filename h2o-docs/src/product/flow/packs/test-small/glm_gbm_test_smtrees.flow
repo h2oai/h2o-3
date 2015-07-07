@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/smtrees.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/smtrees.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/smtrees.csv\"]\n  destination_frame: \"smtrees.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_names: [\"\",\"girth\",\"height\",\"vol\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"smtrees.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"smtrees.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"smtrees.hex\", [0.25], [\"smtrees_test.hex_0.250\",\"smtrees_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-00057be0-9574-4e9a-809b-213529180359\",\"training_frame\":\"smtrees_train.hex_0.750\",\"validation_frame\":\"smtrees_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"vol\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-00057be0-9574-4e9a-809b-213529180359\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-00057be0-9574-4e9a-809b-213529180359\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-00057be0-9574-4e9a-809b-213529180359\", frame: \"smtrees_test.hex_0.250\", predictions_frame: \"prediction-3613df85-611a-4d62-bef8-3b1c41f4d34d\""
+    }
+  ]
+}

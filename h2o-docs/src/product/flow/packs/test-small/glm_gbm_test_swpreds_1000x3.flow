@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/swpreds_1000x3.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/swpreds_1000x3.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/swpreds_1000x3.csv\"]\n  destination_frame: \"swpreds_1000x3.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"X1\",\"X2\",\"y\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"swpreds_1000x3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"swpreds_1000x3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"swpreds_1000x3.hex\", [0.25], [\"swpreds_1000x3_test.hex_0.250\",\"swpreds_1000x3_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-cdab7830-cc18-4fb3-9138-6d24558b1df9\",\"training_frame\":\"swpreds_1000x3_train.hex_0.750\",\"validation_frame\":\"swpreds_1000x3_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"X1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-cdab7830-cc18-4fb3-9138-6d24558b1df9\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-cdab7830-cc18-4fb3-9138-6d24558b1df9\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-cdab7830-cc18-4fb3-9138-6d24558b1df9\", frame: \"swpreds_1000x3_test.hex_0.250\", predictions_frame: \"prediction-cfe828f2-c6d6-43fd-a7af-47f16452debd\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-cdab7830-cc18-4fb3-9138-6d24558b1df9\", frame: \"swpreds_1000x3.hex\", predictions_frame: \"prediction-cfe828f2-c6d6-43fd-a7af-47f16452debd\""
+    }
+  ]
+}
