@@ -49,6 +49,9 @@ public final class PersistHdfs extends Persist {
       conf = new Configuration();
       Path confDir = null;
       // Try to guess location of default Hadoop configuration
+      // http://www.slideshare.net/martyhall/hadoop-tutorial-hdfs-part-3-java-api
+      // WARNING: loading of default properties should be disabled if the job
+      // is executed via yarn command which prepends core-site.xml properties on classpath
       if (System.getenv().containsKey("HADOOP_CONF_DIR")) {
         confDir = new Path(System.getenv("HADOOP_CONF_DIR"));
       } else if (System.getenv().containsKey("YARN_CONF_DIR")) {
@@ -59,7 +62,7 @@ public final class PersistHdfs extends Persist {
       // Load default HDFS configuration
       if (confDir != null) {
         Log.info("Using HDFS configuration from " + confDir);
-        conf.addResource(new Path(confDir,  "core-site.xml"));
+        conf.addResource(new Path(confDir, "core-site.xml"));
       } else {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
