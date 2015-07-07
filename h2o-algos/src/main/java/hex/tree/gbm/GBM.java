@@ -157,7 +157,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double w = weight.atd(i);
         if (w == 0) continue;
         _num += w*response.atd(i);
-        _denom += w*Math.max(1e-19, Math.min(1e19, Math.exp(offset.atd(i))));
+        _denom += w*Distributions.Poisson.linkInv(offset.atd(i));
       }
     }
     @Override public void reduce(PoissonInitialValue mrt) {
@@ -171,7 +171,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    * @return initial value
    */
   private double gammaInitialValue() {
-    return new PoissonInitialValue().doAll(
+    return new GammaInitialValue().doAll(
             _response,
             hasWeights() ? _weights : _response.makeCon(1),
             hasOffset() ? _offset : _response.makeCon(0)
@@ -301,7 +301,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (ys.isNA(row)) continue;
           double y = ys.atd(row);
           double o = offset.atd(row);
-          double p = 1./(1.+Math.exp(-(o+_init)));
+          double p = Distributions.Bernoulli.linkInv(o+_init);
           _num += w*(y-p);
           _denom += w*p*(1.-p);
         }
@@ -493,12 +493,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
       double gamma(int tree, int nid) {
         double g = _num[tree][nid]/ _denom[tree][nid];
-        if (_dist != GBMModel.GBMParameters.Family.poisson) {
-          return g;
+        assert(!Double.isInfinite(g)) : "numeric overflow"; //TODO: handle gracefully with signum(g)*1e19"
+        if (_dist == GBMModel.GBMParameters.Family.poisson || _dist == GBMModel.GBMParameters.Family.gamma) {
+          return g == 0 ? -19 : Math.log(g);
         } else {
-          return Math.log(g);
+          return g;
         }
-
       }
       GammaPass(DTree trees[], int leafs[], GBMModel.GBMParameters.Family distribution) { _leafs=leafs; _trees=trees; _dist = distribution; }
       @Override public void map( Chunk[] chks ) {
@@ -547,22 +547,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             int idx=leafnid-leaf;
             if( _dist == GBMModel.GBMParameters.Family.bernoulli ) {
               double p = y - z;
+              num[idx] += w * z;
               denom[idx] += w*p*(1-p);
             } else if ( _dist == GBMModel.GBMParameters.Family.gaussian) {
+              num[idx] += w * z;
               denom[idx] += w;
             } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
               double expfx = y - z;
+              num[idx] += w * y;
               denom[idx] += w*expfx;
-            } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
-              throw H2O.unimpl();
+            } else if ( _dist == GBMModel.GBMParameters.Family.gamma) {
+              double yexp_negf = z + 1;
+              num[idx] += w * yexp_negf;
+              denom[idx] += w;
             } else if ( _dist == GBMModel.GBMParameters.Family.multinomial) {
               double absz = Math.abs(z);
-              denom[idx] += w*(absz*(1-absz));
-            }
-            if ( _dist == GBMModel.GBMParameters.Family.poisson) {
-              num[idx] += w * y;
-            } else {
               num[idx] += w * z;
+              denom[idx] += w*(absz*(1-absz));
             }
           }
         }
