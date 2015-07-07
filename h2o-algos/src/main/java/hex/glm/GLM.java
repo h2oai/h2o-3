@@ -829,7 +829,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int selected = 0;
       int[] cols = null;
       if (_parms._alpha[0] > 0) {
-        final double rhs = _parms._alpha[0] * (2 * l1 - l2);
+        final double rhs = 0;//_parms._alpha[0] * (2 * l1 - l2);
         cols = MemoryManager.malloc4(_dinfo.fullN());
         int j = 0;
         int [] oldActiveCols = _taskInfo._activeCols;
@@ -960,7 +960,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
 
           // generate new IRLS iteration
-          while (iter1 < 1) {
+          while (iter1++ < 201) {
 
             Frame fr = new Frame(_activeData._adaptedFrame);
             fr.add("w", w); // fr has all data
@@ -972,29 +972,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             wsum = gt.wsum;
 
             // coordinate descent loop
-            while (iter1++ < 1) {
+            while (iter1++ < 201) {
               Frame fr2 = new Frame();
               fr2.add("w", w);
               fr2.add("z", z);
-              fr2.add("zTilda", zTilda);
-              fr2.add("filter", _rowFilter);//rows with nas to be skipped
+              fr2.add("zTilda", zTilda); // set it to the original xbeta if first iteration
+              fr2.add("filter", _rowFilter); // rows with nas to be skipped
 
               // non expanded vars loop
               for (int i = 0; i < _activeData._adaptedFrame.numCols() - 1; ++i) {
                 Frame fr3 = new Frame(fr2);
-                fr3.add("xj", _activeData._adaptedFrame.vec(i)); // add the current variable data column to be updated
+                fr3.add("xj", _activeData._adaptedFrame.vec(i)); // add current variable column to be updated
                 boolean intercept = (i == 0); // distinguish between beta_1 update or any other beta_k update k>1
                 if (!intercept)
                   fr3.add("xjm1", _activeData._adaptedFrame.vec(i - 1)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
 
-                GLMCoordinateDescentTaskSeq stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, beta, betaold).doAll(fr3);
+                GLMCoordinateDescentTaskSeq stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, betaold, beta,i).doAll(fr3);
                 beta[i] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0]) / (denums[i] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+
+                // Need to set zTilda in fr2 here to the current zTilda in fr3.
+                fr2.replace(2,fr3.vec(2));
               }
 
-              Frame fr3 = new Frame(fr2); // currently update intercept
+              // intercept update
+              Frame fr3 = new Frame(fr2);
               fr3.add("xj", _activeData._adaptedFrame.vec(beta.length - 2)); // add last variable updated in cycle to the frame
-              GLMCoordinateDescentTaskSeq iupdate = new GLMCoordinateDescentTaskSeq(false, true, beta, betaold).doAll(fr);
+              GLMCoordinateDescentTaskSeq iupdate = new GLMCoordinateDescentTaskSeq(false, true, betaold, beta,0).doAll(fr3);
               beta[beta.length - 1] = iupdate._temp[0] / wsum;
+              fr2.replace(2,fr3.vec(2));
 
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);

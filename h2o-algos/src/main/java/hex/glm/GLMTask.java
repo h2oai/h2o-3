@@ -897,12 +897,14 @@ public abstract class GLMTask  {
     long _nobs;
     boolean _interceptnew;
     boolean _interceptold;
+    int _varindex;
 
-    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, double [] betaold, double[] betanew) {
+    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, double [] betaold, double[] betanew, int varindex) {
       _betaold = betaold;
       _betanew = betanew;
       _interceptold=interceptold; // if updating beta_1, then the intercept is the previous column -> true
       _interceptnew=interceptnew; // if currently updating the intercept value
+      _varindex=varindex;
     }
 
     @Override
@@ -924,27 +926,29 @@ public abstract class GLMTask  {
           xpChunk = chunks[cnt++];
         }
       }
-      ++_nobs;
 
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+        ++_nobs;
         if (filterChunk.atd(i) == 1) continue;
-        //updating the intercept (give j as length-2)
+        // updating the intercept
         if (_interceptnew) {
-          ztildaChunk.set(i, ztildaChunk.atd(i ) - _betaold[_betaold.length - 1] + xpChunk.atd(i) * _betanew[0]);
-          _temp[0] = wChunk.at8(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+          ztildaChunk.set(i, ztildaChunk.atd(i ) - _betaold[_betaold.length - 1] + xpChunk.atd(i) * _betanew[_betaold.length -2]);
+          _temp[0] += wChunk.at8(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
         }
         else{
-          if (_interceptold) // updating beta_1 (give j as 0)
+          if (_interceptold) //  beta_1
             ztildaChunk.set(i, ztildaChunk.atd(i) - xChunk.atd(i) * _betaold[0] + _betanew[_betanew.length-1]);
-          else //updating any other beta_k
-            ztildaChunk.set(i, ztildaChunk.atd(i ) - xChunk.atd(i) * _betaold[0] + xpChunk.atd(i) * _betanew[0]);
-          _temp[0] = wChunk.at8(i) * xChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+          else // any other beta_k
+            ztildaChunk.set(i, ztildaChunk.atd(i ) - xChunk.atd(i) * _betaold[_varindex] +  xpChunk.atd(i)* _betanew[_varindex-1]);
+          _temp[0] += wChunk.at8(i) * xChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
         }
      }
+
+      chunks[2].setVec(ztildaChunk.vec());
     }
 
     @Override
-    public void reduce(GLMCoordinateDescentTaskSeq git){ // adding contribution of all the chunks
+    public void reduce(GLMCoordinateDescentTaskSeq git){
       ArrayUtils.add(_temp, git._temp);
       _nobs += git._nobs;
       super.reduce(git);
@@ -980,7 +984,7 @@ public abstract class GLMTask  {
     }
 
     @Override
-    public void reduce(GLMCoordinateDescentTaskSeqIntercept git){ // adding contribution of all the chunks
+    public void reduce(GLMCoordinateDescentTaskSeqIntercept git){
       _temp+= git._temp;
       super.reduce(git);
     }
@@ -1037,7 +1041,7 @@ public abstract class GLMTask  {
         wChunk.set(i,w);
         zChunk.set(i,z);
 
-        wsum=w;
+        wsum+=w;
 
         for(int j = 0; j < r.nBins; ++j)  { // go over cat variables
           denums[r.binIds[j]] +=  w*r.get(r.binIds[j])*r.get(r.binIds[j]);
