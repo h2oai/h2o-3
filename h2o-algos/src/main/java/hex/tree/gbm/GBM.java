@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.Distributions;
 import hex.ModelCategory;
 import hex.schemas.GBMV3;
 import hex.tree.*;
@@ -10,8 +11,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
-import water.fvec.Vec;
-import water.util.FrameUtils;
+import water.fvec.Frame;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -88,9 +88,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass == 1) _parms._distribution = GBMModel.GBMParameters.Family.gaussian;
         if (_nclass == 2) _parms._distribution = GBMModel.GBMParameters.Family.bernoulli;
         if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
+      } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
+        if (_response.min() < 0)
+          error("_response", "Response cannot be negative for Gamma distribution.");
+        _initialPrediction = poissonInitialValue();
+      } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma) {
+        if (_response.min() < 0)
+          error("_response", "Response cannot be negative for Gamma distribution.");
+        _initialPrediction = gammaInitialValue();
       }
-      if (hasOffset() && isClassifier() && _parms._distribution != GBMModel.GBMParameters.Family.bernoulli) {
-        error("_offset_column", "Offset is only supported for regression or binary classification with the Bernoulli distribution.");
+      if (hasOffset() && isClassifier() && _parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
+        error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
       if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
         if (_offset.max() > 1)
@@ -110,6 +118,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
       break;
+    case poisson:
+      if (isClassifier()) error("_distribution", "Poisson requires the response to be numeric.");
+      break;
+    case gamma:
+      if (isClassifier()) error("_distribution", "Gamma requires the response to be numeric.");
+      break;
     case gaussian:
       if (isClassifier()) error("_distribution", "Gaussian requires the response to be numeric.");
       break;
@@ -123,35 +137,83 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_learn_rate", "learn_rate must be between 0 and 1");
   }
 
+  /**
+   * Compute the inital value for Poisson distribution
+   * @return initial value
+   */
+  private double poissonInitialValue() {
+    return new PoissonInitialValue().doAll(
+            _response,
+            hasWeights() ? _weights : _response.makeCon(1),
+            hasOffset() ? _offset : _response.makeCon(0)
+    ).initialValue();
+  }
+
+  private static class PoissonInitialValue extends MRTask<PoissonInitialValue> {
+    private double _num;
+    private double _denom;
+    public  double initialValue() {
+      return Math.log(_num / _denom);
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        _num += w*response.atd(i);
+        _denom += w*Distributions.Poisson.linkInv(offset.atd(i));
+      }
+    }
+    @Override public void reduce(PoissonInitialValue mrt) {
+      _num += mrt._num;
+      _denom += mrt._denom;
+    }
+  }
+
+  /**
+   * Compute the inital value for Poisson distribution
+   * @return initial value
+   */
+  private double gammaInitialValue() {
+    return new GammaInitialValue().doAll(
+            _response,
+            hasWeights() ? _weights : _response.makeCon(1),
+            hasOffset() ? _offset : _response.makeCon(0)
+    ).initialValue();
+  }
+
+  private static class GammaInitialValue extends MRTask<GammaInitialValue> {
+    private double _num;
+    private double _denom;
+    public  double initialValue() {
+      return Math.log(_num / _denom);
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        _num += w*response.atd(i)*Math.exp(-offset.atd(i));
+        _denom += w;
+      }
+    }
+    @Override public void reduce(GammaInitialValue mrt) {
+      _num += mrt._num;
+      _denom += mrt._denom;
+    }
+  }
+
   // ----------------------
   private class GBMDriver extends Driver {
 
     @Override protected void buildModel() {
       if (hasOffset() && _parms._distribution == GBMModel.GBMParameters.Family.bernoulli) {
-        Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
-        Log.info("Iteration 0: initial value: " + _initialPrediction + " (starting value)");
-        double delta;
-        int count=0;
-        double tol = 1e-4;
-        int N=1; //one step is enough - same as R
-        //From R GBM vignette:
-        //For speed, gbm() does only one step of the Newton-Raphson algorithm
-        //rather than iterating to convergence. No appreciable loss of accuracy
-        //since the next boosting iteration will simply correct for the prior iterations
-        //inadequacy.
-        _initialPrediction = 0;
-        do {
-          double newInit = new NewtonRaphson(_initialPrediction).doAll(_train).value();
-          delta = Math.abs(_initialPrediction - newInit);
-          _initialPrediction = newInit;
-          Log.info("Iteration " + ++count + ": initial value: " + _initialPrediction);
-        } while (count < N && delta >= tol);
-        if (delta > tol) Log.warn("Not fully converged.");
-        Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
+        _initialPrediction = getInitialValueBernoulliOffset(_train);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
-      if( _initialPrediction != 0.0 ) {      // Only non-zero for regression or bernoulli
+      // Set the initial prediction into the tree column 0
+      if( _initialPrediction != 0.0 ) {
         final double init = _initialPrediction;
         new MRTask() {
           @Override
@@ -178,16 +240,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             return;             // Stop when approaching round-off error
         }
 
-        // ESL2, page 387
-        // Step 2a: Compute prediction (prob distribution) from prior tree results:
-        //   Work <== f(Tree)
-        new ComputeProb().doAll(_train, _parms._build_tree_one_node);
-
-        // ESL2, page 387
-        // Step 2b i: Compute residuals from the prediction (probability distribution)
-        //   Work <== f(Work)
+        // Compute predictions and resulting residuals for trees built so far
+        // ESL2, page 387, Steps 2a, 2b
         new ComputeRes().doAll(_train, _parms._build_tree_one_node);
 
+        // Build more trees, based on residuals above
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
         buildNextKTrees();
@@ -199,9 +256,37 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
     }
 
+    /**
+     * Helper to compute the initial value for Bernoulli for offset != 0
+     * @return
+     */
+    private double getInitialValueBernoulliOffset(Frame train) {
+      Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
+      double delta;
+      int count = 0;
+      double tol = 1e-4;
+
+      //From R GBM vignette:
+      //For speed, gbm() does only one step of the Newton-Raphson algorithm
+      //rather than iterating to convergence. No appreciable loss of accuracy
+      //since the next boosting iteration will simply correct for the prior iterations
+      //inadequacy.
+      int N = 1; //one step is enough - same as R
+
+      double init = 0; //start with initial value of 0 for convergence
+      do {
+        double newInit = new NewtonRaphson(init).doAll(train).value();
+        delta = Math.abs(init - newInit);
+        init = newInit;
+        Log.info("Iteration " + ++count + ": initial value: " + init);
+      } while (count < N && delta >= tol);
+      if (delta > tol) Log.warn("Not fully converged.");
+      Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
+      return init;
+    }
 
     /**
-     * Iteration to find a consistent initial value for bernoulli with offsets
+     * Newton-Raphson fixpoint iteration to find a self-consistent initial value
      */
     private class NewtonRaphson extends MRTask<NewtonRaphson> {
       double _init;
@@ -220,7 +305,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (ys.isNA(row)) continue;
           double y = ys.atd(row);
           double o = offset.atd(row);
-          double p = 1./(1.+Math.exp(-(o+_init)));
+          double p = Distributions.Bernoulli.linkInv(o+_init);
           _num += w*(y-p);
           _denom += w*p*(1.-p);
         }
@@ -234,76 +319,43 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     // --------------------------------------------------------------------------
-    // Compute Prediction from prior tree results.
-    // Classification (multinomial): Probability Distribution of loglikelyhoods
-    //   Prob_k = exp(Work_k)/sum_all_K exp(Work_k)
-    // Classification (bernoulli): Probability of y = 1 given logit link function
-    //   Prob_0 = 1/(1 + exp(Work)), Prob_1 = 1/(1 + exp(-Work))
-    // Regression: Just prior tree results
-    // Work <== f(Tree)
-    class ComputeProb extends MRTask<ComputeProb> {
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-          Chunk tr = chk_tree(chks,0);
-          Chunk wk = chk_work(chks,0);
-          for( int row = 0; row < ys._len; row++)
-            // wk.set(row, 1.0f/(1f+Math.exp(-tr.atd(row))) ); // Prob_1
-            wk.set(row, 1.0f / (1f + Math.exp(tr.atd(row) + offset.atd(row))));     // Prob_0
-        } else if( _nclass > 1 ) {       // Classification
-          double fs[] = new double[_nclass+1];
-          for( int row=0; row<ys._len; row++ ) {
-            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
-            double sum = score1(chks, weight,0.0 /*offset*/,fs,row);
-            if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
-              for( int k=0; k<_nclass; k++ )
-                chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
-            else
-              for( int k=0; k<_nclass; k++ ) // Save as a probability distribution
-                chk_work(chks,k).set(row,(float)(fs[k+1]/sum));
-          }
-        } else {                  // Regression
-          Chunk tr = chk_tree(chks,0); // Prior tree sums
-          Chunk wk = chk_work(chks,0); // Predictions
-          for( int row=0; row<ys._len; row++ )
-            wk.set(row,(float)(tr.atd(row) + offset.atd(row)));
-        }
-      }
-    }
-
-    // --------------------------------------------------------------------------
-    // Compute Residuals from Actuals
-    // Work <== f(Work)
+    // Compute Residuals
     class ComputeRes extends MRTask<ComputeRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
-        if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-          for(int row = 0; row < ys._len; row++) {
-            if( ys.isNA(row) ) continue;
-            int y = (int)ys.at8(row); // zero-based response variable
-            Chunk wk = chk_work(chks,0);
-            // wk.set(row, y-(float)wk.atd(row));  // wk.atd(row) is Prob_1
-            wk.set(row, y-1f+(float)wk.atd(row));  // wk.atd(row) is Prob_0
-          }
-        } else if( _nclass > 1 ) {       // Classification
-
-          for( int row=0; row<ys._len; row++ ) {
-            if( ys.isNA(row) ) continue;
-            int y = (int)ys.at8(row); // zero-based response variable
-            // Actual is '1' for class 'y' and '0' for all other classes
-            for( int k=0; k<_nclass; k++ ) {
-              if( _model._output._distribution[k] != 0 ) {
-                Chunk wk = chk_work(chks,k);
-                wk.set(row, (y==k?1f:0f)-(float)wk.atd(row) );
+        Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
+        Chunk tr = chk_tree(chks,0); // Prior tree sums
+        Chunk wk = chk_work(chks,0); // Predictions
+        double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
+        for( int row = 0; row < wk._len; row++) {
+          if( ys.isNA(row) ) continue;
+          double f = tr.atd(row) + offset.atd(row);
+          double y = ys.at8(row);
+          if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
+            wk.set(row, (float)Distributions.Bernoulli.gradient(y, f)); //class 1
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
+            wk.set(row, (float)Distributions.Gaussian.gradient(y, f));
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
+            wk.set(row, (float)Distributions.Poisson.gradient(y, f));
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma) {
+            wk.set(row, (float) Distributions.Gamma.gradient(y, f));
+          } else if( _nclass > 1 ) {
+            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
+            double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
+            if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
+              for (int k = 0; k < _nclass; k++) {
+                wk = chk_work(chks, k);
+                wk.set(row, ((int)y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f));
+              }
+            } else {
+              for( int k=0; k<_nclass; k++ ) { // Save as a probability distribution
+                if( _model._output._distribution[k] != 0 ) {
+                  wk = chk_work(chks, k);
+                  wk.set(row, ((int)y == k ? 1f : 0f) - (float)(fs[k + 1] / sum));
+                }
               }
             }
-          }
-
-        } else {                  // Regression
-          Chunk wk = chk_work(chks,0); // Prediction==>Residuals
-          for( int row=0; row<ys._len; row++ )
-            wk.set(row, (float)(ys.atd(row)-wk.atd(row)) );
+          } else throw H2O.unimpl();
         }
       }
     }
@@ -379,20 +431,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b iii.  Compute the gammas, and store them back
       // into the tree leaves.  Includes learn_rate.
       // For classification (bernoulli):
-      //    gamma_i = sum res_i / sum p_i*(1 - p_i) where p_i = y_i - res_i
+      //    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i
       // For classification (multinomial):
       //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
       // For regression (gaussian):
       //    gamma_i = sum res_i / count(res_i)
-      GammaPass gp = new GammaPass(ktrees,leafs,_parms._distribution == GBMModel.GBMParameters.Family.bernoulli).doAll(_train);
+      GammaPass gp = new GammaPass(ktrees,leafs,_parms._distribution).doAll(_train);
       double m1class = _nclass > 1 && _parms._distribution != GBMModel.GBMParameters.Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
       for( int k=0; k<_nclass; k++ ) {
         final DTree tree = ktrees[k];
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
-          float gf = (float)(_parms._learn_rate * m1class * gp._rss[k][i] / gp._gss[k][i]);
-          if( gp._gss[k][i]==0 ) // Bad split; all corrections sum to zero
-            gf = (float)(Math.signum(gp._rss[k][i])*1e4);
+          float gf = (float)(_parms._learn_rate * m1class * gp.gamma(k,i));
+          if( gp._denom[k][i]==0 ) // Bad split; all corrections sum to zero
+            gf = (float)(Math.signum(gp._num[k][i])*1e4);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -434,21 +486,28 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _model._output.addKTrees(ktrees);
     }
 
-    // ---
+    // Set terminal node estimates (gamma)
     // ESL2, page 387.  Step 2b iii.
     // Nids <== f(Nids)
     private class GammaPass extends MRTask<GammaPass> {
       final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
       final int   _leafs[]; // Number of active leaves (per tree)
-      final boolean _isBernoulli;
-      // Per leaf: sum(res);
-      double _rss[/*tree/klass*/][/*tree-relative node-id*/];
-      // Per leaf: multinomial: sum(|res|*1-|res|), gaussian: sum(1), bernoulli: sum((y-res)*(1-y+res))
-      double _gss[/*tree/klass*/][/*tree-relative node-id*/];
-      GammaPass(DTree trees[], int leafs[], boolean isBernoulli) { _leafs=leafs; _trees=trees; _isBernoulli = isBernoulli; }
+      final GBMModel.GBMParameters.Family _dist;
+      private double _num[/*tree/klass*/][/*tree-relative node-id*/];
+      private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
+      double gamma(int tree, int nid) {
+        double g = _num[tree][nid]/ _denom[tree][nid];
+        assert(!Double.isInfinite(g)) : "numeric overflow"; //TODO: handle gracefully with signum(g)*1e19"
+        if (_dist == GBMModel.GBMParameters.Family.poisson || _dist == GBMModel.GBMParameters.Family.gamma) {
+          return g == 0 ? -19 : Math.log(g);
+        } else {
+          return g;
+        }
+      }
+      GammaPass(DTree trees[], int leafs[], GBMModel.GBMParameters.Family distribution) { _leafs=leafs; _trees=trees; _dist = distribution; }
       @Override public void map( Chunk[] chks ) {
-        _gss = new double[_nclass][];
-        _rss = new double[_nclass][];
+        _denom = new double[_nclass][];
+        _num = new double[_nclass][];
         final Chunk resp = chk_resp(chks); // Response for this frame
 
         // For all tree/klasses
@@ -458,8 +517,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if( tree == null ) continue; // Empty class is ignored
 
           // A leaf-biased array of all active Tree leaves.
-          final double gs[] = _gss[k] = new double[tree._len-leaf];
-          final double rs[] = _rss[k] = new double[tree._len-leaf];
+          final double denom[] = _denom[k] = new double[tree._len-leaf];
+          final double num[] = _num[k] = new double[tree._len-leaf];
           final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks,k); // Residuals for this tree/class
 
@@ -485,22 +544,37 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             nids.set(row, leafnid);
             assert !ress.isNA(row);
 
-            // Compute numerator (rs) and denominator (gs) of gamma
-            double w = hasWeights() ? chk_weight(chks).atd(row) : 1;
-            double res = ress.atd(row);
-            double ares = Math.abs(res);
-            if( _isBernoulli ) {
-              double prob = resp.atd(row) - res;
-              gs[leafnid-leaf] += w*prob*(1-prob);
-            } else
-              gs[leafnid-leaf] += w*(_nclass > 1 ? ares*(1-ares) : 1);
-            rs[leafnid-leaf] += w*res;
+            // Compute numerator and denominator of terminal node estimate (gamma)
+            double w = hasWeights() ? chk_weight(chks).atd(row) : 1; //weight
+            double y = resp.atd(row); //response
+            double z = ress.atd(row); //residual
+            int idx=leafnid-leaf;
+            if( _dist == GBMModel.GBMParameters.Family.bernoulli ) {
+              double p = y - z;
+              num[idx] += w * z;
+              denom[idx] += w*p*(1-p);
+            } else if ( _dist == GBMModel.GBMParameters.Family.gaussian) {
+              num[idx] += w * z;
+              denom[idx] += w;
+            } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
+              double expfx = y - z;
+              num[idx] += w * y;
+              denom[idx] += w*expfx;
+            } else if ( _dist == GBMModel.GBMParameters.Family.gamma) {
+              double yexp_negf = z + 1;
+              num[idx] += w * yexp_negf;
+              denom[idx] += w;
+            } else if ( _dist == GBMModel.GBMParameters.Family.multinomial) {
+              double absz = Math.abs(z);
+              num[idx] += w * z;
+              denom[idx] += w*(absz*(1-absz));
+            }
           }
         }
       }
       @Override public void reduce( GammaPass gp ) {
-        ArrayUtils.add(_gss,gp._gss);
-        ArrayUtils.add(_rss,gp._rss);
+        ArrayUtils.add(_denom,gp._denom);
+        ArrayUtils.add(_num,gp._num);
       }
     }
 
@@ -566,26 +640,31 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+    double f = chk_tree(chks,0).atd(row) + offset;
     if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
-      fs[2] = 1.0-fs[1];
+      fs[2] = Distributions.Bernoulli.linkInv(f);
+      fs[1] = 1.0-fs[2];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
+      return fs[0] = Distributions.Gaussian.linkInv(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson){
+      return fs[0] = Distributions.Poisson.linkInv(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma){
+      return fs[0] = Distributions.Gamma.linkInv(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
+      if (_nclass == 2) {
+        // This optimization assumes the 2nd tree of a 2-class system is the
+        // inverse of the first.  Fill in the missing tree
+        fs[1] = Math.exp(chk_tree(chks, 0).atd(row));
+        fs[2] = 1.0 / fs[1]; // exp(-d) === 1/exp(d)
+        return fs[1] + fs[2];
+      }
+      // Multinomial loss function; sum(exp(data)).  Load tree data
+      for( int k=0; k<_nclass; k++ )
+        fs[k+1]=chk_tree(chks,k).atd(row);
+      // Rescale to avoid Infinities; return sum(exp(data))
+      return hex.genmodel.GenModel.log_rescale(fs);
     }
-    if( _nclass == 1 ) { // Regression
-      return fs[0] = chk_tree(chks, 0).atd(row) + offset;
-    }
-    if( _nclass == 2 ) {        // The Boolean Optimization
-      // This optimization assumes the 2nd tree of a 2-class system is the
-      // inverse of the first.  Fill in the missing tree
-      fs[1] = Math.exp(chk_tree(chks,0).atd(row));
-      fs[2] = 1.0/fs[1]; // exp(-d) === 1/exp(d)
-      return fs[1]+fs[2];
-    }
-    // Multinomial loss function; sum(exp(data)).  Load tree data
-    for( int k=0; k<_nclass; k++ ) 
-      fs[k+1]=chk_tree(chks,k).atd(row);
-    // Rescale to avoid Infinities; return sum(exp(data))
-    return hex.genmodel.GenModel.log_rescale(fs);
+    throw H2O.unimpl();
   }
-
 }

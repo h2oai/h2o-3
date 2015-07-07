@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/Abalone.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/Abalone.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/Abalone.gz\"]\n  destination_frame: \"Abalone.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 9\n  single_quotes: false\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"Abalone.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"Abalone.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"Abalone.hex\", [0.25], [\"Abalone_test\",\"Abalone_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"Abalone_train\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-c375c754-2e4e-470f-ac3b-94909a55e7b4\",\"training_frame\":\"Abalone_train\",\"validation_frame\":\"Abalone_test\",\"ignore_const_cols\":true,\"response_column\":\"C9\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[1],\"lambda\":[],\"lambda_search\":true,\"nlambdas\":-1,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"lambda_min_ratio\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-c375c754-2e4e-470f-ac3b-94909a55e7b4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-c375c754-2e4e-470f-ac3b-94909a55e7b4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-c375c754-2e4e-470f-ac3b-94909a55e7b4\", frame: \"Abalone.hex\", predictions_frame: \"prediction-459b3569-6251-4096-b530-c65431535588\""
+    }
+  ]
+}

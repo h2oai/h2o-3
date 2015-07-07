@@ -57,8 +57,8 @@ public class GBMTest extends TestUtil {
       fr2 = gbm.score(fr);
       double sq_err = new CompErr().doAll(job.response(),fr2.vecs()[0])._sum;
       double mse = sq_err/fr2.numRows();
-      assertEquals(79152.1233,mse,0.1);
-      assertEquals(79152.1233,gbm._output._scored_train[1]._mse,0.1);
+      assertEquals(79152.26,mse,0.1);
+      assertEquals(79152.26,gbm._output._scored_train[1]._mse,0.1);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
@@ -84,7 +84,15 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, Family.gaussian);
-    
+
+    basicGBM("./smalldata/junit/cars.csv",
+            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            false, Family.poisson);
+
+    basicGBM("./smalldata/junit/cars.csv",
+            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            false, Family.gamma);
+
     // Classification tests
     basicGBM("./smalldata/junit/test_tree.csv",
             new PrepData() { int prep(Frame fr) { return 1; }
@@ -100,6 +108,11 @@ public class GBMTest extends TestUtil {
             new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
             },
             false, Family.bernoulli);
+
+    basicGBM("./smalldata/logreg/prostate.csv",
+            new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
+            },
+            false, Family.multinomial);
 
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
@@ -627,7 +640,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-15); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -686,7 +699,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-15); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223

@@ -67,7 +67,7 @@ def weights_check(ip,port):
     h2o_cars_data["cylinders"] = h2o_cars_data["cylinders"].asfactor()
 
     # uniform weights same as no weights
-    random.seed(2222)
+    random.seed(222)
     weight = random.randint(1,10)
     uniform_weights = [[weight] for r in range(406)]
     h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)

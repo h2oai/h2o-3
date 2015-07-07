@@ -39,9 +39,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     int N = _parms._ntrees;
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
       preds[0] /= N;
-      return preds;
-    }
-    else { // classification
+    } else { // classification
       if (_output.nclasses() == 2 && binomialOpt()) {
         preds[1] /= N; //average probability
         preds[2] = 1. - preds[1];
@@ -49,9 +47,6 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
         double sum = MathUtils.sum(preds);
         if (sum > 0) MathUtils.div(preds, sum);
       }
-      if (_parms._balance_classes)
-        GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     }
     return preds;
   }

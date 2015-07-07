@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+  
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/Motor_insurance_sweden.txt\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/Motor_insurance_sweden.txt\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/Motor_insurance_sweden.txt\"]\n  destination_frame: \"Motor_insurance_sweden.hex\"\n  parse_type: \"CSV\"\n  separator: 9\n  number_columns: 7\n  single_quotes: false\n  column_names: [\"Kilometres\",\"Zone\",\"Bonus\",\"Make\",\"Insured\",\"Claims\",\"Payment\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"Motor_insurance_sweden.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"Motor_insurance_sweden.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"Motor_insurance_sweden.hex\", [0.25], [\"Motor_insurance_sweden_test\",\"Motor_insurance_sweden_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-7b920e41-b025-420e-b040-adcbc518f580\",\"training_frame\":\"Motor_insurance_sweden_train\",\"validation_frame\":\"Motor_insurance_sweden_test\",\"ignore_const_cols\":true,\"response_column\":\"Claims\",\"family\":\"poisson\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[0],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-7b920e41-b025-420e-b040-adcbc518f580\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-7b920e41-b025-420e-b040-adcbc518f580\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-7b920e41-b025-420e-b040-adcbc518f580\", frame: \"Motor_insurance_sweden_train\", predictions_frame: \"prediction-fb6a9bc5-5b6c-4abc-892d-da84e95885af\""
+    }
+  ]
+}

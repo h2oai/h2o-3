@@ -1,10 +1,8 @@
 package hex.tree.gbm;
 
-import hex.VarImp;
-import hex.genmodel.GenModel;
+import hex.Distributions;
 import hex.tree.SharedTreeModel;
 import water.Key;
-import water.fvec.Chunk;
 import water.util.SB;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
@@ -16,7 +14,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson  }
+    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson, gamma }
     public Family _distribution = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
   }
@@ -33,28 +31,26 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
     super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
-    if( _parms._distribution == GBMParameters.Family.bernoulli ) {
-      double fx = preds[1] + _output._init_f + offset;
-      preds[2] = 1.0/(1.0+Math.exp(-fx));
-      preds[1] = 1.0-preds[2];
-      if (_parms._balance_classes)
-        GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
-      return preds;
+    if (_parms._distribution == GBMParameters.Family.bernoulli) {
+      double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
+      preds[2] = Distributions.Bernoulli.linkInv(f);
+      preds[1] = 1.0 - preds[2];
+    } else if (_parms._distribution == GBMParameters.Family.multinomial) { // Kept the initial prediction for binomial
+      if (_output.nclasses() == 2) { //1-tree optimization for binomial
+        preds[1] += _output._init_f + offset; //offset is not yet allowed, but added here to be future-proof
+        preds[2] = -preds[1];
+      }
+      hex.genmodel.GenModel.GBM_rescale(preds);
+    } else { //Regression
+      double f = preds[0] + _output._init_f + offset;
+      if( _parms._distribution == GBMParameters.Family.gaussian) {
+        preds[0] = Distributions.Gaussian.linkInv(f);
+      } else if( _parms._distribution == GBMParameters.Family.poisson) {
+        preds[0] = Distributions.Poisson.linkInv(f);
+      } else if( _parms._distribution == GBMParameters.Family.gamma) {
+        preds[0] = Distributions.Gamma.linkInv(f);
+      }
     }
-    if( _output.nclasses()==1 ) {
-      // Prediction starts from the mean response, and adds predicted residuals
-      preds[0] += _output._init_f + offset;
-      return preds;
-    }
-    if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-      preds[1] += _output._init_f;
-      preds[2] = - preds[1];
-    }
-    hex.genmodel.GenModel.GBM_rescale(preds);
-    if (_parms._balance_classes)
-      GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-    preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     return preds;
   }
 
@@ -72,8 +68,16 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       return;
     }
     if( _output.nclasses() == 1 ) { // Regression
-      // Prediction starts from the mean response, and adds predicted residuals
-      body.ip("preds[0] += ").p(_output._init_f).p(";");
+      if( _parms._distribution == GBMParameters.Family.gaussian) {
+        // Prediction starts from the mean response, and adds predicted residuals
+        body.ip("preds[0] += ").p(_output._init_f).p(";");
+      } else if( _parms._distribution == GBMParameters.Family.poisson) {
+        body.ip("preds[0] += ").p(_output._init_f).p(";");
+        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+      } else if( _parms._distribution == GBMParameters.Family.gamma) {
+        body.ip("preds[0] += ").p(_output._init_f).p(";");
+        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+      }
       return;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
