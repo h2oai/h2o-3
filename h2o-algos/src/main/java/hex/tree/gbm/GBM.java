@@ -595,13 +595,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double f = chk_tree(chks,0).atd(row) + offset;
     if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[2] = Distributions.Bernoulli.invLink(f);
+      fs[2] = Distributions.Bernoulli.linkInv(f);
       fs[1] = 1.0-fs[2];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.gaussian) {
-      return fs[0] = Distributions.Gaussian.invLink(f);
+      return fs[0] = Distributions.Gaussian.linkInv(f);
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson){
-      return fs[0] = Distributions.Poisson.invLink(f);
+      return fs[0] = Distributions.Poisson.linkInv(f);
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
       if (_nclass == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the

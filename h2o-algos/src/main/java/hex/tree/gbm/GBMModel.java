@@ -1,11 +1,8 @@
 package hex.tree.gbm;
 
 import hex.Distributions;
-import hex.VarImp;
-import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
-import water.fvec.Chunk;
 import water.util.SB;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
@@ -17,7 +14,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson  }
+    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson, gamma }
     public Family _distribution = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
   }
@@ -36,7 +33,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
     if (_parms._distribution == GBMParameters.Family.bernoulli) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
-      preds[2] = Distributions.Bernoulli.invLink(f);
+      preds[2] = Distributions.Bernoulli.linkInv(f);
       preds[1] = 1.0 - preds[2];
     } else if (_parms._distribution == GBMParameters.Family.multinomial) { // Kept the initial prediction for binomial
       if (_output.nclasses() == 2) { //1-tree optimization for binomial
@@ -47,9 +44,9 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     } else { //Regression
       double f = preds[0] + _output._init_f + offset;
       if( _parms._distribution == GBMParameters.Family.gaussian) {
-        preds[0] = Distributions.Gaussian.invLink(f);
+        preds[0] = Distributions.Gaussian.linkInv(f);
       } else if( _parms._distribution == GBMParameters.Family.poisson) {
-        preds[0] = Distributions.Poisson.invLink(f);
+        preds[0] = Distributions.Poisson.linkInv(f);
       }
     }
     return preds;
