@@ -61,7 +61,7 @@ public final class PersistHdfs extends Persist {
         Log.info("Using HDFS configuration from " + confDir);
         conf.addResource(new Path(confDir,  "core-site.xml"));
       } else {
-        Log.warn("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are not loaded!");
+        Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
 
       if( H2O.ARGS.hdfs != null && H2O.ARGS.hdfs.length() > 0 ) {
