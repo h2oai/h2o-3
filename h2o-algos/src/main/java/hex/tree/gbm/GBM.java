@@ -90,6 +90,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
       } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
         _initialPrediction = poissonInitialValue();
+      } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma) {
+        _initialPrediction = gammaInitialValue();
       }
       if (hasOffset() && isClassifier() && _parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
@@ -114,6 +116,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       break;
     case poisson:
       if (isClassifier()) error("_distribution", "Poisson requires the response to be numeric.");
+      break;
+    case gamma:
+      if (isClassifier()) error("_distribution", "Gamma requires the response to be numeric.");
       break;
     case gaussian:
       if (isClassifier()) error("_distribution", "Gaussian requires the response to be numeric.");
@@ -156,6 +161,39 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
     @Override public void reduce(PoissonInitialValue mrt) {
+      _num += mrt._num;
+      _denom += mrt._denom;
+    }
+  }
+
+  /**
+   * Compute the inital value for Poisson distribution
+   * @return initial value
+   */
+  private double gammaInitialValue() {
+    return new PoissonInitialValue().doAll(
+            _response,
+            hasWeights() ? _weights : _response.makeCon(1),
+            hasOffset() ? _offset : _response.makeCon(0)
+    ).initialValue();
+  }
+
+  private static class GammaInitialValue extends MRTask<GammaInitialValue> {
+    private double _num;
+    private double _denom;
+    public  double initialValue() {
+      return Math.log(_num / _denom);
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        _num += w*response.atd(i)*Math.exp(-offset.atd(i));
+        _denom += w;
+      }
+    }
+    @Override public void reduce(GammaInitialValue mrt) {
       _num += mrt._num;
       _denom += mrt._denom;
     }
@@ -295,6 +333,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             wk.set(row, (float)Distributions.Gaussian.gradient(y, f));
           } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
             wk.set(row, (float)Distributions.Poisson.gradient(y, f));
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma) {
+            wk.set(row, (float) Distributions.Gamma.gradient(y, f));
           } else if( _nclass > 1 ) {
             double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
             double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
@@ -513,6 +553,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
               double expfx = y - z;
               denom[idx] += w*expfx;
+            } else if ( _dist == GBMModel.GBMParameters.Family.poisson) {
+              throw H2O.unimpl();
             } else if ( _dist == GBMModel.GBMParameters.Family.multinomial) {
               double absz = Math.abs(z);
               denom[idx] += w*(absz*(1-absz));
@@ -602,6 +644,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return fs[0] = Distributions.Gaussian.linkInv(f);
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson){
       return fs[0] = Distributions.Poisson.linkInv(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma){
+      return fs[0] = Distributions.Gamma.linkInv(f);
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
       if (_nclass == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
