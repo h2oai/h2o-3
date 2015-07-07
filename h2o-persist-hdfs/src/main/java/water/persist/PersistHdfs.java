@@ -47,6 +47,23 @@ public final class PersistHdfs extends Persist {
       Log.debug("resource ", p.getAbsolutePath(), " added to the hadoop configuration");
     } else {
       conf = new Configuration();
+      Path confDir = null;
+      // Try to guess location of default Hadoop configuration
+      if (System.getenv().containsKey("HADOOP_CONF_DIR")) {
+        confDir = new Path(System.getenv("HADOOP_CONF_DIR"));
+      } else if (System.getenv().containsKey("YARN_CONF_DIR")) {
+        confDir = new Path(System.getenv("YARN_CONF_DIR"));
+      } else  if (System.getenv().containsKey("HADOOP_HOME")) {
+        confDir = new Path(System.getenv("HADOOP_HOME"), "conf");
+      }
+      // Load default HDFS configuration
+      if (confDir != null) {
+        Log.info("Using HDFS configuration from " + confDir);
+        conf.addResource(new Path(confDir,  "core-site.xml"));
+      } else {
+        Log.warn("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are not loaded!");
+      }
+
       if( H2O.ARGS.hdfs != null && H2O.ARGS.hdfs.length() > 0 ) {
         // setup default remote Filesystem - for version 0.21 and higher
         conf.set("fs.defaultFS", H2O.ARGS.hdfs);
