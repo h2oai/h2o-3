@@ -68,7 +68,7 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
         'lambda_search': None,
         'nlambdas': None,
         'lambda_min_ratio': None,
-        'use_all_factor_levels': False,
+        # 'use_all_factor_levels': False,
     }
 
 

@@ -98,7 +98,7 @@ class Basic(unittest.TestCase):
                     'lambda_search': None,
                     'nlambdas': None,
                     'lambda_min_ratio': None,
-                    'use_all_factor_levels': False,
+                    # 'use_all_factor_levels': False,
                 }
                 model_key = 'many_cols_glm.hex'
                 bmResult = h2o.n0.build_model(
