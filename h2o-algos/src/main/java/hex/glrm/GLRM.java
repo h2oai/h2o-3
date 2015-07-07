@@ -252,7 +252,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         try {
           job = new KMeans(parms);
           km = job.trainModel().get();
-          Frame pred = km.score(_parms.train());
         } finally {
           if (job != null) job.remove();
           if (km != null) km.remove();
