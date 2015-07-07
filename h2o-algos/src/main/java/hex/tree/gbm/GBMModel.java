@@ -76,7 +76,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
         body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
       } else if( _parms._distribution == GBMParameters.Family.gamma) {
         body.ip("preds[0] += ").p(_output._init_f).p(";");
-        body.ip("preds[0] = -1./preds[0];");
+        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
       }
       return;
     }

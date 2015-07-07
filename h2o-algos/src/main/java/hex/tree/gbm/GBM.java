@@ -89,8 +89,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass == 2) _parms._distribution = GBMModel.GBMParameters.Family.bernoulli;
         if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
       } else if (_parms._distribution == GBMModel.GBMParameters.Family.poisson) {
+        if (_response.min() < 0)
+          error("_response", "Response cannot be negative for Gamma distribution.");
         _initialPrediction = poissonInitialValue();
       } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma) {
+        if (_response.min() < 0)
+          error("_response", "Response cannot be negative for Gamma distribution.");
         _initialPrediction = gammaInitialValue();
       }
       if (hasOffset() && isClassifier() && _parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
