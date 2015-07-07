@@ -58,7 +58,8 @@ public abstract class Parser extends Iced {
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   protected final ParseSetup _setup;
-  Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; }
+  protected final Key _jobKey;
+  Parser( ParseSetup setup, Key jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
@@ -68,7 +69,7 @@ public abstract class Parser extends Iced {
     if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
-    while( is.available() > 0 )
+    while( is.available() > 0 && (_jobKey == null || !((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()))
       parseChunk(cidx++, din, dout);
     parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
     return dout;
@@ -85,7 +86,7 @@ public abstract class Parser extends Iced {
     StreamParseWriter nextChunk = dout;
     int zidx = bvs.read(null,0,0); // Back-channel read of chunk index
     assert zidx==1;
-    while( is.available() > 0 ) {
+    while( is.available() > 0 && (_jobKey == null || !((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed())) {
       int xidx = bvs.read(null,0,0); // Back-channel read of chunk index
       if( xidx > zidx ) {  // Advanced chunk index of underlying ByteVec stream?
         zidx = xidx;       // Record advancing of chunk

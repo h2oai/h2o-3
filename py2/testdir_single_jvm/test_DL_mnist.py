@@ -50,7 +50,7 @@ class Basic(unittest.TestCase):
             'overwrite_with_best_model': None, # boolean true
             'expert_mode': None, # boolean false
             'autoencoder': None, # boolean false
-            'use_all_factor_levels': None, # boolean true
+            # 'use_all_factor_levels': None, # boolean true
             # [u'Tanh', u'TanhWithDropout', u'Rectifier', u'RectifierWithDropout', u'Maxout', u'MaxoutWithDropout']
             'activation': 'RectifierWithDropout', # enum Rectifier 
             'hidden': '[117,131,129]', # int[] [200, 200]

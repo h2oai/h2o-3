@@ -4,6 +4,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
+import water.Key;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ class CsvParser extends Parser {
   private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
 
-  CsvParser( ParseSetup ps ) { super(ps); }
+  CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
@@ -454,12 +455,12 @@ MAIN_LOOP:
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
-        for (int i = 0; hasHdr && i < _setup._column_names.length; ++i)
+        for (int i = 0; hasHdr && i < firstLine.length; ++i)
           hasHdr = _setup._column_names[i].equalsIgnoreCase(firstLine[i]);
       } else { // declared to have header, but no column names provided, assume header exist in all files
         _setup._column_names = firstLine;
       }
-    } else System.out.println("Foo"); //FIXME Throw exception
+    } // else FIXME Throw exception
     return hasHdr ? ParseSetup.HAS_HEADER: ParseSetup.NO_HEADER;
     // consider making insensitive to quotes
   }
@@ -675,7 +676,7 @@ MAIN_LOOP:
 
       // Asked to check for a header, so see if 1st line looks header-ish
       if( checkHeader == HAS_HEADER
-        || ( checkHeader == GUESS_HEADER && ParseSetup.hasHeader(data[0], data[1]) && data[0].length == ncols)) {
+        || ( checkHeader == GUESS_HEADER && ParseSetup.hasHeader(data[0], data[1]))) {
         checkHeader = HAS_HEADER;
         labels = data[0];
       } else {
@@ -703,7 +704,7 @@ MAIN_LOOP:
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
       InputStream is = new ByteArrayInputStream(bits);
-      CsvParser p = new CsvParser(resSetup);
+      CsvParser p = new CsvParser(resSetup, null);
       PreviewParseWriter dout = new PreviewParseWriter(resSetup._number_columns);
       try {
         p.streamParse(is, dout);

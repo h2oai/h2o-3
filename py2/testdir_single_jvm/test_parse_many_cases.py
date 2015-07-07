@@ -248,10 +248,10 @@ class Basic(unittest.TestCase):
                         '.data'
                     self.writeRows(csvPathname,newRows2,eol)
                     if "'" in tcd[tokenCase][0]:
-                        singleQuotes = 1
+                        single_quotes = 1
                     else:
-                        singleQuotes = 0
-                    parseResult = h2i.import_parse(path=csvPathname, schema='local', singleQuotes=singleQuotes,
+                        single_quotes = 0
+                    parseResult = h2i.import_parse(path=csvPathname, schema='local', single_quotes=single_quotes,
                         noPrint=not h2o_args.verbose, retryDelaySecs=0.1, 
                         doSummary=DO_SUMMARY, intermediateResults=DO_INTERMEDIATE_RESULTS)
 

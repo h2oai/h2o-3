@@ -527,8 +527,8 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
     # local builds have (unknown) in h2o if you build.sh (instead of make)
     # gradle builds should always be right with version?
-    if not expectedVersion.startswith('0'):
-        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % 
+    if not expectedVersion.startswith('3'):
+        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 3) %s" % 
             expectedVersion)
 
     for i, v in enumerate(cloudVersion):

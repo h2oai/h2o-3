@@ -9,5 +9,5 @@ import hex.tree.gbm.GBMModel;
  *
  * @see hex.GridSearchSchema
  */
-public class GBMGridSearchV3 extends GridSearchSchema<GBMGrid, GBMGridSearchV3, GBMModel.GBMParameters, GBMV3.GBMParametersV3> {
+public class GBMGridSearchV99 extends GridSearchSchema<GBMGrid, GBMGridSearchV99, GBMModel.GBMParameters, GBMV3.GBMParametersV3> {
 }

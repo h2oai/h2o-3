@@ -9,18 +9,53 @@
 
 - Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
 
-- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in Terminal. 
-- Confirm ports 54321 and 54322 are available for both TCP and UDP.
-- Confirm your firewall is not preventing the nodes from locating each other.
-- Confirm the nodes are not using different versions of H2O.
+- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in your shell (OSX or Linux). 
+- Confirm ports 54321 and 54322 are available for both TCP and UDP. Launch Telnet (for Windows users) or Terminal (for OS X users), then type `telnet localhost 54321`, `telnet localhost 54322`
+- Confirm your firewall is not preventing the nodes from locating each other. If you can't launch H2O, we recommend temporarily disabling any firewalls until you can confirm they are not preventing H2O from launching. 
+- Confirm the nodes are not using different versions of H2O. If the H2O initialization is not successful, look at the output in the shell - if you see `Attempting to join /localhost:54321 with an H2O version mismatch (md5 differs)`, update H2O on all the nodes to the same version.
+- Confirm that there is space in the `/tmp` directory. 
+	- Windows: In Command Prompt, enter `TEMP` and `%TEMP%` and delete files as needed, or use Disk Cleanup. 
+	- OS X: In Terminal, enter `open $TMPDIR` and delete the folder with your username. 
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
-- Confirm that the nodes are not on different networks.
+- Confirm that there are no spaces in the file path name used to launch H2O. 
+- Confirm that the nodes are not on different networks by confirming that the IP addresses of the nodes are the same in the output: 
+ ```
+ INFO: Listening for HTTP and REST traffic on  IP_Address/
+06-18 10:54:21.586 192.168.1.70:54323    25638  main      
+INFO: H2O cloud name: 'H2O_User' on IP_Address, discovery address /Discovery_Address
+INFO: Cloud of size 1 formed [IP_Address]
+```
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
 - (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. 
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
 - (EC2 only) Check the configuration for the EC2 security group.
+
+---
+
+**The following error message displayed when I tried to launch H2O - what should I do?**
+
+```
+Exception in thread "main" java.lang.UnsupportedClassVersionError: water/H2OApp
+: Unsupported major.minor version 51.0
+        at java.lang.ClassLoader.defineClass1(Native Method)
+        at java.lang.ClassLoader.defineClassCond(Unknown Source)
+        at java.lang.ClassLoader.defineClass(Unknown Source)
+        at java.security.SecureClassLoader.defineClass(Unknown Source)
+        at java.net.URLClassLoader.defineClass(Unknown Source)
+        at java.net.URLClassLoader.access$000(Unknown Source)
+        at java.net.URLClassLoader$1.run(Unknown Source)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at java.net.URLClassLoader.findClass(Unknown Source)
+        at java.lang.ClassLoader.loadClass(Unknown Source)
+        at sun.misc.Launcher$AppClassLoader.loadClass(Unknown Source)
+        at java.lang.ClassLoader.loadClass(Unknown Source)
+Could not find the main class: water.H2OApp. Program will exit.
+```
+This error output indicates that your Java version is not supported. Upgrade to [Java 7 (JVM)](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [later](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html) and H2O should launch successfully. 
+
+---
 
 
 
@@ -340,6 +375,22 @@ For more information on how H2O works with Excel, refer to this [page](http://le
 
 ---
 
+**I received the following error message when launching H2O - how do I resolve the error?**
+
+```
+Invalid flow_dir illegal character at index 12...
+```
+
+This error message means that there is a space (or other unsupported character) in your H2O directory. To resolve this error: 
+
+- Create a new folder without unsupported characters to use as the H2O directory (for example, `C:\h2o`). 
+
+  or 
+  
+- Specify a different save directory using the `-flow_dir` parameter when launching H2O: `java -jar h2o.jar -flow_dir test`
+
+---
+
 ##Hadoop
 
 <!---
@@ -526,7 +577,19 @@ After completing this procedure, go to Python and use `h2o.init()` to start H2O 
 >
 >If you download the jar and the H2O package, `h2o.init()` will work like R >and you don't have to start the jar yourself.
 
+---
 
+**How should I specify the datatype during import in Python?**
+
+Refer to the following example: 
+
+```
+fraw = h2o.import_file("smalldata/logreg/prostate.csv") 
+fsetup = h2o.parse_setup(fraw) 
+fsetup["column_types"][1] = "Enum" # change second column "CAPSULE" to categorical 
+fr = h2o.parse_raw(fsetup) 
+fr.describe()
+```
 
 
 ---
@@ -624,9 +687,19 @@ Not all shim outputs are fully supported, please see ?h2o.shim for more informat
 
 Remove the `h2o.shim(enable=TRUE)` line and try running the code again. Note that the `h2o.shim` is only a way to notify users of previous versions of H2O about changes to the H2O R package - it will not revise your code, but provides suggested replacements for deprecated commands and parameters. 
 
+---
+
+**How do I extract the model weights from a model I've creating using H2O in R? I've enabled `extract_model_weights_and_biases`, but the output refers to a file I can't open in R.**
+
+For an example of how to extract weights and biases from a model, refer to the following repo location on [GitHub](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_weights_and_biases.R). 
 
 ---
 
+**I'm using CentOS and I want to run H2O in R - are there any dependencies I need to install?**
+
+Yes, make sure to install `libcurl`, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize. 
+
+---
 
 ##Sparkling Water
 
@@ -688,6 +761,94 @@ This error output displays if the input file is not present on all nodes. Becaus
 **Are there any drawbacks to using Sparkling Water compared to standalone H2O?**
 
 The version of H2O embedded in Sparkling Water is the same as the standalone version. 
+
+---
+
+**How do I use Sparkling Water from the Spark shell?**
+
+There are two methods: 
+
+- Use `$SPARK_HOME/bin/spark-shell --packages ai.h2o:sparkling-water-core_2.10:1.3.3`
+
+  or 
+  
+- `bin/sparkling-shell`
+
+The software distribution provides example scripts in the `examples/scripts` directory: 
+
+`bin/sparkling-shell -i examples/scripts/chicagoCrimeSmallShell.script.scala`
+
+For either method, initialize H2O as shown in the following example: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc).start()
+```
+
+After successfully launching H2O, the following output displays: 
+
+```
+Sparkling Water Context:
+ * number of executors: 3
+ * list of used executors:
+  (executorId, host, port)
+  ------------------------
+  (1,Michals-MBP.0xdata.loc,54325)
+  (0,Michals-MBP.0xdata.loc,54321)
+  (2,Michals-MBP.0xdata.loc,54323)
+  ------------------------
+
+  Open H2O Flow in browser: http://172.16.2.223:54327 (CMD + click in Mac OSX)
+  
+```
+
+---
+
+**How do I use H2O with Spark Submit?**
+
+Spark Submit is for submitting self-contained applications. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/quick-start.html#self-contained-applications). 
+
+First, initialize H2O: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc).start()
+```
+
+The Sparkling Water distribution provides several examples of self-contained applications built with Sparkling Water. To run the examples: 
+
+`bin/run-example.sh ChicagoCrimeAppSmall`
+
+The "magic" behind `run-example.sh` is a regular Spark Submit: 
+
+`$SPARK_HOME/bin/spark-submit ChicagoCrimeAppSmall --packages ai.h2o:sparkling-water-core_2.10:1.3.3 --packages ai.h2o:sparkling-water-examples_2.10:1.3.3`
+
+---
+
+**How do I use Sparkling Water with Databricks cloud?**
+
+Sparkling Water compatibility with Databricks cloud is still in development. 
+
+
+
+---
+
+**How do I develop applications with Sparkling Water?**
+
+For a regular Spark application (a self-contained application as described in the [Spark documentation](https://spark.apache.org/docs/latest/quick-start.html#self-contained-applications)), the app needs to initialize `H2OServices` via `H2OContext`: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc).start()
+```
+
+For more information, refer to the [Sparkling Water development documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md). 
+
+---
+
+**How do I connect to Sparkling Water from R or Python?**
+
+After starting `H2OServices` by starting `H2OContext`, point your client to the IP address and port number specified in `H2OContext`. 
 
 ---
 

@@ -23,7 +23,7 @@ def define_params():
         'lambda': [0, 1e-8, 1e-4, 1e-3],
         'lambda_search': [None, 0, 1], # FIX! what if lambda is set when lambda_search=1
 
-        'use_all_factor_levels': [None, 0, 1],
+        # 'use_all_factor_levels': [None, 0, 1],
         'alpha': [0,0.2,0.4],
         'family': ['family_default', 'gaussian', 'binomial', 'poisson', None],
         'link': ['logit', 'log', 'inverse', 'tweedie', None],

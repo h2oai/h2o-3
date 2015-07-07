@@ -69,7 +69,7 @@ class Basic(unittest.TestCase):
                 'alpha': '[0.1]', 
                 'max_after_balance_size': 1000.0, 
                 'class_sampling_factors': '[0.2]', 
-                'use_all_factor_levels': None, 
+                # 'use_all_factor_levels': None, 
                 'lambda': '[0]',
             }
 
