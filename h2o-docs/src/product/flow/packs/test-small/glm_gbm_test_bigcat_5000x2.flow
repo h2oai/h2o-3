@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "assist"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/bigcat_5000x2.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/bigcat_5000x2.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/bigcat_5000x2.csv\"]\n  destination_frame: \"bigcat_5000x2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 2\n  single_quotes: false\n  column_names: [\"X\",\"y\"]\n  column_types: [\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"bigcat_5000x2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"bigcat_5000x2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"bigcat_5000x2.hex\", [0.25], [\"bigcat_5000x2_test.hex_0.250\",\"bigcat_5000x2_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-ebba4e6b-109f-4e80-941e-5ca8bcb5b113\",\"training_frame\":\"bigcat_5000x2_train.hex_0.750\",\"validation_frame\":\"bigcat_5000x2_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"X\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-ebba4e6b-109f-4e80-941e-5ca8bcb5b113\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-ebba4e6b-109f-4e80-941e-5ca8bcb5b113\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-ebba4e6b-109f-4e80-941e-5ca8bcb5b113\", frame: \"bigcat_5000x2_test.hex_0.250\", predictions_frame: \"prediction-7efc0603-e87d-4256-a2c3-312d9e96ac9b\""
+    }
+  ]
+}

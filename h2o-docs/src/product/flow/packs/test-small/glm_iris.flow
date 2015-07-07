@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "cells": [
+        {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris.csv\"]\n  destination_frame: \"iris.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris.hex\", [0.25], [\"iris_test\",\"iris_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-bae3711a-a691-479c-b264-a37ec8b4546d\",\"training_frame\":\"iris_train\",\"validation_frame\":\"iris_test\",\"ignore_const_cols\":true,\"response_column\":\"C1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-bae3711a-a691-479c-b264-a37ec8b4546d\""
+    },
+    {
+      "type": "cs",
+      "input": "inspect getModel \"glm-bae3711a-a691-479c-b264-a37ec8b4546d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-bae3711a-a691-479c-b264-a37ec8b4546d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-bae3711a-a691-479c-b264-a37ec8b4546d\", frame: \"iris_test\", predictions_frame: \"prediction-ecc7171e-2d4e-4c74-9901-4725cb8af3d0\""
+    }
+  ]
+}

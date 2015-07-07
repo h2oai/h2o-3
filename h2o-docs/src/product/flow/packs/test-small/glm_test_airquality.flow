@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/airquality.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/airquality.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/airquality.csv\"]\n  destination_frame: \"airquality.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 6\n  single_quotes: false\n  column_names: [\"Ozone\",\"Solar.R\",\"Wind\",\"Temp\",\"Month\",\"Day\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"airquality.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"airquality.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"airquality.hex\", [0.25], [\"airquality_test\",\"airquality_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-07d78203-e277-4f1f-a381-ae45185bccd5\",\"training_frame\":\"airquality_train\",\"validation_frame\":\"airquality_test\",\"ignore_const_cols\":true,\"response_column\":\"Ozone\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-07d78203-e277-4f1f-a381-ae45185bccd5\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-07d78203-e277-4f1f-a381-ae45185bccd5\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-07d78203-e277-4f1f-a381-ae45185bccd5\", frame: \"airquality_train\", predictions_frame: \"prediction-2922c8ae-952e-41e1-9879-4fb1d05e3866\""
+    }
+  ]
+}
