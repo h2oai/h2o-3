@@ -481,7 +481,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     for( DTree dtree : trees )
       if( dtree != null ) {
         try {
-          PrintWriter writer = new PrintWriter("/tmp/h2o-dev.tree" + ++counter + ".txt", "UTF-8");
+          PrintWriter writer = new PrintWriter("/tmp/h2o-3.tree" + ++counter + ".txt", "UTF-8");
           writer.println(dtree.root().toString2(new StringBuilder(), 0));
           writer.close();
         } catch (FileNotFoundException|UnsupportedEncodingException e) {

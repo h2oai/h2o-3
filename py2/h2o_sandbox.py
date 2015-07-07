@@ -165,6 +165,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 #[Loaded java.lang.Error from /usr/lib/jvm/java-7-oracle/jre/lib/rt.jar]
                 foundBadPartial = regex1.search(line)
                 foundBad = foundBadPartial and not (
+                    ('classification error is') or
                     ('STARTING TEST' in line) or # R test named ..._pop_assert..
                     ('INFO:' in line and 'Error' in line) or
                     ('Failed to instantiate schema class:' in line) or
