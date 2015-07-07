@@ -25,8 +25,8 @@ public class Distributions {
   }
 
   public static class Gamma {
-    public static double deviance(double w, double y, double f) { return w*(y*Math.exp(-f)+f); }
-    public static double gradient(double y, double f) { return y*Math.exp(-f)-1; }
-    public static double linkInv(double f) { return -1/f; }
+    public static double deviance(double w, double y, double f) { return w*(y*linkInv(-f)+f); }
+    public static double gradient(double y, double f) { return y*linkInv(-f)-1; }
+    public static double linkInv(double f) { return Math.max(1e-19,Math.min(1e19,Math.exp(f))); }
   }
 }
