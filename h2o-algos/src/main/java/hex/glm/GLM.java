@@ -991,7 +991,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 beta[i] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0]) / (denums[i] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
 
                 // Need to set zTilda in fr2 here to the current zTilda in fr3.
-                fr2.replace(2,fr3.vec(2));
+               // fr2.replace(2,fr3.vec(2));
               }
 
               // intercept update
@@ -999,7 +999,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fr3.add("xj", _activeData._adaptedFrame.vec(beta.length - 2)); // add last variable updated in cycle to the frame
               GLMCoordinateDescentTaskSeq iupdate = new GLMCoordinateDescentTaskSeq(false, true, betaold, beta,0).doAll(fr3);
               beta[beta.length - 1] = iupdate._temp[0] / wsum;
-              fr2.replace(2,fr3.vec(2));
+             // fr2.replace(2,fr3.vec(2));
 
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);

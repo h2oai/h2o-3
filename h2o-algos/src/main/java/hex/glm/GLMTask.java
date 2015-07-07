@@ -944,7 +944,7 @@ public abstract class GLMTask  {
         }
      }
 
-      chunks[2].setVec(ztildaChunk.vec());
+      //chunks[2].setVec(ztildaChunk.vec());
     }
 
     @Override
