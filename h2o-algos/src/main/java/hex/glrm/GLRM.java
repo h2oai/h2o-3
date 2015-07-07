@@ -417,7 +417,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
         Vec[] vecs = new Vec[_ncolA + 2*_ncolX];
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
-        for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeRand(_parms._seed);
+        for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeGaus(_parms._seed);
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
@@ -428,8 +428,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
-        model.update(_key); // Update model in K/V store
-        update(1);          // One unit of work
+        model.update(_key);  // Update model in K/V store
+        update(1);           // One unit of work
 
         boolean overwriteX = false;
         double step = _parms._init_step_size;   // Initial step size
