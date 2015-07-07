@@ -11,6 +11,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import static org.junit.Assert.assertTrue;
+
 public class GBMGridTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
@@ -57,4 +59,44 @@ public class GBMGridTest extends TestUtil {
     }
   }
 
+  public void testDuplicatesCarsGrid() {
+    GBMGrid gbmg = null;
+    Frame fr = null;
+    Vec old = null;
+    try {
+      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr.remove("name").remove(); // Remove unique id
+      old = fr.remove("economy");
+      fr.add("economy", old); // response to last column
+      DKV.put(fr);
+
+      // Get the Grid for this modeling class and frame
+      gbmg = GBMGrid.get(fr);
+
+      // Setup random hyperparameter search space
+      HashMap<String, Object[]> hyperParms = new HashMap<>();
+      hyperParms.put("_distribution", new Family[]{Family.gaussian});
+      hyperParms.put("_ntrees", new Integer[]{5, 5});
+      hyperParms.put("_max_depth", new Integer[]{2, 2});
+      hyperParms.put("_learn_rate", new Float[]{.1f, .1f});
+
+      // Fire off a grid search
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = fr._key;
+      params._response_column = "economy";
+      Grid.GridSearch gs = gbmg.startGridSearch(params, hyperParms);
+      Grid g2 = (Grid) gs.get();
+      assert g2 == gbmg;
+
+      // Check that duplicate model have not been constructed
+      Integer numModels = gs.models().length;
+      System.out.println("Grid consists of " + numModels + " models");
+      assertTrue(numModels==1);
+
+    } finally {
+      if (old != null) old.remove();
+      if (fr != null) fr.remove();
+      if (gbmg != null) gbmg.remove();
+    }
+  }
 }
