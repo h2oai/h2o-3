@@ -59,6 +59,7 @@ public class GBMGridTest extends TestUtil {
     }
   }
 
+  @Ignore("PUBDEV-1643")
   public void testDuplicatesCarsGrid() {
     GBMGrid gbmg = null;
     Frame fr = null;
