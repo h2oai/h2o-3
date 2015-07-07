@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+ 
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/insurance.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/insurance.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/insurance.csv\"]\n  destination_frame: \"insurance.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"District\",\"Group\",\"Age\",\"Holders\",\"Claims\"]\n  column_types: [\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"insurance.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"insurance.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"insurance.hex\", [0.25], [\"insurance_test\",\"insurance_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-7da2f09a-68a8-4ed1-8b5b-eb0cf050e31e\",\"training_frame\":\"insurance_train\",\"validation_frame\":\"insurance_test\",\"ignore_const_cols\":true,\"response_column\":\"District\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-7da2f09a-68a8-4ed1-8b5b-eb0cf050e31e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-7da2f09a-68a8-4ed1-8b5b-eb0cf050e31e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-7da2f09a-68a8-4ed1-8b5b-eb0cf050e31e\", frame: \"insurance_train\", predictions_frame: \"prediction-9aeb36b3-75f9-4193-8091-6cb5403a1e8c\""
+    }
+  ]
+}

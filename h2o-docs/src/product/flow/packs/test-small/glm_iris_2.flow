@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "cells": [
+        {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_test.csv\"]\n  destination_frame: \"iris_test.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"species\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_train.csv\"]\n  destination_frame: \"iris_train.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"species\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_train.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-19234bd7-6eaa-4e6e-b893-7cfc606ba121\",\"training_frame\":\"iris_train.hex\",\"validation_frame\":\"iris_test.hex\",\"ignore_const_cols\":true,\"response_column\":\"sepal_len\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-19234bd7-6eaa-4e6e-b893-7cfc606ba121\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-19234bd7-6eaa-4e6e-b893-7cfc606ba121\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-19234bd7-6eaa-4e6e-b893-7cfc606ba121\", frame: \"iris_test.hex\", predictions_frame: \"prediction-9f0bcfeb-5b2a-432b-9c78-e1dbeca86048\""
+    }
+  ]
+}

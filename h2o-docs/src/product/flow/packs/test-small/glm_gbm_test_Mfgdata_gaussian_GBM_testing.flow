@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv\"]\n  destination_frame: \"Mfgdata_gaussian_GBM_testing.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 10\n  single_quotes: false\n  column_names: [\"\",\"dep\",\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"o\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"Mfgdata_gaussian_GBM_testing.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"Mfgdata_gaussian_GBM_testing.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"Mfgdata_gaussian_GBM_testing.hex\", [0.25], [\"Mfgdata_gaussian_GBM_testing_test.hex_0.250\",\"Mfgdata_gaussian_GBM_testing_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-c31b5ab5-9dd2-4e99-a096-16d5d035226e\",\"training_frame\":\"Mfgdata_gaussian_GBM_testing_train.hex_0.750\",\"validation_frame\":\"Mfgdata_gaussian_GBM_testing_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"o\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-c31b5ab5-9dd2-4e99-a096-16d5d035226e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-c31b5ab5-9dd2-4e99-a096-16d5d035226e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-c31b5ab5-9dd2-4e99-a096-16d5d035226e\", frame: \"Mfgdata_gaussian_GBM_testing_test.hex_0.250\", predictions_frame: \"prediction-11839025-d6ac-43bf-b268-2575a8dbd537\""
+    }
+  ]
+}
