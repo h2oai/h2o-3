@@ -29,7 +29,7 @@ glm_gbm_test_swpreds_1000x3.flow
 glm_iris.flow
 glm_iris2.flow
 glm_iris22.flow
-glm_iris_flow.flow
+glm_iris_2.flow
 glm_iris_test_numeric_missing_extra.flow
 glm_iris_wheader-nonspd.flow
 glm_iris_wheader.flow
