@@ -3,14 +3,6 @@
   "cells": [
     {
       "type": "cs",
-      "input": "assist"
-    },
-    {
-      "type": "cs",
-      "input": "importFiles"
-    },
-    {
-      "type": "cs",
       "input": "importFiles [ \"../smalldata/gbm_test/bigcat_5000x2.csv\" ]"
     },
     {
