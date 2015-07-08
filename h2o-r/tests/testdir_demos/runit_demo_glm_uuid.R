@@ -25,7 +25,7 @@ test <- function(conn) {
   print("Take a random uniform test train split (30:70).")
     
     # fails with some seeds/bad splits. use fixed seed.
-    airline.uuid$split <- ifelse(h2o.runif(airline.uuid, runif=12345)>0.3, yes=1, no=0)
+    airline.uuid$split <- ifelse(h2o.runif(airline.uuid, seed=12345)>0.3, yes=1, no=0)
     airline.train.hex <- h2o.assign(airline.uuid[airline.uuid$split==1,1:32],key="airline.train.hex")
     airline.test.hex <- h2o.assign(airline.uuid[airline.uuid$split==0,1:32],key="airline.test.hex")
     print("Dimension of training set: ")
