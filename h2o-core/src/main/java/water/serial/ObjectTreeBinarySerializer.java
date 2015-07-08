@@ -67,7 +67,7 @@ public class ObjectTreeBinarySerializer implements Serializer<List<Key>, URI> {
     for(Key k : objectTree) {
       if (k != null) {
         String filename = FileUtils.keyToFileName(k) + EXTENSION;
-        URI fileUri = URI.create(outputDir + "/" + filename); // this is not the right way to append
+        URI fileUri = URI.create(outputDir + "/" + filename); // We have URI
         // NOTE: this will fetch remote object to the caller node!
         serial.save(k.get(), fileUri);
         savedFilenames.add(filename);
