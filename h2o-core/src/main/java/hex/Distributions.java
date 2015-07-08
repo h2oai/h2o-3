@@ -18,6 +18,10 @@ public class Distributions {
     public static double linkInv(double f) {
       return f;
     }
+
+    public static String linkInvString(String f) {
+      return f;
+    }
   }
 
   public static class Bernoulli {
@@ -31,6 +35,10 @@ public class Distributions {
 
     public static double linkInv(double f) {
       return 1. / (1. + exp(-f));
+    }
+
+    public static String linkInvString(String f) {
+      return "1.0/(1.0+Math.exp(-"+f+"))";
     }
   }
 
@@ -46,6 +54,10 @@ public class Distributions {
     public static double linkInv(double f) {
       return exp(f);
     }
+
+    public static String linkInvString(String f) {
+      return expString(f);
+    }
   }
 
   public static class Gamma {
@@ -59,6 +71,10 @@ public class Distributions {
 
     public static double linkInv(double f) {
       return exp(f);
+    }
+
+    public static String linkInvString(String f) {
+      return expString(f);
     }
   }
 
@@ -74,9 +90,15 @@ public class Distributions {
     public static double linkInv(double f) {
       return exp(f);
     }
+
+    public static String linkInvString(String f) {
+      return expString(f);
+    }
   }
 
   // sanitized exponential function
   public static double exp(double x)  { return Math.max(1e-19, Math.min(1e19, Math.exp(x))); }
+
+  public static String expString(String x)  { return "Math.max(1e-19, Math.min(1e19, Math.exp(" + x + ")))"; }
 }
 

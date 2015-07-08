@@ -62,8 +62,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
     if( _parms._distribution == GBMParameters.Family.bernoulli ) {
-      body.ip("double fx = preds[1] + ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
+      body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
+      body.ip("preds[2] = " + Distributions.Bernoulli.linkInvString("preds[2]") + ";").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
@@ -73,16 +73,17 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     if( _output.nclasses() == 1 ) { // Regression
       if( _parms._distribution == GBMParameters.Family.gaussian) {
         // Prediction starts from the mean response, and adds predicted residuals
-        body.ip("preds[0] += ").p(_output._init_f).p(";");
+        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
+        body.ip("preds[0] = " + Distributions.Gaussian.linkInvString("preds[0]") + ";").nl();
       } else if( _parms._distribution == GBMParameters.Family.poisson) {
-        body.ip("preds[0] += ").p(_output._init_f).p(";");
-        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
+        body.ip("preds[0] = " + Distributions.Poisson.linkInvString("preds[0]") + ";").nl();
       } else if( _parms._distribution == GBMParameters.Family.gamma) {
-        body.ip("preds[0] += ").p(_output._init_f).p(";");
-        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
+        body.ip("preds[0] = " + Distributions.Gamma.linkInvString("preds[0]") + ";").nl();
       } else if( _parms._distribution == GBMParameters.Family.tweedie) {
-        body.ip("preds[0] += ").p(_output._init_f).p(";");
-        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
+        body.ip("preds[0] = " + Distributions.Tweedie.linkInvString("preds[0]") + ";").nl();
       }
       return;
     }
