@@ -241,13 +241,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           double resp = wrks.atd(row);
-//          // FIXME: Shouldn't we compute the MSE in the link(response) space, not the response space? - Not what R seems to do
-//          if (_family == Distributions.Family.tweedie
-//                  || _family == Distributions.Family.poisson
-//                  || _family == Distributions.Family.gamma) {
-//            resp = _family.link(resp);
-//            //FIXME: Consider additionally weighting to make MSE match the actual deviance better (see GLM)
-//          }
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
           ssqs[b] += w*resp*resp;
