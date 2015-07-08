@@ -4,7 +4,11 @@ import hex.*;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
+import water.util.RandomUtils;
 import water.util.TwoDimTable;
+
+import java.util.Random;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
@@ -34,8 +38,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       Categorical, Ordinal
     }
 
+    // Non-negative matrix factorization (NNMF): r_x = r_y = NonNegative
+    // Orthogonal NNMF: r_x = OneSparse, r_y = NonNegative
+    // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
     public enum Regularizer {
-      L2, L1,
+      L2, L1, NonNegative, OneSparse, UnitOneSparse
     }
 
     // L(u,a): Loss function
@@ -44,7 +51,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case L2:
           return (u-a)*(u-a);
         case L1:
-          return Math.abs(u-a);
+          return Math.abs(u - a);
         case Huber:
           return Math.abs(u-a) <= 1 ? 0.5*(u-a)*(u-a) : Math.abs(u-a)-0.5;
         case Poisson:
@@ -116,15 +123,42 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // r_i(x_i): Regularization function for single entry x_i
-    public final double regularize_x(double u) { return regularize(u, _regularization_x); }
-    public final double regularize_y(double u) { return regularize(u, _regularization_y); }
-    public final double regularize(double u, Regularizer regularization) {
+    // r_i(x_i): Regularization function for single row x_i
+    public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
+    public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
+    public final double regularize(double[] u, Regularizer regularization) {
+      if(u == null) return 0;
+      double ureg = 0;
+
       switch(regularization) {
         case L2:
-          return u*u;
+          for(int i = 0; i < u.length; i++)
+            ureg += u[i] * u[i];
+          return ureg;
         case L1:
-          return Math.abs(u);
+          for(int i = 0; i < u.length; i++)
+            ureg += Math.abs(u[i]);
+          return ureg;
+        case NonNegative:
+          for(int i = 0; i < u.length; i++) {
+            if(u[i] < 0) return Double.POSITIVE_INFINITY;
+          }
+          return 0;
+        case OneSparse:
+          int card = 0;
+          for(int i = 0; i < u.length; i++) {
+            if(u[i] < 0) return Double.POSITIVE_INFINITY;
+            else if(u[i] > 0) card++;
+          }
+          return card == 1 ? 0 : Double.POSITIVE_INFINITY;
+        case UnitOneSparse:
+          int ones = 0, zeros = 0;
+          for(int i = 0; i < u.length; i++) {
+            if(u[i] == 1) ones++;
+            else if(u[i] == 0) zeros++;
+            else return Double.POSITIVE_INFINITY;
+          }
+          return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
@@ -138,21 +172,43 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
       double ureg = 0;
       for(int i = 0; i < u.length; i++) {
-        for(int j = 0; j < u[0].length; j++)
-          ureg += regularize(u[i][j], regularization);
+        ureg += regularize(u[i], regularization);
+        if(Double.isInfinite(ureg)) return ureg;
       }
       return ureg;
     }
 
-    // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at u
-    public final double rproxgrad_x(double u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x); }
-    public final double rproxgrad_y(double u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y); }
-    public final double rproxgrad(double u, double alpha, double gamma, Regularizer regularization) {
+    // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u
+    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, rand); }
+    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, rand); }
+    // public final double[] rproxgrad_x(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, RandomUtils.getRNG(_seed)); }
+    // public final double[] rproxgrad_y(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, RandomUtils.getRNG(_seed)); }
+    public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
+      if(u == null || alpha == 0 || gamma == 0) return u;
+      double[] v = new double[u.length];
+      int idx;
+
       switch(regularization) {
         case L2:
-          return u/(1+2*alpha*gamma);
+          for(int i = 0; i < u.length; i++)
+            v[i] = u[i]/(1+2*alpha*gamma);
+          return v;
         case L1:
-          return Math.max(u-alpha*gamma,0) + Math.min(u+alpha*gamma,0);
+          for(int i = 0; i < u.length; i++)
+            v[i] = Math.max(u[i]-alpha*gamma,0) + Math.min(u[i]+alpha*gamma,0);
+          return v;
+        case NonNegative:
+          for(int i = 0; i < u.length; i++)
+            v[i] = Math.max(u[i],0);
+          return v;
+        case OneSparse:
+          idx = ArrayUtils.maxIndex(u, rand);
+          v[idx] = u[idx] > 0 ? u[idx] : 1e-6;
+          return v;
+        case UnitOneSparse:
+          idx = ArrayUtils.maxIndex(u, rand);
+          v[idx] = 1;
+          return v;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
@@ -185,6 +241,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Number of categorical and numeric columns
     public int _ncats;
     public int _nnums;
+
+    // Number of good rows in training frame (not skipped)
+    public long _nobs;
 
     // Categorical offset vector
     public int[] _catOffsets;
