@@ -17,12 +17,12 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   return(is_flipped)
 }
 
-checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
+checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {
   k <- fitH2O@parameters$k
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance
   eigvecR <- fitR$rotation
-  eigvecH2O <- as.matrix(fitH2O@model$eigenvectors)
+  eigvecH2O <- fitH2O@model$eigenvectors
   
   pcimpR <- pcimpR[,1:k]
   eigvecR <- eigvecR[,1:k]
@@ -40,16 +40,8 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   pcimpH2O <- as.matrix(pcimpH2O); dimnames(pcimpH2O) <- dimnames(pcimpR)
   expect_equal(pcimpH2O, pcimpR, tolerance = tolerance, scale = 1)
   
-  if(sort_rows && !is.null(rownames(eigvecH2O)) && !is.null(rownames(eigvecR))) {
-    Log.info("Sorting rows alphabetically by row name")
-    eigvecH2O <- eigvecH2O[order(rownames(eigvecH2O)),]
-    eigvecR <- eigvecR[order(rownames(eigvecR)),]
-    expect_equal(dim(eigvecH2O), dim(eigvecR))
-    expect_true(all(rownames(eigvecH2O) == rownames(eigvecR)))
-  }
-  
   Log.info("Compare Principal Components between R and H2O\n") 
   Log.info("R Principal Components:"); print(eigvecR)
   Log.info("H2O Principal Components:"); print(eigvecH2O)
-  checkSignedCols(eigvecH2O, eigvecR, tolerance = tolerance)
+  checkSignedCols(as.matrix(eigvecH2O), eigvecR, tolerance = tolerance)
 }

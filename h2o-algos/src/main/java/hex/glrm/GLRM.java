@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
@@ -9,6 +10,8 @@ import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
+import hex.pca.PCA;
+import hex.pca.PCAModel;
 import hex.schemas.GLRMV99;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
@@ -22,8 +25,10 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Generalized Low Rank Models
@@ -37,6 +42,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Convergence tolerance
   private final double TOLERANCE = 1e-6;
 
+  // Maximum number of columns when categoricals expanded
+  private final int MAX_COLS_EXPANDED = 5000;
+
   // Number of columns in training set (p)
   private transient int _ncolA;
   private transient int _ncolY;    // With categoricals expanded into 0/1 indicator cols
@@ -49,7 +57,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   @Override public Job<GLRMModel> trainModel() {
-    return start(new GLRMDriver(), _parms._max_iterations);
+    return start(new GLRMDriver(), _parms._max_iterations+1);
   }
 
   @Override public ModelCategory[] can_build() {
@@ -84,7 +92,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
     // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
-    int k_min = (int) Math.min(_train.numCols(), _train.numRows());
+    _ncolY = _train.numColsExp(true, false);
+    int k_min = (int) Math.min(_ncolY, _train.numRows());
+    if (_ncolY > MAX_COLS_EXPANDED)
+      warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm may be slow.");
+
     if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
       if (_parms._init != GLRM.Initialization.User)
@@ -194,34 +206,36 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
         return ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
-      } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
-        SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y to be the right singular vectors
+        PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
-        parms._nv = _parms._k;
+        parms._k = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
         parms._seed = _parms._seed;
-        parms._only_v = true;
+        parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
 
-        SVDModel svd = null;
-        SVD job = null;
+        PCAModel pca = null;
+        PCA job = null;
         try {
-          job = new SVD(parms);
-          svd = job.trainModel().get();
+          job = new PCA(parms);
+          pca = job.trainModel().get();
         } finally {
           if (job != null) job.remove();
-          if (svd != null) svd.remove();
+          if (pca != null) pca.remove();
         }
 
         // Ensure SVD centers align with adapted training frame cols
-        assert svd._output._permutation.length == dinfo._permutation.length;
+        assert pca._output._permutation.length == dinfo._permutation.length;
         for(int i = 0; i < dinfo._permutation.length; i++)
-          assert svd._output._permutation[i] == dinfo._permutation[i];
-        centers_exp = ArrayUtils.transpose(svd._output._v);
+          assert pca._output._permutation[i] == dinfo._permutation[i];
+        centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
+        // for(int i = 0; i < centers_exp.length; i++)
+        //  ArrayUtils.mult(centers_exp[i], pca._output._std_deviation[i] * Math.sqrt(pca._output._nobs-1));
 
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -250,7 +264,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats, dinfo._nums);
         centers_exp = expandCats(centers, dinfo);
       }
-      _ncolY = centers_exp[0].length;
+      assert centers_exp[0].length == _ncolY;
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
       double frob = frobenius2(centers_exp);
@@ -259,6 +273,27 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
       }
       return centers_exp;
+    }
+
+    // Initialize X matrix
+    public void initialX(DataInfo dinfo, double[][] yt, double[] normSub, double[] normMul) {
+      // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
+      if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
+              && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
+        Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
+        double[][] ygram = ArrayUtils.formGram(yt);
+        if (_parms._gamma_y > 0) {
+          for(int i = 0; i < ygram.length; i++)
+            ygram[i][i] += _parms._gamma_y;
+        }
+        CholeskyDecomposition yychol = regularizedCholesky(ygram, 10, false);
+        if(!yychol.isSPD())
+          Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting X to a matrix of random numbers. Results will be numerically unstable");
+        else {
+          CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, normSub, normMul);
+          cmtsk.doAll(dinfo._adaptedFrame);
+        }
+      }
     }
 
     // Stopping criteria
@@ -277,25 +312,47 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return false;       // Not stopping
     }
 
+    // Regularized Cholesky decomposition using H2O implementation
     public Cholesky regularizedCholesky(Gram gram, int max_attempts) {
       int attempts = 0;
       double addedL2 = 0;   // TODO: Should I report this to the user?
       Cholesky chol = gram.cholesky(null);
+
       while(!chol.isSPD() && attempts < max_attempts) {
         if(addedL2 == 0) addedL2 = 1e-5;
         else addedL2 *= 10;
         ++attempts;
         gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
-        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of X Gram matrix");
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
         gram.cholesky(chol);
       }
       if(!chol.isSPD())
         throw new Gram.NonSPDMatrixException();
       return chol;
     }
-    public Cholesky regularizedCholesky(Gram gram) {
-      return regularizedCholesky(gram, 10);
+    public Cholesky regularizedCholesky(Gram gram) { return regularizedCholesky(gram, 10); }
+
+    // Regularized Cholesky decomposition using JAMA implementation
+    public CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts, boolean throw_exception) {
+      int attempts = 0;
+      double addedL2 = 0;
+      Matrix gmat = new Matrix(gram);
+      CholeskyDecomposition chol = new CholeskyDecomposition(gmat);
+
+      while(!chol.isSPD() && attempts < max_attempts) {
+        if(addedL2 == 0) addedL2 = 1e-5;
+        else addedL2 *= 10;
+        ++attempts;
+
+        for(int i = 0; i < gram.length; i++) gmat.set(i,i,addedL2); // try to add L2 penalty to make the Gram SPD
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
+        chol = new CholeskyDecomposition(gmat);
+      }
+      if(!chol.isSPD() && throw_exception)
+        throw new Gram.NonSPDMatrixException();
+      return chol;
     }
+    public CholeskyDecomposition regularizedCholesky(double[][] gram) { return regularizedCholesky(gram, 10, true); }
 
     // Recover singular values and eigenvectors of XY
     public void recoverSVD(GLRMModel model, DataInfo xinfo) {
@@ -333,7 +390,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // The model to be built
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
-        model.delete_and_lock(_key);
+        model.delete_and_lock(self());
 
         // Save adapted frame info for scoring later
         tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
@@ -352,26 +409,30 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._catOffsets = tinfo._catOffsets;
         model._output._names_expanded = tinfo.coefNames();
 
-        // 0) a) Initialize X matrix to random numbers
+        // 0) a) Initialize Y matrix
+        long nobs = _train.numRows() * _train.numCols();
+        for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
+        model._output._nobs = nobs;
+        double[][] yt = ArrayUtils.transpose(initialY(tinfo));
+
+        // 0) b) Initialize X matrix to random numbers
         // Jam A and X into a single frame for distributed computation
         // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
         Vec[] vecs = new Vec[_ncolA + 2*_ncolX];
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
-        for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeRand(_parms._seed);
+        for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeGaus(_parms._seed);
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
-
-        // 0) b) Initialize Y matrix
-        double nobs = _train.numRows() * _train.numCols();
-        // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        double[][] yt = ArrayUtils.transpose(initialY(tinfo));
+        initialX(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
-        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, true).doAll(dinfo._adaptedFrame);
+        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
+        model.update(_key);  // Update model in K/V store
+        update(1);           // One unit of work
 
         boolean overwriteX = false;
         double step = _parms._init_step_size;   // Initial step size
@@ -395,7 +456,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // step = 1.0 / model._output._iterations;   // Step size \alpha_k = 1/iters
           if(model._output._avg_change_obj > 0) {   // Objective decreased this iteration
-            yt = ytnew;
+            model._output._archetypes = yt = ytnew;
             model._output._objective = obj_new;
             step *= 1.05;
             steps_in_row = Math.max(1, steps_in_row+1);
@@ -404,9 +465,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             step = step / Math.max(1.5, -steps_in_row);
             steps_in_row = Math.min(0, steps_in_row-1);
             overwriteX = false;
-            // Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective + "; reducing step size to " + step);
+            Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective + "; reducing step size to " + step);
           }
-          model.update(_key); // Update model in K/V store
+          model._output._step_size = step;
+          model.update(self()); // Update model in K/V store
           update(1);          // One unit of work
         }
 
@@ -419,7 +481,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;
-
         model._output._archetypes = yt;
         model._output._step_size = step;
         if (_parms._recover_svd) recoverSVD(model, xinfo);
@@ -427,6 +488,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Optional: This computes XY, but do we need it?
         // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);
         // tsk.outputFrame(_parms._destination_key, _train._names, null);
+        model.update(self());
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);
@@ -534,6 +596,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
+      Random rand = RandomUtils.getRNG(_parms._seed + cs[0].start());
       _loss = _xreg = 0;
 
       for(int row = 0; row < cs[0]._len; row++) {
@@ -589,12 +652,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // Update row x_i of working copy with new values
+        double[] u = new double[_ncolX];
         for(int k = 0; k < _ncolX; k++) {
           double xold = chk_xold(cs,k,_ncolA).atd(row);   // Old value of x_i
-          xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
-          chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
-          _xreg += _parms.regularize_x(xnew[k]);
+          u[k] = xold - _alpha * grad[k];
+          // xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
+          // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
+          // _xreg += _parms.regularize_x(xnew[k]);
         }
+        xnew = _parms.rproxgrad_x(u, _alpha, rand);
+        _xreg += _parms.regularize_x(xnew);
+        for(int k = 0; k < _ncolX; k++)
+          chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
 
         // Compute loss function using new x_i
         // Categorical columns
@@ -710,14 +779,19 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override protected void postGlobal() {
       assert _ytnew.length == _ytold.length && _ytnew[0].length == _ytold[0].length;
+      Random rand = RandomUtils.getRNG(_parms._seed);
 
       // Compute new y_j values using proximal gradient
       for(int j = 0; j < _ytnew.length; j++) {
+        double[] u = new double[_ytnew[0].length];
         for(int k = 0; k < _ytnew[0].length; k++) {
-          double u = _ytold[j][k] - _alpha * _ytnew[j][k];
-          _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
-          _yreg += _parms.regularize_y(_ytnew[j][k]);
+          // double u = _ytold[j][k] - _alpha * _ytnew[j][k];
+          // _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
+          // _yreg += _parms.regularize_y(_ytnew[j][k]);
+          u[k] = _ytold[j][k] - _alpha * _ytnew[j][k];
         }
+        _ytnew[j] = _parms.rproxgrad_y(u, _alpha, rand);
+        _yreg += _parms.regularize_y(_ytnew[j]);
       }
     }
   }
@@ -791,11 +865,89 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Calculate regularization term for old X if requested
         if(_regX) {
+          int idx = 0;
+          double[] xrow = new double[_ncolX];
           for(int j = _ncolA; j < _ncolA+_ncolX; j++) {
-            double x = cs[j].atd(row);
-            _xold_reg += _parms.regularize_x(x);
+            // double x = cs[j].atd(row);
+            // _xold_reg += _parms.regularize_x(x);
+            xrow[idx] = cs[j].atd(row);
+            idx++;
           }
+          assert idx == _ncolX;
+          _xold_reg += _parms.regularize_x(xrow);
         }
+      }
+    }
+  }
+
+  // Solves XD = AY' for X where A is n by p, Y is k by p, D is k by k, and n >> p > k
+  // Resulting matrix X = (AY')D^(-1) will have dimensions n by k
+  private static class CholMulTask extends MRTask<CholMulTask> {
+    DataInfo _dinfo;
+    GLRMParameters _parms;
+    final double[][] _yt;     // _yt = Y' (transpose of Y)
+    final int _ncolA;         // Number of cols in training frame
+    final int _ncolX;         // Number of cols in X (k)
+    final double[] _normSub;  // For standardizing training data
+    final double[] _normMul;
+    CholeskyDecomposition _chol;   // Cholesky decomposition of D = D', since we solve D'X' = DX' = AY'
+
+    CholMulTask(DataInfo dinfo, GLRMParameters parms, CholeskyDecomposition chol, double[][] yt, double[] normSub, double[] normMul) {
+      this(dinfo, parms, chol, yt, yt.length, yt[0].length, normSub, normMul);
+    }
+
+    CholMulTask(DataInfo dinfo, GLRMParameters parms, CholeskyDecomposition chol, double[][] yt, int ncolA, int ncolX, double[] normSub, double[] normMul) {
+      assert yt != null && yt[0].length == ncolX;
+      _parms = parms;
+      _yt = yt;
+      _ncolA = ncolA;
+      _ncolX = ncolX;
+      _chol = chol;
+
+      assert dinfo._cats <= ncolA;
+      _dinfo = dinfo;
+      _normSub = normSub;
+      _normMul = normMul;
+    }
+
+    // [A,X,W] A is read-only training data, X is left matrix in A = XY decomposition, W is working copy of X
+    @Override public void map(Chunk[] cs) {
+      assert (_ncolA + 2*_ncolX) == cs.length;
+      double[] xrow = new double[_ncolX];
+
+      for(int row = 0; row < cs[0]._len; row++) {
+        // 1) Compute single row of AY'
+        for (int k = 0; k < _ncolX; k++) {
+          // Categorical columns
+          double x = 0;
+          for(int d = 0; d < _dinfo._cats; d++) {
+            double a = cs[d].atd(row);
+            if (Double.isNaN(a)) continue;
+            x += _yt[idx_ycat(d, (int)a, _dinfo)][k];
+          }
+
+          // Numeric columns
+          for (int d = _dinfo._cats; d < _ncolA; d++) {
+            int ds = d - _dinfo._cats;
+            double a = cs[d].atd(row);
+            if (Double.isNaN(a)) continue;
+            x += (a - _normSub[ds]) * _normMul[ds] * _yt[idx_ynum(ds,_dinfo)][k];
+          }
+          xrow[k] = x;
+        }
+
+        // 2) Cholesky solve for single row of X
+        // _chol.solve(xrow);
+        Matrix tmp = _chol.solve(new Matrix(new double[][] {xrow}).transpose());
+        xrow = tmp.getColumnPackedCopy();
+
+        // 3) Save row of solved values into X (and copy W = X)
+        int i = 0;
+        for(int d = _ncolA; d < _ncolA+_ncolX; d++) {
+          cs[d].set(row, xrow[i]);
+          cs[d+_ncolX].set(row, xrow[i++]);
+        }
+        assert i == xrow.length;
       }
     }
   }
