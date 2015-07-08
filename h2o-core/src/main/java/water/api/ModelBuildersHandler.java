@@ -48,15 +48,7 @@ class ModelBuildersHandler extends Handler {
     for (Map.Entry<String, Class<? extends ModelBuilder>> entry : builders.entrySet()) {
         String algo = entry.getKey();
         ModelBuilder builder = ModelBuilder.createModelBuilder(algo);
-
-        ModelBuilderSchema schema = null;
-        try {
-          schema = (ModelBuilderSchema)Schema.schema(version, builder);
-        }
-        catch (H2ONotFoundArgumentException e) {
-          schema = (ModelBuilderSchema)Schema.schema(Schema.getExperimentalVersion(), builder);
-        }
-        m.model_builders.put(algo, schema.fillFromImpl(builder));
+        m.model_builders.put(algo, (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
     }
     return m;
   }

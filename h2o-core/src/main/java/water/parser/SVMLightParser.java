@@ -3,7 +3,7 @@ package water.parser;
 import java.io.*;
 import java.util.Arrays;
 
-import water.util.Log;
+import water.Key;
 import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
@@ -19,7 +19,7 @@ class SVMLightParser extends Parser {
   private static final int COL = 2;
   private static final int VAL = 3;
 
-  SVMLightParser( ParseSetup ps ) { super(ps); }
+  SVMLightParser( ParseSetup ps, Key jobkey ) { super(ps, jobkey); }
 
   /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type 
    *  SVMLight if the input is in svm light format, throw an exception otherwise.
@@ -32,7 +32,7 @@ class SVMLightParser extends Parser {
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
     SVMLightParser p = new SVMLightParser(new ParseSetup(ParserType.SVMLight,
             ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
-            null,null,null,null,null));
+            null,null,null,null,null), null);
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)

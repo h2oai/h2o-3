@@ -98,6 +98,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     } else {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
+    _localmodel.checkMissingCats(r.binIds);
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
     step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
   }

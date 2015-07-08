@@ -66,7 +66,7 @@ class H2OFrame:
     self._computed=True
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     self._ncols = parse["number_columns"]
-    self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols)]
+    self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
@@ -116,9 +116,7 @@ class H2OFrame:
     """
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
-    # blocking parse, first line is always a header (since "we" wrote the data out)
-    parse = h2o.parse(setup, _py_tmp_key(), first_line_is_header=1)
-    # a hack to get the column names correct since "parse" does not provide them
+    parse = h2o.parse(setup, _py_tmp_key())
     self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]
@@ -309,12 +307,12 @@ class H2OFrame:
     self._eager()
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
-    colnames = self.names()[0:ncols]
     start_idx = max(self.nrow()-nrows,0)
     tail = self[start_idx:(start_idx+nrows),:]
     res = tail.as_data_frame(False)
+    colnames = res.pop(0)
     print "Last {} rows and first {} columns: ".format(nrows,ncols)
-    h2o.H2ODisplay(res,["Row ID"]+colnames)
+    h2o.H2ODisplay(res,colnames)
     return tail
 
   def levels(self, col=None):
@@ -576,6 +574,16 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("cbind", False, self, data))
 
+  def rbind(self, data):
+    """
+    Combine H2O Datasets by Rows.
+    Takes a sequence of H2O data sets and combines them by rows.
+    :param data: an H2OFrame
+    :return: self, with data appended (row-wise)
+    """
+    if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
+    return H2OFrame(expr=ExprNode("rbind", self, data))
+
   def split_frame(self, ratios=[0.75], destination_frames=""):
     """
     Split a frame into distinct subsets of size determined by the given ratios.
@@ -769,7 +777,7 @@ class H2OFrame:
 
     total = frame["counts"].sum()
     densities = [(frame["counts"][i,:]/total)._scalar()*(1/(frame["breaks"][i,:]._scalar()-frame["breaks"][i-1,:]._scalar())) for i in range(1,frame["counts"].nrow())]
-    densities.insert(0,float("nan"))
+    densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.setNames(["density"])
     frame = frame.cbind(densities_frame)
@@ -943,7 +951,7 @@ class H2OFrame:
     :param seed: A random seed. If None, then one will be generated.
     :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
     """
-    return H2OFrame(expr=ExprNode("h2o.runif", self, -1 if seed is None else random.randint(123456789, 999999999)))
+    return H2OFrame(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
 
   def match(self, table, nomatch=0):
     """

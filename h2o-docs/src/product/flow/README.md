@@ -405,6 +405,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 <a name="DL"></a>
 - **Deep Learning**: Create a Deep Learning model.
 
+
 The available options vary depending on the selected model. If an option is only available for a specific model type, the model type is listed. If no model type is specified, the option is applicable to all model types. 
 
 - **Model_ID**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates an ID containing the model type (for example, `gbm-6f6bdc8b-ccbc-474a-b590-4579eea44596`). 
@@ -415,8 +416,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
->**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
+- **User_points**: [(K-Means](#Kmeans) For K-Means, specify the number of initial cluster centers.  
 
 - **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale.  
 
@@ -442,7 +442,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Build\_tree\_one\_node**: [(DRF](#DRF), [GBM)](#GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
-- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
+- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
 
@@ -454,8 +454,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **K**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
 
-- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. 
-
 - **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA), [GLM)](#GLM) Specify the number of training iterations. 
  
 - **Intercept**: [(GLM)](#GLM) To include a constant term in the model, check this checkbox. This option is selected by default. 
@@ -466,15 +464,19 @@ The available options vary depending on the selected model. If an option is only
 
 - **Gradient_epsilon**: [(GLM)](#GLM) (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
-- **Init**: [(K-Means](#Kmeans), [PCA)](#PCA) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
+- **Init**: [(K-Means](#Kmeans) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. 
 
   >**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
-- **Offset_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
+- **Offset_column**: [(GLM)](#GLM),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
 
 - **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 
-- **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
+- **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+
+- **Tweedie_variance_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
+
+- **Tweedie_link_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier. 
 
@@ -585,6 +587,11 @@ The available options vary depending on the selected model. If an option is only
  **Fast_mode**: [(DL)](#DL) Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+
+- **PCA_method**: [(PCA)](#PCA) Select the algorithm to use for computing the principal components: 
+	- *GramSVD*: Computes the Gram matrix of the training frame, then calculates a local SVD on the result using the JAMA package
+	- *Power*: Computes the SVD using the power iteration method
+	- *GLRM*: Builds a generalized low-rank model with L1 loss function and no regularization, then recovers the SVD from the resulting X and Y matrices
 
 - **Force\_load\_balance**: [(DL)](#DL) Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
@@ -1030,6 +1037,3 @@ You can also email your question to [h2ostream@googlegroups.com](mailto:h2ostrea
 ## Shutting Down H2O
 
 To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
-
-
-d

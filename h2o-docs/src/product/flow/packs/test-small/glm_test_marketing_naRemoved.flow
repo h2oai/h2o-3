@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/marketing_naRemoved.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/marketing_naRemoved.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/marketing_naRemoved.csv\"]\n  destination_frame: \"marketing_naRemoved.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"Income\",\"Sex\",\"Marital\",\"Age\",\"Edu\",\"Occupation\",\"Lived\",\"Dual_Income\",\"Household\",\"Householdu18\",\"Status\",\"Home_Type\",\"Ethnic\",\"Language\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"marketing_naRemoved.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"marketing_naRemoved.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"marketing_naRemoved.hex\", [0.25], [\"marketing_naRemoved_test\",\"marketing_naRemoved_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-89b437f8-7440-4a2b-843e-d7a7c47b96a2\",\"training_frame\":\"marketing_naRemoved_train\",\"validation_frame\":\"marketing_naRemoved_test\",\"ignore_const_cols\":true,\"response_column\":\"Income\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[1],\"lambda\":[0.00001],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-89b437f8-7440-4a2b-843e-d7a7c47b96a2\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-89b437f8-7440-4a2b-843e-d7a7c47b96a2\""
+    }
+  ]
+}

@@ -77,8 +77,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
     _hasWeights = super.hasWeights();
     _hasOffset = super.hasOffset();
-    if (_hasOffset)
-      error("_offset_column", "Offsets are not yet supported for GBM/DRF.");
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode");
     if(_vresponse != null)
@@ -483,7 +481,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     for( DTree dtree : trees )
       if( dtree != null ) {
         try {
-          PrintWriter writer = new PrintWriter("/tmp/h2o-dev.tree" + ++counter + ".txt", "UTF-8");
+          PrintWriter writer = new PrintWriter("/tmp/h2o-3.tree" + ++counter + ".txt", "UTF-8");
           writer.println(dtree.root().toString2(new StringBuilder(), 0));
           writer.close();
         } catch (FileNotFoundException|UnsupportedEncodingException e) {

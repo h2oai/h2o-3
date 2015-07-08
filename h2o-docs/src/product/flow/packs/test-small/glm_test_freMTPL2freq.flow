@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/freMTPL2freq.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/freMTPL2freq.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/freMTPL2freq.csv.zip\"]\n  destination_frame: \"freMTPL2freq.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 12\n  single_quotes: false\n  column_names: [\"IDpol\",\"ClaimNb\",\"Exposure\",\"Area\",\"VehPower\",\"VehAge\",\"DrivAge\",\"BonusMalus\",\"VehBrand\",\"VehGas\",\"Density\",\"Region\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 524288"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"freMTPL2freq.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"freMTPL2freq.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"freMTPL2freq.hex\", [0.25], [\"freMTPL2freq_test\",\"freMTPL2freq_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-50884e93-a6c5-4a75-893b-58bdca5e4b89\",\"training_frame\":\"freMTPL2freq_train\",\"validation_frame\":\"freMTPL2freq_test\",\"ignore_const_cols\":true,\"response_column\":\"ClaimNb\",\"weights_column\":\"Exposure\",\"family\":\"poisson\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[0],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-50884e93-a6c5-4a75-893b-58bdca5e4b89\""
+    }
+  ]
+}
