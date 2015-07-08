@@ -55,7 +55,7 @@ public class Env extends Iced {
   @Override public AutoBuffer write_impl(AutoBuffer ab) {
     // write _refcnt
     ab.put4(_refcnt.size());
-    for (Vec v: _refcnt.keySet()) { ab.putStr(v._key.toString()); ab.put4(_refcnt.get(v)._val); }
+    for (Vec v: _refcnt.keySet()) { ab.put(v); ab.put4(_refcnt.get(v)._val); }
     return ab;
   }
 
@@ -65,7 +65,7 @@ public class Env extends Iced {
     _trash = new HashSet<>();
     int len = ab.get4();
     for (int i = 0; i < len; ++i) {
-      _refcnt.put((Vec)DKV.getGet(ab.getStr()), new IcedInt(ab.get4()));
+      _refcnt.put(ab.get(Vec.class), new IcedInt(ab.get4()));
     }
     return this;
   }
