@@ -636,7 +636,8 @@ public class DeepLearningParameters extends Model.Parameters {
             "_nesterov_accelerated_gradient",
             "_ignore_const_cols",
             "_keep_cross_validation_splits",
-            "_max_categorical_features"
+            "_max_categorical_features",
+            "_nfolds"
     };
 
     static void checkCompleteness() {
