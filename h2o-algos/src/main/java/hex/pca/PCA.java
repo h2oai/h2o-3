@@ -6,7 +6,6 @@ import hex.DataInfo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.ModelMetricsPCA;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
@@ -44,7 +43,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public Job<PCAModel> trainModel() {
-    return start(new PCADriver(), _parms._pca_method == PCAParameters.Method.GramSVD ? 5 : 3);
+    return start(new PCADriver(), 1);
   }
 
   @Override
@@ -69,8 +68,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     }
   }
 
+  public enum Initialization {
+    SVD, PlusPlus, User
+  }
+
   // Called from an http request
-  public PCA(PCAParameters parms) {
+  public PCA(PCAModel.PCAParameters parms) {
     super("PCA", parms);
     init(false);
   }
@@ -96,6 +99,49 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
+
+  /**
+   * Given a n by k matrix X, form its Gram matrix
+   * @param x Matrix of real numbers
+   * @param transpose If true, compute n by n Gram of rows = XX'
+   *                  If false, compute k by k Gram of cols = X'X
+   * @return A symmetric positive semi-definite Gram matrix
+   */
+  public static double[][] formGram(double[][] x, boolean transpose) {
+    if (x == null) return null;
+    int dim_in = transpose ? x[0].length : x.length;
+    int dim_out = transpose ? x.length : x[0].length;
+    double[][] xgram = new double[dim_out][dim_out];
+
+    // Compute all entries on and above diagonal
+    if(transpose) {
+      for (int i = 0; i < dim_in; i++) {
+        // Outer product = x[i] * x[i]', where x[i] is col i
+        for (int j = 0; j < dim_out; j++) {
+          for (int k = j; k < dim_out; k++)
+            xgram[j][k] += x[j][i] * x[k][i];
+        }
+      }
+    } else {
+      for (int i = 0; i < dim_in; i++) {
+        // Outer product = x[i]' * x[i], where x[i] is row i
+        for (int j = 0; j < dim_out; j++) {
+          for (int k = j; k < dim_out; k++)
+            xgram[j][k] += x[i][j] * x[i][k];
+        }
+      }
+    }
+
+    // Fill in entries below diagonal since Gram is symmetric
+    for (int i = 0; i < dim_in; i++) {
+      for (int j = 0; j < dim_out; j++) {
+        for (int k = 0; k < j; k++)
+          xgram[j][k] = xgram[k][j];
+      }
+    }
+    return xgram;
+  }
+  public static double[][] formGram(double[][] x) { return formGram(x, false); }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 
@@ -126,7 +172,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._pc_importance = new TwoDimTable("Importance of components", null,
               new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][]{pca._output._std_deviation, prop_var, cum_var});
-      pca._output._model_summary = pca._output._pc_importance;
     }
 
     protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {
@@ -138,7 +183,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._nnums = svd._output._nnums;
       pca._output._ncats = svd._output._ncats;
       pca._output._catOffsets = svd._output._catOffsets;
-      pca._output._nobs = svd._output._nobs;
 
       // Fill model with eigenvectors and standard deviations
       pca._output._std_deviation = ArrayUtils.mult(svd._output._d, 1.0 / Math.sqrt(svd._output._nobs - 1.0));
@@ -157,7 +201,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._nnums = glrm._output._nnums;
       pca._output._ncats = glrm._output._ncats;
       pca._output._catOffsets = glrm._output._catOffsets;
-      pca._output._objective = glrm._output._objective;
 
       // Fill model with eigenvectors and standard deviations
       double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
@@ -217,24 +260,20 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.delete_and_lock(_key);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
+          dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
                             /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
 
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
-          update(1, "Begin distributed calculation of Gram matrix");
           GramTask gtsk = new Gram.GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
-          model._output._nobs = gtsk._nobs;
 
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
-          update(1, "Calculating SVD of Gram matrix locally");
           Matrix gramJ = new Matrix(gtsk._gram.getXX());
           SingularValueDecomposition svdJ = gramJ.svd();
-          update(1, "Computing stats from SVD");
           computeStatsFillModel(model, dinfo, svdJ, gram, gtsk._nobs);
 
         } else if(_parms._pca_method == PCAParameters.Method.Power) {
@@ -266,7 +305,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             if (svd != null) svd.remove();
           }
           // Recover PCA results from SVD model
-          update(1, "Computing stats from SVD");
           computeStatsFillModel(model, svd);
 
         } else if(_parms._pca_method == PCAParameters.Method.GLRM) {
@@ -279,12 +317,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
-          parms._recover_svd = true;
 
+          parms._recover_svd = true;
           parms._loss = GLRMModel.GLRMParameters.Loss.L2;
           parms._gamma_x = 0;
           parms._gamma_y = 0;
-          parms._init = GLRM.Initialization.PlusPlus;
 
           GLRMModel glrm = null;
           GLRM job = null;
@@ -301,24 +338,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             }
           }
           // Recover PCA results from GLRM model
-          update(1, "Computing stats from GLRM decomposition");
           computeStatsFillModel(model, glrm);
         }
-        update(1, "Scoring and computing metrics on training data");
-        if (_parms._compute_metrics) {
-          model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
-          ModelMetricsPCA mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          model._output._training_metrics = mm;
-        }
 
-        // At the end: validation scoring (no need to gather scoring history)
-        update(1, "Scoring and computing metrics on validation data");
-        if (_valid != null) {
-          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
-          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          pred.delete();
-        }
         model.update(self());
+        update(1);
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);

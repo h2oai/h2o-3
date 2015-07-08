@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.svd <- function(conn) {
+test.glrm.arrests <- function(conn) {
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
   arrestsH2O <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
@@ -20,4 +20,4 @@ test.glrm.svd <- function(conn) {
   testEnd()
 }
 
-doTest("GLRM Test: USArrests with SVD Computations", test.glrm.svd)
+doTest("GLRM Golden Test: USArrests with Centering", test.glrm.arrests)

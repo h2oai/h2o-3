@@ -249,49 +249,6 @@ public class ArrayUtils {
     return res;
   }
 
-  /**
-   * Given a n by k matrix X, form its Gram matrix
-   * @param x Matrix of real numbers
-   * @param transpose If true, compute n by n Gram of rows = XX'
-   *                  If false, compute k by k Gram of cols = X'X
-   * @return A symmetric positive semi-definite Gram matrix
-   */
-  public static double[][] formGram(double[][] x, boolean transpose) {
-    if (x == null) return null;
-    int dim_in = transpose ? x[0].length : x.length;
-    int dim_out = transpose ? x.length : x[0].length;
-    double[][] xgram = new double[dim_out][dim_out];
-
-    // Compute all entries on and above diagonal
-    if(transpose) {
-      for (int i = 0; i < dim_in; i++) {
-        // Outer product = x[i] * x[i]', where x[i] is col i
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = j; k < dim_out; k++)
-            xgram[j][k] += x[j][i] * x[k][i];
-        }
-      }
-    } else {
-      for (int i = 0; i < dim_in; i++) {
-        // Outer product = x[i]' * x[i], where x[i] is row i
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = j; k < dim_out; k++)
-            xgram[j][k] += x[i][j] * x[i][k];
-        }
-      }
-    }
-
-    // Fill in entries below diagonal since Gram is symmetric
-    for (int i = 0; i < dim_in; i++) {
-      for (int j = 0; j < dim_out; j++) {
-        for (int k = 0; k < j; k++)
-          xgram[j][k] = xgram[k][j];
-      }
-    }
-    return xgram;
-  }
-  public static double[][] formGram(double[][] x) { return formGram(x, false); }
-
   public static String[] permuteCols(String[] vec, int[] idx) {
     if(vec == null) return null;
     assert vec.length == idx.length : "Length of vector must match permutation vector length: Got " + vec.length + " != " + idx.length;
@@ -370,21 +327,6 @@ public class ArrayUtils {
   }
 
   public static int maxIndex(float[] from, Random rand) {
-    assert rand != null;
-    int result = 0;
-    int maxCount = 0; // count of maximal element for a 1 item reservoir sample
-    for( int i = 1; i < from.length; ++i ) {
-      if( from[i] > from[result] ) {
-        result = i;
-        maxCount = 1;
-      } else if( from[i] == from[result] ) {
-        if( rand.nextInt(++maxCount) == 0 ) result = i;
-      }
-    }
-    return result;
-  }
-
-  public static int maxIndex(double[] from, Random rand) {
     assert rand != null;
     int result = 0;
     int maxCount = 0; // count of maximal element for a 1 item reservoir sample

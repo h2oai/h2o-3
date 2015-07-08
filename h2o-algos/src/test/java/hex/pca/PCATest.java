@@ -10,7 +10,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 
 import java.util.concurrent.ExecutionException;
 
@@ -248,8 +247,8 @@ public class PCATest extends TestUtil {
     double[][] xgram = ard(ard(17, 22, 27), ard(22, 29, 36), ard(27, 36, 45));  // X'X
     double[][] xtgram = ard(ard(14, 32), ard(32, 77));    // (X')'X' = XX'
 
-    double[][] xgram_glrm = ArrayUtils.formGram(x, false);
-    double[][] xtgram_glrm = ArrayUtils.formGram(x, true);
+    double[][] xgram_glrm = PCA.formGram(x, false);
+    double[][] xtgram_glrm = PCA.formGram(x, true);
     Assert.assertArrayEquals(xgram, xgram_glrm);
     Assert.assertArrayEquals(xtgram, xtgram_glrm);
   }

@@ -3,8 +3,6 @@ package hex.naivebayes;
 import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
-import hex.naivebayes.NaiveBayesModel.NaiveBayesOutput;
-import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -30,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author anqi_fu
  *
  */
-public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameters,NaiveBayesOutput> {
+public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
     return new NaiveBayesV3();
@@ -208,7 +206,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
 
         // The model to be built
-        model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
+        model = new NaiveBayesModel(dest(), _parms, new NaiveBayesModel.NaiveBayesOutput(NaiveBayes.this));
         model.delete_and_lock(_key);
         _train.read_lock(_key);
 
@@ -237,7 +235,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     }
   }
 
-  private TwoDimTable createModelSummaryTable(NaiveBayesOutput output) {
+  private TwoDimTable createModelSummaryTable(NaiveBayesModel.NaiveBayesOutput output) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();

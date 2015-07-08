@@ -18,9 +18,6 @@ public class PCAModelV99 extends ModelSchema<PCAModel, PCAModelV99, PCAModel.PCA
 
     @API(help = "Frame key for loading matrix (Power method only)")
     public KeyV3.FrameKeyV3 loading_key;
-
-    @API(help = "GLRM final value of L2 loss function")
-    public double objective;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
