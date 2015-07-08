@@ -93,6 +93,10 @@ public class GBMTest extends TestUtil {
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, Family.gamma);
 
+    basicGBM("./smalldata/junit/cars.csv",
+            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            false, Family.tweedie);
+
     // Classification tests
     basicGBM("./smalldata/junit/test_tree.csv",
             new PrepData() { int prep(Frame fr) { return 1; }

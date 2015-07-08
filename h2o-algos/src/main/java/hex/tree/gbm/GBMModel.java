@@ -14,9 +14,10 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson, gamma }
+    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson, gamma, tweedie }
     public Family _distribution = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
+    public float _tweedie_power=1.5f;
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
@@ -49,6 +50,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
         preds[0] = Distributions.Poisson.linkInv(f);
       } else if( _parms._distribution == GBMParameters.Family.gamma) {
         preds[0] = Distributions.Gamma.linkInv(f);
+      } else if( _parms._distribution == GBMParameters.Family.tweedie) {
+        preds[0] = Distributions.Tweedie.linkInv(f);
       }
     }
     return preds;
@@ -75,6 +78,9 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
         body.ip("preds[0] += ").p(_output._init_f).p(";");
         body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
       } else if( _parms._distribution == GBMParameters.Family.gamma) {
+        body.ip("preds[0] += ").p(_output._init_f).p(";");
+        body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
+      } else if( _parms._distribution == GBMParameters.Family.tweedie) {
         body.ip("preds[0] += ").p(_output._init_f).p(";");
         body.ip("preds[0] = Math.max(1e-19,Math.min(1e19,Math.exp(preds[0])));");
       }
