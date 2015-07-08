@@ -229,7 +229,9 @@ task buildH2oDevDist(type: Exec) {
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
-    environment['JAVA_6_HOME'] = java6home
+    if (java6home != null) {
+      environment['JAVA_6_HOME'] = java6home
+    }
     commandLine './make-dist.sh'
 }
 
