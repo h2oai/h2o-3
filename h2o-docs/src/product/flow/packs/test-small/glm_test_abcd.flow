@@ -1,7 +1,6 @@
 {
   "version": "1.0.0",
   "cells": [
-   
     {
       "type": "cs",
       "input": "importFiles [ \"../smalldata/glm_test/abcd.csv\" ]"
@@ -20,31 +19,23 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"abcd.hex\""
-    },
-    {
-      "type": "cs",
-      "input": "splitFrame \"abcd.hex\", [0.25], [\"abcd_test\",\"abcd_train\"]"
-    },
-    {
-      "type": "cs",
       "input": "assist buildModel, null, training_frame: \"abcd.hex\""
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-d1c7e1c3-6f27-4bff-ad1c-43bda1150740\",\"training_frame\":\"abcd_train\",\"validation_frame\":\"abcd_test\",\"ignore_const_cols\":true,\"response_column\":\"A\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-3fafba10-5a7d-4eea-8fca-0cf059ba3e1d\",\"training_frame\":\"abcd.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"A\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "cs",
-      "input": "getModel \"glm-d1c7e1c3-6f27-4bff-ad1c-43bda1150740\""
+      "input": "getModel \"glm-3fafba10-5a7d-4eea-8fca-0cf059ba3e1d\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"glm-d1c7e1c3-6f27-4bff-ad1c-43bda1150740\""
+      "input": "predict model: \"glm-3fafba10-5a7d-4eea-8fca-0cf059ba3e1d\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"glm-d1c7e1c3-6f27-4bff-ad1c-43bda1150740\", frame: \"abcd_test\", predictions_frame: \"prediction-4318f0bc-cba2-4447-9521-698adf976a25\""
+      "input": "predict model: \"glm-3fafba10-5a7d-4eea-8fca-0cf059ba3e1d\", frame: \"abcd.hex\", predictions_frame: \"prediction-564a92d3-e9cc-497d-b44e-05439ce59acf\""
     }
   ]
 }
