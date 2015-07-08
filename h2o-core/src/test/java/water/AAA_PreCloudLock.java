@@ -18,13 +18,7 @@ public class AAA_PreCloudLock extends TestUtil {
   private static void stall() {
     stall_till_cloudsize(PARTIAL_CLOUD_SIZE);
     // Start Nano server; block for starting
-    Runnable run = H2O.finalizeRegistration();
-    if( run != null ) 
-      synchronized(run) {
-        while( water.api.RequestServer.SERVER==null ) 
-          try { run.wait(); }
-          catch( InterruptedException ignore ) {}
-      }
+    H2O.finalizeRegistration();
   }
 
   // ---
