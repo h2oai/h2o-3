@@ -6,6 +6,7 @@ import hex.DataInfo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.ModelMetricsPCA;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
@@ -43,7 +44,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public Job<PCAModel> trainModel() {
-    return start(new PCADriver(), 1);
+    return start(new PCADriver(), _parms._pca_method == PCAParameters.Method.GramSVD ? 5 : 3);
   }
 
   @Override
@@ -73,7 +74,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   // Called from an http request
-  public PCA(PCAModel.PCAParameters parms) {
+  public PCA(PCAParameters parms) {
     super("PCA", parms);
     init(false);
   }
@@ -172,6 +173,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._pc_importance = new TwoDimTable("Importance of components", null,
               new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][]{pca._output._std_deviation, prop_var, cum_var});
+      pca._output._model_summary = pca._output._pc_importance;
     }
 
     protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {
@@ -266,14 +268,17 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
+          update(1, "Begin distributed calculation of Gram matrix");
           GramTask gtsk = new Gram.GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
 
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
+          update(1, "Calculating SVD of Gram matrix locally");
           Matrix gramJ = new Matrix(gtsk._gram.getXX());
           SingularValueDecomposition svdJ = gramJ.svd();
+          update(1, "Computing stats from SVD");
           computeStatsFillModel(model, dinfo, svdJ, gram, gtsk._nobs);
 
         } else if(_parms._pca_method == PCAParameters.Method.Power) {
@@ -305,6 +310,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             if (svd != null) svd.remove();
           }
           // Recover PCA results from SVD model
+          update(1, "Computing stats from SVD");
           computeStatsFillModel(model, svd);
 
         } else if(_parms._pca_method == PCAParameters.Method.GLRM) {
@@ -338,11 +344,24 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             }
           }
           // Recover PCA results from GLRM model
+          update(1, "Computing stats from GLRM decomposition");
           computeStatsFillModel(model, glrm);
         }
+        update(1, "Scoring and computing metrics on training data");
+        if (_parms._compute_metrics) {
+          model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
+          ModelMetricsPCA mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          model._output._training_metrics = mm;
+        }
 
+        // At the end: validation scoring (no need to gather scoring history)
+        update(1, "Scoring and computing metrics on validation data");
+        if (_valid != null) {
+          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
+          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          pred.delete();
+        }
         model.update(self());
-        update(1);
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);
