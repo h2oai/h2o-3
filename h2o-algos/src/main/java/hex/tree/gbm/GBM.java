@@ -28,6 +28,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       ModelCategory.Multinomial,
     };
   }
+  @Override public boolean hasWork2() { return _parms._distribution == GBMModel.GBMParameters.Family.tweedie; }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
@@ -96,6 +97,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_response.min() < 0)
           error("_response", "Response cannot be negative for Gamma distribution.");
         _initialPrediction = gammaInitialValue();
+      } else if (_parms._distribution == GBMModel.GBMParameters.Family.tweedie) {
+        if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
+          error("_tweedie_power", "Tweedie power must be between 1 and 2.");
+        if (_response.min() < 0)
+          error("_response", "Response cannot be negative for Gamma distribution.");
+        _initialPrediction = tweedieInitialValue(_parms._tweedie_power);
       }
       if (hasOffset() && isClassifier() && _parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
@@ -123,6 +130,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       break;
     case gamma:
       if (isClassifier()) error("_distribution", "Gamma requires the response to be numeric.");
+      break;
+    case tweedie:
+      if (isClassifier()) error("_distribution", "Tweedie requires the response to be numeric.");
       break;
     case gaussian:
       if (isClassifier()) error("_distribution", "Gaussian requires the response to be numeric.");
@@ -193,11 +203,48 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (response.isNA(i)) continue;
         double w = weight.atd(i);
         if (w == 0) continue;
-        _num += w*response.atd(i)*Math.exp(-offset.atd(i));
+        _num += w*response.atd(i)*Distributions.Gamma.linkInv(-offset.atd(i));
         _denom += w;
       }
     }
     @Override public void reduce(GammaInitialValue mrt) {
+      _num += mrt._num;
+      _denom += mrt._denom;
+    }
+  }
+
+  /**
+   * Compute the inital value for Poisson distribution
+   * @return initial value
+   */
+  private double tweedieInitialValue(double power) {
+    return new TweedieInitialValue(power).doAll(
+            _response,
+            hasWeights() ? _weights : _response.makeCon(1),
+            hasOffset() ? _offset : _response.makeCon(0)
+    ).initialValue();
+  }
+
+  private static class TweedieInitialValue extends MRTask<TweedieInitialValue> {
+    TweedieInitialValue(double power) {_power = power;}
+    private double _power;
+    private double _num;
+    private double _denom;
+    public  double initialValue() {
+      return Math.log(_num / _denom);
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        double o = offset.atd(i);
+        double y = response.atd(i);
+        _num += w*y*Distributions.exp(o*(1-_power));
+        _denom += w*Distributions.exp(o*(2-_power));
+      }
+    }
+    @Override public void reduce(TweedieInitialValue mrt) {
       _num += mrt._num;
       _denom += mrt._denom;
     }
@@ -242,7 +289,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
         // Compute predictions and resulting residuals for trees built so far
         // ESL2, page 387, Steps 2a, 2b
-        new ComputeRes().doAll(_train, _parms._build_tree_one_node);
+        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node);
 
         // Build more trees, based on residuals above
         // ESL2, page 387, Step 2b ii, iii, iv
@@ -320,12 +367,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     // --------------------------------------------------------------------------
     // Compute Residuals
-    class ComputeRes extends MRTask<ComputeRes> {
+    class ComputePredAndRes extends MRTask<ComputePredAndRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk tr = chk_tree(chks,0); // Prior tree sums
-        Chunk wk = chk_work(chks,0); // Predictions
+        Chunk wk = chk_work(chks,0); // Place to store residuals
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
@@ -339,6 +386,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             wk.set(row, (float)Distributions.Poisson.gradient(y, f));
           } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma) {
             wk.set(row, (float) Distributions.Gamma.gradient(y, f));
+          } else if (_parms._distribution == GBMModel.GBMParameters.Family.tweedie) {
+            Chunk wk2 = chk_work2(chks); // Place to store residuals
+            wk2.set(row, f);
+            wk.set(row, (float) Distributions.Tweedie.gradient(y, f, _parms._tweedie_power));
           } else if( _nclass > 1 ) {
             double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
             double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
@@ -498,7 +549,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       double gamma(int tree, int nid) {
         double g = _num[tree][nid]/ _denom[tree][nid];
         assert(!Double.isInfinite(g)) : "numeric overflow"; //TODO: handle gracefully with signum(g)*1e19"
-        if (_dist == GBMModel.GBMParameters.Family.poisson || _dist == GBMModel.GBMParameters.Family.gamma) {
+        if (_dist == GBMModel.GBMParameters.Family.poisson
+                || _dist == GBMModel.GBMParameters.Family.gamma
+                || _dist == GBMModel.GBMParameters.Family.tweedie)
+        {
           return g == 0 ? -19 : Math.log(g);
         } else {
           return g;
@@ -520,7 +574,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final double denom[] = _denom[k] = new double[tree._len-leaf];
           final double num[] = _num[k] = new double[tree._len-leaf];
           final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
-          final Chunk ress = chk_work(chks,k); // Residuals for this tree/class
+          final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
+          final Chunk pred = hasWork2() ? chk_work2(chks) : null; // Residuals for this tree/class
 
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
@@ -564,6 +619,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               double yexp_negf = z + 1;
               num[idx] += w * yexp_negf;
               denom[idx] += w;
+            } else if ( _dist == GBMModel.GBMParameters.Family.tweedie) {
+              double f = pred.atd(row);
+              num[idx] += w * y * Distributions.exp(f*(1-_parms._tweedie_power));
+              denom[idx] += w * Distributions.exp(f*(2-_parms._tweedie_power));
             } else if ( _dist == GBMModel.GBMParameters.Family.multinomial) {
               double absz = Math.abs(z);
               num[idx] += w * z;
@@ -651,6 +710,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return fs[0] = Distributions.Poisson.linkInv(f);
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.gamma){
       return fs[0] = Distributions.Gamma.linkInv(f);
+    } else if (_parms._distribution == GBMModel.GBMParameters.Family.tweedie){
+      return fs[0] = Distributions.Tweedie.linkInv(f);
     } else if (_parms._distribution == GBMModel.GBMParameters.Family.multinomial) {
       if (_nclass == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
