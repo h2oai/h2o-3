@@ -241,8 +241,6 @@ public class Job<T extends Keyed> extends Keyed {
         old._finalProgress = finalProgress;
         return old;
       }
-      // Run the onCancelled code synchronously, right now
-      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
     // Also immediately update immediately a possibly cached local POJO (might
     // be shared with the DKV cached job, might not).
@@ -255,12 +253,6 @@ public class Job<T extends Keyed> extends Keyed {
     // Remove on cancel/fail/done, only used whilst Job is Running
     if (deleteProgressKey())
       DKV.remove(_progressKey);
-  }
-
-  /**
-   * Callback which is called after job cancellation (by user, by exception).
-   */
-  protected void onCancelled() {
   }
 
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.

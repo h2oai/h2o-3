@@ -75,6 +75,7 @@ def parse_setup(raw_frames):
 def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
+  
   :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
   :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
@@ -122,6 +123,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
 def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   """
   Used in conjunction with import_file and parse_setup in order to make alterations before parsing.
+
   :param setup: Result of h2o.parse_setup
   :param id: An optional id for the frame.
   :param first_line_is_header: -1,0,1 if the first line is to be used as the header
@@ -228,6 +230,7 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
   """
   Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
   conforms to the rules specified in the h2o frame documentation.
+
   :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
   :param h2o_frame: an H2OFrame
   :param rows: number of rows
@@ -255,6 +258,7 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
 def np_comparison_check(h2o_data, np_data, num_elements):
   """
   Check values achieved by h2o against values achieved by numpy
+
   :param h2o_data: an H2OFrame or H2OVec
   :param np_data: a numpy array
   :param num_elements: number of elements to compare
@@ -295,6 +299,7 @@ def run_test(sys_args, test_to_run):
 def ou():
   """
   Where is my baguette!?
+
   :return: the name of the baguette. oh uhr uhr huhr
   """
   from inspect import stack
@@ -371,6 +376,7 @@ def removeFrameShallow(key):
   """
   Do a shallow DKV remove of the frame (does not remove any internal Vecs).
   This is a "soft" delete. Just removes the top level pointer, but all big data remains!
+
   :param key: A Frame Key to be removed
   :return: None
   """
@@ -394,6 +400,7 @@ def rapids(expr, id=None):
 def ls():
   """
   List Keys on an H2O Cluster
+
   :return: Returns a list of keys in the current H2O instance
   """
   return H2OFrame(expr=ExprNode("ls"))._frame().as_data_frame()
@@ -420,6 +427,7 @@ def download_pojo(model,path=""):
   """
   Download the POJO for this model to the directory specified by path (no trailing slash!).
   If path is "", then dump to screen.
+
   :param model: Retrieve this model's scoring POJO.
   :param path:  An absolute path to the directory where POJO should be saved.
   :return: None
@@ -502,7 +510,9 @@ def save_model(model, dir="", name="", filename="", force=False):
 def load_model(path):
   """
   Load a saved H2O model from disk.
-  :param path: The full path of the H2O Model to be imported.
+  :param path: The full path of the H2O Model to be imported. For example, if the `dir` argument in h2o.saveModel was
+  set to "/Users/UserName/Desktop" then the `path` argument in h2o.loadModel should be set to something like
+  "/Users/UserName/Desktop/K-meansModel__a7cebf318ca5827185e209edf47c4052"
   :return: the model
   """
   if not isinstance(path, str): raise ValueError("`path` must be a non-empty character string")

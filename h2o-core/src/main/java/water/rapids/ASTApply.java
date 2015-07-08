@@ -53,26 +53,39 @@ public class ASTApply extends ASTOp {
       Vec[] vecs_result;
 
       boolean isRow = false;
-      ParallelVecApply t;
-      H2O.submitTask(t=new ParallelVecApply(FUN,fr,_fun_args,env)).join();
-      if( t._applyTasks[0]._vec_result==null ) isRow = true;
-      // Create the results frame.
-      if (isRow) {
-        Futures fs = new Futures();
-        Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-        AppendableVec v = new AppendableVec(key);
-        NewChunk chunk = new NewChunk(v, 0);
-        row_result=new double[t._applyTasks.length];
-        for(int i=0;i<row_result.length;++i) row_result[i] = t._applyTasks[i]._row_result;
-        for (double aRow_result : row_result) chunk.addNum(aRow_result);
-        chunk.close(0, fs);
+      Futures fs = new Futures();
+      Key key;
+      AppendableVec v=null;
+      NewChunk chunk=null;
+      Vec[] vecs = new Vec[fr.numCols()];
+      for(int i=0;i<fr.numCols();++i) {
+        ASTFrame f;
+        AST[] funargs= new AST[_fun_args==null?1:_fun_args.length+1];
+        funargs[0]=f=new ASTFrame(fr.vec(i)._key.toString());
+        if( _fun_args!=null )
+          System.arraycopy(_fun_args, 0, funargs, 1, _fun_args.length);
+        FUN.exec(env,funargs);
+        if( i == 0 ) {
+          isRow = env.isNum();
+          if( isRow ) {
+            key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+            v = new AppendableVec(key);
+            chunk = new NewChunk(v, 0);
+          }
+        }
+        if( isRow ) chunk.addNum(env.popDbl());
+        else        {
+          vecs[i] = env.popAry().anyVec();
+          env.lock(vecs[i]); // hack: basically don't let refcnt'n destroy the vec ever
+        }
+      }
+      if( isRow ) {
+        chunk.close(0,fs);
         Vec vec = v.close(fs);
         fs.blockForPending();
         fr2 = new Frame(vec);
       } else {
-        vecs_result=new Vec[t._applyTasks.length];
-        for(int i=0; i<vecs_result.length;++i) vecs_result[i]=t._applyTasks[i]._vec_result;
-        fr2 = new Frame(fr.names(), vecs_result);
+        fr2 = new Frame(fr.names(), vecs);
       }
     }
     if( _margin == 1) {      // Work on rows
@@ -99,54 +112,6 @@ public class ASTApply extends ASTOp {
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
     env.pushAry(fr2);
-  }
-
-  private static class ParallelVecTask extends H2O.H2OCountedCompleter<ParallelVecTask> {
-    // IN
-    private final ASTOp _FUN;
-    private final Frame _f;
-    private final int _i;
-    private final AST[] _funArgs;
-    private final Env _env;
-
-    // OUT
-    private double _row_result;
-    private Vec    _vec_result;
-
-    ParallelVecTask(H2O.H2OCountedCompleter cc, ASTOp FUN, Frame fr, int i, AST[] funArgs, Env env) { super(cc); _FUN = FUN; _f=fr; _i=i; _funArgs=funArgs; _env=env; }
-    @Override protected void compute2() {
-      // combine all function args:
-      ASTFrame f;
-      AST[] args= new AST[_funArgs==null?1:_funArgs.length+1];
-      args[0]=f=new ASTFrame(_f.vec(_i)._key.toString());
-      if( _funArgs!=null )
-        System.arraycopy(_funArgs, 0, args, 1, _funArgs.length);
-      _FUN.exec(_env,args);
-      if( _env.isNum() ) _row_result=_env.popDbl();
-      else              {_vec_result=_env.popAry().anyVec(); _env.addRef(_vec_result); }
-      DKV.remove(f._fr._key);
-      tryComplete();
-    }
-  }
-
-  private static class ParallelVecApply extends H2O.H2OCountedCompleter<ParallelVecApply> {
-    // IN
-    private final Frame _fr;
-    private final ASTOp _FUN;
-    private final AST[] _funArgs;
-    private final Env   _env;
-
-    // OUT
-    ParallelVecTask[] _applyTasks;
-
-    ParallelVecApply(ASTOp FUN, Frame fr, AST[] funArgs, Env env) { _FUN=FUN; _fr=fr; _funArgs=funArgs; _env=env; }
-    @Override protected void compute2() {
-      int nTasks;
-      addToPendingCount((nTasks=_fr.numCols())-1);
-      _applyTasks = new ParallelVecTask[nTasks];
-      for(int i=0;i<nTasks;++i)
-        (_applyTasks[i] = new ParallelVecTask(this, _FUN, _fr, i, _funArgs,_env)).compute2();
-    }
   }
 }
 

@@ -333,7 +333,7 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     }
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
-    result = self.do_json_request('3/Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
+    result = self.do_json_request('99/Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
 
     verboseprint("rapids result:", dump_json(result))
 

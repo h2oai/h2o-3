@@ -167,7 +167,7 @@ public class RequestServer extends NanoHTTPD {
       "Delete all Frames from the H2O distributed K/V store.");
     register("/3/Models/(?<modelid>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"model_id"},
       "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<modelid>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
+    register("/3/Models/(?<modelid>.*?)(\\.java)?"                  ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
       "Return all Models from the H2O distributed K/V store.");
@@ -698,7 +698,9 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
       ModelSchema ms = (ModelSchema)mb.models[0];
-      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+      Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+      //r.addHeader("Content-Disposition", "attachment; filename=\"" + ms.model_id.key().toString() + ".java\"");
+      return r;
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());

@@ -768,8 +768,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    */
   public static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);
-    if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
-                                                            "Failed to find schema for version: " + version + " and type: " + type);
+    if (null == clz)
+      clz = schemaClass(Schema.getExperimentalVersion(), type);
+
+    if (null == clz)
+      throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
+                                             "Failed to find schema for version: " + version + " and type: " + type);
     return Schema.newInstance(clz);
   }
 
