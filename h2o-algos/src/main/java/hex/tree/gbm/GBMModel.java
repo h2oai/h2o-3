@@ -8,16 +8,7 @@ import water.util.SB;
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
-    /** Distribution functions.  Note: AUTO will select gaussian for
-     *  continuous, and multinomial for categorical response
-     *
-     *  <p>TODO: Replace with drop-down that displays different distributions
-     *  depending on cont/cat response
-     */
-    public enum Family {  AUTO, bernoulli, multinomial, gaussian, poisson, gamma, tweedie }
-    public Family _distribution = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
-    public float _tweedie_power=1.5f;
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
@@ -32,11 +23,11 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
     super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
-    if (_parms._distribution == GBMParameters.Family.bernoulli) {
+    if (_parms._distribution == Distributions.Family.bernoulli) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
-      preds[2] = Distributions.Bernoulli.linkInv(f);
+      preds[2] = _parms._distribution.linkInv(f);
       preds[1] = 1.0 - preds[2];
-    } else if (_parms._distribution == GBMParameters.Family.multinomial) { // Kept the initial prediction for binomial
+    } else if (_parms._distribution == Distributions.Family.multinomial) { // Kept the initial prediction for binomial
       if (_output.nclasses() == 2) { //1-tree optimization for binomial
         preds[1] += _output._init_f + offset; //offset is not yet allowed, but added here to be future-proof
         preds[2] = -preds[1];
@@ -44,15 +35,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       hex.genmodel.GenModel.GBM_rescale(preds);
     } else { //Regression
       double f = preds[0] + _output._init_f + offset;
-      if( _parms._distribution == GBMParameters.Family.gaussian) {
-        preds[0] = Distributions.Gaussian.linkInv(f);
-      } else if( _parms._distribution == GBMParameters.Family.poisson) {
-        preds[0] = Distributions.Poisson.linkInv(f);
-      } else if( _parms._distribution == GBMParameters.Family.gamma) {
-        preds[0] = Distributions.Gamma.linkInv(f);
-      } else if( _parms._distribution == GBMParameters.Family.tweedie) {
-        preds[0] = Distributions.Tweedie.linkInv(f);
-      }
+      preds[0] = _parms._distribution.linkInv(f);
     }
     return preds;
   }
@@ -61,9 +44,9 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected void toJavaUnifyPreds(SB body, SB file) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
-    if( _parms._distribution == GBMParameters.Family.bernoulli ) {
+    if( _parms._distribution == Distributions.Family.bernoulli ) {
       body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = " + Distributions.Bernoulli.linkInvString("preds[2]") + ";").nl();
+      body.ip("preds[2] = " + _parms._distribution.linkInvString("preds[2]") + ";").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
@@ -71,20 +54,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       return;
     }
     if( _output.nclasses() == 1 ) { // Regression
-      if( _parms._distribution == GBMParameters.Family.gaussian) {
-        // Prediction starts from the mean response, and adds predicted residuals
-        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-        body.ip("preds[0] = " + Distributions.Gaussian.linkInvString("preds[0]") + ";").nl();
-      } else if( _parms._distribution == GBMParameters.Family.poisson) {
-        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-        body.ip("preds[0] = " + Distributions.Poisson.linkInvString("preds[0]") + ";").nl();
-      } else if( _parms._distribution == GBMParameters.Family.gamma) {
-        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-        body.ip("preds[0] = " + Distributions.Gamma.linkInvString("preds[0]") + ";").nl();
-      } else if( _parms._distribution == GBMParameters.Family.tweedie) {
-        body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-        body.ip("preds[0] = " + Distributions.Tweedie.linkInvString("preds[0]") + ";").nl();
-      }
+      body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
+      body.ip("preds[0] = " + _parms._distribution.linkInvString("preds[0]") + ";").nl();
       return;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial

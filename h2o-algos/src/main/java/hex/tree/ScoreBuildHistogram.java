@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.Distributions;
 import water.MRTask;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.C0DChunk;
@@ -40,8 +41,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
   final boolean _subset;      // True if working a subset of cols
+  final Distributions.Family _family;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset, Distributions.Family family) {
     super(cc);
     _k    = k;
     _ncols= ncols;
@@ -52,6 +54,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _hcs  = hcs;
     _subset = subset;
     _modifiesInputs = true;
+    _family = family;
   }
 
   /** Marker for already decided row. */
@@ -238,6 +241,12 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           double resp = wrks.atd(row);
+          if (_family == Distributions.Family.tweedie
+                  || _family == Distributions.Family.poisson
+                  || _family == Distributions.Family.gamma) {
+            resp = _family.link(resp);
+            //FIXME: Consider additionally weighting to make MSE match the actual deviance better (see GLM)
+          }
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
           ssqs[b] += w*resp*resp;

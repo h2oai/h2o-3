@@ -35,6 +35,17 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
 
     public boolean _build_tree_one_node = false;
+
+    public int _nfolds = 1;
+
+    /** Distribution functions.  Note: AUTO will select gaussian for
+     *  continuous, and multinomial for categorical response
+     *
+     *  <p>TODO: Replace with drop-down that displays different distributions
+     *  depending on cont/cat response
+     */
+    public Distributions.Family _distribution = Distributions.Family.AUTO;
+    public float _tweedie_power=1.5f;
   }
 
   final public VarImp varImp() { return _output._varimp; }

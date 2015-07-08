@@ -20,11 +20,12 @@ public class DeepLearningParameters extends Model.Parameters {
     return _sparse ? 0 : Double.NaN;
   }
 
-  // public int _n_folds;
+  // public int _nfolds;
   public int getNumFolds() {
-    return 0;
+    return _nfolds;
   }
 
+  public int _nfolds;
   public boolean _keep_cross_validation_splits;
 
   /**
@@ -502,7 +503,7 @@ public class DeepLearningParameters extends Model.Parameters {
       dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
     }
     if (getNumFolds() != 0)
-      dl.error("_n_folds", "n_folds is not yet implemented.");
+      dl.error("_nfolds", "nfolds is not yet implemented.");
 
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
@@ -659,7 +660,7 @@ public class DeepLearningParameters extends Model.Parameters {
     static void checkpoint(final DeepLearningParameters oldP, final DeepLearningParameters newP) {
       checkCompleteness();
       if (newP.getNumFolds() != 0)
-        throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
+        throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
       if ((newP._valid == null) != (oldP._valid == null)
               || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
         throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
