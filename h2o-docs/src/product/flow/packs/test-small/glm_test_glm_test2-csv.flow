@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+  
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/glm_test2.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/glm_test2.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/glm_test2.csv\"]\n  destination_frame: \"glm_test2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 10\n  single_quotes: false\n  column_names: [\"ID\",\"V1\",\"V2\",\"V3\",\"V4\",\"V5\",\"V6\",\"V7\",\"V8\",\"response\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"glm_test2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"glm_test2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"glm_test2.hex\", [0.25], [\"glm_test2_test\",\"glm_test2_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-c1184fdf-69e7-482e-b447-cfac31ac880b\",\"training_frame\":\"glm_test2_train\",\"validation_frame\":\"glm_test2_test\",\"ignore_const_cols\":true,\"response_column\":\"ID\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-c1184fdf-69e7-482e-b447-cfac31ac880b\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-c1184fdf-69e7-482e-b447-cfac31ac880b\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-c1184fdf-69e7-482e-b447-cfac31ac880b\", frame: \"glm_test2_train\", predictions_frame: \"prediction-483d2cb6-9894-4ed5-9b29-37633adeb396\""
+    }
+  ]
+}

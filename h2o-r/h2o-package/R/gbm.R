@@ -14,7 +14,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param distribution A \code{character} string. The loss function to be implemented.
-#'        Must be "AUTO", "bernoulli", "multinomial", or "gaussian"
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
@@ -51,7 +51,7 @@
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
-                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial"),
+                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,

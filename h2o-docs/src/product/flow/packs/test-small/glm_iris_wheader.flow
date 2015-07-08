@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+        {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_wheader.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_wheader.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_wheader.csv\"]\n  destination_frame: \"iris_wheader.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_wheader.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_wheader.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_wheader.hex\", [0.25], [\"iris_wheader_test\",\"iris_wheader_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-fea3a411-3e2a-401d-8e06-4242b632ccd5\",\"training_frame\":\"iris_wheader_train\",\"validation_frame\":\"iris_wheader_test\",\"ignore_const_cols\":true,\"response_column\":\"sepal_len\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-fea3a411-3e2a-401d-8e06-4242b632ccd5\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-fea3a411-3e2a-401d-8e06-4242b632ccd5\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-fea3a411-3e2a-401d-8e06-4242b632ccd5\", frame: \"iris_wheader_test\", predictions_frame: \"prediction-f9a4c850-f098-4dc5-93ff-febe15746a46\""
+    }
+  ]
+}

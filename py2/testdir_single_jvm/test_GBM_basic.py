@@ -107,10 +107,10 @@ class Basic(unittest.TestCase):
             print "model.model_category", model.model_category
             assert model.model_category=='Multinomial', model.model_category
 
-            print "FIX! why is mse 0 and mse_train Nan?"
-            print "model:", dump_json(model)
-            print "model.training_metrics.MSE:", model.training_metrics.MSE
-            print "model.training_metrics.logloss:", model.training_metrics.logloss
+            # FIX!
+            # print "FIX! why is mse 0 and mse_train Nan?"
+            # print "model.mse:", model.mse
+            # print "model.mse_train:", model.mse_train
 
             if 1==0:
                 print ""
