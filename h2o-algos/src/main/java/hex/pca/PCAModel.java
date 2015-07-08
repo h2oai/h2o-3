@@ -49,6 +49,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public int _ncats;
     public int _nnums;
 
+    // Number of good rows in training frame (not skipped)
+    public long _nobs;
+
     // Total column variance for expanded and transformed data
     public double _total_variance;
 

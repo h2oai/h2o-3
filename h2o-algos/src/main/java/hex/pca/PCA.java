@@ -138,6 +138,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._nnums = svd._output._nnums;
       pca._output._ncats = svd._output._ncats;
       pca._output._catOffsets = svd._output._catOffsets;
+      pca._output._nobs = svd._output._nobs;
 
       // Fill model with eigenvectors and standard deviations
       pca._output._std_deviation = ArrayUtils.mult(svd._output._d, 1.0 / Math.sqrt(svd._output._nobs - 1.0));
@@ -226,6 +227,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           GramTask gtsk = new Gram.GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
+          model._output._nobs = gtsk._nobs;
 
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm

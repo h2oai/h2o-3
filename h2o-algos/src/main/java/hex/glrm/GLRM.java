@@ -206,7 +206,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
         return ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
-      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and use right singular vectors as initial Y
+      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y to be the right singular vectors
         PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -234,6 +234,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for(int i = 0; i < dinfo._permutation.length; i++)
           assert pca._output._permutation[i] == dinfo._permutation[i];
         centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
+        // for(int i = 0; i < centers_exp.length; i++)
+        //  ArrayUtils.mult(centers_exp[i], pca._output._std_deviation[i] * Math.sqrt(pca._output._nobs-1));
 
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -408,8 +410,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._names_expanded = tinfo.coefNames();
 
         // 0) a) Initialize Y matrix
-        double nobs = _train.numRows() * _train.numCols();
-        // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
+        long nobs = _train.numRows() * _train.numCols();
+        for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
+        model._output._nobs = nobs;
         double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
         // 0) b) Initialize X matrix to random numbers

@@ -242,6 +242,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _ncats;
     public int _nnums;
 
+    // Number of good rows in training frame (not skipped)
+    public long _nobs;
+
     // Categorical offset vector
     public int[] _catOffsets;
 
