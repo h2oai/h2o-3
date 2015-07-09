@@ -8,26 +8,14 @@ import water.api.ModelParametersSchema;
 
 public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,NaiveBayesV3.NaiveBayesParametersV3> {
   public static final class NaiveBayesParametersV3 extends ModelParametersSchema<NaiveBayesParameters, NaiveBayesParametersV3> {
-    static public String[] fields = new String[]{
-				"model_id",
-				"training_frame",
-				"validation_frame",
-				"response_column",
-				"ignored_columns",
-				"ignore_const_cols",
-				"score_each_iteration",
-				"balance_classes",
-				"class_sampling_factors",
-				"max_after_balance_size",
-				"max_confusion_matrix_size",
-				"max_hit_ratio_k",
-				"laplace",
-				"min_sdev",
-				"eps_sdev",
-				"min_prob",
-				"eps_prob",
-				"compute_metrics"
-		};
+    static public String[] own_fields = new String[]{
+      "response_column",
+      "balance_classes",
+      "class_sampling_factors",
+      "max_after_balance_size",
+      "max_confusion_matrix_size",
+      "max_hit_ratio_k",
+      "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob", "compute_metrics"};
 
     // supervised Schema
 

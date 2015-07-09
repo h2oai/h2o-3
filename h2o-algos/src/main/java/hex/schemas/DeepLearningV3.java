@@ -12,17 +12,10 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
   public static final class DeepLearningParametersV3 extends ModelParametersSchema<DeepLearningParameters, DeepLearningParametersV3> {
 
     // Determines the order of parameters in the GUI
-
-    static public String[] fields = new String[] {
-				"model_id",
-				"training_frame",
-				"validation_frame",
-				"response_column",
-				"ignored_columns",
-				"ignore_const_cols",
-				"score_each_iteration",
-        "n_folds",
+    static public String[] own_fields = new String[] {
+        "nfolds",
         "keep_cross_validation_splits",
+        "response_column",
         "weights_column",
         "offset_column",
         "balance_classes",
