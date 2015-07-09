@@ -1,5 +1,6 @@
 package water;
 
+import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
 import water.util.Log;
 
@@ -16,6 +17,8 @@ public class H2OApp {
   }
 
   private static void driver(String[] args, String relativeResourcePath) {
+    temporarilyDisableLoggingFromSomeClassesAtStartup();
+
     // Register H2O Extensions
     registerExtensions();
 
@@ -27,6 +30,19 @@ public class H2OApp {
     H2O.finalizeRegistration();
   }
 
+  /**
+   * Disable logging from a few specific classes at startup.
+   *
+   * The full logger initialization is done by setLog4jProperties() in class water.util.Log.
+   * These classes may (or may not) be re-enabled later on.
+   */
+  public static void temporarilyDisableLoggingFromSomeClassesAtStartup() {
+    java.util.Properties p = new java.util.Properties();
+    p.setProperty("log4j.logger.org.reflections.Reflections", "WARN");
+    p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
+    PropertyConfigurator.configure(p);
+    System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+  }
 
   // Be paranoid and check that this doesn't happen twice.
   private static boolean extensionsRegistered = false;

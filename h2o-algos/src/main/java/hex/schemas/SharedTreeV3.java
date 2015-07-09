@@ -18,11 +18,11 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
       "max_confusion_matrix_size",
       "max_hit_ratio_k",
       "ntrees", "max_depth", "min_rows", "nbins", "nbins_cats", "r2_stopping", "seed",
-      "build_tree_one_node"
+      "build_tree_one_node",
+      "nfolds"
     };
 
     // supervised Schema
-
     // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
     // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
     // column names are related to training_frame.
@@ -96,5 +96,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.secondary)
     public boolean build_tree_one_node;
+
+    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
+    public int nfolds;
   }
 }
