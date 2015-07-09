@@ -104,6 +104,7 @@ public class Exec {
     int start = _x;
     char c;
     while( !isWS(c=peek()) && c!=')' && c!='}') _x++;
+    if( start == _x ) throw new IllegalArgumentException("Missing token");
     return _str.substring(start,_x);
   }
 
