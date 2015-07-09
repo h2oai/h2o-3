@@ -35,7 +35,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return new SVDV99();
   }
 
-  @Override public Job<SVDModel> trainModel() {
+  @Override public Job<SVDModel> trainModelImpl() {
     return start(new SVDDriver(), _parms._nv+1);
   }
 

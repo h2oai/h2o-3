@@ -36,8 +36,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public boolean _build_tree_one_node = false;
 
-    public int _nfolds = 1;
-
     /** Distribution functions.  Note: AUTO will select gaussian for
      *  continuous, and multinomial for categorical response
      *

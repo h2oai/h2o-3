@@ -48,7 +48,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return new GLRMV99();
   }
 
-  @Override public Job<GLRMModel> trainModel() {
+  @Override public Job<GLRMModel> trainModelImpl() {
     return start(new GLRMDriver(), _parms._max_iterations);
   }
 

@@ -28,7 +28,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   public ModelBuilderSchema schema() { return new QuantileV3(); }
 
-  @Override public Quantile trainModel() {
+  @Override public Quantile trainModelImpl() {
     return (Quantile)start(new QuantileDriver(), train().numCols()*_parms._probs.length);
   }
 

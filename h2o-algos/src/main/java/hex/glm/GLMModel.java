@@ -75,7 +75,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
-    public int _nfolds;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = 1e-5;

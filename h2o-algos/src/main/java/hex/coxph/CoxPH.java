@@ -35,7 +35,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   }
 
   /** Start the Cox PH training Job on an F/J thread. */
-  @Override public Job<CoxPHModel> trainModel() {
+  @Override public Job<CoxPHModel> trainModelImpl() {
     CoxPHDriver cd = new CoxPHDriver();
     cd.setModelBuilderTrain(_train);
     CoxPH cph = (CoxPH) start(cd, _parms.iter_max);

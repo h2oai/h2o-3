@@ -38,7 +38,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override public GBMV3 schema() { return new GBMV3(); }
 
   /** Start the GBM training Job on an F/J thread. */
-  @Override public Job<GBMModel> trainModel() {
+  @Override public Job<GBMModel> trainModelImpl() {
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 

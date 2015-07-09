@@ -43,7 +43,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   @Override
-  public Job<PCAModel> trainModel() {
+  public Job<PCAModel> trainModelImpl() {
     return start(new PCADriver(), _parms._pca_method == PCAParameters.Method.GramSVD ? 5 : 3);
   }
 

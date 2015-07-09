@@ -20,7 +20,6 @@ public class DeepLearningParameters extends Model.Parameters {
     return _sparse ? 0 : Double.NaN;
   }
 
-  public int _nfolds = 0;
   public boolean _keep_cross_validation_splits;
 
   /**
@@ -497,9 +496,6 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
       dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
     }
-    if (_nfolds > 1)
-      dl.error("_nfolds", "nfolds > 1 is not implemented.");
-
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
         dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");

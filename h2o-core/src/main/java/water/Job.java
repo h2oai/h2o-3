@@ -51,7 +51,7 @@ public class Job<T extends Keyed> extends Keyed {
   transient H2OCountedCompleter _barrier;// Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
-  public final Key<T> _dest;   // Key for result
+  public Key<T> _dest;   // Key for result
   /** Since _dest is public final, not sure why we have a getter but some
    *  people like 'em. */
   public final Key<T> dest() { return _dest; }

@@ -53,7 +53,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   /** Start the DeepLearning training Job on an F/J thread. */
-  @Override public Job<DeepLearningModel> trainModel() {
+  @Override public Job<DeepLearningModel> trainModelImpl() {
     // We look at _train before init(true) is called, so step around that here:
     long work = 1;
     if (null != _train)

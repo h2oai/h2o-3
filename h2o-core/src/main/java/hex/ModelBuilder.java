@@ -185,7 +185,77 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Method to launch training of a Model, based on its parameters. */
-  abstract public Job<M> trainModel();
+  final public Job<M> trainModel() {
+    return _parms._nfolds > 1 ? computeCrossValidation() : trainModelImpl();
+  }
+
+  /**
+   * Model-specific implementation of model training
+   * @return ModelBuilder job
+   */
+  abstract public Job<M> trainModelImpl();
+
+  /**
+   * Default implementation of N-fold cross-validation
+   * @return Cross-validation Job
+   * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
+   */
+  public Job<M> computeCrossValidation() {
+    assert _valid == null : "Cross-Validation with validation frame is not suppoted.";
+    Frame origTrainFrame = _train;
+    String origWeightsName = _parms._weights_column;
+    Key[] modelKeys = new Key[_parms._nfolds];
+
+    // Build N cross-validation models
+    for (int i=0; i<_parms._nfolds; ++i) {
+      Vec origWeight = origWeightsName != null ? _train.vec(origWeightsName) : _train.anyVec().makeCon(1.0);
+      String identifier = dest().toString() + "_cv_" + i;
+      String cvWeights = "weights_" + identifier;
+
+      Frame cvTrain = new Frame(Key.make(), origTrainFrame.names(), origTrainFrame.vecs());
+      cvTrain.add(cvWeights, _train.anyVec().makeZero());
+
+      Frame cvVal = new Frame(Key.make(), origTrainFrame.names(), origTrainFrame.vecs());
+      cvVal.add(cvWeights, _train.anyVec().makeZero());
+
+      final int N = _parms._nfolds;
+      // Set the weights
+      new MRTask() {
+        @Override
+        public void map(Chunk origWeight, Chunk trainWeight, Chunk validWeight) {
+          for (int i=0; i<origWeight._len; ++i) {
+            double w = origWeight.atd(i);
+            boolean holdout = (origWeight.start() + i) % N == 0;
+            trainWeight.set(i, holdout ? 0 : w);
+            validWeight.set(i, holdout ? w : 0);
+          }
+        }
+      }.doAll(origWeight, cvTrain.lastVec(), cvVal.lastVec());
+      modelKeys[i] = Key.make(identifier);
+
+      DKV.put(cvVal);
+      DKV.put(cvTrain);
+      _dest = modelKeys[i];
+      _parms._weights_column = cvWeights;
+      _parms._train = cvTrain._key;
+      _parms._valid = cvVal._key;
+      Job<M> cvModel = trainModelImpl();
+      cvModel.get();
+
+      DKV.remove(cvVal._key);
+      DKV.remove(cvTrain._key);
+    }
+
+    // Build main model
+    _parms._weights_column = origWeightsName;
+    _parms._nfolds = 0;
+    _parms._valid = null;
+    _parms._train = origTrainFrame._key;
+    Job<M> mainModel = trainModelImpl();
+    mainModel.get();
+    ((Model)DKV.getGet(mainModel._dest))._output._validation_metrics = null;
+    return mainModel;
+  };
 
   /** List containing the categories of models that this builder can
    *  build.  Each ModelBuilder must have one of these. */

@@ -956,7 +956,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._train = mse_frame._key;
     parms._probs = new double[]{quantile};
-    Quantile job = new Quantile(parms).trainModel();
+    Job<QuantileModel> job = new Quantile(parms).trainModel();
     QuantileModel kmm = job.get();
     job.remove();
     double q = kmm._output._quantiles[0][0];
