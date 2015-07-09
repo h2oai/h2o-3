@@ -30,7 +30,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   public enum Initialization {
     Random, PlusPlus, Furthest, User
@@ -354,9 +354,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       TwoDimTable table = new TwoDimTable(
               "Model Summary", null,
               new String[rows],
-              colHeaders.toArray(new String[0]),
-              colTypes.toArray(new String[0]),
-              colFormat.toArray(new String[0]),
+              colHeaders.toArray(new String[colHeaders.size()]),
+              colTypes  .toArray(new String[colTypes  .size()]),
+              colFormat .toArray(new String[colFormat .size()]),
               "");
       int row = 0;
       int col = 0;
@@ -365,7 +365,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       table.set(row, col++, output._iterations);
       table.set(row, col++, output._tot_withinss);
       table.set(row, col++, output._totss);
-      table.set(row, col++, output._betweenss);
+      table.set(row, col  , output._betweenss);
       return table;
     }
 
@@ -383,9 +383,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       TwoDimTable table = new TwoDimTable(
               "Scoring History", null,
               new String[rows],
-              colHeaders.toArray(new String[0]),
-              colTypes.toArray(new String[0]),
-              colFormat.toArray(new String[0]),
+              colHeaders.toArray(new String[colHeaders.size()]),
+              colTypes  .toArray(new String[colTypes  .size()]),
+              colFormat .toArray(new String[colFormat .size()]),
               "");
       int row = 0;
       for( int i = 0; i<rows; i++ ) {
@@ -397,7 +397,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_start_time, true));
         table.set(row, col++, i);
         table.set(row, col++, output._avg_centroids_chg[i]);
-        table.set(row, col++, output._history_withinss[i]);
+        table.set(row, col  , output._history_withinss[i]);
         row++;
       }
       return table;
