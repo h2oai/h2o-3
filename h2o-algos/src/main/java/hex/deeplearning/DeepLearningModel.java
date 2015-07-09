@@ -253,7 +253,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
-    } else if (get_params().getNumFolds() > 0) {
+    } else if (get_params()._nfolds > 1) {
       colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
 //      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -316,8 +316,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
         }
       }
-      else if(get_params().getNumFolds() > 1) {
-        throw H2O.unimpl("n_folds >= 2 is not (yet) implemented.");
+      else if(get_params()._nfolds > 1) {
+        throw H2O.unimpl("n_folds > 1 is not implemented.");
       }
       row++;
     }
@@ -422,12 +422,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
     model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
-    if (parms.getNumFolds() != 0) actual_best_model_key = null;
+    if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
-      errors[0].num_folds = parms.getNumFolds();
+      errors[0].num_folds = parms._nfolds;
       _output.errors = last_scored();
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
