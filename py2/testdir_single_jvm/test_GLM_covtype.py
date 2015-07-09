@@ -90,7 +90,7 @@ class Basic(unittest.TestCase):
             print "\nmcms", tabulate(m1, headers=h0)
 
             thms = OutputObj(cmm.thresholds_and_metric_scores, 'thms')
-            cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
+            ## cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
 
             if 1==0:
                 print ""
