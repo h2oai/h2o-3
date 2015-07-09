@@ -10,9 +10,30 @@ import water.api.ModelParametersSchema;
 public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParametersV99> {
 
   public static final class GLRMParametersV99 extends ModelParametersSchema<GLRMParameters, GLRMParametersV99> {
-    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization_x",
-            "regularization_y", "gamma_x", "gamma_y", "max_iterations", "init_step_size", "min_step_size", "seed",
-            "init", "user_points", "recover_svd" };
+
+    static public String[] fields = new String[] {
+				"model_id",
+				"training_frame",
+				"validation_frame",
+				"ignored_columns",
+				"ignore_const_cols",
+				"score_each_iteration",
+				"loading_key",
+				"transform",
+				"k",
+				"loss",
+				"regularization_x",
+				"regularization_y",
+				"gamma_x",
+				"gamma_y",
+				"max_iterations",
+				"init_step_size",
+				"min_step_size",
+				"seed",
+				"init",
+				"user_points",
+				"recover_svd"
+		};
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
