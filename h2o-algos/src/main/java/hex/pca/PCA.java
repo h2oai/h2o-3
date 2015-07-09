@@ -89,8 +89,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
     if (_train == null) return;
-    if (_train.numCols() < 2) error("_train", "_train must have more than one column");
     _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
+    // if (_ncolExp < 2) error("_train", "_train must have more than one column when categoricals are expanded");
 
     // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
     int k_min = (int)Math.min(_ncolExp, _train.numRows());
@@ -269,7 +269,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
           update(1, "Begin distributed calculation of Gram matrix");
-          GramTask gtsk = new Gram.GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
+          GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
 
