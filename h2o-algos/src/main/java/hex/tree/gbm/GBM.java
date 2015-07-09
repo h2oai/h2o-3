@@ -564,6 +564,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final double num[] = _num[k] = new double[tree._len-leaf];
           final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
+          final Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
+          final Chunk preds = chk_tree(chks,k);
 
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
@@ -608,7 +610,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               num[idx] += w * yexp_negf;
               denom[idx] += w;
             } else if ( _dist == Distributions.Family.tweedie) {
-              double f = chk_tree(chks,0).atd(row) + chk_offset(chks).atd(row);
+              double f = preds.atd(row) + offset.atd(row);
               num[idx] += w * y * Distributions.exp(f*(1-_parms._tweedie_power));
               denom[idx] += w * Distributions.exp(f*(2-_parms._tweedie_power));
             } else if ( _dist == Distributions.Family.multinomial) {
