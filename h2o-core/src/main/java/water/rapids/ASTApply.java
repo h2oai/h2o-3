@@ -71,12 +71,13 @@ public class ASTApply extends ASTOp {
             key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
             v = new AppendableVec(key);
             chunk = new NewChunk(v, 0);
-          } else {
-            vecs[0] = env.popAry().anyVec();
           }
         }
         if( isRow ) chunk.addNum(env.popDbl());
-        else        vecs[i] = env.popAry().anyVec();
+        else        {
+          vecs[i] = env.popAry().anyVec();
+          env.lock(vecs[i]); // hack: basically don't let refcnt'n destroy the vec ever
+        }
       }
       if( isRow ) {
         chunk.close(0,fs);
