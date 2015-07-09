@@ -16,7 +16,16 @@ test {
     if (multipleNode) { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
 
     useTestNG{
+        useDefaultListeners = true
         if (singleNode) { suites("src/test/resources/singleNode.xml") }
         else { suites("src/test/resources/multipleNode.xml") }
+    }
+    //testLogging.setShowCauses(true)
+    //testLogging.setShowStackTraces(true)
+    //testLogging.setShowStandardStreams(true)
+
+    reports {
+        html.enabled = false
+        junitXml.outputPerTestCase = true
     }
 }
