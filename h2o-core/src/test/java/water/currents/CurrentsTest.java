@@ -164,8 +164,11 @@ public class CurrentsTest extends TestUtil {
   }
 
   @Test public void testVariance() {
-    // Checking variance
-    String tree = "(var %a.hex () FALSE \"everything\")";
+    // Checking variance: scalar
+    String tree = "({x . (var x x \"everything\")} (rows a.hex [0]))";
+    checkTree(tree);
+
+    tree = "({x . ((var x x \"everything\"))} a.hex)";
     checkTree(tree);
   }
 
