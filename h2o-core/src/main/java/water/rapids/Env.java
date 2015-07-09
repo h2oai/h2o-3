@@ -327,8 +327,10 @@ public class Env extends Iced {
   // Done writing into all things.  Allow rollups.
   public void postWrite() {
     Futures fs = new Futures();
-    for( Key key : _refcnt.keySet() )
-      ((Vec)DKV.getGet(key)).postWrite(fs);
+    for( Key key : _refcnt.keySet() ) {
+      Vec v = DKV.getGet(key);
+      if( v!=null ) v.postWrite(fs);
+    }
     fs.blockForPending();
   }
 
