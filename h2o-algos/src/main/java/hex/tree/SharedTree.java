@@ -76,6 +76,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    *  the number of classes to predict on; validate a checkpoint.  */
   @Override public void init(boolean expensive) {
     super.init(expensive);
+    if(_parms._nfolds > 1)
+      error("_nfolds", "nfolds > 1 is not implemented.");
     _hasWeights = super.hasWeights();
     _hasOffset = super.hasOffset();
     if (H2O.ARGS.client && _parms._build_tree_one_node)
