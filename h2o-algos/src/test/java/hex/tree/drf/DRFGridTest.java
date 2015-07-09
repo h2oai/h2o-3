@@ -1,6 +1,5 @@
 package hex.tree.drf;
 
-import hex.Distributions;
 import hex.Grid;
 import hex.Model;
 
@@ -228,7 +227,4 @@ public class DRFGridTest extends TestUtil {
       if (drfRebuilt != null) drfRebuilt.remove();
     }
   }
-  
-  
-
 }
