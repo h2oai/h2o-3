@@ -2,8 +2,8 @@ package hex;
 
 /**
  * Distribution functions to be used by ML Algos
- * Note: Not using interface or inheritance for performance reasons - let the user call these directly
  */
+//TODO: Separate into family/link
 public class Distributions {
 
   interface Dist {
