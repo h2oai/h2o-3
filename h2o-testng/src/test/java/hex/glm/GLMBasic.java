@@ -4,13 +4,23 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 
+import java.lang.reflect.Field;
+import java.lang.Class;
+
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+import org.testng.Assert;
+import org.testng.Reporter;
 import org.testng.SkipException;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -21,142 +31,305 @@ import water.TestNGUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.serial.ObjectTreeBinarySerializer;
 
 public class GLMBasic extends TestNGUtil {
+
+	private static class Param {
+		public String name = null;
+		public String type = null;
+		public boolean isRequired = false;
+		public boolean isAutoSet = true;
+
+		public Param(String name, String type) {
+			this(name, type, false, true);
+		}
+
+		public Param(String name, String type, boolean isRequired, boolean isAutoSet) {
+			this.name = name;
+			this.type = type;
+			this.isRequired = isRequired;
+			this.isAutoSet = isAutoSet;
+		}
+
+		public static boolean parseBoolean(String value) {
+			// can either be "x", "Y" for true and blank or "N" for false
+			String bValue = value.trim().toLowerCase();
+			if ("x".equals(bValue) || "y".equals(bValue)) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public boolean parseAndSet(GLMParameters glmParams, String value) {
+			value = value.trim();
+			Object v = null;
+
+			// Only boolean has a special case: "" can be used as false.
+			// So it is parsed here before other datatypes will be parsed.
+			if ("boolean".equals(type)) {
+				v = parseBoolean(value);
+			} else {
+				// is this a non-blank value? if it's NOT, no need to set: use Default value one!
+				// TODO: if this is a required value then this input doesn't make sense!!!
+				if ("".equals(value)) {
+					//System.out.println("Value is empty, so ignore this");
+					return false;
+				}
+
+				switch (type) {
+					// case "boolean": this case has already been checked previously
+
+					case "String":
+						v = value;
+						break;
+
+					case "String[]":
+						// TODO: may be we need to parse this one too!!!
+						v = new String[] { value };
+						break;
+
+					case "double":
+						v = Double.parseDouble(value);
+						break;
+
+					case "double[]":
+						v = new double[] { Double.parseDouble(value) };
+						break;
+
+					case "int":
+						v = Integer.parseInt(value);
+						break;
+
+					default:
+						System.out.println("Unrecognized type: " + type);
+						break;
+				}
+			}
+
+			Class<?> clazz = glmParams.getClass();
+			while (clazz != null) {
+				try {
+					Field field = clazz.getDeclaredField(name);
+					//field.setAccessible(true); // is this needed?!?
+					field.set(glmParams, v);
+					return true;
+
+				} catch (NoSuchFieldException e) {
+					// not in this clazz, ok, fine... how about its Super one?
+					clazz = clazz.getSuperclass();
+				} catch (Exception e) {
+					throw new IllegalStateException(e);
+				}
+			}
+			return false;
+		}
+
+		public void print(GLMParameters glmParams) {
+			Class<?> clazz = glmParams.getClass();
+
+			while (clazz != null) {
+				try {
+					Field field = clazz.getDeclaredField(name);
+					System.out.println(String.format("  %s = %s", name, field.get(glmParams)));
+					return;
+
+				} catch (NoSuchFieldException e) {
+					// not in this clazz, ok, fine... how about its Super one?
+					clazz = clazz.getSuperclass();
+				} catch (Exception e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		}
+	}
+
+	private static class OptionsGroupParam {
+		public List<String> optionsGroup = null;
+		public Object[] values = null;
+
+		public OptionsGroupParam(String[] optionsGroup, Object[] values) {
+			this.optionsGroup = new ArrayList<String>(Arrays.asList(optionsGroup));
+			this.values = values;
+		}
+
+		public Object getValue(String[] input) {
+			for (String option: optionsGroup) {
+				if (Param.parseBoolean(input[tcHeaders.indexOf(option)])) {
+					return values[optionsGroup.indexOf(option)];
+				}
+			}
+			return null;
+		}
+	}
+
+	// below are single param which can set automatically to a GLM Object
+	private static Param[] params = new Param[] {
+			/*
+			// TODO implement the use of these - or using OptionsGroupParam
+			new Param("gaussian", "boolean", false, false),
+			new Param("binomial", "boolean", false, false),
+			new Param("poisson", "boolean", false, false),
+			new Param("gamma", "boolean", false, false),
+
+			new Param("irlsm", "boolean", false, false),
+			new Param("lbfgs", "boolean", false, false),
+			*/
+
+			// autoset items
+			new Param("_alpha", "double[]"),
+			new Param("_lambda", "double[]"),
+			new Param("_standardize", "boolean"),
+			new Param("_lambda_search", "boolean"),
+			new Param("_ignore_const_cols", "boolean"),
+			new Param("_offset_column", "String"),
+			new Param("_weights_column", "String"),
+			new Param("_non_negative", "boolean"),
+			new Param("_intercept", "boolean"),
+			new Param("_prior", "double"),
+			new Param("_max_active_predictors", "int"),
+			new Param("_ignored_columns", "String[]"),
+			new Param("_response_column", "String"),
+	};
+
+	private static OptionsGroupParam[] optionParams = new OptionsGroupParam[] {
+			new OptionsGroupParam(
+					new String[] {"gaussian", "binomial", "poisson", "gamma"},
+					new Object[] {Family.gaussian, Family.binomial, Family.poisson, Family.gamma}),
+			new OptionsGroupParam(
+					new String[] {"irlsm", "lbfgs"},
+					new Object[] {Solver.IRLSM, Solver.L_BFGS}),
+	};
+
+	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
+			"0",
+			"1",
+			"test_description",
+			"3",
+			"4",
+			"5",
+			"testcase_id",
+
+			// GLM Parameters
+			"regression",
+			"classification",
+			"gaussian",
+			"binomial",
+			"poisson",
+			"gamma",
+
+			"auto",
+			"irlsm",
+			"lbfgs",
+
+			"_ignore_const_cols",
+			"_offset_column",
+			"_weights_column",
+			"_alpha",
+			"_lambda",
+			"_lambda_search",
+			"_standardize",
+			"_non_negative",
+			"betaConstraints", // TODO: check this out
+			"lowerBound",
+			"upperBound",
+			"beta_given",
+			"_intercept",
+			"_prior",
+			"_max_active_predictors",
+			"distribution",
+			"regression_balanced_unbalanced",
+			"rows",
+			"columns",
+			"train_rows_after_split",
+			"validation_rows_after_split",
+			"parse_types",
+			"categorical",
+			"sparse",
+			"dense",
+			"collinear_cols",
+
+			// dataset files & ids
+			"train_dataset_id",
+			"train_dataset_filename",
+			"validate_dataset_id",
+			"validate_dataset_filename",
+
+			"_response_column",
+			"target_type",
+			"_ignored_columns",
+			"r",
+			"scikit"
+	));
 
 	@DataProvider(name = "glmCases")
 	public static Object[][] glmCases() {
 
 		/**
-		 * The first column of data is used to testing.
-		 */
-		final int firstColumn = 6;
-		/**
-		 * The number column of data is used to testing.
-		 */
-		final int totalColumn = 45;
-		/**
 		 * The first row of data is used to testing.
 		 */
 		final int firstRow = 4;
-		final String filePath = "h2o-testng/src/test/resources/" + "glmCases.csv";
+		final String testcaseFilePath = "h2o-testng/src/test/resources/glmCases.csv";
 
 		Object[][] data = null;
 
 		try {
 			// read data from file
-			List<String> lines = Files.readAllLines(find_test_file_static(filePath).toPath(), Charset.defaultCharset());
+			List<String> lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(),
+					Charset.defaultCharset());
 
-			// remove header
+			// remove headers
 			lines.removeAll(lines.subList(0, firstRow));
 
-			data = new Object[lines.size()][totalColumn];
+			data = new Object[lines.size()][7];
 			int r = 0;
+
 			for (String line : lines) {
-				String[] variables = line.trim().split(",");
-				for (int c = 0; c < totalColumn; c++) {
-					if (c + firstColumn < variables.length) {
-						data[r][c] = variables[c + firstColumn];
-					}
-					else {
-						data[r][c] = "";
-					}
-				}
+				String[] variables = line.trim().split(",", -1);
+
+				data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
+				data[r][1] = variables[tcHeaders.indexOf("test_description")];
+				data[r][2] = toGLMParameters(variables);
+				data[r][3] = variables[tcHeaders.indexOf("train_dataset_id")];
+				data[r][4] = variables[tcHeaders.indexOf("train_dataset_filename")];
+				data[r][5] = variables[tcHeaders.indexOf("validate_dataset_id")];
+				data[r][6] = variables[tcHeaders.indexOf("validate_dataset_filename")];
+
 				r++;
 			}
 		}
-		catch (Exception ignore) {
-			System.out.println("Cannot open file: " + filePath);
+		catch (IOException ignore) {
+			System.out.println("Cannot open file: " + testcaseFilePath);
 			ignore.printStackTrace();
 		}
 
 		return data;
 	}
 
-	@Test(dataProvider = "glmCases")
-	public void basic(String testcase_id, String regression, String classification, String gaussian, String binomial,
-			String poisson, String gamma, String auto, String irlsm, String lbfgs, String ignore_const_cols,
-			String offset_column, String weights_column, String alpha, String lambda, String lambdaSearch,
-			String standardize, String non_negative, String betaConstraints, String lowerBound, String upperBound,
-			String beta_given, String intercept, String prior, String maxActivePredictors, String distribution,
-			String regression_balanced_unbalanced, String rows, String columns, String train_rows_after_split,
-			String validation_rows_after_split, String parse_types, String categorical, String sparse, String dense,
-			String collinear_cols, String train_dataset_id, String train_dataset_filename, String validate_dataset_id,
-			String validate_dataset_filename, String target, String target_type, String ignored_columns, String r,
-			String scikit) {
-
+	private void _basic(GLMParameters glmParams, String trainDatasetId, String trainDatasetFilename,
+						String validateDatasetId, String validateDatasetFilename) {
 		final String pathFile = "smalldata/testng/";
 
-		// Set GLM parameters
-		Family f = null;
-		if (gaussian.equals("x")) {
-			f = Family.gaussian;
-		}
-		else if (binomial.equals("x")) {
-			f = Family.binomial;
-		}
-		else if (poisson.equals("x")) {
-			f = Family.poisson;
-		}
-		else if (gamma.equals("x")) {
-			f = Family.gamma;
-		}
+		Frame trainFrame = null;
+		Frame validateFrame = null;
 
-		GLMParameters params = null != f ? new GLMParameters(f) : new GLMParameters();
-		if (irlsm.equals("x")) {
-			params._solver = Solver.IRLSM;
-		}
-		else if (lbfgs.equals("x")) {
-			params._solver = Solver.L_BFGS;
-		}
-		params._lambda = lambda.equals("") ? null : new double[] { Double.parseDouble(lambda) };
-		params._alpha = alpha.equals("") ? null : new double[] { Double.parseDouble(alpha) };
-		params._standardize = standardize.equals("x");
-		params._lambda_search = lambdaSearch.equals("Y");
+		// create train dataset
+		File train_dataset = find_test_file_static(pathFile + trainDatasetFilename);
+		System.out.println("Is train dataset exist? If no, abort the test.\n");
+		assert train_dataset.exists();
+		NFSFileVec nfs_train_dataset = NFSFileVec.make(train_dataset);
+		Key key_train_dataset = Key.make(trainDatasetId + ".hex");
+		trainFrame = ParseDataset.parse(key_train_dataset, nfs_train_dataset._key);
+		glmParams._train = trainFrame._key;
 
-		params._ignore_const_cols = ignore_const_cols.equals("x");
-		if (!"".equals(offset_column)) {
-			params._offset_column = offset_column;
-		}
-		if (!"".equals(weights_column)) {
-			params._weights_column = weights_column;
-		}
-		params._non_negative = non_negative.equals("x");
-		params._intercept = intercept.equals("x");
-		if (!"".equals(prior)) {
-			params._prior = Double.parseDouble(prior);
-		}
-		if (!"".equals(maxActivePredictors)) {
-			params._max_active_predictors = Integer.parseInt(maxActivePredictors);
-		}
-		if (!"".equals(ignored_columns)) {
-			params._ignored_columns = new String[] { ignored_columns };
-		}
-
-		// params._beta_constraints
-		// params._score_each_iteration = false;
-
-		Frame train = null;
-		Frame validate = null;
-		if (!"".equals(train_dataset_filename) && !"".equals(validate_dataset_filename)) {
-			// train
-			File train_dataset = find_test_file_static(pathFile + train_dataset_filename);
-			assert train_dataset.exists();
-			NFSFileVec nfs_train_dataset = NFSFileVec.make(train_dataset);
-			Key key_train_dataset = Key.make(train_dataset_id + ".hex");
-			train = ParseDataset.parse(key_train_dataset, nfs_train_dataset._key);
-			params._train = train._key;
-
-			// validate
-			File validate_dataset = find_test_file_static(pathFile + validate_dataset_filename);
-			assert validate_dataset.exists();
-			NFSFileVec nfs_validate_dataset = NFSFileVec.make(validate_dataset);
-			Key key_validate_dataset = Key.make(train_dataset_id + ".hex");
-			validate = ParseDataset.parse(key_validate_dataset, nfs_validate_dataset._key);
-			params._valid = validate._key;
-
-			params._response_column = target;
-		}
+		// create validate dataset
+		File validate_dataset = find_test_file_static(pathFile + validateDatasetFilename);
+		assert validate_dataset.exists();
+		NFSFileVec nfs_validate_dataset = NFSFileVec.make(validate_dataset);
+		Key key_validate_dataset = Key.make(validateDatasetId + ".hex");
+		validateFrame = ParseDataset.parse(key_validate_dataset, nfs_validate_dataset._key);
+		glmParams._valid = validateFrame._key;
 
 		// Build the appropriate glm, given the above parameters
 		Key modelKey = Key.make("model");
@@ -167,33 +340,107 @@ public class GLMBasic extends TestNGUtil {
 
 		Scope.enter();
 
-		if ("".equals(train_dataset_filename) || "".equals(validate_dataset_filename)
-				|| "newsgroup_train1".equals(train_dataset_id)) {
-			// ignore those test case
-			throw new SkipException("Skipping this exception");
+		job = new GLM(modelKey, "basic glm test", glmParams);
+		model = job.trainModel().get();
+
+		model = DKV.get(modelKey).get();
+
+		coef = model.coefficients();
+
+		try {
+			score = model.score(validateFrame);
+			// Assert.assertTrue(model.testJavaScoring(score, trainFrame, 1e-15));
+			System.out.println("Test is passed.");
 		}
-		else {
-			job = new GLM(modelKey, "basic glm test", params);
-			model = job.trainModel().get();
+		catch (IllegalArgumentException ex) {
+			// can't predict testcase
+			Assert.fail("Test is failed. It can't predict");
+			ex.printStackTrace();
+		}
+		finally {
+			if (trainFrame != null) {
+				trainFrame.delete();
+			}
+			if (validateFrame != null) {
+				validateFrame.delete();
+			}
+			if (model != null)
+				model.delete();
+			if (job != null)
+				job.remove();
+			Scope.exit();
+		}
+	}
 
-			model = DKV.get(modelKey).get();
+	@Test(dataProvider = "glmCases")
+	public void basic(String testcaseId, String testDescription, GLMParameters glmParams,
+					  String trainDatasetId, String trainDatasetFilename, String validateDatasetId, String validateDatasetFilename) {
+		redirectStandardStreams();
 
-			coef = model.coefficients();
-			score = model.score(validate);
-			// Assert.assertTrue(model.testJavaScoring(score, train, 1e-15));
+		System.out.println(String.format("Testcase: %s", testcaseId));
+		System.out.println(String.format("Description: %s", testDescription));
+		System.out.println("GLM Params:");
+		for (Param p: params) {
+			if (p.isAutoSet) {
+				p.print(glmParams);
+			}
 		}
 
-//		if (train != null) {
-//			train.delete();
-//		}
-		if (validate != null) {
-			validate.delete();
-		}
-		if (model != null)
-			model.delete();
-		if (job != null)
-			job.remove();
-		Scope.exit();
+		System.out.println("");
+		System.out.println(String.format("Datasets: \n" +
+				"Train Dataset ID:      %s\n" +
+				"Train Dataset File:    %s\n" +
+				"Validate Dataset ID:   %s\n" +
+				"Validate Dataset File: %s\n",
+				trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename));
+		System.out.println("");
 
+		_basic(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename);
+
+		resetStandardStreams();
+	}
+
+
+	private static GLMParameters toGLMParameters(String[] input) {
+		// TODO: Start Ugly code ---
+		String gaussian = input[tcHeaders.indexOf("gaussian")];
+		String binomial = input[tcHeaders.indexOf("binomial")];
+		String poisson = input[tcHeaders.indexOf("poisson")];
+		String gamma = input[tcHeaders.indexOf("gamma")];
+
+		String irlsm = input[tcHeaders.indexOf("irlsm")];
+		String lbfgs = input[tcHeaders.indexOf("lbfgs")];
+
+		Family f = null;
+		if ("x".equals(gaussian)) {
+			f = Family.gaussian;
+		}
+		else if ("x".equals(binomial)) {
+			f = Family.binomial;
+		}
+		else if ("x".equals(poisson)) {
+			f = Family.poisson;
+		}
+		else if ("x".equals(gamma)) {
+			f = Family.gamma;
+		}
+
+		GLMParameters glmParams = null != f ? new GLMParameters(f) : new GLMParameters();
+
+		if ("x".equals(irlsm)) {
+			glmParams._solver = Solver.IRLSM;
+		}
+		else if ("x".equals(lbfgs)) {
+			glmParams._solver = Solver.L_BFGS;
+		}
+		// End Ugly code ---
+
+		for (Param p: params) {
+			if (p.isAutoSet) {
+				p.parseAndSet(glmParams, input[tcHeaders.indexOf(p.name)]);
+			}
+		}
+
+		return glmParams;
 	}
 }
