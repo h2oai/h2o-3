@@ -35,6 +35,7 @@
 #'        reproducible when running single threaded
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
