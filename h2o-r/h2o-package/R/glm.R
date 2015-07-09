@@ -43,7 +43,7 @@
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
-#' @param nfolds (Currently Unimplemented)
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
