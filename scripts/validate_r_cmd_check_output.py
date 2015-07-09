@@ -33,7 +33,7 @@ class Check:
 
         allowed_regex_list = [
             r"^\* using log directory",
-            r"^\* using R version",
+            r"^\* using R Under development",
             r"^\* using R version",
             r"^\* using platform",
             r"^\* using session charset",
