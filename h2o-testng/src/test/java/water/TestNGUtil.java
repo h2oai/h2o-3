@@ -1,6 +1,7 @@
 package water;
 
-import org.testng.annotations.Optional;
+import org.testng.Reporter;
+import org.testng.annotations.*;
 import testngframework.NodeContainer;
 
 import water.fvec.*;
@@ -8,11 +9,10 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
 import static org.testng.Assert.assertTrue;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
@@ -21,6 +21,13 @@ public class TestNGUtil extends Iced {
     private static boolean _stall_called_before = false;
     protected static int _initial_keycnt = 0;
     protected static int MINCLOUDSIZE;
+
+    private static final PrintStream stderr = System.err;
+    private static final PrintStream stdout = System.out;
+
+    private ByteArrayOutputStream baOutStream = new ByteArrayOutputStream();
+    private PrintStream outputStream = new PrintStream(baOutStream);
+
 
     public TestNGUtil() { this(1); }
     public TestNGUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
@@ -99,6 +106,23 @@ public class TestNGUtil extends Iced {
             file = null;
         return file;
     }
+
+
+    //@BeforeMethod(alwaysRun = true)
+    public void redirectStandardStreams() {
+        System.setOut(outputStream);
+        System.setErr(outputStream);
+    }
+
+    //@AfterMethod(alwaysRun = true)
+    public void resetStandardStreams() {
+        Reporter.log(baOutStream.toString());
+        baOutStream.reset();
+
+        System.setOut(stdout);
+        System.setErr(stderr);
+    }
+
 
     /** Hunt for test files in likely places.  Null if cannot find.
      *  @param fname Test filename
