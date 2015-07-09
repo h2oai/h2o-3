@@ -465,8 +465,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         for (int i=0; i<means.length; ++i)
           means[i] = (means[i] - _means[i])/_mults[i];
 
+      double[] values = new double[cs.length];
       for( int row = 0; row < cs[0]._len; row++ ) {
-        double[] values = new double[cs.length];
         // fetch the data - using consistent NA and categorical data handling (same as for training)
         data(values, cs, row, _means, _mults);
         // compute the distance from the (standardized) cluster centroids
