@@ -128,6 +128,25 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   abstract protected class Driver extends H2OCountedCompleter<Driver> {
 
     @Override protected void compute2() {
+      if (_parms._nfolds > 1) {
+        Frame origTrain = _train.clone();
+        //build main model
+        _parms._nfolds = 1;
+        toplevel();
+        //build cv models
+        for (int i=0;i<_parms._nfolds;++i) {
+          _train = origTrain;
+          Frame traincopy = new Frame(Key.make(), _train.names(), _train.vecs());
+          Driver d = this.clone();
+          traincopy.add("cv_weights",_response.makeCon(1.0));
+          _parms._train = traincopy._key;
+          _parms._weights_column = "cv_weights";
+          d.toplevel();
+        }
+      }
+    }
+
+    protected void toplevel() {
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys
