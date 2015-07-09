@@ -56,6 +56,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              seed,
                              offset_column = NULL,
                              weights_column = NULL,
+                             nfolds = 0,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
@@ -117,6 +118,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if(!missing(seed))
     parms$seed <- seed
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 

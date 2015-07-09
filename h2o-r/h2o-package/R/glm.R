@@ -159,9 +159,8 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
-  if(!missing(nfolds))
-    if (nfolds > 1) stop("nfolds >1 not supported")
-  #   parms$nfolds <- nfolds
+  if (!missing(nfolds) && nfolds > 1)
+    parms$nfolds <- nfolds
   if(!missing(beta_constraints)){
     delete <- !.is.eval(beta_constraints)
     if (delete) {
