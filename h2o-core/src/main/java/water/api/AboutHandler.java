@@ -36,6 +36,10 @@ public class AboutHandler extends Handler {
     entries.add(new AboutEntryV3("Built by",              H2O.ABV.compiledBy()));
     entries.add(new AboutEntryV3("Built on",              H2O.ABV.compiledOn()));
 
+    for (H2O.AboutEntry ae : H2O.getAboutEntries()) {
+      entries.add(new AboutEntryV3(ae.getName(), ae.getValue()));
+    }
+
     s.entries = entries.toArray(new AboutEntryV3[0]);
     return s;
   }

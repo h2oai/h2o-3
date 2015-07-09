@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/auto.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/auto.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/auto.csv\"]\n  destination_frame: \"auto.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 57\n  single_quotes: false\n  column_names: [\"y\",\"x.CAR_TYPE_2\",\"x.CAR_TYPE_3\",\"x.CAR_TYPE_4\",\"x.CAR_TYPE_5\",\"x.CAR_TYPE_6\",\"x.JOBCLASS_3\",\"x.JOBCLASS_4\",\"x.JOBCLASS_5\",\"x.JOBCLASS_6\",\"x.JOBCLASS_7\",\"x.JOBCLASS_8\",\"x.JOBCLASS_9\",\"x.MAX_EDUC_2\",\"x.MAX_EDUC_3\",\"x.MAX_EDUC_4\",\"x.MAX_EDUC_5\",\"x.KIDSDRIV\",\"x.KIDSDRIV2\",\"x.KIDSDRIV3\",\"x.TRAVTIME\",\"x.TRAVTIME2\",\"x.TRAVTIME3\",\"x.BLUEBOOK\",\"x.BLUEBOOK2\",\"x.BLUEBOOK3\",\"x.NPOLICY\",\"x.NPOLICY2\",\"x.NPOLICY3\",\"x.MVR_PTS\",\"x.MVR_PTS2\",\"x.MVR_PTS3\",\"x.AGE\",\"x.AGE2\",\"x.AGE3\",\"x.HOMEKIDS\",\"x.HOMEKIDS2\",\"x.HOMEKIDS3\",\"x.YOJ\",\"x.YOJ2\",\"x.YOJ3\",\"x.INCOME\",\"x.INCOME2\",\"x.INCOME3\",\"x.HOME_VAL\",\"x.HOME_VAL2\",\"x.HOME_VAL3\",\"x.SAMEHOME\",\"x.SAMEHOME2\",\"x.SAMEHOME3\",\"x.CAR_USE\",\"x.RED_CAR\",\"x.REVOLKED\",\"x.GENDER\",\"x.MARRIED\",\"x.PARENT1\",\"x.AREA\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 65536"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"auto.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"auto.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"auto.hex\", [0.25], [\"auto_test\",\"auto_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-a290ef76-fea9-47dc-ab93-57d979262ffc\",\"training_frame\":\"auto_train\",\"validation_frame\":\"auto_test\",\"ignore_const_cols\":true,\"response_column\":\"y\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-a290ef76-fea9-47dc-ab93-57d979262ffc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-a290ef76-fea9-47dc-ab93-57d979262ffc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-a290ef76-fea9-47dc-ab93-57d979262ffc\", frame: \"auto_train\", predictions_frame: \"prediction-08020ef1-0f82-4dd6-b415-bab45b93aa58\""
+    }
+  ]
+}

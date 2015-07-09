@@ -196,6 +196,13 @@ public class NanoHTTPD
   // ==================================================
 
   /**
+   * Jetty supercedes Nano.
+   */
+  public NanoHTTPD() {
+    myServerSocket = null;
+  }
+
+  /**
    * Starts a HTTP server to given port.<p>
    * Throws an IOException if the socket is already in use
    */

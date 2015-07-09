@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
-import com.brsanthu.googleanalytics.EventHit;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -42,7 +41,7 @@ final public class H2O {
   /**
    * Print help about command line arguments.
    */
-  private static void printHelp() {
+  public static void printHelp() {
     String defaultFlowDirMessage;
     if (DEFAULT_FLOW_DIR() == null) {
       // If you start h2o on hadoop, you must set -flow_dir.
@@ -124,6 +123,10 @@ final public class H2O {
             "\n";
 
     System.out.print(s);
+
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.printHelp();
+    }
   }
 
   /**
@@ -183,9 +186,6 @@ final public class H2O {
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
-    /** -hdfs=hdfs; HDFS backend */
-    public String hdfs = null;
-
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
@@ -247,7 +247,7 @@ final public class H2O {
     }
   }
 
-  private static void parseFailed(String message) {
+  public static void parseFailed(String message) {
     System.out.println("");
     System.out.println("ERROR: " + message);
     System.out.println("");
@@ -255,7 +255,7 @@ final public class H2O {
     H2O.exit(1);
   }
 
-  private static class OptString {
+  public static class OptString {
     String _s;
     String _lastMatchedFor;
 
@@ -311,6 +311,10 @@ final public class H2O {
    * Dead stupid argument parser.
    */
   private static void parseArguments(String[] args) {
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      args = e.parseArguments(args);
+    }
+
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
@@ -357,10 +361,6 @@ final public class H2O {
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
         ARGS.nthreads = s.parseInt(args[i]);
-      }
-      else if (s.matches("hdfs")) {
-        i = s.incrementAndCheck(i, args);
-        ARGS.hdfs = args[i];
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
@@ -478,6 +478,48 @@ final public class H2O {
     } catch (Exception ignore) { }
     ABV = abv;
   }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  private static ArrayList<AbstractH2OExtension> extensions = new ArrayList<>();
+
+  public static void addExtension(AbstractH2OExtension e) {
+    extensions.add(e);
+  }
+
+  public static ArrayList<AbstractH2OExtension> getExtensions() {
+    return extensions;
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  public static class AboutEntry {
+    private String name;
+    private String value;
+
+    public String getName() { return name; }
+    public String getValue() { return value; }
+
+    AboutEntry(String n, String v) {
+      name = n;
+      value = v;
+    }
+  }
+
+  private static ArrayList<AboutEntry> aboutEntries = new ArrayList<>();
+
+  @SuppressWarnings("unused")
+  public static void addAboutEntry(String name, String value) {
+    AboutEntry e = new AboutEntry(name, value);
+    aboutEntries.add(e);
+  }
+
+  @SuppressWarnings("unused")
+  public static ArrayList<AboutEntry> getAboutEntries() {
+    return aboutEntries;
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
 
   // Atomically set once during startup.  Guards against repeated startups.
   public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
@@ -832,6 +874,14 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
+  private static JettyHTTPD jetty;
+  public static void setJetty(JettyHTTPD value) {
+    jetty = value;
+  }
+  public static JettyHTTPD getJetty() {
+    return jetty;
+  }
+
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
@@ -845,6 +895,17 @@ final public class H2O {
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
 
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      String n = e.getExtensionName() + " ";
+      AbstractBuildVersion abv = e.getBuildVersion();
+      Log.info(n + "Build git branch: ", abv.branchName());
+      Log.info(n + "Build git hash: ", abv.lastCommitHash());
+      Log.info(n + "Build git describe: ", abv.describe());
+      Log.info(n + "Build project version: ", abv.projectVersion());
+      Log.info(n + "Built by: ", abv.compiledBy());
+      Log.info(n + "Built on: ", abv.compiledOn());
+    }
+
     Runtime runtime = Runtime.getRuntime();
     Log.info("Java availableProcessors: " + runtime.availableProcessors());
     Log.info("Java heap totalMemory: " + PrettyPrint.bytes(runtime.totalMemory()));
@@ -852,7 +913,7 @@ final public class H2O {
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     List<String> launchStrings = ManagementFactory.getRuntimeMXBean().getInputArguments();
     Log.info("JVM launch parameters: "+launchStrings);
-    Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
+    Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
   }
@@ -887,7 +948,7 @@ final public class H2O {
     Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
             "  1. Open a terminal and run 'ssh -L 55555:localhost:"
             + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-            "  2. Point your browser to http://localhost:55555");
+            "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
 
 
     // Create the starter Cloud with 1 member
@@ -957,12 +1018,11 @@ final public class H2O {
   }
 
   /** Start the web service; disallow future URL registration.
-   *  Returns a Runnable that will be notified once the server is up.  */
-  static public Runnable finalizeRegistration() {
-    if( _doneRequests ) return null;
+   *  Blocks until the server is up.  */
+  static public void finalizeRegistration() {
+    if (_doneRequests) return;
     _doneRequests = true;
-    // Start the Nano HTTP server thread
-    return water.api.RequestServer.start();
+    water.api.RequestServer.finalizeRegistration();
   }
 
   // --------------------------------------------------------------------------
@@ -1227,6 +1287,11 @@ final public class H2O {
 
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
+
+    // Validate extension arguments
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.validateArguments();
+    }
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
 

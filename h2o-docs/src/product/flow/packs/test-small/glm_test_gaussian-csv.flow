@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/gaussian.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/gaussian.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/gaussian.csv\"]\n  destination_frame: \"gaussian.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 10\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"gaussian.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"gaussian.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"gaussian.hex\", [0.25], [\"gaussian_test\",\"gaussian_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-6a929e03-d82f-4f63-a4c0-e1233e095fdb\",\"training_frame\":\"gaussian_train\",\"validation_frame\":\"gaussian_test\",\"ignore_const_cols\":true,\"response_column\":\"C1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-6a929e03-d82f-4f63-a4c0-e1233e095fdb\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-6a929e03-d82f-4f63-a4c0-e1233e095fdb\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-6a929e03-d82f-4f63-a4c0-e1233e095fdb\", frame: \"gaussian_train\", predictions_frame: \"prediction-98f48037-f8a4-4080-bd93-a506e4869f8f\""
+    }
+  ]
+}

@@ -56,7 +56,7 @@ public final class PersistHdfs extends Persist {
         confDir = new Path(System.getenv("HADOOP_CONF_DIR"));
       } else if (System.getenv().containsKey("YARN_CONF_DIR")) {
         confDir = new Path(System.getenv("YARN_CONF_DIR"));
-      } else  if (System.getenv().containsKey("HADOOP_HOME")) {
+      } else if (System.getenv().containsKey("HADOOP_HOME")) {
         confDir = new Path(System.getenv("HADOOP_HOME"), "conf");
       }
       // Load default HDFS configuration
@@ -65,14 +65,6 @@ public final class PersistHdfs extends Persist {
         conf.addResource(new Path(confDir, "core-site.xml"));
       } else {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
-      }
-
-      if( H2O.ARGS.hdfs != null && H2O.ARGS.hdfs.length() > 0 ) {
-        // setup default remote Filesystem - for version 0.21 and higher
-        conf.set("fs.defaultFS", H2O.ARGS.hdfs);
-        // To provide compatibility with version 0.20.0 it is necessary to setup the property
-        // fs.default.name which was in newer version renamed to 'fs.defaultFS'
-        conf.set("fs.default.name", H2O.ARGS.hdfs);
       }
     }
     CONF = conf;

@@ -64,7 +64,7 @@ class UDPRebooted extends UDP {
   // Try to gracefully close/shutdown all i/o channels.
   private static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
-    try { NetworkInit._apiSocket.close(); } catch( IOException ignore ) { }
+    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
     try { TCPReceiverThread.SOCK.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
