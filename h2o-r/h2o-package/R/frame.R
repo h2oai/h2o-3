@@ -2687,8 +2687,8 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
     if( breaks=="Scott"   ) breaks <- "scott"
   }
   h <- as.data.frame(.h2o.nary_frame_op("hist", x, breaks))
-  counts <- na.omit(h[,2])
-  mids <- na.omit(h[,4])
+  counts <- stats::na.omit(h[,2])
+  mids <- stats::na.omit(h[,4])
   histo <- list()
   histo$breaks <- h$breaks
   histo$counts <- as.numeric(counts)

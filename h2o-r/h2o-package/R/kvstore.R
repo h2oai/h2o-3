@@ -103,38 +103,6 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
 }
 
 #'
-#' Garbage Collection of Temporary Frames
-#'
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
-
-# TODO: This is an older version; need to go back through git and find the "good" one...
-.h2o.gc <- function(conn = h2o.getConnection()) {
-  frame_keys <- as.vector(h2o.ls()[,1L])
-  frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@mutable$session_id), frame_keys)]
-  # no reference? then destroy!
-  # TODO in order for this function to work properly, you would need to search (recursively)
-  # TODO through ALL objects for H2OFrame and H2OModel objects including lists, environments,
-  # TODO and slots of S4 objects
-  f <- function(env) {
-    l <- lapply(ls(env), function(x) {
-      o <- get(x, envir=env)
-      if(is(o, "H2OFrame")) o@frame_id else if(is(o, "H2OModel")) o@model_id
-    })
-    Filter(Negate(is.null), l)
-  }
-  p_list  <- f(.pkg.env)
-  g_list  <- f(globalenv())
-  f1_list <- f(parent.frame())
-
-  g_list <- unlist(c(p_list, g_list, f1_list))
-  l <- setdiff(seq_len(length(frame_keys)),
-               unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
-  if (length(l) != 0L)
-    h2o.rm(frame_keys[l])
-  invisible(NULL)
-}
-
-#'
 #' Rename an H2O object.
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
