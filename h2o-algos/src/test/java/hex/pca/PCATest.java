@@ -48,6 +48,7 @@ public class PCATest extends TestUtil {
           parms._transform = std;
           parms._max_iterations = 1000;
           parms._pca_method = PCAParameters.Method.Power;
+          parms._compute_metrics = false;    // Skip computing metrics to reduce runtime
 
           PCA job = new PCA(parms);
           try {
@@ -100,6 +101,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAParameters.Method.GramSVD;
+      parms._compute_metrics = false;    // Skip computing metrics to reduce runtime
 
       try {
         job = new PCA(parms);
@@ -156,6 +158,7 @@ public class PCATest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._use_all_factor_levels = true;
       parms._pca_method = PCAParameters.Method.Power;
+      parms._compute_metrics = false;    // Skip computing metrics to reduce runtime
 
       try {
         job = new PCA(parms);
@@ -215,6 +218,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._max_iterations = 1000;
       parms._pca_method = PCAParameters.Method.GramSVD;
+      parms._compute_metrics = false;    // Skip computing metrics to reduce runtime
 
       try {
         job = new PCA(parms);
