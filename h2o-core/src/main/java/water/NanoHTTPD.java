@@ -8,7 +8,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -621,7 +620,7 @@ public class NanoHTTPD
                       "\"name\" : "         + "\"" + keyName      + "\", " +
                       "\"total_bytes\" : "  +        length       + " " +
                       "}";
-              sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
+              sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes("UTF-8")));
               return true;
             }
           }
@@ -652,7 +651,7 @@ public class NanoHTTPD
               UploadFileVec.readPut(destination_key, new InputStreamWrapper(in, boundary.getBytes()), stats);
               // TODO: Figure out how to marshal a response here Ray-style so that docs, etc. are generated properly.
               String responsePayload = "{ \"destination_frame\": \"" + destination_key + "\", \"total_bytes\": " + stats.total_bytes + " }\n";
-              sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
+              sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes("UTF-8")));
               return true;
             }
           }
