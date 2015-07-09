@@ -41,7 +41,7 @@ public class Env extends Iced {
   final static int NULL  =99999;
 
   transient ExecStack _stack;                // The stack
-  transient HashMap<Vec,IcedInt> _refcnt;    // Ref Counts for each vector
+  transient HashMap<Key,IcedInt> _refcnt;    // Ref Counts for each vector
   transient final public StringBuilder _sb;  // Holder for print results
   transient final HashSet<Key> _locked;      // Vec keys, these shalt not be DKV.removed.
   final SymbolTable  _global;
@@ -55,7 +55,7 @@ public class Env extends Iced {
   @Override public AutoBuffer write_impl(AutoBuffer ab) {
     // write _refcnt
     ab.put4(_refcnt.size());
-    for (Vec v: _refcnt.keySet()) { ab.put(v); ab.put4(_refcnt.get(v)._val); }
+    for (Key k: _refcnt.keySet()) { ab.put(k); ab.put4(_refcnt.get(k)._val); }
     return ab;
   }
 
@@ -65,7 +65,7 @@ public class Env extends Iced {
     _trash = new HashSet<>();
     int len = ab.get4();
     for (int i = 0; i < len; ++i) {
-      _refcnt.put(ab.get(Vec.class), new IcedInt(ab.get4()));
+      _refcnt.put(ab.get(Key.class), new IcedInt(ab.get4()));
     }
     return this;
   }
@@ -215,17 +215,22 @@ public class Env extends Iced {
   public void addRef(Frame f) { for (Vec v : f.vecs()) addRef(v); }
   public void addRef(Vec v) {
     if( inScope(v) ) {
-      IcedInt I = _refcnt.get(v);
+      IcedInt I = getRef(v);
       assert I == null || I._val >= 0;
-      _refcnt.put(v, new IcedInt(I == null ? 1 : I._val + 1));
+      putRef(v, new IcedInt(I == null ? 1 : I._val + 1));
       if (v instanceof EnumWrappedVec) {
         Vec mv = ((EnumWrappedVec) v).masterVec();
-        IcedInt Imv = _refcnt.get(mv);
+        IcedInt Imv = getRef(mv);
         assert Imv == null || Imv._val >= 0;
-        _refcnt.put(mv, new IcedInt(Imv == null ? 1 : Imv._val + 1));
+       putRef(mv, new IcedInt(Imv == null ? 1 : Imv._val + 1));
       }
     }
   }
+
+  private IcedInt getRef(Vec v) { return v._key==null?null:_refcnt.get(v._key); }
+  private void    putRef(Vec v, IcedInt i) { _refcnt.put(v._key,i); }
+  private void    rmRef (Vec v) { if( v._key!=null ) _refcnt.remove(v._key); }
+  private boolean hasRef(Vec v) { return v._key != null && _refcnt.containsKey(v._key); }
 
   // Vecs are only tracked in the scope that they are created in.
   // thou shalt not kill vecs belonging to some parent scope
@@ -282,11 +287,11 @@ public class Env extends Iced {
     if( v == null ) return false;
     boolean delete;
 
-    if( _refcnt.get(v) == null ) return false;
+    if( getRef(v) == null ) return false;
     if( hasLock(v._key) ) return false;
-    int cnt = _refcnt.get(v)._val - 1;
+    int cnt = getRef(v)._val - 1;
     if( cnt > 0 ) {
-      _refcnt.put(v, new IcedInt(cnt));
+      putRef(v, new IcedInt(cnt));
       delete = false;
     } else {
       // safe to remove!;
@@ -311,8 +316,8 @@ public class Env extends Iced {
   }
 
   private void extinguishCounts(Object o) {
-    if (o instanceof Vec) { _refcnt.remove(o);}
-    else  for(Vec v: ((Frame) o).vecs()) _refcnt.remove(v);
+    if (o instanceof Vec) { rmRef((Vec)o);}
+    else  for(Vec v: ((Frame) o).vecs()) rmRef(v);
   }
 
   /*
@@ -322,8 +327,8 @@ public class Env extends Iced {
   // Done writing into all things.  Allow rollups.
   public void postWrite() {
     Futures fs = new Futures();
-    for( Vec vec : _refcnt.keySet() )
-      vec.postWrite(fs);
+    for( Key key : _refcnt.keySet() )
+      ((Vec)DKV.getGet(key)).postWrite(fs);
     fs.blockForPending();
   }
 
@@ -337,11 +342,9 @@ public class Env extends Iced {
     }
 
     Futures fs = new Futures();
-    for (Vec v : _refcnt.keySet()) {
-      if (_refcnt.get(v)._val == 0) {
-        removeVec(v, fs);
-      }
-    }
+    for (Key k : _refcnt.keySet())
+      if (_refcnt.get(k)._val == 0)
+        removeVec(((Vec)DKV.getGet(k)), fs);
     fs.blockForPending();
 
     for(Frame f: _tmpFrames) {if(f._key!=null) DKV.remove(f._key); } // top level removal only (Vecs may be live still)
@@ -398,8 +401,8 @@ public class Env extends Iced {
 //      Keyed.remove(key);
     }
     _locked.clear();
-    for( Vec v: _refcnt.keySet()) {
-      if( _refcnt.get(v)._val==0 && !hasLock(v._key) ) Keyed.remove(v._key); // no lock and zero counts, nuke it.
+    for( Key ik: _refcnt.keySet()) {
+      if( _refcnt.get(ik)._val==0 && !hasLock(ik) ) Keyed.remove(ik); // no lock and zero counts, nuke it.
     }
   }
 
