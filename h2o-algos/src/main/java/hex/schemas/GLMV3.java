@@ -16,7 +16,6 @@ import water.api.ModelParametersSchema;
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
-
     static public String[] fields = new String[]{
 				"model_id",
 				"training_frame",

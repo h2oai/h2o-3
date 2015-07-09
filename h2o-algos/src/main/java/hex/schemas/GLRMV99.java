@@ -10,7 +10,6 @@ import water.api.ModelParametersSchema;
 public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParametersV99> {
 
   public static final class GLRMParametersV99 extends ModelParametersSchema<GLRMParameters, GLRMParametersV99> {
-
     static public String[] fields = new String[] {
 				"model_id",
 				"training_frame",
