@@ -1594,15 +1594,16 @@ setMethod("mean", "H2OFrame", h2o.mean)
 #' var(prostate.hex$AGE)
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
+  if( is.null(y) ) y <- x
   if(!missing(use)) {
     if (use %in% c("pairwise.complete.obs", "na.or.complete"))
       stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   } else
     use <- "everything"
-  if ((ncol(x) == 1L) && (is.null(y) || ncol(y) == 1L))
-    .h2o.nary_scalar_op("var", x, y, na.rm, use)
+  if ((ncol(x) == 1L) && (ncol(y) == 1L))
+    .h2o.nary_scalar_op("var", x, y, use)
   else
-    .h2o.nary_frame_op("var", x, y, na.rm, use)
+    .h2o.nary_frame_op ("var", x, y, use)
 }
 
 #' @rdname h2o.var
