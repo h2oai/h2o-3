@@ -35,7 +35,7 @@ class ValNum extends Val {
 class ValStr extends Val {
   final String _str;
   ValStr(String str) { _str = str; }
-  @Override public String toString() { return _str; }
+  @Override public String toString() { return '"'+_str+'"'; }
   @Override public int type () { return STR; }
   @Override boolean isStr() { return true; }
   @Override public String getStr() { return _str; }
