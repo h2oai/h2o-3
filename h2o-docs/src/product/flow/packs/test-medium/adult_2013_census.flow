@@ -42,4 +42,4 @@
       "input": "predict model: \"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\", frame: \"adult_2013_test.hex\", predictions_frame: \"prediction-2b7c627c-ac9b-4cf2-9281-90b004161c89\""
     }
   ]
-
+}
