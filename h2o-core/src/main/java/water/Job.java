@@ -1,7 +1,9 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.Log;
 
 import java.io.PrintWriter;
@@ -19,6 +21,62 @@ import java.util.Arrays;
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
   public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  /** A list of field validation issues. */
+  public ValidationMessage[] _messages = new ValidationMessage[0];
+  private int _error_count = -1; // -1 ==> init not run yet, for those Jobs that have an init, like ModelBuilder. Note, this counts ONLY errors, not WARNs and etc.
+
+  /**
+   * init(expensive) is called inside a DTask, not from the http request thread.  If we add validation messages to the
+   * Job we want to update it in the DKV so the client can see them when polling and later on
+   * after the Job completes.
+   * <p>
+   * NOTE: this should only be called when no other threads are updating the job, for example from init() or after the
+   * DTask is stopped and is getting cleaned up.
+   */
+  public void updateValidationMessages() {
+    // Atomically update the validation messages in the Job in the DKV.
+
+    // In some cases we haven't stored to the DKV yet:
+    new TAtomic<Job>() {
+      @Override public Job atomic(Job old) {
+        if( old == null ) throw new H2OKeyNotFoundArgumentException(old._key);
+
+        old._messages = _messages;
+        return old;
+      }
+    }.invoke(_key);
+    }
+
+  public int error_count() { return (_error_count > 0 ? _error_count : 0); }
+  public int error_count_or_uninitialized() { return _error_count; }
+
+  public void hide (String field_name, String message) { message(ValidationMessage.MessageType.HIDE , field_name, message); }
+
+  public void info (String field_name, String message) { message(ValidationMessage.MessageType.INFO , field_name, message); }
+
+  public void warn (String field_name, String message) { message(ValidationMessage.MessageType.WARN , field_name, message); }
+
+  public void error(String field_name, String message) { message(ValidationMessage.MessageType.ERROR, field_name, message); _error_count++; }
+
+  public void clearValidationErrors() {
+    _messages = new ValidationMessage[0];
+    _error_count = 0;
+  }
+
+  public void message(ValidationMessage.MessageType message_type, String field_name, String message) {
+    _messages = Arrays.copyOf(_messages, _messages.length + 1);
+    _messages[_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
+  }
+
+  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
+  public String validationErrors() {
+    StringBuilder sb = new StringBuilder();
+    for( ValidationMessage vm : _messages )
+      if( vm.message_type == ValidationMessage.MessageType.ERROR )
+        sb.append(vm.toString()).append("\n");
+    return sb.toString();
+  }
+
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
@@ -244,7 +302,7 @@ public class Job<T extends Keyed> extends Keyed {
     }.invoke(_key);
     // Also immediately update immediately a possibly cached local POJO (might
     // be shared with the DKV cached job, might not).
-    if( this != DKV.getGet(_key) ) { 
+    if( this != DKV.getGet(_key) ) {
       _exception = msg;
       _state = resultingState;
       _end_time = done;
@@ -348,4 +406,32 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Default checksum; not really used by Jobs.  */
   @Override protected long checksum_impl() { throw H2O.fail("Job checksum does not exist by definition"); }
+
+  /** The result of an abnormal Model.Parameter check.  Contains a
+   *  level, a field name, and a message.
+   *
+   *  Can be an ERROR, meaning the parameters can't be used as-is,
+   *  a HIDE, which means the specified field should be hidden given
+   *  the values of other fields, or a WARN or INFO for informative
+   *  messages to the user.
+   */
+  public static final class ValidationMessage extends Iced {
+    public enum MessageType { HIDE, INFO, WARN, ERROR }
+    final ModelBuilder.ValidationMessage.MessageType message_type;
+    final String field_name;
+    final String message;
+
+    public ValidationMessage(ModelBuilder.ValidationMessage.MessageType message_type, String field_name, String message) {
+      this.message_type = message_type;
+      this.field_name = field_name;
+      this.message = message;
+      switch (message_type) {
+        case INFO: Log.info(field_name + ": " + message); break;
+        case WARN: Log.warn(field_name + ": " + message); break;
+        case ERROR: Log.err(field_name + ": " + message); break;
+      }
+    }
+
+    @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
+  }
 }

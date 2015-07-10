@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.ModelBuilder;
 import water.*;
 import water.api.KeyV3.JobKeyV3;
 import water.util.DocGen.HTML;
@@ -40,6 +41,13 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String exception;
 
+  @API(help="Info, warning and error messages; NOTE: can be appended to while the Job is running", direction=API.Direction.OUTPUT)
+  public ValidationMessageBase messages[];
+
+  @API(help="Count of error messages", direction=API.Direction.OUTPUT)
+  public int error_count;
+
+
   //==========================
   // Custom adapters go here
 
@@ -72,6 +80,14 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
     Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(job.getClass(), 0); // What type do we expect for this Job?
     dest = KeyV3.forKeyedClass(dest_class, dest_key);
     exception = job._exception;
+
+    this.messages = new ValidationMessageBase[job._messages.length];
+    int i = 0;
+    for( ModelBuilder.ValidationMessage vm : job._messages ) {
+      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version
+    }
+    this.error_count = job.error_count();
+
     return (S) this;
   }
 

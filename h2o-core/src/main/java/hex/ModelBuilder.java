@@ -4,7 +4,6 @@ import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
@@ -587,6 +586,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean computePriorClassDistribution(){
     return _parms._balance_classes;
   }
+
+  @Override
+  public int error_count() { assert error_count_or_uninitialized() >= 0 : "init() not run yet"; return super.error_count(); }
+
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -752,30 +755,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert(_parms._fold_column != null == hasFoldCol());
   }
 
-  /**
-   * init(expensive) is called inside a DTask, not from the http request thread.  If we add validation messages to the
-   * ModelBuilder (aka the Job) we want to update it in the DKV so the client can see them when polling and later on
-   * after the job completes.
-   * <p>
-   * NOTE: this should only be called when no other threads are updating the job, for example from init() or after the
-   * DTask is stopped and is getting cleaned up.
-   * @see #init(boolean)
-   */
-  public void updateValidationMessages() {
-    // Atomically update the validation messages in the Job in the DKV.
-
-    // In some cases we haven't stored to the DKV yet:
-    new TAtomic<Job>() {
-      @Override public Job atomic(Job old) {
-        if( old == null ) throw new H2OKeyNotFoundArgumentException(old._key);
-
-        ModelBuilder builder = (ModelBuilder)old;
-        builder._messages = ModelBuilder.this._messages;
-        return builder;
-      }
-    }.invoke(_key);
-    }
-
   abstract class FilterCols {
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
@@ -798,59 +777,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (expensive) Log.info(msg);
       }
     }
-  }
-
-  /** A list of field validation issues. */
-  public ValidationMessage[] _messages = new ValidationMessage[0];
-  private int _error_count = -1; // -1 ==> init not run yet; note, this counts ONLY errors, not WARNs and etc.
-  public int error_count() { assert _error_count>=0 : "init() not run yet"; return _error_count; }
-  public void hide (String field_name, String message) { message(ValidationMessage.MessageType.HIDE , field_name, message); }
-  public void info (String field_name, String message) { message(ValidationMessage.MessageType.INFO , field_name, message); }
-  public void warn (String field_name, String message) { message(ValidationMessage.MessageType.WARN , field_name, message); }
-  public void error(String field_name, String message) { message(ValidationMessage.MessageType.ERROR, field_name, message); _error_count++; }
-  private void clearValidationErrors() {
-    _messages = new ValidationMessage[0];
-    _error_count = 0;
-  }
-  private void message(ValidationMessage.MessageType message_type, String field_name, String message) {
-    _messages = Arrays.copyOf(_messages, _messages.length + 1);
-    _messages[_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
-  }
-  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
-  public String validationErrors() {
-    StringBuilder sb = new StringBuilder();
-    for( ValidationMessage vm : _messages )
-      if( vm.message_type == ValidationMessage.MessageType.ERROR )
-        sb.append(vm.toString()).append("\n");
-    return sb.toString();
-  }
-
-  /** The result of an abnormal Model.Parameter check.  Contains a
-   *  level, a field name, and a message.
-   *
-   *  Can be an ERROR, meaning the parameters can't be used as-is,
-   *  a HIDE, which means the specified field should be hidden given
-   *  the values of other fields, or a WARN or INFO for informative
-   *  messages to the user.
-   */
-  public static final class ValidationMessage extends Iced {
-    public enum MessageType { HIDE, INFO, WARN, ERROR }
-    final MessageType message_type;
-    final String field_name;
-    final String message;
-
-    public ValidationMessage(MessageType message_type, String field_name, String message) {
-      this.message_type = message_type;
-      this.field_name = field_name;
-      this.message = message;
-      switch (message_type) {
-        case INFO: Log.info(field_name + ": " + message); break;
-        case WARN: Log.warn(field_name + ": " + message); break;
-        case ERROR: Log.err(field_name + ": " + message); break;
-      }
-    }
-
-    @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
   }
 
 }
