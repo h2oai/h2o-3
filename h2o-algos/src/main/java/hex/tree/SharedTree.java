@@ -58,9 +58,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Base class hasWeights() uses the transient Vec, which is not available on remote nodes...
   // But sending the ModelBuilder around to remote nodes is bad practice anyway....
   boolean _hasWeights;
-  @Override public boolean hasWeights() { return _weights != null && _hasWeights; }
+  @Override public boolean hasWeights() { return _hasWeights; }
   boolean _hasOffset;
-  @Override public boolean hasOffset() { return _offset != null && _hasOffset; }
+  @Override public boolean hasOffset() { return _hasOffset; }
 
   @Override public long progressUnits() { return _parms._ntrees; }
 
@@ -455,10 +455,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Score scv = new Score(this,false,false,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
-        if (out._scored_valid == null) {
-          assert(out._ntrees == 1);
-          out._scored_valid = new ScoreKeeper[out._ntrees];
-        }
         out._scored_valid[out._ntrees].fillFrom(mmv);
         if (out._ntrees > 0) Log.info("Validation " + out._scored_valid[out._ntrees].toString());
       }

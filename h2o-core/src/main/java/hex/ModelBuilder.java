@@ -217,7 +217,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for (int i=0; i<N; ++i) {
       Frame origTrainFrame = DKV.getGet(origTrainFrameKey);
       Vec origWeight = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
-      String identifier = origDest.toString() + "_cv_" + i;
+      String identifier = origDest.toString() + "_cv_" + (i+1);
       String cvWeights = "weights";
 
       Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
