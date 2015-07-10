@@ -74,8 +74,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //        "elastic_averaging",
 //        "elastic_averaging_moving_rate",
 //        "elastic_averaging_regularization"
-        "nfolds",
-        "keep_cross_validation_splits",
     };
 
     /// Supervised params
@@ -128,12 +126,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public int max_hit_ratio_k;
 
     /////////////////////
-
-    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
-    public int nfolds;
-
-    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean keep_cross_validation_splits;
 
     /**
      * A model key associated with a previously trained Deep Learning

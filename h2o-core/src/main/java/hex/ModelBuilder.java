@@ -205,8 +205,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Job<M> computeCrossValidation() {
     final int N = _parms._nfolds;
     assert(N>1);
-    _parms._nfolds = 0;
-    assert _valid == null : "Cross-Validation with validation frame is not suppoted.";
+    assert _valid == null;
     Key<Frame> origTrainFrameKey = _parms._train;
     Key<M> origDest = dest();
     String origWeightsName = _parms._weights_column;
@@ -246,6 +245,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       DKV.put(cvTrain);
 
       _dest = modelKeys[i];
+      _parms._nfolds = 0;
       _parms._weights_column = cvWeights;
       _parms._train = cvTrain._key;
       _parms._valid = cvVal._key;
@@ -262,6 +262,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Build main model
     _dest = origDest;
+    _parms._nfolds = 0;
     _parms._weights_column = origWeightsName;
     _parms._valid = null;
     _parms._train = origTrainFrameKey;
@@ -431,6 +432,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
     }
 
+    if (_parms._nfolds < 0 || _parms._nfolds == 1) {
+      error("_nfolds", "nfolds must be either 0 or >1.");
+    }
 
     // NOTE: allow re-init:
     clearInitState();
@@ -539,6 +543,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
+      }
+      if (_parms._nfolds > 1) {
+        error("_nfolds" ,"N-fold cross-validation is not supported if a validation dataset is provided.");
       }
     } else {
       _valid = null;

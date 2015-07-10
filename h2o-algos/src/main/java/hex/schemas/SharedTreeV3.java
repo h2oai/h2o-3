@@ -25,9 +25,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
         "nbins_cats",
         "r2_stopping",
         "seed",
-        "build_tree_one_node",
-        "nfolds",
-        "keep_cross_validation_splits"
+        "build_tree_one_node"
     };
 
     // supervised Schema
@@ -78,9 +76,6 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public int max_hit_ratio_k;
 
-    //
-
-
     @API(help="Number of trees.", gridable = true)
     public int ntrees;
 
@@ -104,11 +99,5 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.secondary)
     public boolean build_tree_one_node;
-
-    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
-    public int nfolds;
-
-    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean keep_cross_validation_splits;
   }
 }
