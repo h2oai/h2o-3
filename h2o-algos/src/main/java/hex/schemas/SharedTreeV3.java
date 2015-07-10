@@ -8,21 +8,6 @@ import water.api.FrameV3.ColSpecifierV3;
 public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P extends SharedTreeV3.SharedTreeParametersV3> extends ModelBuilderSchema<B,S,P> {
 
   public static class SharedTreeParametersV3<P extends SharedTreeParameters, S extends SharedTreeParametersV3<P, S>> extends ModelParametersSchema<P, S> {
-    static public String[] fields = new String[] {
-            "nfolds",
-            "keep_cross_validation_splits",
-            "response_column",
-            "offset_column",
-            "weights_column",
-            "balance_classes",
-            "class_sampling_factors",
-            "max_after_balance_size",
-            "max_confusion_matrix_size",
-            "max_hit_ratio_k",
-            "ntrees", "max_depth", "min_rows", "nbins", "nbins_cats", "r2_stopping", "seed",
-            "build_tree_one_node",
-    };
-
     // supervised Schema
     // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
     // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
