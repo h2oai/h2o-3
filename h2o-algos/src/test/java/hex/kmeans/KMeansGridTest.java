@@ -5,6 +5,7 @@ import java.util.*;
 import hex.Grid;
 import hex.Model;
 import org.junit.*;
+import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -70,6 +71,7 @@ public class KMeansGridTest extends TestUtil {
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
+      DKV.put(fr);
 
       // Get the Grid for this modeling class and frame
       kmg = KMeansGrid.get(fr);
@@ -111,6 +113,7 @@ public class KMeansGridTest extends TestUtil {
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
+      DKV.put(fr);
 
       // Get the Grid for this modeling class and frame
       kmg = KMeansGrid.get(fr);
@@ -156,6 +159,7 @@ public class KMeansGridTest extends TestUtil {
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
+      DKV.put(fr);
 
       // Get the Grid for this modeling class and frame
       kmg = KMeansGrid.get(fr);
