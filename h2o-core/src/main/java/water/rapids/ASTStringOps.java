@@ -35,14 +35,16 @@ class ASTStrSplit extends ASTUniPrefixOp {
       @Override public void map(Chunk[] cs, NewChunk[] ncs) {
         Chunk c = cs[0];
         for (int i = 0; i < c._len; ++i) {
-          int idx = (int)c.at8(i);
-          String s = old_domains[idx];
-          String[] ss = s.split(regex);
           int cnt = 0;
-          for (String s1 : ss) {
-            int n_idx = Arrays.asList(new_domains[cnt]).indexOf(s1);
-            if (n_idx == -1) ncs[cnt++].addNA();
-            else ncs[cnt++].addNum(n_idx);
+          if( !c.isNA(i) ) {
+            int idx = (int) c.at8(i);
+            String s = old_domains[idx];
+            String[] ss = s.split(regex);
+            for (String s1 : ss) {
+              int n_idx = Arrays.asList(new_domains[cnt]).indexOf(s1);
+              if (n_idx == -1) ncs[cnt++].addNA();
+              else ncs[cnt++].addNum(n_idx);
+            }
           }
           if (cnt < ncs.length)
             for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();

@@ -218,7 +218,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
-          if (actualNewP.getNumFolds() != 0) {
+          if (actualNewP._nfolds != 0) {
             Log.info("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
 
             H2O.unimpl("writing to n_folds field needs to be uncommented");
@@ -357,7 +357,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
 
         // replace the model with the best model so far (if it's better)
-        if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
+        if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode) {

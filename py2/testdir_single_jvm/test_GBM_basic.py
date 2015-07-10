@@ -85,10 +85,8 @@ class Basic(unittest.TestCase):
             model = OutputObj(modelResult['models'][0]['output'], 'model')
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-            cmm = OutputObj(cmmResult, 'cmm')
-
-            # FIX!
-            ### print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
+            # cmm = OutputObj(cmmResult, 'cmm')
+            # print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             vis = OutputObj(model.variable_importances, 'vis')
 
@@ -114,8 +112,7 @@ class Basic(unittest.TestCase):
             # print "model.mse:", model.mse
             # print "model.mse_train:", model.mse_train
 
-
-            if 1==1:
+            if 1==0:
                 print ""
                 for i,c in enumerate(cmm.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)

@@ -30,7 +30,7 @@
 #' @param seed Seed for random numbers (affects sampling when balance_classes=T)
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty. **Currently not supported**
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
@@ -63,7 +63,7 @@ h2o.gbm <- function(x, y, training_frame,
                     max_after_balance_size = 1,
                     seed,
                     build_tree_one_node = FALSE,
-                    nfolds,
+                    nfolds = 0,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -129,8 +129,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$seed <- seed
   if(!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
-  if (!missing(nfolds) && nfolds > 1)
-    stop("Nfolds > 1 not currently implemented.", call. = FALSE)
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
