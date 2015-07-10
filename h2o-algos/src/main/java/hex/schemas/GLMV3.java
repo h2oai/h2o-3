@@ -16,10 +16,16 @@ import water.api.ModelParametersSchema;
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
-    static public String[] own_fields = new String[]{
+    static public String[] fields = new String[]{
             "nfolds",
             "keep_cross_validation_splits",
+            "model_id",
+            "training_frame",
+            "validation_frame",
             "response_column",
+            "ignored_columns",
+            "ignore_const_cols",
+            "score_each_iteration",
             "offset_column",
             "weights_column",
             "family",
@@ -42,12 +48,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_min_ratio",
             "beta_constraints",
             "max_active_predictors",
-      // dead unused args forced here by backwards compatibility, remove in V4
-      "balance_classes",
-      "class_sampling_factors",
-      "max_after_balance_size",
-      "max_confusion_matrix_size",
-      "max_hit_ratio_k",
+            // dead unused args forced here by backwards compatibility, remove in V4
+            "balance_classes",
+            "class_sampling_factors",
+            "max_after_balance_size",
+            "max_confusion_matrix_size",
+            "max_hit_ratio_k",
     };
 
     @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)

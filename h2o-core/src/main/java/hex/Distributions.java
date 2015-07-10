@@ -180,11 +180,13 @@ public class Distributions {
     tweedie {
       @Override
       public double deviance(double w, double y, double f) {
+        assert(p>1 && p<2);
         return w * (Math.pow(y, 2 - p) / ((1 - p) * (2 - p)) - y * exp(f * (1 - p)) / (1 - p) + exp(f * (2 - p)) / (2 - p));
       }
 
       @Override
       public double gradient(double y, double f) {
+        assert(p>1 && p<2);
         return y * exp(f * (1 - p)) - exp(f * (2 - p));
       }
 
