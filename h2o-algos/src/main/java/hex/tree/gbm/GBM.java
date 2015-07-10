@@ -394,7 +394,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               }
             }
           } else {
-            _parms._distribution.p = _parms._tweedie_power; //UGLY
+            _parms._distribution.p = _parms._tweedie_power; //FIXME PUBDEV-1670: p isn't serialized properly as part of Enum
             wk.set(row, (float) _parms._distribution.gradient(y, f));
           }
         }

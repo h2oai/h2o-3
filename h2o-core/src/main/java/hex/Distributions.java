@@ -205,7 +205,7 @@ public class Distributions {
         return expString(f);
       }
     };
-    public double p; //tweedie power
+    public double p; //tweedie power //FIXME PUBDEV-1670: This isn't getting serialized by the Icer
   }
 
   // sanitized exponential function
