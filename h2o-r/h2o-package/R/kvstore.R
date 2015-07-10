@@ -259,8 +259,8 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' Download the Scoring POJO (Plain Old Java Object) of a H2O Model
 #'
 #' @param model An H2OModel
-#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to console.
-#'             The file name will be a compilable java file name.
+#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to
+#'             to console. The file name will be a compilable java file name.
 #' @param conn An H2OClient object.
 #' @param getjar Whether to also download the h2o-genmodel.jar file needed to compile the POJO 
 #' @return If path is "", then pretty print the POJO to the console.
@@ -272,8 +272,10 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
 #'
 #' h2o.download_pojo(my_model)  # print the model to screen
-#' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working directory, NOT RUN
-#' # h2o.download_pojo(my_model, getwd(), getjar = FALSE )  # save only the POJO to the current working directory, NOT RUN
+#' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working 
+#' #                                         directory, NOT RUN
+#' # h2o.download_pojo(my_model, getwd(), getjar = FALSE )  # save only the POJO to the current
+#' #                                                           working directory, NOT RUN
 #' @export
 h2o.download_pojo <- function(model, path="", conn=h2o.getConnection(), getjar=TRUE) {
   model_id <- model@model_id
