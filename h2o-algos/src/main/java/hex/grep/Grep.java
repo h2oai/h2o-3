@@ -26,8 +26,13 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   public ModelBuilderSchema schema() { return new GrepV3(); }
 
-  @Override public Grep trainModelImpl() {
-    return (Grep)start(new GrepDriver(), _parms.train().numRows());
+  @Override public Grep trainModelImpl(long work) {
+    return (Grep)start(new GrepDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms.train().numRows();
   }
 
   @Override public ModelCategory[] can_build() {

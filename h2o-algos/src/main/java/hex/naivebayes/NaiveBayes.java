@@ -3,7 +3,6 @@ package hex.naivebayes;
 import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
-import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -17,7 +16,6 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Naive Bayes
@@ -37,8 +35,13 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
   public boolean isSupervised(){return true;}
 
   @Override
-  public Job<NaiveBayesModel> trainModelImpl() {
-    return start(new NaiveBayesDriver(), 6);
+  public Job<NaiveBayesModel> trainModelImpl(long work) {
+    return start(new NaiveBayesDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return 6;
   }
 
   @Override

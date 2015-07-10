@@ -529,9 +529,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private static final long WORK_TOTAL = 1000000;
   @Override
-  public Job<GLMModel> trainModelImpl() {
-    start(new GLMDriver(null), WORK_TOTAL);
+  public Job<GLMModel> trainModelImpl(long work) {
+    start(new GLMDriver(null), work);
     return this;
+  }
+
+  @Override
+  public long progressUnits() {
+    return WORK_TOTAL;
   }
 
   static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.

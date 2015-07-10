@@ -186,46 +186,55 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
-    return _parms._nfolds > 1 ? computeCrossValidation() : trainModelImpl();
+    return _parms._nfolds > 1 ? computeCrossValidation() : trainModelImpl(progressUnits());
   }
 
   /**
    * Model-specific implementation of model training
+   * @param progressUnits Number of progress units (each advances the Job's progress bar by a bit)
    * @return ModelBuilder job
    */
-  abstract public Job<M> trainModelImpl();
+  abstract public Job<M> trainModelImpl(long progressUnits);
+  abstract public long progressUnits();
 
   /**
-   * Default implementation of N-fold cross-validation
+   * Default naive (serial) implementation of N-fold cross-validation
    * @return Cross-validation Job
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public Job<M> computeCrossValidation() {
+    final int N = _parms._nfolds;
+    assert(N>1);
+    _parms._nfolds = 0;
     assert _valid == null : "Cross-Validation with validation frame is not suppoted.";
-    Frame origTrainFrame = _train;
+    Key<Frame> origTrainFrameKey = _parms._train;
+    Key<M> origDest = dest();
     String origWeightsName = _parms._weights_column;
-    Key[] modelKeys = new Key[_parms._nfolds];
+    Key[] modelKeys = new Key[N];
+    // adapt main Job's progress bar to build N+1 models
+    DKV.put(_progressKey = createProgressKey(), new Progress((N+1)* progressUnits()));
 
     // Build N cross-validation models
-    for (int i=0; i<_parms._nfolds; ++i) {
-      Vec origWeight = origWeightsName != null ? _train.vec(origWeightsName) : _train.anyVec().makeCon(1.0);
-      String identifier = dest().toString() + "_cv_" + i;
-      String cvWeights = "weights_" + identifier;
+    for (int i=0; i<N; ++i) {
+      Frame origTrainFrame = DKV.getGet(origTrainFrameKey);
+      Vec origWeight = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
+      String identifier = origDest.toString() + "_cv_" + i;
+      String cvWeights = "weights";
 
-      Frame cvTrain = new Frame(Key.make(), origTrainFrame.names(), origTrainFrame.vecs());
-      cvTrain.add(cvWeights, _train.anyVec().makeZero());
+      Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvTrain.add(cvWeights, origTrainFrame.anyVec().makeZero());
 
-      Frame cvVal = new Frame(Key.make(), origTrainFrame.names(), origTrainFrame.vecs());
-      cvVal.add(cvWeights, _train.anyVec().makeZero());
+      Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvVal.add(cvWeights, origTrainFrame.anyVec().makeZero());
 
-      final int N = _parms._nfolds;
-      // Set the weights
+      // Do N-fold CV splits via weights
+      final int fold = i;
       new MRTask() {
         @Override
         public void map(Chunk origWeight, Chunk trainWeight, Chunk validWeight) {
           for (int i=0; i<origWeight._len; ++i) {
             double w = origWeight.atd(i);
-            boolean holdout = (origWeight.start() + i) % N == 0;
+            boolean holdout = (origWeight.start() + i) % N == fold;
             trainWeight.set(i, holdout ? 0 : w);
             validWeight.set(i, holdout ? w : 0);
           }
@@ -235,27 +244,36 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       DKV.put(cvVal);
       DKV.put(cvTrain);
+
       _dest = modelKeys[i];
       _parms._weights_column = cvWeights;
       _parms._train = cvTrain._key;
       _parms._valid = cvVal._key;
-      Job<M> cvModel = trainModelImpl();
+      _state = JobState.CREATED;
+
+      Job<M> cvModel = trainModelImpl(-1);
       cvModel.get();
 
-      DKV.remove(cvVal._key);
-      DKV.remove(cvTrain._key);
+      if (!_parms._keep_cross_validation_splits) {
+        DKV.remove(cvVal._key);
+        DKV.remove(cvTrain._key);
+      }
     }
 
     // Build main model
+    _dest = origDest;
     _parms._weights_column = origWeightsName;
-    _parms._nfolds = 0;
     _parms._valid = null;
-    _parms._train = origTrainFrame._key;
-    Job<M> mainModel = trainModelImpl();
+    _parms._train = origTrainFrameKey;
+    _state = JobState.CREATED;
+
+    Job<M> mainModel = trainModelImpl(-1);
     mainModel.get();
+
+    // FIXME: Compute N-fold cross-validation metrics
     ((Model)DKV.getGet(mainModel._dest))._output._validation_metrics = null;
     return mainModel;
-  };
+  }
 
   /** List containing the categories of models that this builder can
    *  build.  Each ModelBuilder must have one of these. */
@@ -325,6 +343,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _train.add(_parms._weights_column, w);
         ++res;
       }
+    } else {
+      _weights = null;
+      assert(!hasWeights());
     }
     if(_parms._offset_column != null) {
       Vec o = _train.remove(_parms._offset_column);
@@ -341,6 +362,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _train.add(_parms._offset_column, o);
         ++res;
       }
+    } else {
+      _offset = null;
+      assert(!hasOffset());
     }
     if(isSupervised() && _parms._response_column != null) {
       _response = _train.remove(_parms._response_column);
@@ -351,6 +375,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _train.add(_parms._response_column, _response);
         ++res;
       }
+    } else {
+      _response = null;
     }
     return res;
   }
@@ -514,6 +540,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
       }
+    } else {
+      _valid = null;
+      _vresponse = null;
     }
   }
 

@@ -17,6 +17,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
     static public String[] own_fields = new String[]{
+            "nfolds",
+            "keep_cross_validation_splits",
             "response_column",
             "offset_column",
             "weights_column",
@@ -46,7 +48,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
       "max_after_balance_size",
       "max_confusion_matrix_size",
       "max_hit_ratio_k",
-      "nfolds"
     };
 
     @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
@@ -165,6 +166,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
     public int nfolds;
+
+    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
+    public boolean keep_cross_validation_splits;
 
     /////////////////////
 

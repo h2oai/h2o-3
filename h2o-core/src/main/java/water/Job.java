@@ -134,7 +134,7 @@ public class Job<T extends Keyed> extends Keyed {
    */
   public Job<T> start(final H2OCountedCompleter fjtask, long work) {
     // FIXME: Do not override shared progress key
-    DKV.put(_progressKey = createProgressKey(), new Progress(work));
+    if (work > 0) DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";

@@ -52,13 +52,19 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
-  /** Start the DeepLearning training Job on an F/J thread. */
-  @Override public Job<DeepLearningModel> trainModelImpl() {
+  /** Start the DeepLearning training Job on an F/J thread.
+   * @param work*/
+  @Override public Job<DeepLearningModel> trainModelImpl(long work) {
     // We look at _train before init(true) is called, so step around that here:
+    return start(new DeepLearningDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
     long work = 1;
     if (null != _train)
       work = (long)(_parms._epochs * _train.numRows());
-    return start(new DeepLearningDriver(), work);
+    return work;
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the

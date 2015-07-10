@@ -29,8 +29,16 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
 
   public ModelBuilderSchema schema() { return new Word2VecV3(); }
 
-  /** Start the KMeans training Job on an F/J thread. */
-  @Override public Job<Word2VecModel> trainModelImpl() { return start(new Word2VecDriver(), _parms._epochs); }
+  /** Start the KMeans training Job on an F/J thread.
+   * @param work*/
+  @Override public Job<Word2VecModel> trainModelImpl(long work) {
+    return start(new Word2VecDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms._epochs;
+  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

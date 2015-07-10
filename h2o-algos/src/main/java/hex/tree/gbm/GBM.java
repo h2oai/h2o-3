@@ -37,9 +37,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   @Override public GBMV3 schema() { return new GBMV3(); }
 
-  /** Start the GBM training Job on an F/J thread. */
-  @Override public Job<GBMModel> trainModelImpl() {
-    return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
+  /** Start the GBM training Job on an F/J thread.
+   * @param work*/
+  @Override public Job<GBMModel> trainModelImpl(long work) {
+    return start(new GBMDriver(), work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -566,7 +567,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // A leaf-biased array of all active Tree leaves.
           final double denom[] = _denom[k] = new double[tree._len-leaf];
           final double num[] = _num[k] = new double[tree._len-leaf];
-          final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
+          final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
           final Chunk pred = hasWork2() ? chk_work2(chks) : null; // Residuals for this tree/class
 

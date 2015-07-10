@@ -5,7 +5,6 @@ import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV99;
-import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -35,9 +34,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return new SVDV99();
   }
 
-  @Override public Job<SVDModel> trainModelImpl() {
-    return start(new SVDDriver(), _parms._nv+1);
+  @Override public Job<SVDModel> trainModelImpl(long work) {
+    return start(new SVDDriver(), work);
   }
+
+  @Override
+  public long progressUnits() {
+    return _parms._nv+1;
+  }
+
 
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{ ModelCategory.DimReduction };
