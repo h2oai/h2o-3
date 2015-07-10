@@ -1,6 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-h2o.init()
+
 # Explore a typical Data Science workflow with H2O and R
 #
 # Goal: assist the manager of data of NYC to load-balance the bicycles
@@ -11,7 +11,7 @@ h2o.init()
 # Connect to a cluster
 # Set this to True if you want to fetch the data directly from S3.
 # This is useful if your cluster is running in EC2.
-data_source_is_s3 = FALSE
+data_source_is_s3 = F
 
 locate_source <- function(s) {
   if (data_source_is_s3)
@@ -20,6 +20,7 @@ locate_source <- function(s) {
     myPath <- locate(s)
 }
 
+test.citibike.demo <- function(conn) {
 # Pick either the big or the small demo.
 # Big data is 10M rows
 small_test <-  locate_source("bigdata/laptop/citibike-nyc/2013-08.csv")
@@ -42,7 +43,11 @@ big_test <-  c(locate_source("bigdata/laptop/citibike-nyc/2013-07.csv"),
 # station, trip duration and trip start time and day.  The larger dataset
 # totals about 10 million rows
 print("Import and Parse bike data...")
-data <- h2o.importFile(path = small_test, destination_frame = "citi_bike.hex")
+start <- Sys.time()
+data <- h2o.importFile(path = big_test, destination_frame = "citi_bike")
+parseTime <- Sys.time() - start
+print(paste("Took", round(parseTime, digits = 2), "seconds to parse", 
+            nrow(data), "rows and", ncol(data), "columns."))
 
 # 2- light data munging: group the bike starts per-day, converting the 10M rows
 # of trips to about 140,000 station&day combos - predicting the number of trip
@@ -59,7 +64,11 @@ data$day   <- day(starttime)
 data$age   <- data$year - data$"birth year"
 
 print ('Group data into station & day combinations...')
-bpd <- h2o.group_by(data, by = c("days","start station name", "year","month", "day", "dayofweek"), nrow("day") , mean("tripduration"), mean("age"), order.by=c("year", "month", "day"))
+start <- Sys.time()
+bpd <- h2o.group_by(data, by = c("days","start station name", "year","month", "day", "dayofweek"), nrow("day") , mean("tripduration"), mean("age"))
+groupTime <- Sys.time() - start
+print(paste("Took", round(groupTime, digits = 2), "seconds to group", 
+            nrow(data), "data points into", nrow(bpd), "points."))
 names(bpd) <- c("days","start station name", "year","month", "day","dayofweek", "bike_count", "mean_duree", "mean_age")
 
 print('Examine the distribution of the number of bike rides as well as the average day of riders per day...')
@@ -84,7 +93,7 @@ split_fit_predict <- function(data) {
   myX <- setdiff(names(train), myY)
 
   # Run GBM
-  gbm <- h2o.gbm(x = myX, 
+  gbm <- h2o.gbm(x = myX, build_tree_one_node = T, 
                  y = myY,
                  training_frame    = train,
                  validation_frame  = test,
@@ -129,7 +138,11 @@ split_fit_predict <- function(data) {
 }
 
 # Split the data (into test & train), fit some models and predict on the holdout data
+start <- Sys.time()
 split_fit_predict(bpd)
+modelBuild <- Sys.time() - start
+print(paste("Took", round(modelBuild, digits = 2), "seconds to build a gbm, a random forest, and a glm model, score and report r2 values."))
+
 # Here we see an r^2 of 0.91 for GBM, and 0.71 for GLM.  This means given just
 # the station, the month, and the day-of-week we can predict 90% of the
 # variance of the bike-trip-starts.
@@ -164,9 +177,17 @@ names(wthr3) = c("year", "month", "day", names(wthr3)[4:9])
 
 # 6 - Join the weather data-per-day to the bike-starts-per-day
 print("Merge Daily Weather with Bikes-Per-Day")
-bpd_with_weather <- h2o.merge(x = bpd, y = wthr3,all.x = True,all.y = False)
+bpd_with_weather <- h2o.merge(x = bpd, y = wthr3, all.x = T, all.y = F)
 summary(bpd_with_weather)
 print(bpd_with_weather)
+dim(bpd_with_weather)
 
 # 7 - Test/Train split again, model build again, this time with weather
+start <- Sys.time()
 split_fit_predict(bpd_with_weather)
+modelBuild <- Sys.time() - start
+print(paste("Took", round(modelBuild, digits = 2), "seconds to build a gbm, a random forest, and a glm model, score and report r2 values."))
+testEnd()
+}
+
+doTest("Test out Citibike Demo", test.citibike.demo)
