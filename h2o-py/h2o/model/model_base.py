@@ -386,8 +386,8 @@ class ModelBase(object):
     return [True,False]
 
   # Delete from cluster as model goes out of scope
-  def __del__(self):
-    h2o.remove(self._id)
+  # def __del__(self):
+  #   h2o.remove(self._id)
 
   @staticmethod
   def _has(dictionary, key):
