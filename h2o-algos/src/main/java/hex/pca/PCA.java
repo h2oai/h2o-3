@@ -284,6 +284,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         } else if(_parms._pca_method == PCAParameters.Method.Power) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
+          parms._valid = _parms._valid;
           parms._ignored_columns = _parms._ignored_columns;
           parms._ignore_const_cols = _parms._ignore_const_cols;
           parms._score_each_iteration = _parms._score_each_iteration;
@@ -316,6 +317,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         } else if(_parms._pca_method == PCAParameters.Method.GLRM) {
           GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
           parms._train = _parms._train;
+          parms._valid = _parms._valid;
           parms._ignored_columns = _parms._ignored_columns;
           parms._ignore_const_cols = _parms._ignore_const_cols;
           parms._score_each_iteration = _parms._score_each_iteration;
