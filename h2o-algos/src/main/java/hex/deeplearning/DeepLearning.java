@@ -64,7 +64,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     long work = 1;
     if (null != _train)
       work = (long)(_parms._epochs * _train.numRows());
-    return work;
+    return Math.max(1,work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
