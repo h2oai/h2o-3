@@ -46,7 +46,7 @@ print("Import and Parse bike data...")
 start <- Sys.time()
 data <- h2o.importFile(path = big_test, destination_frame = "citi_bike")
 parseTime <- Sys.time() - start
-print(paste("Took", round(parseTime, digits = 2), "seconds to parse", 
+print(paste("Took", round(parseTime, digits = 2), units(parseTime),"to parse", 
             nrow(data), "rows and", ncol(data), "columns."))
 
 # 2- light data munging: group the bike starts per-day, converting the 10M rows
@@ -67,7 +67,7 @@ print ('Group data into station & day combinations...')
 start <- Sys.time()
 bpd <- h2o.group_by(data, by = c("days","start station name", "year","month", "day", "dayofweek"), nrow("day") , mean("tripduration"), mean("age"))
 groupTime <- Sys.time() - start
-print(paste("Took", round(groupTime, digits = 2), "seconds to group", 
+print(paste("Took", round(groupTime, digits = 2), units(groupTime), "to group", 
             nrow(data), "data points into", nrow(bpd), "points."))
 names(bpd) <- c("days","start station name", "year","month", "day","dayofweek", "bike_count", "mean_duree", "mean_age")
 
@@ -93,21 +93,22 @@ split_fit_predict <- function(data) {
   myX <- setdiff(names(train), myY)
 
   # Run GBM
-  gbm <- h2o.gbm(x = myX, build_tree_one_node = T, 
+  gbm <- h2o.gbm(x = myX,
                  y = myY,
                  training_frame    = train,
                  validation_frame  = test,
                  ntrees            = 500,
                  max_depth         = 6,
                  learn_rate        = 0.1)
-
+  
   # Run DRF
-  drf <- h2o.randomForest(x = myX,
+  drf <- h2o.randomForest(x = myX, build_tree_one_node = T,
                           y = myY,
                           training_frame    = train,
                           validation_frame  = test,
                           ntrees            = 250,
                           max_depth         = 30)
+
 
   # Run GLM
   glm <- h2o.glm(x = myX,
@@ -141,7 +142,7 @@ split_fit_predict <- function(data) {
 start <- Sys.time()
 split_fit_predict(bpd)
 modelBuild <- Sys.time() - start
-print(paste("Took", round(modelBuild, digits = 2), "seconds to build a gbm, a random forest, and a glm model, score and report r2 values."))
+print(paste("Took", round(modelBuild, digits = 2), units(modelBuild), "to build a gbm, a random forest, and a glm model, score and report r2 values."))
 
 # Here we see an r^2 of 0.91 for GBM, and 0.71 for GLM.  This means given just
 # the station, the month, and the day-of-week we can predict 90% of the
@@ -186,7 +187,7 @@ dim(bpd_with_weather)
 start <- Sys.time()
 split_fit_predict(bpd_with_weather)
 modelBuild <- Sys.time() - start
-print(paste("Took", round(modelBuild, digits = 2), "seconds to build a gbm, a random forest, and a glm model, score and report r2 values."))
+print(paste("Took", round(modelBuild, digits = 2), units(modelBuild) ,"to build a gbm, a random forest, and a glm model, score and report r2 values."))
 testEnd()
 }
 
