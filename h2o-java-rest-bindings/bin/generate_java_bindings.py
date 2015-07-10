@@ -188,6 +188,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         for meta in endpoints_by_entity[entity]:
             path = meta['url_pattern']
             retrofit_path = var_pattern.sub(r'{\1}', path)
+            retrofit_path = retrofit_path.replace('\\', '\\\\')
             http_method = meta['http_method']
             input_schema_name  = meta['input_schema']
             output_schema_name = meta['output_schema']
