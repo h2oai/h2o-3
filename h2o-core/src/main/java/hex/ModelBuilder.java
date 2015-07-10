@@ -262,7 +262,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Build main model
     _dest = origDest;
-    _parms._nfolds = 0;
+    _parms._nfolds = N; //let the main model know that it is built with cross-validation (no early stopping, etc.)
     _parms._weights_column = origWeightsName;
     _parms._valid = null;
     _parms._train = origTrainFrameKey;
