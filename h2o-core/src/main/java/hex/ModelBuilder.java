@@ -1,6 +1,7 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
@@ -186,7 +187,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
-    return _parms._nfolds > 1 ? computeCrossValidation() : trainModelImpl(progressUnits());
+    return _parms._nfolds == 0 ? trainModelImpl(progressUnits()) :
+            // cross-validation needs to be forked off to allow smooth progress bar
+            start(new H2O.H2OCountedCompleter(){
+              @Override protected void compute2() {
+                computeCrossValidation();
+                tryComplete();
+              }
+            }, (_parms._nfolds+1)*progressUnits());
   }
 
   /**
@@ -211,8 +219,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     String origWeightsName = _parms._weights_column;
     Key[] modelKeys = new Key[N];
     // adapt main Job's progress bar to build N+1 models
-    DKV.put(_progressKey = createProgressKey(), new Progress((N+1)* progressUnits()));
     ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
+    _deleteProgressKey = false;
 
     // Build N cross-validation models
     for (int i=0; i<N; ++i) {
@@ -273,16 +281,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _parms._valid = null;
     _parms._train = origTrainFrameKey;
     _state = JobState.CREATED;
+    _deleteProgressKey = true;
 
     Job<M> main = trainModelImpl(-1);
     Model mainModel = main.get();
-
     for (int i=1; i<N; ++i) {
       mb[0].reduce(mb[i]);
     }
     mainModel._output._validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
     mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
+    DKV.put(mainModel);
     return main;
+  }
+
+  boolean _deleteProgressKey = true;
+  @Override
+  protected boolean deleteProgressKey() {
+    return _deleteProgressKey;
   }
 
   /** List containing the categories of models that this builder can
@@ -554,7 +569,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_valid", iae.getMessage());
       }
       if (_parms._nfolds > 1) {
-        error("_nfolds" ,"N-fold cross-validation is not supported if a validation dataset is provided.");
+        error("_nfolds", "N-fold cross-validation is not supported if a validation dataset is provided.");
       }
     } else {
       _valid = null;
