@@ -311,8 +311,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _offset; // Handy offset column
   protected transient Vec _weights;
 
-  public boolean hasOffset(){ return _offset != null;}
-  public boolean hasWeights(){return _weights != null;}
+  public boolean hasOffset(){ return _parms._offset_column != null;} // don't look at transient Vec
+  public boolean hasWeights(){return _parms._weights_column != null;} // don't look at transient Vec
   // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
 
   protected int _nclass; // Number of classes; 1 for regression; 2+ for classification
@@ -551,6 +551,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = null;
       _vresponse = null;
     }
+    assert(_weights != null == hasWeights());
+    assert(_parms._weights_column != null == hasWeights());
+    assert(_offset != null == hasOffset());
+    assert(_parms._offset_column != null == hasOffset());
   }
 
   /**
