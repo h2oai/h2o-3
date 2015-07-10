@@ -22,8 +22,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 				"ignored_columns",
 				"ignore_const_cols",
 				"score_each_iteration",
-				"nfolds",
-        "keep_cross_validation_splits",
         "weights_column",
         "offset_column",
         "balance_classes",

@@ -254,18 +254,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
     } else if (get_params()._nfolds > 1) {
-      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
-//      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
-      if (_output.getModelCategory() == ModelCategory.Binomial) {
-        colHeaders.add("Cross-Validation AUC");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
-      if (_output.isClassifier()) {
-        colHeaders.add("Cross-Validation Classification Error");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
+//      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+////      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+//      if (_output.getModelCategory() == ModelCategory.Binomial) {
+//        colHeaders.add("Cross-Validation AUC");
+//        colTypes.add("double");
+//        colFormat.add("%.5f");
+//      }
+//      if (_output.isClassifier()) {
+//        colHeaders.add("Cross-Validation Classification Error");
+//        colTypes.add("double");
+//        colFormat.add("%.5f");
+//      }
     }
 
     final int rows = errors.length;
@@ -315,9 +315,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (_output.isClassifier()) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
         }
-      }
-      else if(get_params()._nfolds > 1) {
-        throw H2O.unimpl("n_folds > 1 is not implemented.");
       }
       row++;
     }

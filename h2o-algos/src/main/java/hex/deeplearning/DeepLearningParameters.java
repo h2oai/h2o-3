@@ -448,6 +448,10 @@ public class DeepLearningParameters extends Model.Parameters {
 //          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       if (!classification && _valid != null || _valid == null)
         dl.hide("_score_validation_sampling", "score_validation_sampling requires classification and a validation frame.");
+    } else {
+      if (_nfolds > 1) {
+        dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
+      }
     }
 
     if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)

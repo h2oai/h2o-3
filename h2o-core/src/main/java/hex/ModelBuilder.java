@@ -212,6 +212,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Key[] modelKeys = new Key[N];
     // adapt main Job's progress bar to build N+1 models
     DKV.put(_progressKey = createProgressKey(), new Progress((N+1)* progressUnits()));
+    ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
 
     // Build N cross-validation models
     for (int i=0; i<N; ++i) {
@@ -252,7 +253,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _state = JobState.CREATED;
 
       Job<M> cvModel = trainModelImpl(-1);
-      cvModel.get();
+      Model m = cvModel.get();
+
+      Frame adaptFr = new Frame(cvVal);
+      boolean computeMetrics = (!isSupervised() || adaptFr.find(m._output.responseName()) != -1);
+      m.adaptTestForTrain(adaptFr,true,computeMetrics);
+      mb[i] = m.scoreImplMetricBuilder(cvVal, adaptFr, Key.make().toString());
 
       if (!_parms._keep_cross_validation_splits) {
         DKV.remove(cvVal._key);
@@ -268,12 +274,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _parms._train = origTrainFrameKey;
     _state = JobState.CREATED;
 
-    Job<M> mainModel = trainModelImpl(-1);
-    mainModel.get();
+    Job<M> main = trainModelImpl(-1);
+    Model mainModel = main.get();
 
-    // FIXME: Compute N-fold cross-validation metrics
-    ((Model)DKV.getGet(mainModel._dest))._output._validation_metrics = null;
-    return mainModel;
+    for (int i=1; i<N; ++i) {
+      mb[0].reduce(mb[i]);
+    }
+    mainModel._output._validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
+    mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
+    return main;
   }
 
   /** List containing the categories of models that this builder can
