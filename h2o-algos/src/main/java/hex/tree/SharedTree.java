@@ -61,7 +61,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   @Override public boolean hasWeights() { return _hasWeights; }
   boolean _hasOffset;
   @Override public boolean hasOffset() { return _hasOffset; }
-  public boolean hasWork2() { return false; }
 
   @Override
   protected boolean computePriorClassDistribution(){ return true;}
@@ -200,9 +199,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Initial work columns.  Set-before-use in the algos.
         for( int i=0; i<_nclass; i++ )
           _train.add("Work_"+domain[i], _response.makeZero());
-
-        if (hasWork2())
-          _train.add("Work2", _response.makeZero());
 
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
@@ -358,8 +354,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_resp(     ) { return _model._output.responseIdx(); }
   protected int idx_tree(int c) { return _ncols+1+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
-  protected int idx_work2()     { assert(hasWork2()); return idx_work(0)+1; }
-  protected int idx_nids(int c) { return idx_work(c) + _nclass + (hasWork2() ? 1:0); }
+  protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
 
   protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
@@ -367,7 +362,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp(  )]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c )]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c )]; }
-  protected Chunk chk_work2(Chunk chks[])         { return chks[idx_work2( )]; }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c )]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
