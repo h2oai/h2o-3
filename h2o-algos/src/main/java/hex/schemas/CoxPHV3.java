@@ -7,12 +7,14 @@ import water.api.ModelParametersSchema;
 
 public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParametersV3> {
   public static final class CoxPHParametersV3 extends ModelParametersSchema<CoxPHParameters, CoxPHParametersV3> {
-    static public String[] fields = new String[] {
+    static public String[] own_fields = new String[] {
               "start_column",
               "stop_column",
               "event_column",
+
               "weights_column",
               "offset_columns",
+
               "ties",
               "init",
               "lre_min",

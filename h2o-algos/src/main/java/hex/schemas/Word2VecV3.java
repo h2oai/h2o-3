@@ -7,7 +7,7 @@ import water.api.ModelParametersSchema;
 
 public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV3.Word2VecParametersV3> {
   public static final class Word2VecParametersV3 extends ModelParametersSchema<Word2VecParameters, Word2VecParametersV3> {
-    static public String[] fields = new String[] {
+    static public String[] own_fields = new String[] {
             "minWordFreq",
             "wordModel",
             "normModel",

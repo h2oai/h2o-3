@@ -20,15 +20,6 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] fields = new String[] {
-      "model_id",
-      "training_frame",
-      "validation_frame",
-      "nfolds",
-      "keep_cross_validation_splits",
-      "ignored_columns",
-      "ignore_const_cols",
-  };
 
 		public String[] fields() {
 				Class<? extends ModelParametersSchema> this_clz = this.getClass();
