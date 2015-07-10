@@ -5,7 +5,6 @@ dl_airline.flow
 dl_airlines.flow
 dl_airlines_AirlinesTrainMM.flow
 dl_airlines_allyears2k.flow
-dl_airlines_allyears2k_headers.flow
 dl_airlines_gram_std.flow
 dl_arcene.flow
 dl_arcene_arcene_train_test.flow
@@ -23,7 +22,5 @@ gbm_covtype-20k.flow
 gbm_covtype-altered.flow
 glm_airline.flow
 glm_airline_allyears2k.flow
-glm_airline_allyears2k_headers.flow
-glm_airline_allyears2k_headers_only.flow
 glm_airline_gram_std.flow
 glm_airline_uuid_airline.flow
