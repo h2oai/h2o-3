@@ -29,3 +29,9 @@ test {
         junitXml.outputPerTestCase = true
     }
 }
+
+task updateTestNGReport(type: Exec) {
+    commandLine 'python', 'scripts/update_testng_report.py', '-d', 'build/reports/tests/'
+}
+
+test.finalizedBy(updateTestNGReport)
