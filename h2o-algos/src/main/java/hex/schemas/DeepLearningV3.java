@@ -13,15 +13,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     // Determines the order of parameters in the GUI
     static public String[] fields = new String[] {
-				"model_id",
-				"training_frame",
-				"validation_frame",
-				"response_column",
-				"ignored_columns",
-				"ignore_const_cols",
-				"score_each_iteration",
-				"nfolds",
-        "keep_cross_validation_splits",
         "weights_column",
         "offset_column",
         "balance_classes",
@@ -83,6 +74,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //        "elastic_averaging",
 //        "elastic_averaging_moving_rate",
 //        "elastic_averaging_regularization"
+        "nfolds",
+        "keep_cross_validation_splits",
     };
 
     /// Supervised params
