@@ -132,7 +132,7 @@ public class GLMBasic extends TestNGUtil {
 			while (clazz != null) {
 				try {
 					Field field = clazz.getDeclaredField(name);
-					System.out.println(String.format("  %s = %s", name, field.get(glmParams)));
+					System.out.println(String.format("  %s: %s", name, field.get(glmParams)));
 					return;
 
 				} catch (NoSuchFieldException e) {
@@ -282,7 +282,7 @@ public class GLMBasic extends TestNGUtil {
 			// remove headers
 			lines.removeAll(lines.subList(0, firstRow));
 
-			data = new Object[lines.size()][7];
+			data = new Object[lines.size()][8];
 			int r = 0;
 
 			for (String line : lines) {
@@ -295,6 +295,7 @@ public class GLMBasic extends TestNGUtil {
 				data[r][4] = variables[tcHeaders.indexOf("train_dataset_filename")];
 				data[r][5] = variables[tcHeaders.indexOf("validate_dataset_id")];
 				data[r][6] = variables[tcHeaders.indexOf("validate_dataset_filename")];
+				data[r][7] = variables; // raw input stored here for debugging
 
 				r++;
 			}
@@ -372,9 +373,27 @@ public class GLMBasic extends TestNGUtil {
 		}
 	}
 
+	private void printRawInput(String[] rawInput) {
+		System.out.println("RAW INPUTS:");
+		for (int i = 0; i < tcHeaders.size(); i++) {
+			System.out.println(String.format("  %s: %s", tcHeaders.get(i), rawInput[i]));
+		}
+	}
+
+	private boolean _validate(GLMParameters glmParams, String trainDatasetId, String trainDatasetFilename,
+							  String validateDatasetId, String validateDatasetFilename, String[] rawInput) {
+		if ("".equals(trainDatasetFilename.trim()) || "".equals(validateDatasetFilename.trim())) {
+			System.out.println("[INVALID] Filename is blank!");
+			printRawInput(rawInput);
+			return false;
+		}
+		return true;
+	}
+
 	@Test(dataProvider = "glmCases")
 	public void basic(String testcaseId, String testDescription, GLMParameters glmParams,
-					  String trainDatasetId, String trainDatasetFilename, String validateDatasetId, String validateDatasetFilename) {
+					  String trainDatasetId, String trainDatasetFilename, String validateDatasetId, String validateDatasetFilename,
+					  String[] rawInput) {
 		redirectStandardStreams();
 
 		System.out.println(String.format("Testcase: %s", testcaseId));
@@ -395,9 +414,23 @@ public class GLMBasic extends TestNGUtil {
 				trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename));
 		System.out.println("");
 
-		_basic(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename);
+		try {
+			if (_validate(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename, rawInput)) {
+				_basic(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename);
+			} else {
+				Assert.fail(String.format("INVALID INPUT - this test is skipped."));
+			}
+		} finally {
 
-		resetStandardStreams();
+			//wait 100 mili-sec for output/error to be stored
+			try {
+				Thread.sleep(100);
+			} catch(InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+
+			resetStandardStreams();
+		}
 	}
 
 
