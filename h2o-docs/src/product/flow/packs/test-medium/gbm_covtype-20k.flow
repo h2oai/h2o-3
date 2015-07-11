@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/covtype/covtype.20k.data\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/covtype/covtype.20k.data\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/covtype/covtype.20k.data\"]\n  destination_frame: \"covtype_20k_data.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 55\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 131072"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"covtype_20k_data.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"covtype_20k_data.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"covtype_20k_data.hex\", [0.25], [\"covtype_20k_data_test\",\"covtype_20k_data_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-4fa3e2b1-714d-4758-be10-9eac29d3f690\",\"training_frame\":\"covtype_20k_data_train\",\"validation_frame\":\"covtype_20k_data_test\",\"ignore_const_cols\":true,\"response_column\":\"C1\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1939750635744243500,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-4fa3e2b1-714d-4758-be10-9eac29d3f690\""
+    },
+    {
+      "type": "cs",
+      "input": "inspect getModel \"gbm-4fa3e2b1-714d-4758-be10-9eac29d3f690\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-4fa3e2b1-714d-4758-be10-9eac29d3f690\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-4fa3e2b1-714d-4758-be10-9eac29d3f690\", frame: \"covtype_20k_data_test\", predictions_frame: \"prediction-778d49a3-2770-4f21-9ede-4e97b31913b9\""
+    }
+  ]
+}

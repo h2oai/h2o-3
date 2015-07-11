@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/airlines/allyears2k.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/airlines/allyears2k.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/airlines/allyears2k.zip\"]\n  destination_frame: \"allyears2k3.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 31\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 262144"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"allyears2k3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"allyears2k3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"allyears2k3.hex\", [0.25], [\"allyears2k3_test.hex_0.250\",\"allyears2k3_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-3d262ec0-96c4-4985-b30e-d5f201f6669d\",\"training_frame\":\"allyears2k3_train.hex_0.750\",\"validation_frame\":\"allyears2k3_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C31\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-8766504278430806000,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-3d262ec0-96c4-4985-b30e-d5f201f6669d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-3d262ec0-96c4-4985-b30e-d5f201f6669d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-3d262ec0-96c4-4985-b30e-d5f201f6669d\", frame: \"allyears2k3_test.hex_0.250\", predictions_frame: \"prediction-5484989c-38da-4696-8bfc-7995a788887f\""
+    }
+  ]
+}
