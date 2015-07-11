@@ -110,7 +110,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               }) {
                                 for (int n_folds : new int[]{
                                         0,
-//                                  2,
+                                        3,
                                 }) {
                                   if (n_folds != 0 && vf != 0) continue;
                                   for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
@@ -155,10 +155,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p._overwrite_with_best_model = overwrite_with_best_model;
                                             p._epochs = epochs;
                                             p._loss = loss;
-                                            if (n_folds > 0) {
-                                              H2O.unimpl();
-                                              // p._n_folds = n_folds;
-                                            }
+                                            p._nfolds = n_folds;
                                             p._keep_cross_validation_splits = keep_cv_splits;
                                             p._seed = myseed;
                                             p._train_samples_per_iteration = train_samples_per_iteration;
@@ -202,16 +199,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                               else assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
                                             }
 
-                                            if (n_folds != 0)
-                                            // test HTML of cv models
-                                            {
-                                              throw H2O.unimpl();
-//                                        for (Key k : model1.get_params().xval_models) {
-//                                          DeepLearningModel cv_model = UKV.get(k);
-//                                          StringBuilder sb = new StringBuilder();
-//                                          cv_model.generateHTML("cv", sb);
-//                                          cv_model.delete();
-//                                        }
+                                            if (n_folds != 0) {
+                                              assert(model1._output._validation_metrics != null);
                                             }
                                           }
 
@@ -226,7 +215,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           {
                                             p2._model_id = Key.make();
                                             p2._checkpoint = model1._key;
-                                            // p._n_folds = 0;
+                                            p2._nfolds = 0;
                                             p2._train = frame._key;
                                             p2._activation = activation;
                                             p2._hidden = hidden;
