@@ -52,9 +52,9 @@ abstract public class Log {
   public static void trace( Object... objs ) { write(TRACE,objs); }
   public static void debug( Object... objs ) { write(DEBUG,objs); }
   public static void info ( Object... objs ) { write(INFO ,objs); }
-  public static void warn ( Object... objs ) { write(WARN ,objs); }
-  public static void err  ( Object... objs ) { write(ERRR ,objs); }
-  public static void fatal( Object... objs ) { write(FATAL,objs); }
+  public static void warn ( Object... objs ) { write(WARN, objs); }
+  public static void err  ( Object... objs ) { write(ERRR, objs); }
+  public static void fatal( Object... objs ) { write(FATAL, objs); }
 
   public static void httpd( String msg ) {
     org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
@@ -285,31 +285,34 @@ abstract public class Log {
   private static synchronized org.apache.log4j.Logger createLog4j() {
     if( _logger != null ) return _logger; // Test again under lock
 
-    File dir;
-    boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
-
-    // Use ice folder if local, or default
-    if (windowsPath)
-      dir = new File(H2O.ICE_ROOT.toString());
-    else if( H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
-      dir = new File(H2O.ICE_ROOT.getPath());
-    else
-      dir = new File(H2O.DEFAULT_ICE_ROOT());
-
-    // If a log4j properties file was specified on the command-line, use it.
-    // Don't use it if we were launched with 'hadoop jar'.
-    // Create some default properties on the fly if we aren't using a provided configuration file.
-    String log4jConfiguration = System.getProperty ("log4j.configuration");
+    // Create some default properties on the fly if we aren't using a provided configuration.
     boolean launchedWithHadoopJar = H2O.ARGS.hdfs_skip;
+    String log4jConfiguration = System.getProperty ("log4j.configuration");
     boolean log4jConfigurationProvided = log4jConfiguration != null;
-    boolean useProvidedLog4jConfigurationFile = log4jConfigurationProvided && !launchedWithHadoopJar;
 
-    if (useProvidedLog4jConfigurationFile) {
+    // Note: for the hadoop case, force H2O to specify the logging setup since we don't care
+    // about any hadoop log setup, anyway.
+    if (!launchedWithHadoopJar && H2O.haveInheritedLog4jConfiguration()) {
+      // Do nothing.
+    }
+    else if (!launchedWithHadoopJar && log4jConfigurationProvided) {
       PropertyConfigurator.configure(log4jConfiguration);
     }
     else {
+      // H2O creates the log setup itself on the fly in code.
       java.util.Properties p = new java.util.Properties();
       try {
+        File dir;
+        boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
+
+        // Use ice folder if local, or default
+        if (windowsPath)
+          dir = new File(H2O.ICE_ROOT.toString());
+        else if( H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
+          dir = new File(H2O.ICE_ROOT.getPath());
+        else
+          dir = new File(H2O.DEFAULT_ICE_ROOT());
+
         setLog4jProperties(dir.toString(), p);
       }
       catch (Exception e) {

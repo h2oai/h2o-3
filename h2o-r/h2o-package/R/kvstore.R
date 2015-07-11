@@ -103,38 +103,6 @@ h2o.rm <- function(ids, conn = h2o.getConnection()) {
 }
 
 #'
-#' Garbage Collection of Temporary Frames
-#'
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
-
-# TODO: This is an older version; need to go back through git and find the "good" one...
-.h2o.gc <- function(conn = h2o.getConnection()) {
-  frame_keys <- as.vector(h2o.ls()[,1L])
-  frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@mutable$session_id), frame_keys)]
-  # no reference? then destroy!
-  # TODO in order for this function to work properly, you would need to search (recursively)
-  # TODO through ALL objects for H2OFrame and H2OModel objects including lists, environments,
-  # TODO and slots of S4 objects
-  f <- function(env) {
-    l <- lapply(ls(env), function(x) {
-      o <- get(x, envir=env)
-      if(is(o, "H2OFrame")) o@frame_id else if(is(o, "H2OModel")) o@model_id
-    })
-    Filter(Negate(is.null), l)
-  }
-  p_list  <- f(.pkg.env)
-  g_list  <- f(globalenv())
-  f1_list <- f(parent.frame())
-
-  g_list <- unlist(c(p_list, g_list, f1_list))
-  l <- setdiff(seq_len(length(frame_keys)),
-               unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
-  if (length(l) != 0L)
-    h2o.rm(frame_keys[l])
-  invisible(NULL)
-}
-
-#'
 #' Rename an H2O object.
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
@@ -288,12 +256,13 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 
 
 #'
-#' Download the Scoring POJO of An H2O Model
+#' Download the Scoring POJO (Plain Old Java Object) of a H2O Model
 #'
 #' @param model An H2OModel
-#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to console.
-#'             The file name will be a compilable java file name.
+#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to
+#'             to console. The file name will be a compilable java file name.
 #' @param conn An H2OClient object.
+#' @param getjar Whether to also download the h2o-genmodel.jar file needed to compile the POJO 
 #' @return If path is "", then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory.
 #' @examples
@@ -303,14 +272,31 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
 #'
 #' h2o.download_pojo(my_model)  # print the model to screen
-#' # h2o.download_pojo(my_model, getwd())  # save to the current working directory, NOT RUN
+#' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working 
+#' #                                         directory, NOT RUN
+#' # h2o.download_pojo(my_model, getwd(), getjar = FALSE )  # save only the POJO to the current
+#' #                                                           working directory, NOT RUN
 #' @export
-h2o.download_pojo <- function(model, path="", conn=h2o.getConnection()) {
+h2o.download_pojo <- function(model, path="", conn=h2o.getConnection(), getjar=TRUE) {
   model_id <- model@model_id
   java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
   file.path <- paste0(path, "/", model_id, ".java")
   if( path == "" ) cat(java)
-  else write(java, file=file.path)
+  else {
+    write(java, file=file.path)
+    if (getjar) {
+      .__curlError = FALSE
+      .__curlErrorMessage = ""
+      url = .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
+      tmp = tryCatch(getBinaryURL(url = url,
+                          useragent = R.version.string),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+      if (! .__curlError) {
+        jar.path <- paste0(path, "/h2o-genmodel.jar")
+        writeBin(tmp, jar.path, useBytes = TRUE);
+      }
+    }
+  }
 
   if( path!="") print( paste0("POJO written to: ", file.path) )
 }

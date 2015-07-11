@@ -393,7 +393,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model.delete_and_lock(self());
 
         // Save adapted frame info for scoring later
-        tinfo = new DataInfo(Key.make(), _train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
+        tinfo = new DataInfo(Key.make(), _train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(tinfo._key, tinfo);
 
         // Save standardization vectors for use in scoring later

@@ -4,6 +4,9 @@ import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PropertyConfigurator;
+import org.reflections.Reflections;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -20,6 +23,7 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -481,6 +485,76 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
+  private static boolean _haveInheritedLog4jConfiguration = false;
+  public static boolean haveInheritedLog4jConfiguration() {
+    return _haveInheritedLog4jConfiguration;
+  }
+
+  public static void configureLogging() {
+    if (LogManager.getCurrentLoggers().hasMoreElements()) {
+      _haveInheritedLog4jConfiguration = true;
+      return;
+    }
+
+    // Disable logging from a few specific classes at startup.
+    // (These classes may (or may not) be re-enabled later on.)
+    //
+    // The full logger initialization is done by setLog4jProperties() in class water.util.Log.
+    // The trick is the output path / file isn't known until the H2O API PORT is chosen,
+    // so real logger initialization has to happen somewhat late in the startup lifecycle.
+    java.util.Properties p = new java.util.Properties();
+    p.setProperty("log4j.logger.org.reflections.Reflections", "WARN");
+    p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
+    PropertyConfigurator.configure(p);
+    System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  // Be paranoid and check that this doesn't happen twice.
+  private static boolean extensionsRegistered = false;
+  private static long registerExtensionsMillis = 0;
+
+  /**
+   * Register H2O extensions.
+   * <p/>
+   * Use reflection to find all classes that inherit from water.AbstractH2OExtension
+   * and call H2O.addExtension() for each.
+   */
+  public static void registerExtensions() {
+    if (extensionsRegistered) {
+      throw H2O.fail("Extensions already registered");
+    }
+
+    long before = System.currentTimeMillis();
+
+    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
+    String[] packages = new String[]{"water", "hex"};
+
+    for (String pkg : packages) {
+      Reflections reflections = new Reflections(pkg);
+      for (Class registerClass : reflections.getSubTypesOf(water.AbstractH2OExtension.class)) {
+        if (!Modifier.isAbstract(registerClass.getModifiers())) {
+          try {
+            Object instance = registerClass.newInstance();
+            water.AbstractH2OExtension e = (water.AbstractH2OExtension) instance;
+            H2O.addExtension(e);
+          } catch (Exception e) {
+            throw H2O.fail(e.toString());
+          }
+        }
+      }
+    }
+
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.init();
+    }
+
+    extensionsRegistered = true;
+
+    registerExtensionsMillis = System.currentTimeMillis() - before;
+  }
+
   private static ArrayList<AbstractH2OExtension> extensions = new ArrayList<>();
 
   public static void addExtension(AbstractH2OExtension e) {
@@ -489,6 +563,59 @@ final public class H2O {
 
   public static ArrayList<AbstractH2OExtension> getExtensions() {
     return extensions;
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  // Be paranoid and check that this doesn't happen twice.
+  private static boolean apisRegistered = false;
+
+  /**
+   * Register REST API routes.
+   *
+   * Use reflection to find all classes that inherit from water.api.AbstractRegister
+   * and call the register() method for each.
+   *
+   * @param relativeResourcePath Relative path from running process working dir to find web resources.
+   */
+  public static void registerRestApis(String relativeResourcePath) {
+    if (apisRegistered) {
+      throw H2O.fail("APIs already registered");
+    }
+
+    // Log extension registrations here so the message is grouped in the right spot.
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.printInitialized();
+    }
+    Log.info("Registered " + H2O.getExtensions().size() + " extensions in: " + registerExtensionsMillis + "mS");
+
+    long before = System.currentTimeMillis();
+
+    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
+    String[] packages = new String[] { "water", "hex" };
+
+    for (String pkg : packages) {
+      Reflections reflections = new Reflections(pkg);
+      Log.debug("Registering REST APIs for package: " + pkg);
+      for (Class registerClass : reflections.getSubTypesOf(water.api.AbstractRegister.class)) {
+        if (!Modifier.isAbstract(registerClass.getModifiers())) {
+          try {
+            Log.debug("Found REST API registration for class: " + registerClass.getName());
+            Object instance = registerClass.newInstance();
+            water.api.AbstractRegister r = (water.api.AbstractRegister) instance;
+            r.register(relativeResourcePath);
+          }
+          catch (Exception e) {
+            throw H2O.fail(e.toString());
+          }
+        }
+      }
+    }
+
+    apisRegistered = true;
+
+    long registerApisMillis = System.currentTimeMillis() - before;
+    Log.info("Registered REST APIs in: " + registerApisMillis + "mS");
   }
 
   //-------------------------------------------------------------------------------------------------------------------

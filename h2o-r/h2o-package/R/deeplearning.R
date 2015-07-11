@@ -9,7 +9,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
-#' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
@@ -110,7 +110,7 @@
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
-                             n_folds = 0,
+                             nfolds = 0,
                              validation_frame,
                              checkpoint,
                              autoencoder = FALSE,
@@ -198,8 +198,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$model_id <- model_id
   if(!missing(overwrite_with_best_model))
     parms$overwrite_with_best_model <- overwrite_with_best_model
-  if(!missing(n_folds))
-    parms$n_folds <- n_folds
+  if(!missing(nfolds))
+    parms$nfolds <- nfolds
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if(!missing(checkpoint))
