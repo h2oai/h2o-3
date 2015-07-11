@@ -624,7 +624,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       bs._mb.makeModelMetrics(this, fr);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
   }
-  protected ModelMetrics.MetricBuilder scoreImplMetricBuilder(Frame fr, Frame adaptFrm, String destination_key) {
+  protected ModelMetrics.MetricBuilder scoreImplMetricBuilder(Frame fr, Frame adaptFrm) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
     final int nc = _output.nclasses();

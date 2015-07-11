@@ -1,7 +1,6 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
-import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
@@ -260,13 +259,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _parms._valid = cvVal._key;
       _state = JobState.CREATED;
 
+      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
       Job<M> cvModel = trainModelImpl(-1);
       Model m = cvModel.get();
 
       Frame adaptFr = new Frame(cvVal);
       boolean computeMetrics = (!isSupervised() || adaptFr.find(m._output.responseName()) != -1);
-      m.adaptTestForTrain(adaptFr,true,computeMetrics);
-      mb[i] = m.scoreImplMetricBuilder(cvVal, adaptFr, Key.make().toString());
+      m.adaptTestForTrain(adaptFr, true, computeMetrics);
+      mb[i] = m.scoreImplMetricBuilder(cvVal, adaptFr);
 
       if (!_parms._keep_cross_validation_splits) {
         DKV.remove(cvVal._key);
@@ -283,6 +283,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _state = JobState.CREATED;
     _deleteProgressKey = true;
 
+    Log.info("Building main model.");
     Job<M> main = trainModelImpl(-1);
     Model mainModel = main.get();
     for (int i=1; i<N; ++i) {

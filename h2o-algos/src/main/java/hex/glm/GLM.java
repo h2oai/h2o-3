@@ -156,6 +156,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient GLMModel _model;
 
   @Override public void init(boolean expensive) {
+    if (_parms._nfolds != 0) error("_nfolds", "nfolds != 0 is not supported");
     _t0 = System.currentTimeMillis();
     super.init(expensive);
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
