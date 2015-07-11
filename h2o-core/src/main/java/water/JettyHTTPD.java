@@ -32,6 +32,30 @@ import water.util.Log;
  * This is intended to be a singleton per H2O node.
  */
 public class JettyHTTPD {
+  //------------------------------------------------------------------------------------------
+  // Thread-specific things.
+  //------------------------------------------------------------------------------------------
+
+  private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
+
+  private static void startTransaction(String userAgent) {
+    _userAgent.set(userAgent);
+  }
+
+  private static void endTransaction() {
+    _userAgent.remove();
+  }
+
+  /**
+   * @return Thread-local User-Agent for this transaction.
+   */
+  public static String getUserAgent() {
+    return _userAgent.get();
+  }
+
+  //------------------------------------------------------------------------------------------
+  // Object-specific things.
+  //------------------------------------------------------------------------------------------
   private static volatile boolean _acceptRequests = false;
 
   private String _ip;
@@ -426,56 +450,63 @@ public class JettyHTTPD {
     public void doGeneric(String method,
                           HttpServletRequest request,
                           HttpServletResponse response) throws IOException, ServletException {
-      // Marshal Jetty request parameters to Nano-style.
+      try {
+        startTransaction(request.getHeader("User-Agent"));
 
-      // Note that getServletPath does an un-escape so that the %24 of job id's are turned into $ characters.
-      String uri = request.getServletPath();
+        // Marshal Jetty request parameters to Nano-style.
 
-      Properties headers = new Properties();
-      Enumeration<String> en = request.getHeaderNames();
-      while (en.hasMoreElements()) {
-        String key = en.nextElement();
-        String value = request.getHeader(key);
-        headers.put(key, value);
-      }
+        // Note that getServletPath does an un-escape so that the %24 of job id's are turned into $ characters.
+        String uri = request.getServletPath();
 
-      Properties parms = new Properties();
-      Map<String, String[]> parameterMap;
-      parameterMap = request.getParameterMap();
-      for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
-        String key = entry.getKey();
-        String[] values = entry.getValue();
-        for (String value : values) {
-          parms.put(key, value);
+        Properties headers = new Properties();
+        Enumeration<String> en = request.getHeaderNames();
+        while (en.hasMoreElements()) {
+          String key = en.nextElement();
+          String value = request.getHeader(key);
+          headers.put(key, value);
         }
+
+        Properties parms = new Properties();
+        Map<String, String[]> parameterMap;
+        parameterMap = request.getParameterMap();
+        for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+          String key = entry.getKey();
+          String[] values = entry.getValue();
+          for (String value : values) {
+            parms.put(key, value);
+          }
+        }
+
+        // Make Nano call.
+        NanoHTTPD.Response resp = water.api.RequestServer.SERVER.serve(uri, method, headers, parms);
+
+        // Un-marshal Nano response back to Jetty.
+        String choppedNanoStatus = resp.status.substring(0, 3);
+        assert (choppedNanoStatus.length() == 3);
+        int sc = Integer.parseInt(choppedNanoStatus);
+        response.setStatus(sc);
+
+        response.setContentType(resp.mimeType);
+
+        Properties header = resp.header;
+        Enumeration<Object> en2 = header.keys();
+        while (en2.hasMoreElements()) {
+          String key = (String) en2.nextElement();
+          String value = header.getProperty(key);
+          response.setHeader(key, value);
+        }
+
+        OutputStream os = response.getOutputStream();
+        InputStream is = resp.data;
+        FileUtils.copyStream(is, os, 1024);
       }
+      finally {
+        // Handle shutdown if it was requested.
+        if (H2O.getShutdownRequested()) {
+          H2O.shutdown(0);
+        }
 
-      // Make Nano call.
-      NanoHTTPD.Response resp = water.api.RequestServer.SERVER.serve(uri, method, headers, parms);
-
-      // Un-marshal Nano response back to Jetty.
-      String choppedNanoStatus = resp.status.substring(0, 3);
-      assert(choppedNanoStatus.length() == 3);
-      int sc = Integer.parseInt(choppedNanoStatus);
-      response.setStatus(sc);
-
-      response.setContentType(resp.mimeType);
-
-      Properties header = resp.header;
-      Enumeration<Object> en2 = header.keys();
-      while (en2.hasMoreElements()) {
-        String key = (String) en2.nextElement();
-        String value = header.getProperty(key);
-        response.setHeader(key, value);
-      }
-
-      OutputStream os = response.getOutputStream();
-      InputStream is = resp.data;
-      FileUtils.copyStream(is, os, 1024);
-
-      // Handle shutdown if it was requested.
-      if (H2O.getShutdownRequested()) {
-        H2O.shutdown(0);
+        endTransaction();
       }
     }
   }

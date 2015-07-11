@@ -6,6 +6,7 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
+import org.eclipse.jetty.util.Jetty;
 import org.reflections.Reflections;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
@@ -644,6 +645,67 @@ final public class H2O {
   @SuppressWarnings("unused")
   public static ArrayList<AboutEntry> getAboutEntries() {
     return aboutEntries;
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  private static AtomicLong nextModelNum = new AtomicLong(0);
+
+  /**
+   * Calculate a unique model id that includes User-Agent info (if it can be discovered).
+   * For the user agent info to be discovered, this needs to be called from a Jetty thread.
+   *
+   * This lets us distinguish models created from R vs. other front-ends, for example.
+   * At some future point, it could make sense to include a sessionId here.
+   *
+   * The algorithm is:
+   *   descModel_[userAgentPrefixIfKnown_]cloudId_monotonicallyIncreasingInteger
+   *
+   * Right now because of the way the REST API works, a bunch of numbers are created and
+   * thrown away.  So the values are monotonically increasing but not contiguous.
+   *
+   * @param desc Model description.
+   * @return The suffix.
+   */
+  synchronized public static String calcNextUniqueModelId(String desc) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(desc).append("Model").append("_");
+
+    // Append user agent string if we can figure it out.
+    String source = JettyHTTPD.getUserAgent();
+    if (source != null) {
+      StringBuilder ua = new StringBuilder();
+
+      if (source.contains("Safari")) {
+        ua.append("Safari");
+      }
+      else {
+        for (int i = 0; i < source.length(); i++) {
+          char c = source.charAt(i);
+          if (c >= 'a' && c <= 'z') {
+            ua.append(c);
+            continue;
+          } else if (c >= 'A' && c <= 'Z') {
+            ua.append(c);
+            continue;
+          }
+          break;
+        }
+      }
+
+      if (ua.toString().length() > 0) {
+        sb.append(ua.toString()).append("_");
+      }
+    }
+
+    // REST API needs some refactoring to avoid burning lots of extra numbers.
+    //
+    // I actually tried only doing the addAndGet only for POST requests (and junk UUID otherwise),
+    // but that didn't eliminate the gaps.
+    long n = nextModelNum.addAndGet(1);
+    sb.append(Long.toString(CLUSTER_ID)).append("_").append(Long.toString(n));
+
+    return sb.toString();
   }
 
   //-------------------------------------------------------------------------------------------------------------------
