@@ -95,7 +95,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     }
   }
 
-  private double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+  public double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     assert _parms._pred_indicator;
     assert tmp.length == _output._names.length && preds.length == _parms._k;
     for(int i = 0; i < tmp.length; i++)

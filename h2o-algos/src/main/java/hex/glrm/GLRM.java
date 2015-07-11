@@ -185,9 +185,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
-    // Initialize Y matrix
-    public double[][] initialY(DataInfo dinfo) {
-      double[][] centers, centers_exp;
+    // Initialize Y and X matrices
+    // tinfo = original training data A, dinfo = [A,X,W] where W is working copy of X (initialized here)
+    private double[][] initialXY(DataInfo tinfo, DataInfo dinfo) {
+      double[][] centers, centers_exp = null;
 
       if (null != _parms._user_points) { // User-specified starting points
         Vec[] centersVecs = _parms._user_points.get().vecs();
@@ -200,8 +201,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // Permute cluster columns to align with dinfo and expand out categoricals
-        centers = ArrayUtils.permuteCols(centers, dinfo._permutation);
-        centers_exp = expandCats(centers, dinfo);
+        centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
+        centers_exp = expandCats(centers, tinfo);
 
       } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
         return ArrayUtils.gaussianArray(_parms._k, _ncolY);
@@ -230,14 +231,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // Ensure SVD centers align with adapted training frame cols
-        assert pca._output._permutation.length == dinfo._permutation.length;
-        for(int i = 0; i < dinfo._permutation.length; i++)
-          assert pca._output._permutation[i] == dinfo._permutation[i];
+        assert pca._output._permutation.length == tinfo._permutation.length;
+        for(int i = 0; i < tinfo._permutation.length; i++)
+          assert pca._output._permutation[i] == tinfo._permutation[i];
         centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
         // for(int i = 0; i < centers_exp.length; i++)
         //  ArrayUtils.mult(centers_exp[i], pca._output._std_deviation[i] * Math.sqrt(pca._output._nobs-1));
 
-      } else {  // Run k-means++ and use resulting cluster centers as initial Y
+      } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -248,51 +249,74 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._max_iterations = _parms._max_iterations;
         parms._standardize = true;
         parms._seed = _parms._seed;
+        parms._pred_indicator = true;
 
         KMeansModel km = null;
         KMeans job = null;
         try {
           job = new KMeans(parms);
           km = job.trainModel().get();
+
+          // Score only if clusters well-defined and closed-form solution does not exist
+          double frob = frobenius2(km._output._centers_raw);
+          if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm())
+            initialXKmeans(dinfo, km);
         } finally {
           if (job != null) job.remove();
           if (km != null) km.remove();
         }
 
         // Permute cluster columns to align with dinfo, normalize nums, and expand out cats to indicator cols
-        centers = ArrayUtils.permuteCols(km._output._centers_raw, dinfo.mapNames(km._output._names));
-        centers = transform(centers, dinfo._normSub, dinfo._normMul, dinfo._cats, dinfo._nums);
-        centers_exp = expandCats(centers, dinfo);
-      }
-      assert centers_exp[0].length == _ncolY;
+        centers = ArrayUtils.permuteCols(km._output._centers_raw, tinfo.mapNames(km._output._names));
+        centers = transform(centers, tinfo._normSub, tinfo._normMul, tinfo._cats, tinfo._nums);
+        centers_exp = expandCats(centers, tinfo);
+      } else
+        error("_init", "Initialization method " + _parms._init + " is undefined");
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
-      double frob = frobenius2(centers_exp);
+      assert centers_exp != null && centers_exp[0].length == _ncolY;
+      double frob = frobenius2(centers_exp);   // TODO: Don't need to calculate twice if k-means++
       if(frob == 0 || Double.isNaN(frob)) {
-        warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead...");
+        warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead");
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
       }
       return centers_exp;
     }
 
-    // Initialize X matrix
-    public void initialX(DataInfo dinfo, double[][] yt, double[] normSub, double[] normMul) {
-      // In case of L2 loss and regularization, initialize X = AY'(YY' + \gamma)^(-1)
-      if(_parms._loss == GLRMParameters.Loss.L2 && (_parms._gamma_x == 0 || _parms._regularization_x == GLRMParameters.Regularizer.L2)
-              && (_parms._gamma_y == 0 || _parms._regularization_y == GLRMParameters.Regularizer.L2)) {
-        Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
-        double[][] ygram = ArrayUtils.formGram(yt);
-        if (_parms._gamma_y > 0) {
-          for(int i = 0; i < ygram.length; i++)
-            ygram[i][i] += _parms._gamma_y;
+    // Set X to matrix of indicator columns, e.g. k = 4, cluster = 3 -> [0, 0, 1, 0]
+    private void initialXKmeans(DataInfo dinfo, KMeansModel km) {
+      // Frame pred = km.score(_parms.train());
+      Log.info("Initializing X to matrix of indicator columns corresponding to cluster assignments");
+      final KMeansModel model = km;
+      new MRTask() {
+        @Override public void map( Chunk chks[] ) {
+          double tmp [] = new double[_ncolA];
+          double preds[] = new double[_ncolX];
+          for(int row = 0; row < chks[0]._len; row++) {
+            double p[] = model.score_indicator(chks, row, tmp, preds);
+            for(int c = 0; c < preds.length; c++) {
+              chks[_ncolA+c].set(row, p[c]);
+              chks[_ncolA+_ncolX+c].set(row, p[c]);
+            }
+          }
         }
-        CholeskyDecomposition yychol = regularizedCholesky(ygram, 10, false);
-        if(!yychol.isSPD())
-          Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting X to a matrix of random numbers. Results will be numerically unstable");
-        else {
-          CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, normSub, normMul);
-          cmtsk.doAll(dinfo._adaptedFrame);
-        }
+      }.doAll(dinfo._adaptedFrame);
+    }
+
+    // In case of L2 loss and regularization, initialize closed form X = AY'(YY' + \gamma)^(-1)
+    private void initialXClosedForm(DataInfo dinfo, double[][] yt, double[] normSub, double[] normMul) {
+      Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
+      double[][] ygram = ArrayUtils.formGram(yt);
+      if (_parms._gamma_y > 0) {
+        for(int i = 0; i < ygram.length; i++)
+          ygram[i][i] += _parms._gamma_y;
+      }
+      CholeskyDecomposition yychol = regularizedCholesky(ygram, 10, false);
+      if(!yychol.isSPD())
+        Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting initial X to standard normal random matrix. Results will be numerically unstable");
+      else {
+        CholMulTask cmtsk = new CholMulTask(dinfo, _parms, yychol, yt, _ncolA, _ncolX, normSub, normMul);
+        cmtsk.doAll(dinfo._adaptedFrame);
       }
     }
 
@@ -396,7 +420,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         tinfo = new DataInfo(Key.make(), _train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(tinfo._key, tinfo);
 
-        // Save standardization vectors for use in scoring later
+        // Save training frame adaptation information for use in scoring later
         model._output._normSub = tinfo._normSub == null ? new double[tinfo._nums] : tinfo._normSub;
         if(tinfo._normMul == null) {
           model._output._normMul = new double[tinfo._nums];
@@ -409,22 +433,24 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._catOffsets = tinfo._catOffsets;
         model._output._names_expanded = tinfo.coefNames();
 
-        // 0) a) Initialize Y matrix
         long nobs = _train.numRows() * _train.numCols();
         for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
         model._output._nobs = nobs;
-        double[][] yt = ArrayUtils.transpose(initialY(tinfo));
 
-        // 0) b) Initialize X matrix to random numbers
+        // 0) Initialize Y and X matrices
         // Jam A and X into a single frame for distributed computation
         // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
         Vec[] vecs = new Vec[_ncolA + 2*_ncolX];
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
-        for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeGaus(_parms._seed);
+        for (int i = _ncolA; i < vecs.length; i++)
+          vecs[i] = _train.anyVec().makeGaus(_parms._seed);   // By default, initialize X to random Gaussian matrix
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(dinfo._key, dinfo);
-        initialX(dinfo, yt, model._output._normSub, model._output._normMul);
+
+        // Use closed form solution for X if L2 loss and regularization
+        double[][] yt = ArrayUtils.transpose(initialXY(tinfo, dinfo));
+        if (_parms.hasClosedForm()) initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);

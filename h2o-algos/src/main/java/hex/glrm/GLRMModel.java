@@ -45,6 +45,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       L2, L1, NonNegative, OneSparse, UnitOneSparse
     }
 
+    public final boolean hasClosedForm() {
+      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
+              && (_gamma_y == 0 || _regularization_y == GLRMParameters.Regularizer.L2));
+    }
+
     // L(u,a): Loss function
     public final double loss(double u, double a) {
       switch(_loss) {
