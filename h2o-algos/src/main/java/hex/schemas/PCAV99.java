@@ -22,8 +22,9 @@ public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV9
 				"max_iterations",
 				"seed",
 				"loading_name",
-				"use_all_factor_levels"
-		};
+				"use_all_factor_levels",
+                "compute_metrics"
+            };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
@@ -45,5 +46,8 @@ public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV9
 
     @API(help = "Whether first factor level is included in each categorical expansion", direction = API.Direction.INOUT)
     public boolean use_all_factor_levels;
+
+    @API(help = "Whether a to compute metrics on the training data", direction = API.Direction.INOUT)
+    public boolean compute_metrics;
   }
 }

@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/chicago/chicagoCensus.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/chicago/chicagoCensus.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/chicago/chicagoCensus.csv\"]\n  destination_frame: \"chicagoCensus.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"Community Area Number\",\"COMMUNITY AREA NAME\",\"PERCENT OF HOUSING CROWDED\",\"PERCENT HOUSEHOLDS BELOW POVERTY\",\"PERCENT AGED 16+ UNEMPLOYED\",\"PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA\",\"PERCENT AGED UNDER 18 OR OVER 64\",\"PER CAPITA INCOME \",\"HARDSHIP INDEX\"]\n  column_types: [\"Numeric\",\"String\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"chicagoCensus.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"chicagoCensus.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"chicagoCensus.hex\", [0.25], [\"chicagoCensus_test\",\"chicagoCensus_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"deeplearning\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-c53967b5-c552-4f9a-a68e-c68ca8831eac\",\"training_frame\":\"chicagoCensus_train\",\"validation_frame\":\"chicagoCensus_test\",\"ignore_const_cols\":true,\"response_column\":\"HARDSHIP INDEX\",\"activation\":\"Tanh\",\"hidden\":[50,50],\"epochs\":\"0.1\",\"variable_importances\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":-6282753151003629000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-c53967b5-c552-4f9a-a68e-c68ca8831eac\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-c53967b5-c552-4f9a-a68e-c68ca8831eac\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-c53967b5-c552-4f9a-a68e-c68ca8831eac\", frame: \"chicagoCensus_test\", predictions_frame: \"prediction-fe864613-cd66-4018-bfee-3112f7dd8408\""
+    }
+  ]
+}

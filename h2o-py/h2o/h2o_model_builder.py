@@ -37,11 +37,13 @@ def _check_frame(x,y,response):
   if y is not None: x[response._col_names[0]] = y
   return x
 
-# Add the weights column to the training and/or validation data
-def _add_weights_col(target, source, weights_column):
-  if not isinstance(weights_column, str): raise ValueError("`weights_column` must be a column name, but got "
-                                                           "{0}".format(weights_column))
-  target[weights_column] = source[weights_column]
+# Add the column to the training and/or validation data
+def _add_col(x, source, column):
+  if not isinstance(column, str): raise ValueError("column must be a str but got {1}".format(type(column)))
+  if not isinstance(column, str): raise ValueError("column must be a name in {0}, but got "
+                                                   "{1}".format(source.col_names(), column))
+  x[column] = source[column]
+  return x
 
 # Build an H2O model
 def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
@@ -56,12 +58,13 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   x = _check_frame(x,y,y)
   if validation_x is not None: validation_x = _check_frame(validation_x,validation_y,y)
 
+  # add weights_column to x/validation_x, if it isn't already there. have to grab it from the training/validation frame.
   if "weights_column" in kwargs.keys():
     # training_frame
     if kwargs["weights_column"] not in x._col_names:
       if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `weights`"
                                                                  "not part of `x`")
-      _add_weights_col(x, kwargs["training_frame"], kwargs["weights_column"])
+      x = _add_col(x, kwargs["training_frame"], kwargs["weights_column"])
       assert kwargs["weights_column"] in x._col_names
 
     # validation_frame
@@ -69,8 +72,25 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
       if kwargs["weights_column"] not in validation_x._col_names:
         if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
                                                                      "`weights` not part of `validation_x`")
-        _add_weights_col(validation_x, kwargs["validation_frame"], kwargs["weights_column"])
+        x = _add_col(validation_x, kwargs["validation_frame"], kwargs["weights_column"])
         assert kwargs["weights_column"] in validation_x._col_names
+
+  # add offset_column to x/validation_x, if it isn't already there. have to grab it from the training/validation frame.
+  if "offset_column" in kwargs.keys():
+    # training_frame
+    if kwargs["offset_column"] not in x._col_names:
+      if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if "
+                                                                 "`offset_column` not part of `x`")
+      x = _add_col(x, kwargs["training_frame"], kwargs["offset_column"])
+      assert kwargs["offset_column"] in x._col_names
+
+    # validation_frame
+    if validation_x is not None:
+      if kwargs["offset_column"] not in validation_x._col_names:
+        if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
+                                                                     "`offset_column` not part of `validation_x`")
+        x = _add_col(validation_x, kwargs["validation_frame"], kwargs["offset_column"])
+        assert kwargs["offset_column"] in validation_x._col_names
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id

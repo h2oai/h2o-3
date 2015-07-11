@@ -321,7 +321,6 @@ def log_and_echo(message):
   H2OConnection.post_json("LogAndEcho", message=message)
 
 def ipy_notebook_exec(path,save_and_norun=False):
-  save_and_norun=True
   notebook = json.load(open(path))
   program = ''
   for block in ipy_blocks(notebook):

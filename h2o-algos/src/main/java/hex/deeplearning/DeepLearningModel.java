@@ -480,16 +480,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
       // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
       // Note: actual communication time is estimated by the NetworkTest's collective test.
-      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && time_for_communication_us > 1e4) {
-//        Log.info("Time taken for communication: " + PrettyPrint.usecs((long)time_for_communication_us));
-//        Log.info("Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long)time_last_iter_millis, true));
-        final double comm_to_work_ratio = (time_for_communication_us *1e-3) / time_last_iter_millis;
-//        Log.info("Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
-//        Log.info("target_comm_to_work: " + get_params().target_ratio_comm_to_comp);
-        final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
-//        Log.warn("Suggested value for train_samples_per_iteration: " + get_params().actual_train_samples_per_iteration/correction);
-        actual_train_samples_per_iteration /= correction;
-        actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2) {
+        Log.info("Auto-tuning train_samples_per_iteration.");
+        if (time_for_communication_us > 1e4) {
+          Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
+          Log.info("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_last_iter_millis, true));
+          final double comm_to_work_ratio = (time_for_communication_us * 1e-3) / time_last_iter_millis;
+          Log.info("  Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
+          Log.info("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
+          final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
+          Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+          actual_train_samples_per_iteration /= correction;
+          actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        } else if (time_for_communication_us <= 1e4) {
+          Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        }
       }
 
       _timeLastScoreEnter = now;
