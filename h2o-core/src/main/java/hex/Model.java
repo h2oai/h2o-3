@@ -999,7 +999,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   private void deleteCrossValidationModels( ) {
     if (_output._crossValidationModels != null) {
       for (Key k : _output._crossValidationModels) {
-        ((Model)DKV.getGet(k)).delete(); //delete all subparts
+        if (k!=null)
+          ((Model)DKV.getGet(k)).delete(); //delete all subparts
       }
     }
   }
