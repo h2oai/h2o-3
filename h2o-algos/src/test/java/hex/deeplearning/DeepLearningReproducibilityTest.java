@@ -68,6 +68,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._train_samples_per_iteration = 3;
           p._hidden_dropout_ratios = new double[]{0.4, 0.1};
           p._epochs = 1.32;
+//          p._nfolds = 2;
           p._quiet_mode = true;
           p._reproducible = repro;
           DeepLearning dl = new DeepLearning(p);
@@ -98,7 +99,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
         } finally {
           // cleanup
           if (mymodel != null) {
-            mymodel.delete_xval_models();
             mymodel.delete();
           }
           if (train != null) train.delete();

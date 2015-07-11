@@ -101,7 +101,6 @@ public class DeepLearningMNIST extends TestUtil {
         } finally {
           dl.remove();
           if (model != null) {
-            model.delete_xval_models();
             model.delete();
           }
         }

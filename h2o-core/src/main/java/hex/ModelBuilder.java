@@ -213,68 +213,86 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final int N = _parms._nfolds;
     assert(N>1);
     assert _valid == null;
-    Key<Frame> origTrainFrameKey = _parms._train;
-    Key<M> origDest = dest();
-    String origWeightsName = _parms._weights_column;
-    Key[] modelKeys = new Key[N];
+    final Key<Frame> origTrainFrameKey = _parms._train;
+    final Frame origTrainFrame = DKV.getGet(origTrainFrameKey);
+    final Key<M> origDest = dest();
+    final String origWeightsName = _parms._weights_column;
+    final Key[] modelKeys = new Key[N];
     // adapt main Job's progress bar to build N+1 models
     ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
     _deleteProgressKey = false;
 
     // Build N cross-validation models
     for (int i=0; i<N; ++i) {
-      Frame origTrainFrame = DKV.getGet(origTrainFrameKey);
-      Vec origWeight = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
-      String identifier = origDest.toString() + "_cv_" + (i+1);
-      String cvWeights = "weights";
+      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
+      final String identifier = origDest.toString() + "_cv_" + (i+1);
+      final String weightName = "weights";
 
-      Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
-      cvTrain.add(cvWeights, origTrainFrame.anyVec().makeZero());
+      // Do N-fold CV splits via light-weight weight columns
+      final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
+      final Vec trainWeight = origTrainFrame.anyVec().makeZero();
+      final Vec validWeight = origTrainFrame.anyVec().makeZero();
 
-      Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
-      cvVal.add(cvWeights, origTrainFrame.anyVec().makeZero());
+      // Training/Validation share the same data, but will have exclusive weights
+      final Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvTrain.add(weightName, trainWeight);
+      DKV.put(cvTrain);
+      final Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvVal.add(weightName, validWeight);
+      DKV.put(cvVal);
 
-      // Do N-fold CV splits via weights
+      // Now update the weights in place
       final int fold = i;
       new MRTask() {
         @Override
-        public void map(Chunk origWeight, Chunk trainWeight, Chunk validWeight) {
-          for (int i=0; i<origWeight._len; ++i) {
-            double w = origWeight.atd(i);
-            boolean holdout = (origWeight.start() + i) % N == fold;
-            trainWeight.set(i, holdout ? 0 : w);
-            validWeight.set(i, holdout ? w : 0);
+        public void map(Chunk orig, Chunk train, Chunk valid) {
+          for (int i=0; i< orig._len; ++i) {
+            double w = orig.atd(i);
+            boolean holdout = (orig.start() + i) % N == fold;
+            train.set(i, holdout ? 0 : w);
+            valid.set(i, holdout ? w : 0);
           }
         }
-      }.doAll(origWeight, cvTrain.lastVec(), cvVal.lastVec());
+      }.doAll(origWeight, trainWeight, validWeight);
       modelKeys[i] = Key.make(identifier);
 
-      DKV.put(cvVal);
-      DKV.put(cvTrain);
 
       _dest = modelKeys[i];
       _parms._nfolds = 0;
-      _parms._weights_column = cvWeights;
+      _parms._weights_column = weightName;
       _parms._train = cvTrain._key;
       _parms._valid = cvVal._key;
       _state = JobState.CREATED;
 
-      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
       Job<M> cvModel = trainModelImpl(-1);
       Model m = cvModel.get();
 
       Frame adaptFr = new Frame(cvVal);
-      boolean computeMetrics = (!isSupervised() || adaptFr.find(m._output.responseName()) != -1);
-      m.adaptTestForTrain(adaptFr, true, computeMetrics);
-      mb[i] = m.scoreImplMetricBuilder(cvVal, adaptFr);
+      m.adaptTestForTrain(adaptFr, true, !isSupervised());
+      mb[i] = m.scoreMetrics(adaptFr);
 
       if (!_parms._keep_cross_validation_splits) {
-        DKV.remove(cvVal._key);
+        trainWeight.remove();
+        validWeight.remove();
         DKV.remove(cvTrain._key);
+        DKV.remove(cvVal._key);
+        if (origWeightsName == null) origWeight.remove();
       }
+      Model.cleanup_adapt(adaptFr, cvVal);
+      DKV.remove(adaptFr._key);
+      cvModel.remove();
+
+//      new TAtomic<JobList>() {
+//        @Override public JobList atomic(JobList old) {
+//          if( old == null ) old = new JobList();
+//          Key[] jobs = old._jobs;
+//          old._jobs = Arrays.copyOf(jobs, jobs.length - 1);
+//          return old;
+//        }
+//      }.invoke(LIST);
     }
 
-    // Build main model
+    Log.info("Building main model.");
     _dest = origDest;
     _parms._nfolds = N; //let the main model know that it is built with cross-validation (no early stopping, etc.)
     _parms._weights_column = origWeightsName;
@@ -283,11 +301,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _state = JobState.CREATED;
     _deleteProgressKey = true;
 
-    Log.info("Building main model.");
     Job<M> main = trainModelImpl(-1);
     Model mainModel = main.get();
-    for (int i=1; i<N; ++i) {
-      mb[0].reduce(mb[i]);
+
+//    new TAtomic<JobList>() {
+//      @Override public JobList atomic(JobList old) {
+//        if( old == null ) old = new JobList();
+//        Key[] jobs = old._jobs;
+//        old._jobs = Arrays.copyOf(jobs, jobs.length - 1);
+//        return old;
+//      }
+//    }.invoke(LIST);
+
+    Log.info("Computing " + N + "-fold cross-validation metrics.");
+    mainModel._output._crossValidationModels = new Key[N];
+    for (int i=0; i<N; ++i) {
+      if (i>0) mb[0].reduce(mb[i]);
+      mainModel._output._crossValidationModels[i] = modelKeys[i];
     }
     mainModel._output._validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
     mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
@@ -497,7 +527,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       if (! _parms._balance_classes)
         hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
-      else if (_parms._weights_column != null)
+      else if (_parms._weights_column != null && _weights != null && !_weights.isBinary())
         error("_balance_classes", "Balance classes and observation weights are not currently supported together.");
       if( _parms._max_after_balance_size <= 0.0 )
         error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");

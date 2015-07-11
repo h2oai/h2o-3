@@ -110,7 +110,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               }) {
                                 for (int n_folds : new int[]{
                                         0,
-                                        3,
+//                                       2,
                                 }) {
                                   if (n_folds != 0 && vf != 0) continue;
                                   for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
@@ -339,11 +339,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                           throw new RuntimeException(t);
                                         } finally {
                                           if (model1 != null) {
-                                            model1.delete_xval_models();
                                             model1.delete();
                                           }
                                           if (model2 != null) {
-                                            model2.delete_xval_models();
                                             model2.delete();
                                           }
                                           Scope.exit();

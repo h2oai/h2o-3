@@ -224,6 +224,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
 
+    /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1) **/
+    Key _crossValidationModels[];
+
     public Output(){this(false,false);}
     public Output(boolean hasWeights, boolean hasOffset) {
       _hasWeights = hasWeights;
@@ -550,7 +553,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame adaptFr = new Frame(fr);
     boolean computeMetrics = (!isSupervised() || adaptFr.find(_output.responseName()) != -1);
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    Frame output = scoreImpl(fr,adaptFr, destination_key); // Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Predict & Score
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -590,7 +593,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     adaptFr.delete();
   }
 
-
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
    *  already adapted to the Model's domain, so the output is also.  Also
@@ -599,7 +601,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param adaptFrm Already adapted frame
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -619,12 +621,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols,adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
   }
-  protected ModelMetrics.MetricBuilder scoreImplMetricBuilder(Frame fr, Frame adaptFrm) {
+
+  /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
+   * @param adaptFrm Already adapted frame
+   * @return MetricBuilder
+   */
+  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -644,9 +651,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics).doAll(ncols,adaptFrm);
-    if (computeMetrics)
-      bs._mb.makeModelMetrics(this, fr);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/).doAll(ncols,adaptFrm);
     return bs._mb;
   }
 
@@ -657,9 +662,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final double[] _mean;  // Column means of test frame
     final boolean _computeMetrics;  // Column means of test frame
     final boolean _hasWeights;
+    final boolean _makePreds;
 
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics ) {
-      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics;
+    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds ) {
+      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
       _hasWeights = testHasWeights;
@@ -695,8 +701,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
           _mb.perRow(preds, actual, weight, offset, Model.this);
         }
-        for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-          cpreds[c].addNum(p[c]);
+        if (_makePreds) {
+          for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+            cpreds[c].addNum(p[c]);
+        }
       }
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
@@ -981,4 +989,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     p.addAll(super.getPublishedKeys());
     return p;
   }
+
+  @Override
+  public void delete() {
+    deleteCrossValidationModels();
+    super.delete();
+  }
+
+  private void deleteCrossValidationModels( ) {
+    if (_output._crossValidationModels != null) {
+      for (Key k : _output._crossValidationModels) {
+        ((Model)DKV.getGet(k)).delete(); //delete all subparts
+      }
+    }
+  }
+
 }

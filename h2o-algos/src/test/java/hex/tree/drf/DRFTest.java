@@ -876,4 +876,50 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Ignore
+  @Test
+  public void testNFold() {
+    Frame tfr = null, vfr = null;
+    DRFModel drf = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+          "DepTime", "ArrTime", "ActualElapsedTime",
+          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+          "CancellationCode", "CarrierDelay", "WeatherDelay",
+          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._nfolds = 3;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      drf = job.trainModel().get();
+
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._validation_metrics;
+      assertEquals(0.7252305790568023, mm.auc()._auc, 1e-8);
+      assertEquals(0.21258514360090627, mm.mse(), 1e-8);
+      assertEquals(0.14751832396119646, mm.r2(), 1e-6);
+      assertEquals(0.6133063511996262, mm.logloss(), 1e-6);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
 }
