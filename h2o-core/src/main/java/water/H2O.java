@@ -669,7 +669,7 @@ final public class H2O {
    */
   synchronized public static String calcNextUniqueModelId(String desc) {
     StringBuilder sb = new StringBuilder();
-    sb.append(desc).append("Model").append("_");
+    sb.append(desc).append("_model_");
 
     // Append user agent string if we can figure it out.
     String source = JettyHTTPD.getUserAgent();

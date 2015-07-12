@@ -61,6 +61,21 @@ class ModelBuildersHandler extends Handler {
     m.model_builders.put(m.algo, (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
     return m;
   }
+
+  public static class ModelIdV3 extends Schema<Iced, ModelIdV3>{
+    @API(help="Model ID", direction = API.Direction.OUTPUT)
+    String model_id;
+  }
+
+  /** Calculate next unique model_id. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelIdV3 calcModelId(int version, ModelBuildersV3 m) {
+    m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
+    String model_id = H2O.calcNextUniqueModelId(m.algo);
+    ModelIdV3 mm = new ModelIdV3();
+    mm.model_id = model_id;
+    return mm;
+  }
 }
 
 
