@@ -20,8 +20,6 @@ public class DeepLearningParameters extends Model.Parameters {
     return _sparse ? 0 : Double.NaN;
   }
 
-  public boolean _keep_cross_validation_splits;
-
   /**
    * A model key associated with a previously trained Deep Learning
    * model. This option allows users to build a new model as a
