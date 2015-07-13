@@ -23,7 +23,7 @@ locate_source <- function(s) {
 test.citibike.demo <- function(conn) {
 # Pick either the big or the small demo.
 # Big data is 10M rows
-small_test <-  locate_source("smalldata/demos/citibike-nyc/citibike_20k.csv")
+small_test <-  locate_source("smalldata/demos/citibike_20k.csv")
 big_test <-  c(locate_source("bigdata/laptop/citibike-nyc/2013-07.csv"),
                locate_source("bigdata/laptop/citibike-nyc/2013-08.csv"),
                locate_source("bigdata/laptop/citibike-nyc/2013-09.csv"),
@@ -151,8 +151,8 @@ print(paste("Took", round(modelBuild, digits = 2), units(modelBuild), "to build 
 # 5- Now lets add some weather
 # Load weather data
 wthr1 <- h2o.importFile(path =
-  c(locate_source("smalldata/demos/citibike-nyc/31081_New_York_City__Hourly_2013.csv"),
-    locate_source("smalldata/demos/citibike-nyc/31081_New_York_City__Hourly_2014.csv")))
+  c(locate_source("smalldata/demos/31081_New_York_City__Hourly_2013.csv"),
+    locate_source("smalldata/demos/31081_New_York_City__Hourly_2014.csv")))
 
 # Peek at the data
 summary(wthr1)
