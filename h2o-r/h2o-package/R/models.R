@@ -98,10 +98,10 @@
 
 
 
-.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params) {
+.h2o.startModelJob <- function(algo, params) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
-  ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.__remoteSend(method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
   params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
@@ -162,7 +162,7 @@
   })
 
   #---------- Validate parameters ----------#
-  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
+  validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
@@ -179,29 +179,29 @@
   }
 
   #---------- Build! ----------#
-  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
+  res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
 
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture",conn=conn, job_key=job_key, id=dest_key)
+  new("H2OModelFuture", job_key=job_key, id=dest_key)
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
- params$training_frame <- get("training_frame", parent.frame())
- .h2o.eval.frame(params$training_frame)
+.h2o.createModel <- function(algo, params) {
+  params$training_frame <- get("training_frame", parent.frame())
+  .h2o.eval.frame(params$training_frame)
 
- if (!is.null(params$validation_frame)){
+  if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
     .h2o.eval.frame(params$validation_frame)
   }
 
-  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
+  h2o.getFutureModel(.h2o.startModelJob(algo, params))
 }
 
 h2o.getFutureModel <- function(object) {
-  .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@id, object@conn)
+  .h2o.__waitOnJob(object@job_key)
+  h2o.getModel(object@id)
 }
 
 #' Predict on an H2O Model
@@ -231,7 +231,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@id, '/frames/', newdata@id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST")
+  res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   .h2o.getGCFrame(res$name)
 }
@@ -264,7 +264,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   # nfold_vec <- h2o.sample(fr, 1:nfolds)
   nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
 
-  fnum_id <- as.h2o(nfold_vec, model@conn)
+  fnum_id <- as.h2o(nfold_vec)
   fnum_id <- h2o.cbind(fnum_id, data)
 
   xval <- lapply(1:nfolds, function(i) {
@@ -327,7 +327,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     parms <- list()
     parms[["model"]] <- model@id
     parms[["frame"]] <- data.id
-    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@id,data.id), .params = parms)
+    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@id,data.id), .params = parms)
 
     ####
     # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
@@ -1097,7 +1097,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   .h2o.eval.frame(newdata)
 
   url <- paste0("Predictions/models/",object@id, "/frames/", newdata@id)
-  res <- .h2o.__remoteSend(object@conn, url, method="POST")
+  res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object
   metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])   # FIXME: don't think model metrics come out of Predictions anymore!!!

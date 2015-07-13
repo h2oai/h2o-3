@@ -280,7 +280,7 @@ setMethod("show", "H2OFrame", function(object) {
 #' @export
 setClass("H2ORawData", contains="H2OObject")
 
-setMethod("initialize", signatur="H2ORawData", function(.Object, ..., id=character()) {
+setMethod("initialize", signature="H2ORawData", function(.Object, ..., id=character()) {
   callNextMethod(.Object, ..., id=id)
 })
 
@@ -329,11 +329,15 @@ setMethod("initialize", "H2OW2V", function(.Object, ..., id ) {
 setClass("H2OModel",
          representation(id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
          prototype(id=NA_character_),
-         contains=c("VIRTUAL"))
+         contains="H2OObject")
 
-# TODO: make a mode model-specific constructor
-.newH2OModel <- function(Class, ..., id = NA_character_) {
-  .newH2OObject(Class, ...,id=id)
+setMethod("initialize", signature="H2OModel", function(.Object, ..., id=character()) {
+  callNextMethod(.Object, ..., id=id)
+})
+
+# TODO: make a more model-specific constructor
+.newH2OModel <- function(Class, id, ...) {
+  new(Class, id=id, ...)
 }
 
 #' @rdname H2OModel-class

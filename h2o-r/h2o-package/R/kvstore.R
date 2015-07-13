@@ -255,12 +255,12 @@ h2o.getModel <- function(id) {
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
-  .newH2OModel(Class          = Class,
-                id      = json$id$name,
-                algorithm     = json$algo,
-                parameters    = parameters,
-                allparameters = allparams,
-                model         = model)
+  .newH2OModel(Class         = Class,
+               id            = id,
+               algorithm     = json$algo,
+               parameters    = parameters,
+               allparameters = allparams,
+               model         = model)
 }
 
 
