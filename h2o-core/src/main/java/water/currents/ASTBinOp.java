@@ -51,9 +51,7 @@ abstract class ASTBinOp extends ASTPrim {
 
   /** Auto-widen the scalar to every element of the frame */
   private ValFrame scalar_op_frame( final double d, Frame fr ) {
-    for( Vec vec : fr.vecs() )
-      if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
-    return new ValFrame(new MRTask() {
+    Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
@@ -62,14 +60,13 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(d,chk.atd(i)));
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame());
+      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+    return cleanEnum( fr, res ); // Cleanup enum misuse
   }
 
   /** Auto-widen the scalar to every element of the frame */
   ValFrame frame_op_scalar( Frame fr, final double d ) {
-    for( Vec vec : fr.vecs() )
-      if( !vec.isNumeric() ) throw new IllegalArgumentException("Cannot mix Numeric and non-Numeric types");
-    return new ValFrame(new MRTask() {
+    Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
@@ -78,7 +75,23 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame());
+      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+    return cleanEnum( fr, res ); // Cleanup enum misuse
+  }
+
+  // Ops do not make sense on Enums, except EQ/NE; flip such ops to NAs
+  private static Vec cleanEnum( boolean enumOK, Vec oldvec, Vec newvec ) {
+    return oldvec.isEnum() && !enumOK ? newvec.makeCon(Double.NaN) : newvec;
+  }
+
+  // Ops do not make sense on Enums, except EQ/NE; flip such ops to NAs
+  private ValFrame cleanEnum( Frame oldfr, Frame newfr ) {
+    final boolean enumOK = enumOK();
+    final Vec oldvecs[] = oldfr.vecs();
+    final Vec newvecs[] = newfr.vecs();
+    for( int i=0; i<oldvecs.length; i++ )
+      newvecs[i] = cleanEnum( enumOK, oldvecs[i], newvecs[i] );
+    return new ValFrame(newfr);
   }
 
   /** Auto-widen the scalar to every element of the frame */
@@ -133,6 +146,9 @@ abstract class ASTBinOp extends ASTPrim {
   private ValFrame frame_op_vec( Frame fr, Vec vec ) {
     throw H2O.unimpl();
   }
+  
+  // Make sense to run this OP on an enm?
+  boolean enumOK() { return false; }
 }
 
 // ----------------------------------------------------------------------------
@@ -194,9 +210,13 @@ class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double
         }
       }.doAll(fr.numCols(),fr).outputFrame());
   }
+  @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
 }
+
 class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double l, double r ) { return l!=r?1:0; } 
-  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } }
+  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } 
+  @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
+}
 
 // ----------------------------------------------------------------------------
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.

@@ -29,8 +29,7 @@ test.var <- function() {
   h2o_vec <- as.vector(unlist(iris_H2Ovar))
   r_vec   <- as.vector(unlist(iris_Rvar))
 
-
-  expect_equivalent(h2o_vec, r_vec)
+  expect_equal(h2o_vec, r_vec, tol=1e-6)
 
   testEnd()
 }

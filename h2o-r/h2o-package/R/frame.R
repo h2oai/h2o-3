@@ -1875,7 +1875,7 @@ h2o.ifelse <- function(test, yes, no) {
   else if (inherits(yes, "H2OFrame") || inherits(no, "H2OFrame"))
     .h2o.nary_frame_op("ifelse", test, yes, no)
   else
-    stop("This funciton doesn't contain an H2O object")
+    stop("This function doesn't contain an H2O object")
 }
 
 #' @rdname h2o.ifelse
