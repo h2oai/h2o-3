@@ -152,6 +152,7 @@ class H2OFrame:
   def __sub__ (self, i): return H2OFrame(expr=ExprNode("-",   self,i))
   def __mul__ (self, i): return H2OFrame(expr=ExprNode("*",   self,i))
   def __div__ (self, i): return H2OFrame(expr=ExprNode("/",   self,i))
+  def __floordiv__(self, i): return H2OFrame(expr=ExprNode("intDiv",self,i))
   def __mod__ (self, i): return H2OFrame(expr=ExprNode("mod", self,i))
   def __or__  (self, i): return H2OFrame(expr=ExprNode("|",   self,i))
   def __and__ (self, i): return H2OFrame(expr=ExprNode("&",   self,i))
@@ -169,10 +170,20 @@ class H2OFrame:
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
   def __rdiv__(self, i): return H2OFrame(expr=ExprNode("/",i,  self))
+  def __rfloordiv__(self, i): return H2OFrame(expr=ExprNode("intDiv",i,self))
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame(expr=ExprNode("^",i,  self))
   # unops
   def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
+
+  def mult(self, matrix):
+    """
+    Perform matrix multiplication.
+
+    :param matrix: The matrix to multiply to the left of self.
+    :return: The multiplied matrices.
+    """
+    return H2OFrame(expr=ExprNode("x", self, matrix))
 
   def cos(self)     :    return H2OFrame(expr=ExprNode("cos", self))
   def sin(self)     :    return H2OFrame(expr=ExprNode("sin", self))
