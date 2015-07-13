@@ -30,9 +30,10 @@ public class UDPTimeOutThread extends Thread {
             // Also retry clients who do not appear to be shutdown
             (t._target._heartbeat._client && t._retry <  HeartBeatThread.CLIENT_TIMEOUT) ) {
           if( !t.isDone() && !t._nack ) {
-            if(++t._resendsCnt % 50 == 0)
-              Log.warn("Got " + t._resendsCnt + " resends on task " + t._dt.getClass().getSimpleName());
-            t.call();
+            boolean forceTCP;
+            if(forceTCP = (++t._resendsCnt % 50 == 0))
+              Log.warn("Got " + t._resendsCnt + " resends on task " + t._dt.getClass().getSimpleName() + ", enforcing TCP");
+            t.call(forceTCP);
           }
         } else {                // Target is dead, nobody to retry to
           t.cancel(true);

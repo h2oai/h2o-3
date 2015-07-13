@@ -315,10 +315,17 @@ public /* final */ class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-  public final int close() {
+  public final int close() { return close(false);}
+  public final int close(boolean forceTCP) {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
     assert _h2o != null || _chan != null; // Byte-array backed should not be closed
+    if(!_read && forceTCP && !hasTCP())
+      try {
+        tcpOpen();
+      } catch (IOException e) {
+        throw new AutoBufferException(e);
+      }
     try {
       if( _chan == null ) {     // No channel?
         if( _read ) return 0;

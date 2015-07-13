@@ -162,7 +162,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   private byte [] _bits;
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
-  public synchronized RPC<V> call() {
+  public synchronized RPC<V> call(){return call(false);}
+  public synchronized RPC<V> call(boolean forceTCP) {
       // Any Completer will not be carried over to remote; add it to the RPC call
       // so completion is signaled after the remote comes back.
     CountedCompleter cc = _dt.getCompleter();
@@ -206,7 +207,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
                 _bits = ab.copyRawBits(offset);
             }
             assert sz_check(ab) : "Resend of " + _dt.getClass() + " changes size from " + _size + " to " + ab.size() + " for task#" + _tasknum;
-            ab.close();        // Then close; send final byte
+            ab.close(forceTCP);        // Then close; send final byte
             _sentTcp = t;      // Set after close (and any other possible fail)
             break;             // Break out of retry loop
           } catch( AutoBuffer.AutoBufferException e ) {
@@ -402,7 +403,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
 
     // Re-send strictly the ack, because we're missing an AckAck
-    final void resend_ack() {
+    final void resend_ack(boolean forceTCP) {
       assert _computedAndReplied : "Found RPCCall not computed "+_tsknum;
       DTask dt = _dt;
       if( dt == null ) return;  // Received ACKACK already
@@ -413,7 +414,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       else dt.write(rab.put1(RPC.SERVER_UDP_SEND)); // Original reply sent via UDP
       assert sz_check(rab) : "Resend of "+_dt.getClass()+" changes size from "+_size+" to "+rab.size();
       assert dt._repliedTcp==wasTCP;
-      rab.close();
+      rab.close(forceTCP);
       // Double retry until we exceed existing age.  This is the time to delay
       // until we try again.  Note that we come here immediately on creation,
       // so the first doubling happens before anybody does any waiting.  Also
@@ -503,9 +504,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // sent via UDP, resend the whole answer.
       assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
       ++old._ackResendCnt;
-      if(old._ackResendCnt % 50 == 0)
+      boolean forceTCP;
+      if(forceTCP = (old._ackResendCnt % 50 == 0))
         Log.err("Possibly broken network, can not send ack through, got " + old._ackResendCnt + " resends.");
-      old.resend_ack();
+      old.resend_ack(forceTCP);
     }
     ab.close();
   }

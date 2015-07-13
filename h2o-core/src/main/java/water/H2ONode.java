@@ -383,14 +383,16 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         // Blow it off and go wait again...
         catch( InterruptedException e ) { continue; }
         assert r._computed : "Found RPCCall not computed "+r._tsknum;
-        r._ackResendCnt++;
+        boolean forceTCP;
+        if(forceTCP = (r._ackResendCnt++ % 50 == 0))
+          Log.warn("Got " + r._ackResendCnt + " resends on ack for task task " + r._dt.getClass().getSimpleName() + ", enforcing TCP");
         // RPC from somebody who dropped out of cloud?
         if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
             // Timedout client?
             (r._client._heartbeat._client && r._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
           r._client.remove_task_tracking(r._tsknum);
         } else if( r._dt != null ) { // Not yet seen the ACKACK?
-          r.resend_ack();            // Resend ACK, hoping for ACKACK
+          r.resend_ack(forceTCP);            // Resend ACK, hoping for ACKACK
           PENDING.add(r);            // And queue up to send again
         }
       }
