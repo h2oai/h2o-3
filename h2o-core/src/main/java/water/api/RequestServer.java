@@ -186,6 +186,8 @@ public class RequestServer extends NanoHTTPD {
       "Set Model Builders visibility level.");
     register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
       "Get Model Builders visibility level.");
+    register("/3/ModelBuilders/(?<algo>.*)/model_id"             ,"POST"  ,ModelBuildersHandler.class, "calcModelId",                 new String[] {"algo"},
+      "Return a new unique model_id for the specified algorithm.");
     register("/3/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
       "Return the Model Builder metadata for the specified algorithm.");
     register("/3/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
