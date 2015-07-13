@@ -5,10 +5,20 @@ import water.fvec.*;
 
 /** Subclasses take a Frame and produces a scalar.  NAs -> NAs */
 abstract class ASTReducerOp extends ASTPrim {
-  @Override int nargs() { return 1+1; }
+  @Override int nargs() { return -1; }
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    return new ValNum(new RedOp().doAll(fr)._d);
+    // NOTE: no *initial* value needed for the reduction.  Instead, the
+    // reduction op is used between pairs of actual values, and never against
+    // the empty list.  NaN is returned if there are *no* values in the
+    // reduction.
+    double d = Double.NaN;
+    for( int i=1; i<asts.length; i++ ) {
+      Val val = asts[i].exec(env);
+      double d2 = val.isFrame() ? new RedOp().doAll(stk.track(val).getFrame())._d : val.getNum();
+      if( i==1 ) d = d2;
+      else d = op(d,d2);
+    }
+    return new ValNum(d);
   }
   /** Override to express a basic math primitive */
   abstract double op( double l, double r );

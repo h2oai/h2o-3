@@ -8,9 +8,9 @@ source('../../h2o-runit.R')
 
 #setupRandomSeed(1689636624)
 
-test.basic.minmax <- function(conn) {
+test.basic.minmax <- function() {
   Log.info("Uploading iris data...")
-  hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
+  hex <- h2o.importFile( locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
 
   Log.info("Computing min & max of the first column of iris...")
   iris1_min <- min(hex[,1]); Log.info("Minimum:"); print(iris1_min)
@@ -32,8 +32,8 @@ test.basic.minmax <- function(conn) {
 
   Log.info("min and max corretness")
   df <- data.frame(c(1,-0.1,0))
-  expect_that(min(as.h2o(conn, df)), equals(min(df)))
-  expect_that(max(as.h2o(conn, df)), equals(max(df)))
+  expect_that(min(as.h2o( df)), equals(min(df)))
+  expect_that(max(as.h2o( df)), equals(max(df)))
   
   testEnd()
 }

@@ -14,11 +14,23 @@ class ASTColSlice extends ASTPrim {
     Frame fr2 = new Frame();
     if( asts[2] instanceof ASTNumList ) {
       // Work down the list of columns, picking out the keepers
-      for( double dcol : ((ASTNumList)asts[2]).expand() ) {
-        int col = (int)dcol;
-        if( col!=dcol || col < 0 || col >= fr.numCols() ) 
-          throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
-        fr2.add(fr.names()[col],fr.vecs()[col]);
+      ASTNumList nums =(ASTNumList)asts[2];
+      if( nums.min() >= 0 ) {   // Positive (inclusion) list
+        for( double dcol : nums.expand() ) {
+          int col = (int)dcol;
+          if( col!=dcol || col < 0 || col >= fr.numCols() ) 
+            throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
+          fr2.add(fr.names()[col],fr.vecs()[col]);
+        }
+      } else {                  // Negative (exclusion) list
+        fr2 = new Frame(fr);    // All of them at first
+        // This loop depends on ASTNumList return values in sorted order
+        for( double dcol : nums.expand() ) {
+          int col = (int)dcol;
+          if( col!=dcol || col < -fr.numCols() || col >= 0 ) 
+            throw new IllegalArgumentException("Column must be an integer from "+(-fr.numCols())+" to -1");
+          fr2.remove(-col-1);   // Remove named column
+        }
       }
     } else if( (asts[2] instanceof ASTNum) ) {
       int col = (int) (((ASTNum) asts[2])._d.getNum());
