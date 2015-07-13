@@ -21,6 +21,9 @@
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+#' @param https (Optional) Set this to TRUE to use https instead of http.
+#' @param username (Optional) Username to login with.
+#' @param password (Optional) Password to login with.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -48,7 +51,8 @@
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = TRUE) {
+                     ice_root = tempdir(), strict_version_check = TRUE,
+                     https = FALSE, username = NA_character_, password = NA_character_) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -83,6 +87,12 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     stop("`ice_root` must be a non-empty character string")
   if(!is.logical(strict_version_check) || length(strict_version_check) != 1L || is.na(strict_version_check))
     stop("`strict_version_check` must be TRUE or FALSE")
+  if(!is.logical(https) || length(https) != 1L || is.na(https))
+    stop("`https` must be TRUE or FALSE")
+  if(!is.character(username) && !is.na(username))
+    stop("`username` must be a character string")
+  if(!is.character(password) && !is.na(password))
+    stop("`password` must be a character string")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
@@ -102,7 +112,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   warnNthreads <- FALSE
-  tmpConn <- new("H2OConnection", ip = ip, port = port)
+  tmpConn <- new("H2OConnection", ip = ip, port = port, https = https, username = username, password = password)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -141,13 +151,12 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn <- new("H2OConnection", ip = ip, port = port)
-  cat("Successfully connected to", h2o.getBaseURL(conn), "\n\n")
-  h2o.clusterInfo(conn)
+  cat("Successfully connected to", h2o.getBaseURL(tmpConn), "\n\n")
+  h2o.clusterInfo(tmpConn)
   cat("\n")
 
   if( strict_version_check ) {
-    verH2O <- h2o.getVersion(conn)
+    verH2O <- h2o.getVersion(tmpConn)
     verPkg <- packageVersion("h2o")
     if (verH2O != verPkg)
       stop(sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg)))
@@ -160,9 +169,9 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("           > localH2O = h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-  conn@mutable$session_id <- .init.session_id(conn)
-  assign("SERVER", conn, .pkg.env)
-  conn
+  tmpConn@mutable$session_id <- .init.session_id(tmpConn)
+  assign("SERVER", tmpConn, .pkg.env)
+  tmpConn
 }
 
 #' Retrieve an H2O Connection
