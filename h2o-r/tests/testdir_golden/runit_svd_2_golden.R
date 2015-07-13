@@ -16,7 +16,7 @@ test.svdidentity.golden <- function(H2Oserver) {
   eigvec <- fitH2O@model$v
   eigval <- fitH2O@model$d^2
   for(i in 1:length(eigval))
-    expect_equal(as.numeric(gram %*% eigvec[,i]), eigval[i] * eigvec[,i], tolerance = 1e-6)
+    expect_equal(as.numeric(gram %*% eigvec[,i]), eigval[i] * eigvec[,i], tolerance = 1e-5)
   
   testEnd()
 }
