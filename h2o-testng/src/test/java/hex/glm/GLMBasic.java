@@ -352,6 +352,7 @@ public class GLMBasic extends TestNGUtil {
 		//		"RACE, -.5, .5\n"+
 		//		"GLEASON, -.5, .5");
 		//betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+		//glmParams._beta_constraints = betaConstraints._key;
 
 		// Build the appropriate glm, given the above parameters
 		Key modelKey = Key.make("model");
