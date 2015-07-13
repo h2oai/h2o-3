@@ -110,7 +110,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               }) {
                                 for (int n_folds : new int[]{
                                         0,
-//                                       2,
+                                        2,
                                 }) {
                                   if (n_folds != 0 && vf != 0) continue;
                                   for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks

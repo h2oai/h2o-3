@@ -1082,7 +1082,6 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testNFold() {
     Frame tfr = null, vfr = null;

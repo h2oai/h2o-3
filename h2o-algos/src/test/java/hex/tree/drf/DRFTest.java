@@ -877,7 +877,6 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testNFold() {
     Frame tfr = null, vfr = null;
