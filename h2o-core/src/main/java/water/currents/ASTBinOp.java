@@ -7,6 +7,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.ValueString;
+import water.util.ArrayUtils;
 
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly two arguments
@@ -23,7 +24,6 @@ abstract class ASTBinOp extends ASTPrim {
     switch( left.type() ) {
     case Val.NUM: 
       final double dlf = left.getNum();
-      
       switch( rite.type() ) {
       case Val.NUM:  return new ValNum( op (dlf,rite.getNum()));
       case Val.FRM:  return scalar_op_frame(dlf,rite.getFrame());
@@ -33,7 +33,6 @@ abstract class ASTBinOp extends ASTPrim {
 
     case Val.FRM: 
       Frame flf = left.getFrame();
-
       switch( rite.type() ) {
       case Val.NUM:  return frame_op_scalar(flf,rite.getNum());
       case Val.STR:  return frame_op_scalar(flf,rite.getStr());
@@ -41,7 +40,15 @@ abstract class ASTBinOp extends ASTPrim {
       default: throw H2O.fail();
       }
           
-    case Val.STR: throw H2O.unimpl();
+    case Val.STR: 
+      String slf = left.getStr();
+      switch( rite.type() ) {
+      case Val.NUM:  throw H2O.unimpl();
+      case Val.STR:  throw H2O.unimpl();
+      case Val.FRM:  return scalar_op_frame(slf,rite.getFrame());
+      default: throw H2O.fail();
+      }
+
     default: throw H2O.fail();
     }
   }
@@ -80,36 +87,96 @@ abstract class ASTBinOp extends ASTPrim {
   }
 
   // Ops do not make sense on Enums, except EQ/NE; flip such ops to NAs
-  private static Vec cleanEnum( boolean enumOK, Vec oldvec, Vec newvec ) {
-    return oldvec.isEnum() && !enumOK ? newvec.makeCon(Double.NaN) : newvec;
-  }
-
-  // Ops do not make sense on Enums, except EQ/NE; flip such ops to NAs
   private ValFrame cleanEnum( Frame oldfr, Frame newfr ) {
     final boolean enumOK = enumOK();
     final Vec oldvecs[] = oldfr.vecs();
     final Vec newvecs[] = newfr.vecs();
     for( int i=0; i<oldvecs.length; i++ )
-      newvecs[i] = cleanEnum( enumOK, oldvecs[i], newvecs[i] );
+      if( !oldvecs[i].isNumeric() && // Must be numeric OR
+          !oldvecs[i].isTime() &&    // time OR
+          !(oldvecs[i].isEnum() && enumOK) ) // Enum and enums are OK (op is EQ/NE)
+        newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(newfr);
   }
 
   /** Auto-widen the scalar to every element of the frame */
-  private ValFrame frame_op_scalar( Frame fr, String str ) {
-    for( Vec vec : fr.vecs() )
-      if( !vec.isString() ) throw new IllegalArgumentException("Cannot mix String and non-String types");
-    final ValueString srt = new ValueString(str);
-    return new ValFrame(new MRTask() {
+  private ValFrame frame_op_scalar( Frame fr, final String str ) {
+    Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           ValueString vstr = new ValueString();
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
-            for( int i=0; i<chk._len; i++ )
-              cres.addNum(str_op(chk.atStr(vstr,i),srt));
+            Vec vec = chk.vec();
+            // String Vectors: apply str_op as ValueStrings to all elements
+            if( vec.isString() ) {
+              final ValueString conStr = new ValueString(str);
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(str_op(chk.atStr(vstr,i),conStr));
+            } else if( vec.isEnum() ) {
+              // Enum Vectors: convert string to domain value; apply op (not
+              // str_op).  Not sure what the "right" behavior here is, can
+              // easily argue that should instead apply str_op to the Enum
+              // string domain value - except that this whole operation only
+              // makes sense for EQ/NE, and is much faster when just comparing
+              // doubles vs comparing strings.
+              final double d = (double)ArrayUtils.find(vec.domain(),str);
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(op(chk.atd(i),d));
+            } else {
+              // nothing: mixing string and numeric; will be all NA below
+            }
           }
         }
-      }.doAll(1,fr).outputFrame());
+      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+    // str_ops do not make sense on numerics
+    final Vec oldvecs[] = fr.vecs();
+    final Vec newvecs[] = res.vecs();
+    for( int i=0; i<oldvecs.length; i++ )
+      if( !oldvecs[i].isString() && // Must be String OR
+          !oldvecs[i].isEnum() )    // Enum
+        newvecs[i] = newvecs[i].makeCon(Double.NaN);
+    return new ValFrame(res);
+  }
+
+  /** Auto-widen the scalar to every element of the frame */
+  private ValFrame scalar_op_frame( final String str, Frame fr ) {
+    Frame res = new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+          ValueString vstr = new ValueString();
+          for( int c=0; c<chks.length; c++ ) {
+            Chunk chk = chks[c];
+            NewChunk cres = cress[c];
+            Vec vec = chk.vec();
+            // String Vectors: apply str_op as ValueStrings to all elements
+            if( vec.isString() ) {
+              final ValueString conStr = new ValueString(str);
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(str_op(conStr,chk.atStr(vstr,i)));
+            } else if( vec.isEnum() ) {
+              // Enum Vectors: convert string to domain value; apply op (not
+              // str_op).  Not sure what the "right" behavior here is, can
+              // easily argue that should instead apply str_op to the Enum
+              // string domain value - except that this whole operation only
+              // makes sense for EQ/NE, and is much faster when just comparing
+              // doubles vs comparing strings.
+              final double d = (double)ArrayUtils.find(vec.domain(),str);
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(op(d,chk.atd(i)));
+            } else {
+              // nothing: mixing string and numeric; will be all NA below
+            }
+          }
+        }
+      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+    // str_ops do not make sense on numerics
+    final Vec oldvecs[] = fr.vecs();
+    final Vec newvecs[] = res.vecs();
+    for( int i=0; i<oldvecs.length; i++ )
+      if( !oldvecs[i].isString() && // Must be String OR
+          !oldvecs[i].isEnum() )    // Enum
+        newvecs[i] = newvecs[i].makeCon(Double.NaN);
+    return new ValFrame(res);
   }
 
   /** Auto-widen: If one frame has only 1 column, auto-widen that 1 column to
@@ -137,7 +204,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame());
+      }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame(lf._names,null));
   }
 
   private ValFrame vec_op_frame( Vec vec, Frame fr ) {

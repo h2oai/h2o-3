@@ -3,8 +3,8 @@ source('../../h2o-runit.R')
 
 toDouble <- function(r) ifelse(is.integer(r), as.numeric(r), r)
 
-test.slice.star <- function(conn) {
-  hex <- as.h2o(conn, iris)
+test.slice.star <- function() {
+  hex <- as.h2o( iris)
 
   Log.info("Try adding scalar to a numeric column: 5 * hex[,col]")
 
