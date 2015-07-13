@@ -64,7 +64,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     long work = 1;
     if (null != _train)
       work = (long)(_parms._epochs * _train.numRows());
-    return Math.max(1,work);
+    return Math.max(1, work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -131,6 +131,25 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       String msg = "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers (or reduce the number of categorical factors).";
       error("_hidden", msg);
       cancel(msg);
+    }
+  }
+
+  @Override
+  public void modifyParmsForCrossValidationSplits(int i, int N) {
+    super.modifyParmsForCrossValidationSplits(i, N);
+    if (_parms._overwrite_with_best_model) {
+      warn("_overwrite_with_best_model",
+              "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");
+      _parms._overwrite_with_best_model = false;
+    }
+  }
+
+  @Override
+  public void modifyParmsForCrossValidationMainModel(int N) {
+    super.modifyParmsForCrossValidationMainModel(N);
+    if (_parms._overwrite_with_best_model) {
+      warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
+      _parms._overwrite_with_best_model = false;
     }
   }
 
@@ -510,7 +529,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
       } else {
         // limit user-given value to number of epochs desired
-        tspi = Math.max(1, Math.min(tspi, (long)(mp._epochs * numRows)));
+        tspi = Math.max(1, Math.min(tspi, (long) (mp._epochs * numRows)));
       }
       assert(tspi != 0 && tspi != -1 && tspi != -2 && tspi >= 1);
       return tspi;

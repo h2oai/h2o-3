@@ -187,7 +187,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
     return _parms._nfolds == 0 ? trainModelImpl(progressUnits()) :
-            // cross-validation needs to be forked off to allow smooth progress bar
+            // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
             start(new H2O.H2OCountedCompleter(){
               @Override protected void compute2() {
                 computeCrossValidation();
@@ -220,7 +220,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Key[] modelKeys = new Key[N];
     // adapt main Job's progress bar to build N+1 models
     ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
-    _deleteProgressKey = false;
+    _deleteProgressKey = false; // keep the same progress bar for all N+1 jobs
 
     // Build N cross-validation models
     for (int i=0; i<N; ++i) {
@@ -258,11 +258,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
       _dest = modelKeys[i];
-      _parms._nfolds = 0;
       _parms._weights_column = weightName;
       _parms._train = cvTrain._key;
       _parms._valid = cvVal._key;
       _state = JobState.CREATED;
+      modifyParmsForCrossValidationSplits(i, N);
 
       Job<M> cvModel = trainModelImpl(-1);
       Model m = cvModel.get();
@@ -294,12 +294,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info("Building main model.");
     _dest = origDest;
-    _parms._nfolds = N; //let the main model know that it is built with cross-validation (no early stopping, etc.)
     _parms._weights_column = origWeightsName;
-    _parms._valid = null;
     _parms._train = origTrainFrameKey;
     _state = JobState.CREATED;
-    _deleteProgressKey = true;
+    _deleteProgressKey = true; //delete progress after the main model is done
+    _parms._valid = null; //(cross-)validation metrics get stitched together below
+    modifyParmsForCrossValidationMainModel(N);
 
     Job<M> main = trainModelImpl(-1);
     Model mainModel = main.get();
@@ -323,6 +323,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
     DKV.put(mainModel);
     return main;
+  }
+  /**
+   * Override with model-specific checks / modifications to _parms for N-fold cross-validation splits.
+   * For example, the models might need to be told to not do early stopping.
+   * @param i which model index [0...N-1]
+   * @param N Total number of cross-validation folds
+   */
+  public void modifyParmsForCrossValidationSplits(int i, int N) {
+    _parms._nfolds = 0;
+  }
+
+  /**
+   * Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
+   * For example, the model might need to be told to not do early stopping.
+   */
+  public void modifyParmsForCrossValidationMainModel(int N) {
+    _parms._nfolds = N; //let the main model know that it is built with cross-validation (no early stopping, etc.)
   }
 
   boolean _deleteProgressKey = true;
