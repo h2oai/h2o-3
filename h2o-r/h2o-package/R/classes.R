@@ -327,17 +327,13 @@ setMethod("initialize", "H2OW2V", function(.Object, ..., id ) {
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
-         prototype(id=NA_character_),
-         contains="H2OObject")
-
-setMethod("initialize", signature="H2OModel", function(.Object, ..., id=character()) {
-  callNextMethod(.Object, ..., id=id)
-})
+         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
+         prototype(model_id=NA_character_),
+         contains="VIRTUAL")
 
 # TODO: make a more model-specific constructor
-.newH2OModel <- function(Class, id, ...) {
-  new(Class, id=id, ...)
+.newH2OModel <- function(Class, model_id, ...) {
+  new(Class, model_id=model_id, ...)
 }
 
 #' @rdname H2OModel-class
@@ -350,7 +346,7 @@ setMethod("show", "H2OModel", function(object) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model ID: ", o@id, "\n")
+  cat("Model ID: ", o@model_id, "\n")
 
   # summary
   print(m$model_summary)
@@ -379,7 +375,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("Model Details:\n")
   cat("==============\n\n")
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
-  cat("Model Key: ", o@id, "\n")
+  cat("Model Key: ", o@model_id, "\n")
 
   # summary
   print(m$model_summary)
@@ -666,7 +662,7 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #' @slot id the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(job_key="character", id="character"))
+setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
 
 #'
 #' Describe an H2OFrame object

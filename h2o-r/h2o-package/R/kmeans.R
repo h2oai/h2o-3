@@ -13,7 +13,7 @@
 #'        initial centers in the init parameter. If k is not omitted,
 #'        in this case, then it should be equal to the number of
 #'        user-specified centers.
-#' @param id (Optional) The unique id assigned to the resulting model. If
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param max_iterations The maximum number of iterations allowed. Must be between 0
 #         and 1e6 inclusive.
@@ -41,7 +41,7 @@
 #' h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
 #' @export
 h2o.kmeans <- function(training_frame, x, k,
-                       id,
+                       model_id,
                        max_iterations = 1000,
                        standardize = TRUE,
                        init = c("Furthest","Random", "PlusPlus"),
@@ -61,8 +61,8 @@ h2o.kmeans <- function(training_frame, x, k,
   if(!missing(k))
     parms$k <- k
   parms$training_frame <- training_frame
-  if(!missing(id))
-    parms$id <- id
+  if(!missing(model_id))
+    parms$model_id <- model_id
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if(!missing(standardize))

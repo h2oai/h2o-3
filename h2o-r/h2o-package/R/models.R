@@ -184,7 +184,7 @@
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture", job_key=job_key, id=dest_key)
+  new("H2OModelFuture", job_key=job_key, model_id=dest_key)
 }
 
 .h2o.createModel <- function(algo, params) {
@@ -201,7 +201,7 @@
 
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@job_key)
-  h2o.getModel(object@id)
+  h2o.getModel(object@model_id)
 }
 
 #' Predict on an H2O Model
@@ -230,7 +230,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   .h2o.eval.frame(newdata)
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@id, '/frames/', newdata@id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@id)
   res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   .h2o.getGCFrame(res$name)
@@ -254,7 +254,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
     model <- do.call(model.type, c(params))
   }
   output[1, "fold_num"] <- -1
-  output[1, "model_key"] <- model@id
+  output[1, "model_key"] <- model@model_id
   # output[1, "model"] <- model@model$mse_valid
 
   data <- params$training_frame
@@ -325,9 +325,9 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     .h2o.eval.frame(data)
 
     parms <- list()
-    parms[["model"]] <- model@id
+    parms[["model"]] <- model@model_id
     parms[["frame"]] <- data.id
-    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@id,data.id), .params = parms)
+    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id,data.id), .params = parms)
 
     ####
     # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874

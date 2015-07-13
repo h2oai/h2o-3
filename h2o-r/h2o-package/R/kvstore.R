@@ -188,11 +188,11 @@ h2o.getFrame <- function(id) {
 #' localH2O <- h2o.init()
 #'
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
-#' id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@id
-#' model.retrieved <- h2o.getModel(id, localH2O)
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
+#' model.retrieved <- h2o.getModel(model_id)
 #' @export
-h2o.getModel <- function(id) {
-  json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", id))$models[[1L]]
+h2o.getModel <- function(model_id) {
+  json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
@@ -256,7 +256,7 @@ h2o.getModel <- function(id) {
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
   .newH2OModel(Class         = Class,
-               id            = id,
+               model_id      = model_id,
                algorithm     = json$algo,
                parameters    = parameters,
                allparameters = allparams,
