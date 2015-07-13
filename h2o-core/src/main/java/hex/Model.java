@@ -651,7 +651,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/).doAll(adaptFrm);
     return bs._mb;
   }
 
@@ -842,7 +842,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   /** Generate implementation for super class. */
   protected SB toJavaSuper( String modelName, SB sb ) {
-    return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
+    return sb.nl().ip("public " + modelName + "() { super(NAMES,DOMAINS); }").nl();
   }
   private SB toJavaNAMES(SB sb, SB fileContextSB) {
     String modelName = JCodeGen.toJavaId(_key.toString());
@@ -999,8 +999,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   private void deleteCrossValidationModels( ) {
     if (_output._crossValidationModels != null) {
       for (Key k : _output._crossValidationModels) {
-        if (k!=null)
-          ((Model)DKV.getGet(k)).delete(); //delete all subparts
+        Model m = DKV.getGet(k);
+        if (m!=null) m.delete(); //delete all subparts
       }
     }
   }
