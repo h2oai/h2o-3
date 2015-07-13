@@ -17,7 +17,7 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   return(is_flipped)
 }
 
-checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {
+checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   k <- fitH2O@parameters$k
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance

@@ -449,7 +449,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(dinfo._key, dinfo);
 
         // Use closed form solution for X if L2 loss and regularization
-        double[][] yt = ArrayUtils.transpose(initialXY(tinfo, dinfo));
+        double[][] yt = initialXY(tinfo, dinfo);
+        yt = ArrayUtils.transpose(yt);
         if (_parms.hasClosedForm()) initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
