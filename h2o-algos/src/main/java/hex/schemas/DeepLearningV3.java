@@ -16,12 +16,12 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 				"model_id",
 				"training_frame",
 				"validation_frame",
+        "nfolds",
+        "keep_cross_validation_splits",
 				"response_column",
 				"ignored_columns",
 				"ignore_const_cols",
 				"score_each_iteration",
-				"nfolds",
-        "keep_cross_validation_splits",
         "weights_column",
         "offset_column",
         "balance_classes",
@@ -135,12 +135,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public int max_hit_ratio_k;
 
     /////////////////////
-
-    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
-    public int nfolds;
-
-    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean keep_cross_validation_splits;
 
     /**
      * A model key associated with a previously trained Deep Learning

@@ -56,8 +56,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return new GLRMV99();
   }
 
-  @Override public Job<GLRMModel> trainModel() {
-    return start(new GLRMDriver(), _parms._max_iterations+1);
+  @Override public Job<GLRMModel> trainModelImpl(long work) {
+    return start(new GLRMDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms._max_iterations + 1;
   }
 
   @Override public ModelCategory[] can_build() {

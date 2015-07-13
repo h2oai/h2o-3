@@ -1081,4 +1081,43 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testNFold() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._seed = 0xdecaf;
+      parms._min_rows = 1;
+      parms._max_depth = 2;
+      parms._nfolds = 2;
+      parms._ntrees = 3;
+      parms._learn_rate = 1e-3f;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
+      assertEquals(0.55555555555, mm.auc()._auc, 1e-8);
+      assertEquals(0.3313375036935877, mm.mse(), 1e-8);
+      assertEquals(-0.3253500147743509, mm.r2(), 1e-6);
+      assertEquals(0.8630781835948022, mm.logloss(), 1e-6);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
+    }
+  }
 }

@@ -19,7 +19,6 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Naive Bayes
@@ -39,8 +38,13 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   public boolean isSupervised(){return true;}
 
   @Override
-  public Job<NaiveBayesModel> trainModel() {
-    return start(new NaiveBayesDriver(), 6);
+  public Job<NaiveBayesModel> trainModelImpl(long work) {
+    return start(new NaiveBayesDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return 6;
   }
 
   @Override

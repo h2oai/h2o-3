@@ -55,12 +55,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return _vresponse != null ? _vresponse:(_vresponse = DKV.getGet(_vresponse_key));
   }
 
-  // Base class hasWeights() uses the transient Vec, which is not available on remote nodes...
-  // But sending the ModelBuilder around to remote nodes is bad practice anyway....
-  boolean _hasWeights;
-  @Override public boolean hasWeights() { return _hasWeights; }
-  boolean _hasOffset;
-  @Override public boolean hasOffset() { return _hasOffset; }
+  @Override public long progressUnits() { return _parms._ntrees; }
 
   @Override
   protected boolean computePriorClassDistribution(){ return true;}
@@ -75,10 +70,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    *  the number of classes to predict on; validate a checkpoint.  */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if(_parms._nfolds > 1)
-      error("_nfolds", "nfolds > 1 is not implemented.");
-    _hasWeights = super.hasWeights();
-    _hasOffset = super.hasOffset();
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode");
     if(_vresponse != null)

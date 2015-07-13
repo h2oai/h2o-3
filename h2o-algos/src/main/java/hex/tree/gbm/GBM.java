@@ -36,9 +36,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   @Override public GBMV3 schema() { return new GBMV3(); }
 
-  /** Start the GBM training Job on an F/J thread. */
-  @Override public Job<GBMModel> trainModel() {
-    return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
+  /** Start the GBM training Job on an F/J thread.
+   * @param work*/
+  @Override public Job<GBMModel> trainModelImpl(long work) {
+    return start(new GBMDriver(), work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -393,7 +394,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               }
             }
           } else {
-            _parms._distribution.p = _parms._tweedie_power; //UGLY
+            _parms._distribution.p = _parms._tweedie_power; //FIXME PUBDEV-1670: p isn't serialized properly as part of Enum
             wk.set(row, (float) _parms._distribution.gradient(y, f));
           }
         }
@@ -563,7 +564,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // A leaf-biased array of all active Tree leaves.
           final double denom[] = _denom[k] = new double[tree._len-leaf];
           final double num[] = _num[k] = new double[tree._len-leaf];
-          final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
+          final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
           final Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
           final Chunk preds = chk_tree(chks,k);

@@ -2,8 +2,8 @@ package hex;
 
 /**
  * Distribution functions to be used by ML Algos
- * Note: Not using interface or inheritance for performance reasons - let the user call these directly
  */
+//TODO: Separate into family/link
 public class Distributions {
 
   interface Dist {
@@ -205,7 +205,7 @@ public class Distributions {
         return expString(f);
       }
     };
-    public double p; //tweedie power
+    public double p; //tweedie power //FIXME PUBDEV-1670: This isn't getting serialized by the Icer
   }
 
   // sanitized exponential function

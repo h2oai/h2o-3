@@ -2,6 +2,7 @@ package hex.grep;
 
 import org.junit.*;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -28,7 +29,7 @@ public class GrepTest extends TestUtil {
       parms._train = fr._key;
       parms._regex = regex;
 
-      Grep job = new Grep(parms).trainModel();
+      Job<GrepModel> job = new Grep(parms).trainModel();
       kmm = job.get();
       job.remove();
 

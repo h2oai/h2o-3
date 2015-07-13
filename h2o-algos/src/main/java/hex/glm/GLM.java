@@ -156,14 +156,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient GLMModel _model;
 
   @Override public void init(boolean expensive) {
+    if (_parms._nfolds != 0) error("_nfolds", "nfolds != 0 is not supported");
     _t0 = System.currentTimeMillis();
     super.init(expensive);
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
-    if(_parms._nfolds > 1)
-      error("_nfolds", "nfolds > 1 is not implemented.");
     if (expensive) {
       // bail early if we have basic errors like a missing training frame
       if (error_count() > 0) return;
@@ -531,9 +530,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private static final long WORK_TOTAL = 1000000;
   @Override
-  public Job<GLMModel> trainModel() {
-    start(new GLMDriver(null), WORK_TOTAL);
+  public Job<GLMModel> trainModelImpl(long work) {
+    start(new GLMDriver(null), work);
     return this;
+  }
+
+  @Override
+  public long progressUnits() {
+    return WORK_TOTAL;
   }
 
   static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.

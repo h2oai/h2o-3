@@ -19,10 +19,6 @@
     },
     {
       "type": "cs",
-      "input": "assist buildModel, null, training_frame: \"iris_wheader_nonspd.hex\""
-    },
-    {
-      "type": "cs",
       "input": "assist splitFrame, \"iris_wheader_nonspd.hex\""
     },
     {

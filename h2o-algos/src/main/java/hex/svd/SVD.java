@@ -35,9 +35,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return new SVDV99();
   }
 
-  @Override public Job<SVDModel> trainModel() {
-    return start(new SVDDriver(), _parms._nv+1);
+  @Override public Job<SVDModel> trainModelImpl(long work) {
+    return start(new SVDDriver(), work);
   }
+
+  @Override
+  public long progressUnits() {
+    return _parms._nv+1;
+  }
+
 
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{ ModelCategory.DimReduction };

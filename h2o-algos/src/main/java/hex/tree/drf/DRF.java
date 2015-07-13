@@ -13,7 +13,6 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 
@@ -46,9 +45,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
   @Override public DRFV3 schema() { return new DRFV3(); }
 
-  /** Start the DRF training Job on an F/J thread. */
-  @Override public Job<hex.tree.drf.DRFModel> trainModel() {
-    return start(new DRFDriver(), _parms._ntrees/*work for progress bar*/);
+  /** Start the DRF training Job on an F/J thread.
+   * @param work*/
+  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work) {
+    return start(new DRFDriver(), work);
   }
 
 

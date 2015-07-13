@@ -6,7 +6,6 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.JCodeGen;
 import water.util.SB;
 
@@ -88,7 +87,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     }
   }
 
-  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
@@ -142,7 +141,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
   @Override public Frame score(Frame fr, String destination_key) {
     Frame adaptFr = new Frame(fr);
     adaptTestForTrain(adaptFr, true, false);   // Adapt
-    Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;
   }

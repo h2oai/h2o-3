@@ -254,18 +254,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
     } else if (get_params()._nfolds > 1) {
-      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
-//      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
-      if (_output.getModelCategory() == ModelCategory.Binomial) {
-        colHeaders.add("Cross-Validation AUC");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
-      if (_output.isClassifier()) {
-        colHeaders.add("Cross-Validation Classification Error");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
+//      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+////      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+//      if (_output.getModelCategory() == ModelCategory.Binomial) {
+//        colHeaders.add("Cross-Validation AUC");
+//        colTypes.add("double");
+//        colFormat.add("%.5f");
+//      }
+//      if (_output.isClassifier()) {
+//        colHeaders.add("Cross-Validation Classification Error");
+//        colTypes.add("double");
+//        colFormat.add("%.5f");
+//      }
     }
 
     final int rows = errors.length;
@@ -315,9 +315,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (_output.isClassifier()) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
         }
-      }
-      else if(get_params()._nfolds > 1) {
-        throw H2O.unimpl("n_folds > 1 is not implemented.");
       }
       row++;
     }
@@ -725,9 +722,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     if (!get_params()._autoencoder) {
-      return super.scoreImpl(orig,adaptedFr,destination_key);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -843,7 +840,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     else {
       Frame adaptFr = new Frame(fr);
       adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
-      Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
+      Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
       cleanup_adapt( adaptFr, fr );
       return output;
     }
@@ -962,7 +959,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._train = mse_frame._key;
     parms._probs = new double[]{quantile};
-    Quantile job = new Quantile(parms).trainModel();
+    Job<QuantileModel> job = new Quantile(parms).trainModel();
     QuantileModel kmm = job.get();
     job.remove();
     double q = kmm._output._quantiles[0][0];
@@ -1005,15 +1002,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         DKV.remove(model_info().localModelInfoKey(node));
       }
     }
-  }
-
-  void delete_xval_models( ) {
-//    if (get_params().xval_models != null) {
-//      for (Key k : get_params().xval_models) {
-//        DKV.get(k).<DeepLearningModel>get().delete_best_model();
-//        DKV.get(k).<DeepLearningModel>get().delete();
-//      }
-//    }
   }
 
   private String getHeader() {

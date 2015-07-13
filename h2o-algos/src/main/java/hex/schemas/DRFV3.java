@@ -11,6 +11,8 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 				"model_id",
 				"training_frame",
 				"validation_frame",
+        "nfolds",
+        "keep_cross_validation_splits",
 				"response_column",
 				"ignored_columns",
 				"ignore_const_cols",

@@ -51,7 +51,7 @@ public class Job<T extends Keyed> extends Keyed {
   transient H2OCountedCompleter _barrier;// Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
-  public final Key<T> _dest;   // Key for result
+  public Key<T> _dest;   // Key for result
   /** Since _dest is public final, not sure why we have a getter but some
    *  people like 'em. */
   public final Key<T> dest() { return _dest; }
@@ -133,8 +133,8 @@ public class Job<T extends Keyed> extends Keyed {
    *  @see H2OCountedCompleter
    */
   public Job<T> start(final H2OCountedCompleter fjtask, long work) {
-    // FIXME: Do not override shared progress key
-    DKV.put(_progressKey = createProgressKey(), new Progress(work));
+    if (work >= 0)
+      DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
@@ -257,7 +257,9 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
-  public float progress() { return isStopped() ? _finalProgress : progress_impl(); }
+  public float progress() {
+    return isStopped() ? _finalProgress : progress_impl();
+  }
   // Read racy progress in a non-racy way: read the DKV exactly once,
   // null-checking as we go.  Handles the case where the Job is being removed
   // exactly when we are reading progress e.g. for the GUI.

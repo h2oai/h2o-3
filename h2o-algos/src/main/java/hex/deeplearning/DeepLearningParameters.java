@@ -20,9 +20,6 @@ public class DeepLearningParameters extends Model.Parameters {
     return _sparse ? 0 : Double.NaN;
   }
 
-  public int _nfolds = 0;
-  public boolean _keep_cross_validation_splits;
-
   /**
    * A model key associated with a previously trained Deep Learning
    * model. This option allows users to build a new model as a
@@ -449,6 +446,10 @@ public class DeepLearningParameters extends Model.Parameters {
 //          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       if (!classification && _valid != null || _valid == null)
         dl.hide("_score_validation_sampling", "score_validation_sampling requires classification and a validation frame.");
+    } else {
+      if (_nfolds > 1) {
+        dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
+      }
     }
 
     if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
@@ -497,9 +498,6 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
       dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
     }
-    if (_nfolds > 1)
-      dl.error("_nfolds", "nfolds > 1 is not implemented.");
-
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
         dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
@@ -630,8 +628,8 @@ public class DeepLearningParameters extends Model.Parameters {
             "_momentum_stable",
             "_nesterov_accelerated_gradient",
             "_ignore_const_cols",
-            "_keep_cross_validation_splits",
             "_max_categorical_features",
+            "_keep_cross_validation_splits",
             "_nfolds"
     };
 
