@@ -22,6 +22,7 @@
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 #' @param https (Optional) Set this to TRUE to use https instead of http.
+#' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
@@ -52,7 +53,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE,
-                     https = FALSE, username = NA_character_, password = NA_character_) {
+                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -89,6 +90,8 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     stop("`strict_version_check` must be TRUE or FALSE")
   if(!is.logical(https) || length(https) != 1L || is.na(https))
     stop("`https` must be TRUE or FALSE")
+  if(!is.logical(insecure) || length(insecure) != 1L || is.na(insecure))
+    stop("`insecure` must be TRUE or FALSE")
   if(!is.character(username) && !is.na(username))
     stop("`username` must be a character string")
   if(!is.character(password) && !is.na(password))
@@ -107,12 +110,16 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     min_mem_size <- Xmx
   }
 
+  if (https && !insecure) {
+    stop("Certificate checking is currently not implemented.  Please set insecure = TRUE to continue.")
+  }
+
   if (nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
     strict_version_check = FALSE
   }
 
   warnNthreads <- FALSE
-  tmpConn <- new("H2OConnection", ip = ip, port = port, https = https, username = username, password = password)
+  tmpConn <- new("H2OConnection", ip = ip, port = port, https = https, insecure = insecure, username = username, password = password)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))

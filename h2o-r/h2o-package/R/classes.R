@@ -55,6 +55,7 @@ setRefClass("H2OConnectionMutableState",
 #' @slot ip A \code{character} string specifying the IP address of the H2O cloud.
 #' @slot port A \code{numeric} value specifying the port number of the H2O cloud.
 #' @slot https Set this to TRUE to use https instead of http.
+#' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
 #' @slot password Password to login with.
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
@@ -62,11 +63,13 @@ setRefClass("H2OConnectionMutableState",
 #' @export
 setClass("H2OConnection",
          representation(ip="character", port="numeric",
-                        https="logical", username="character", password="character",
+                        https="logical", insecure="logical",
+                        username="character", password="character",
                         mutable="H2OConnectionMutableState"),
          prototype(ip       = NA_character_,
                    port     = NA_integer_,
                    https    = FALSE,
+                   insecure = FALSE,
                    username = NA_character_,
                    password = NA_character_,
                    mutable  = new("H2OConnectionMutableState")))

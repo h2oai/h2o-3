@@ -75,6 +75,11 @@
     basicAuth = 1L
     opts = curlOptions(userpwd = userpwd, httpauth = basicAuth, .opts = opts)
   }
+  if (conn@https) {
+    if (conn@insecure) {
+      opts = curlOptions(ssl.verifypeer = 0L, .opts = opts)
+    }
+  }
 
   queryString = ""
   i = 1L
