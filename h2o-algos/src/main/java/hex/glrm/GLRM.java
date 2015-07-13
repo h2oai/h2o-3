@@ -497,7 +497,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             step = step / Math.max(1.5, -steps_in_row);
             steps_in_row = Math.min(0, steps_in_row-1);
             overwriteX = false;
-            Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective + "; reducing step size to " + step);
+            Log.info("Iteration " + model._output._iterations + ": Objective increased to " + obj_new + "; reducing step size to " + step);
           }
           model._output._step_size = step;
           model.update(self()); // Update model in K/V store
@@ -507,7 +507,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 4) Save solution to model output
         // Save X frame for user reference later
         Vec[] xvecs = new Vec[_ncolX];
-        for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
+        if(overwriteX) {
+          for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
+        } else {
+          for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xold(i, _ncolA));
+        }
         x = new Frame(_parms._loading_key, null, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
         DKV.put(x._key, x);
