@@ -122,7 +122,7 @@ public class JettyHTTPD {
     _acceptRequests = true;
   }
 
-  private void createServer(ServerConnector connector) throws Exception {
+  protected void createServer(ServerConnector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
     registerHandlers(_server);
     _server.start();
