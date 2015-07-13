@@ -411,6 +411,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       GLRMModel model = null;
       DataInfo dinfo = null, xinfo = null, tinfo = null;
       Frame fr = null, x = null;
+      boolean overwriteX = false;
 
       try {
         init(true);   // Initialize parameters
@@ -466,7 +467,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model.update(_key);  // Update model in K/V store
         update(1);           // One unit of work
 
-        boolean overwriteX = false;
         double step = _parms._init_step_size;   // Initial step size
         int steps_in_row = 0;                   // Keep track of number of steps taken that decrease objective
 
@@ -538,14 +538,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } finally {
         _parms.read_unlock_frames(GLRM.this);
         if (model != null) model.unlock(_key);
+        if (tinfo != null) tinfo.remove();
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
-        if (tinfo != null) tinfo.remove();
+        
         // if (x != null && !_parms._keep_loading) x.delete();
-        // Clean up old copy of X matrix
+        // Clean up unused copy of X matrix
         if (fr != null) {
-          for(int i = 0; i < _ncolX; i++)
-            fr.vec(idx_xold(i, _ncolA)).remove();
+          if(overwriteX) {
+            for (int i = 0; i < _ncolX; i++) fr.vec(idx_xold(i, _ncolA)).remove();
+          } else {
+            for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
+          }
         }
       }
       tryComplete();
