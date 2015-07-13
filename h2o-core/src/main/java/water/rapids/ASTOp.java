@@ -192,6 +192,9 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTddply());
     putPrefix(new ASTMerge ());
     putPrefix(new ASTGroupBy());
+    putPrefix(new ASTCumSum());
+    putPrefix(new ASTCumProd());
+    putPrefix(new ASTCumMin());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum());
     putPrefix(new ASTRunif ());
@@ -1850,6 +1853,210 @@ class ASTSum extends ASTReducerOp {
       }
     }
     @Override public void reduce( RedSum s ) { _d += s._d; }
+  }
+}
+
+class ASTCumSum extends ASTUniPrefixOp {
+  @Override String opStr() { return "cumsum"; }
+  @Override ASTOp make() { return new ASTCumSum(); }
+  public ASTCumSum() { super(new String[]{"x"}); }
+
+  @Override public void apply(Env e){
+    Frame f = e.popAry();
+
+    // per chunk cum-sum
+    CumSumTask t = new CumSumTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkSums = t._chkSums;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        double d=c.cidx()==0?0:chkSums[c.cidx()-1];
+        for(int i=0;i<c._len;++i)
+          c.set(i, c.atd(i)+d);
+      }
+    }.doAll(cumuVec);
+    e.pushAry(new Frame(cumuVec));
+  }
+
+  private class CumSumTask extends MRTask<CumSumTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkSums;
+
+    CumSumTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkSums = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double sum=0;
+      for(int i=0;i<c._len;++i) {
+        sum += c.isNA(i) ? Double.NaN : c.atd(i);
+        if( Double.isNaN(sum) ) nc.addNA();
+        else                    nc.addNum(sum);
+      }
+      _chkSums[c.cidx()] = sum;
+    }
+    @Override public void reduce(CumSumTask t) { if( _chkSums != t._chkSums ) ArrayUtils.add(_chkSums, t._chkSums); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkSums.length;++i) _chkSums[i] += _chkSums[i-1];
+    }
+  }
+}
+
+class ASTCumProd extends ASTUniPrefixOp {
+  @Override String opStr() { return "cumprod"; }
+  @Override ASTOp make() { return new ASTCumProd(); }
+  public ASTCumProd() { super(new String[]{"x"}); }
+
+  @Override public void apply(Env e){
+    Frame f = e.popAry();
+
+    // per chunk cum-prod
+    CumProdTask t = new CumProdTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkProds = t._chkProds;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        if( c.cidx()!=0 ) {
+          double d=chkProds[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, c.atd(i)*d);
+        }
+      }
+    }.doAll(cumuVec);
+    e.pushAry(new Frame(cumuVec));
+  }
+
+  private class CumProdTask extends MRTask<CumProdTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkProds;
+
+    CumProdTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkProds = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double sum=0;
+      for(int i=0;i<c._len;++i) {
+        sum *= c.isNA(i) ? Double.NaN : c.atd(i);
+        if( Double.isNaN(sum) ) nc.addNA();
+        else                    nc.addNum(sum);
+      }
+      _chkProds[c.cidx()] = sum;
+    }
+    @Override public void reduce(CumProdTask t) { if( _chkProds != t._chkProds ) ArrayUtils.add(_chkProds, t._chkProds); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkProds.length;++i) _chkProds[i] *= _chkProds[i-1];
+    }
+  }
+}
+
+class ASTCumMin extends ASTUniPrefixOp {
+  @Override String opStr() { return "cummin"; }
+  @Override ASTOp make() { return new ASTCumMin(); }
+  public ASTCumMin() { super(new String[]{"x"}); }
+
+  @Override public void apply(Env e){
+    Frame f = e.popAry();
+
+    // per chunk cum-min
+    CumMinTask t = new CumMinTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkMins = t._chkMins;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        if( c.cidx()!=0 ) {
+          double d=chkMins[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, Math.min(c.atd(i), d));
+        }
+      }
+    }.doAll(cumuVec);
+    e.pushAry(new Frame(cumuVec));
+  }
+
+  private class CumMinTask extends MRTask<CumMinTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkMins;
+
+    CumMinTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkMins = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double min=Double.MAX_VALUE;
+      for(int i=0;i<c._len;++i) {
+        min = c.isNA(i) ? Double.NaN : Math.min(min, c.atd(i));
+        if( Double.isNaN(min) ) nc.addNA();
+        else                    nc.addNum(min);
+      }
+      _chkMins[c.cidx()] = min;
+    }
+    @Override public void reduce(CumMinTask t) { if( _chkMins != t._chkMins ) ArrayUtils.add(_chkMins, t._chkMins); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkMins.length;++i)
+        _chkMins[i] = _chkMins[i-1] < _chkMins[i] ? _chkMins[i-1] : _chkMins[i];
+    }
+  }
+}
+
+class ASTCumMax extends ASTUniPrefixOp {
+  @Override String opStr() { return "cummax"; }
+  @Override ASTOp make() { return new ASTCumMax(); }
+  public ASTCumMax() { super(new String[]{"x"}); }
+
+  @Override public void apply(Env e){
+    Frame f = e.popAry();
+
+    // per chunk cum-min
+    CumMaxTask t = new CumMaxTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkMaxs = t._chkMaxs;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        if( c.cidx()!=0 ) {
+          double d=chkMaxs[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, Math.min(c.atd(i), d));
+        }
+      }
+    }.doAll(cumuVec);
+    e.pushAry(new Frame(cumuVec));
+  }
+
+  private class CumMaxTask extends MRTask<CumMaxTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkMaxs;
+
+    CumMaxTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkMaxs = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double max=-Double.MAX_VALUE;
+      for(int i=0;i<c._len;++i) {
+        max = c.isNA(i) ? Double.NaN : Math.max(max, c.atd(i));
+        if( Double.isNaN(max) ) nc.addNA();
+        else                    nc.addNum(max);
+      }
+      _chkMaxs[c.cidx()] = max;
+    }
+    @Override public void reduce(CumMaxTask t) { if( _chkMaxs != t._chkMaxs ) ArrayUtils.add(_chkMaxs, t._chkMaxs); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkMaxs.length;++i)
+        _chkMaxs[i] = _chkMaxs[i-1] > _chkMaxs[i] ? _chkMaxs[i-1] : _chkMaxs[i];
+    }
   }
 }
 
