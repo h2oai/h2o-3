@@ -48,7 +48,7 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
   }
   @Test public void test4_throws() {
-    String tree = "(== %a.hex \"hello\")";
+    String tree = "(== %a.hex (cols a.hex [1 2]))";
     checkTree(tree,true);
   }
   
