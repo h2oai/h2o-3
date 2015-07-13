@@ -7,9 +7,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
+import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.*;
@@ -219,41 +219,12 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public Iterator<T> iterator() {return _g.iterator(); }
   }
 
-  // custom serializer for <Group,Int> pairs
-  public static class IcedHM<G extends Iced,S extends String> extends Iced {
-    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
-    IcedHM() { _m = new NonBlockingHashMap<>(); }
-    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
-    void put(G g, S i) { _m.put(g,i);}
-    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
-    Set<G> keySet() { return _m.keySet(); }
-    int size() { return _m.size(); }
-    String get(G g) { return _m.get(g); }
-    G getk(G g) { return _m.getk(g); }
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      if( _m==null || _m.size()==0 ) return ab.put4(0);
-      else {
-        ab.put4(_m.size());
-        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
-      }
-      return ab;
-    }
-    @Override public IcedHM read_impl(AutoBuffer ab) {
-      int mLen;
-      if( (mLen=ab.get4())!=0 ) {
-        _m = new NonBlockingHashMap<>();
-        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
-      }
-      return this;
-    }
-  }
-
   public static class GBTask extends MRTask<GBTask> {
-    IcedHM<G,String> _g;  // lol GString
+    IcedHashMap<G,String> _g;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedHM<>(); }
+    @Override public void setupLocal() { _g = new IcedHashMap<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
@@ -279,8 +250,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        IcedHM<G,String> l = _g;
-        IcedHM<G,String> r = t._g;
+        IcedHashMap<G,String> l = _g;
+        IcedHashMap<G,String> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
         for( G rg:r.keySet() ) {
