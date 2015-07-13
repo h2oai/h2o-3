@@ -28,6 +28,7 @@ import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestNGUtil;
+import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
@@ -314,6 +315,7 @@ public class GLMBasic extends TestNGUtil {
 
 		Frame trainFrame = null;
 		Frame validateFrame = null;
+		Frame betaConstraints = null;
 
 		// create train dataset
 		File train_dataset = find_test_file_static(pathFile + trainDatasetFilename);
@@ -331,6 +333,25 @@ public class GLMBasic extends TestNGUtil {
 		Key key_validate_dataset = Key.make(validateDatasetId + ".hex");
 		validateFrame = ParseDataset.parse(key_validate_dataset, nfs_validate_dataset._key);
 		glmParams._valid = validateFrame._key;
+
+		// the beta constraints are represented in a frame with columns: "names", "lower_bounds", "upper_bounds",
+		// and "beta_given" (optional). Each row corresponds to a predictor in the GLM. "names" contains the predictor
+		// names, "lower"/"upper_bounds", are the lower and upper bounds of beta, and "beta_given" is some supplied
+		// starting values for the betas.
+
+		// You need to construct the beta constraints frame. In order to do so, you need to know the names of the
+		// predictor columns, the upper and lower bounds (these are the same for each predictor), and (optionally)
+		// the beta given (we don't provide this in the test case spreadsheet yet).
+
+		// In this example, "AGE", "RACE", and "GLEASON" are the predictor names. -.5 is the lower bound and .5 is the
+		// upper bound. Clearly, this information could change for each test case, so you'll have to generalize this
+		// method.
+		//Key betaConsKey = Key.make("beta_constraints");
+		//FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n"+
+		//		"AGE, -.5, .5\n"+
+		//		"RACE, -.5, .5\n"+
+		//		"GLEASON, -.5, .5");
+		//betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 
 		// Build the appropriate glm, given the above parameters
 		Key modelKey = Key.make("model");
@@ -364,6 +385,9 @@ public class GLMBasic extends TestNGUtil {
 			}
 			if (validateFrame != null) {
 				validateFrame.delete();
+			}
+			if (betaConstraints != null) {
+				betaConstraints.delete();
 			}
 			if (model != null)
 				model.delete();
