@@ -236,6 +236,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       UDPTimeOutThread.PENDING.add(this);
       return this;
     } catch( Throwable t ) {
+      t.printStackTrace();
       throw Log.throwErr(t);
     }
   }

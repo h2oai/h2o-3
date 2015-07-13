@@ -387,7 +387,7 @@ public /* final */ class AutoBuffer {
   private void tcpOpen() throws IOException {
     assert _firstPage && _bb.limit() >= 1+2+4; // At least something written
     assert _chan == null;
-    assert _bb.position()==0;
+//    assert _bb.position()==0;
     _chan = _h2o.getTCPSocket();
     raisePriority();
   }

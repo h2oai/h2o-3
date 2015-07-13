@@ -31,7 +31,7 @@ public class UDPTimeOutThread extends Thread {
             (t._target._heartbeat._client && t._retry <  HeartBeatThread.CLIENT_TIMEOUT) ) {
           if( !t.isDone() && !t._nack ) {
             boolean forceTCP;
-            if(forceTCP = (++t._resendsCnt % 50 == 0))
+            if(forceTCP = (++t._resendsCnt % 10 == 0))
               Log.warn("Got " + t._resendsCnt + " resends on task " + t._dt.getClass().getSimpleName() + ", enforcing TCP");
             t.call(forceTCP);
           }
