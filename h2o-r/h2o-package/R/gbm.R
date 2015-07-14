@@ -11,7 +11,7 @@
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
-#' @param id (Optional) The unique id assigned to the resulting model. If
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param distribution A \code{character} string. The loss function to be implemented.
 #'        Must be "AUTO", "bernoulli", "multinomial", or "gaussian"
@@ -50,7 +50,7 @@
 #'         ntrees = 3, max_depth = 3, min_rows = 2)
 #' @export
 h2o.gbm <- function(x, y, training_frame,
-                    id,
+                    model_id,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial"),
                     ntrees = 50,
                     max_depth = 5,
@@ -103,8 +103,8 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if (!missing(id))
-    parms$id <- id
+  if (!missing(model_id))
+    parms$model_id <- model_id
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(ntrees))
@@ -136,7 +136,7 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
-  else            .h2o.createModel(training_frame@conn, 'gbm', parms)
+  if( do_future ) .h2o.startModelJob('gbm', parms)
+  else            .h2o.createModel('gbm', parms)
 }
 
