@@ -376,7 +376,7 @@ public /* final */ class AutoBuffer {
     } finally {
       bbFree();
       _time_close_ms = System.currentTimeMillis();
-      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+//      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
       assert isClosed();
     }
     return 0;
@@ -410,7 +410,7 @@ public /* final */ class AutoBuffer {
     restorePriority();          // And if we raised priority, lower it back
     bbFree();
     _time_close_ms = System.currentTimeMillis();
-    TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+//    TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
     assert isClosed();
   }
 
