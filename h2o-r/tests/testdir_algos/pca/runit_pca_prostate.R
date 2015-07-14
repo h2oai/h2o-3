@@ -2,9 +2,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 # Test PCA on prostate.csv
-test.pca.prostate <- function(conn) {
+test.pca.prostate <- function() {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"))
+  prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
   
   Log.info("Converting CAPSULE, RACE, DPROS and DCAPS columns to factors")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
