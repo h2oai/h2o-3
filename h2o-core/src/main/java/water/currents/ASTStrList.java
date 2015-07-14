@@ -71,3 +71,18 @@ class ASTAsFactor extends ASTPrim {
     return new ValFrame(new Frame(fr._names, new Vec[]{v0}));
   }
 }
+
+/** Is a factor/categorical? */
+class ASTIsFactor extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (is.factor col)
+  @Override String str() { return "is.factor"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isEnum() ? 1 : 0);
+    double ds[] = new double[fr.numCols()];
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = fr.vec(i).isEnum() ? 1 : 0;
+    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
+    return new ValFrame(new Frame(new String[]{"is.factor"}, new Vec[]{vec}));
+  }
+}

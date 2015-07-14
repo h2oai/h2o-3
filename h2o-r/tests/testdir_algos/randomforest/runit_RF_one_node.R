@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.one.node.drf <- function(conn) {
+test.one.node.drf <- function() {
   Log.info("Loading data and building models...")
   airs.hex <- h2o.importFile(locate("smalldata/airlines/allyears2k.zip"))
 
