@@ -271,24 +271,15 @@ h2o.qpfpc <- function(data, class.col, probs=NULL) {
 #' summary(irismiss.hex)
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
-  ## -- Force evaluate temporary ASTs -- ##
-  .h2o.eval.frame(data)
-
+  .h2o.eval.frame(data)      ## -- Force evaluate temporary ASTs -- ##
   parms = list()
-
   parms$dataset <- data@id
   parms$fraction <- fraction
   if(!missing(seed))
     parms$seed <- seed
-
   json <- .h2o.__remoteSend(method = "POST", page = 'MissingInserter', .params = parms)
   .h2o.__waitOnJob(json$key$name)
-  # TODO: uncomment once job key progress is functional
-  res <- json$dataset$name
-
-  ## No gc because insertMissingValues modifies the frame in spot
-
-  .h2o.getGCFrame(res)
+  data
 }
 
 #' Split an H2O Data Set
