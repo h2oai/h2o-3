@@ -487,12 +487,48 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("prod",self,na_rm))._scalar()
 
-  def which(self,condition):
+  def any(self):
     """
-    :param condition: A conditional statement.
-    :return: A list of indices for which the condition is True
+    :return: True if any element is True in the column.
     """
-    return H2OFrame(expr=ExprNode("h2o.which",self,condition))
+    return H2OFrame(expr=ExprNode("any",self))._scalar()
+
+  def all(self):
+    """
+    :return: True if every element is True in the column.
+    """
+    return H2OFrame(expr=ExprNode("all",self))._scalar()
+
+  def isnumeric(self):
+    """
+    :return: True if the column is numeric, otherwise return False
+    """
+    return H2OFrame(expr=ExprNode("is.numeric",self))._scalar()
+
+  def isstring(self):
+    """
+    :return: True if the column is a string column, otherwise False (same as ischaracter)
+    """
+    return H2OFrame(expr=ExprNode("is.character",self))._scalar()
+
+  def ischaracter(self):
+    """
+    :return: True if the column is a character column, otherweise False (same as isstring)
+    """
+    return self.isstring()
+
+  def remove_vecs(self, cols):
+    """
+    :param cols: Drop these columns.
+    :return: A frame with the columns dropped.
+    """
+    self._eager()
+    is_char = all([isinstance(i,(unicode,str)) for i in cols])
+    if is_char:
+      cols = [self._find_idx(col) for col in cols]
+    cols = sorted(cols)
+    return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
+
 
   def as_data_frame(self, use_pandas=True):
     """
