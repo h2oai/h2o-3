@@ -1120,4 +1120,53 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Ignore("PUBDEV-1690")
+  public void testNfoldOneVsRest() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm1 = null;
+    GBMModel gbm2 = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._seed = 0xdecaf;
+      parms._min_rows = 1;
+      parms._max_depth = 2;
+      parms._nfolds = (int) tfr.numRows();
+      parms._ntrees = 3;
+      parms._learn_rate = 1e-3f;
+
+      // Build a first model; all remaining models should be equal
+      GBM job1 = new GBM(parms);
+      gbm1 = job1.trainModel().get();
+
+      parms._nfolds = (int) tfr.numRows() + 1;
+      GBM job2 = new GBM(parms);
+      gbm2 = job2.trainModel().get();
+
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._validation_metrics;
+      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.mse(), mm2.mse(), 1e-12);
+      assertEquals(mm1.r2(), mm2.r2(), 1e-12);
+      assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
+
+      //TODO: add check: the correct number of individual models were built.
+
+      job1.remove();
+      job2.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm1 != null) gbm1.delete();
+      if (gbm2 != null) gbm2.delete();
+      Scope.exit();
+    }
+  }
 }
