@@ -320,24 +320,19 @@ public /* final */ class AutoBuffer {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
     assert _h2o != null || _chan != null; // Byte-array backed should not be closed
-    if(!_read && forceTCP && !hasTCP())
-      try {
-        tcpOpen();
-      } catch (IOException e) {
-        throw new AutoBufferException(e);
-      }
+
     try {
       if( _chan == null ) {     // No channel?
         if( _read ) return 0;
         // For small-packet write, send via UDP.  Since nothing is sent until
         // now, this close() call trivially orders - since the reader will not
         // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU ) return udpSend();
+        if( _bb.position() < MTU && !forceTCP) return udpSend();
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
-      if( hasTCP() ) {          // TCP connection?
+      if( hasTCP() || forceTCP ) {          // TCP connection?
         try {
           if( _read ) {         // Reader?
             int x = get1U();    // Read 1 more byte

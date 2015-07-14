@@ -385,7 +385,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         assert r._computed : "Found RPCCall not computed "+r._tsknum;
         boolean forceTCP;
         DTask dt = r._dt;
-        if(forceTCP = (r._ackResendCnt++ % 10 == 0) && dt != null)
+        if(forceTCP = (++r._ackResendCnt % 10 == 0) && dt != null)
           Log.warn("Got " + r._ackResendCnt + " resends on ack for task task " + dt.getClass().getSimpleName() + ", enforcing TCP");
         // RPC from somebody who dropped out of cloud?
         if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
@@ -394,7 +394,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
           r._client.remove_task_tracking(r._tsknum);
         } else if( r._dt != null ) { // Not yet seen the ACKACK?
           r.resend_ack(forceTCP);            // Resend ACK, hoping for ACKACK
-          PENDING.add(r);            // And queue up to send again
+          if(!forceTCP)
+            PENDING.add(r);            // And queue up to send again
         }
       }
     }

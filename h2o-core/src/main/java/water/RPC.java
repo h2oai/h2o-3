@@ -208,7 +208,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
             }
             assert sz_check(ab) : "Resend of " + _dt.getClass() + " changes size from " + _size + " to " + ab.size() + " for task#" + _tasknum;
             ab.close(forceTCP);        // Then close; send final byte
-            _sentTcp = t;      // Set after close (and any other possible fail)
+            _sentTcp = t || forceTCP;  // Set after close (and any other possible fail)
             break;             // Break out of retry loop
           } catch( AutoBuffer.AutoBufferException e ) {
             Log.info("IOException during RPC call: " + e._ioe.getMessage() + ",  AB=" + ab + ", for task#" + _tasknum + ", waiting and retrying...");
@@ -413,9 +413,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       boolean wasTCP = dt._repliedTcp;
       if( wasTCP )  rab.put1(RPC.SERVER_TCP_SEND) ; // Original reply sent via TCP
       else dt.write(rab.put1(RPC.SERVER_UDP_SEND)); // Original reply sent via UDP
-      assert sz_check(rab) : "Resend of "+_dt.getClass()+" changes size from "+_size+" to "+rab.size();
+      assert sz_check(rab) : "Resend of " + _dt.getClass() + " changes size from "+_size+" to "+rab.size();
       assert dt._repliedTcp==wasTCP;
-      rab.close(forceTCP);
+      rab.close(!wasTCP && forceTCP);
+      dt._repliedTcp = wasTCP || forceTCP;
       // Double retry until we exceed existing age.  This is the time to delay
       // until we try again.  Note that we come here immediately on creation,
       // so the first doubling happens before anybody does any waiting.  Also
