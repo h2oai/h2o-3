@@ -481,11 +481,11 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("cummax",self))
 
-  def prod(self):
+  def prod(self,na_rm=False):
     """
     :return: The product of the column.
     """
-    return H2OFrame(expr=ExprNode("prod",self))._scalar()
+    return H2OFrame(expr=ExprNode("prod",self,na_rm))._scalar()
 
   def which(self,condition):
     """
