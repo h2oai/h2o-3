@@ -24,20 +24,6 @@ test.citibike.demo <- function(conn) {
 # Pick either the big or the small demo.
 # Big data is 10M rows
 small_test <-  locate_source("smalldata/demos/citibike_20k.csv")
-big_test <-  c(locate_source("bigdata/laptop/citibike-nyc/2013-07.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2013-08.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2013-09.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2013-10.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2013-11.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2013-12.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-01.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-02.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-03.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-04.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-05.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-06.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-07.csv"),
-               locate_source("bigdata/laptop/citibike-nyc/2014-08.csv"))
 
 # 1- Load data - 1 row per bicycle trip.  Has columns showing the start and end
 # station, trip duration and trip start time and day.  The larger dataset
