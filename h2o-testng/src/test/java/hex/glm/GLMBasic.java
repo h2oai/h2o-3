@@ -360,9 +360,21 @@ public class GLMBasic extends TestNGUtil {
 		//glmParams._beta_constraints = betaConstraints._key;
 
 		if (isBetaConstraints) {
+			// Here's an example of how to make the beta constraints frame.
+			// First, represent the beta constraints frame as a string, for example:
+
+			//"names, lower_bounds, upper_bounds\n"+
+			//"AGE, -.5, .5\n"+
+			//"RACE, -.5, .5\n"+
+			//"GLEASON, -.5, .5"
+			String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
+			List<String> predictorNames = Arrays.asList(trainFrame._names);
+			predictorNames.remove(glmParams._response_column); // remove the response column name. we only want predictors
+			for(String name : predictorNames){
+				betaConstraintsString += name+", "+lowerBound+", "+upperBound+"\n";
+			}
 			Key betaConsKey = Key.make("beta_constraints");
-			FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n" + responseColumn + "," + lowerBound
-					+ "," + upperBound);
+			FVecTest.makeByteVec(betaConsKey, betaConstraintsString);
 			betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 			glmParams._beta_constraints = betaConstraints._key;
 		}
