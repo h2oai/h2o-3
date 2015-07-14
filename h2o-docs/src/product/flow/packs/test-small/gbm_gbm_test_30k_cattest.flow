@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/30k_cattest.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/30k_cattest.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/30k_cattest.csv\"]\n  destination_frame: \"X30k_cattest1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"C1\",\"C2\",\"C3\"]\n  column_types: [\"String\",\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"X30k_cattest1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"X30k_cattest1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"X30k_cattest1.hex\", [0.3], [\"X30k_cattest1_test.hex_0.30\",\"X30k_cattest1_train.hex_0.70\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-cfbf123c-ed9a-4d06-93d5-a099cf1d69ec\",\"training_frame\":\"X30k_cattest1_train.hex_0.70\",\"validation_frame\":\"X30k_cattest1_test.hex_0.30\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C3\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":5527782139607134000,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-cfbf123c-ed9a-4d06-93d5-a099cf1d69ec\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-cfbf123c-ed9a-4d06-93d5-a099cf1d69ec\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-cfbf123c-ed9a-4d06-93d5-a099cf1d69ec\", frame: \"X30k_cattest1_test.hex_0.30\", predictions_frame: \"prediction-d0d830b5-aa65-4b7a-9814-8abccaf33b49\""
+    }
+  ]
+}
