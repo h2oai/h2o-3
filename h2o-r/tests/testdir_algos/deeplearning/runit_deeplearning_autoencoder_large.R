@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.deeplearning_autoencoder <- function(conn) {
+check.deeplearning_autoencoder <- function() {
      Log.info("Deep Learning Autoencoder MNIST)")
 
-     train_hex = h2o.uploadFile(conn, locate("bigdata/laptop/mnist/train.csv.gz"))
-     test_hex = h2o.uploadFile(conn, locate("bigdata/laptop/mnist/test.csv.gz"))
+     train_hex = h2o.uploadFile(locate("bigdata/laptop/mnist/train.csv.gz"))
+     test_hex  = h2o.uploadFile(locate("bigdata/laptop/mnist/test.csv.gz" ))
 
      predictors = c(1:784)
      resp = 785

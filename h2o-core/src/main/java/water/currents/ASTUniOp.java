@@ -1,9 +1,9 @@
 package water.currents;
 
+import java.util.Random;
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
+import water.fvec.*;
 
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument
@@ -41,3 +41,14 @@ class ASTSqrt  extends ASTUniOp { String str() { return "sqrt" ; } double op(dou
 class ASTTan   extends ASTUniOp { String str() { return "tan"  ; } double op(double d) { return Math.tan  (d); } }
 class ASTTanh  extends ASTUniOp { String str() { return "tanh" ; } double op(double d) { return Math.tanh (d); } }
 class ASTTrunc extends ASTUniOp { String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
+
+class ASTRunif extends ASTPrim {
+  @Override int nargs() { return 1+2; } // (h2o.runif frame seed)
+  @Override String str() { return "h2o.runif"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr  = stk.track(asts[1].exec(env)).getFrame();
+    long seed = (long)asts[2].exec(env).getNum();
+    if( seed == -1 ) seed = new Random().nextLong();
+    return new ValFrame(new Frame(new String[]{"rnd"}, new Vec[]{fr.anyVec().makeRand(seed)}));
+  }
+}

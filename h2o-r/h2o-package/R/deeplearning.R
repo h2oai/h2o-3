@@ -108,7 +108,7 @@
 #'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
-                             id = "",
+                             model_id = "",
                              overwrite_with_best_model,
                              n_folds = 0,
                              validation_frame,
@@ -195,7 +195,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   parms$response_column <- args$y
   parms$ignored_columns <- args$x_ignore
   if(!missing(model_id))
-    parms$id <- id
+    parms$model_id <- model_id
   if(!missing(overwrite_with_best_model))
     parms$overwrite_with_best_model <- overwrite_with_best_model
   if(!missing(n_folds))
@@ -313,7 +313,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  .h2o.createModel(training_frame@conn, 'deeplearning', parms)
+  .h2o.createModel('deeplearning', parms)
 }
 
 #' Anomaly Detection via H2O Deep Learning Model
@@ -338,9 +338,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' head(prostate.anon)
 #' @export
 h2o.anomaly <- function(object, data) {
-  url <- paste0('Predictions/models/', object@id, '/frames/', data@id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@id)
   res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE)
-  key <- res$model_metrics[[1L]]$predictions$id$name
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
 
   .h2o.getGCFrame(key)
 }
@@ -371,7 +371,7 @@ h2o.anomaly <- function(object, data) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
   .h2o.eval.frame(data)
-  url <- paste0('Predictions/models/', object@id, '/frames/', data@id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@id)
   res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 

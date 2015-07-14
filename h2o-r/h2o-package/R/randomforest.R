@@ -10,7 +10,7 @@
 #'        or a categorical variable).
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the
 #'        variables in the model.
-#' @param id (Optional) The unique id assigned to the resulting model. If
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
@@ -40,7 +40,7 @@
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
 h2o.randomForest <- function( x, y, training_frame,
-                             id,
+                             model_id,
                              validation_frame,
                              mtries = -1,
                              sample_rate = 0.632,
@@ -89,8 +89,8 @@ h2o.randomForest <- function( x, y, training_frame,
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(id))
-    parms$id <- id
+  if(!missing(model_id))
+    parms$model_id <- model_id
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if(!missing(mtries))
@@ -120,6 +120,6 @@ h2o.randomForest <- function( x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  if( do_future ) .h2o.startModelJob(training_frame@conn, 'drf', parms)
-  else            .h2o.createModel(training_frame@conn, 'drf', parms)
+  if( do_future ) .h2o.startModelJob('drf', parms)
+  else            .h2o.createModel('drf', parms)
 }

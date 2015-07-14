@@ -239,7 +239,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict <- predict.H2OModel
 
-h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
+h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
 {
   output <- data.frame()
 
@@ -272,7 +272,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
       params$validation_frame <- data[fnum_id$object != i, ]
       fold <- do.call(model.type, c(params))
       output[(i+1), "fold_num"] <<- i - 1
-      output[(i+1), "model_key"] <<- fold@id
+      output[(i+1), "model_key"] <<- fold@model_id
       # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
       fold
     })
@@ -1096,7 +1096,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   # ok need to score on the newdata
   .h2o.eval.frame(newdata)
 
-  url <- paste0("Predictions/models/",object@id, "/frames/", newdata@id)
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", newdata@id)
   res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object
