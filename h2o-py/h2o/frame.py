@@ -457,6 +457,37 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("as.Date",self,format))
 
+  def cumsum(self):
+    """
+    :return: The cumulative sum over the column.
+    """
+    return H2OFrame(expr=ExprNode("cumsum",self))
+
+  def cumprod(self):
+    """
+    :return: The cumulative product over the column.
+    """
+    return H2OFrame(expr=ExprNode("cumprod",self))
+
+  def cummin(self):
+    """
+    :return: The cumulative min over the column.
+    """
+    return H2OFrame(expr=ExprNode("cummin",self))
+
+  def cummax(self):
+    """
+    :return: The cumulative max over the column.
+    """
+    return H2OFrame(expr=ExprNode("cummax",self))
+
+  def which(self,condition):
+    """
+    :param condition: A conditional statement.
+    :return: A list of indices for which the condition is True
+    """
+    return H2OFrame(expr=ExprNode("h2o.which",self,condition))
+
   def as_data_frame(self, use_pandas=True):
     """
     Obtain the dataset as a python-local object (pandas frame if possible, list otherwise)
@@ -1006,10 +1037,7 @@ class H2OFrame:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
       if pytmp:
-        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
-        # t = res["result_type"]
-        # if t in [1,3]:   sb = ["#{} ".format(res["scalar"])]
-        # elif t in [2,4]: sb = ["\"{}\"".format(res["string"])]
+        h2o.rapids(ExprNode._collapse_sb(sb), self._id)
         sb = ["%", self._id," "]
         self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
