@@ -207,9 +207,6 @@ public class GLMBasic extends TestNGUtil {
 			"0",
 			"1",
 			"test_description",
-			"3",
-			"4",
-			"5",
 			"testcase_id",
 
 			// GLM Parameters
@@ -219,6 +216,7 @@ public class GLMBasic extends TestNGUtil {
 			"binomial",
 			"poisson",
 			"gamma",
+			"_x_",
 
 			"auto",
 			"irlsm",
@@ -258,7 +256,7 @@ public class GLMBasic extends TestNGUtil {
 			"validate_dataset_filename",
 
 			"_response_column",
-			"target_type",
+			"response_column_type",
 			"_ignored_columns",
 			"r",
 			"scikit"
@@ -310,12 +308,19 @@ public class GLMBasic extends TestNGUtil {
 	}
 
 	private void _basic(GLMParameters glmParams, String trainDatasetId, String trainDatasetFilename,
-						String validateDatasetId, String validateDatasetFilename) {
+						String validateDatasetId, String validateDatasetFilename, String[] rawInput) {
 		final String pathFile = "smalldata/testng/";
 
 		Frame trainFrame = null;
 		Frame validateFrame = null;
 		Frame betaConstraints = null;
+
+		boolean isBetaConstraints = Param.parseBoolean(rawInput[tcHeaders.indexOf("betaConstraints")]);
+		String responseColumnType = rawInput[tcHeaders.indexOf("response_column_type")];
+		String responseColumn = rawInput[tcHeaders.indexOf("_response_column")];
+		String lowerBound = rawInput[tcHeaders.indexOf("lowerBound")];
+		String upperBound = rawInput[tcHeaders.indexOf("upperBound")];
+		String betaGiven = rawInput[tcHeaders.indexOf("beta_given")];
 
 		// create train dataset
 		File train_dataset = find_test_file_static(pathFile + trainDatasetFilename);
@@ -354,6 +359,14 @@ public class GLMBasic extends TestNGUtil {
 		//betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 		//glmParams._beta_constraints = betaConstraints._key;
 
+		if (isBetaConstraints) {
+			Key betaConsKey = Key.make("beta_constraints");
+			FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n" + responseColumn + "," + lowerBound
+					+ "," + upperBound);
+			betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+			glmParams._beta_constraints = betaConstraints._key;
+		}
+
 		// Build the appropriate glm, given the above parameters
 		Key modelKey = Key.make("model");
 		GLM job = null;
@@ -366,7 +379,7 @@ public class GLMBasic extends TestNGUtil {
 		job = new GLM(modelKey, "basic glm test", glmParams);
 		model = job.trainModel().get();
 
-		model = DKV.get(modelKey).get();
+		//model = DKV.get(modelKey).get();
 
 		coef = model.coefficients();
 
@@ -441,7 +454,7 @@ public class GLMBasic extends TestNGUtil {
 
 		try {
 			if (_validate(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename, rawInput)) {
-				_basic(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename);
+				_basic(glmParams, trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename, rawInput);
 			} else {
 				Assert.fail(String.format("INVALID INPUT - this test is skipped."));
 			}
