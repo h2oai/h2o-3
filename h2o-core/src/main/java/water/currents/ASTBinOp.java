@@ -123,9 +123,7 @@ abstract class ASTBinOp extends ASTPrim {
               final double d = (double)ArrayUtils.find(vec.domain(),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
-            } else {
-              // nothing: mixing string and numeric; will be all NA below
-            }
+            } // mixing string and numeric; will be all NA below
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
@@ -163,9 +161,7 @@ abstract class ASTBinOp extends ASTPrim {
               final double d = (double)ArrayUtils.find(vec.domain(),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(d,chk.atd(i)));
-            } else {
-              // nothing: mixing string and numeric; will be all NA below
-            }
+            } // mixing string and numeric; will be all NA below
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);

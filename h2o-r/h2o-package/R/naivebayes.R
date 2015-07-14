@@ -15,7 +15,7 @@
 #'        column index number starting at 0, and increasing from left to right. The response must be a categorical
 #'        variable with at least two levels.
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
-#' @param id (Optional) The unique id assigned to the resulting model. If
+#' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
 #' @param threshold The minimum standard deviation to use for observations without enough data. Must be
@@ -40,7 +40,7 @@
 #' }
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
-                           id,
+                           model_id,
                            laplace = 0,
                            threshold = 0.001,
                            eps = 0,
@@ -61,8 +61,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  if(!missing(id))
-    parms$id <- id
+  if(!missing(model_id))
+    parms$model_id <- model_id
   if(!missing(laplace))
     parms$laplace <- laplace
   # TODO: These params have different names than h2o, don't think this should be the case
@@ -78,5 +78,5 @@ h2o.naiveBayes <- function(x, y, training_frame,
   parms$eps_prob <- eps
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'naivebayes', parms)
+  .h2o.createModel('naivebayes', parms)
 }
