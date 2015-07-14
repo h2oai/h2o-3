@@ -173,6 +173,10 @@
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
       ga('create', 'UA-29263631-3');
+      ga('create', 'UA-64842905-1', 'auto', {'name': 'newTracker'}, {'allowLinker': true });
+      ga('newTracker.require', 'linker');
+      ga('linker:autoLink', ['h2o.ai','leadpages.co', 'amazonaws.com']);
+
       ga('send', 'pageview', { 'title': 'H2O Downloads for SUBST_PROJECT_VERSION' });
       <!-- GA sending events -->
       function trackLink(id, category, action) {
