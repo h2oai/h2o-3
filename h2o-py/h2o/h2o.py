@@ -145,6 +145,11 @@ def _quoted(key):
   key = key if is_quoted  else "\"" + key + "\""
   return key
 
+def assign(data,id):
+  rapids(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager())
+  data._id = id
+  return data
+
 def which(condition):
   """
   :param condition: A conditional statement.
