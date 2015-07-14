@@ -329,6 +329,14 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  objects). */
   final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
+
+  public double [] toDoubleArray(){
+    double [] res = new double[_len];
+    for(int i = 0; i < _len; ++i)
+      res[i] = atd(i);
+    return res;
+  }
+
   /** Set the element as missing, using absolute row numbers.
    *
    *  <p>As with all the {@code set} calls, if the value written does not fit

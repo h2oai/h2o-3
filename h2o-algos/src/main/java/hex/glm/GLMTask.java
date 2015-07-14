@@ -173,7 +173,7 @@ public abstract class GLMTask  {
             skip[r] = true;
             continue;
           }
-          int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
+          int off = _dinfo.getCategoricalId(i,(int)c.at8(r)); // get pos in beta vector.
           if(off != -1) {
             double t = pk[off];
             double b = beta[off];
@@ -592,7 +592,7 @@ public abstract class GLMTask  {
       }
       // numerics
       for (int i = 0; i < _dinfo._nums; ++i) {
-        Chunk c = chks[i + _dinfo._cats];
+        Chunk c = chks[i + _dinfo._cats]; //not expanded
         for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
           if(skp[r] || c.isNA(r))
             continue;
@@ -753,8 +753,6 @@ public abstract class GLMTask  {
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       double wz = w * z;
 
-      // cd expression instead
-
       _yy += wz * z;
       for(int i = 0; i < r.nBins; ++i)
         _xy[r.binIds[i]] += wz;
@@ -895,16 +893,16 @@ public abstract class GLMTask  {
     final double [] _betanew; // global beta @ j-1 that was just updated.
     public double [] _temp;
     long _nobs;
+    int _cat_num; // 1: c and p categorical, 2:c numeric and p categorical, 3:c and p numeric , 4: c categorical and previous num.
     boolean _interceptnew;
     boolean _interceptold;
-    int _varindex;
 
-    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, double [] betaold, double[] betanew, int varindex) {
+    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num , double [] betaold, double [] betanew){
+      _cat_num = cat_num;
       _betaold = betaold;
       _betanew = betanew;
-      _interceptold=interceptold; // if updating beta_1, then the intercept is the previous column -> true
+      _interceptold=interceptold; // if updating beta_1, then the intercept is the previous column
       _interceptnew=interceptnew; // if currently updating the intercept value
-      _varindex=varindex;
     }
 
     @Override
@@ -915,36 +913,58 @@ public abstract class GLMTask  {
       Chunk ztildaChunk = chunks[cnt++];
       Chunk filterChunk = chunks[cnt++];
       Chunk xpChunk=null, xChunk=null;
-      _temp = new double[1];
-      if (_interceptnew)
+      _temp = new double[_betaold.length];
+      if (_interceptnew) {
+        xChunk = new C0DChunk(1,chunks[0]._len);
         xpChunk = chunks[cnt++];
-      else {
-        if (_interceptold)
+      } else {
+        if (_interceptold) {
           xChunk = chunks[cnt++];
+          xpChunk = new C0DChunk(1,chunks[0]._len);
+        }
         else {
           xChunk = chunks[cnt++];
           xpChunk = chunks[cnt++];
         }
       }
 
+      //  4: c numeric and previous cat.
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
         ++_nobs;
         if (filterChunk.atd(i) == 1) continue;
-        // updating the intercept
-        if (_interceptnew) {
-          ztildaChunk.set(i, ztildaChunk.atd(i ) - _betaold[_betaold.length - 1] + xpChunk.atd(i) * _betanew[_betaold.length -2]);
-          _temp[0] += wChunk.at8(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+        int active_level = 0, active_level_p = 0;
+        double val = 1, valp = 1;
+        if(_cat_num == 1) {
+          active_level = (int) xChunk.at8(i); // only need to change one temp value per observation.
+          active_level_p = (int) xpChunk.at8(i); // both cat
         }
-        else{
-          if (_interceptold) //  beta_1
-            ztildaChunk.set(i, ztildaChunk.atd(i) - xChunk.atd(i) * _betaold[0] + _betanew[_betanew.length-1]);
-          else // any other beta_k
-            ztildaChunk.set(i, ztildaChunk.atd(i ) - xChunk.atd(i) * _betaold[_varindex] +  xpChunk.atd(i)* _betanew[_varindex-1]);
-          _temp[0] += wChunk.at8(i) * xChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+        else if(_cat_num == 2){
+          val = xChunk.atd(i); // current num and previous cat
+          active_level_p = (int) xpChunk.at8(i);
         }
-     }
+        else if(_cat_num == 3){
+          val = xChunk.atd(i); // both num
+          valp = xpChunk.atd(i);
+        }
+        else if(_cat_num == 4){
+          active_level = (int) xChunk.at8(i); // current cat
+          valp = xpChunk.atd(i); //prev numeric
+        }
 
-      //chunks[2].setVec(ztildaChunk.vec());
+        if (_interceptnew) {
+            ztildaChunk.set(i, ztildaChunk.atd(i) - _betaold[0] + valp * _betanew[active_level_p]);
+            _temp[0] += wChunk.at8(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+          } else {
+            if (_interceptold) // beta_1
+              ztildaChunk.set(i, ztildaChunk.atd(i) - val * _betaold[active_level] + _betanew[active_level_p]);
+            else // any other beta_k
+              ztildaChunk.set(i, ztildaChunk.atd(i) - val * _betaold[active_level] + valp * _betanew[active_level_p]);
+
+           _temp[active_level] += wChunk.at8(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
+           }
+
+       }
+
     }
 
     @Override
@@ -1012,7 +1032,7 @@ public abstract class GLMTask  {
       Chunk zTilda = chunks[chunks.length-2];
       Chunk fChunk = chunks[chunks.length-1];
       chunks = Arrays.copyOf(chunks,chunks.length-4);
-      denums = new double[_dinfo.fullN()+1];
+      denums = new double[_dinfo.fullN()+1]; // full N is expanded
       Row r = _dinfo.newDenseRow();
       for(int i = 0; i < chunks[0]._len; ++i) {
         if(fChunk.at8(i) == 1) continue;
@@ -1044,7 +1064,7 @@ public abstract class GLMTask  {
         wsum+=w;
 
         for(int j = 0; j < r.nBins; ++j)  { // go over cat variables
-          denums[r.binIds[j]] +=  w*r.get(r.binIds[j])*r.get(r.binIds[j]);
+          denums[r.binIds[j]] +=  w; // binIds skips the zeros.
         }
         for(int j = 0; j < r.nNums; ++j){ // num vars
           int id = r.numIds == null?(j + numStart):r.numIds[j];

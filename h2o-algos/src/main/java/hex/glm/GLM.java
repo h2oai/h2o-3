@@ -829,7 +829,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int selected = 0;
       int[] cols = null;
       if (_parms._alpha[0] > 0) {
-        final double rhs = 0;//_parms._alpha[0] * (2 * l1 - l2);
+        final double rhs = _parms._alpha[0] * (2 * l1 - l2);
         cols = MemoryManager.malloc4(_dinfo.fullN());
         int j = 0;
         int [] oldActiveCols = _taskInfo._activeCols;
@@ -946,60 +946,106 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         }
         case COORDINATE_DESCENT_SEQ: {
-          double wsum; // for intercept denum
-          double[] denums; // for all soft thresholding update denums
-          double[] beta = _taskInfo._beta.clone();
-          double[] betaold = _taskInfo._beta.clone();
-          assert beta.length == _activeData.fullN() + 1;
+          _activeData=_dinfo;
+          int p = _activeData.fullN()+ 1;
+          double wsum; // intercept denum
+          double[] denums;
+          double[] beta = new double[p]; // _taskInfo._beta.clone(); ADD FOR WARM STARTS
+          double[] betaold = new double[p];
           int iter1 = 0; // total cd iters
 
           // get reweighted least squares vectors
-          Vec[] newVecs = _dinfo._adaptedFrame.anyVec().makeZeros(3);
+          Vec[] newVecs = _activeData._adaptedFrame.anyVec().makeZeros(3);
           Vec w = newVecs[0]; // fixed before each CD loop
           Vec z = newVecs[1]; // fixed before each CD loop
           Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
 
           // generate new IRLS iteration
-          while (iter1++ < 201) {
+          while (iter1++ < 100) {
 
             Frame fr = new Frame(_activeData._adaptedFrame);
             fr.add("w", w); // fr has all data
             fr.add("z", z);
             fr.add("zTilda", zTilda);
             fr.add("filter", _rowFilter); //rows with nas to be skipped
+
             GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(GLM.this._key, _activeData, _parms, beta).doAll(fr);
             denums = gt.denums;
             wsum = gt.wsum;
 
             // coordinate descent loop
-            while (iter1++ < 201) {
+            while (iter1++ < 100) {
               Frame fr2 = new Frame();
               fr2.add("w", w);
               fr2.add("z", z);
-              fr2.add("zTilda", zTilda); // set it to the original xbeta if first iteration
-              fr2.add("filter", _rowFilter); // rows with nas to be skipped
+              fr2.add("zTilda", zTilda); // original x%*%beta if first iteration
+              fr2.add("filter", _rowFilter); // na row to skip
 
-              // non expanded vars loop
-              for (int i = 0; i < _activeData._adaptedFrame.numCols() - 1; ++i) {
+              for(int i=0; i < _activeData._cats; i++) {
                 Frame fr3 = new Frame(fr2);
-                fr3.add("xj", _activeData._adaptedFrame.vec(i)); // add current variable column to be updated
-                boolean intercept = (i == 0); // distinguish between beta_1 update or any other beta_k update k>1
-                if (!intercept)
-                  fr3.add("xjm1", _activeData._adaptedFrame.vec(i - 1)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
+                int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
+                int prev_level_num = 0;
+                fr3.add("xj", _activeData._adaptedFrame.vec(i));
 
-                GLMCoordinateDescentTaskSeq stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, betaold, beta,i).doAll(fr3);
-                beta[i] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0]) / (denums[i] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                boolean intercept = (i == 0); // prev var is intercept
+                if(!intercept) {
+                  prev_level_num = _activeData._catOffsets[i]-_activeData._catOffsets[i-1];
+                  fr3.add("xjm1", _activeData._adaptedFrame.vec(i-1)); // add previous categorical variable
+                }
 
-                // Need to set zTilda in fr2 here to the current zTilda in fr3.
-               // fr2.replace(2,fr3.vec(2));
+                int start_old = _activeData._catOffsets[i];
+                GLMCoordinateDescentTaskSeq stupdate;
+                if(intercept)
+                  stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, 4 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
+                        new double [] {beta[p-1]} ).doAll(fr3);
+                else
+                  stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, 1 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
+                          Arrays.copyOfRange(beta, _activeData._catOffsets[i-1], _activeData._catOffsets[i])  ).doAll(fr3);
+
+                for(int j=0;j < level_num; ++j)
+                 beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage(stupdate._temp[j] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                         / (denums[_activeData._catOffsets[i]+j] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
               }
 
-              // intercept update
+              int cat_num = 2; // if intercept, or not intercept but not first numeric, then both are numeric .
+              for (int i = 0; i < _activeData._nums; ++i) {
+                GLMCoordinateDescentTaskSeq stupdate;
+                Frame fr3 = new Frame(fr2);
+                fr3.add("xj", _activeData._adaptedFrame.vec(i+_activeData._cats)); // add current variable col
+                boolean intercept = (i == 0 && _activeData.numStart() == 0); // if true then all numeric case and doing beta_1
+
+                if(i > 0 || intercept) {// previous var is a numeric var
+                    cat_num = 3;
+                    if(!intercept)
+                     fr3.add("xjm1", _activeData._adaptedFrame.vec(i - 1 + _activeData._cats)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
+                    stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] {betaold[_activeData.numStart()+ i]}, new double [] {beta[(_activeData.numStart()+i-1+p)%p]}).doAll(fr3);
+                    beta[i+_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                            / (denums[i+_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                   }
+                    else if (i == 0 && !intercept){ // previous one is the last categorical variable
+                    int prev_level_num = _activeData.numStart()-_activeData._catOffsets[_activeData._cats-1];
+                    fr3.add("xjm1", _activeData._adaptedFrame.vec(_activeData._cats-1)); // add previous categorical variable
+                    stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] {betaold[ _activeData.numStart()+ i]},
+                            Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1] , _activeData.numStart() )  ).doAll(fr3);
+                    beta[i+_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                            / (denums[i+_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                  }
+              }
+
+              // intercept update: preceded by a categorical or numeric variable
               Frame fr3 = new Frame(fr2);
-              fr3.add("xj", _activeData._adaptedFrame.vec(beta.length - 2)); // add last variable updated in cycle to the frame
-              GLMCoordinateDescentTaskSeq iupdate = new GLMCoordinateDescentTaskSeq(false, true, betaold, beta,0).doAll(fr3);
-              beta[beta.length - 1] = iupdate._temp[0] / wsum;
-             // fr2.replace(2,fr3.vec(2));
+              fr3.add("xjm1", _activeData._adaptedFrame.vec( _activeData._adaptedFrame.numCols()- 2 ) ); // add last variable updated in cycle to the frame
+              GLMCoordinateDescentTaskSeq iupdate ;
+              if( _activeData._adaptedFrame.vec(  _activeData._adaptedFrame.numCols()- 2  ).isEnum()) {
+                cat_num = 2;
+                iupdate = new GLMCoordinateDescentTaskSeq( false, true, cat_num , new double [] {betaold[betaold.length-1]},
+                        Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ) ).doAll(fr3);
+              }
+              else {
+                cat_num = 3;
+                iupdate = new GLMCoordinateDescentTaskSeq(false, true, cat_num , new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }).doAll(fr3);
+              }
+               beta[beta.length - 1] = iupdate._temp[0] / wsum;
 
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);
