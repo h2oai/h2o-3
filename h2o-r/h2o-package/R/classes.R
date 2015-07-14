@@ -54,14 +54,25 @@ setRefClass("H2OConnectionMutableState",
 #' is not found at port 54321.
 #' @slot ip A \code{character} string specifying the IP address of the H2O cloud.
 #' @slot port A \code{numeric} value specifying the port number of the H2O cloud.
+#' @slot https Set this to TRUE to use https instead of http.
+#' @slot insecure Set this to TRUE to disable SSL certificate checking.
+#' @slot username Username to login with.
+#' @slot password Password to login with.
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
 #' @aliases H2OConnection
 #' @export
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", mutable="H2OConnectionMutableState"),
-         prototype(ip      = NA_character_,
-                   port    = NA_integer_,
-                   mutable = new("H2OConnectionMutableState")))
+         representation(ip="character", port="numeric",
+                        https="logical", insecure="logical",
+                        username="character", password="character",
+                        mutable="H2OConnectionMutableState"),
+         prototype(ip       = NA_character_,
+                   port     = NA_integer_,
+                   https    = FALSE,
+                   insecure = FALSE,
+                   username = NA_character_,
+                   password = NA_character_,
+                   mutable  = new("H2OConnectionMutableState")))
 
 
 
@@ -99,7 +110,7 @@ setClass("H2OObject",
 setMethod("initialize", "H2OObject", function(.Object, ...) {
   .Object <- callNextMethod()
   .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
-                                                                     function(x) capture.output(print(x)))))]
+                                                                     function(x) utils::capture.output(print(x)))))]
   .Object
 })
 
@@ -688,7 +699,7 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
     cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
     l <- list()
     for( i in 1:nc ) {
-      cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+      cat("$ ", cc[i], rep(' ', width - max(stats::na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
       first.10.rows <- df[,i]
       if( isfactor[i] ) {
         nl <- num.levels[i]

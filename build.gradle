@@ -222,10 +222,15 @@ task buildH2oDevDist(type: Exec) {
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
+    def java6home = System.getenv("JAVA_6_HOME")
+
     environment['PROJECT_VERSION'] = projectVersion
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
+    if (java6home != null) {
+      environment['JAVA_6_HOME'] = java6home
+    }
     commandLine './make-dist.sh'
 }
 

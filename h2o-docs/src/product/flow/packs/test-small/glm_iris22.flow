@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "cells": [
+        {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris22.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris22.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris22.csv\"]\n  destination_frame: \"iris22.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 6\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\",\"class2\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris22.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris22.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris22.hex\", [0.25], [\"iris22_test\",\"iris22_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"iris22.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-1554dd17-627c-4fc8-8709-e4c53ea2469c\",\"training_frame\":\"iris22_train\",\"validation_frame\":\"iris22_test\",\"ignore_const_cols\":true,\"response_column\":\"sepal_len\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-1554dd17-627c-4fc8-8709-e4c53ea2469c\""
+    },
+    {
+      "type": "cs",
+      "input": "inspect getModel \"glm-1554dd17-627c-4fc8-8709-e4c53ea2469c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-1554dd17-627c-4fc8-8709-e4c53ea2469c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-1554dd17-627c-4fc8-8709-e4c53ea2469c\", frame: \"iris22_test\", predictions_frame: \"prediction-1d8a8fd4-ec00-46d0-bf63-77503bdbfda4\""
+    }
+  ]
+}

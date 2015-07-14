@@ -35,6 +35,7 @@
 #'        reproducible when running single threaded
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -56,6 +57,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              seed,
                              offset_column = NULL,
                              weights_column = NULL,
+                             nfolds = 0,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
@@ -117,6 +119,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if(!missing(seed))
     parms$seed <- seed
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 

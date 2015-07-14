@@ -10,9 +10,29 @@ import water.api.ModelParametersSchema;
 public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParametersV99> {
 
   public static final class GLRMParametersV99 extends ModelParametersSchema<GLRMParameters, GLRMParametersV99> {
-    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization_x",
-            "regularization_y", "gamma_x", "gamma_y", "max_iterations", "init_step_size", "min_step_size", "seed",
-            "init", "user_points", "recover_svd" };
+    static public String[] fields = new String[] {
+				"model_id",
+				"training_frame",
+				"validation_frame",
+				"ignored_columns",
+				"ignore_const_cols",
+				"score_each_iteration",
+				"loading_key",
+				"transform",
+				"k",
+				"loss",
+				"regularization_x",
+				"regularization_y",
+				"gamma_x",
+				"gamma_y",
+				"max_iterations",
+				"init_step_size",
+				"min_step_size",
+				"seed",
+				"init",
+				"user_points",
+				"recover_svd"
+		};
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
@@ -20,13 +40,16 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Rank of matrix approximation", required = true)
     public int k;
 
-    @API(help = "Loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
+    @API(help = "Numeric loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
     public GLRMParameters.Loss loss;
 
-    @API(help = "Regularization function for X matrix", values = { "L2", "L1" }) // TODO: pull out of enum class
+    @API(help = "Enum loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of enum class
+    public GLRMParameters.MultiLoss multi_loss;
+
+    @API(help = "Regularization function for X matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_x;
 
-    @API(help = "Regularization function for Y matrix", values = { "L2", "L1" }) // TODO: pull out of enum class
+    @API(help = "Regularization function for Y matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_y;
 
     @API(help = "Regularization weight on X matrix")

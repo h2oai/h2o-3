@@ -50,7 +50,7 @@ class Basic(unittest.TestCase):
                 'loss': 'CrossEntropy',
 
                 'validation_frame': parse_key, # KeyIndexed None
-                'ignored_columns': '[STR]', # string[] None
+                'ignored_columns': '["STR"]', # string[] None
                 'response_column': 'FNDX', # string None
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
@@ -60,7 +60,7 @@ class Basic(unittest.TestCase):
                 'overwrite_with_best_model': None, # boolean true
                 'expert_mode': None, # boolean false
                 'autoencoder': None, # boolean false
-                'use_all_factor_levels': None, # boolean true
+                # 'use_all_factor_levels': None, # boolean true
                 # [u'Tanh', u'TanhWithDropout', u'Rectifier', u'RectifierWithDropout', u'Maxout', u'MaxoutWithDropout']
                 'activation': None, # enum Rectifier 
                 'hidden': None, # int[] [200, 200]

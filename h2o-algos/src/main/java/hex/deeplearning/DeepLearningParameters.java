@@ -20,13 +20,6 @@ public class DeepLearningParameters extends Model.Parameters {
     return _sparse ? 0 : Double.NaN;
   }
 
-  // public int _n_folds;
-  public int getNumFolds() {
-    return 0;
-  }
-
-  public boolean _keep_cross_validation_splits;
-
   /**
    * A model key associated with a previously trained Deep Learning
    * model. This option allows users to build a new model as a
@@ -453,6 +446,10 @@ public class DeepLearningParameters extends Model.Parameters {
 //          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       if (!classification && _valid != null || _valid == null)
         dl.hide("_score_validation_sampling", "score_validation_sampling requires classification and a validation frame.");
+    } else {
+      if (_nfolds > 1) {
+        dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
+      }
     }
 
     if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
@@ -483,7 +480,7 @@ public class DeepLearningParameters extends Model.Parameters {
       dl.error("_single_node_mode", "Cannot run on a single node in client mode");
     if (_autoencoder)
       dl.hide("_use_all_factor_levels", "use_all_factor_levels is mandatory in combination with autoencoder.");
-    if (getNumFolds() != 0)
+    if (_nfolds != 0)
       dl.hide("_overwrite_with_best_model", "overwrite_with_best_model is unsupported in combination with n-fold cross-validation.");
     if (_adaptive_rate) {
       dl.hide("_rate", "rate is not used with adaptive_rate.");
@@ -501,9 +498,6 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
       dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
     }
-    if (getNumFolds() != 0)
-      dl.error("_n_folds", "n_folds is not yet implemented.");
-
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
         dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
@@ -532,6 +526,8 @@ public class DeepLearningParameters extends Model.Parameters {
     }
     if (!_autoencoder && _sparsity_beta != 0)
       dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
+    if (classification && dl.hasOffset())
+      dl.info("_offset_column", "Offset is only supported for regression.");
 
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
@@ -632,8 +628,9 @@ public class DeepLearningParameters extends Model.Parameters {
             "_momentum_stable",
             "_nesterov_accelerated_gradient",
             "_ignore_const_cols",
+            "_max_categorical_features",
             "_keep_cross_validation_splits",
-            "_max_categorical_features"
+            "_nfolds"
     };
 
     static void checkCompleteness() {
@@ -659,8 +656,8 @@ public class DeepLearningParameters extends Model.Parameters {
      */
     static void checkpoint(final DeepLearningParameters oldP, final DeepLearningParameters newP) {
       checkCompleteness();
-      if (newP.getNumFolds() != 0)
-        throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
+      if (newP._nfolds != 0)
+        throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
       if ((newP._valid == null) != (oldP._valid == null)
               || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
         throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
@@ -756,7 +753,7 @@ public class DeepLearningParameters extends Model.Parameters {
         Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
         toParms._use_all_factor_levels = true;
       }
-      if (fromParms._overwrite_with_best_model && fromParms.getNumFolds() != 0) {
+      if (fromParms._overwrite_with_best_model && fromParms._nfolds != 0) {
         Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
         toParms._overwrite_with_best_model = false;
       }
@@ -776,7 +773,7 @@ public class DeepLearningParameters extends Model.Parameters {
         toParms._rho = 0;
         toParms._epsilon = 0;
       }
-      if (fromParms.getNumFolds() != 0) {
+      if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
           Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;

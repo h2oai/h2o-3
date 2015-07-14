@@ -123,12 +123,7 @@ class ModelMetricsHandler extends Handler {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ ) {
           ModelMetrics mm = mml._model_metrics[i];
-          try {
-            this.model_metrics[i] = (ModelMetricsBase)Schema.schema(3, mm.getClass()).fillFromImpl(mm);
-          }
-          catch (H2ONotFoundArgumentException e) {
-            this.model_metrics[i] = (ModelMetricsBase)Schema.schema(Schema.getExperimentalVersion(), mm.getClass()).fillFromImpl(mm);
-          }
+          this.model_metrics[i] = (ModelMetricsBase) Schema.schema(3, mm.getClass()).fillFromImpl(mm);
         }
       } else {
         this.model_metrics = new ModelMetricsBase[0];

@@ -197,31 +197,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  final private static class ConfMat extends ConfusionMatrix {
-    final private double _err;
-    final private double _f1;
-    public ConfMat(double err, double f1) {
-      super(null, null);
-      _err=err;
-      _f1=f1;
-    }
-    @Override public double err() { return _err; }
-    @Override public double F1() { return _f1; }
-  }
-
   public ConfusionMatrix cm() {
     final DeepLearningScoring lasterror = last_scored();
     if (lasterror == null) return null;
     ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
             lasterror.train_confusion_matrix;
-    if (cm == null ) {
-      if (lasterror.validation || lasterror.num_folds > 0) {
-        return new ConfMat(lasterror.scored_valid._classError, lasterror.validation_AUC != null ? lasterror.validation_AUC.maxF1() : 0);
-      } else {
-        return new ConfMat(lasterror.scored_train._classError, lasterror.training_AUC != null ? lasterror.training_AUC.maxF1() : 0);
-      }
-    }
     return cm;
   }
 
@@ -272,19 +253,19 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
-    } else if (get_params().getNumFolds() > 0) {
-      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
-//      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
-      if (_output.getModelCategory() == ModelCategory.Binomial) {
-        colHeaders.add("Cross-Validation AUC");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
-      if (_output.isClassifier()) {
-        colHeaders.add("Cross-Validation Classification Error");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
+    } else if (get_params()._nfolds > 1) {
+//      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+////      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+//      if (_output.getModelCategory() == ModelCategory.Binomial) {
+//        colHeaders.add("Cross-Validation AUC");
+//        colTypes.add("double");
+//        colFormat.add("%.5f");
+//      }
+//      if (_output.isClassifier()) {
+//        colHeaders.add("Cross-Validation Classification Error");
+//        colTypes.add("double");
+//        colFormat.add("%.5f");
+//      }
     }
 
     final int rows = errors.length;
@@ -334,9 +315,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (_output.isClassifier()) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
         }
-      }
-      else if(get_params().getNumFolds() > 1) {
-        throw H2O.unimpl("n_folds >= 2 is not (yet) implemented.");
       }
       row++;
     }
@@ -441,12 +419,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
     model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
-    if (parms.getNumFolds() != 0) actual_best_model_key = null;
+    if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
-      errors[0].num_folds = parms.getNumFolds();
+      errors[0].num_folds = parms._nfolds;
       _output.errors = last_scored();
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
@@ -502,16 +480,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
       // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
       // Note: actual communication time is estimated by the NetworkTest's collective test.
-      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && time_for_communication_us > 1e4) {
-//        Log.info("Time taken for communication: " + PrettyPrint.usecs((long)time_for_communication_us));
-//        Log.info("Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long)time_last_iter_millis, true));
-        final double comm_to_work_ratio = (time_for_communication_us *1e-3) / time_last_iter_millis;
-//        Log.info("Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
-//        Log.info("target_comm_to_work: " + get_params().target_ratio_comm_to_comp);
-        final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
-//        Log.warn("Suggested value for train_samples_per_iteration: " + get_params().actual_train_samples_per_iteration/correction);
-        actual_train_samples_per_iteration /= correction;
-        actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2) {
+        Log.info("Auto-tuning train_samples_per_iteration.");
+        if (time_for_communication_us > 1e4) {
+          Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
+          Log.info("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_last_iter_millis, true));
+          final double comm_to_work_ratio = (time_for_communication_us * 1e-3) / time_last_iter_millis;
+          Log.info("  Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
+          Log.info("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
+          final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
+          Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+          actual_train_samples_per_iteration /= correction;
+          actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        } else if (time_for_communication_us <= 1e4) {
+          Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        }
       }
 
       _timeLastScoreEnter = now;
@@ -738,9 +722,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     if (!get_params()._autoencoder) {
-      return super.scoreImpl(orig,adaptedFr,destination_key);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -856,7 +840,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     else {
       Frame adaptFr = new Frame(fr);
       adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
-      Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
+      Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
       cleanup_adapt( adaptFr, fr );
       return output;
     }
@@ -975,7 +959,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._train = mse_frame._key;
     parms._probs = new double[]{quantile};
-    Quantile job = new Quantile(parms).trainModel();
+    Job<QuantileModel> job = new Quantile(parms).trainModel();
     QuantileModel kmm = job.get();
     job.remove();
     double q = kmm._output._quantiles[0][0];
@@ -1018,15 +1002,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         DKV.remove(model_info().localModelInfoKey(node));
       }
     }
-  }
-
-  void delete_xval_models( ) {
-//    if (get_params().xval_models != null) {
-//      for (Key k : get_params().xval_models) {
-//        DKV.get(k).<DeepLearningModel>get().delete_best_model();
-//        DKV.get(k).<DeepLearningModel>get().delete();
-//      }
-//    }
   }
 
   private String getHeader() {

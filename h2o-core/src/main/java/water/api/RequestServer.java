@@ -58,6 +58,7 @@ public class RequestServer extends NanoHTTPD {
   public static final int H2O_REST_API_VERSION = 3;
 
   static public RequestServer SERVER;
+  private RequestServer() {}
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
@@ -166,7 +167,7 @@ public class RequestServer extends NanoHTTPD {
       "Delete all Frames from the H2O distributed K/V store.");
     register("/3/Models/(?<modelid>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"model_id"},
       "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<modelid>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
+    register("/3/Models/(?<modelid>.*?)(\\.java)?"                  ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
       "Return all Models from the H2O distributed K/V store.");
@@ -185,6 +186,8 @@ public class RequestServer extends NanoHTTPD {
       "Set Model Builders visibility level.");
     register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
       "Get Model Builders visibility level.");
+    register("/3/ModelBuilders/(?<algo>.*)/model_id"             ,"POST"  ,ModelBuildersHandler.class, "calcModelId",                 new String[] {"algo"},
+      "Return a new unique model_id for the specified algorithm.");
     register("/3/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
       "Return the Model Builder metadata for the specified algorithm.");
     register("/3/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
@@ -432,31 +435,14 @@ public class RequestServer extends NanoHTTPD {
     return lookup(http_method, uri);
   }
 
-
-  // Keep spinning until we get to launch the NanoHTTPD.  Launched in a
-  // seperate thread (I'm guessing here) so the startup process does not hang
-  // if the various web-port accesses causes Nano to hang on startup.
-  public static Runnable start() {
+  public static void finalizeRegistration() {
     Schema.registerAllSchemasIfNecessary();
-    Runnable run=new Runnable() {
-        @Override public void run()  {
-          while( true ) {
-            try {
-              // Try to get the NanoHTTP daemon started
-              synchronized(this) {
-                SERVER = new RequestServer(water.init.NetworkInit._apiSocket);
-                notifyAll();
-              }
-              break;
-            } catch( Exception ioe ) {
-              Log.err("Launching NanoHTTP server got ",ioe);
-              try { Thread.sleep(1000); } catch( InterruptedException ignore ) { } // prevent denial-of-service
-            }
-          }
-        }
-      };
-    new Thread(run, "Request Server launcher").start();
-    return run;
+
+    // Need a stub RequestServer to handle calls to serve() from Jetty.
+    // But no threads are started here anymore.
+    SERVER = new RequestServer();
+
+    H2O.getJetty().acceptRequests();
   }
 
   public static void alwaysLogRequest(String uri, String method, Properties parms) {
@@ -714,7 +700,9 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
       ModelSchema ms = (ModelSchema)mb.models[0];
-      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+      Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+      //r.addHeader("Content-Disposition", "attachment; filename=\"" + ms.model_id.key().toString() + ".java\"");
+      return r;
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());

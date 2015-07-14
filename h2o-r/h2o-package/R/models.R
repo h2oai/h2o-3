@@ -204,12 +204,12 @@
     }
   }
 
-  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, h2oRestApiVersion), h2oRestApiVersion)
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, h2oRestApiVersion))
 }
 
-h2o.getFutureModel <- function(object, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
-  h2o.getModel(object@model_id, object@conn, h2oRestApiVersion = h2oRestApiVersion)
+  h2o.getModel(object@model_id, object@conn)
 }
 
 #' Predict on an H2O Model
@@ -1210,8 +1210,8 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
     main <- paste(yaxis, "vs", xaxis)
     if( x@on_train ) main <- paste(main, "(on train)")
     else             main <- paste(main, "(on valid)")
-    plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
-    abline(0, 1, lty = 2)
+    graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
+    graphics::abline(0, 1, lty = 2)
   }
 }
 

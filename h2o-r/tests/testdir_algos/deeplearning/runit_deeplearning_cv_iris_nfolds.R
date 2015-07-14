@@ -6,7 +6,9 @@ test.deeplearning.nfolds <- function(conn) {
   print(summary(iris.hex))
   iris.nfolds <- h2o.deeplearning.cv(x = 1:4, y = 5, training_frame = iris.hex, nfolds = 3)
   print(iris.nfolds)
-  
+  iris.nfolds.real <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex, nfolds = 3)
+  print(iris.nfolds.real)
+
   # Can't specify both nfolds >= 2 and validation = H2OParsedData at once
   expect_error(h2o.deeplearning.cv(x = 1:4, y = 5, training_frame = iris.hex, nfolds = 5, validation_frame = iris.hex))
   testEnd()

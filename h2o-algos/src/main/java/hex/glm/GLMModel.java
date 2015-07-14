@@ -75,7 +75,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
-    public int _n_folds;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = 1e-5;
@@ -86,8 +85,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_active_predictors = -1;
 
     public void validate(GLM glm) {
-      if(_n_folds < 0) glm.error("n_folds","must be >= 0");
-      if(_n_folds == 1)_n_folds = 0; // 0 or 1 means no n_folds
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
@@ -95,9 +92,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           _nlambdas = 100;
         else
           _exactLambdas = false;
-      if(_family != Family.tweedie)
-        glm.hide("tweedie_variance_power","Only applicable with Tweedie family");
-      _tweedie_link_power = 1 - _tweedie_variance_power;
+      if(_family != Family.tweedie) {
+        glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
+        glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
+      }
+
       if(_beta_constraints != null) {
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");

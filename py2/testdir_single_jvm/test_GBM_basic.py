@@ -50,7 +50,7 @@ class Basic(unittest.TestCase):
             'min_rows': 3,
             'nbins': 40,
             'learn_rate': 0.2,
-            'loss': 'multinomial',
+            # 'loss': 'multinomial',
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
@@ -85,8 +85,8 @@ class Basic(unittest.TestCase):
             model = OutputObj(modelResult['models'][0]['output'], 'model')
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-            cmm = OutputObj(cmmResult, 'cmm')
-            print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
+            # cmm = OutputObj(cmmResult, 'cmm')
+            # print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             vis = OutputObj(model.variable_importances, 'vis')
 
@@ -107,12 +107,12 @@ class Basic(unittest.TestCase):
             print "model.model_category", model.model_category
             assert model.model_category=='Multinomial', model.model_category
 
-            print "FIX! why is mse 0 and mes_train Nan?"
-            print "model.mse:", model.mse
-            print "model.mse_train:", model.mse_train
+            # FIX!
+            # print "FIX! why is mse 0 and mse_train Nan?"
+            # print "model.mse:", model.mse
+            # print "model.mse_train:", model.mse_train
 
-
-            if 1==1:
+            if 1==0:
                 print ""
                 for i,c in enumerate(cmm.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)

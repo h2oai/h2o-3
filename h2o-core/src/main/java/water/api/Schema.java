@@ -199,7 +199,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   // Bound the version search if we haven't yet registered all schemas
   public final static int getHighestSupportedVersion() {
     return HIGHEST_SUPPORTED_VERSION;
-  }
+   }
 
   public final static int getExperimentalVersion() {
     return EXPERIMENTAL_VERSION;
@@ -487,13 +487,19 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   // URL parameter parse
   private <E> Object parse( String field_name, String s, Class fclz, boolean required ) {
-    if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
-    if( fclz.equals(int.class) ) return Integer.valueOf(s);
-    if( fclz.equals(long.class) ) return Long.valueOf(s);
-    if( fclz.equals(boolean.class) ) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
-    if( fclz.equals(byte.class) ) return Byte.valueOf(s);
-    if( fclz.equals(double.class) ) return Double.valueOf(s);
-    if( fclz.equals(float.class) ) return Float.valueOf(s);
+    try {
+      if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
+      if( fclz.equals(int.class) ) return parseInteger(s, int.class);
+      if( fclz.equals(long.class) ) return parseInteger(s, long.class);
+      if( fclz.equals(short.class) ) return parseInteger(s, short.class);
+      if( fclz.equals(boolean.class) ) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
+      if( fclz.equals(byte.class) ) return parseInteger(s, byte.class);
+      if( fclz.equals(double.class) ) return Double.valueOf(s);
+      if( fclz.equals(float.class) ) return Float.valueOf(s);
+    } catch (NumberFormatException ne) {
+      String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
+      throw new H2OIllegalArgumentException(msg);
+    }
     if( fclz.isArray() ) {      // An array?
       if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
@@ -518,7 +524,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         // Fails with primitive classes; need the wrapper class.  Thanks, Java.
         a = (E[]) Array.newInstance(afclz, splits.length);
       }
-
+      
       for( int i=0; i<splits.length; i++ ) {
         if (String.class == afclz || KeyV3.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
@@ -585,24 +591,49 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
     // where the frame name is also specified.
     if ( FrameV3.ColSpecifierV3.class.isAssignableFrom(fclz)) {
-        return new FrameV3.ColSpecifierV3(s);
+      return new FrameV3.ColSpecifierV3(s);
     }
 
     if( ModelSchema.class.isAssignableFrom(fclz) )
       throw H2O.fail("Can't yet take ModelSchema as input.");
-      /*
+    /*
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
-        Value v = DKV.get(s);
-        if (null == v) return null; // not required
-        if (! v.isModel()) throw new IllegalArgumentException("Model argument points to a non-model object.");
-        return v.get();
+      Value v = DKV.get(s);
+      if (null == v) return null; // not required
+      if (! v.isModel()) throw new IllegalArgumentException("Model argument points to a non-model object.");
+      return v.get();
       }
-      */
-
+    */
     throw H2O.fail("Unimplemented schema fill from "+fclz.getSimpleName());
   }
+
+  /**
+   * Helper functions for parse()
+   **/
+
+  /**
+   * Parses a string into an integer data type specified by parameter return_type. Accepts any format that
+   * is accepted by java's BigDecimal class.
+   *  - Throws a NumberFormatException if the evaluated string is not an integer or if the value is too large to
+   *    be stored into return_type without overflow.
+   *  - Throws an IllegalAgumentException if return_type is not an integer data type.
+   **/
+  private <T> T parseInteger(String s, Class<T> return_type) {
+    try {
+      java.math.BigDecimal num = new java.math.BigDecimal(s);
+      T result = (T) num.getClass().getDeclaredMethod(return_type.getSimpleName() + "ValueExact", new Class[0]).invoke(num);
+      return result;
+    } catch (InvocationTargetException ite) {
+      throw new NumberFormatException("The expression's numeric value is out of the range of type " + return_type.getSimpleName());
+    } catch (NoSuchMethodException nsme) {
+      throw new IllegalArgumentException(return_type.getSimpleName() + " is not an integer data type");
+    } catch (IllegalAccessException iae) {
+      throw H2O.fail("Cannot parse expression as " + return_type.getSimpleName() + " (Illegal Access)");
+    }
+  }
+  
   private int read( String s, int x, char c, Class fclz ) {
     if( peek(s,x,c) ) return x+1;
     throw new IllegalArgumentException("Expected '"+c+"' while reading a "+fclz.getSimpleName()+", but found "+s);
@@ -768,8 +799,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    */
   public static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);
-    if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
-                                                            "Failed to find schema for version: " + version + " and type: " + type);
+    if (null == clz)
+      clz = schemaClass(Schema.getExperimentalVersion(), type);
+
+    if (null == clz)
+      throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
+                                             "Failed to find schema for version: " + version + " and type: " + type);
     return Schema.newInstance(clz);
   }
 

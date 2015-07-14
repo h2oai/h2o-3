@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/ecology_model.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/ecology_model.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/ecology_model.csv\"]\n  destination_frame: \"ecology_model.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"Site\",\"Angaus\",\"SegSumT\",\"SegTSeas\",\"SegLowFlow\",\"DSDist\",\"DSMaxSlope\",\"USAvgT\",\"USRainDays\",\"USSlope\",\"USNative\",\"DSDam\",\"Method\",\"LocSed\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"ecology_model.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"ecology_model.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"ecology_model.hex\", [0.25], [\"ecology_model_test.hex_0.250\",\"ecology_model_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-82d0821a-a40a-4219-9f7f-682eedb74cd4\",\"training_frame\":\"ecology_model_train.hex_0.750\",\"validation_frame\":\"ecology_model_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"Site\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-82d0821a-a40a-4219-9f7f-682eedb74cd4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-82d0821a-a40a-4219-9f7f-682eedb74cd4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-82d0821a-a40a-4219-9f7f-682eedb74cd4\", frame: \"ecology_model_test.hex_0.250\", predictions_frame: \"prediction-960bf393-5efb-4c3f-ac01-a681b993c728\""
+    }
+  ]
+}

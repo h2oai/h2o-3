@@ -48,15 +48,7 @@ class ModelBuildersHandler extends Handler {
     for (Map.Entry<String, Class<? extends ModelBuilder>> entry : builders.entrySet()) {
         String algo = entry.getKey();
         ModelBuilder builder = ModelBuilder.createModelBuilder(algo);
-
-        ModelBuilderSchema schema = null;
-        try {
-          schema = (ModelBuilderSchema)Schema.schema(version, builder);
-        }
-        catch (H2ONotFoundArgumentException e) {
-          schema = (ModelBuilderSchema)Schema.schema(Schema.getExperimentalVersion(), builder);
-        }
-        m.model_builders.put(algo, schema.fillFromImpl(builder));
+        m.model_builders.put(algo, (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
     }
     return m;
   }
@@ -68,6 +60,21 @@ class ModelBuildersHandler extends Handler {
     ModelBuilder builder = ModelBuilder.createModelBuilder(m.algo);
     m.model_builders.put(m.algo, (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
     return m;
+  }
+
+  public static class ModelIdV3 extends Schema<Iced, ModelIdV3>{
+    @API(help="Model ID", direction = API.Direction.OUTPUT)
+    String model_id;
+  }
+
+  /** Calculate next unique model_id. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelIdV3 calcModelId(int version, ModelBuildersV3 m) {
+    m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
+    String model_id = H2O.calcNextUniqueModelId(m.algo);
+    ModelIdV3 mm = new ModelIdV3();
+    mm.model_id = model_id;
+    return mm;
   }
 }
 

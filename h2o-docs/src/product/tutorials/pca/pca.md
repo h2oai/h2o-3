@@ -1,15 +1,10 @@
 # PCA Tutorial
 
->Note: PCA is still in development in the current version of H2O. After development is complete, this document will be updated. 
-
-<!---
-
-
 This tutorial walks new users through the process of creating a Principal Components Analysis (PCA) model. 
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-For more details on the math behind H2O's implementation of PCA, refer to <a href="http://docs.h2o.ai/datascience/pca.html" target="_blank">PCA Data Science</a>.
+For more details on the math behind H2O's implementation of PCA, refer to <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#Data%20Science%20Algorithms-PCA" target="_blank">PCA Data Science</a>.
 
 
 ### When to Use PCA
@@ -35,7 +30,7 @@ Before creating a model, import data into H2O:
 0. Click the **Assist Me!** button in the *Help* tab in the sidebar on the right side of the page. 
 
   ![Assist Me button](../images/AssistButton.png)
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field, or drag and drop the file onto the **Search** entry field and press Enter to confirm the drop. 
+0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. 
 0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
   ![Importing Files](../images/GBM_ImportFile.png)
 
@@ -68,12 +63,7 @@ Now, parse the imported data:
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns.  
 0. In the **K** field, specify the number of clusters. For this example, enter `3`.  
 0. In the **Max_iterations** field, specify the maximum number of iterations. For this example, enter `100`. 
-0. From the drop-down **Init** menu, select the initialization mode. For this example, select **PlusPlus**. 
-   - PlusPlus initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen. 
-   - User initialization requires the corresponding **User_points** parameter. To define a specific initialization point, select the imported dataset .hex file from the drop-down **User_points** list, then select **User** from the drop-down **Init** list.
-   
-     **Note**: The user-specified points dataset must have the same number of columns as the training dataset.  
-
+0. From the drop-down **pca_method** menu, select the method for computing PCA. For this example, select *GramSVD*. The *GramSVD* option forms the Gram matrix of the training frame via a distributed computation, then computes the singular value decomposition (SVD) of the Gram locally using the JAMA package. The principal component vectors and standard deviations are recovered from the SVD. 
 0. Click the **Build Model** button. 
 
 
@@ -85,9 +75,7 @@ Now, parse the imported data:
 The output for PCA includes the following: 
 
 - Output (model category, model summary, scoring history, training metrics, validation metrics, iterations)
-- Archetypes
+- Eigenvectors
 - Standard deviation
-- Rotation 
 - Importance of components
 
---> 

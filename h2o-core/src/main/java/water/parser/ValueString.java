@@ -84,13 +84,14 @@ public class ValueString extends Iced implements Comparable<ValueString> {
       for (int i = 0; i < length(); ++i)
         if (getBuffer()[getOffset() + i] != str.getBuffer()[str.getOffset() + i]) return false;
       return true;
-    } else if (o instanceof String) {
+    } /* never called
+     else if (o instanceof String) {
       String str = (String) o;
       if (str.length() != length()) return false;
       for (int i = 0; i < length(); ++i)
         if (getBuffer()[getOffset() + i] != str.charAt(i)) return false;
       return true;
-    }
+    } */
     return false; //FIXME find out if this is required for some case or if an exception can be thrown
   }
   public final byte [] getBuffer() {return _buf;}

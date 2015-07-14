@@ -137,11 +137,15 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
 alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRUE, use_all_factor_levels = TRUE) {
   df.clone <- df
   is_num <- sapply(df.clone, is.numeric)
-  df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
-  df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
-  if (ignore_const_cols) {
+  if(any(is_num)) {
+    df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
+    df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
+  }
+  
+  if(ignore_const_cols) {
     is_const <- sapply(df.clone, function(z) { var(z, na.rm = TRUE) == 0 })
-    df.clone <- df.clone[,!is_const]
+    if(any(is_const))
+      df.clone <- df.clone[,!is_const]
   }
   genDummyCols(df.clone, use_all_factor_levels)
 }

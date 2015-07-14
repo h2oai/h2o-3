@@ -35,6 +35,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
 
     public boolean _build_tree_one_node = false;
+
+    /** Distribution functions.  Note: AUTO will select gaussian for
+     *  continuous, and multinomial for categorical response
+     *
+     *  <p>TODO: Replace with drop-down that displays different distributions
+     *  depending on cont/cat response
+     */
+    public Distributions.Family _distribution = Distributions.Family.AUTO;
+    public float _tweedie_power=1.5f;
   }
 
   final public VarImp varImp() { return _output._varimp; }
@@ -109,7 +118,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees++;
       // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
       _scored_train = ArrayUtils.copyAndFillOf(_scored_train, _ntrees+1, new ScoreKeeper());
-      _scored_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoreKeeper()) : null;
+      _scored_valid = _scored_valid != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoreKeeper()) : null;
       _training_time_ms = ArrayUtils.copyAndFillOf(_training_time_ms, _ntrees+1, System.currentTimeMillis());
       fs.blockForPending();
     }
@@ -129,11 +138,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // Invoke scoring
     Arrays.fill(preds,0);
     for( int tidx=0; tidx<_output._treeKeys.length; tidx++ )
-      score0(data, preds, tidx, weight, offset);
+      score0(data, preds, tidx);
     return preds;
   }
   // Score per line per tree
-  private void score0(double data[], double preds[], int treeIdx, double weight, double offset) {
+  private void score0(double data[], double preds[], int treeIdx) {
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
       if (keys[c] != null) {
@@ -142,7 +151,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
     }
-    if (keys.length == 1) preds[0] += offset;
   }
 
   @Override protected Futures remove_impl( Futures fs ) {

@@ -5,7 +5,7 @@ package water.parser;
 public enum ParserType {
   GUESS(false), ARFF(true), XLS(false), XLSX(false), CSV(true), SVMLight(true);
   final boolean _parallelParseSupported;
-  private ParserType( boolean par ) { _parallelParseSupported = par; }
+  ParserType( boolean par ) { _parallelParseSupported = par; }
   String toString( int ncols, byte separator ) {
     if( this== GUESS) return "";
     StringBuilder sb = new StringBuilder(name());

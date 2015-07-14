@@ -32,8 +32,13 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
 
   public ModelBuilderSchema schema() { return new ExampleV3(); }
 
-  @Override public Example trainModel() {
-    return (Example)start(new ExampleDriver(), _parms._max_iterations);
+  @Override public Example trainModelImpl(long work) {
+    return (Example)start(new ExampleDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms._max_iterations;
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the

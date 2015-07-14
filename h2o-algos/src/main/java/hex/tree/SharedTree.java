@@ -55,12 +55,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return _vresponse != null ? _vresponse:(_vresponse = DKV.getGet(_vresponse_key));
   }
 
-  // Base class hasWeights() uses the transient Vec, which is not available on remote nodes...
-  // But sending the ModelBuilder around to remote nodes is bad practice anyway....
-  boolean _hasWeights;
-  @Override public boolean hasWeights() { return _hasWeights; }
-  boolean _hasOffset;
-  @Override public boolean hasOffset() { return _hasOffset; }
+  @Override public long progressUnits() { return _parms._ntrees; }
 
   @Override
   protected boolean computePriorClassDistribution(){ return true;}
@@ -75,10 +70,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    *  the number of classes to predict on; validate a checkpoint.  */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    _hasWeights = super.hasWeights();
-    _hasOffset = super.hasOffset();
-    if (_hasOffset)
-      error("_offset_column", "Offsets are not yet supported for GBM/DRF.");
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode");
     if(_vresponse != null)
@@ -109,6 +100,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "_nbins_cats must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    if (_parms._distribution == Distributions.Family.tweedie) {
+      _parms._distribution.tweedie.p = _parms._tweedie_power;
+    }
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeights() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -123,7 +117,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Top-level tree-algo driver
   abstract protected class Driver extends H2OCountedCompleter<Driver> {
 
-    // Top-level tree-algo driver function
     @Override protected void compute2() {
       _model = null;            // Resulting model!
       try {
@@ -261,7 +254,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (idx_weight() >= 0)
         fr2.add(fr._names[idx_weight()],vecs[idx_weight()]);
       // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar, _model._parms._distribution));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -287,9 +280,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final boolean _subset;      // True if working a subset of cols
     final boolean _build_tree_one_node;
     float[] _improvPerVar;      // Squared Error improvement per variable per split
+    Distributions.Family _family;
     
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar, Distributions.Family family) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -301,6 +295,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _subset = subset;
       _build_tree_one_node = build_tree_one_node;
       _improvPerVar = improvPerVar;
+      _family = family;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -311,7 +306,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset).dfork(0,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset, _family).dfork(0,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -349,9 +344,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_offset(   ) { return _model._output.offsetIdx(); }
   protected int idx_resp(     ) { return _model._output.responseIdx(); }
   protected int idx_tree(int c) { return _ncols+1+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
-  protected int idx_work(int c) { return _ncols+1+_nclass+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
-  protected int idx_nids(int c) { return _ncols+1+_nclass+_nclass+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
-  protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass+(hasOffset()?1:0)+(hasWeights()?1:0); }
+  protected int idx_work(int c) { return idx_tree(c) + _nclass; }
+  protected int idx_nids(int c) { return idx_work(c) + _nclass; }
+  protected int idx_oobt()      { return idx_nids(0) + _nclass; }
 
   protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
@@ -483,7 +478,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     for( DTree dtree : trees )
       if( dtree != null ) {
         try {
-          PrintWriter writer = new PrintWriter("/tmp/h2o-dev.tree" + ++counter + ".txt", "UTF-8");
+          PrintWriter writer = new PrintWriter("/tmp/h2o-3.tree" + ++counter + ".txt", "UTF-8");
           writer.println(dtree.root().toString2(new StringBuilder(), 0));
           writer.close();
         } catch (FileNotFoundException|UnsupportedEncodingException e) {

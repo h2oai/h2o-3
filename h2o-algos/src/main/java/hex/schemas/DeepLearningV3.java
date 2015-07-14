@@ -12,10 +12,16 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
   public static final class DeepLearningParametersV3 extends ModelParametersSchema<DeepLearningParameters, DeepLearningParametersV3> {
 
     // Determines the order of parameters in the GUI
-    static public String[] own_fields = new String[] {
-//        "n_folds",
-//        "keep_cross_validation_splits",
-        "response_column",
+    static public String[] fields = new String[] {
+				"model_id",
+				"training_frame",
+				"validation_frame",
+        "nfolds",
+        "keep_cross_validation_splits",
+				"response_column",
+				"ignored_columns",
+				"ignore_const_cols",
+				"score_each_iteration",
         "weights_column",
         "offset_column",
         "balance_classes",
@@ -129,12 +135,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public int max_hit_ratio_k;
 
     /////////////////////
-
-//    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
-//    public int n_folds;
-
-//    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
-//    public boolean keep_cross_validation_splits;
 
     /**
      * A model key associated with a previously trained Deep Learning

@@ -100,9 +100,9 @@ Users of our Spark-compatible solution, Sparkling Water, should be aware that Sp
 
 Sparkling Water is versioned according to the Spark versioning: 
 
-- Use Sparkling Water 1.2 for Spark 1.2
-- Use Sparkling Water 1.3 for Spark 1.3+
-- Sparkling Water 1.4 is currently in development is scheduled for release at the end of July 
+- Use [Sparkling Water 1.2](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.2/6/index.html) for Spark 1.2
+- Use [Sparkling Water 1.3](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.3/7/index.html) for Spark 1.3+
+- Use [Sparkling Water 1.4](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.4/3/index.html) for Spark 1.4
 
 ###Getting Started with Sparkling Water
 

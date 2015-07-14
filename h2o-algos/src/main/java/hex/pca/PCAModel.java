@@ -6,7 +6,6 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.JCodeGen;
 import water.util.SB;
 import water.util.TwoDimTable;
@@ -16,13 +15,14 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public static class PCAParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
     public Method _pca_method = Method.GramSVD;   // Method for computing PCA
-    public int _k = 1;                // Number of principal components
+    public int _k = 1;                     // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
     // public Key<Frame> _loading_key;
-    public String _loading_name;
+    public String _loading_name;           // Loading only generated if pca_method = Power
     public boolean _keep_loading = true;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
+    public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
 
     public enum Method {
       GramSVD, Power, GLRM
@@ -30,6 +30,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   public static class PCAOutput extends Model.Output {
+    // GLRM final value of L2 loss function
+    public double _objective;
+
     // Principal components (eigenvectors)
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;
@@ -44,6 +47,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Number of categorical and numeric columns
     public int _ncats;
     public int _nnums;
+
+    // Number of good rows in training frame (not skipped)
+    public long _nobs;
 
     // Total column variance for expanded and transformed data
     public double _total_variance;
@@ -83,7 +89,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   @Override
-  protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._k; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
@@ -140,7 +146,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public Frame score(Frame fr, String destination_key) {
     Frame adaptFr = new Frame(fr);
     adaptTestForTrain(adaptFr, true, false);   // Adapt
-    Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
     cleanup_adapt( adaptFr, fr );
     return output;
   }

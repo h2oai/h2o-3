@@ -57,9 +57,15 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
   }
 
-  /** Start the KMeans training Job on an F/J thread. */
-  @Override public Job<KMeansModel> trainModel() {
-    return start(new KMeansDriver(), _parms._max_iterations);
+  /** Start the KMeans training Job on an F/J thread.
+   * @param work*/
+  @Override public Job<KMeansModel> trainModelImpl(long work) {
+    return start(new KMeansDriver(), work);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms._max_iterations;
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -74,9 +80,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     if( _parms._init == Initialization.User && _parms._user_points == null )
       error("_user_points","Must specify initial cluster centers");
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
-      if( _parms._user_points.get().numCols() != _train.numCols() ) {
+      Frame user_points = _parms._user_points.get();
+      if( user_points.numCols() != _train.numCols() ) {
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
-      }
+      } else if( user_points.numRows() != _parms._k)
+        error("_user_points","The number of rows in the user-specified points is not equal to k = " + _parms._k);
     }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
@@ -99,10 +107,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
       double centers[][];    // Cluster centers
       if( null != _parms._user_points ) { // User-specified starting points
-        int numCenters = _parms._k;
-        int numCols = _parms._user_points.get().numCols();
+        Frame user_points = _parms._user_points.get();
+        int numCenters = (int)user_points.numRows();
+        int numCols = user_points.numCols();
         centers = new double[numCenters][numCols];
-        Vec[] centersVecs = _parms._user_points.get().vecs();
+        Vec[] centersVecs = user_points.vecs();
         // Get the centers and standardize them if requested
         for (int r=0; r<numCenters; r++) {
           for (int c=0; c<numCols; c++){

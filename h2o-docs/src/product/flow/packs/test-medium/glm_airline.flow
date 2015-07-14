@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/airlines/AirlinesTrain.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/airlines/AirlinesTrain.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/airlines/AirlinesTrain.csv.zip\"]\n  destination_frame: \"AirlinesTrain2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 12\n  single_quotes: false\n  column_names: [\"fYear\",\"fMonth\",\"fDayofMonth\",\"fDayOfWeek\",\"DepTime\",\"ArrTime\",\"UniqueCarrier\",\"Origin\",\"Dest\",\"Distance\",\"IsDepDelayed\",\"IsDepDelayed_REC\"]\n  column_types: [\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 131072"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"AirlinesTrain2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/airlines/AirlinesTest.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/airlines/AirlinesTest.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/airlines/AirlinesTest.csv.zip\"]\n  destination_frame: \"AirlinesTest2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 12\n  single_quotes: false\n  column_names: [\"fYear\",\"fMonth\",\"fDayofMonth\",\"fDayOfWeek\",\"DepTime\",\"ArrTime\",\"UniqueCarrier\",\"Origin\",\"Dest\",\"Distance\",\"IsDepDelayed\",\"IsDepDelayed_REC\"]\n  column_types: [\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"AirlinesTest2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"AirlinesTest2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-fed49c71-37e6-4825-8dfc-a7424243b27f\",\"training_frame\":\"AirlinesTrain2.hex\",\"validation_frame\":\"AirlinesTest2.hex\",\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed_REC\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[0],\"lambda\":[1],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":\"1E-4\",\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-fed49c71-37e6-4825-8dfc-a7424243b27f\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-fed49c71-37e6-4825-8dfc-a7424243b27f\""
+    }
+  ]
+}

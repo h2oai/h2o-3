@@ -284,7 +284,7 @@ public class DataInfo extends Keyed {
       if(sigmas.length != _normMul.length)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
       for(int i = 0; i < sigmas.length; ++i)
-        _normMul[i] = 1.0/sigmas[i];
+        _normMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
     }
     if(_predictor_transform.isMeanAdjusted()) {
       if(sigmas.length != _normMul.length)

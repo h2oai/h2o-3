@@ -289,7 +289,7 @@ class H2OCloudNode:
             while (len(s) > 0):
                 if (self.terminated):
                     return
-                match_groups = re.search(r"Listening for HTTP and REST traffic on  http://(\S+):(\d+)", s)
+                match_groups = re.search(r"Listening for HTTP and REST traffic on http.*://(\S+):(\d+)", s)
                 if (match_groups is not None):
                     port = match_groups.group(2)
                     if (port is not None):
