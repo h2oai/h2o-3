@@ -5,10 +5,10 @@
 ##
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-complexFilterTest_Goalies_43 <- function(conn) {
+complexFilterTest_Goalies_43 <- function() {
     Log.info("A munge-task R unit test on data <Goalies> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
     Log.info("Uploading Goalies")
-    hex <- h2o.importFile(conn, locate("smalldata/poisson/Goalies.csv"), "rGoalies.hex")
+    hex <- h2o.importFile(locate("smalldata/poisson/Goalies.csv"), "rGoalies.hex")
     print(hex)
 Log.info("Performing compound task !( ( hex[,c(\"PostSHO\")] != 5.86538292444 ) & ( hex[,c(\"W\")] >= 5.12738355475 ) | ( ( hex[,c(\"PostGA\")] >= 31.6363447616 )) ) on dataset <Goalies>")
          filterHex <- hex[!( ( hex[,c("PostSHO")] != 5.86538292444 ) & ( hex[,c("W")] >= 5.12738355475 ) | ( ( hex[,c("PostGA")] >= 31.6363447616 )) ),]
