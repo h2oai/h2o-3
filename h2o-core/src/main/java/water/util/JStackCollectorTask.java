@@ -38,7 +38,9 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
       sb.p(" java.lang.Thread.State: ").p(t.getState().toString());
       sb.nl();
       for( StackTraceElement aTrace : el.getValue()) sb.p("\tat ").p(aTrace.toString()).nl();
-      traces[i++] = sb.toString();
+      String s = sb.toString();
+      Log.info(s);
+      traces[i++] = s;
     }
     _traces[H2O.SELF.index()] = new DStackTrace(traces);
   }
