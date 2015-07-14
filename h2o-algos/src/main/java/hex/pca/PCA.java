@@ -74,10 +74,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     }
   }
 
-  public enum Initialization {
-    SVD, PlusPlus, User
-  }
-
   // Called from an http request
   public PCA(PCAParameters parms) {
     super("PCA", parms);
@@ -105,49 +101,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
-
-  /**
-   * Given a n by k matrix X, form its Gram matrix
-   * @param x Matrix of real numbers
-   * @param transpose If true, compute n by n Gram of rows = XX'
-   *                  If false, compute k by k Gram of cols = X'X
-   * @return A symmetric positive semi-definite Gram matrix
-   */
-  public static double[][] formGram(double[][] x, boolean transpose) {
-    if (x == null) return null;
-    int dim_in = transpose ? x[0].length : x.length;
-    int dim_out = transpose ? x.length : x[0].length;
-    double[][] xgram = new double[dim_out][dim_out];
-
-    // Compute all entries on and above diagonal
-    if(transpose) {
-      for (int i = 0; i < dim_in; i++) {
-        // Outer product = x[i] * x[i]', where x[i] is col i
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = j; k < dim_out; k++)
-            xgram[j][k] += x[j][i] * x[k][i];
-        }
-      }
-    } else {
-      for (int i = 0; i < dim_in; i++) {
-        // Outer product = x[i]' * x[i], where x[i] is row i
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = j; k < dim_out; k++)
-            xgram[j][k] += x[i][j] * x[i][k];
-        }
-      }
-    }
-
-    // Fill in entries below diagonal since Gram is symmetric
-    for (int i = 0; i < dim_in; i++) {
-      for (int j = 0; j < dim_out; j++) {
-        for (int k = 0; k < j; k++)
-          xgram[j][k] = xgram[k][j];
-      }
-    }
-    return xgram;
-  }
-  public static double[][] formGram(double[][] x) { return formGram(x, false); }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 
@@ -190,6 +143,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._nnums = svd._output._nnums;
       pca._output._ncats = svd._output._ncats;
       pca._output._catOffsets = svd._output._catOffsets;
+      pca._output._nobs = svd._output._nobs;
 
       // Fill model with eigenvectors and standard deviations
       pca._output._std_deviation = ArrayUtils.mult(svd._output._d, 1.0 / Math.sqrt(svd._output._nobs - 1.0));
@@ -208,6 +162,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._nnums = glrm._output._nnums;
       pca._output._ncats = glrm._output._ncats;
       pca._output._catOffsets = glrm._output._catOffsets;
+      pca._output._objective = glrm._output._objective;
 
       // Fill model with eigenvectors and standard deviations
       double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
@@ -267,7 +222,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.delete_and_lock(_key);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
+          dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
                             /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
 
@@ -277,6 +232,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
+          model._output._nobs = gtsk._nobs;
 
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
@@ -330,11 +286,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
-
           parms._recover_svd = true;
+
           parms._loss = GLRMModel.GLRMParameters.Loss.L2;
           parms._gamma_x = 0;
           parms._gamma_y = 0;
+          parms._init = GLRM.Initialization.PlusPlus;
 
           GLRMModel glrm = null;
           GLRM job = null;
