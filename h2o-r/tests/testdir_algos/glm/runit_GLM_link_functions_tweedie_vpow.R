@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test_tweedie <- function(conn) {
+test_tweedie <- function() {
   
   require(testthat)
   require(statmod)
@@ -16,7 +16,7 @@ test_tweedie <- function(conn) {
   data(auto)
   df <- as.data.frame(auto$x)  #for glm
   df$y <- auto$y
-  hdf <- as.h2o(df, conn = conn, destination_frame = "hdf")  #for h2o
+  hdf <- as.h2o(df, destination_frame = "hdf")  #for h2o
   y <- "y"
   x <- setdiff(names(df), "y")
   

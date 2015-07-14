@@ -348,35 +348,37 @@ class ASTIfElse extends ASTPrim {
 
     // If all zero's, return false and never execute true.
     Frame fr = new Frame(tst);
-    Frame tfr = null;
+    Val tval = null;
     for( Vec vec : tst.vecs() )
       if( vec.min()!=0 || vec.max()!= 0 ) {
-        fr.add(tfr = exec_check(env,stk,tst,asts[2])); // Need true side sometimes
+        tval = exec_check(env,stk,tst,asts[2],fr);
         break;
       }
-    final boolean has_t = tfr!=null;
+    final boolean has_tfr = tval != null && tval.isFrame();
+    final double td = (tval != null && tval.isNum()) ? tval.getNum() : Double.NaN;
 
     // If all nonzero's (or NA's), then never execute false.
-    Frame ffr = null;
+    Val fval = null;
     for( Vec vec : tst.vecs() )
       if( vec.nzCnt()+vec.naCnt() < vec.length() ) {
-        fr.add(ffr = exec_check(env,stk,tst,asts[3])); // Need false side sometimes
+        fval = exec_check(env,stk,tst,asts[3],fr);
         break;
       }
-    final boolean has_f = ffr!=null;
+    final boolean has_ffr = fval != null && fval.isFrame();
+    final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
 
     // Now pick from left-or-right in the new frame
-    assert tfr != null || ffr != null;
     Frame res = new MRTask() {
         @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-          assert nchks.length+(has_t ? nchks.length : 0)+(has_f ? nchks.length : 0) == chks.length;
+          assert nchks.length+(has_tfr ? nchks.length : 0)+(has_ffr ? nchks.length : 0) == chks.length;
           for( int i=0; i<nchks.length; i++ ) {
             Chunk ctst = chks[i];
             NewChunk res = nchks[i];
             for( int row=0; row<ctst._len; row++ ) {
-              double d = ctst.isNA(row) 
-                ? Double.NaN    // Not from either side
-                : chks[i+nchks.length+((ctst.atd(row)==0 && has_t) ? nchks.length : 0)].atd(row);
+              double d;
+              if(     ctst.isNA(row)    ) d = Double.NaN;
+              else if( ctst.atd(row)==0 ) d = has_ffr ? chks[i+nchks.length+(has_tfr ? nchks.length : 0)].atd(row) : fd;
+              else                        d = has_tfr ? chks[i+nchks.length                             ].atd(row) : td;
               res.addNum(d);
             }
           }
@@ -385,11 +387,14 @@ class ASTIfElse extends ASTPrim {
     return new ValFrame(res);
   }
 
-  Frame exec_check( Env env, Env.StackHelp stk, Frame tst, AST ast ) {
-    Frame fr = stk.track(ast.exec(env)).getFrame();
-    if( tst.numCols() != fr.numCols() || tst.numRows() != fr.numRows() )
-      throw new IllegalArgumentException("ifelse test frame and other frames must match dimensions, found "+tst+" and "+fr);
-    return fr;
+  Val exec_check( Env env, Env.StackHelp stk, Frame tst, AST ast, Frame xfr ) {
+    Val val = ast.exec(env);
+    if( val.isFrame() ) {
+      Frame fr = stk.track(val).getFrame();
+      if( tst.numCols() != fr.numCols() || tst.numRows() != fr.numRows() )
+        throw new IllegalArgumentException("ifelse test frame and other frames must match dimensions, found "+tst+" and "+fr);
+      xfr.add(fr);
+    }
+    return val;
   }
 }
-
