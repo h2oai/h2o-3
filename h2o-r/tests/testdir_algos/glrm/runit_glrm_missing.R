@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.missing <- function(conn) {
+test.glrm.missing <- function() {
   seed <- 1234
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
   
@@ -13,7 +13,7 @@ test.glrm.missing <- function(conn) {
   for(i in 1:length(missing_frac)) {
     f <- missing_frac[i]
     Log.info("Importing USArrests.csv data...\n")
-    arrests.hex <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"))
+    arrests.hex <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"))
     
     Log.info(paste("Inserting ", 100 * f, "% missing entries:\n", sep = ""))
     h2o.insertMissingValues(data = arrests.hex, fraction = f, seed = seed)
