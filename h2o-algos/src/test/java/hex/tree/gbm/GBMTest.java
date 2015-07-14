@@ -1122,8 +1122,8 @@ public class GBMTest extends TestUtil {
   }
 
   @Ignore("PUBDEV-1690")
-  public void testNfoldOneVsRest() {
-    Frame tfr = null, vfr = null;
+  public void testNfoldsOneVsRest() {
+    Frame tfr = null;
     GBMModel gbm1 = null;
     GBMModel gbm2 = null;
 
@@ -1162,7 +1162,6 @@ public class GBMTest extends TestUtil {
       job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
       if (gbm1 != null) gbm1.delete();
       if (gbm2 != null) gbm2.delete();
       Scope.exit();
@@ -1170,8 +1169,8 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
-  public void testNfoldsError() {
-    Frame tfr = null, vfr = null;
+  public void testNfoldsInvalidValues() {
+    Frame tfr = null;
     GBMModel gbm1 = null;
     GBMModel gbm2 = null;
     GBMModel gbm3 = null;
@@ -1215,10 +1214,48 @@ public class GBMTest extends TestUtil {
       job3.remove();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
       if (gbm1 != null) gbm1.delete();
       if (gbm2 != null) gbm2.delete();
       if (gbm3 != null) gbm3.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsCVAndValidation() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      vfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._valid = vfr._key;
+      parms._response_column = "response";
+      parms._weights_column = "weight";
+      parms._seed = 0xdecaf;
+      parms._min_rows = 1;
+      parms._max_depth = 2;
+      parms._nfolds = 3;
+      parms._ntrees = 3;
+      parms._learn_rate = 1e-3f;
+
+      GBM job = new GBM(parms);
+
+      try {
+        Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
+        gbm = job.trainModel().get();
+        Assert.fail("Should toss AssertionError instead of reaching here");
+      } catch(AssertionError e) {}
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
       Scope.exit();
     }
   }
