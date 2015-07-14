@@ -136,6 +136,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTFactor());
     putPrefix(new ASTAsNumeric());
     putPrefix(new ASTIsFactor());
+    putPrefix(new ASTIsCharacter());
+    putPrefix(new ASTIsNumeric());
     putPrefix(new ASTAnyFactor());              // For Runit testing
     putPrefix(new ASTCanBeCoercedToLogical());
     putPrefix(new ASTAnyNA());
@@ -237,6 +239,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTStoreSize());
     putPrefix(new ASTKeysLeaked());
     putPrefix(new ASTAll());
+    putPrefix(new ASTAny());
+    putPrefix(new ASTRange());
     putPrefix(new ASTNLevels());
     putPrefix(new ASTLevels());
     putPrefix(new ASTHist());
@@ -870,6 +874,49 @@ class ASTAll extends ASTUniPrefixOp {
     @Override public void reduce(AllTask t) { all &= t.all; }
   }
 }
+
+class ASTAny extends ASTUniPrefixOp {
+  boolean _narm;
+  ASTAny() { super(VARS1);}
+  @Override String opStr() { return "any"; }
+  @Override ASTOp make() {return new ASTAny();}
+  ASTAny parse_impl(Exec E) {
+    AST arg = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTId ) _narm = ((ASTNum)E._env.lookup((ASTId)a))._d==1; // ignroed for now, always assume narm=F
+    E.eatEnd(); // eat ending ')'
+    ASTAny res = (ASTAny) clone();
+    res._asts = new AST[]{arg};
+    return res;
+  }
+  @Override void apply(Env env) {
+    boolean any;
+    if( env.isNum() ) { any = env.popDbl()!=0; }  // got a number on the stack... if 0 then all is FALSE, otherwise TRUE
+    else {
+      Frame fr = env.popAry();
+      if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
+      Vec v = fr.anyVec();
+      if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
+      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      any = new AllTask().doAll(fr.anyVec()).any;
+    }
+    env.push(new ValStr(any?"TRUE":"FALSE"));
+  }
+
+  private static class AllTask extends MRTask<AllTask> {
+    private boolean any=false;
+    @Override public void map(Chunk c) {
+      for(int i=0;i<c._len;++i) {
+        if( !any ) {
+          if( c.isNA(i) ) { any = false; break; }
+          any |= c.atd(i)==1;
+        } else break;
+      }
+    }
+    @Override public void reduce(AllTask t) { any &= t.any; }
+  }
+}
+
 class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
   ASTCanBeCoercedToLogical() { super(VARS1); }
   @Override String opStr() { return "canBeCoercedToLogical"; }
@@ -2888,6 +2935,30 @@ class ASTSetLevel extends ASTUniPrefixOp {
   }
 }
 
+class ASTRange extends ASTUniPrefixOp {
+  @Override String opStr() { return "range"; }
+  ASTRange() { super( new String[]{"x"}); }
+  @Override ASTOp make() { return new ASTRange(); }
+  @Override void apply(Env env) {
+    Frame f = env.popAry();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
+    Futures fs = new Futures();
+    Key k = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+    AppendableVec v = new AppendableVec(k);
+    NewChunk c = new NewChunk(v,0);
+    c.addNum(f.anyVec().min());
+    c.addNum(f.anyVec().max());
+    c.close(0,fs);
+    Vec vec = v.close(fs);
+    fs.blockForPending();
+    Frame f2 = new Frame(vec);
+    env.pushAry(f2);
+  }
+}
+
 class ASTMatch extends ASTUniPrefixOp {
   double _nomatch;
   String[] _matches;
@@ -4516,7 +4587,7 @@ class ASTFactor extends ASTUniPrefixOp {
 class ASTCharacter extends ASTUniPrefixOp {
   ASTCharacter() { super(new String[]{"", "ary"});}
   @Override String opStr() { return "as.character"; }
-  @Override ASTOp make() {return new ASTFactor();}
+  @Override ASTOp make() {return new ASTCharacter();}
   @Override void apply(Env env) {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
@@ -4526,6 +4597,29 @@ class ASTCharacter extends ASTUniPrefixOp {
     env.pushAry(fr);
   }
 }
+
+class ASTIsNumeric extends ASTUniPrefixOp {
+  ASTIsNumeric() { super(new String[]{"x"});}
+  @Override String opStr() { return "is.numeric"; }
+  @Override ASTOp make() {return new ASTIsNumeric();}
+  @Override void apply(Env env) {
+    Frame ary = env.popAry();
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("is.numeric requires a single column");
+    env.push(new ValStr(ary.anyVec().isNumeric()?"TRUE":"FALSE"));
+  }
+}
+
+class ASTIsCharacter extends ASTUniPrefixOp {
+  ASTIsCharacter() { super(new String[]{"x"});}
+  @Override String opStr() { return "is.character"; }
+  @Override ASTOp make() {return new ASTIsCharacter();}
+  @Override void apply(Env env) {
+    Frame ary = env.popAry();
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("is.numeric requires a single column");
+    env.push(new ValStr(ary.anyVec().isString()?"TRUE":"FALSE"));
+  }
+}
+
 
 /**
 * R 'ls' command.
@@ -4849,11 +4943,14 @@ class ASTCat extends ASTUniPrefixOp {
 }
 
 class ASTWhich extends ASTUniPrefixOp {  // 1-based index
+  int _one_based;
   ASTWhich() {super(null); }
   @Override String opStr() { return "h2o.which"; }
   @Override ASTWhich make() { return new ASTWhich(); }
   @Override ASTWhich parse_impl(Exec E) {
     AST condition = E.parse();
+    AST a = E.parse();
+    if( a instanceof ASTId ) _one_based = (int)((ASTNum)E._env.lookup((ASTId)a))._d;
     ASTWhich res = (ASTWhich)clone();
     res._asts = new AST[]{condition};
     return res;
@@ -4880,7 +4977,7 @@ class ASTWhich extends ASTUniPrefixOp {  // 1-based index
       @Override public void map(Chunk c, NewChunk nc) {
         long start = c.start();
         for(int i=0;i<c._len;++i)
-          if( c.at8(i)==1 ) nc.addNum(1+start+i);
+          if( c.at8(i)==1 ) nc.addNum(_one_based+start+i);
       }
     }.doAll(1,f.anyVec()).outputFrame();
     e.pushAry(f2);
@@ -4888,7 +4985,7 @@ class ASTWhich extends ASTUniPrefixOp {  // 1-based index
   @Override double[] map(Env env, double[] in, double[] out, AST[] args) {
     ArrayList<Integer> w = new ArrayList<>();
     for(int i=0; i < in.length;++i)
-      if( in[i]==1 ) w.add(i+1);
+      if( in[i]==1 ) w.add(i+_one_based);
     out=new double[w.size()];
     for(int i=0;i<w.size();++i) out[i]=w.get(i);
     return out;
