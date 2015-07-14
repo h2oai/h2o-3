@@ -22,7 +22,7 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance
   eigvecR <- fitR$rotation
-  eigvecH2O <- as.matrix(fitH2O@model$eigenvectors)
+  eigvecH2O <- fitH2O@model$eigenvectors
   
   pcimpR <- pcimpR[,1:k]
   eigvecR <- eigvecR[,1:k]
@@ -54,5 +54,5 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   Log.info("Compare Principal Components between R and H2O\n") 
   Log.info("R Principal Components:"); print(eigvecR)
   Log.info("H2O Principal Components:"); print(eigvecH2O)
-  checkSignedCols(eigvecH2O, eigvecR, tolerance = tolerance)
+  checkSignedCols(as.matrix(eigvecH2O), eigvecR, tolerance = tolerance)
 }

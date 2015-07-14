@@ -7,7 +7,7 @@ test.pubdev.1458 <- function(conn) {
   train.hex <- h2o.importFile(locate("smalldata/jira/pub_1458.csv"))
   print(summary(train.hex))
   
-  Log.info("R with standardization, drop rows with any NAs")
+  Log.info("H2O R with standardization, drop rows with any NAs")
   train.cmp <- scale(train.dat, center = TRUE, scale = TRUE)
   train.cmp <- train.cmp[complete.cases(train.cmp),]
   fitR <- prcomp(train.cmp, center = FALSE, scale. = FALSE)
