@@ -168,6 +168,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMin ());
     putPrefix(new ASTMax ());
     putPrefix(new ASTSum ());
+    putPrefix(new ASTProd());
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
@@ -195,6 +196,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCumSum());
     putPrefix(new ASTCumProd());
     putPrefix(new ASTCumMin());
+    putPrefix(new ASTCumMax());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum());
     putPrefix(new ASTRunif ());
@@ -1856,6 +1858,43 @@ class ASTSum extends ASTReducerOp {
   }
 }
 
+class ASTProd extends ASTReducerOp {
+  ASTProd() {super(0);}
+  @Override String opStr(){ return "prod";}
+  @Override ASTOp make() {return new ASTProd();}
+  @Override double op(double d0, double d1) { return d0*d1;}
+  @Override void apply(Env env) {
+    double prod=_init;
+    int argcnt = _argcnt;
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) prod = op(prod,env.popDbl());
+      else {
+        Frame fr = env.popAry(); // pop w/o lowering refcnts ... clean it up later
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        prod *= new RedProd(_narm).doAll(fr)._d;
+      }
+    env.push(new ValNum(prod));
+  }
+
+  private static class RedProd extends MRTask<RedProd> {
+    final boolean _narm;
+    double _d;
+    RedProd( boolean narm ) { _narm = narm; }
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+//        assert C.vec().isNumeric();
+        double prod=_d;
+        if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) prod *= d; }
+        else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        prod *= d; }
+        _d = prod;
+        if( Double.isNaN(prod) ) break;
+      }
+    }
+    @Override public void reduce( RedProd s ) { _d += s._d; }
+  }
+}
+
 class ASTCumSum extends ASTUniPrefixOp {
   @Override String opStr() { return "cumsum"; }
   @Override ASTOp make() { return new ASTCumSum(); }
@@ -1863,6 +1902,9 @@ class ASTCumSum extends ASTUniPrefixOp {
 
   @Override public void apply(Env e){
     Frame f = e.popAry();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
 
     // per chunk cum-sum
     CumSumTask t = new CumSumTask(f.anyVec().nChunks());
@@ -1912,6 +1954,9 @@ class ASTCumProd extends ASTUniPrefixOp {
 
   @Override public void apply(Env e){
     Frame f = e.popAry();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
 
     // per chunk cum-prod
     CumProdTask t = new CumProdTask(f.anyVec().nChunks());
@@ -1964,6 +2009,9 @@ class ASTCumMin extends ASTUniPrefixOp {
   @Override public void apply(Env e){
     Frame f = e.popAry();
 
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
     // per chunk cum-min
     CumMinTask t = new CumMinTask(f.anyVec().nChunks());
     t.doAll(1, f.anyVec());
@@ -2015,6 +2063,9 @@ class ASTCumMax extends ASTUniPrefixOp {
 
   @Override public void apply(Env e){
     Frame f = e.popAry();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
 
     // per chunk cum-min
     CumMaxTask t = new CumMaxTask(f.anyVec().nChunks());
