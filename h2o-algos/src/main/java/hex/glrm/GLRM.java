@@ -541,7 +541,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         if (tinfo != null) tinfo.remove();
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
-        
+
         // if (x != null && !_parms._keep_loading) x.delete();
         // Clean up unused copy of X matrix
         if (fr != null) {
