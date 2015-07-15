@@ -1121,7 +1121,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore("PUBDEV-1690")
+  @Test
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
     GBMModel gbm1 = null;
@@ -1154,7 +1154,7 @@ public class GBMTest extends TestUtil {
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
-      //TODO: add check: the correct number of individual models were built.
+      //TODO: add check: the correct number of individual models were built. PUBDEV-1690
 
       job1.remove();
       job2.remove();
