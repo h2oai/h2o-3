@@ -79,6 +79,25 @@ public class CurrentsTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void testRowAssign() {
+    String tree;
+    // Assign column 3 over column 0
+    tree = "(= %a.hex (cols %a.hex [3]) 0 [0:150])";
+    checkTree(tree);
+
+    // Assign 17 over column 0
+    tree = "(= %a.hex 17 [0] [0:150])";
+    checkTree(tree);
+
+    // Assign 17 over column 0, row 5
+    tree = "(= %a.hex 17 [0] [5])";
+    checkTree(tree);
+
+    // Append 17
+    tree = "(= %a.hex 17 [4] [0:150])";
+    checkTree(tree);
+  }
+
   @Test public void testFun() {
     // Compute 3*3; single variable defined in function body
     String tree = "({var1 . (* var1 var1)} 3)";

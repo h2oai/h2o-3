@@ -200,7 +200,7 @@ function(ast, id) {
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=ast, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=ast, id=id, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   gc()
   .h2o.getGCFrame(id)

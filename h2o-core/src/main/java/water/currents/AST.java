@@ -106,13 +106,13 @@ abstract public class AST extends Iced {
 
     // Generic data mungers
     init(new ASTAsFactor());
+    init(new ASTAssign());
     init(new ASTCBind());
     init(new ASTColNames());
     init(new ASTColSlice());
     init(new ASTIsFactor());
     init(new ASTRBind());
     init(new ASTRowSlice());
-    init(new ASTRowSliceAssign());
     init(new ASTRunif());
 
     // Functional data mungers

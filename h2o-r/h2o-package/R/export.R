@@ -139,7 +139,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   if(!is.character(name) || length(name) != 1L || is.na(name))
     stop("`name` must be a character string")
   else if(!nzchar(name))
-    name <- object@id
+    name <- object@model_id
 
   if(!is.character(filename) || length(filename) != 1L || is.na(filename))
     stop("`filename` must be a character string")

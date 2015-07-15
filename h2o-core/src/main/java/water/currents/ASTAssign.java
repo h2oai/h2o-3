@@ -1,35 +1,44 @@
 package water.currents;
 
-import java.util.Arrays;
-
 import water.*;
 import water.fvec.*;
 
 /** Assign into a row slice */
-class ASTRowSliceAssign extends ASTPrim {
-  @Override int nargs() { return 1+3; } // (rows= dst src [numlist])
-  @Override String str() { return "rows=" ; }
+class ASTAssign extends ASTPrim {
+  @Override int nargs() { return 1+4; } // (= dst src col_expr row_expr)
+  @Override String str() { return "=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
+    Val vsrc  = stk.track(asts[2].exec(env));
+    ASTNumList cols = check( dst.numCols(), asts[3] );
+    ASTNumList rows = check( dst.numRows(), asts[4] );
 
-    // Sanity check rows vs dst.  To simplify logic, jam the 1 row case in as a ASTNumList
-    ASTNumList rows;
-    if( asts[3] instanceof ASTNumList ) {
-      rows = (ASTNumList)asts[3];
-    } else if( (asts[3] instanceof ASTNum) ) {
-      rows = new ASTNumList(asts[2].exec(env).getNum());
-    } else throw new IllegalArgumentException("Requires a number-list as the last argument, but found a "+asts[3].getClass());
-    if( !(0 <= rows.min() && rows.max() <= dst.numRows()) )
-      throw new IllegalArgumentException("Row must be an integer from 0 to "+(dst.numRows()-1));
+    // Check for append; add a col of NAs if appending
+    if( cols.cnt()==1 && cols.max()-1==dst.numCols() )
+      dst.add(Frame.defaultColName(dst.numCols()), dst.anyVec().makeCon(Double.NaN));
 
-    // Sanity check src vs dst; then assign into dst.
-    Val vsrc = stk.track(asts[2].exec(env));
+    // Slice out cols for mutation
+    Frame slice = new ASTColSlice().apply(env,stk,new AST[]{null,new ASTFrame(dst),cols}).getFrame();
+
+    // Assign over the column slice
     switch( vsrc.type() ) {
-    case Val.NUM:  assign_frame_scalar(dst,rows,vsrc.getNum()  );  break;
-    case Val.FRM:  assign_frame_frame (dst,rows,vsrc.getFrame());  break;
+    case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+    case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
     default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
     }
     return new ValFrame(dst);
+  }
+
+  private ASTNumList check( long dstX, AST ast ) {
+    // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
+    ASTNumList dim;
+    if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
+    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._d.getNum());
+    else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
+    if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
+        !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
+      throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
+    return dim;
   }
 
   // Rectangular array copy from src into dst
@@ -99,8 +108,7 @@ class ASTRowSliceAssign extends ASTPrim {
     if( dst.numRows() == nrows && rows.isDense() ) {
       new MRTask(){
         @Override public void map(Chunk[] cs) {
-          for( int i=0; i<cs.length; i++ )
-            cs[i].replaceAll(new C0DChunk(src,cs[i]._len));
+          for( Chunk c : cs )  c.replaceAll(new C0DChunk(src,c._len));
         }
       }.doAll(dst);
       return;

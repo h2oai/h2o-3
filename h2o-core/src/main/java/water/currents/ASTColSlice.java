@@ -7,9 +7,9 @@ import water.fvec.*;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {
-  @Override int nargs() { return 1+2; }
+  @Override int nargs() { return 1+2; } // (cols src [col_list])
   @Override String str() { return "cols" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr2 = new Frame();
     if( asts[2] instanceof ASTNumList ) {

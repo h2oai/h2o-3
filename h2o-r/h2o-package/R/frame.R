@@ -873,9 +873,6 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   missingJ <- missing(j)
   if( !missingJ && is.na(j) ) j <- as.list(match.call())$j
 
-  updateColName <- FALSE
-  idx <- 0
-  name <- ""
   if( !missingI && is.character(i) && missingJ ) {  ## case where fr["baz"] <- qux
     missingI <- TRUE
     missingJ <- FALSE
@@ -890,67 +887,35 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
     stop("`value` can only be an H2OFrame object or a numeric or character vector")
 
-  if( missingI ) {   # Row arg is missing, means "all the rows"
-    rows <- paste0("[0:",nrow(x),"]")
-    if( missingJ ) { # Optional column selector
-      sub <- x       # Column arg is missing, means "all the columns" and does not need any selection
-    } else {         # Encode the column selector
-      name <- j
-      j <- match(j, colnames(x))
-      if( any(is.na(j)) ) {
-        if( is.numeric(name) ) {
-         idx <- name
-        } else {
-          updateColName <- TRUE
-          idx <- ncol(x)+1
-        }
-        j <- .eval(idx,parent.frame())
-        op  <- new("ASTApply", op = "cols")
-        ast <- new("ASTNode", root = op, children = list(.get(x), j))
-        mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-        sub <-  .newH2OFrame(id = .key.make("subset"), mutable = mutable)
+  # Row arg is missing, means "all the rows"
+  rows <- if( missingI ) paste0("[0:",nrow(x),"]") 
+          else           .eval(i,parent.frame())
+
+  name <- NA
+  if( missingJ ) {   # Col arg is missing, means "all the cols"
+    cols <- paste0("[0:",ncol(x),"]")
+  } else {
+    idx <- match(j, colnames(x))
+    if( any(is.na(idx)) ) {
+      if( is.numeric(j) ) {
+        idx <- j
       } else {
-        sub <- x[,j]
+        name <- j
+        idx <- ncol(x)+1
       }
     }
-  } else {           # Has row selector
-    rows <- .eval(i,parent.frame())
-    if (missingJ) {
-      sub <- x[i,]
-    } else {
-      name <- j
-      j <- match(j, colnames(x))
-      if( any(is.na(j)) ) {
-        if( is.numeric(name) ) {
-          idx <- name
-        } else {
-          updateColName <- TRUE
-          idx <- ncol(x)+1
-        }
-        j <- .eval(idx,parent.frame())
-        op  <- new("ASTApply", op = "cols")
-        ast <- new("ASTNode", root = op, children = list(.get(x), j))
-        mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-        sub <-  .newH2OFrame(id = .key.make("subset"), mutable = mutable)
-      } else {
-        sub <- x[i, j]
-      }
-    }
+    cols <- .eval(idx,parent.frame())
   }
-  lhs <- .get(sub)
 
-  if (is(value, "H2OFrame")) {
-    rhs <- .get(value)
-  } else if( is.na(value) ) {
-    rhs <- "%NA"
-  } else
-    rhs <- eval(substitute(value), parent.frame())
+  src <- if( is(value, "H2OFrame") ) .get(value)
+         else if( is.na(value) )     "%NA"
+         else                        eval(substitute(value), parent.frame())
 
-  op  <- new("ASTApply", op = "rows=")
-  ast <- new("ASTNode", root = op, children = list(lhs, rhs, rows))
+  op  <- new("ASTApply", op = "=")
+  ast <- new("ASTNode", root = op, children = list(.get(x), src, cols, rows))
   res <- .h2o.replace.frame(ast = ast, id = x@id)
 
-  if( updateColName ) { colnames(res)[idx] <- name }
+  if( !is.na(name) ) colnames(res)[idx] <- name
   res
 })
 
@@ -961,28 +926,20 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
     stop("`name` must be a non-empty string")
 
   idx <- match(name, colnames(x))
-  if (is.null(value)) {
-    if (is.na(idx))
-      res <- x
-    else
-      res <- x[,-idx]
-  } else {
-    if (is.na(idx))
-      idx <- ncol(x) + 1L
-    lhs <- x[,idx]
+  if( is.null(value) ) 
+    return( if( is.na(idx) ) x else x[,-idx] )
 
-    if (is(value, "H2OFrame")) {
-      rhs <- .get(value)
-    } else if (is.numeric(value))
-      rhs <- eval(substitute(value), parent.frame())
-    else
-      stop("`value` can only be an H2OFrame object, numeric or NULL")
+  if( is.na(idx) ) idx <- ncol(x) + 1L ## Append a column
+  cols <- .eval(idx, parent.frame())   ## Column to overwrite
 
-    rows <- paste0("[0:",nrow(x),"]")  # All rows
-    ast <- new("ASTNode", root = new("ASTApply", op = "rows="), children = list(lhs, rhs, rows))
-    res <- .h2o.replace.frame(ast = ast, id = x@id)
-    colnames(res)[idx] <- name
-  }
+  if (is(value, "H2OFrame"))    src <- .get(value)
+  else if (is.numeric(value))   src <- eval(substitute(value), parent.frame())
+  else stop("`value` can only be an H2OFrame object, numeric or NULL")
+
+  rows <- paste0("[0:",nrow(x),"]")  # All rows
+  ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(x, src, cols, rows))
+  res <- .h2o.replace.frame(ast = ast, id = x@id)
+  colnames(res)[idx] <- name
   res
 })
 
