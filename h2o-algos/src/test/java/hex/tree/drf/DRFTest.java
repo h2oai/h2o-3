@@ -909,11 +909,10 @@ public class DRFTest extends TestUtil {
       drf = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._validation_metrics;
-      assertEquals(0.7252305790568023, mm.auc()._auc, 1e-8); // 1 node
-      assertEquals(0.7330846346541204, mm.auc()._auc, 1e-8); // 5 nodes
-      assertEquals(0.21258514360090627, mm.mse(), 1e-8);
-      assertEquals(0.14751832396119646, mm.r2(), 1e-6);
-      assertEquals(0.6133063511996262, mm.logloss(), 1e-6);
+      assertEquals(0.7276154565296726, mm.auc()._auc, 1e-8); // 1 node
+      assertEquals(0.21211607823987555, mm.mse(), 1e-8);
+      assertEquals(0.14939930970822446, mm.r2(), 1e-6);
+      assertEquals(0.6121968624307211, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {

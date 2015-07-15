@@ -1095,7 +1095,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
-      parms._seed = 0xdecaf;
+      parms._seed = 123;
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = 2;
@@ -1107,10 +1107,10 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
-      assertEquals(0.55555555555, mm.auc()._auc, 1e-8);
-      assertEquals(0.3313375036935877, mm.mse(), 1e-8);
-      assertEquals(-0.3253500147743509, mm.r2(), 1e-6);
-      assertEquals(0.8630781835948022, mm.logloss(), 1e-6);
+      assertEquals(0.6296296296296297, mm.auc()._auc, 1e-8);
+      assertEquals(0.28640022521234304, mm.mse(), 1e-8);
+      assertEquals(-0.145600900849372169, mm.r2(), 1e-6);
+      assertEquals(0.7674117059335286, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -1138,6 +1138,7 @@ public class GBMTest extends TestUtil {
       parms._max_depth = 2;
       parms._nfolds = (int) tfr.numRows();
       parms._ntrees = 3;
+      parms._seed = 12345;
       parms._learn_rate = 1e-3f;
 
       GBM job1 = new GBM(parms);
@@ -1181,6 +1182,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._min_rows = 1;
+      parms._seed = 12345;
       parms._max_depth = 2;
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
@@ -1231,6 +1233,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "response";
+      parms._seed = 12345;
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = 3;
@@ -1274,6 +1277,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._min_rows = 1;
+      parms._seed = 12345;
       parms._max_depth = 2;
       parms._nfolds = 3;
       parms._ntrees = 3;

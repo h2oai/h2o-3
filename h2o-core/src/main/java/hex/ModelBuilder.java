@@ -8,14 +8,17 @@ import water.fvec.*;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
+import static water.util.RandomUtils.getRNG;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -24,6 +27,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** All the parameters required to build the model. */
   public final P _parms;
+  private P parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
@@ -221,26 +225,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // adapt main Job's progress bar to build N+1 models
     ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
     _deleteProgressKey = false; // keep the same progress bar for all N+1 jobs
+    long seed = new Random().nextLong();
+    for (Field f : _parms.getClass().getFields()) {
+      if (f.getName().equals("_seed")) {
+        try {
+          seed = (long)(f.get(_parms));
+        } catch (IllegalAccessException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    Log.info("Creating " + N + "-fold cross-validation splits with random number seed: " + seed);
 
-    // Build N cross-validation models
+    // make 2*N binary weight vectors
+    // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
+    final Vec[] weights = new Vec[2*N];
+    final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
     for (int i=0; i<N; ++i) {
-      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
-      final String identifier = origDest.toString() + "_cv_" + (i+1);
-      final String weightName = "weights";
+      weights[2*i]   = origTrainFrame.anyVec().makeZero();
+      weights[2*i+1] = origTrainFrame.anyVec().makeZero();
 
-      // Do N-fold CV splits via light-weight weight columns
-      final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
-      final Vec trainWeight = origTrainFrame.anyVec().makeZero();
-      final Vec validWeight = origTrainFrame.anyVec().makeZero();
-
-      // Training/Validation share the same data, but will have exclusive weights
-      final Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
-      cvTrain.add(weightName, trainWeight);
-      DKV.put(cvTrain);
-      final Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
-      cvVal.add(weightName, validWeight);
-      DKV.put(cvVal);
-
+      final long actualSeed = seed;
       // Now update the weights in place
       final int fold = i;
       new MRTask() {
@@ -248,14 +253,33 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         public void map(Chunk orig, Chunk train, Chunk valid) {
           for (int i=0; i< orig._len; ++i) {
             double w = orig.atd(i);
-            boolean holdout = (orig.start() + i) % N == fold;
+            int num = Math.abs(getRNG(orig.start()+actualSeed+i).nextInt());
+            boolean holdout = num % N == fold;
             train.set(i, holdout ? 0 : w);
             valid.set(i, holdout ? w : 0);
           }
         }
-      }.doAll(origWeight, trainWeight, validWeight);
-      modelKeys[i] = Key.make(identifier);
+      }.doAll(origWeight, weights[2*i], weights[2*i+1]);
+      if (weights[2*i].isConst()) {
+        throw new IllegalArgumentException("Not enough data to create " + N + " random cross-validation splits. Either reduce nfolds, specify a larger dataset or specify another random number seed.");
+      }
+    }
 
+    // Build N cross-validation models
+    for (int i=0; i<N; ++i) {
+      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
+      final String identifier = origDest.toString() + "_cv_" + (i+1);
+      final String weightName = "weights";
+
+      // Training/Validation share the same data, but will have exclusive weights
+      final Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvTrain.add(weightName, weights[2*i]);
+      DKV.put(cvTrain);
+      final Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvVal.add(weightName, weights[2*i+1]);
+      DKV.put(cvVal);
+
+      modelKeys[i] = Key.make(identifier);
 
       _dest = modelKeys[i];
       _parms._weights_column = weightName;
@@ -272,8 +296,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       mb[i] = m.scoreMetrics(adaptFr);
 
       if (!_parms._keep_cross_validation_splits) {
-        trainWeight.remove();
-        validWeight.remove();
+        weights[2*i].remove();
+        weights[2*i+1].remove();
         DKV.remove(cvTrain._key);
         DKV.remove(cvVal._key);
         if (origWeightsName == null) origWeight.remove();
