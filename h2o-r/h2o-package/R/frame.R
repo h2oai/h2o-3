@@ -2443,7 +2443,7 @@ h2o.cummax <- function(x) .h2o.nary_frame_op("cummax", x)
 #' @examples
 #' localH2O <- h2o.init()
 #' fr <- as.h2o(iris)
-#' h2o.which(iris[,5] == "setosa")
+#' h2o.which(fr[,5] == "setosa")
 #' @export
 h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x, TRUE) }
 
