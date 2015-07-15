@@ -882,14 +882,10 @@ h2o.subset <- function(x, subset, select, drop = FALSE, ...) {
     cols <- eval(substitute(select), env, parent.frame())
   }
 
-  if (missingSubset && missingSelect)
-    x
-  else if (missingSelect)
-    x[rows,]
-  else if (missingSubset)
-    x[,cols]
-  else
-    x[rows, cols]
+  if (missingSubset && missingSelect) x
+  else if (missingSelect)             x[rows,]
+  else if (missingSubset)             x[,cols]
+  else                                x[rows, cols]
 }
 
 #' @export
@@ -2386,8 +2382,72 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   }
 }
 
+#'
+#' Cumulative Sum
+#'
+#' Obtain the cumulative sum of a column.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @examples
+#' localH2O <- h2o.init()
+#' fr <- as.h2o(iris)
+#' h2o.cumsum(fr[,1])
+#' @export
+h2o.cumsum <- function(x) .h2o.nary_frame_op("cumsum", x)
 
-h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x) }
+#'
+#' Cumulative Product
+#'
+#' Obtain the cumulative product of a column.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @examples
+#' localH2O <- h2o.init()
+#' fr <- as.h2o(iris)
+#' h2o.cumprod(fr[,1])
+#' @export
+h2o.cumprod <- function(x) .h2o.nary_frame_op("cumprod", x)
+
+#'
+#' Cumulative Min
+#'
+#' Obtain the cumulative min of a column.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @examples
+#' localH2O <- h2o.init()
+#' fr <- as.h2o(iris)
+#' h2o.cummin(fr[,1])
+#' @export
+h2o.cummin <- function(x) .h2o.nary_frame_op("cummin", x)
+
+#'
+#' Cumulative Max
+#'
+#' Obtain the cumulative max of a column.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @examples
+#' localH2O <- h2o.init()
+#' fr <- as.h2o(iris)
+#' h2o.cummax(fr[,1])
+#' @export
+h2o.cummax <- function(x) .h2o.nary_frame_op("cummax", x)
+
+#'
+#' H2O Which
+#'
+#' 1-based indices similar to R's which
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @examples
+#' localH2O <- h2o.init()
+#' fr <- as.h2o(iris)
+#' h2o.which(iris[,5] == "setosa")
+#' @export
+h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x, TRUE) }
+
+
 h2o.which.max <- function(x)  { .h2o.nary_frame_op("h2o.which.max", x) }
 h2o.vote  <- function(x, nclasses, weights=rep(0,ncol(x))) { .h2o.nary_frame_op("h2o.vote", x, nclasses, weights) }
 #-----------------------------------------------------------------------------------------------------------------------

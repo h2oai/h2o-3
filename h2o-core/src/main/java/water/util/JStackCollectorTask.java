@@ -207,21 +207,36 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
 
     String [] traces = new String[1+ http_traces.size() + fj_traces.size() + other_traces.size() + tcp_traces.size() + h2o_sys_traces.size() + system_traces.size() + jetty_traces.size()];
     int ii = 1;
-    for(String t:http_traces)
+    for(String t:http_traces) {
       traces[ii++] = t;
-    for(String t:fj_traces)
+      Log.info(t);
+    }
+    for(String t:fj_traces) {
       traces[ii++] = t;
-    for(String t:other_traces)
+      Log.info(t);
+    }
+    for(String t:other_traces) {
       traces[ii++] = t;
-    for(String t:tcp_traces)
+      Log.info(t);
+    }
+    for(String t:tcp_traces) {
       traces[ii++] = t;
-    for(String t:h2o_sys_traces)
+      Log.info(t);
+    }
+    for(String t:h2o_sys_traces) {
       traces[ii++] = t;
-    for(String t:system_traces)
+      Log.info(t);
+    }
+    for(String t:system_traces) {
       traces[ii++] = t;
-    for(String t:jetty_traces)
+      Log.info(t);
+    }
+    for(String t:jetty_traces) {
       traces[ii++] = t;
+      Log.info(t);
+    }
     traces[0] = td.toString();
+    Log.info(traces[0]);
     _traces[H2O.SELF.index()] = new DStackTrace(traces);
   }
 

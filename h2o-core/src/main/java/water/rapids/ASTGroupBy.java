@@ -460,10 +460,11 @@ import java.util.concurrent.atomic.AtomicInteger;
     // compare 2 groups
     // iterate down _ds, stop when _ds[i] > that._ds[i], or _ds[i] < that._ds[i]
     // order by various columns specified by _orderByCols
+    // NaN is treated as least
     @Override public int compareTo(G g) {
       for(int i:_orderByCols)
-        if( _ds[i] < g._ds[i] ) return -1;
-        else if( _ds[i] > g._ds[i] ) return 1;
+        if(      Double.isNaN(_ds[i])   || _ds[i] < g._ds[i] ) return -1;
+        else if( Double.isNaN(g._ds[i]) || _ds[i] > g._ds[i] ) return 1;
       return 0;
     }
 
