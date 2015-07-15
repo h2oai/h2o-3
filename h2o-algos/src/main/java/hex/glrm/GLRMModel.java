@@ -41,8 +41,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Non-negative matrix factorization (NNMF): r_x = r_y = NonNegative
     // Orthogonal NNMF: r_x = OneSparse, r_y = NonNegative
     // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
+    // Quadratic mixture: r_x = Simplex, r_y = 0 (\gamma_y = 0)
     public enum Regularizer {
-      L2, L1, NonNegative, OneSparse, UnitOneSparse
+      L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
     public final boolean hasClosedForm() {
@@ -164,6 +165,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             else return Double.POSITIVE_INFINITY;
           }
           return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
+        case Simplex:
+          double sum = 0;
+          for(int i = 0; i < u.length; i++) {
+            if(u[i] < 0) return Double.POSITIVE_INFINITY;
+            else sum += u[i];
+          }
+          return sum == 1 ? 0 : Double.POSITIVE_INFINITY;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
@@ -191,7 +199,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
       if(u == null || alpha == 0 || gamma == 0) return u;
       double[] v = new double[u.length];
-      int idx;
 
       switch(regularization) {
         case L2:
@@ -207,13 +214,43 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             v[i] = Math.max(u[i],0);
           return v;
         case OneSparse:
-          idx = ArrayUtils.maxIndex(u, rand);
+          int idx = ArrayUtils.maxIndex(u, rand);
           v[idx] = u[idx] > 0 ? u[idx] : 1e-6;
           return v;
         case UnitOneSparse:
           idx = ArrayUtils.maxIndex(u, rand);
           v[idx] = 1;
           return v;
+        case Simplex:
+          // Proximal gradient algorithm by Chen and Ye in http://arxiv.org/pdf/1101.6081v2.pdf
+          // 1) Sort input vector u in ascending order: u[1] <= ... <= u[n]
+          int n = u.length;
+          int[] idxs = new int[n];
+          for(int i = 0; i < n; i++) idxs[i] = i;
+          ArrayUtils.sort(idxs, u);
+
+          // 2) Calculate cumulative sum of u in descending order
+          // cumsum(u) = (..., u[n-2]+u[n-1]+u[n], u[n-1]+u[n], u[n])
+          double[] ucsum = new double[n];
+          ucsum[n-1] = u[idxs[n-1]];
+          for(int i = n-2; i >= 0; i--)
+            ucsum[i] = ucsum[i+1] + u[idxs[i]];
+
+          // 3) Let t_i = (\sum_{j=i+1}^n u[j] - 1)/(n - i)
+          // For i = n-1,...,1, set optimal t* to first t_i >= u[i]
+          double t = (ucsum[0] - 1)/n;    // Default t* = (\sum_{j=1}^n u[j] - 1)/n
+          for(int i = n-1; i >= 1; i--) {
+            double tmp = (ucsum[i] - 1)/(n - i);
+            if(tmp >= u[idxs[i-1]]) {
+              t = tmp; break;
+            }
+          }
+
+          // 4) Return max(u - t*, 0) as projection of u onto simplex
+          double[] x = new double[u.length];
+          for(int i = 0; i < u.length; i++)
+            x[i] = Math.max(u[i] - t, 0);
+          return x;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
