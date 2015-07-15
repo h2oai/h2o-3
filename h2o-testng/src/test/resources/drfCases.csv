@@ -1,44 +1,47 @@
-x,,x,,,,,,,,,,,,,,airquality.csv
-x,,,,x,,,,,,,,,,,,airquality.csv
-x,,,,,x,,,,,,,,,,,airquality.csv
-x,,x,,,,,,,,,,,,,,
-x,,,,x,,,,,,,,,,,,
-x,,,,,x,,,,,,,,,,,
-,x,,x,,,,,,,,,,,Yes,,iris.csv
-,x,,x,,,,,,,,,,,No,,iris.csv
-,x,,x,,,,,,,,,,,Yes,,iris.csv
-,x,,x,,,,,,,,,,,No,,iris.csv
-,x,,,x,,,,,,,,,,Yes,,iris.csv
-,x,,,x,,,,,,,,,,No,,iris.csv
-,x,,,,x,,,,,,,,,Yes,,iris.csv
-,x,,,,x,,,,,,,,,No,,iris.csv
-,x,,x,,,,,,,,,,,Yes,,airquality.csv
-,x,,x,,,,,,,,,,,No,,airquality.csv
-,x,,x,,,,,,,,,,,Yes,,airquality.csv
-,x,,x,,,,,,,,,,,No,,airquality.csv
-,x,,,x,,,,,,,,,,Yes,,airquality.csv
-,x,,,x,,,,,,,,,,No,,airquality.csv
-,x,,,,x,,,,,,,,,Yes,,airquality.csv
-,x,,,,x,,,,,,,,,No,,airquality.csv
-,x,,x,,,,,,,,,,,Yes,,newsgroup
-,x,,x,,,,,,,,,,,No,,newsgroup
-,x,,x,,,,,,,,,,,Yes,,newsgroup
-,x,,x,,,,,,,,,,,No,,newsgroup
-,x,,,x,,,,,,,,,,Yes,,newsgroup
-,x,,,x,,,,,,,,,,No,,newsgroup
-,x,,,,x,,,,,,,,,Yes,,newsgroup
-,x,,,,x,,,,,,,,,No,,newsgroup
-,x,,x,,,,,,,,,,,Yes,,newsgroup
-,x,,x,,,,,,,,,,,No,,newsgroup
-,x,,x,,,,,,,,,,,Yes,,newsgroup
-,x,,x,,,,,,,,,,,No,,newsgroup
-,x,,,x,,,,,,,,,,Yes,,newsgroup
-,x,,,x,,,,,,,,,,No,,newsgroup
-,x,,,,x,,,,,,,,,Yes,,newsgroup
-,x,,,,x,,,,,,,,,No,,newsgroup
-,x,,x,,,,,100,,,,,,,,newsgroup
-,x,,x,,,,,,30,,,,,,,newsgroup
-,x,,x,,,,,,,1,,,,,,newsgroup
-,x,,x,,,,,,,,40,,,,,newsgroup
-,x,,x,,,,,,,,,3,,,,newsgroup
-,x,,x,,,,,,,,,,0.8,,,newsgroup
+Random Forest ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,Testcase ID,Type,,Family,,,,,,,,,,,,,,,,,,,,,,Data,,,,,,,,,,,,,,,,Validated against R/Scikit,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Validation against R,,,Validation against Scikit,,,
+,,,,Regression,Classification,Gaussian,Binomial/Multinomial,Poissan,Gamma,ignore_const_cols,offset_column,weights_column,ntrees,max_depth,min_rows,nbins,nbins_cats,mtries,sample_rate,score each iteration,balance_classes,max_confusion_matrix_size,max_hit_ratio,r2_stopping,build_tree_one_node,binomial_double_trees,class_sampling_factors,Distribution,Regression/Balanced/Unbalanced,Rows,Columns,train rows after split,validation rows after split,Categorical,Sparse,Dense,Collinear Cols,train_dataset_id,train dataset filename,validate_dataset_id,validate dataset filename,target,target_type,R,Scikit,AUC,MSE,Loss,AUC,MSE,Loss,
+,Regression Dense Data : N trees=50; Depth =20,Regression_Gaussian_Dense,rf_testcase_1,x,,x,,,,,,,,,,,,,,,,,,,,,,Gaussian,Regression,153,6,,,,,x,,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv,Ozone,enum,x,x,,,,,,,
+,,Regression_Poisson_Dense,rf_testcase_2,x,,,,x,,,,,,,,,,,,,,,,,,,,Poissan,Regression,153,6,,,,,x,,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv,Ozone,enum,x,x,,,,,,,
+,,Regression_Gamma_Dense,rf_testcase_3,x,,,,,x,,,,,,,,,,,,,,,,,,,Gamma,Regression,153,6,,,,,x,,airquality_train1,airquality_train1.csv,airquality_validation1,airquality_validation1.csv,Ozone,enum,x,x,,,,,,,
+,Regression Sparse Data,Regression_Gaussian_Sparse,rf_testcase_4,x,,x,,,,,,,,,,,,,,,,,,,,,,Gaussian,Regression,,,,,,x,,,,,,,,,x,x,,,,,,,
+,,Regression_Poisson_Sparse,rf_testcase_5,x,,,,x,,,,,,,,,,,,,,,,,,,,Poissan,Regression,,,,,,x,,,,,,,,,x,x,,,,,,,
+,,Regression_Gamma_Sparse,rf_testcase_6,x,,,,,x,,,,,,,,,,,,,,,,,,,Gamma,Regression,,,,,,x,,,,,,,,,x,x,,,,,,,
+,Classification Balanced Dense Data,Classification_Balanced data_Binomial_Balance classes_Dense,rf_testcase_7,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Binomial,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Binomial_Balance classes disabled_Dense,rf_testcase_8,,x,,x,,,,,,,,,,,,,,No,,,,,,,Binomial,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes_Dense,rf_testcase_9,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Multinomial,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes disabled_Dense,rf_testcase_10,,x,,x,,,,,,,,,,,,,,No,,,,,,,Multinomial,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Poisson_Balance classes_Dense,rf_testcase_11,,x,,,x,,,,,,,,,,,,,Yes,,,,,,,Poissan,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Poisson_Balance classes disabled_Dense,rf_testcase_12,,x,,,x,,,,,,,,,,,,,No,,,,,,,Poissan,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Gamma_Balance classes_Dense,rf_testcase_13,,x,,,,x,,,,,,,,,,,,Yes,,,,,,,Gamma,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,,Classification_Balanced data_Gamma_Balance classes disabled_Dense,rf_testcase_14,,x,,,,x,,,,,,,,,,,,No,,,,,,,Gamma,Balanced,150,5,100,50,,,x,,iris_train1,iris_train1.csv,iris_validation1,iris_validation1.csv,Species,enum,x,x,,,,,,,
+,Classification Unbalanced Dense Data,Classification_Unbalanced data_Binomial_Balance classes_Dense,rf_testcase_15,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Binomial,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Binomial_Balance classes disabled_Dense,rf_testcase_16,,x,,x,,,,,,,,,,,,,,No,,,,,,,Binomial,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Multinomial_Balance classes_Dense,rf_testcase_17,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Multinomial,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Multinomial_Balance classes disabled_Dense,rf_testcase_18,,x,,x,,,,,,,,,,,,,,No,,,,,,,Multinomial,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Poisson_Balance classes_Dense,rf_testcase_19,,x,,,x,,,,,,,,,,,,,Yes,,,,,,,Poissan,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Poisson_Balance classes disabled_Dense,rf_testcase_20,,x,,,x,,,,,,,,,,,,,No,,,,,,,Poissan,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Gamma_Balance classes_Dense,rf_testcase_21,,x,,,,x,,,,,,,,,,,,Yes,,,,,,,Gamma,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Gamma_Balance classes disabled_Dense,rf_testcase_22,,x,,,,x,,,,,,,,,,,,No,,,,,,,Gamma,Unbalanced,153,6,,,,,x,,airquality,,,,,,x,x,,,,,,,
+,Classification Balanced Sparse Data,Classification_Balanced data_Binomial_Balance classes_Sparse,rf_testcase_23,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Binomial,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,Balanced sparse dataset: Newsgroup; where we group sets of targets together to balance it; do so with clustering (and human sensibility) to make sure it's not too fictitious. Can then do as binomial or multinomial. Just need code to construct it properly and set the new target in the data set; such as below.
+,,Classification_Balanced data_Binomial_Balance classes disabled_Sparse,rf_testcase_24,,x,,x,,,,,,,,,,,,,,No,,,,,,,Binomial,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes_Sparse,rf_testcase_25,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Multinomial,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes disabled_Sparse,rf_testcase_26,,x,,x,,,,,,,,,,,,,,No,,,,,,,Multinomial,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Poissonl_Balance classes_Sparse,rf_testcase_27,,x,,,x,,,,,,,,,,,,,Yes,,,,,,,Poissan,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Poisson_Balance classes disabled_Sparse,rf_testcase_28,,x,,,x,,,,,,,,,,,,,No,,,,,,,Poissan,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Gamma_Balance classes_Sparse,rf_testcase_29,,x,,,,x,,,,,,,,,,,,Yes,,,,,,,Gamma,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Gamma_Balance classes disabled_Sparse,rf_testcase_30,,x,,,,x,,,,,,,,,,,,No,,,,,,,Gamma,Balanced,,,2034,1353,,x,,,newsgroup_train1,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,Classification Unbalanced Sparse Data,Classification_Unbalanced data_Binomial_Balance classes_Sparse,rf_testcase_31,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Binomial,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Binomial_Balance classes disabled_Sparse,rf_testcase_32,,x,,x,,,,,,,,,,,,,,No,,,,,,,Binomial,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Multinomial_Balance classes_Sparse,rf_testcase_33,,x,,x,,,,,,,,,,,,,,Yes,,,,,,,Binomial,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Multinomial_Balance classes disabled_Sparse,rf_testcase_34,,x,,x,,,,,,,,,,,,,,No,,,,,,,Binomial,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Poisson_Balance classes_Sparse,rf_testcase_35,,x,,,x,,,,,,,,,,,,,Yes,,,,,,,Poissan,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Poisson_Balance classes disabled_Sparse,rf_testcase_36,,x,,,x,,,,,,,,,,,,,No,,,,,,,Poissan,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Gamma_Balance classes_Sparse,rf_testcase_37,,x,,,,x,,,,,,,,,,,,Yes,,,,,,,Gamma,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Unbalanced data_Gamma_Balance classes disabled_Sparse,rf_testcase_38,,x,,,,x,,,,,,,,,,,,No,,,,,,,Gamma,Unbalanced,,,,,,x,,,newsgroup_unbalanced,,,,,,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes_Sparse,rf_testcase_39,,x,,x,,,,,,100,,,,,,,,,,,,,,,Multinomial,Balanced,,,2034,1353,,x,,,newsgroup_balanced,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes disabled_Sparse,rf_testcase_40,,x,,x,,,,,,,30,,,,,,,,,,,,,,Multinomial,Balanced,,,2034,1353,,x,,,newsgroup_balanced,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes_Sparse,rf_testcase_41,,x,,x,,,,,,,,1,,,,,,,,,,,,,Multinomial,Balanced,,,2034,1353,,x,,,newsgroup_balanced,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
+,,Classification_Balanced data_Multinomial_Balance classes disabled_Sparse,rf_testcase_42,,x,,x,,,,,,,,,40,,,,,,,,,,,,Multinomial,Balanced,,,2034,1353,,x,,,newsgroup_balanced,newsgroup_train1.csv,newsgroup_validation1,newsgroup_validation1.csv,1,enum,x,x,,,,,,,
