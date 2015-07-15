@@ -372,8 +372,14 @@ public class GLMBasic extends TestNGUtil {
 			//predictorNames.remove(glmParams._response_column); // remove the response column name. we only want predictors
 			for(String name : predictorNames){
 				if (!name.equals(glmParams._response_column)) {
-					System.out.println(name + ", " + lowerBound + ", " + upperBound + "\n");
-					betaConstraintsString += name + ", " + lowerBound + ", " + upperBound + "\n";
+					if(trainFrame.vec(name).isEnum()){ // need coefficient names for each level of a categorical column
+						for(String level : trainFrame.vec(name).domain()){
+							betaConstraintsString += name + "." + level + ", " + lowerBound + ", " + upperBound + "\n";
+						}
+					}
+					else { // numeric columns only need one coefficient name
+						betaConstraintsString += name + ", " + lowerBound + ", " + upperBound + "\n";
+					}
 				}
 			}
 			Key betaConsKey = Key.make("beta_constraints");
