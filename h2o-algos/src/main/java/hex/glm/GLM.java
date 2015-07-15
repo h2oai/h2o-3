@@ -946,13 +946,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         }
         case COORDINATE_DESCENT_SEQ: {
+          // REMOVE THAT AND FIX IN TASK WHICH COLS ARE KEPT
           _activeData=_dinfo;
           int p = _activeData.fullN()+ 1;
           double wsum; // intercept denum
           double[] denums;
           double[] beta = new double[p]; // _taskInfo._beta.clone(); ADD FOR WARM STARTS
           double[] betaold = new double[p];
-          int iter1 = 0; // total cd iters
+          int iter2=0; // total cd iters
 
           // get reweighted least squares vectors
           Vec[] newVecs = _activeData._adaptedFrame.anyVec().makeZeros(3);
@@ -961,7 +962,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
 
           // generate new IRLS iteration
-          while (iter1++ < 100) {
+          while (iter2++ < 20) {
 
             Frame fr = new Frame(_activeData._adaptedFrame);
             fr.add("w", w); // fr has all data
@@ -972,9 +973,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(GLM.this._key, _activeData, _parms, beta).doAll(fr);
             denums = gt.denums;
             wsum = gt.wsum;
+            int iter1 = 0;
 
             // coordinate descent loop
-            while (iter1++ < 100) {
+            while (iter1++ < 50) {
               Frame fr2 = new Frame();
               fr2.add("w", w);
               fr2.add("z", z);
@@ -1061,8 +1063,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _taskInfo._beta = beta;
 
           }
-          System.out.println("iter1 = " + iter1);
-          _taskInfo._iter = iter1;
+          System.out.println("iter2 = " + iter2);
+          _taskInfo._iter = iter2;
           for (Vec v : newVecs) v.remove();
           break;
         }

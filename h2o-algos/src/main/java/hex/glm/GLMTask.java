@@ -953,14 +953,14 @@ public abstract class GLMTask  {
 
         if (_interceptnew) {
             ztildaChunk.set(i, ztildaChunk.atd(i) - _betaold[0] + valp * _betanew[active_level_p]);
-            _temp[0] += wChunk.at8(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+            _temp[0] += wChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
           } else {
             if (_interceptold) // beta_1
               ztildaChunk.set(i, ztildaChunk.atd(i) - val * _betaold[active_level] + _betanew[active_level_p]);
             else // any other beta_k
               ztildaChunk.set(i, ztildaChunk.atd(i) - val * _betaold[active_level] + valp * _betanew[active_level_p]);
 
-           _temp[active_level] += wChunk.at8(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
+           _temp[active_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
            }
 
        }
