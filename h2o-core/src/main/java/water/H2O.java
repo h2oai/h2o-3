@@ -681,7 +681,10 @@ final public class H2O {
       StringBuilder ua = new StringBuilder();
 
       if (source.contains("Safari")) {
-        ua.append("Safari");
+        ua.append("safari");
+      }
+      else if (source.contains("Python")) {
+        ua.append("python");
       }
       else {
         for (int i = 0; i < source.length(); i++) {
