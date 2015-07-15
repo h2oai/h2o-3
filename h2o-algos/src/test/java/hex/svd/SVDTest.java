@@ -43,6 +43,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._seed = 1234;
       parms._only_v = false;
+      parms._transform = DataInfo.TransformType.NONE;
 
       SVD job = new SVD(parms);
       try {
@@ -83,6 +84,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._seed = 1234;
       parms._only_v = true;
+      parms._transform = DataInfo.TransformType.NONE;
 
       SVD job = new SVD(parms);
       try {
@@ -122,6 +124,7 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._only_v = false;
       parms._keep_u = false;
+      parms._transform = DataInfo.TransformType.NONE;
 
       try {
         job = new SVD(parms);
@@ -219,6 +222,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 7;
       parms._use_all_factor_levels = true;
       parms._only_v = false;
+      parms._transform = DataInfo.TransformType.NONE;
 
       SVD job = new SVD(parms);
       try {
