@@ -152,6 +152,7 @@ class H2OFrame:
   def __sub__ (self, i): return H2OFrame(expr=ExprNode("-",   self,i))
   def __mul__ (self, i): return H2OFrame(expr=ExprNode("*",   self,i))
   def __div__ (self, i): return H2OFrame(expr=ExprNode("/",   self,i))
+  def __floordiv__(self, i): return H2OFrame(expr=ExprNode("intDiv",self,i))
   def __mod__ (self, i): return H2OFrame(expr=ExprNode("mod", self,i))
   def __or__  (self, i): return H2OFrame(expr=ExprNode("|",   self,i))
   def __and__ (self, i): return H2OFrame(expr=ExprNode("&",   self,i))
@@ -169,10 +170,20 @@ class H2OFrame:
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
   def __rdiv__(self, i): return H2OFrame(expr=ExprNode("/",i,  self))
+  def __rfloordiv__(self, i): return H2OFrame(expr=ExprNode("intDiv",i,self))
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame(expr=ExprNode("^",i,  self))
   # unops
   def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
+
+  def mult(self, matrix):
+    """
+    Perform matrix multiplication.
+
+    :param matrix: The matrix to multiply to the left of self.
+    :return: The multiplied matrices.
+    """
+    return H2OFrame(expr=ExprNode("x", self, matrix))
 
   def cos(self)     :    return H2OFrame(expr=ExprNode("cos", self))
   def sin(self)     :    return H2OFrame(expr=ExprNode("sin", self))
@@ -445,6 +456,79 @@ class H2OFrame:
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("as.Date",self,format))
+
+  def cumsum(self):
+    """
+    :return: The cumulative sum over the column.
+    """
+    return H2OFrame(expr=ExprNode("cumsum",self))
+
+  def cumprod(self):
+    """
+    :return: The cumulative product over the column.
+    """
+    return H2OFrame(expr=ExprNode("cumprod",self))
+
+  def cummin(self):
+    """
+    :return: The cumulative min over the column.
+    """
+    return H2OFrame(expr=ExprNode("cummin",self))
+
+  def cummax(self):
+    """
+    :return: The cumulative max over the column.
+    """
+    return H2OFrame(expr=ExprNode("cummax",self))
+
+  def prod(self,na_rm=False):
+    """
+    :return: The product of the column.
+    """
+    return H2OFrame(expr=ExprNode("prod",self,na_rm))._scalar()
+
+  def any(self):
+    """
+    :return: True if any element is True in the column.
+    """
+    return H2OFrame(expr=ExprNode("any",self))._scalar()
+
+  def all(self):
+    """
+    :return: True if every element is True in the column.
+    """
+    return H2OFrame(expr=ExprNode("all",self))._scalar()
+
+  def isnumeric(self):
+    """
+    :return: True if the column is numeric, otherwise return False
+    """
+    return H2OFrame(expr=ExprNode("is.numeric",self))._scalar()
+
+  def isstring(self):
+    """
+    :return: True if the column is a string column, otherwise False (same as ischaracter)
+    """
+    return H2OFrame(expr=ExprNode("is.character",self))._scalar()
+
+  def ischaracter(self):
+    """
+    :return: True if the column is a character column, otherweise False (same as isstring)
+    """
+    return self.isstring()
+
+  def remove_vecs(self, cols):
+    """
+    :param cols: Drop these columns.
+    :return: A frame with the columns dropped.
+    """
+    self._eager()
+    is_char = all([isinstance(i,(unicode,str)) for i in cols])
+    if is_char:
+      cols = [self._find_idx(col) for col in cols]
+    cols = sorted(cols)
+    return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
+
 
   def as_data_frame(self, use_pandas=True):
     """
@@ -995,10 +1079,7 @@ class H2OFrame:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
       if pytmp:
-        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
-        # t = res["result_type"]
-        # if t in [1,3]:   sb = ["#{} ".format(res["scalar"])]
-        # elif t in [2,4]: sb = ["\"{}\"".format(res["string"])]
+        h2o.rapids(ExprNode._collapse_sb(sb), self._id)
         sb = ["%", self._id," "]
         self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
