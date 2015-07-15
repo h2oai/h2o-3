@@ -343,6 +343,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.port = s.parseInt(args[i]);
       }
+      else if (s.matches("switch_tcp")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.switch_tcp = s.parseInt(args[i]);
+      }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
         ARGS.baseport = s.parseInt(args[i]);
