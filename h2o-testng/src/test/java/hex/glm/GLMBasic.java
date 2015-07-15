@@ -216,7 +216,7 @@ public class GLMBasic extends TestNGUtil {
 			"binomial",
 			"poisson",
 			"gamma",
-			"_x_",
+			"tweedie",
 
 			"auto",
 			"irlsm",
@@ -493,6 +493,8 @@ public class GLMBasic extends TestNGUtil {
 		String binomial = input[tcHeaders.indexOf("binomial")];
 		String poisson = input[tcHeaders.indexOf("poisson")];
 		String gamma = input[tcHeaders.indexOf("gamma")];
+		String tweedie = input[tcHeaders.indexOf("tweedie")];
+
 
 		String irlsm = input[tcHeaders.indexOf("irlsm")];
 		String lbfgs = input[tcHeaders.indexOf("lbfgs")];
@@ -509,6 +511,9 @@ public class GLMBasic extends TestNGUtil {
 		}
 		else if ("x".equals(gamma)) {
 			f = Family.gamma;
+		}
+		else if ("x".equals(tweedie)) {
+			f = Family.tweedie;
 		}
 
 		GLMParameters glmParams = null != f ? new GLMParameters(f) : new GLMParameters();

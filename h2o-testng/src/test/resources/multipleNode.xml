@@ -2,7 +2,8 @@
     <test name="Basic (M)">
         <classes>
             <parameter name="numNodes" value="5"/>
-            <class name="hex.tree.gbm.GBMBasic" />
+            <!-- <class name="hex.tree.gbm.GBMBasic" /> -->
+            <class name="hex.tree.drf.DRFBasic" />
             <class name="hex.glm.GLMBasic" />
         </classes>
     </test>
