@@ -508,6 +508,10 @@ final public class H2O {
     p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
     PropertyConfigurator.configure(p);
     System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+
+    // Log jetty stuff to stdout for now.
+    // TODO:  figure out how to wire this into log4j.
+    System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StrErrLog");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
