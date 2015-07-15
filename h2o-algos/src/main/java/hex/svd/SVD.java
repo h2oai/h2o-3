@@ -9,6 +9,7 @@ import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -196,9 +197,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Compute first singular value \sigma_1
           double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[0]);
-          CalcSigmaU ctsk = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame);
+          CalcSigmaU ctsk = new CalcSigmaU(dinfo, _parms, ivv_vk).doAll(uinfo._adaptedFrame);
           model._output._d[0] = ctsk._sval;
-          assert ctsk._nobs == model._output._nobs;    // Check same number of skipped rows as Gram
+          assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
         }
         model.update(self()); // Update model in K/V store
         update(1);            // One unit of work
@@ -220,9 +221,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           if(!_parms._only_v) {
             double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
             // model._output._d[k] = new CalcSigma(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
-            CalcSigmaUNorm ctsk = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, model._output._d[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame);
+            CalcSigmaUNorm ctsk = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, model._output._d[k-1]).doAll(uinfo._adaptedFrame);
             model._output._d[k] = ctsk._sval;
-            assert ctsk._nobs == model._output._nobs;
+            assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
@@ -294,10 +295,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     long nobs = 0;
     int ncols = dinfo._adaptedFrame.numCols();
 
+    // TODO: Find better way to extract training row. Can't use FrameTask.processRow since must normalize u_{k-1}/\sigma_{k-1}.
+    Chunk[] cs_train = Arrays.copyOfRange(cs, 0, ncols);   // Only chunks corresponding to training frame
+
     // Calculate inner product of current row with vec
     for (int r = 0; r < cs[0].len(); r++) {
       DataInfo.Row row = dinfo.newDenseRow();
-      if(dinfo.extractDenseRow(cs, r, row).bad) continue;
+      dinfo.extractDenseRow(cs_train, r, row);
+      if(row.bad) continue;
       sum = row.innerProduct(vec);
       sumsqr += sum * sum;
       nobs++;
@@ -320,21 +325,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private static class CalcSigmaU extends MRTask<CalcSigmaU> {
     DataInfo _dinfo;    // Training data only
     SVDParameters _parms;
-    final double[] _normSub;
-    final double[] _normMul;
     final int _ncols;
     final double[] _svec;   // Input: Right singular vector (v_1)
 
     double _sval;           // Output: Singular value (\sigma_1)
     long _nobs;             // Output: Number of processed rows
 
-    CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
+    CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
       _dinfo = dinfo;
       _parms = parms;
       _svec = svec;
-      _normSub = normSub;
-      _normMul = normMul;
       _ncols = _dinfo._adaptedFrame.numCols();
       _sval = 0;
     }
@@ -363,22 +364,18 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final int _k;             // Input: Index of current singular vector (k)
     final double[] _svec;     // Input: Right singular vector (v_k)
     final double _sval_old;   // Input: Singular value from last iteration (\sigma_{k-1})
-    final double[] _normSub;
-    final double[] _normMul;
     final int _ncols;
 
     double _sval;     // Output: Singular value (\sigma_k)
     long _nobs;       // Output: Number of processed rows
 
-    CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
+    CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old) {
       // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
       assert k >= 1 : "Index of singular vector k must be at least 1";
       _dinfo = dinfo;
       _parms = parms;
       _k = k;
       _svec = svec;
-      _normSub = normSub;
-      _normMul = normMul;
       _ncols = _dinfo._adaptedFrame.numCols();
       _sval_old = sval_old;
       _sval = 0;
