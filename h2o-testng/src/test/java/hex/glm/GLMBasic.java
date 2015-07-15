@@ -527,10 +527,6 @@ public class GLMBasic extends TestNGUtil {
 			}
 		}
 
-		// How to set the weights and offset column parameters
-		//glmParams._weights_column = input[tcHeaders.indexOf("_weights_column")];
-		//glmParams._offset_column = input[tcHeaders.indexOf("_offset_column")];
-
 		return glmParams;
 	}
 }
