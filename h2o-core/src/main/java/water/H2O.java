@@ -43,6 +43,8 @@ final public class H2O {
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
 
+  public static int SWITCH_TO_TCP_AFTER = 1; // switch to tcp after this many failed sends
+
   /**
    * Print help about command line arguments.
    */
