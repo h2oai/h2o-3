@@ -32,7 +32,7 @@ public class UDPTimeOutThread extends Thread {
           if( !t.isDone() && !t._nack ) {
             boolean forceTCP;
             if(forceTCP = (++t._resendsCnt % 10 == 0))
-              Log.warn("Got " + t._resendsCnt + " resends on task " + t._dt.getClass().getSimpleName() + ", enforcing TCP");
+              Log.warn("Got " + t._resendsCnt + " resends on task #" + t._tasknum + ", class = " + t._dt.getClass().getSimpleName() + ", enforcing TCP");
             t.call(forceTCP);
           }
         } else {                // Target is dead, nobody to retry to
