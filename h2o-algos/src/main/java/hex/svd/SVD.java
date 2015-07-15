@@ -184,7 +184,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(1, dinfo._adaptedFrame);
           model._output._d[0] = ctsk._sval;
           assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
-          uvecs[0] = ctsk.outputFrame().vec(0);   // Save output column of U
+          Frame tmp = ctsk.outputFrame();
+          uvecs[0] = tmp.vec(0);   // Save output column of U
+          tmp.unlock(self());
         }
         model.update(self()); // Update model in K/V store
         update(1);            // One unit of work
@@ -208,7 +210,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(1, dinfo._adaptedFrame);
             model._output._d[k] = ctsk._sval;
             assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;
-            uvecs[k] = ctsk.outputFrame().vec(0);   // Save output column of U
+            Frame tmp = ctsk.outputFrame();
+            uvecs[k] = tmp.vec(0);   // Save output column of U
+            tmp.unlock(self());
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
