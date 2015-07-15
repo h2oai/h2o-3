@@ -145,6 +145,17 @@ def _quoted(key):
   key = key if is_quoted  else "\"" + key + "\""
   return key
 
+def assign(data,id):
+  rapids(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager())
+  data._id = id
+  return data
+
+def which(condition):
+  """
+  :param condition: A conditional statement.
+  :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
+  """
+  return H2OFrame(expr=ExprNode("h2o.which",condition,False))._frame()
 
 def ifelse(test,yes,no):
   """
