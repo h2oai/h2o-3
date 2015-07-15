@@ -195,7 +195,7 @@ final public class H2O {
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
-    public int switch_tcp = 1;
+    public int switch_tcp = 0;
 
     /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
     public boolean hdfs_skip = false;

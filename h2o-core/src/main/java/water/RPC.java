@@ -162,7 +162,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   private byte [] _bits;
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
-  public synchronized RPC<V> call(){return call(!(_dt instanceof FetchClazz) && H2O.ARGS.switch_tcp > 0);}
+  public synchronized RPC<V> call(){return call(!(_dt instanceof FetchClazz) && H2O.ARGS.switch_tcp == 0);}
   public synchronized RPC<V> call(boolean forceTCP) {
       // Any Completer will not be carried over to remote; add it to the RPC call
       // so completion is signaled after the remote comes back.
@@ -377,9 +377,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           UDP.udp udp = dt.priority()==H2O.FETCH_ACK_PRIORITY ? UDP.udp.fetchack : UDP.udp.ack;
           ab = new AutoBuffer(_client).putTask(udp,_tsknum).put1(SERVER_UDP_SEND);
           dt.write(ab);         // Write the DTask - could be very large write
-          boolean forceTCP = !(dt instanceof FetchClazz) && H2O.ARGS.switch_tcp > 0;
+          boolean forceTCP = !(dt instanceof FetchClazz) && H2O.ARGS.switch_tcp == 0;
           dt._repliedTcp = forceTCP || ab.hasTCP(); // Resends do not need to repeat TCP result
-          ab.close();                   // Then close; send final byte
+          ab.close(forceTCP);                   // Then close; send final byte
           _computedAndReplied = true;   // After the final handshake, set computed+replied bit
           break;                        // Break out of retry loop
         } catch( AutoBuffer.AutoBufferException e ) {
@@ -489,7 +489,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           Log.debug("Start remote task#"+task+" "+rpc._dt.getClass()+" from "+ab._h2o);
         H2O.submitTask(rpc);    // And execute!
       } else {                  // Else lost the task-insertion race
-        assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
+        if(ab.hasTCP())  ab.drainClose();
         // DROP PACKET
       }
 
