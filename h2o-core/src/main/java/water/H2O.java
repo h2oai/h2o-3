@@ -43,7 +43,6 @@ final public class H2O {
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
 
-  public static int SWITCH_TO_TCP_AFTER = 1; // switch to tcp after this many failed sends
 
   /**
    * Print help about command line arguments.
@@ -195,6 +194,8 @@ final public class H2O {
     //-----------------------------------------------------------------------------------
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
+
+    public int switch_tcp = 1;
 
     /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
     public boolean hdfs_skip = false;
@@ -407,8 +408,10 @@ final public class H2O {
       }
       else if (s.matches("experimental")) {
         ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
-      }
-      else {
+      } else if(s.matches("switch_tcp")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.switch_tcp = Integer.parseInt(args[i]);
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }

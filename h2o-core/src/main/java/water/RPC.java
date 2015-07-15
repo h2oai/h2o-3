@@ -162,7 +162,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   private byte [] _bits;
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
-  public synchronized RPC<V> call(){return call(!(_dt instanceof FetchClazz) && H2O.SWITCH_TO_TCP_AFTER > 0);}
+  public synchronized RPC<V> call(){return call(!(_dt instanceof FetchClazz) && H2O.ARGS.switch_tcp > 0);}
   public synchronized RPC<V> call(boolean forceTCP) {
       // Any Completer will not be carried over to remote; add it to the RPC call
       // so completion is signaled after the remote comes back.
@@ -377,7 +377,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           UDP.udp udp = dt.priority()==H2O.FETCH_ACK_PRIORITY ? UDP.udp.fetchack : UDP.udp.ack;
           ab = new AutoBuffer(_client).putTask(udp,_tsknum).put1(SERVER_UDP_SEND);
           dt.write(ab);         // Write the DTask - could be very large write
-          boolean forceTCP = !(dt instanceof FetchClazz) && H2O.SWITCH_TO_TCP_AFTER > 0;
+          boolean forceTCP = !(dt instanceof FetchClazz) && H2O.ARGS.switch_tcp > 0;
           dt._repliedTcp = forceTCP || ab.hasTCP(); // Resends do not need to repeat TCP result
           ab.close();                   // Then close; send final byte
           _computedAndReplied = true;   // After the final handshake, set computed+replied bit
@@ -515,7 +515,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         ab.drainClose();
       }
       ++old._ackResendCnt;
-      boolean force_tcp = old._ackResendCnt >= H2O.SWITCH_TO_TCP_AFTER;
+      boolean force_tcp = old._ackResendCnt >= H2O.ARGS.switch_tcp;
       if(old._ackResendCnt % 50 == 0)
         Log.err("Possibly broken network, can not send ack through, got " + old._ackResendCnt + " resends.");
       old.resend_ack(force_tcp);
