@@ -57,7 +57,6 @@ abstract public class AST extends Iced {
     init(new ASTFloor ());
     init(new ASTLog   ());
     init(new ASTRound ());
-    init(new ASTRound ());
     init(new ASTSignif());
     init(new ASTSin   ());
     init(new ASTSqrt  ());
@@ -92,12 +91,15 @@ abstract public class AST extends Iced {
     init(new ASTMax());
     init(new ASTMaxNA());
     init(new ASTMean());
-    init(new ASTMean());
     init(new ASTMin());
     init(new ASTMinNA());
     init(new ASTSdev());
     init(new ASTSum());
     init(new ASTSumNA());
+
+    // Time
+    init(new ASTListTimeZones());
+    init(new ASTSetTimeZone());
 
     // Complex Math
     init(new ASTVariance());

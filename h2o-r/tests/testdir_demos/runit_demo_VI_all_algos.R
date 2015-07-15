@@ -5,7 +5,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 
 # If you want to cut and paste code from this test, you can just create the connection yourself up front.
 # h = h2o.init()
@@ -13,9 +13,9 @@ test <- function(h) {
 # Parse data into H2O
 print("Parsing data into H2O")
 # From an h2o git workspace.
-data.hex <- h2o.importFile(h, locate("smalldata/demos/bank-additional-full.csv"), destination_frame="data")
+data.hex <- h2o.importFile( locate("smalldata/demos/bank-additional-full.csv"), destination_frame="data")
 # Or directly from github.
-# data.hex = h2o.importFile(h, path = "https://raw.github.com/0xdata/h2o/master/smalldata/bank-additional-full.csv", destination_frame="data.hex")
+# data.hex = h2o.importFile( path = "https://raw.github.com/0xdata/h2o/master/smalldata/bank-additional-full.csv", destination_frame="data.hex")
 
 print("Expectation: All Algos should pick the predictor - 'duration' as the most important variable")
 

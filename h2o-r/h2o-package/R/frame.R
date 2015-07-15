@@ -636,7 +636,7 @@ as.Date.H2OFrame <- function(x, format, ...) {
 #' @param tz The desired timezone.
 #' @export
 h2o.setTimezone <- function(tz) {
-  expr <- paste0("(setTimeZone \"", tz, "\"")
+  expr <- paste0("(setTimeZone \"", tz, "\")")
   invisible(.h2o.raw_expr_op(expr))
 }
 
