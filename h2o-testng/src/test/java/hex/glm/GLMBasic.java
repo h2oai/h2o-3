@@ -369,9 +369,12 @@ public class GLMBasic extends TestNGUtil {
 			//"GLEASON, -.5, .5"
 			String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
 			List<String> predictorNames = Arrays.asList(trainFrame._names);
-			predictorNames.remove(glmParams._response_column); // remove the response column name. we only want predictors
+			//predictorNames.remove(glmParams._response_column); // remove the response column name. we only want predictors
 			for(String name : predictorNames){
-				betaConstraintsString += name+", "+lowerBound+", "+upperBound+"\n";
+				if (!name.equals(glmParams._response_column)) {
+					System.out.println(name + ", " + lowerBound + ", " + upperBound + "\n");
+					betaConstraintsString += name + ", " + lowerBound + ", " + upperBound + "\n";
+				}
 			}
 			Key betaConsKey = Key.make("beta_constraints");
 			FVecTest.makeByteVec(betaConsKey, betaConstraintsString);
