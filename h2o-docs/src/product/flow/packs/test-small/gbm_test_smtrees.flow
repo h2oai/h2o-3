@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/smtrees.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/smtrees.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/smtrees.csv\"]\n  destination_frame: \"smtrees.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_names: [\"\",\"girth\",\"height\",\"vol\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"smtrees.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"smtrees.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"smtrees.hex\", [0.2], [\"smtrees-test.hex_0.20\",\"smtrees_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-2c247185-949c-4662-9a98-0c1010519da3\",\"training_frame\":\"smtrees_train.hex_0.80\",\"validation_frame\":\"smtrees-test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"vol\",\"ntrees\":\"3\",\"max_depth\":\"1\",\"min_rows\":\"2\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-8528387593460335000,\"learn_rate\":\"1\",\"distribution\":\"gaussian\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-2c247185-949c-4662-9a98-0c1010519da3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-2c247185-949c-4662-9a98-0c1010519da3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-2c247185-949c-4662-9a98-0c1010519da3\", frame: \"smtrees-test.hex_0.20\", predictions_frame: \"prediction-994ea89c-be4f-498a-acea-e9fedde0e371\""
+    }
+  ]
+}
