@@ -1022,6 +1022,39 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+
+  // test categorical autoexpansions, run on airlines which has several categorical columns,
+  // once on explicitly expanded data, once on h2o autoexpanded and compare the results
+  @Test
+  public void test_COD_Airlines() {
+    GLM job = null;
+    GLMModel model1 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip");
+    //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._valid = fr._key;
+      params._lambda = null;
+      params._alpha = new double[]{1};
+      params._standardize = false;
+      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._lambda_search = true;
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categoricals, no standardization", params);
+      model1 = job.trainModel().get();
+    } finally {
+      fr.delete();
+      if (model1 != null) model1.delete();
+//      if(score != null)score.delete();
+      if (job != null) job.remove();
+    }
+  }
+
+
   @Test
   public void testYmuTsk() {
 
@@ -1354,7 +1387,7 @@ public class GLMTest  extends TestUtil {
       Scope.enter();
       // test LBFGS with l1 pen
       GLMParameters params = new GLMParameters(Family.gaussian);
-      params._solver = Solver.L_BFGS;
+      params._solver = Solver.COORDINATE_DESCENT_SEQ;
       params._response_column = fr._names[0];
       params._train = parsed;
       params._alpha = new double[]{0};
@@ -1374,7 +1407,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 215;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{/*Solver.L_BFGS,*/ Solver.IRLSM}) { // LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{Solver.COORDINATE_DESCENT_SEQ, Solver.IRLSM}) { // LBFGS lambda-search is too slow now
         params._solver = s;
         job = new GLM(modelKey, "glm test simple poisson", params);
         job.trainModel().get();

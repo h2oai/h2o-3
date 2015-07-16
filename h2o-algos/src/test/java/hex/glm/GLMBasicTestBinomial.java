@@ -26,6 +26,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   static Frame _prostateTrainUpsampled; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
   static Frame _abcd; // tiny corner case dataset
+
   @Test
   public void testOffset() {
     GLM job = null;

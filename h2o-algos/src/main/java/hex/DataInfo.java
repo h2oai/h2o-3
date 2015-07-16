@@ -44,7 +44,7 @@ public class DataInfo extends Keyed {
   public int weightChunkId(){return _cats + _nums;}
   public final boolean _skipMissing;
   public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
-  final int [][] _catLvls;
+  public final int [][] _catLvls;
 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
@@ -86,7 +86,6 @@ public class DataInfo extends Keyed {
     _response_transform = response_transform;
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
-    _catLvls = null;
     _permutation = new int[train.numCols()];
     final Vec[] tvecs = train.vecs();
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
@@ -103,6 +102,8 @@ public class DataInfo extends Keyed {
         nums[nnums++] = i;
     _nums = nnums;
     _cats = ncats;
+    _catLvls = new int[_cats][];
+
     // sort the cats in the decreasing order according to their size
     for(int i = 0; i < ncats; ++i)
       for(int j = i+1; j < ncats; ++j)
@@ -441,7 +442,7 @@ public class DataInfo extends Keyed {
 
   public final int getCategoricalId(int cid, int val) {
     final int c;
-    if (_catLvls != null)  // some levels are ignored?
+    if (_catLvls[cid] != null)  // some levels are ignored?
       c = Arrays.binarySearch(_catLvls[cid], val);
     else c = val - (_useAllFactorLevels?0:1);
     if( c < 0) return -1;

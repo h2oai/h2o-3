@@ -891,18 +891,23 @@ public abstract class GLMTask  {
   public static class GLMCoordinateDescentTaskSeq extends MRTask<GLMCoordinateDescentTaskSeq> {
     final double [] _betaold; // current old value at j
     final double [] _betanew; // global beta @ j-1 that was just updated.
+    final int [] _catLvls_new; // sorted list of indices of active levels only for one categorical variable
+    final int [] _catLvls_old;
     public double [] _temp;
     long _nobs;
     int _cat_num; // 1: c and p categorical, 2:c numeric and p categorical, 3:c and p numeric , 4: c categorical and previous num.
     boolean _interceptnew;
     boolean _interceptold;
 
-    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num , double [] betaold, double [] betanew){
+    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num , double [] betaold, double [] betanew,
+                                        int [] catLvlsold, int [] catLvlsnew){
       _cat_num = cat_num;
       _betaold = betaold;
       _betanew = betanew;
       _interceptold=interceptold; // if updating beta_1, then the intercept is the previous column
       _interceptnew=interceptnew; // if currently updating the intercept value
+      _catLvls_old=catLvlsold;
+      _catLvls_new=catLvlsnew;
     }
 
     @Override
@@ -913,6 +918,9 @@ public abstract class GLMTask  {
       Chunk ztildaChunk = chunks[cnt++];
       Chunk filterChunk = chunks[cnt++];
       Chunk xpChunk=null, xChunk=null;
+      double betanew = 0; // most recently updated prev variable
+      double betaold = 0; // old value of current variable being updated
+
       _temp = new double[_betaold.length];
       if (_interceptnew) {
         xChunk = new C0DChunk(1,chunks[0]._len);
@@ -928,7 +936,9 @@ public abstract class GLMTask  {
         }
       }
 
-      //  4: c numeric and previous cat.
+      // For each observation, add corresponding term to temp - or if categorical variable only add the term corresponding to its active level and the active level
+      // of the most recently updated variable before it (if also cat). If for an obs the active level corresponds to an inactive column, we just dont want to include
+      // it - same if inactive level in most recently updated var. so set these to zero ( Wont be updating a betaj which is inactive) .
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
         ++_nobs;
         if (filterChunk.atd(i) == 1) continue;
@@ -936,11 +946,17 @@ public abstract class GLMTask  {
         double val = 1, valp = 1;
         if(_cat_num == 1) {
           active_level = (int) xChunk.at8(i); // only need to change one temp value per observation.
+          if (_catLvls_old != null)  // some levels are ignored?
+            active_level = Arrays.binarySearch(_catLvls_old, active_level);
           active_level_p = (int) xpChunk.at8(i); // both cat
+          if (_catLvls_new != null)  // some levels are ignored?
+            active_level_p = Arrays.binarySearch(_catLvls_new, active_level_p);
         }
         else if(_cat_num == 2){
           val = xChunk.atd(i); // current num and previous cat
           active_level_p = (int) xpChunk.at8(i);
+          if (_catLvls_new != null)  // some levels are ignored?
+            active_level_p = Arrays.binarySearch(_catLvls_new, active_level_p);
         }
         else if(_cat_num == 3){
           val = xChunk.atd(i); // both num
@@ -948,19 +964,27 @@ public abstract class GLMTask  {
         }
         else if(_cat_num == 4){
           active_level = (int) xChunk.at8(i); // current cat
+          if (_catLvls_old != null)  // some levels are ignored?
+            active_level = Arrays.binarySearch(_catLvls_old, active_level); // search to see if this level is active.
           valp = xpChunk.atd(i); //prev numeric
         }
 
+        if(active_level >= 0)
+         betaold = _betaold[active_level];
+        if(active_level_p>=0)
+         betanew = _betanew[active_level_p];
+
         if (_interceptnew) {
-            ztildaChunk.set(i, ztildaChunk.atd(i) - _betaold[0] + valp * _betanew[active_level_p]);
+            ztildaChunk.set(i, ztildaChunk.atd(i) - betaold + valp * betanew); //
             _temp[0] += wChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
           } else {
-            if (_interceptold) // beta_1
-              ztildaChunk.set(i, ztildaChunk.atd(i) - val * _betaold[active_level] + _betanew[active_level_p]);
-            else // any other beta_k
-              ztildaChunk.set(i, ztildaChunk.atd(i) - val * _betaold[active_level] + valp * _betanew[active_level_p]);
+           // if (_interceptold) // beta_1
+              ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
+           // else // any other beta_k
+           //   ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
 
-           _temp[active_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
+            if(active_level >=0 )
+            _temp[active_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
            }
 
        }
