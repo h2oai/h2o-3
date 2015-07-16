@@ -19,10 +19,10 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
 
 checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {
   sdevR <- fitR$sdev
-  sdevH2O <- fitH2O@model$std_deviation
+  sdevH2O <- as.numeric(fitH2O@model$pc_importance[1,])
   Log.info("Compare Standard Deviations between R and H2O\n") 
   Log.info(paste("H2O Std Dev : ", sdevH2O, "\t\t", "R Std Dev : ", sdevR))
-  expect_equal(fitH2O@model$std_deviation, fitR$sdev, tolerance = tolerance)
+  expect_equal(sdevH2O, sdevR, tolerance = tolerance)
   
   Log.info("Compare Principal Components between R and H2O\n") 
   Log.info("R Principal Components:"); print(fitR$rotation)
