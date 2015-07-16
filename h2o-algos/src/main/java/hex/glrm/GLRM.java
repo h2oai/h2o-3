@@ -440,8 +440,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._names_expanded = tinfo.coefNames();
 
         long nobs = _train.numRows() * _train.numCols();
-        for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        model._output._nobs = nobs;
+        long na_cnt = 0;
+        for(int i = 0; i < _train.numCols(); i++)
+          na_cnt += _train.vec(i).naCnt();
+        model._output._nobs = nobs - na_cnt;   // TODO: Should we count NAs?
 
         // 0) Initialize Y and X matrices
         // Jam A and X into a single frame for distributed computation
@@ -457,7 +459,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Use closed form solution for X if L2 loss and regularization
         double[][] yt = initialXY(tinfo, dinfo);
         yt = ArrayUtils.transpose(yt);
-        if (_parms.hasClosedForm()) initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
+        if (na_cnt == 0 && _parms.hasClosedForm())
+          initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);

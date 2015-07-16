@@ -1234,6 +1234,17 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
       stop("type must be either 'barplot' or 'lines'")
 }
 
+#'
+#' Retrieve the standard deviations of principal components
+#'
+#' @param object An \linkS4class{H2ODimReductionModel} object.
+#' @export
+h2o.sdev <- function(object) {
+  if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
+    stop("object must be a H2O PCA model")
+  as.numeric(object@model$pc_importance[1,])
+}
+
 # Handles ellipses
 .model.ellipses <- function(dots) {
   lapply(names(dots), function(type) {
