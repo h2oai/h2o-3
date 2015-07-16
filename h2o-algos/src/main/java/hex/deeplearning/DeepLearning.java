@@ -99,7 +99,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
-            parms._offset_column != null
+            parms._offset_column != null,
+            parms._fold_column != null
       );
   }
 

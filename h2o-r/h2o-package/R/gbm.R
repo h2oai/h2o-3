@@ -31,6 +31,9 @@
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
+#'        Must be "Random" or "Modulo"
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
@@ -64,6 +67,8 @@ h2o.gbm <- function(x, y, training_frame,
                     seed,
                     build_tree_one_node = FALSE,
                     nfolds = 0,
+                    fold_column = NULL,
+                    fold_assignment = c("Random","Modulo"),
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -101,6 +106,7 @@ h2o.gbm <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if (!missing(model_id))
@@ -135,7 +141,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$score_each_iteration <- score_each_iteration
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
-
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
   else            .h2o.createModel(training_frame@conn, 'gbm', parms)
 }

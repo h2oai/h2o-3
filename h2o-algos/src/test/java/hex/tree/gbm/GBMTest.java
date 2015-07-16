@@ -1122,6 +1122,7 @@ public class GBMTest extends TestUtil {
   }
 
   @Ignore("PUBDEV-1690")
+  @Test
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
     GBMModel gbm1 = null;
@@ -1303,6 +1304,51 @@ public class GBMTest extends TestUtil {
       if (old != null) old.remove();
       if (gbm1 != null) gbm1.delete();
       if (gbm2 != null) gbm2.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNFoldAirline() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._nfolds = 3;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
+      assertEquals(0.7262076707473135, mm.auc()._auc, 1e-4); // 1 node
+      assertEquals(0.22686348162897116, mm.mse(), 1e-4);
+      assertEquals(0.09026116418495023, mm.r2(), 1e-4);
+      assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
       Scope.exit();
     }
   }

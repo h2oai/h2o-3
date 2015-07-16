@@ -51,6 +51,21 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_splits;
 
+  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 response_column;
+
+  @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 weights_column;
+
+  @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 offset_column;
+
+  @API(help = "Column with cross-validation fold index assignment per observation", is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 fold_column;
+
+  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"Random", "Modulo"}, level = API.Level.expert, direction=API.Direction.INOUT)
+  public Model.Parameters.FoldAssignmentScheme fold_assignment;
+
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
