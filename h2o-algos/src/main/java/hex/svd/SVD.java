@@ -9,6 +9,7 @@ import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -122,8 +123,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override protected void compute2() {
       SVDModel model = null;
-      DataInfo uinfo = null, dinfo = null;
-      Frame fr = null, u = null;
+      DataInfo dinfo = null;
+      Frame u = null;
+      Vec[] uvecs = null;
 
       try {
         init(true);   // Initialize parameters
@@ -136,7 +138,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 0) Transform training data and save standardization vectors for use in scoring later
         dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
-                            /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* intercept */ false);
+                            /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -175,30 +177,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if(!_parms._only_v) {
           model._output._d = new double[_parms._nv];
           model._output._u_key = Key.make(_parms._u_name);
-
-          // Append vecs for storing left singular vectors (U) if requested
-          Vec[] vecs = new Vec[_train.numCols() + _parms._nv];
-          Vec[] uvecs = new Vec[_parms._nv];
-          for (int i = 0; i < _train.numCols(); i++) vecs[i] = _train.vec(i);
-          int c = 0;
-          for (int i = _train.numCols(); i < vecs.length; i++) {
-            vecs[i] = _train.anyVec().makeZero();
-            uvecs[c++] = vecs[i];   // Save reference to U only
-          }
-          assert c == uvecs.length;
-
-          fr = new Frame(null, vecs);
-          u = new Frame(model._output._u_key, null, uvecs);
-          uinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE,
-                              /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* intercept */ false);
-          DKV.put(uinfo._key, uinfo);
-          DKV.put(u._key, u);
+          uvecs = new Vec[_parms._nv];
 
           // Compute first singular value \sigma_1
           double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[0]);
-          CalcSigmaU ctsk = new CalcSigmaU(dinfo, _parms, ivv_vk, model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame);
+          CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(1, dinfo._adaptedFrame);
           model._output._d[0] = ctsk._sval;
-          assert ctsk._nobs == model._output._nobs;    // Check same number of skipped rows as Gram
+          assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
+          Frame tmp = ctsk.outputFrame();
+          uvecs[0] = tmp.vec(0);   // Save output column of U
+          tmp.unlock(self());
         }
         model.update(self()); // Update model in K/V store
         update(1);            // One unit of work
@@ -219,10 +207,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 3a) Compute \sigma_k = ||A_{k-1}v_k|| and u_k = A_{k-1}v_k/\sigma_k
           if(!_parms._only_v) {
             double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
-            // model._output._d[k] = new CalcSigma(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
-            CalcSigmaUNorm ctsk = new CalcSigmaUNorm(dinfo, _parms, ivv_vk, k, model._output._d[k-1], model._output._normSub, model._output._normMul).doAll(uinfo._adaptedFrame);
+            CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(1, dinfo._adaptedFrame);
             model._output._d[k] = ctsk._sval;
-            assert ctsk._nobs == model._output._nobs;
+            assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;
+            Frame tmp = ctsk.outputFrame();
+            uvecs[k] = tmp.vec(0);   // Save output column of U
+            tmp.unlock(self());
           }
 
           // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
@@ -234,21 +224,24 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           update(1);            // One unit of work
         }
 
-        // 4) Normalize last left singular vector and save parameters
+        // 4) Normalize output frame columns by singular values to get left singular vectors
         // TODO: Make sure model building consistent if algo cancelled midway
         model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
-        if(!_parms._only_v) {
-          if(_parms._keep_u) {
-            final int idx = _parms._nv - 1;
-            final int ncols = _train.numCols();
-            final double sigma_last = model._output._d[_parms._nv - 1];
+        if(!_parms._only_v && _parms._keep_u) {
+          u = new Frame(model._output._u_key, null, uvecs);
+          DKV.put(u._key, u);
 
-            new MRTask() {
+          final double[] sigma = model._output._d;
+          new MRTask() {
               @Override public void map(Chunk cs[]) {
-                div(chk_u(cs, idx, ncols), sigma_last);
+              for (int col = 0; col < cs.length; col++) {
+                for(int row = 0; row < cs[0].len(); row++) {
+                  double x = cs[col].atd(row);
+                  cs[col].set(row, x / sigma[col]);
+                }
               }
-            }.doAll(uinfo._adaptedFrame);
-          }
+            }
+          }.doAll(u);
         }
         model.update(self());
         done();
@@ -264,7 +257,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       } finally {
         if( model != null ) model.unlock(_key);
         if( dinfo != null ) dinfo.remove();
-        if( uinfo != null ) uinfo.remove();
         if( u != null & !_parms._keep_u ) u.delete();
         _parms.read_unlock_frames(SVD.this);
       }
@@ -279,123 +271,27 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
   }
 
-  // In chunk, first cols are training frame A, next cols are left singular vectors U
-  // protected static int idx_u(int c) { return _ncols+c; }
-  protected static Chunk chk_u(Chunk chks[], int c, int ncols) { return chks[ncols+c]; }
+  private static class CalcSigmaU extends FrameTask<CalcSigmaU> {
+    final double[] _svec;
+    public double _sval;
+    public long _nobs;
 
-  // A pair result: square distance and number of rows skipped
-  private static final class L2Norm { double _sumsqr; long _nobs;  }
-
-  // Save inner product of each row with vec to col k of chunk array
-  // Returns sum over l2 norms of each row with vec
-  // Note: Handling of row skipping should match that of GramTask
-  private static L2Norm l2norm2(Chunk[] cs, double[] vec, int k, DataInfo dinfo, L2Norm result) {
-    double sumsqr = 0, sum = 0;
-    long nobs = 0;
-    int ncols = dinfo._adaptedFrame.numCols();
-
-    // Calculate inner product of current row with vec
-    for (int r = 0; r < cs[0].len(); r++) {
-      DataInfo.Row row = dinfo.newDenseRow();
-      if(dinfo.extractDenseRow(cs, r, row).bad) continue;
-      sum = row.innerProduct(vec);
-      sumsqr += sum * sum;
-      nobs++;
-      chk_u(cs,k,ncols).set(r,sum);   // Update u_k <- A_{k-1}v_k
-    }
-
-    result._sumsqr = sumsqr;
-    result._nobs = nobs;
-    return result;
-  }
-
-  // Divide each row of a chunk by a constant
-  private static void div(Chunk chk, double norm) {
-    for(int row = 0; row < chk._len; row++) {
-      double tmp = chk.atd(row);
-      chk.set(row, tmp / norm);
-    }
-  }
-
-  private static class CalcSigmaU extends MRTask<CalcSigmaU> {
-    DataInfo _dinfo;    // Training data only
-    SVDParameters _parms;
-    final double[] _normSub;
-    final double[] _normMul;
-    final int _ncols;
-    final double[] _svec;   // Input: Right singular vector (v_1)
-
-    double _sval;           // Output: Singular value (\sigma_1)
-    long _nobs;             // Output: Number of processed rows
-
-    CalcSigmaU(DataInfo dinfo, SVDParameters parms, double[] svec, double[] normSub, double[] normMul) {
-      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
-      _dinfo = dinfo;
-      _parms = parms;
+    public CalcSigmaU(Key jobKey, DataInfo dinfo, double[] svec) {
+      super(jobKey, dinfo);
       _svec = svec;
-      _normSub = normSub;
-      _normMul = normMul;
-      _ncols = _dinfo._adaptedFrame.numCols();
       _sval = 0;
     }
 
-    @Override public void map(Chunk[] cs) {
-      assert cs.length - _ncols == _parms._nv;
-      L2Norm result = new L2Norm();
-      l2norm2(cs, _svec, 0, _dinfo, result);    // Update \sigma_1 and u_1 <- Av_1
-      _sval = result._sumsqr;
-      _nobs = result._nobs;
+    @Override protected void processRow(long gid, DataInfo.Row r, NewChunk[] outputs) {
+      double num = r.innerProduct(_svec);
+      outputs[0].addNum(num);
+      _sval += num * num;
+      ++_nobs;
     }
 
     @Override public void reduce(CalcSigmaU other) {
-      _sval += other._sval;
       _nobs += other._nobs;
-    }
-
-    @Override protected void postGlobal() {
-      _sval = Math.sqrt(_sval);
-    }
-  }
-
-  private static class CalcSigmaUNorm extends MRTask<CalcSigmaUNorm> {
-    DataInfo _dinfo;
-    SVDParameters _parms;
-    final int _k;             // Input: Index of current singular vector (k)
-    final double[] _svec;     // Input: Right singular vector (v_k)
-    final double _sval_old;   // Input: Singular value from last iteration (\sigma_{k-1})
-    final double[] _normSub;
-    final double[] _normMul;
-    final int _ncols;
-
-    double _sval;     // Output: Singular value (\sigma_k)
-    long _nobs;       // Output: Number of processed rows
-
-    CalcSigmaUNorm(DataInfo dinfo, SVDParameters parms, double[] svec, int k, double sval_old, double[] normSub, double[] normMul) {
-      // assert svec.length == dinfo._adaptedFrame.numColsExp(parms._use_all_factor_levels, false);
-      assert k >= 1 : "Index of singular vector k must be at least 1";
-      _dinfo = dinfo;
-      _parms = parms;
-      _k = k;
-      _svec = svec;
-      _normSub = normSub;
-      _normMul = normMul;
-      _ncols = _dinfo._adaptedFrame.numCols();
-      _sval_old = sval_old;
-      _sval = 0;
-    }
-
-    @Override public void map(Chunk[] cs) {
-      assert cs.length - _ncols == _parms._nv;
-      L2Norm result = new L2Norm();
-      l2norm2(cs, _svec, _k, _dinfo, result);   // Update \sigma_k and save u_k <- A_{k-1}v_k
-      _sval = result._sumsqr;
-      _nobs = result._nobs;
-      div(chk_u(cs,_k-1,_ncols), _sval_old);     // Normalize previous u_{k-1} <- u_{k-1}/\sigma_{k-1}
-    }
-
-    @Override public void reduce(CalcSigmaUNorm other) {
       _sval += other._sval;
-      _nobs += other._nobs;
     }
 
     @Override protected void postGlobal() {

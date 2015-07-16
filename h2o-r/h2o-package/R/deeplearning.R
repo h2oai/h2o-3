@@ -9,7 +9,6 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
@@ -85,7 +84,7 @@
 #'        replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes}
 #' @param sparse Sparse data handling (Experimental)
 #' @param col_major Use a column major weight matrix for input layer. Can speed up forward
-#'        proagation, but might slow down backpropagation (Experimental)
+#'        propagation, but might slow down backpropagation (Experimental)
 #' @param average_activation Average activation for sparse auto-encoder (Experimental)
 #' @param sparsity_beta Sparsity regularization (Experimental)
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing
@@ -95,6 +94,10 @@
 #'        Frames"
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
+#'        Must be "Random" or "Modulo"
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -110,7 +113,6 @@
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
-                             nfolds = 0,
                              validation_frame,
                              checkpoint,
                              autoencoder = FALSE,
@@ -168,6 +170,9 @@ h2o.deeplearning <- function(x, y, training_frame,
                              export_weights_and_biases=FALSE,
                              offset_column = NULL,
                              weights_column = NULL,
+                             nfolds = 0,
+                             fold_column = NULL,
+                             fold_assignment = c("Random","Modulo"),
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
@@ -192,6 +197,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y, autoencoder)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$response_column <- args$y
   parms$ignored_columns <- args$x_ignore
   if(!missing(model_id))
@@ -312,7 +318,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$export_weights_and_biases <- export_weights_and_biases
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
-
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   .h2o.createModel(training_frame@conn, 'deeplearning', parms)
 }
 

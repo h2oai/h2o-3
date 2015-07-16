@@ -4766,7 +4766,7 @@ class ASTSetTimeZone extends ASTOp {
   @Override void apply(Env e) {
     Set<String> idSet = DateTimeZone.getAvailableIDs();
     if(!idSet.contains(_tz))
-      throw new IllegalArgumentException("Unacceptable timezone name given.  For a list of acceptable names, use listTimezone().");
+      throw new IllegalArgumentException("Unacceptable timezone name given: "+_tz+".  For a list of acceptable names, use listTimezone().");
     new MRTask() {
       @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
     }.doAllNodes();

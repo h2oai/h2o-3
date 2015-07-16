@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/upsampled.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/upsampled.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/upsampled.csv\"]\n  destination_frame: \"upsampled.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 20\n  single_quotes: false\n  column_names: [\"C1\",\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\",\"C9\",\"C10\",\"C11\",\"C12\",\"C13\",\"C14\",\"C15\",\"C16\",\"C17\",\"C18\",\"C19\",\"C20\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"upsampled.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"upsampled.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"upsampled.hex\", [0.2], [\"upsampled.hex_test\",\"upsampled.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-6fee7726-a1d1-4986-b6f3-ee00f2202b3a\",\"training_frame\":\"upsampled.hex_0.80\",\"validation_frame\":\"upsampled.hex_test\",\"ignore_const_cols\":true,\"response_column\":\"C1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-6fee7726-a1d1-4986-b6f3-ee00f2202b3a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-6fee7726-a1d1-4986-b6f3-ee00f2202b3a\""
+    },
+   
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-6fee7726-a1d1-4986-b6f3-ee00f2202b3a\", frame: \"upsampled.hex_test\", predictions_frame: \"prediction-929c3432-5dd5-4560-b62a-2be96e29f28d\""
+    }
+  ]
+}

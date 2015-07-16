@@ -485,7 +485,7 @@ public class GLRMTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
-      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
+      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
 
       Log.info("Original matrix:\n" + colFormat(iris_cols, "%8.7s") + ArrayUtils.pprint(iris));
       double[][] iris_perm = ArrayUtils.permuteCols(iris, dinfo._permutation);
@@ -524,7 +524,7 @@ public class GLRMTest extends TestUtil {
         Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toEnum())._key);
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
-      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false);
+      DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
 
       Log.info("Original matrix:\n" + colFormat(pros_cols, "%8.7s") + ArrayUtils.pprint(prostate));
       double[][] pros_perm = ArrayUtils.permuteCols(prostate, dinfo._permutation);

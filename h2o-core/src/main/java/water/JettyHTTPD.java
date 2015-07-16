@@ -36,7 +36,16 @@ public class JettyHTTPD {
   // Thread-specific things.
   //------------------------------------------------------------------------------------------
 
+  private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
   private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
+
+  private static void startRequestLifecycle() {
+    _startMillis.set(System.currentTimeMillis());
+  }
+
+  protected static long getStartMillis() {
+    return _startMillis.get();
+  }
 
   private static void startTransaction(String userAgent) {
     _userAgent.set(userAgent);
@@ -157,6 +166,7 @@ public class JettyHTTPD {
   public void registerHandlers(HandlerWrapper s) {
     GateHandler gh = new GateHandler();
     AddCommonResponseHeadersHandler rhh = new AddCommonResponseHeadersHandler();
+    ExtensionHandler1 eh1 = new ExtensionHandler1();
 
     ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
@@ -168,7 +178,7 @@ public class JettyHTTPD {
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
-    Handler[] handlers = {gh, rhh, context};
+    Handler[] handlers = {gh, rhh, eh1, context};
     HandlerCollection hc = new HandlerCollection();
     hc.setHandlers(handlers);
     s.setHandler(hc);
@@ -181,6 +191,8 @@ public class JettyHTTPD {
                         Request baseRequest,
                         HttpServletRequest request,
                         HttpServletResponse response ) throws IOException, ServletException {
+      startRequestLifecycle();
+
       while (! _acceptRequests) {
         try {
           Thread.sleep(100);
@@ -190,13 +202,29 @@ public class JettyHTTPD {
     }
   }
 
+  protected void handle1(String target,
+                         Request baseRequest,
+                         HttpServletRequest request,
+                         HttpServletResponse response) throws IOException, ServletException {}
+
+  public class ExtensionHandler1 extends AbstractHandler {
+    public ExtensionHandler1() {}
+
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException, ServletException {
+      H2O.getJetty().handle1(target, baseRequest, request, response);
+    }
+  }
+
   public class AddCommonResponseHeadersHandler extends AbstractHandler {
     public AddCommonResponseHeadersHandler() {}
 
-    public void handle( String target,
-                        Request baseRequest,
-                        HttpServletRequest request,
-                        HttpServletResponse response ) throws IOException, ServletException {
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException, ServletException {
       setCommonResponseHttpHeaders(response);
     }
   }
@@ -227,8 +255,12 @@ public class JettyHTTPD {
         response.setStatus(HttpServletResponse.SC_OK);
         OutputStream os = response.getOutputStream();
         water.util.FileUtils.copyStream(is, os, 2048);
-      } catch (Exception e) {
+      }
+      catch (Exception e) {
         sendErrorResponse(response, e, uri);
+      }
+      finally {
+        logRequest("GET", request, response);
       }
     }
 
@@ -263,8 +295,12 @@ public class JettyHTTPD {
                 "}\n";
         response.setContentType("application/json");
         response.getWriter().write(responsePayload);
-      } catch (Exception e) {
+      }
+      catch (Exception e) {
         sendErrorResponse(response, e, uri);
+      }
+      finally {
+        logRequest("POST", request, response);
       }
     }
   }
@@ -310,6 +346,8 @@ public class JettyHTTPD {
       }
       catch (Exception e) {
         sendErrorResponse(response, e, uri);
+      } finally {
+        logRequest("POST", request, response);
       }
     }
   }
@@ -499,8 +537,9 @@ public class JettyHTTPD {
         OutputStream os = response.getOutputStream();
         InputStream is = resp.data;
         FileUtils.copyStream(is, os, 1024);
-      }
-      finally {
+      } finally {
+        logRequest(method, request, response);
+
         // Handle shutdown if it was requested.
         if (H2O.getShutdownRequested()) {
           H2O.shutdown(0);
@@ -512,6 +551,10 @@ public class JettyHTTPD {
   }
 
   //--------------------------------------------------
+
+  protected static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
+    Log.httpd(method, request.getRequestURI(), response.getStatus(), System.currentTimeMillis() - getStartMillis());
+  }
 
   private static String readLine(InputStream in) throws IOException {
     StringBuilder sb = new StringBuilder();
