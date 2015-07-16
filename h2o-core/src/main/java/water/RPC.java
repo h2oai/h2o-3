@@ -9,6 +9,7 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -169,6 +170,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   public synchronized RPC<V> call(boolean forceTCP) {
       // Any Completer will not be carried over to remote; add it to the RPC call
       // so completion is signaled after the remote comes back.
+    _dt._rndBits = new Random().nextInt();
     CountedCompleter cc = _dt.getCompleter();
     if( cc != null )  handleCompleter(cc);
 
@@ -370,6 +372,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       DTask dt, origDt = _dt; // _dt can go null the instant it is send over wire
       assert origDt!=null;    // Freed after completion
       while((dt = _dt) != null) { // Retry loop for broken TCP sends
+        dt._rndBits = new Random().nextInt();
         AutoBuffer ab = null;
         try {
           // Start the ACK with results back to client.  If the client is
@@ -412,6 +415,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       assert _computedAndReplied : "Found RPCCall not computed "+_tsknum;
       DTask dt = _dt;
       if( dt == null ) return;  // Received ACKACK already
+      dt._rndBits = new Random().nextInt();
       UDP.udp udp = dt.priority()==H2O.FETCH_ACK_PRIORITY ? UDP.udp.fetchack : UDP.udp.ack;
       forceTCP = forceTCP && udp != UDP.udp.fetchack;
       AutoBuffer rab = new AutoBuffer(_client).putTask(udp,_tsknum);
