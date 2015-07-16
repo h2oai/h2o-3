@@ -5,6 +5,7 @@ import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -191,6 +192,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
+//    init(false); //parameter sanity check (such as _fold_column, etc.)
+    if (error_count() > 0) {
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    }
     return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits()) :
             // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
             start(new H2O.H2OCountedCompleter(){
@@ -219,7 +224,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public Job<M> computeCrossValidation() {
-    init(false); //parameter sanity check (such as _fold_column, etc.)
     assert _valid == null;
     final Key<Frame> origTrainFrameKey = _parms._train;
     final Frame origTrainFrame = train();
