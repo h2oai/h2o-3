@@ -126,14 +126,10 @@ class H2OFrame:
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
 
   def _upload_raw_data(self, tmp_file_path, column_names):
-    # file upload info is the normalized path to a local file
-    fui = {"file": os.path.abspath(tmp_file_path)}
-    # create a random name for the data
-    dest_key = _py_tmp_key()
-    # do the POST -- blocking, and "fast" (does not real data upload)
-    h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)
-    # actually parse the data and setup self._vecs
-    self._handle_text_key(dest_key)
+    fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
+    dest_key = _py_tmp_key()                                                  # create a random name for the data
+    h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
+    self._handle_text_key(dest_key)                                           # actually parse the data and setup self._vecs
 
   def __iter__(self):
     """
@@ -850,6 +846,7 @@ class H2OFrame:
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """
     Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR in computing bin width.
+
     :param breaks: breaks Can be one of the following: A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott." A
     single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width. Or,
     A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
@@ -917,6 +914,7 @@ class H2OFrame:
     Categorical Interaction Feature Creation in H2O.
     Creates a frame in H2O with n-th order interaction features between categorical columns, as specified by
     the user.
+
     :param factors: factors Factor columns (either indices or column names).
     :param pairwise: Whether to create pairwise interactions between factors (otherwise create one
     higher-order interaction). Only applicable if there are 3 or more factors.
@@ -1105,23 +1103,13 @@ class H2OFrame:
     else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
 
   def _update(self):
-    # get ncols,nrows,names and exclude everything else
-    # frames_ex = ["row_offset", "row_count", "checksum", "default_percentiles", "compatible_models",
-    #              "vec_ids","chunk_summary","distribution_summary"]
-    # columns_ex = ["missing_count", "zero_count", "positive_infinity_count", "negative_infinity_count",
-    #               "mins", "maxs", "mean", "sigma", "type", "domain", "data", "string_data",
-    #               "precision", "histogram_bins", "histogram_base", "histogram_stride", "percentiles"]
-    #
-    # frames_ex = "frames/" + ",frames/".join(frames_ex)
-    # columns_ex = "frames/columns/" + ",frames/columns/".join(columns_ex)
-    # exclude="?_exclude_fields={},{}".format(frames_ex,columns_ex)
     res = h2o.frame(self._id)["frames"][0]  # TODO: exclude here?
     self._nrows = res["rows"]
     self._ncols = len(res["columns"])
     self._col_names = [c["label"] for c in res["columns"]]
     self._computed=True
     self._ast=None
-    #### DO NOT ADD METHODS HERE!!! ####
+  #### DO NOT ADD METHODS HERE!!! ####
 
 # private static methods
 
@@ -1145,11 +1133,9 @@ def _check_lists_of_lists(python_obj):
 
 def _handle_python_lists(python_obj):
   cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
-  # do we have a list of lists: [[...], ..., [...]] ?
-  lol = _is_list_of_lists(python_obj)
+  lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
   if lol:
-    # must be a list of flat lists, raise ValueError if not
-    _check_lists_of_lists(python_obj)
+    _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
     # have list of lists, each list is a row
     # length of the longest list is the number of columns
     cols = max([len(l) for l in python_obj])
@@ -1166,15 +1152,12 @@ def _handle_numpy_array(python_obj):       return _handle_python_lists(python_ob
 def _handle_pandas_data_frame(python_obj): return _handle_numpy_array(python_obj=python_obj.as_matrix())
 def _handle_python_dicts(python_obj):
   header = python_obj.keys()
-  # is this a valid header?
-  is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
+  is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
   if not is_valid:
     raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
-  # check that each value entry is a flat list/tuple
-  for k in python_obj:
+  for k in python_obj:  # check that each value entry is a flat list/tuple
     v = python_obj[k]
-    # if value is a tuple/list, then it must be flat
-    if isinstance(v, (tuple, list)):
+    if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
       if _is_list_of_lists(v):
         raise ValueError("Values in the dictionary must be flattened!")
 

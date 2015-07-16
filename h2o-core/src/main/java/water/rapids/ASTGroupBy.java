@@ -224,8 +224,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedHashMap<>(); }
     @Override public void map(Chunk[] c) {
+      _g = new IcedHashMap<>();
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
       G g = new G(_gbCols.length,_agg.length,naMethods);
@@ -236,11 +236,7 @@ import java.util.concurrent.atomic.AtomicInteger;
         if( g_old==null ) {  // won the race w/ this group
           gOld=g;
           g=new G(_gbCols.length,_agg.length,naMethods); // need entirely new G
-        } else {
-          gOld=_g.getk(g);
-          if( gOld==null )   // FIXME: Why is gOld null!?
-            while( gOld==null ) gOld=_g.getk(g);
-        }
+        } else gOld=_g.getk(g);
         // cas in COUNT
         long r=gOld._N;
         while(!G.CAS_N(gOld, r, r + 1))
@@ -286,13 +282,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         if( (type=agg[i]._type) == AGG.T_N ) continue; //immediate short circuit if COUNT
 
-        // Do NA handling here for AGG.T_IG and AGG.T_RM
         if( c!= null )
           if( !agg[i].isAll() && c[col].isNA(chkRow) )
             continue;
 
         // build up a long[] of vals, to handle the case when c is and isn't null.
-        // c is null in the reduce  of the MRTask
         long bits=-1;
         if( c!=null ) {
           if( c[col].isNA(chkRow) ) continue;
