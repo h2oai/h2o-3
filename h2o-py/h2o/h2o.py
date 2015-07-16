@@ -187,9 +187,6 @@ def get_model(model_id):
   else:                           raise NotImplementedError(model_type)
 
 
-def str(frame):
-  pass
-
 def get_frame(frame_id):
   """
   Obtain a handle to the frame in H2O with the frame_id key.
