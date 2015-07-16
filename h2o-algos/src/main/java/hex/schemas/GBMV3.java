@@ -15,6 +15,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 				"validation_frame",
         "nfolds",
         "keep_cross_validation_splits",
+        "fold_assignment",
+        "fold_column",
 				"response_column",
 				"ignored_columns",
 				"ignore_const_cols",

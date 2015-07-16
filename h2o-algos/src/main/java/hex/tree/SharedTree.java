@@ -104,13 +104,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _parms._distribution.tweedie.p = _parms._tweedie_power;
     }
     if (_train != null) {
-      double sumWeights = _train.numRows() * (hasWeights() ? _train.vec(_parms._weights_column).mean() : 1);
+      double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
       error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
               + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
     if( _train != null )
-      _ncols = _train.numCols()-1-(_parms._weights_column!=null?1:0)-(_parms._offset_column!=null?1:0);
+      _ncols = _train.numCols()-1-numSpecialCols();
   }
 
   // --------------------------------------------------------------------------
@@ -166,7 +166,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
             if (stratified != _train) {
               _train = stratified;
-              _response = stratified.lastVec();
+              _response = stratified.vec(_parms._response_column);
+              _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               MRUtils.ClassDist cdmt2 = _weights != null ?
                   new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
@@ -343,16 +344,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_weight(   ) { return _model._output.weightsIdx(); }
   protected int idx_offset(   ) { return _model._output.offsetIdx(); }
   protected int idx_resp(     ) { return _model._output.responseIdx(); }
-  protected int idx_tree(int c) { return _ncols+1+c+(hasOffset()?1:0)+(hasWeights()?1:0); }
+  protected int idx_tree(int c) { return _ncols+1+c+numSpecialCols(); }
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
 
   protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
-  protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp(  )]; }
-  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c )]; }
-  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c )]; }
+  protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp()]; }
+  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
+  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c )]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }

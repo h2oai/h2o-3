@@ -497,7 +497,7 @@ class H2OFrame:
     """
     :return: True if every element is True in the column.
     """
-    return H2OFrame(expr=ExprNode("all",self))._scalar()
+    return H2OFrame(expr=ExprNode("all",self,False))._scalar()
 
   def isnumeric(self):
     """

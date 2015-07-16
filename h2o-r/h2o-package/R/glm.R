@@ -44,6 +44,9 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
+#'        Must be "Random" or "Modulo"
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
@@ -103,7 +106,9 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_search = FALSE,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
-                    nfolds,
+                    nfolds = 0,
+                    fold_column = NULL,
+                    fold_assignment = c("Random","Modulo"),
                     beta_constraints = NULL,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -134,6 +139,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   args <- .verify_dataxy(training_frame, x, y)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
@@ -155,6 +161,8 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(intercept) )                 parms$intercept              <- intercept
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
@@ -175,17 +183,15 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   m
 }
 
-#TODO Rename this function for clarity
-#' Remake an H2O GLM Model
+#' Set betas of an existing H2O GLM Model
 #'
-#' This function allows the usage of new beta constraints to create an GLM model, from an existing
-#' model.
+#' This function allows setting betas of an existing glm model.
 #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
-#' @param beta a new set of beta_constraints
+#' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model_id=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -276,20 +282,4 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
       parms$nfolds <- nfolds
 
     .h2o.startModelJob(training_frame@conn, 'glm', parms)
-}
-
-# TODO: make this possible for all model types
-#' Resolve a GLM H2O Futures Model
-#'
-#' Turns an \linkS4class{H2OModelFuture} into a model of the correct type.
-#' @param keys an \linkS4class{H2OModelFuture} or correct job key.
-#' @param conn a corresponding \linkS4class{H2OConnection} class object.
-#' @return Returns the correct \linkS4class{H2OModel} for the created model.
-#' @export
-h2o.getGLMModel <- function(keys, conn) {
-  if(missing(conn)) conn <- h2o.getConnection()
-  job_key  <- keys[[1]]
-  dest_key <- keys[[1]]
-  .h2o.__waitOnJob(conn, job_key)
-  model <- h2o.getModel(dest_key, conn)
 }

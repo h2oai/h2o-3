@@ -18,6 +18,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 				"validation_frame",
         "nfolds",
         "keep_cross_validation_splits",
+        "fold_assignment",
+        "fold_column",
 				"response_column",
 				"ignored_columns",
 				"ignore_const_cols",
@@ -84,20 +86,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //        "elastic_averaging_moving_rate",
 //        "elastic_averaging_regularization"
     };
-
-    /// Supervised params
-    // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
-    // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
-    // column names are related to training_frame.
-    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 response_column;
-
-    // todo move this up in the hierarchy when there is weights support?
-    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 weights_column;
-
-    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 offset_column;
 
   /*Imbalanced Classes*/
     /**
