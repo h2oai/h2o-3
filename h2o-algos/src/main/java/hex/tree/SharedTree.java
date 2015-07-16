@@ -166,7 +166,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
             if (stratified != _train) {
               _train = stratified;
-              _response = stratified.lastVec();
+              _response = stratified.vec(_parms._response_column);
+              _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               MRUtils.ClassDist cdmt2 = _weights != null ?
                   new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);

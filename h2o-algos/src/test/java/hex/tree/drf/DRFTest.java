@@ -923,6 +923,47 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testNFoldBalanceClasses() {
+    Frame tfr = null, vfr = null;
+    DRFModel drf = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._nfolds = 3;
+      parms._max_depth = 5;
+      parms._balance_classes = true;
+      parms._ntrees = 5;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      drf = job.trainModel().get();
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
+
   @Test
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
