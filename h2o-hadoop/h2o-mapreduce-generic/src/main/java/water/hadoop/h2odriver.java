@@ -69,6 +69,7 @@ public class h2odriver extends Configured implements Tool {
   static String jksPass = null;
   static boolean hashLogin = false;
   static String loginConfFileName = null;
+  static String userName = System.getProperty("user.name");
 
   // Runtime state that might be touched by different threads.
   volatile ServerSocket driverCallbackSocket = null;
@@ -647,6 +648,10 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         loginConfFileName = args[i];
       }
+      else if (s.equals("-user_name")) {
+        i++; if (i >= args.length) { usage(); }
+        userName = args[i];
+      }
       else {
         error("Unrecognized option " + s);
       }
@@ -1019,6 +1024,7 @@ public class h2odriver extends Configured implements Tool {
     if (hashLogin) {
       addMapperArg(conf, "-hash_login");
     }
+    addMapperArg(conf, "-user_name", userName);
 
     for (String s : extraArguments) {
       addMapperArg(conf, s);

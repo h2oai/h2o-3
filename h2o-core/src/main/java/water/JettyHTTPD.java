@@ -157,6 +157,7 @@ public class JettyHTTPD {
   public void registerHandlers(HandlerWrapper s) {
     GateHandler gh = new GateHandler();
     AddCommonResponseHeadersHandler rhh = new AddCommonResponseHeadersHandler();
+    ExtensionHandler1 eh1 = new ExtensionHandler1();
 
     ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
@@ -168,7 +169,7 @@ public class JettyHTTPD {
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
-    Handler[] handlers = {gh, rhh, context};
+    Handler[] handlers = {gh, rhh, eh1, context};
     HandlerCollection hc = new HandlerCollection();
     hc.setHandlers(handlers);
     s.setHandler(hc);
@@ -190,13 +191,29 @@ public class JettyHTTPD {
     }
   }
 
+  protected void handle1(String target,
+                         Request baseRequest,
+                         HttpServletRequest request,
+                         HttpServletResponse response) throws IOException, ServletException {}
+
+  public class ExtensionHandler1 extends AbstractHandler {
+    public ExtensionHandler1() {}
+
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException, ServletException {
+      H2O.getJetty().handle1(target, baseRequest, request, response);
+    }
+  }
+
   public class AddCommonResponseHeadersHandler extends AbstractHandler {
     public AddCommonResponseHeadersHandler() {}
 
-    public void handle( String target,
-                        Request baseRequest,
-                        HttpServletRequest request,
-                        HttpServletResponse response ) throws IOException, ServletException {
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException, ServletException {
       setCommonResponseHttpHeaders(response);
     }
   }
