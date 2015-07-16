@@ -30,7 +30,7 @@ jacocoTestReport {
     String sourceDirEnd = "/src/main/java/"
 
     // Collect .exec files
-    FileTree execLocation = fileTree(destination);
+    FileTree execLocation = fileTree(destination)
     executionData = execLocation
 
     // Collect source files
