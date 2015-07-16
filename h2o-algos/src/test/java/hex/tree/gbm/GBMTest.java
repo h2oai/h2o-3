@@ -1,9 +1,6 @@
 package hex.tree.gbm;
 
-import hex.AUC2;
-import hex.Distributions;
-import hex.ModelMetricsBinomial;
-import hex.ScoreKeeper;
+import hex.*;
 import org.junit.*;
 import water.*;
 import water.fvec.*;
@@ -1121,7 +1118,6 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore("PUBDEV-1690")
   @Test
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
@@ -1138,6 +1134,7 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = (int) tfr.numRows();
+      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
       parms._ntrees = 3;
       parms._seed = 12345;
       parms._learn_rate = 1e-3f;
@@ -1145,8 +1142,8 @@ public class GBMTest extends TestUtil {
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
 
-      parms._nfolds = (int) tfr.numRows() + 1;
       GBM job2 = new GBM(parms);
+      //parms._nfolds = (int) tfr.numRows() + 1; //This is now an error
       gbm2 = job2.trainModel().get();
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._validation_metrics;
@@ -1156,7 +1153,7 @@ public class GBMTest extends TestUtil {
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
-      //TODO: add check: the correct number of individual models were built.
+      //TODO: add check: the correct number of individual models were built. PUBDEV-1690
 
       job1.remove();
       job2.remove();

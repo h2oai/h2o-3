@@ -250,30 +250,30 @@ def check_models(model1, model2, use_validation=False, op='e'):
   # 1. Check model types
   model1_type = type(model1)
   model2_type = type(model2)
-  assert model1_type == model2_type, "The model types differ. The first model is of type {1} and the second " \
-                                     "models is of type {2}.".format(model1_type, model2_type)
+  assert model1_type == model2_type, "The model types differ. The first model is of type {0} and the second " \
+                                     "models is of type {1}.".format(model1_type, model2_type)
 
   # 2. Check model metrics
   if isinstance(model1,H2OBinomialModel): #   2a. Binomial
     # F1
     f1_1 = model1.F1(valid=use_validation)
     f1_2 = model2.F1(valid=use_validation)
-    if op == 'e': assert f1_1 == f1_2, "The first model has an F1 of {1} and the second model has an F1 of " \
-                                       "{2}. Expected the first to be == to the second.".format(f1_1, f1_2)
-    elif op == 'g': assert f1_1 > f1_2, "The first model has an F1 of {1} and the second model has an F1 of " \
-                                        "{2}. Expected the first to be > than the second.".format(f1_1, f1_2)
-    elif op == 'ge': assert f1_1 >= f1_2, "The first model has an F1 of {1} and the second model has an F1 of " \
-                                          "{2}. Expected the first to be >= than the second.".format(f1_1, f1_2)
+    if op == 'e': assert f1_1 == f1_2, "The first model has an F1 of {0} and the second model has an F1 of " \
+                                       "{1}. Expected the first to be == to the second.".format(f1_1, f1_2)
+    elif op == 'g': assert f1_1 > f1_2, "The first model has an F1 of {0} and the second model has an F1 of " \
+                                        "{1}. Expected the first to be > than the second.".format(f1_1, f1_2)
+    elif op == 'ge': assert f1_1 >= f1_2, "The first model has an F1 of {0} and the second model has an F1 of " \
+                                          "{1}. Expected the first to be >= than the second.".format(f1_1, f1_2)
   elif isinstance(model1,H2ORegressionModel): #   2b. Regression
     # MSE
     mse1 = model1.mse(valid=use_validation)
     mse2 = model2.mse(valid=use_validation)
-    if op == 'e': assert mse1 == mse2, "The first model has an MSE of {1} and the second model has an MSE of " \
-                                       "{2}. Expected the first to be == to the second.".format(mse1, mse2)
-    elif op == 'g': assert mse1 > mse2, "The first model has an MSE of {1} and the second model has an MSE of " \
-                                        "{2}. Expected the first to be > than the second.".format(mse1, mse2)
-    elif op == 'ge': assert mse1 >= mse2, "The first model has an MSE of {1} and the second model has an MSE of " \
-                                          "{2}. Expected the first to be >= than the second.".format(mse1, mse2)
+    if op == 'e': assert mse1 == mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
+                                       "{1}. Expected the first to be == to the second.".format(mse1, mse2)
+    elif op == 'g': assert mse1 > mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
+                                        "{1}. Expected the first to be > than the second.".format(mse1, mse2)
+    elif op == 'ge': assert mse1 >= mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
+                                          "{1}. Expected the first to be >= than the second.".format(mse1, mse2)
   elif isinstance(model1,H2OMultinomialModel): #   2c. Multinomial
     # hit-ratio
     pass
@@ -281,14 +281,14 @@ def check_models(model1, model2, use_validation=False, op='e'):
     # totss
     totss1 = model1.totss(valid=use_validation)
     totss2 = model2.totss(valid=use_validation)
-    if op == 'e': assert totss1 == totss2, "The first model has an TOTSS of {1} and the second model has an " \
-                                           "TOTSS of {2}. Expected the first to be == to the second.".format(totss1,
+    if op == 'e': assert totss1 == totss2, "The first model has an TOTSS of {0} and the second model has an " \
+                                           "TOTSS of {1}. Expected the first to be == to the second.".format(totss1,
                                                                                                              totss2)
-    elif op == 'g': assert totss1 > totss2, "The first model has an TOTSS of {1} and the second model has an " \
-                                            "TOTSS of {2}. Expected the first to be > than the second.".format(totss1,
+    elif op == 'g': assert totss1 > totss2, "The first model has an TOTSS of {0} and the second model has an " \
+                                            "TOTSS of {1}. Expected the first to be > than the second.".format(totss1,
                                                                                                                totss2)
-    elif op == 'ge': assert totss1 >= totss2, "The first model has an TOTSS of {1} and the second model has an " \
-                                              "TOTSS of {2}. Expected the first to be >= than the second." \
+    elif op == 'ge': assert totss1 >= totss2, "The first model has an TOTSS of {0} and the second model has an " \
+                                              "TOTSS of {1}. Expected the first to be >= than the second." \
                                               "".format(totss1, totss2)
 
 def check_dims_values(python_obj, h2o_frame, rows, cols):
