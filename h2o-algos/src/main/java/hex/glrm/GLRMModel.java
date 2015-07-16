@@ -4,6 +4,7 @@ import hex.*;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 import water.util.TwoDimTable;
@@ -46,7 +47,15 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     public final boolean hasClosedForm() {
-      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
+      // TODO: Currently, no closed form solution when training frame has NAs
+      Vec[] vecs = _train.get().vecs();
+      boolean has_na = false;
+      for(int i = 0; i < vecs.length; i++) {
+        if(vecs[i].naCnt() > 0) {
+          has_na = true; break;
+        }
+      }
+      return (!has_na && _loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
               && (_gamma_y == 0 || _regularization_y == GLRMParameters.Regularizer.L2));
     }
 
