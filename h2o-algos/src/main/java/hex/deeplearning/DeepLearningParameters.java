@@ -526,7 +526,7 @@ public class DeepLearningParameters extends Model.Parameters {
     }
     if (!_autoencoder && _sparsity_beta != 0)
       dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
-    if (classification && dl.hasOffset())
+    if (classification && dl.hasOffsetCol())
       dl.info("_offset_column", "Offset is only supported for regression.");
 
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)

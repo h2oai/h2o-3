@@ -73,9 +73,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       error("_distribution", "Only AUTO distribution is implemented so far.");
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
-    if (hasOffset())
+    if (hasOffsetCol())
       error("_offset_column", "Offsets are not yet supported for DRF.");
-    if (hasOffset() && isClassifier()) {
+    if (hasOffsetCol() && isClassifier()) {
       error("_offset_column", "Offset is only supported for regression.");
     }
   }
@@ -177,7 +177,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if (_parms._checkpoint) {
         Timer t = new Timer();
         // Compute oob votes for each output level
-        new OOBScorer(_ncols, _nclass, (hasWeights() ? 1 : 0) + (hasOffset() ? 1 : 0), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
+        new OOBScorer(_ncols, _nclass, numSpecialCols(), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
         Log.info("Reconstructing oob stats from checkpointed model took " + t);
       }
 

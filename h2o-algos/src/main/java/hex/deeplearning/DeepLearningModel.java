@@ -871,7 +871,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

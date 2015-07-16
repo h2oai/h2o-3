@@ -104,10 +104,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           error("_response", "Response cannot be negative for Gamma distribution.");
         _initialPrediction = tweedieInitialValue(_parms._tweedie_power);
       }
-      if (hasOffset() && isClassifier() && _parms._distribution == Distributions.Family.multinomial) {
+      if (hasOffsetCol() && isClassifier() && _parms._distribution == Distributions.Family.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
-      if (hasOffset() && _parms._distribution == Distributions.Family.bernoulli) {
+      if (hasOffsetCol() && _parms._distribution == Distributions.Family.bernoulli) {
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
@@ -153,8 +153,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private double poissonInitialValue() {
     return new PoissonInitialValue().doAll(
             _response,
-            hasWeights() ? _weights : _response.makeCon(1),
-            hasOffset() ? _offset : _response.makeCon(0)
+            hasWeightCol() ? _weights : _response.makeCon(1),
+            hasOffsetCol() ? _offset : _response.makeCon(0)
     ).initialValue();
   }
 
@@ -186,8 +186,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private double gammaInitialValue() {
     return new GammaInitialValue().doAll(
             _response,
-            hasWeights() ? _weights : _response.makeCon(1),
-            hasOffset() ? _offset : _response.makeCon(0)
+            hasWeightCol() ? _weights : _response.makeCon(1),
+            hasOffsetCol() ? _offset : _response.makeCon(0)
     ).initialValue();
   }
 
@@ -219,8 +219,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private double tweedieInitialValue(double power) {
     return new TweedieInitialValue(power).doAll(
             _response,
-            hasWeights() ? _weights : _response.makeCon(1),
-            hasOffset() ? _offset : _response.makeCon(0)
+            hasWeightCol() ? _weights : _response.makeCon(1),
+            hasOffsetCol() ? _offset : _response.makeCon(0)
     ).initialValue();
   }
 
@@ -253,7 +253,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
 
     @Override protected void buildModel() {
-      if (hasOffset() && _parms._distribution == Distributions.Family.bernoulli) {
+      if (hasOffsetCol() && _parms._distribution == Distributions.Family.bernoulli) {
         _initialPrediction = getInitialValueBernoulliOffset(_train);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
@@ -272,7 +272,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
         Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, (hasOffset()?1:0)+(hasWeights()?1:0),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
+        new ResidualsCollector(_ncols, _nclass, numSpecialCols(),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
       }
 
@@ -294,7 +294,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
         buildNextKTrees();
-        Log.info((tid+1) + ". tree was built in " + kb_timer.toString());
+        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         GBM.this.update(1);
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
       }
@@ -345,7 +345,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
         Chunk offset = chk_offset(chks);
-        Chunk weight = hasWeights() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+        Chunk weight = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
         for( int row = 0; row < ys._len; row++) {
           double w = weight.atd(row);
           if (ys.isNA(row)) continue;
@@ -369,7 +369,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     class ComputePredAndRes extends MRTask<ComputePredAndRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
+        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk tr = chk_tree(chks,0); // Prior tree sums
         Chunk wk = chk_work(chks,0); // Place to store residuals
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
@@ -378,7 +378,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           double f = tr.atd(row) + offset.atd(row);
           double y = ys.at8(row);
           if( _parms._distribution == Distributions.Family.multinomial ) {
-            double weight = hasWeights() ? chk_weight(chks).atd(row) : 1;
+            double weight = hasWeightCol() ? chk_weight(chks).atd(row) : 1;
             double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
             if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
               for (int k = 0; k < _nclass; k++) {
@@ -566,7 +566,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final double num[] = _num[k] = new double[tree._len-leaf];
           final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
-          final Chunk offset = hasOffset() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
+          final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
           final Chunk preds = chk_tree(chks,k);
 
           // If we have all constant responses, then we do not split even the
@@ -592,7 +592,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             assert !ress.isNA(row);
 
             // Compute numerator and denominator of terminal node estimate (gamma)
-            double w = hasWeights() ? chk_weight(chks).atd(row) : 1; //weight
+            double w = hasWeightCol() ? chk_weight(chks).atd(row) : 1; //weight
             double y = resp.atd(row); //response
             double z = ress.atd(row); //residual
             int idx=leafnid-leaf;
