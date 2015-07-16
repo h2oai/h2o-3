@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/cancar_logIn.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/cancar_logIn.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/cancar_logIn.csv\"]\n  destination_frame: \"cancar_logIn.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 7\n  single_quotes: false\n  column_names: [\"Merit\",\"Class\",\"Insured\",\"Premium\",\"Claims\",\"Cost\",\"logInsured\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"cancar_logIn.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"cancar_logIn.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"cancar_logIn.hex\", [0.25], [\"cancar_logIn_test\",\"cancar_logIn_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-c20eeac1-1c5b-4d0b-af4f-4e2c99c6f898\",\"training_frame\":\"cancar_logIn_train\",\"validation_frame\":\"cancar_logIn_test\",\"ignore_const_cols\":true,\"response_column\":\"Merit\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"5\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-3531837167965666300,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-c20eeac1-1c5b-4d0b-af4f-4e2c99c6f898\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c20eeac1-1c5b-4d0b-af4f-4e2c99c6f898\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c20eeac1-1c5b-4d0b-af4f-4e2c99c6f898\", frame: \"cancar_logIn_train\", predictions_frame: \"prediction-f3e2ab58-d176-4d89-a0cb-105485b71f51\""
+    }
+  ]
+}

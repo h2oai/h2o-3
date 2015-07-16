@@ -446,14 +446,8 @@ public class RequestServer extends NanoHTTPD {
   }
 
   public static void alwaysLogRequest(String uri, String method, Properties parms) {
-    String log = String.format("%-4s %s", method, uri);
-    for( Object arg : parms.keySet() ) {
-      String value = parms.getProperty((String) arg);
-      if( value != null && value.length() != 0 )
-        log += " " + arg + "=" + value;
-    }
-
-    Log.httpd(log);
+    // This is never called anymore.
+    throw H2O.fail();
   }
 
     // Log all requests except the overly common ones
@@ -551,8 +545,6 @@ public class RequestServer extends NanoHTTPD {
       path = type.requestName(uripath); // Strip suffix type from middle of URI
       versioned_path = "/" + version + path;
     }
-
-    alwaysLogRequest(uri, method, parms);
 
     // Load resources, or dispatch on handled requests
     try {

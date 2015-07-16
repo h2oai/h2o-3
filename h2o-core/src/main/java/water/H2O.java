@@ -176,6 +176,9 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** -user_name=user_name; Set user name */
+    public String user_name = System.getProperty("user.name");
+
     //-----------------------------------------------------------------------------------
     // Node configuration
     //-----------------------------------------------------------------------------------
@@ -354,6 +357,10 @@ final public class H2O {
       }
       else if (s.matches("client")) {
         ARGS.client = true;
+      }
+      else if (s.matches("user_name")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.user_name = args[i];
       }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
@@ -681,7 +688,10 @@ final public class H2O {
       StringBuilder ua = new StringBuilder();
 
       if (source.contains("Safari")) {
-        ua.append("Safari");
+        ua.append("safari");
+      }
+      else if (source.contains("Python")) {
+        ua.append("python");
       }
       else {
         for (int i = 0; i < source.length(); i++) {
@@ -1487,6 +1497,7 @@ final public class H2O {
     }
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
+    Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
     // Register with GA
     if((new File(".h2o_no_collect")).exists()

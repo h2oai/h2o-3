@@ -32,15 +32,15 @@ def cv_carsGBM(ip,port):
     print "Response column: {0}".format(response_col)
 
     ## cross-validation
-    ## check that cv metrics are the same over repeated runs
+    ## check that cv metrics are the same over (seeded) repeated runs
     nfolds = random.randint(3,10)
-    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution)
-    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution)
+    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, seed=1234)
+    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, seed=1234)
     h2o.check_models(gbm1, gbm2)
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution)
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution, seed=1234)
     # TODO: manually construct the cross-validation metrics and compare
     # TODO: PUBDEV-1697
 
@@ -50,8 +50,8 @@ def cv_carsGBM(ip,port):
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution)
     h2o.check_models(gbm1, gbm2)
 
-    # 3. more folds than observations equivalent to leave-one-out
-    gbm3 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution)
+    # 3. more folds than observations equivalent to (seeded) leave-one-out
+    gbm3 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution, seed=1234)
     h2o.check_models(gbm, gbm3)
 
     ## error cases

@@ -431,7 +431,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
-      super(dinfo._weights, dinfo._offset);
+      super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo;
       _names = column_names;
       _domains = domains;

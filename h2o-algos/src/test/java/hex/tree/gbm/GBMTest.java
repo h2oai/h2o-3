@@ -1,11 +1,9 @@
 package hex.tree.gbm;
 
-import hex.AUC2;
-import hex.Distributions;
-import hex.ModelMetricsBinomial;
-import hex.ScoreKeeper;
+import hex.*;
 import org.junit.*;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.fvec.RebalanceDataSet;
 import water.util.Log;
@@ -129,10 +127,10 @@ public class GBMTest extends TestUtil {
             false, Distributions.Family.bernoulli);
 
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
-             new PrepData() { int prep(Frame fr) {
-               for( String s : ignored_aircols ) fr.remove(s).remove();
-               return fr.find("IsArrDelayed"); }
-             },
+            new PrepData() { int prep(Frame fr) {
+              for( String s : ignored_aircols ) fr.remove(s).remove();
+              return fr.find("IsArrDelayed"); }
+            },
             false, Distributions.Family.bernoulli);
 //    // Bigger Tests
 //    basicGBM("../datasets/98LRN.CSV",
@@ -149,14 +147,14 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     // Classification with Bernoulli family
     basicGBM("./smalldata/logreg/prostate.csv",
-             new PrepData() {
-               int prep(Frame fr) {
-                 fr.remove("ID").remove(); // Remove not-predictive ID
-                 int ci = fr.find("RACE"); // Change RACE to categorical
-                 Scope.track(fr.replace(ci,fr.vecs()[ci].toEnum())._key);
-                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
-               }
-             }, false, Distributions.Family.bernoulli);
+            new PrepData() {
+              int prep(Frame fr) {
+                fr.remove("ID").remove(); // Remove not-predictive ID
+                int ci = fr.find("RACE"); // Change RACE to categorical
+                Scope.track(fr.replace(ci,fr.vecs()[ci].toEnum())._key);
+                return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
+              }
+            }, false, Distributions.Family.bernoulli);
     Scope.exit();
   }
 
@@ -667,10 +665,10 @@ public class GBMTest extends TestUtil {
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
-          "DepTime", "ArrTime", "ActualElapsedTime",
-          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-          "CancellationCode", "CarrierDelay", "WeatherDelay",
-          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
         tfr.remove(s).remove();
       }
@@ -1095,7 +1093,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
-      parms._seed = 0xdecaf;
+      parms._seed = 123;
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = 2;
@@ -1107,10 +1105,10 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
-      assertEquals(0.55555555555, mm.auc()._auc, 1e-8);
-      assertEquals(0.3313375036935877, mm.mse(), 1e-8);
-      assertEquals(-0.3253500147743509, mm.r2(), 1e-6);
-      assertEquals(0.8630781835948022, mm.logloss(), 1e-6);
+      assertEquals(0.6296296296296297, mm.auc()._auc, 1e-8);
+      assertEquals(0.28640022521234304, mm.mse(), 1e-8);
+      assertEquals(-0.145600900849372169, mm.r2(), 1e-6);
+      assertEquals(0.7674117059335286, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -1121,7 +1119,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore("PUBDEV-1690")
+  @Test
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
     GBMModel gbm1 = null;
@@ -1137,14 +1135,16 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = (int) tfr.numRows();
+      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
       parms._ntrees = 3;
+      parms._seed = 12345;
       parms._learn_rate = 1e-3f;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
 
-      parms._nfolds = (int) tfr.numRows() + 1;
       GBM job2 = new GBM(parms);
+      //parms._nfolds = (int) tfr.numRows() + 1; //This is now an error
       gbm2 = job2.trainModel().get();
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._validation_metrics;
@@ -1154,7 +1154,7 @@ public class GBMTest extends TestUtil {
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
-      //TODO: add check: the correct number of individual models were built.
+      //TODO: add check: the correct number of individual models were built. PUBDEV-1690
 
       job1.remove();
       job2.remove();
@@ -1181,6 +1181,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._min_rows = 1;
+      parms._seed = 12345;
       parms._max_depth = 2;
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
@@ -1194,16 +1195,16 @@ public class GBMTest extends TestUtil {
       try {
         Log.info("Trying nfolds==1.");
         gbm2 = job2.trainModel().get();
-        Assert.fail("Should toss AssertionError instead of reaching here");
-      } catch(AssertionError e) {}
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       parms._nfolds = -99;
       GBM job3 = new GBM(parms);
       try {
         Log.info("Trying nfolds==-99.");
         gbm3 = job3.trainModel().get();
-        Assert.fail("Should toss AssertionError instead of reaching here");
-      } catch(AssertionError e) {}
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       job1.remove();
       job2.remove();
@@ -1231,6 +1232,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "response";
+      parms._seed = 12345;
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = 3;
@@ -1242,8 +1244,8 @@ public class GBMTest extends TestUtil {
       try {
         Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
         gbm = job.trainModel().get();
-        Assert.fail("Should toss AssertionError instead of reaching here");
-      } catch(AssertionError e) {}
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       job.remove();
     } finally {
@@ -1274,6 +1276,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._min_rows = 1;
+      parms._seed = 12345;
       parms._max_depth = 2;
       parms._nfolds = 3;
       parms._ntrees = 3;
@@ -1299,6 +1302,51 @@ public class GBMTest extends TestUtil {
       if (old != null) old.remove();
       if (gbm1 != null) gbm1.delete();
       if (gbm2 != null) gbm2.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNFoldAirline() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._nfolds = 3;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
+      assertEquals(0.7262076707473135, mm.auc()._auc, 1e-4); // 1 node
+      assertEquals(0.22686348162897116, mm.mse(), 1e-4);
+      assertEquals(0.09026116418495023, mm.r2(), 1e-4);
+      assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
       Scope.exit();
     }
   }

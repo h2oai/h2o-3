@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris.csv\"]\n  destination_frame: \"iris.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris.hex\", [0.2], [\"iris.hex_test\",\"iris.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-b30023da-76e6-4775-912a-90c243a616eb\",\"training_frame\":\"iris.hex_0.80\",\"validation_frame\":\"iris.hex_test\",\"ignore_const_cols\":true,\"response_column\":\"C1\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-6715013047105577000,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-b30023da-76e6-4775-912a-90c243a616eb\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-b30023da-76e6-4775-912a-90c243a616eb\""
+    },
+    
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-b30023da-76e6-4775-912a-90c243a616eb\", frame: \"iris.hex_test\", predictions_frame: \"prediction-33ebc852-5f60-47be-bb27-142ecfb76d90\""
+    }
+  ]
+}

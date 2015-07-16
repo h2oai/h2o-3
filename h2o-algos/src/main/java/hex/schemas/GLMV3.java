@@ -20,9 +20,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "model_id",
             "training_frame",
             "validation_frame",
-            "response_column",
             "nfolds",
             "keep_cross_validation_splits",
+            "fold_assignment",
+            "fold_column",
+            "response_column",
             "ignored_columns",
             "ignore_const_cols",
             "score_each_iteration",
@@ -55,17 +57,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_confusion_matrix_size",
             "max_hit_ratio_k",
     };
-
-    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 response_column;
-
-    // todo move this up in the hierarchy when there is weights support?
-    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 weights_column;
-
-    // todo move this up in the hierarchy when there is offset support?
-    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 offset_column;
 
     // Input fields
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
