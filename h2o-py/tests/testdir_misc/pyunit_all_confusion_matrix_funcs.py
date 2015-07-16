@@ -122,7 +122,7 @@ def all_confusion_matrix_funcs(ip,port):
     cm = mult_perf.confusion_matrix()
     cm_count = 0
     for r in range(7):
-        for c in range(6):
+        for c in range(7):
             cm_count += cm.cell_values[r][c]
     assert cm_count == air_test.nrow(), "incorrect confusion matrix elements. Should sum to {0}, but got {1}". \
         format(air_test.nrow(), cm_count)
