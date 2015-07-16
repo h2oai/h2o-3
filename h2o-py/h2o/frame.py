@@ -271,7 +271,7 @@ class H2OFrame:
     :param frac: Fraction of NAs in the column.
     :return: A  list of column indices.
     """
-    return H2OFrame(ExprNode("filterNACols"), self, frac)._frame()
+    return H2OFrame(expr=ExprNode("filterNACols", self, frac))._frame()
 
   def dim(self):
     """
@@ -280,6 +280,14 @@ class H2OFrame:
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
     return [self.nrow(), self.ncol()]
+
+  def unique(self):
+    """
+    Extract the unique values in the column.
+
+    :return: A new H2OFrame of just the unique values in the column.
+    """
+    return H2OFrame(expr=ExprNode("unique", self))._frame()
 
   def show(self): self.head(10,sys.maxint)  # all columns
 
