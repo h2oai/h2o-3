@@ -2592,18 +2592,10 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #
 #`.` <- `h2o..`
 #
-#h2o.unique <- function(x, incomparables = FALSE, ...) {
-#  # NB: we do nothing with incomparables right now
-#  # NB: we only support MARGIN = 2 (which is the default)
-#
-#  if(!class(x) %in% c('H2OFrame', 'H2OFrame', 'H2OFrame')) stop('h2o.unique: x is of the wrong type. Got: ', class(x))
-##  if( nrow(x) == 0 | ncol(x) == 0) return(NULL) #TODO: Do this on the back end.
-##  if( nrow(x) == 1) return(x)  #TODO: Do this on the back end.
-#
-#  args <- list(...)
-#  if( 'MARGIN' %in% names(args) && args[['MARGIN']] != 2 ) stop('h2o unique: only MARGIN 2 supported')
-#  .h2o.unary_op("unique", x)
-#}
+h2o.unique <- function(x) {
+  if( !is(x, "H2OFrame") ) stop('h2o.unique: x is of the wrong type. Got: ', class(x))
+  .h2o.nary_frame_op("unique", x)
+}
 #unique.H2OFrame <- h2o.unique
 
 
