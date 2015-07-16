@@ -855,7 +855,10 @@ class ASTAll extends ASTUniPrefixOp {
       if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
       Vec v = fr.anyVec();
       if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
-      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      if( v.isConst() )
+        if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      else
+        if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
       all = new AllTask().doAll(fr.anyVec()).all;
     }
     env.push(new ValStr(all?"TRUE":"FALSE"));
@@ -897,7 +900,10 @@ class ASTAny extends ASTUniPrefixOp {
       if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
       Vec v = fr.anyVec();
       if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
-      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      if( v.isConst() )
+        if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      else
+        if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
       any = new AllTask().doAll(fr.anyVec()).any;
     }
     env.push(new ValStr(any?"TRUE":"FALSE"));
