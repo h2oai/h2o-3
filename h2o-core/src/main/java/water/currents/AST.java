@@ -98,8 +98,19 @@ abstract public class AST extends Iced {
     init(new ASTSumNA());
 
     // Time
+    init(new ASTDay());
+    init(new ASTDay());
+    init(new ASTDayOfWeek());
+    init(new ASTHour());
     init(new ASTListTimeZones());
+    init(new ASTMillis());
+    init(new ASTMinute());
+    init(new ASTMonth());
+    init(new ASTSecond());
     init(new ASTSetTimeZone());
+    init(new ASTWeek());
+    init(new ASTYear());
+    init(new ASTasDate());
 
     // Complex Math
     init(new ASTVariance());

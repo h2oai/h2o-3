@@ -4,11 +4,11 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
-import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.MRTask;
 import water.fvec.*;
 import water.parser.ParseTime;
+import water.parser.ValueString;
 
 class ASTListTimeZones extends ASTPrim {
   @Override int nargs() { return 1; } // (listTimeZones)
@@ -35,3 +35,87 @@ class ASTSetTimeZone extends ASTPrim {
   }
 }
 
+/** Basic time accessors; extract hours/days/years/etc from H2O's internal
+ *  msec-since-Unix-epoch time */
+abstract class ASTTime extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (op time)
+  // Override for e.g. month and day-of-week
+  protected String[][] factors() { return null; }
+  abstract long op( MutableDateTime dt );
+  private double op( MutableDateTime dt, double d ) {
+    dt.setMillis((long)d);
+    return op(dt);
+  }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val val = asts[1].exec(env);
+    switch( val.type() ) {
+    case Val.NUM: 
+      double d = val.getNum();
+      return new ValNum(Double.isNaN(d) ? d : op(new MutableDateTime(0),d));
+    case Val.FRM: 
+      Frame fr = stk.track(val).getFrame();
+      if( fr.numCols() > 1 ) throw water.H2O.unimpl();
+      return new ValFrame(new MRTask() {
+          @Override public void map( Chunk chk, NewChunk cres ) {
+            MutableDateTime mdt = new MutableDateTime(0);
+            for( int i=0; i<chk._len; i++ )
+              cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
+          }
+        }.doAll(1,fr).outputFrame(fr._names, factors()));
+    default: throw water.H2O.fail();
+    }
+  }
+}
+class ASTYear   extends ASTTime { String str(){ return "year" ; } long op(MutableDateTime dt) { return dt.getYear();}}
+class ASTDay    extends ASTTime { String str(){ return "day"  ; } long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
+class ASTHour   extends ASTTime { String str(){ return "hour" ; } long op(MutableDateTime dt) { return dt.getHourOfDay();}}
+class ASTMinute extends ASTTime { String str(){ return "minute";} long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
+class ASTSecond extends ASTTime { String str(){ return "second";} long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
+class ASTMillis extends ASTTime { String str(){ return "millis";} long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
+class ASTMonth  extends ASTTime { String str(){ return "month"; } long op(MutableDateTime dt) { return dt.getMonthOfYear();}}
+class ASTWeek   extends ASTTime { String str(){ return "week";  } long op(MutableDateTime dt) { return dt.getWeekOfWeekyear();}}
+
+class ASTDayOfWeek extends ASTTime {
+  static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
+  @Override protected String[][] factors() { return FACTORS; }
+  @Override String str(){ return "dayOfWeek"; }
+  @Override long op(MutableDateTime dt) { return dt.getDayOfWeek()-1;}
+}
+
+/** Convert a String to a Time (msec since Unix Epoch) via a given parse format */
+class ASTasDate extends ASTPrim {
+  @Override int nargs() { return 1+2; } // (as.Date time format)
+  @Override String str() { return "as.Date"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec vec = fr.vecs()[0];
+    if( fr.vecs().length != 1 || !(vec.isEnum() || vec.isString()))
+      throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
+
+    final String format = asts[2].exec(env).getStr();
+    if( format.isEmpty() ) throw new IllegalArgumentException("as.Date requires a non-empty format string");
+    // check the format string more?
+
+    final String[] dom  = vec.domain();
+    final boolean isStr = dom==null && vec.isString();
+    assert isStr || dom!=null : "as.Date error: domain is null, but vec is not String";
+
+    Frame fr2 = new MRTask() {
+      private transient DateTimeFormatter _fmt;
+      @Override public void setupLocal() { _fmt=ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone()); }
+      @Override public void map( Chunk c, NewChunk nc ) {
+        //done on each node in lieu of rewriting DateTimeFormatter as Iced
+        String date;
+        ValueString vStr = new ValueString();
+        for( int i=0; i<c._len; ++i ) {
+          if( !c.isNA(i) ) {
+            if( isStr ) date = c.atStr(vStr, i).toString();
+            else        date = dom[(int)c.at8(i)];
+            nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
+          } else nc.addNA();
+        }
+      }
+    }.doAll(1,fr).outputFrame(fr._names, null);
+    return new ValFrame(fr2);
+  }
+}

@@ -14,8 +14,10 @@ class ASTAssign extends ASTPrim {
     ASTNumList rows = check( dst.numRows(), asts[4] );
 
     // Check for append; add a col of NAs if appending
-    if( cols.cnt()==1 && cols.max()-1==dst.numCols() )
+    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {
+      dst = new Frame(dst);
       dst.add(Frame.defaultColName(dst.numCols()), dst.anyVec().makeCon(Double.NaN));
+    }
 
     // Slice out cols for mutation
     Frame slice = new ASTColSlice().apply(env,stk,new AST[]{null,new ASTFrame(dst),cols}).getFrame();
