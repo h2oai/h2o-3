@@ -3,6 +3,7 @@ package hex.tree.gbm;
 import hex.*;
 import org.junit.*;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.fvec.RebalanceDataSet;
 import water.util.Log;
@@ -126,10 +127,10 @@ public class GBMTest extends TestUtil {
             false, Distributions.Family.bernoulli);
 
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
-             new PrepData() { int prep(Frame fr) {
-               for( String s : ignored_aircols ) fr.remove(s).remove();
-               return fr.find("IsArrDelayed"); }
-             },
+            new PrepData() { int prep(Frame fr) {
+              for( String s : ignored_aircols ) fr.remove(s).remove();
+              return fr.find("IsArrDelayed"); }
+            },
             false, Distributions.Family.bernoulli);
 //    // Bigger Tests
 //    basicGBM("../datasets/98LRN.CSV",
@@ -146,14 +147,14 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     // Classification with Bernoulli family
     basicGBM("./smalldata/logreg/prostate.csv",
-             new PrepData() {
-               int prep(Frame fr) {
-                 fr.remove("ID").remove(); // Remove not-predictive ID
-                 int ci = fr.find("RACE"); // Change RACE to categorical
-                 Scope.track(fr.replace(ci,fr.vecs()[ci].toEnum())._key);
-                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
-               }
-             }, false, Distributions.Family.bernoulli);
+            new PrepData() {
+              int prep(Frame fr) {
+                fr.remove("ID").remove(); // Remove not-predictive ID
+                int ci = fr.find("RACE"); // Change RACE to categorical
+                Scope.track(fr.replace(ci,fr.vecs()[ci].toEnum())._key);
+                return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
+              }
+            }, false, Distributions.Family.bernoulli);
     Scope.exit();
   }
 
@@ -664,10 +665,10 @@ public class GBMTest extends TestUtil {
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
-          "DepTime", "ArrTime", "ActualElapsedTime",
-          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-          "CancellationCode", "CarrierDelay", "WeatherDelay",
-          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
         tfr.remove(s).remove();
       }
@@ -1194,16 +1195,16 @@ public class GBMTest extends TestUtil {
       try {
         Log.info("Trying nfolds==1.");
         gbm2 = job2.trainModel().get();
-        Assert.fail("Should toss AssertionError instead of reaching here");
-      } catch(AssertionError e) {}
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       parms._nfolds = -99;
       GBM job3 = new GBM(parms);
       try {
         Log.info("Trying nfolds==-99.");
         gbm3 = job3.trainModel().get();
-        Assert.fail("Should toss AssertionError instead of reaching here");
-      } catch(AssertionError e) {}
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       job1.remove();
       job2.remove();
@@ -1243,8 +1244,8 @@ public class GBMTest extends TestUtil {
       try {
         Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
         gbm = job.trainModel().get();
-        Assert.fail("Should toss AssertionError instead of reaching here");
-      } catch(AssertionError e) {}
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       job.remove();
     } finally {
