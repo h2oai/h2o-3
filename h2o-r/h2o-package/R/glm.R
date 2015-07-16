@@ -283,19 +283,3 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
 
     .h2o.startModelJob(training_frame@conn, 'glm', parms)
 }
-
-# TODO: make this possible for all model types
-#' Resolve a GLM H2O Futures Model
-#'
-#' Turns an \linkS4class{H2OModelFuture} into a model of the correct type.
-#' @param model an \linkS4class{H2OModelFuture}.
-#' @param conn a corresponding \linkS4class{H2OConnection} class object.
-#' @return Returns the correct \linkS4class{H2OModel} for the created model.
-#' @export
-h2o.getGLMModel <- function(conn, model) {
-  if(missing(conn)) conn <- h2o.getConnection()
-  job_key  <- model@job_key
-  model_id <- model@model_id
-  .h2o.__waitOnJob(conn, job_key)
-  h2o.getModel(model_id, conn)
-}
