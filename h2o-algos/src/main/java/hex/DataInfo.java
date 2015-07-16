@@ -125,7 +125,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0);
+    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0);
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
@@ -162,7 +162,7 @@ public class DataInfo extends Keyed {
       tvecs2[i+_cats] = train.vec(nums[i]);
       _permutation[i+_cats] = nums[i];
     }
-    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0); i < names.length; ++i) {
+    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }
@@ -229,7 +229,7 @@ public class DataInfo extends Keyed {
     _catOffsets[_catOffsets.length-1] = s;
     _responses = responses;
     _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0);
+    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
     _useAllFactorLevels = true;
     setPredictorTransform(predictor_transform);
     setResponseTransform(response_transform);
