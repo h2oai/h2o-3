@@ -183,17 +183,15 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   m
 }
 
-#TODO Rename this function for clarity
-#' Remake an H2O GLM Model
+#' Set betas of an existing H2O GLM Model
 #'
-#' This function allows the usage of new beta constraints to create an GLM model, from an existing
-#' model.
+#' This function allows setting betas of an existing glm model.
 #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
-#' @param beta a new set of beta_constraints
+#' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model_id=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
