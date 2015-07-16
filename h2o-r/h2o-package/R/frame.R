@@ -1373,6 +1373,17 @@ setMethod("is.factor", "H2OFrame", function(x) {
 })
 
 #'
+#' Is H2O Data Frame column numeric
+#'
+#' @param x an \linkS4class{H2OFrame} object column.
+#' @return Returns logical value.
+#' @export
+setMethod("is.numeric", "H2OFrame", function(x) {
+  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.numeric", x)
+  else             .h2o.unary_frame_op("is.numeric", x )
+})
+
+#'
 #' Quantiles of H2O Data Frame.
 #'
 #' Obtain and display quantiles for H2O parsed data.
