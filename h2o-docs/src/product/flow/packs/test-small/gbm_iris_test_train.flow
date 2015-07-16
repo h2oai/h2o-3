@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_test.csv\"]\n  destination_frame: \"iris_test.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"species\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_test.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_train.csv\"]\n  destination_frame: \"iris_train.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"species\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_train.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-b22cc722-f742-461c-819a-8526a539d82e\",\"training_frame\":\"iris_train.hex\",\"validation_frame\":\"iris_test.hex\",\"ignore_const_cols\":true,\"response_column\":\"sepal_len\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-7128666338926431000,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-b22cc722-f742-461c-819a-8526a539d82e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-b22cc722-f742-461c-819a-8526a539d82e\""
+    },
+    
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-b22cc722-f742-461c-819a-8526a539d82e\", frame: \"iris_test.hex\", predictions_frame: \"prediction-60d0871f-da2c-422f-8d0d-058e5c71ec96\""
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/BostonHousing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/BostonHousing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/BostonHousing.csv\"]\n  destination_frame: \"BostonHousing.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"crim\",\"zn\",\"indus\",\"chas\",\"nox\",\"rm\",\"age\",\"dis\",\"rad\",\"tax\",\"ptratio\",\"b\",\"lstat\",\"medv\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"BostonHousing.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"BostonHousing.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"BostonHousing.hex\", [0.25], [\"BostonHousing_test\",\"BostonHousing_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-cd6db1db-6095-4be6-9351-616071939258\",\"training_frame\":\"BostonHousing_train\",\"validation_frame\":\"BostonHousing_test\",\"ignore_const_cols\":true,\"response_column\":\"crim\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":6913488752773974000,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-cd6db1db-6095-4be6-9351-616071939258\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-cd6db1db-6095-4be6-9351-616071939258\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-cd6db1db-6095-4be6-9351-616071939258\", frame: \"BostonHousing_train\", predictions_frame: \"prediction-85b4b4e8-e7a2-480b-8bdd-b9406ec89332\""
+    }
+  ]
+}

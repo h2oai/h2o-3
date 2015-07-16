@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/50_cattest_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/50_cattest_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/50_cattest_test.csv\"]\n  destination_frame: \"X50_cattest_test1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"x1\",\"x2\",\"y\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/50_cattest_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/50_cattest_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/50_cattest_train.csv\"]\n  destination_frame: \"X50_cattest_train1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"x1\",\"x2\",\"y\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"X50_cattest_train1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"X50_cattest_train1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-1c89d559-1c3c-4732-bcb3-ea1e23e5f1af\",\"training_frame\":\"X50_cattest_train1.hex\",\"validation_frame\":\"X50_cattest_test1.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"y\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":1051291578010623600,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-1c89d559-1c3c-4732-bcb3-ea1e23e5f1af\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-1c89d559-1c3c-4732-bcb3-ea1e23e5f1af\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-1c89d559-1c3c-4732-bcb3-ea1e23e5f1af\", frame: \"X50_cattest_test1.hex\", predictions_frame: \"prediction-ab91caf0-c7fa-4035-ad13-1ab1e9c0f28b\""
+    }
+  ]
+}

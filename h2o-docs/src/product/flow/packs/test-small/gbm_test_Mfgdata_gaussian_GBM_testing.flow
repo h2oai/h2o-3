@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv\"]\n  destination_frame: \"Mfgdata_gaussian_GBM_testing.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 10\n  single_quotes: false\n  column_names: [\"\",\"dep\",\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"o\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"Mfgdata_gaussian_GBM_testing.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"Mfgdata_gaussian_GBM_testing.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"Mfgdata_gaussian_GBM_testing.hex\", [0.3], [\"Mfgdata_gaussian_GBM_testing_test.hex_0.30\",\"Mfgdata_gaussian_GBM_testing_train.hex_0.70\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-e742aa51-fe05-413d-9eb5-cc0eedf6debc\",\"training_frame\":\"Mfgdata_gaussian_GBM_testing_train.hex_0.70\",\"validation_frame\":\"Mfgdata_gaussian_GBM_testing_test.hex_0.30\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"dep\",\"ntrees\":\"1\",\"max_depth\":\"1\",\"min_rows\":\"1\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":6333399387015596000,\"learn_rate\":\"1.0f\",\"distribution\":\"gaussian\",\"score_each_iteration\":true,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-e742aa51-fe05-413d-9eb5-cc0eedf6debc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-e742aa51-fe05-413d-9eb5-cc0eedf6debc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-e742aa51-fe05-413d-9eb5-cc0eedf6debc\", frame: \"Mfgdata_gaussian_GBM_testing_test.hex_0.30\", predictions_frame: \"prediction-1de31d05-25bf-4cfb-823e-d998cf19f08e\""
+    }
+  ]
+}

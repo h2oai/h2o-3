@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/BostonHousing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/BostonHousing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/BostonHousing.csv\"]\n  destination_frame: \"BostonHousing2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"crim\",\"zn\",\"indus\",\"chas\",\"nox\",\"rm\",\"age\",\"dis\",\"rad\",\"tax\",\"ptratio\",\"b\",\"lstat\",\"medv\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"BostonHousing2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"BostonHousing2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"BostonHousing2.hex\", [0.2], [\"BostonHousing2_test.hex_0.20\",\"BostonHousing2_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-c2fe34e2-5b91-4a94-b744-e8c3a02cac32\",\"training_frame\":\"BostonHousing2_train.hex_0.80\",\"validation_frame\":\"BostonHousing2_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"medv\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":7945493678658154000,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-c2fe34e2-5b91-4a94-b744-e8c3a02cac32\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c2fe34e2-5b91-4a94-b744-e8c3a02cac32\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c2fe34e2-5b91-4a94-b744-e8c3a02cac32\", frame: \"BostonHousing2_test.hex_0.20\", predictions_frame: \"prediction-f30c5aac-a6f1-4450-9878-4503f4ccf2dd\""
+    }
+  ]
+}
