@@ -208,8 +208,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     // Main worker thread
     @Override protected void compute2() {
       PCAModel model = null;
-      DataInfo dinfo = null;
-      DataInfo xinfo = null;
+      DataInfo dinfo = null, xinfo = null;
       Frame x = null;
 
       try {

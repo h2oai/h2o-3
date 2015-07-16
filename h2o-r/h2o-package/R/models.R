@@ -1234,6 +1234,14 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
       stop("type must be either 'barplot' or 'lines'")
 }
 
+#' @rdname h2o.sdev
+#' @export
+h2o.sdev <- function(object) {
+  if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
+    stop("object must be a H2O PCA model")
+  as.numeric(object@model$pc_importance[1,])
+}
+
 # Handles ellipses
 .model.ellipses <- function(dots) {
   lapply(names(dots), function(type) {
