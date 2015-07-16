@@ -45,7 +45,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Validation frame", direction=API.Direction.INOUT)
   public FrameKeyV3 validation_frame;
 
-  @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
+  @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
   public int nfolds;
 
   @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
