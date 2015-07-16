@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def imbalanced(ip,port):
-
+    # TODO: PUBDEV-1706
     # Connect to h2o
     h2o.init(ip,port)
 
