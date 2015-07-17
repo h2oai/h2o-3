@@ -1119,7 +1119,8 @@ public class Frame extends Lockable<Frame> {
       @Override public void map(Chunk[] cs, NewChunk[] ncs) {
         for(int col=0;col<cs.length;++col)
           for(int row=0;row<cs[0]._len;++row) {
-            if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
+            if( cs[col].isNA(row) ) ncs[col].addNA();
+            else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
             else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
             else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
             else ncs[col].addNum(cs[col].atd(row));
