@@ -14,9 +14,11 @@ import java.util.Random;
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
   public static class GLRMParameters extends Model.Parameters {
+    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public int _k = 1;                            // Rank of resulting XY matrix
     public Loss _loss = Loss.L2;                  // Loss function for numeric cols
     public MultiLoss _multi_loss = MultiLoss.Categorical;  // Loss function for categorical cols
+    public int _period = 1;                       // Length of the period when _loss = Periodic
     public Regularizer _regularization_x = Regularizer.L2;   // Regularization function for X matrix
     public Regularizer _regularization_y = Regularizer.L2;   // Regularization function for Y matrix
     public double _gamma_x = 0;                   // Regularization weight on X matrix
@@ -25,14 +27,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
     public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _loading_key;               // Key to save X matrix
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
 
     public enum Loss {
-      L2, L1, Huber, Poisson, Hinge, Logistic
+      L2, L1, Huber, Poisson, Hinge, Logistic, Periodic
     }
 
     public enum MultiLoss {
@@ -67,6 +68,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return Math.max(1-a*u,0);
         case Logistic:
           return Math.log(1+Math.exp(-a*u));
+        case Periodic:
+          return 1-Math.cos((a-u)*(2*Math.PI)/_period);
         default:
           throw new RuntimeException("Unknown loss function " + _loss);
       }
@@ -87,6 +90,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return a*u <= 1 ? -a : 0;
         case Logistic:
           return -a/(1+Math.exp(a*u));
+        case Periodic:
+          return ((2*Math.PI)/_period) * Math.sin((a-u)*(2*Math.PI)/_period);
         default:
           throw new RuntimeException("Unknown loss function " + _loss);
       }

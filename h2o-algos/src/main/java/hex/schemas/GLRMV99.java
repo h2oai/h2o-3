@@ -21,6 +21,8 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 				"transform",
 				"k",
 				"loss",
+                "multi_loss",
+                "period",
 				"regularization_x",
 				"regularization_y",
 				"gamma_x",
@@ -40,11 +42,14 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Rank of matrix approximation", required = true)
     public int k;
 
-    @API(help = "Numeric loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
+    @API(help = "Numeric loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic" }) // TODO: pull out of enum class
     public GLRMParameters.Loss loss;
 
     @API(help = "Enum loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of enum class
     public GLRMParameters.MultiLoss multi_loss;
+
+    @API(help = "Length of period (only used with periodic loss function)")
+    public int period;
 
     @API(help = "Regularization function for X matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_x;
