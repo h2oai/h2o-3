@@ -1087,6 +1087,7 @@ public class DRFTest extends TestUtil {
       parms._max_depth = 2;
       parms._nfolds = 2;
       parms._ntrees = 3;
+      parms._seed = 11233;
 
       DRF job = new DRF(parms);
 
