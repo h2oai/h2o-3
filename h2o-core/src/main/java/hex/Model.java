@@ -232,7 +232,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _names[];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1) **/
-    Key _crossValidationModels[];
+    Key _cross_validation_models[];
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -1020,8 +1020,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   private void deleteCrossValidationModels( ) {
-    if (_output._crossValidationModels != null) {
-      for (Key k : _output._crossValidationModels) {
+    if (_output._cross_validation_models != null) {
+      for (Key k : _output._cross_validation_models) {
         Model m = DKV.getGet(k);
         if (m!=null) m.delete(); //delete all subparts
       }

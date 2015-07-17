@@ -7,11 +7,8 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MRUtils;
+import water.util.*;
 import static water.util.RandomUtils.getRNG;
-import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -28,7 +25,7 @@ import java.util.Random;
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
 
   /** All the parameters required to build the model. */
-  public final P _parms;
+  public P _parms;
   private P parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
@@ -277,7 +274,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Key[] modelKeys = new Key[N];
 
     // Step 2: Make 2*N binary weight vectors
-
     final String origWeightsName = _parms._weights_column;
     final Vec[] weights = new Vec[2*N];
     final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
@@ -335,39 +331,40 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       modelKeys[i] = Key.make(identifier);
 
-      _dest = modelKeys[i];
-      _parms._weights_column = weightName;
-      _parms._train = cvTrain._key;
-      _parms._valid = cvVal._key;
-      _state = JobState.CREATED;
-      modifyParmsForCrossValidationSplits(i, N);
+      // Build CV model - launch a separate Job
+      Model m;
+      {
+        ModelBuilder<M, P, O> cvModel = (ModelBuilder<M, P, O>) this.clone();
+        cvModel._dest = modelKeys[i];
+        cvModel._key = Key.make(_key.toString() + "_cv" + i);
+        cvModel._state = JobState.CREATED;
+        cvModel._description = identifier;
+        cvModel._parms._weights_column = weightName;
+        cvModel._parms._train = cvTrain._key;
+        cvModel._parms._valid = cvVal._key;
+        cvModel.modifyParmsForCrossValidationSplits(i, N);
 
-      Job<M> cvModel = trainModelImpl(-1);
-      Model m = cvModel.get();
-
-      Frame adaptFr = new Frame(cvVal);
-      m.adaptTestForTrain(adaptFr, true, !isSupervised());
-      mb[i] = m.scoreMetrics(adaptFr);
-
-      if (!_parms._keep_cross_validation_splits) {
-        weights[2*i].remove();
-        weights[2*i+1].remove();
-        DKV.remove(cvTrain._key);
-        DKV.remove(cvVal._key);
-        if (origWeightsName == null) origWeight.remove();
+        cvModel.trainModelImpl(-1);
+        m = cvModel.get();
+        cvModel.remove(); //keep the cv jobs around
       }
-      Model.cleanup_adapt(adaptFr, cvVal);
-      DKV.remove(adaptFr._key);
-      cvModel.remove();
 
-//      new TAtomic<JobList>() {
-//        @Override public JobList atomic(JobList old) {
-//          if( old == null ) old = new JobList();
-//          Key[] jobs = old._jobs;
-//          old._jobs = Arrays.copyOf(jobs, jobs.length - 1);
-//          return old;
-//        }
-//      }.invoke(LIST);
+      // holdout scoring
+      {
+        Frame adaptFr = new Frame(cvVal);
+        m.adaptTestForTrain(adaptFr, true, !isSupervised());
+        mb[i] = m.scoreMetrics(adaptFr);
+
+        if (!_parms._keep_cross_validation_splits) {
+          weights[2 * i].remove();
+          weights[2 * i + 1].remove();
+          DKV.remove(cvTrain._key);
+          DKV.remove(cvVal._key);
+          if (origWeightsName == null) origWeight.remove();
+        }
+        Model.cleanup_adapt(adaptFr, cvVal);
+        DKV.remove(adaptFr._key);
+      }
     }
 
     Log.info("Building main model.");
@@ -395,10 +392,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 //    }.invoke(LIST);
 
     Log.info("Computing " + N + "-fold cross-validation metrics.");
-    mainModel._output._crossValidationModels = new Key[N];
+    mainModel._output._cross_validation_models = new Key[N];
     for (int i=0; i<N; ++i) {
       if (i>0) mb[0].reduce(mb[i]);
-      mainModel._output._crossValidationModels[i] = modelKeys[i];
+      mainModel._output._cross_validation_models[i] = modelKeys[i];
     }
     mainModel._output._validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
     mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
