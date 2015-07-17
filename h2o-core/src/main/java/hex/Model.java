@@ -296,6 +296,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public ModelMetrics _validation_metrics;
 
     /**
+     * Cross-Validation metrics obtained during model training
+     */
+    public ModelMetrics _cross_validation_metrics;
+
+    /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
      */
     public TwoDimTable _model_summary;

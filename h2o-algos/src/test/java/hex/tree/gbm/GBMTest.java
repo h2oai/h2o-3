@@ -1104,7 +1104,7 @@ public class GBMTest extends TestUtil {
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
-      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
       assertEquals(0.6296296296296297, mm.auc()._auc, 1e-8);
       assertEquals(0.28640022521234304, mm.mse(), 1e-8);
       assertEquals(-0.145600900849372169, mm.r2(), 1e-6);
@@ -1147,8 +1147,8 @@ public class GBMTest extends TestUtil {
       //parms._nfolds = (int) tfr.numRows() + 1; //This is now an error
       gbm2 = job2.trainModel().get();
 
-      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._validation_metrics;
-      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._validation_metrics;
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._cross_validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._cross_validation_metrics;
       assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
@@ -1244,8 +1244,9 @@ public class GBMTest extends TestUtil {
       try {
         Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
         gbm = job.trainModel().get();
-        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
-      } catch(H2OModelBuilderIllegalArgumentException e) {}
+      } catch(H2OModelBuilderIllegalArgumentException e) {
+        Assert.fail("Should not toss H2OModelBuilderIllegalArgumentException.");
+      }
 
       job.remove();
     } finally {
@@ -1288,8 +1289,8 @@ public class GBMTest extends TestUtil {
       GBM job2 = new GBM(parms);
       gbm2 = job2.trainModel().get();
 
-      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._validation_metrics;
-      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._validation_metrics;
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._cross_validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._cross_validation_metrics;
       assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
@@ -1336,7 +1337,7 @@ public class GBMTest extends TestUtil {
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
-      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._validation_metrics;
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
       assertEquals(0.7262076707473135, mm.auc()._auc, 1e-4); // 1 node
       assertEquals(0.22686348162897116, mm.mse(), 1e-4);
       assertEquals(0.09026116418495023, mm.r2(), 1e-4);

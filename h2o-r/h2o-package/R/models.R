@@ -207,11 +207,6 @@
   h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, h2oRestApiVersion))
 }
 
-#' Get a model, which may still be in the process of being built
-#'
-#' Gets background H2O GLM model.
-#' @return Returns a \linkS4class{H2OModel} class object.
-#' @export
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
   h2o.getModel(object@model_id, object@conn)
