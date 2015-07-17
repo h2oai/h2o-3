@@ -296,6 +296,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public ModelMetrics _validation_metrics;
 
     /**
+     * Cross-Validation metrics obtained during model training
+     */
+    public ModelMetrics _cross_validation_metrics;
+
+    /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
      */
     public TwoDimTable _model_summary;
@@ -488,14 +493,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
-      boolean isFold = fold != null && names[i].equals(fold);
 
       if(vec == null && isResponse && computeMetrics)
         throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
-      if(vec == null && isFold)
-        throw new IllegalArgumentException("Test dataset is missing fold vector '" + fold + "'");
       if(vec == null && isWeights && computeMetrics)
         throw new IllegalArgumentException("Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed).");
 

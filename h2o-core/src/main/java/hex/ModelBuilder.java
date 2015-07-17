@@ -221,10 +221,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public Job<M> computeCrossValidation() {
-    assert _valid == null;
-    final Key<Frame> origTrainFrameKey = _parms._train;
     final Frame origTrainFrame = train();
-    final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
 
     // Step 1: Assign each row to a fold
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
@@ -250,6 +247,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final long actualSeed = seed;
       Log.info("Creating " + N + " cross-validation splits with random number seed: " + actualSeed);
       foldAssignment = origTrainFrame.anyVec().makeZero();
+      final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
       new MRTask() {
         @Override
         public void map(Chunk foldAssignment) {
@@ -322,10 +320,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final String weightName = "weights";
 
       // Training/Validation share the same data, but will have exclusive weights
-      final Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      final Frame cvTrain = new Frame(Key.make(identifier+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
       cvTrain.add(weightName, weights[2*i]);
       DKV.put(cvTrain);
-      final Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      final Frame cvVal = new Frame(Key.make(identifier+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
       cvVal.add(weightName, weights[2*i+1]);
       DKV.put(cvVal);
 
@@ -339,6 +337,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         cvModel._key = Key.make(_key.toString() + "_cv" + i);
         cvModel._state = JobState.CREATED;
         cvModel._description = identifier;
+
+        // Fix up some parameters
+        cvModel._parms = (P)_parms.clone();
         cvModel._parms._weights_column = weightName;
         cvModel._parms._train = cvTrain._key;
         cvModel._parms._valid = cvVal._key;
@@ -368,15 +369,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     Log.info("Building main model.");
-    _dest = origDest;
-    _parms._weights_column = origWeightsName;
-    _parms._train = origTrainFrameKey;
     _state = JobState.CREATED;
     _deleteProgressKey = true; //delete progress after the main model is done
-    _parms._valid = null; //(cross-)validation metrics get stitched together below
-    if (_parms._fold_column == null) {
-      _parms._nfolds = N; //let the main model know that it is built with cross-validation (no early stopping, etc.)
-    }
     modifyParmsForCrossValidationMainModel(N);
 
     Job<M> main = trainModelImpl(-1);
@@ -397,8 +391,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (i>0) mb[0].reduce(mb[i]);
       mainModel._output._cross_validation_models[i] = modelKeys[i];
     }
-    mainModel._output._validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
-    mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
+    mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
+    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
     DKV.put(mainModel);
     return main;
   }
@@ -730,9 +724,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
-      }
-      if (_parms._nfolds > 1) {
-        error("_nfolds", "nfolds > 1 is not supported if a validation dataset is provided.");
       }
     } else {
       _valid = null;
