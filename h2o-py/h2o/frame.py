@@ -289,14 +289,15 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("unique", self))._frame()
 
-  def show(self): self.head(10,sys.maxint)  # all columns
+  def show(self): self.head(rows=10,cols=sys.maxint,show=True)  # all columns
 
-  def head(self, rows=10, cols=200, **kwargs):
+  def head(self, rows=10, cols=200, show=False, **kwargs):
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
+    :param show: Display the output.
     :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
@@ -306,11 +307,12 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
     head = self[0:10,0:ncols]
     res = head.as_data_frame(False)[1:]
-    print "First {} rows and first {} columns: ".format(nrows, ncols)
-    h2o.H2ODisplay(res,colnames)
+    if show:
+      print "First {} rows and first {} columns: ".format(nrows, ncols)
+      h2o.H2ODisplay(res,colnames)
     return head
 
-  def tail(self, rows=10, cols=200, **kwargs):
+  def tail(self, rows=10, cols=200, show=False, **kwargs):
     """
     Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
@@ -326,8 +328,9 @@ class H2OFrame:
     tail = self[start_idx:(start_idx+nrows),:]
     res = tail.as_data_frame(False)
     colnames = res.pop(0)
-    print "Last {} rows and first {} columns: ".format(nrows,ncols)
-    h2o.H2ODisplay(res,colnames)
+    if show:
+      print "Last {} rows and first {} columns: ".format(nrows,ncols)
+      h2o.H2ODisplay(res,colnames)
     return tail
 
   def levels(self, col=None):
@@ -533,6 +536,44 @@ class H2OFrame:
     cols = sorted(cols)
     return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
 
+  def structure(self):
+    """
+    Similar to R's str method: Compactly Display the Structure of this H2OFrame instance.
+
+    :return: None
+    """
+    df = self.head().as_data_frame(use_pandas=False)
+    nr = self.nrow()
+    nc = len(df[0])
+    cn = df.pop(0)
+    width = max([len(c) for c in cn])
+    isfactor = [c.isfactor() for c in self]
+    nlevels  = [self.nlevels(i) for i in range(nc)]
+    print df
+
+    # nc <- ncol(object)
+    # nr <- nrow(object)
+    # cc <- colnames(object)
+    # width <- max(nchar(cc))
+    # df <- as.data.frame(object[1L:10L,])
+    # isfactor <- as.data.frame(is.factor(object))[,1]
+    # num.levels <- as.data.frame(h2o.nlevels(object))[,1]
+    # lvls <- as.data.frame(h2o.levels(object))
+    # # header statement
+    # cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+    # l <- list()
+    # for( i in 1:nc ) {
+    #   cat("$ ", cc[i], rep(' ', width - max(stats::na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+    # first.10.rows <- df[,i]
+    # if( isfactor[i] ) {
+    # nl <- num.levels[i]
+    # lvls.print <- lvls[1L:min(nl,2L),i]
+    # cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
+    # cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
+    # } else
+    # cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+    # }
+    # }
 
   def as_data_frame(self, use_pandas=True):
     """

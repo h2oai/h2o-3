@@ -168,8 +168,9 @@ public class ASTddply extends ASTOp {
     private final long _gbCols[];
     IcedHM<Group,String> _grps;
     Pass1A(long[] cols) { _gbCols=cols; }
-    @Override public void setupLocal() { _grps = new IcedHM<>(); }
+    @Override public void setupLocal() { }
     @Override public void map(Chunk[] c) {
+      _grps = new IcedHM<>();
       Group g = new Group(_gbCols.length);
       Group gOld;
       int start = (int)c[0].start();
@@ -179,11 +180,7 @@ public class ASTddply extends ASTOp {
         if( old_g==null ) {
           gOld=g;
           g= new Group(_gbCols.length);
-        } else {
-          gOld=_grps.getk(g);
-          if( gOld==null )
-            while( gOld==null ) gOld=_grps.getk(g);
-        }
+        } else gOld=_grps.getk(g);
         long cnt=gOld._N;
         while( !Group.CAS_N(gOld,cnt,cnt+1))
           cnt=gOld._N;
