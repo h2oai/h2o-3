@@ -496,7 +496,12 @@ setMethod("match", "H2OFrame", h2o.match)
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 0L)
+setMethod("%in%", signature("H2OFrame", "character"), function(x, table) any(match(x, table, nomatch = 0)))
+
+# %in% method
+#' @rdname h2o.match
+#' @export
+setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) all(sapply(table,function(t) any(t==x))))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
@@ -1383,16 +1388,6 @@ setMethod("is.numeric", "H2OFrame", function(x) {
   else             .h2o.unary_frame_op("is.numeric", x )
 })
 
-#'
-#' Is H2O Data Frame column numeric
-#'
-#' @param x an \linkS4class{H2OFrame} object column.
-#' @return Returns logical value.
-#' @export
-setMethod("is.numeric", "H2OFrame", function(x) {
-  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.numeric", x)
-  else             .h2o.unary_frame_op("is.numeric", x )
-})
 
 #'
 #' Quantiles of H2O Data Frame.
