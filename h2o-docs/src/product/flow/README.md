@@ -414,6 +414,10 @@ The available options vary depending on the selected model. If an option is only
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Nfolds**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) Specify the number of folds for cross-validation. 
+
+- **Fold_column**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) Select the column that contains the cross-validation fold index assignment per observation. 
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **User_points**: [(K-Means](#Kmeans) For K-Means, specify the number of initial cluster centers.  
@@ -444,9 +448,13 @@ The available options vary depending on the selected model. If an option is only
 
 - **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
+- **Keep\_cross\_validation\_splits**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) To keep the cross-validation frames, check this checkbox. 
+
+- **Fold_assignment**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
+
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian.
+- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -469,8 +477,10 @@ The available options vary depending on the selected model. If an option is only
   >**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - **Offset_column**: [(GLM)](#GLM),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
+	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
 - **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
+	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
 
@@ -538,7 +548,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max\_hit\_ratio\_k**: ([DRF](#DRF), [Naïve Bayes](#NB)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
+- **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
 - **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2.  
 
@@ -589,9 +599,9 @@ The available options vary depending on the selected model. If an option is only
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
 - **PCA_method**: [(PCA)](#PCA) Select the algorithm to use for computing the principal components: 
-	- *GramSVD*: Computes the Gram matrix of the training frame, then calculates a local SVD on the result using the JAMA package
+	- *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
 	- *Power*: Computes the SVD using the power iteration method
-	- *GLRM*: Builds a generalized low-rank model with L1 loss function and no regularization, then recovers the SVD from the resulting X and Y matrices
+	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
 - **Force\_load\_balance**: [(DL)](#DL) Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
@@ -651,7 +661,9 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
 
 To delete a model, click the **Delete** button. 
 
-To generate a POJO to be able to use the model outside of H2O, click the **Download POJO** button. 
+To generate a POJO that can use the model outside of H2O, click the **Download POJO** button. 
+
+>**Note**: To make the POJO work in your Java application, you will also need the `h2o-genmodel.jar` file (`h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar`).
 
 To learn how to make predictions, continue to the next section. 
 

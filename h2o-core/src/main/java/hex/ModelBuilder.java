@@ -270,6 +270,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     final Key[] modelKeys = new Key[N];
+    final Key[] predictionKeys = new Key[N];
 
     // Step 2: Make 2*N binary weight vectors
     final String origWeightsName = _parms._weights_column;
@@ -356,6 +357,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         m.adaptTestForTrain(adaptFr, true, !isSupervised());
         mb[i] = m.scoreMetrics(adaptFr);
 
+        if (_parms._keep_cross_validation_predictions) {
+          String predName = "prediction_" + modelKeys[i].toString();
+          predictionKeys[i] = Key.make(predName);
+          m.predictScoreImpl(cvVal, adaptFr, predName);
+        }
         if (!_parms._keep_cross_validation_splits) {
           weights[2 * i].remove();
           weights[2 * i + 1].remove();
@@ -387,9 +393,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info("Computing " + N + "-fold cross-validation metrics.");
     mainModel._output._cross_validation_models = new Key[N];
+    mainModel._output._cross_validation_predictions = new Key[N];
     for (int i=0; i<N; ++i) {
       if (i>0) mb[0].reduce(mb[i]);
       mainModel._output._cross_validation_models[i] = modelKeys[i];
+      mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
     }
     mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
