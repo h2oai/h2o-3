@@ -17,6 +17,13 @@ We welcome your feedback! Please let us know if you have any questions or commen
 If you're just getting started with H2O, here are some links to help you learn more: 
 
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+  At a minimum, we recommend the following for compatibility with H2O: 
+  
+  - Operating Systems: Windows 7 or later; OS X 10.9 or later, Ubuntu 12.04, or RHEL/CentOS 6 or later
+  - Languages: Java 7 or later; Scala v 2.10 or later; R v.3 or later; Python 2.7.x or later (Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required)
+  - Browsers: Latest version of Chrome, Firefox, Safari, or Internet Explorer (An internet browser is required to use H2O's web UI, Flow)
+  - Hadoop: Cloudera CDH 4 or later (5.3 is recommended); MapR v.3.0 or later; Hortonworks HDP 2.1 or later (Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster)
+  - Spark v 1.3 or later (Spark is not required unless you want to run Sparkling Water)
 
 - <a href="http://h2o.ai/download/" target="_blank">Downloads page</a>: First things first - download a copy of H2O <a href="http://h2o.ai/download/" target="_blank">here</a> by selecting a build under "Download H2O" (the "Bleeding Edge" build contains the latest changes, while the latest alpha release represents a more stable build), then use the installation instruction tabs to install H2O on your client of choice ([standalone](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html), [R](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R), [Python](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Python), [Hadoop](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Hadoop), or [Maven](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Maven)) . 
 
@@ -220,7 +227,10 @@ The Java API is generated and accessible from the [download page](http://h2o.ai/
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references. 
 
-For IDEA IntelliJ support, run `gradle idea`, then **Import Project** within IDEA and point it to the <a href="https://github.com/h2oai/h2o-3.git" target="_blank">h2o-3 directory</a>. 
+For the latest version of IDEA IntelliJ, run `./gradlew idea`, then click **File > Open** within IDEA. Select the `.ipr` file in the repository and click the **Choose** button.  
+
+For older versions of IDEA IntelliJ, run `./gradlew idea`, then **Import Project** within IDEA and point it to the <a href="https://github.com/h2oai/h2o-3.git" target="_blank">h2o-3 directory</a>. 
+ >**Note**: This process will take longer, so we recommend using the first method if possible. 
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters: 
 
