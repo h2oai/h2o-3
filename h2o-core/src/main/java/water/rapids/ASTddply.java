@@ -220,8 +220,10 @@ public class ASTddply extends ASTOp {
       _tasks=new Pass2Task[_grps.length];
       _keys=new Key[_grps.length];
       for( int i=0;i<_grps.length;++i ) {
-        (_tasks[i]=new Pass2Task(this,i%numnodes,_grps[i],_fr._key)).fork();
-        _keys[i] = _tasks[i]._key;
+        int nodeID = i%numnodes;
+        H2ONode n = H2O.CLOUD.members()[nodeID];
+        Key key = Key.make(n);
+        (_tasks[i]=new Pass2Task(this,nodeID,_grps[i],_fr._key, n, _keys[i]=key)).fork();
       }
     }
   }
@@ -235,7 +237,7 @@ public class ASTddply extends ASTOp {
     Key _key;
     H2ONode _n;
     Key[] _subsetVecKeys;
-    Pass2Task(H2O.H2OCountedCompleter cc, int nodeID, Group g, Key frameKey) { super(cc); _nodeID=nodeID; _g=g; _frameKey=frameKey; _n=H2O.CLOUD.members()[_nodeID]; _key=Key.make(_n); }
+    Pass2Task(H2O.H2OCountedCompleter cc, int nodeID, Group g, Key frameKey, H2ONode n, Key key) { super(cc); _nodeID=nodeID; _g=g; _frameKey=frameKey; _n=n; _key=key; }
     @Override protected void compute2() {
       H2ONode n = H2O.CLOUD.members()[_nodeID];
       Futures fs = new Futures();
