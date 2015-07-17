@@ -12,7 +12,7 @@ import hex.glrm.GLRMModel;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV99;
+import hex.schemas.PCAV3;
 
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
@@ -39,7 +39,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV99();
+    return new PCAV3();
   }
 
   @Override
@@ -54,10 +54,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelCategory[] can_build() {
-    return new ModelCategory[]{ModelCategory.Clustering};
+    return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   @Override
   protected void checkMemoryFootPrint() {

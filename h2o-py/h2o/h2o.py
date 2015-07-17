@@ -745,7 +745,6 @@ def prcomp(x,validation_x=None,**kwargs):
   every categorical variable will be dropped. Defaults to FALSE.
   :return: a new dim reduction model
   """
-  kwargs['_rest_version'] = 99
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
 
 

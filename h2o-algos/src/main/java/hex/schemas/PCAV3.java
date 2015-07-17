@@ -6,9 +6,9 @@ import hex.pca.PCAModel.PCAParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 
-public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV99> {
+public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
 
-  public static final class PCAParametersV99 extends ModelParametersSchema<PCAParameters, PCAParametersV99> {
+  public static final class PCAParametersV3 extends ModelParametersSchema<PCAParameters, PCAParametersV3> {
     static public String[] fields = new String[] {
 				"model_id",
 				"training_frame",
@@ -28,7 +28,7 @@ public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV9
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
 
-    @API(help = "Method for computing PCA", values = { "GramSVD", "Power", "GLRM" })   // TODO: pull out of enum class
+    @API(help = "Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)", values = { "GramSVD", "Power", "GLRM" })   // TODO: pull out of enum class
     public PCAParameters.Method pca_method;
 
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT)
@@ -43,7 +43,7 @@ public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV9
     @API(help = "Whether first factor level is included in each categorical expansion", direction = API.Direction.INOUT)
     public boolean use_all_factor_levels;
 
-    @API(help = "Whether a to compute metrics on the training data", direction = API.Direction.INOUT)
+    @API(help = "Whether to compute metrics on the training data", direction = API.Direction.INOUT)
     public boolean compute_metrics;
   }
 }
