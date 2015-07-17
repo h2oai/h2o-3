@@ -110,12 +110,8 @@ public class Env {
     // Now the DKV
     Value value = DKV.get(Key.make(id));
     if( value != null ) {
-      if( value.isFrame() ) {
-        Frame fr = value.get();
-        assert fr._key.toString().equals(id);
-        _globals.addAll(Arrays.asList(fr.vecs()));
-        return new ValFrame(fr);
-      }
+      if( value.isFrame() )
+        return addGlobals((Frame)value.get());
       // Only understand Frames right now
       throw new IllegalArgumentException("DKV name lookup of "+id+" yielded an instance of type "+value.className()+", but only Frame is supported");
     }
@@ -126,6 +122,11 @@ public class Env {
       return ast instanceof ASTNum ? ast.exec(this) : new ValFun(ast);
 
     throw new IllegalArgumentException("Name lookup of '"+id+"' failed");
+  }
+
+  ValFrame addGlobals( Frame fr ) {
+    _globals.addAll(Arrays.asList(fr.vecs()));
+    return new ValFrame(fr);
   }
 
   /*

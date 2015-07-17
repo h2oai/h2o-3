@@ -401,6 +401,7 @@ function(s) {
   } else if (is.character(s)) {
     paste0(" ", s)
   } else if (is(s, "H2OFrame")) {
+    .NotYetImplemented()
     tmp <- .get(s)
     if (is(tmp, "ASTNode")) {
       paste0(" ", .visitor(s@mutable$ast))

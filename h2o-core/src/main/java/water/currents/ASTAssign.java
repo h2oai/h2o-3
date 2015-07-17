@@ -140,3 +140,21 @@ class ASTAssign extends ASTPrim {
   }
 }
 
+/** Assign a temp.  All such assignments are final (cannot change), but the
+ *  temp can be deleted.  Temp is returned for immediate use, and also set in
+ *  the DKV.  Must be globally unique in the DKV.  */
+class ASTTmpAssign extends ASTPrim {
+  @Override int nargs() { return 1+2; } // (tmp= id frame)
+  @Override String str() { return "tmp=" ; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Futures fs = new Futures();
+    String id = ((ASTId)asts[1])._id;
+    Frame dst = stk.track(asts[2].exec(env)).getFrame();
+    Key key = Key.make(id);
+    Frame dst2 = new Frame(key,dst._names,dst.vecs());
+    if( DKV.DputIfMatch(key,new Value(key,dst2),null,fs)!=null )
+      throw new IllegalArgumentException("Tmp keys are final; key "+id+" attempted to be reassigned");
+    fs.blockForPending();
+    return env.addGlobals(dst2);
+  }
+}

@@ -22,17 +22,26 @@ function(node) {
   else if( is(node, "ASTNode") || is(node, "ASTSpan") )  paste0("(", node@root@op, " ", paste0(.visitor(node@children), collapse = " "), ")")
   else if( is(node, "ASTSeries") )                       paste0(" ", node@op, paste0(.visitor(node@children), collapse = ";"), "}")
   else if( is(node, "ASTEmpty") )                        node@key
-  else if( is(node, "H2OFrame") )                        .visitor(.get(node))
-  else                                                  node
+  else if( is(node, "H2OFrame") ) {
+    if( node@mutable$computed )                          node@id
+    else {
+      res <- paste0("(tmp= ",node@id," ",.visitor(node@mutable$ast),")")
+      node@mutable$computed <- T
+      node@mutable$ast <- NULL
+      res
+    }
+  } else                                                 node
 }
 
 #'
-#' Get the key or AST
+#' Get the key or AST.  ASTs are evaluated and assigned, and the id will be
+#' used instead of re-inlining the AST for the next use... which means the AST
+#' has to be visited in execution order (typically not a problem).
 #'
 #' Key points to a bonified object in the H2O cluster
-.get <- function(H2OFrame) {
-  if( H2OFrame@mutable$computed ) paste0('%', H2OFrame@id)
-  else                            H2OFrame@mutable$ast
+.get <- function(fr) {
+  if( fr@mutable$computed ) fr@id
+  else fr
 }
 
 #'

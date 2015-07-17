@@ -762,7 +762,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     }
   }
 
-  ast <- .get(x)
+  ast <- x
 
   if (missingJ) {
     ncols <- x@mutable$ncols
@@ -785,7 +785,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   } else {
     nrows <- NA_integer_
     if (is(i, "H2OFrame")) {
-      rows <- .get(i)
+      rows <- i
     } else if (is(i, "ASTNode"))
       rows <- i
     else
@@ -907,16 +907,15 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     cols <- .eval(idx,parent.frame())
   }
 
-  src <- if( is(value, "H2OFrame") ) .get(value)
+  src <- if( is(value, "H2OFrame") ) value
          else if( is.na(value) )     "%NA"
          else                        eval(substitute(value), parent.frame())
 
   op  <- new("ASTApply", op = "=")
-  ast <- new("ASTNode", root = op, children = list(.get(x), src, cols, rows))
-  res <- .h2o.replace.frame(ast = ast, id = x@id)
-
-  if( !is.na(name) ) colnames(res)[idx] <- name
-  res
+  ast <- new("ASTNode", root = op, children = list(x, src, cols, rows))
+  # Set col name and return updated frame
+  if( !is.na(name) ) ast <- .setColName(ast,idx,name)
+  .h2o.replace.frame(ast = ast, id = x@id)
 })
 
 #' @rdname H2OFrame-Extract
@@ -932,15 +931,15 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   if( is.na(idx) ) idx <- ncol(x) + 1L ## Append a column
   cols <- .eval(idx, parent.frame())   ## Column to overwrite
 
-  if (is(value, "H2OFrame"))    src <- .get(value)
+  if (is(value, "H2OFrame"))    src <- value
   else if (is.numeric(value))   src <- eval(substitute(value), parent.frame())
   else stop("`value` can only be an H2OFrame object, numeric or NULL")
 
   rows <- paste0("[0:",nrow(x),"]")  # All rows
   ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(x, src, cols, rows))
+  # Set col name, and return updated frame
+  ast <- .setColName(ast,idx,name)
   res <- .h2o.replace.frame(ast = ast, id = x@id)
-  colnames(res)[idx] <- name
-  res
 })
 
 #' @rdname H2OFrame-Extract
@@ -978,6 +977,11 @@ setMethod("names", "H2OFrame", function(x) { colnames(x) })
 #' @rdname h2o.colnames
 #' @export
 setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
+
+# Set a column name.
+.setColName <- function(ast, idx, name) {
+  .h2o.nary_op_ast("colnames=", ast, idx-1, name)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Transformation Functions: transform, within
@@ -1946,10 +1950,8 @@ h2o.rbind <- function(...) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' @export
 h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
-  x_temp <- x[1:nrow(x),]
-  y_temp <- y[1:nrow(y),]
-  out <- .h2o.nary_frame_op("merge", x_temp, y_temp, all.x, all.y)
-  out
+  .h2o.gc()
+  .h2o.nary_frame_op("merge", .h2o.eval.frame(x), .h2o.eval.frame(y), all.x, all.y)
 }
 
 #' Group and Apply by Column
@@ -1974,6 +1976,7 @@ h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
 #'         groups created
 #' @export
 h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
+  .h2o.gc()
   if( !is(data, "H2OFrame") )
       stop("`data` must be of type H2OFrame")
 
@@ -2315,6 +2318,7 @@ h2o.vote  <- function(x, nclasses, weights=rep(0,ncol(x))) { .h2o.nary_frame_op(
 #' head(res)
 #' @export
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
+  .h2o.gc()
   mm <- match.call()
   envir <- parent.frame()
   if(!is(.data, "H2OFrame")) stop('.data must be an H2OFrame object')

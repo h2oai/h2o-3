@@ -122,6 +122,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
   if(!is.logical(progressBar) || length(progressBar) != 1L || is.na(progressBar))
     stop("`progressBar` must be TRUE or FALSE")
 
+  .h2o.gc()  # Clear out H2O to make space for new file
   path <- normalizePath(path, winslash = "/")
   srcKey <- .key.make(path)
   urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))

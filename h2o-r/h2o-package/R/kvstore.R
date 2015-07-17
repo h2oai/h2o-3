@@ -10,7 +10,7 @@
     if (nzchar(key)) {
       if (regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
         stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
-      gc() # clean up KV store
+      .h2o.gc() # clean up KV store
     }
   }
   invisible(TRUE)
@@ -41,7 +41,7 @@
 #' h2o.ls(localH2O)
 #' @export
 h2o.ls <- function() {
-  gc()
+  .h2o.gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OFrame(id = .key.make("ls"), mutable = mutable)
@@ -90,37 +90,6 @@ h2o.rm <- function(ids) {
 
   for(i in seq_len(length(ids)))
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
-}
-
-#'
-#' Garbage Collection of Temporary Frames
-#'
-
-# TODO: This is an older version; need to go back through git and find the "good" one...
-.h2o.gc <- function() {
-  frame_keys <- as.vector(h2o.ls()[,1L])
-  frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@mutable$session_id), frame_keys)]
-  # no reference? then destroy!
-  # TODO in order for this function to work properly, you would need to search (recursively)
-  # TODO through ALL objects for H2OFrame and H2OModel objects including lists, environments,
-  # TODO and slots of S4 objects
-  f <- function(env) {
-    l <- lapply(ls(env), function(x) {
-      o <- get(x, envir=env)
-      if(is(o, "H2OFrame")) o@id else if(is(o, "H2OModel")) o@id
-    })
-    Filter(Negate(is.null), l)
-  }
-  p_list  <- f(.pkg.env)
-  g_list  <- f(globalenv())
-  f1_list <- f(parent.frame())
-
-  g_list <- unlist(c(p_list, g_list, f1_list))
-  l <- setdiff(seq_len(length(frame_keys)),
-               unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
-  if (length(l) != 0L)
-    h2o.rm(frame_keys[l])
-  invisible(NULL)
 }
 
 #'

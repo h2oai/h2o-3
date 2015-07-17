@@ -25,7 +25,7 @@ function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
 
-  if( is(x, "H2OFrame") )      x <- .get(x)
+  if( is(x, "H2OFrame") )      x <- x
   else if( is(x, "ASTNode") )  x <- x
   else if( is.numeric(x) )     x <- paste0('#', x)
   else if( is.character(x) )   x <- deparse(eval(x))
@@ -58,7 +58,7 @@ function(op, e1, e2) {
   op <- new("ASTApply", op=.op.map[op])
 
   # Prep the LHS
-  if (is(e1, "H2OFrame"))         lhs <- .get(e1)
+  if (is(e1, "H2OFrame"))         lhs <- e1
   else {
     if (is(e1, "ASTNode"))        lhs <- e1
     else if (is.numeric(e1))      lhs <- paste0('#', e1)
@@ -68,7 +68,7 @@ function(op, e1, e2) {
   }
 
   # Prep the RHS
-  if (is(e2, "H2OFrame"))         rhs <- .get(e2)
+  if (is(e2, "H2OFrame"))         rhs <- e2
   else {
     if (is(e2, "ASTNode"))        rhs <- e2
     else if (is.numeric(e2))      rhs <- paste0('#', e2)
@@ -168,7 +168,6 @@ function(ast) {
     ret <- res$scalar
     if (ret == "NaN") ret <- NA_real_
   }
-  gc()
   ret
 }
 
@@ -190,8 +189,7 @@ function(fr) {
   # Computed now!  No need to compute again
   fr@mutable$computed <- T
   fr@mutable$ast <- NULL
-  # Clean up any dead expressions
-  gc()
+  fr
 }
 
 .h2o.replace.frame<-
@@ -202,6 +200,10 @@ function(ast, id) {
   # Process the results
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=ast, id=id, method = "POST")
   if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-  gc()
   .h2o.getGCFrame(id)
+}
+
+.h2o.gc <- function() {
+  print("H2O triggered GC")
+  gc()
 }
