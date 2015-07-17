@@ -126,12 +126,12 @@ public class Distributions {
     poisson {
       @Override
       public double deviance(double w, double y, double f) {
-        return w * (y * f - linkInv(f));
+        return w * (y * f - exp(f));
       }
 
       @Override
       public double gradient(double y, double f) {
-        return y - linkInv(f);
+        return y - exp(f);
       }
 
       @Override
@@ -153,12 +153,12 @@ public class Distributions {
     gamma {
       @Override
       public double deviance(double w, double y, double f) {
-        return w * (y * linkInv(-f) + f);
+        return w * (y * exp(-f) + f);
       }
 
       @Override
       public double gradient(double y, double f) {
-        return y * linkInv(-f) - 1;
+        return y * exp(-f) - 1;
       }
 
       @Override
@@ -212,7 +212,7 @@ public class Distributions {
   public static double exp(double x)  { return Math.max(1e-19, Math.min(1e19, Math.exp(x))); }
   // sanitized log function
   public static double log(double x)  {
-    return x == 0 ? -19 : Math.max(-19, Math.log(x));
+    return x == 0 ? -19 : Math.max(-19,Math.min(19, Math.log(x)));
   }
 
   public static String expString(String x)  { return "Math.max(1e-19, Math.min(1e19, Math.exp(" + x + ")))"; }
