@@ -58,6 +58,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds;
     public boolean _keep_cross_validation_splits;
+    public enum FoldAssignmentScheme {
+      Random, Modulo
+    }
+    public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.Random;
+
     // TODO: This field belongs in the front-end column-selection process and
     // NOT in the parameters - because this requires all model-builders to have
     // column strip/ignore code.
@@ -65,6 +70,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _ignore_const_cols;    // True if dropping constant cols
     public String _weights_column;
     public String _offset_column;
+    public String _fold_column;
+
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
     // scored every so many major model iterations - throttled to limit scoring
@@ -225,12 +232,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _names[];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1) **/
-    Key _crossValidationModels[];
+    Key _cross_validation_models[];
 
-    public Output(){this(false,false);}
-    public Output(boolean hasWeights, boolean hasOffset) {
+    public Output(){this(false,false,false);}
+    public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
       _hasWeights = hasWeights;
       _hasOffset = hasOffset;
+      _hasFold = hasFold;
     }
 
     /** Any final prep-work just before model-building starts, but after the
@@ -242,6 +250,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( b == null ) {
         _hasOffset = false;
         _hasWeights = false;
+        _hasFold = false;
         return;
       }
       _isSupervised = b.isSupervised();
@@ -250,14 +259,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Capture the data "shape" the model is valid on
       _names  = b._train.names  ();
       _domains= b._train.domains();
-      _hasOffset = b.hasOffset();
-      _hasWeights = b.hasWeights();
+      _hasOffset = b.hasOffsetCol();
+      _hasWeights = b.hasWeightCol();
+      _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
     }
 
-    /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
-    public int nfeatures() { return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (isSupervised()?1:0);}
+    /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
+    public int nfeatures() {
+      return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (isSupervised()?1:0);
+    }
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
@@ -301,18 +313,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The name of the response column (which is always the last column). */
     protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
     protected final boolean _hasWeights;// only need to know if we have them
+    protected final boolean _hasFold;// only need to know if we have them
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
+    public boolean hasFold () { return _hasFold;}
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
+    public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
     // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx     () {
       if(!_hasWeights) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1;
+      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0);
     }
     public int offsetIdx      () {
       if(!_hasOffset) return -1;
+      return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1;
+    }
+    public int foldIdx      () {
+      if(!_hasFold) return -1;
       return _names.length - (isSupervised()?1:0) - 1;
     }
     public int responseIdx    () {
@@ -436,18 +455,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  if any factor column has no levels in common.
    */
   public String[] adaptTestForTrain( Frame test, boolean expensive, boolean computeMetrics) {
-    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics);
+    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics);
   }
   /**
-   *  @param names Training column names
+   * @param names Training column names
    *  @param weights  Name of column with observation weights, weights are NOT filled in if missing in test frame
-   *  @param offset   Name of column with offset, if not null (i.e. trained with offset), offset MUST be present in test data as well, otherwise can not scorew and IAE is thrown.
-   *  @param response Name of response column,  response is NOT filled in if missing in test frame
-   *
-   *  @param domains Training column levels
-   *  @param missing Substitute for missing columns; usually NaN
+   * @param offset   Name of column with offset, if not null (i.e. trained with offset), offset MUST be present in test data as well, otherwise can not scorew and IAE is thrown.
+   * @param fold
+   * @param response Name of response column,  response is NOT filled in if missing in test frame
+   * @param domains Training column levels
+   * @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain( String[] names, String weights, String offset, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain(String[] names, String weights, String offset, String fold, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -469,13 +488,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
+      boolean isFold = fold != null && names[i].equals(fold);
 
       if(vec == null && isResponse && computeMetrics)
         throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
+      if(vec == null && isFold)
+        throw new IllegalArgumentException("Test dataset is missing fold vector '" + fold + "'");
       if(vec == null && isWeights && computeMetrics)
         throw new IllegalArgumentException("Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed).");
+
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null) {
         String str = "Validation set is missing training column "+names[i];
@@ -997,8 +1020,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   private void deleteCrossValidationModels( ) {
-    if (_output._crossValidationModels != null) {
-      for (Key k : _output._crossValidationModels) {
+    if (_output._cross_validation_models != null) {
+      for (Key k : _output._cross_validation_models) {
         Model m = DKV.getGet(k);
         if (m!=null) m.delete(); //delete all subparts
       }

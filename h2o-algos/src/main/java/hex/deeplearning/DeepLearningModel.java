@@ -82,6 +82,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private long start_time;
 
   public long actual_train_samples_per_iteration;
+  public long tspiGuess;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
@@ -482,18 +483,27 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // Note: actual communication time is estimated by the NetworkTest's collective test.
       if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2) {
         Log.info("Auto-tuning train_samples_per_iteration.");
+        double correction = 1;
         if (time_for_communication_us > 1e4) {
           Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
           Log.info("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_last_iter_millis, true));
           final double comm_to_work_ratio = (time_for_communication_us * 1e-3) / time_last_iter_millis;
-          Log.info("  Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
+          Log.info("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
           Log.info("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
-          final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
           Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-          actual_train_samples_per_iteration /= correction;
-          actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
-          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-        } else if (time_for_communication_us <= 1e4) {
+          correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
+          correction = Math.max(0.1,Math.min(2, correction)); //it's ok to train up to 10x more training rows per iteration, but not fewer than half.
+          if (actual_train_samples_per_iteration/correction <= 10*tspiGuess && actual_train_samples_per_iteration/correction >= 0.1*tspiGuess) { //stay within 10x of original guess
+            if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
+              actual_train_samples_per_iteration /= correction;
+              actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+              Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+            }
+          }
+          if (correction == 1) {
+            Log.info("Keeping value of train_samples_per_iteration the same : " + actual_train_samples_per_iteration);
+          }
+        } else {
           Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
         }
       }
@@ -871,7 +881,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

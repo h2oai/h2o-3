@@ -1,6 +1,7 @@
 package hex.tree.drf;
 
 
+import hex.Model;
 import hex.ModelMetricsBinomial;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
@@ -535,10 +536,10 @@ public class DRFTest extends TestUtil {
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
-          "DepTime", "ArrTime", "ActualElapsedTime",
-          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-          "CancellationCode", "CarrierDelay", "WeatherDelay",
-          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
         tfr.remove(s).remove();
       }
@@ -887,10 +888,10 @@ public class DRFTest extends TestUtil {
     try {
       tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
-          "DepTime", "ArrTime", "ActualElapsedTime",
-          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-          "CancellationCode", "CarrierDelay", "WeatherDelay",
-          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
         tfr.remove(s).remove();
       }
@@ -909,17 +910,246 @@ public class DRFTest extends TestUtil {
       drf = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._validation_metrics;
-      assertEquals(0.7252305790568023, mm.auc()._auc, 1e-8); // 1 node
-      assertEquals(0.7330846346541204, mm.auc()._auc, 1e-8); // 5 nodes
-      assertEquals(0.21258514360090627, mm.mse(), 1e-8);
-      assertEquals(0.14751832396119646, mm.r2(), 1e-6);
-      assertEquals(0.6133063511996262, mm.logloss(), 1e-6);
+      assertEquals(0.7276154565296726, mm.auc()._auc, 1e-8); // 1 node
+      assertEquals(0.21211607823987555, mm.mse(), 1e-8);
+      assertEquals(0.14939930970822446, mm.r2(), 1e-6);
+      assertEquals(0.6121968624307211, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
       if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNFoldBalanceClasses() {
+    Frame tfr = null, vfr = null;
+    DRFModel drf = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._nfolds = 3;
+      parms._max_depth = 5;
+      parms._balance_classes = true;
+      parms._ntrees = 5;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      drf = job.trainModel().get();
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsOneVsRest() {
+    Frame tfr = null;
+    DRFModel drf1 = null;
+    DRFModel drf2 = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._seed = 9999;
+      parms._min_rows = 2;
+      parms._nfolds = (int) tfr.numRows();
+      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+
+      DRF job1 = new DRF(parms);
+      drf1 = job1.trainModel().get();
+
+//            parms._nfolds = (int) tfr.numRows() + 1; //this is now an error
+      DRF job2 = new DRF(parms);
+      drf2 = job2.trainModel().get();
+
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._validation_metrics;
+      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.mse(), mm2.mse(), 1e-12);
+      assertEquals(mm1.r2(), mm2.r2(), 1e-12);
+      assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
+
+      //TODO: add check: the correct number of individual models were built. PUBDEV-1690
+
+      job1.remove();
+      job2.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (drf1 != null) drf1.delete();
+      if (drf2 != null) drf2.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsInvalidValues() {
+    Frame tfr = null;
+    DRFModel drf1 = null;
+    DRFModel drf2 = null;
+    DRFModel drf3 = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+
+      parms._nfolds = 0;
+      DRF job1 = new DRF(parms);
+      drf1 = job1.trainModel().get();
+
+      parms._nfolds = 1;
+      DRF job2 = new DRF(parms);
+      try {
+        Log.info("Trying nfolds==1.");
+        drf2 = job2.trainModel().get();
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
+
+      parms._nfolds = -99;
+      DRF job3 = new DRF(parms);
+      try {
+        Log.info("Trying nfolds==-99.");
+        drf3 = job3.trainModel().get();
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
+
+      job1.remove();
+      job2.remove();
+      job3.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (drf1 != null) drf1.delete();
+      if (drf2 != null) drf2.delete();
+      if (drf3 != null) drf3.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsCVAndValidation() {
+    Frame tfr = null, vfr = null;
+    DRFModel drf = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      vfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._valid = vfr._key;
+      parms._response_column = "response";
+      parms._min_rows = 2;
+      parms._max_depth = 2;
+      parms._nfolds = 3;
+      parms._ntrees = 3;
+
+      DRF job = new DRF(parms);
+
+      try {
+        Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
+        drf = job.trainModel().get();
+        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
+      } catch(H2OModelBuilderIllegalArgumentException e) {}
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (drf != null) drf.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsConsecutiveModelsSame() {
+    Frame tfr = null;
+    Vec old = null;
+    DRFModel drf1 = null;
+    DRFModel drf2 = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr.remove("name").remove(); // Remove unique id
+      tfr.remove("economy").remove();
+      old = tfr.remove("economy_20mpg");
+      tfr.add("economy_20mpg", old.toEnum()); // response to last column
+      DKV.put(tfr);
+
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "economy_20mpg";
+      parms._min_rows = 2;
+      parms._max_depth = 2;
+      parms._nfolds = 3;
+      parms._ntrees = 3;
+      parms._seed = 77777;
+
+      DRF job1 = new DRF(parms);
+      drf1 = job1.trainModel().get();
+
+      DRF job2 = new DRF(parms);
+      drf2 = job2.trainModel().get();
+
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._validation_metrics;
+      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.mse(), mm2.mse(), 1e-12);
+      assertEquals(mm1.r2(), mm2.r2(), 1e-12);
+      assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
+
+      job1.remove();
+      job2.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (old != null) old.remove();
+      if (drf1 != null) drf1.delete();
+      if (drf2 != null) drf2.delete();
       Scope.exit();
     }
   }

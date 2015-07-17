@@ -1135,7 +1135,7 @@ public class Frame extends Lockable<Frame> {
         c2._start=-1;
         c2._cidx=-1;
         c2._mem = c2._mem.clone();
-        DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs);
+        DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs, true);
       }
     }
     @Override public void postGlobal() { for( Vec _vec : _vecs ) DKV.put(_vec); }

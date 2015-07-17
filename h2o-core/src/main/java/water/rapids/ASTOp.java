@@ -20,6 +20,7 @@ import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.MathUtils;
 
@@ -199,7 +200,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCumProd());
     putPrefix(new ASTCumMin());
     putPrefix(new ASTCumMax());
-//    putPrefix(new ASTUnique());
+    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum());
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
@@ -855,7 +856,10 @@ class ASTAll extends ASTUniPrefixOp {
       if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
       Vec v = fr.anyVec();
       if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
-      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      if( v.isConst() )
+        if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      else
+        if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
       all = new AllTask().doAll(fr.anyVec()).all;
     }
     env.push(new ValStr(all?"TRUE":"FALSE"));
@@ -897,7 +901,10 @@ class ASTAny extends ASTUniPrefixOp {
       if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
       Vec v = fr.anyVec();
       if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
-      if( v.min() != 0 || v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      if( v.isConst() )
+        if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
+      else
+        if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
       any = new AllTask().doAll(fr.anyVec()).any;
     }
     env.push(new ValStr(any?"TRUE":"FALSE"));
@@ -2157,6 +2164,60 @@ class ASTCumMax extends ASTUniPrefixOp {
     }
   }
 }
+
+class ASTUnique extends ASTUniPrefixOp {
+  @Override String opStr() { return "unique"; }
+  @Override ASTOp make() { return new ASTUnique(); }
+  public ASTUnique() { super(new String[]{"x"}); }
+
+  @Override public void apply(Env e) {
+    Frame f = e.popAry();
+    Vec v;
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( f.anyVec().isEnum() ) {
+      v = Vec.makeSeq(0, (long)f.anyVec().domain().length, true);
+      v.setDomain(f.anyVec().domain());
+      DKV.put(v);
+    } else {
+      UniqTask t = new UniqTask().doAll(f);
+      int nUniq = t._uniq.size();
+      final ASTGroupBy.G[] uniq = t._uniq.keySet().toArray(new ASTGroupBy.G[nUniq]);
+      v = Vec.makeZero(nUniq);
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          int start = (int) c.start();
+          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._ds[0]);
+        }
+      }.doAll(v);
+    }
+    e.pushAry(new Frame(v));
+  }
+
+  private static class UniqTask extends MRTask<UniqTask> {
+    IcedHashMap<ASTGroupBy.G, String> _uniq;
+    @Override public void map(Chunk[] c) {
+      _uniq=new IcedHashMap<>();
+      ASTGroupBy.G g = new ASTGroupBy.G(1);
+      for(int i=0;i<c[0]._len;++i) {
+        g.fill(i, c, new long[]{0});
+        String s_old=_uniq.putIfAbsent(g,"");
+        if( s_old==null ) g=new ASTGroupBy.G(1);
+      }
+    }
+    @Override public void reduce(UniqTask t) {
+      if( _uniq!=t._uniq ) {
+        IcedHashMap<ASTGroupBy.G,String> l = _uniq;
+        IcedHashMap<ASTGroupBy.G,String> r = t._uniq;
+        if( l.size() < r.size() ) { l=r; r = _uniq; }  // larger on the left
+        for( ASTGroupBy.G rg:r.keySet() ) l.putIfAbsent(rg,"");  // loop over smaller set
+        _uniq=l;
+        t._uniq=null;
+      }
+    }
+  }
+}
+
 
 class ASTKappa extends ASTUniPrefixOp {
 
@@ -4766,7 +4827,7 @@ class ASTSetTimeZone extends ASTOp {
   @Override void apply(Env e) {
     Set<String> idSet = DateTimeZone.getAvailableIDs();
     if(!idSet.contains(_tz))
-      throw new IllegalArgumentException("Unacceptable timezone name given.  For a list of acceptable names, use listTimezone().");
+      throw new IllegalArgumentException("Unacceptable timezone name given: "+_tz+".  For a list of acceptable names, use listTimezone().");
     new MRTask() {
       @Override public void setupLocal() { ParseTime.setTimezone(_tz); }
     }.doAllNodes();
