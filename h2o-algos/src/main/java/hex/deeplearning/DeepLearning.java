@@ -518,7 +518,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi = tspi - tspi % numRows;
         tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
         tspi = Math.max(1, tspi); //at least 1 point
-        model.tspiGuess = tspi;
 
         if (!mp._quiet_mode) {
           Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
@@ -534,6 +533,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         tspi = Math.max(1, Math.min(tspi, (long) (mp._epochs * numRows)));
       }
       assert(tspi != 0 && tspi != -1 && tspi != -2 && tspi >= 1);
+      model.tspiGuess = tspi;
       return tspi;
     }
 
