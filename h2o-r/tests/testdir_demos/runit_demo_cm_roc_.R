@@ -21,7 +21,7 @@ if (! exists("myIP")) {
 conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 #uploading data file to h2o
-air <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+air <- h2o.importFile(path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
@@ -44,7 +44,7 @@ print(air.glm)
 print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
-air.test <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+air.test <- h2o.importFile(path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 #predicting & performance on test file
 pred.gbm <- predict(air.gbm, air.test)

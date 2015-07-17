@@ -384,7 +384,8 @@ h2o.filterNACols <- function(data, frac=0.2) {
 h2o.table <- function(x, y = NULL) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2OFrame object")
-  .h2o.nary_frame_op("table", x, y)
+  if( is.null(y) ) .h2o.nary_frame_op("table", x)
+  else             .h2o.nary_frame_op("table", x, y)
 }
 
 #' H2O Median
