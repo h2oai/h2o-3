@@ -909,7 +909,7 @@ public class DRFTest extends TestUtil {
       DRF job = new DRF(parms);
       drf = job.trainModel().get();
 
-      ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._validation_metrics;
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._cross_validation_metrics;
       assertEquals(0.7276154565296726, mm.auc()._auc, 1e-8); // 1 node
       assertEquals(0.21211607823987555, mm.mse(), 1e-8);
       assertEquals(0.14939930970822446, mm.r2(), 1e-6);
@@ -991,8 +991,8 @@ public class DRFTest extends TestUtil {
       DRF job2 = new DRF(parms);
       drf2 = job2.trainModel().get();
 
-      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._validation_metrics;
-      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._validation_metrics;
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
       assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
@@ -1085,16 +1085,18 @@ public class DRFTest extends TestUtil {
       parms._response_column = "response";
       parms._min_rows = 2;
       parms._max_depth = 2;
-      parms._nfolds = 3;
+      parms._nfolds = 2;
       parms._ntrees = 3;
+      parms._seed = 11233;
 
       DRF job = new DRF(parms);
 
       try {
         Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
         drf = job.trainModel().get();
-        Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
-      } catch(H2OModelBuilderIllegalArgumentException e) {}
+      } catch(H2OModelBuilderIllegalArgumentException e) {
+        Assert.fail("Should not toss H2OModelBuilderIllegalArgumentException.");
+      }
 
       job.remove();
     } finally {
@@ -1136,8 +1138,8 @@ public class DRFTest extends TestUtil {
       DRF job2 = new DRF(parms);
       drf2 = job2.trainModel().get();
 
-      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._validation_metrics;
-      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._validation_metrics;
+      ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
+      ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
       assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);

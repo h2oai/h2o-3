@@ -126,14 +126,10 @@ class H2OFrame:
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
 
   def _upload_raw_data(self, tmp_file_path, column_names):
-    # file upload info is the normalized path to a local file
-    fui = {"file": os.path.abspath(tmp_file_path)}
-    # create a random name for the data
-    dest_key = _py_tmp_key()
-    # do the POST -- blocking, and "fast" (does not real data upload)
-    h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)
-    # actually parse the data and setup self._vecs
-    self._handle_text_key(dest_key)
+    fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
+    dest_key = _py_tmp_key()                                                  # create a random name for the data
+    h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
+    self._handle_text_key(dest_key)                                           # actually parse the data and setup self._vecs
 
   def __iter__(self):
     """
@@ -275,7 +271,7 @@ class H2OFrame:
     :param frac: Fraction of NAs in the column.
     :return: A  list of column indices.
     """
-    return H2OFrame(ExprNode("filterNACols"), self, frac)._frame()
+    return H2OFrame(expr=ExprNode("filterNACols", self, frac))._frame()
 
   def dim(self):
     """
@@ -285,14 +281,23 @@ class H2OFrame:
     """
     return [self.nrow(), self.ncol()]
 
-  def show(self): self.head(10,sys.maxint)  # all columns
+  def unique(self):
+    """
+    Extract the unique values in the column.
 
-  def head(self, rows=10, cols=200, **kwargs):
+    :return: A new H2OFrame of just the unique values in the column.
+    """
+    return H2OFrame(expr=ExprNode("unique", self))._frame()
+
+  def show(self): self.head(rows=10,cols=sys.maxint,show=True)  # all columns
+
+  def head(self, rows=10, cols=200, show=False, **kwargs):
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
+    :param show: Display the output.
     :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
@@ -302,11 +307,12 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
     head = self[0:10,0:ncols]
     res = head.as_data_frame(False)[1:]
-    print "First {} rows and first {} columns: ".format(nrows, ncols)
-    h2o.H2ODisplay(res,colnames)
+    if show:
+      print "First {} rows and first {} columns: ".format(nrows, ncols)
+      h2o.H2ODisplay(res,colnames)
     return head
 
-  def tail(self, rows=10, cols=200, **kwargs):
+  def tail(self, rows=10, cols=200, show=False, **kwargs):
     """
     Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
@@ -322,8 +328,9 @@ class H2OFrame:
     tail = self[start_idx:(start_idx+nrows),:]
     res = tail.as_data_frame(False)
     colnames = res.pop(0)
-    print "Last {} rows and first {} columns: ".format(nrows,ncols)
-    h2o.H2ODisplay(res,colnames)
+    if show:
+      print "Last {} rows and first {} columns: ".format(nrows,ncols)
+      h2o.H2ODisplay(res,colnames)
     return tail
 
   def levels(self, col=None):
@@ -529,6 +536,44 @@ class H2OFrame:
     cols = sorted(cols)
     return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
 
+  def structure(self):
+    """
+    Similar to R's str method: Compactly Display the Structure of this H2OFrame instance.
+
+    :return: None
+    """
+    df = self.head().as_data_frame(use_pandas=False)
+    nr = self.nrow()
+    nc = len(df[0])
+    cn = df.pop(0)
+    width = max([len(c) for c in cn])
+    isfactor = [c.isfactor() for c in self]
+    nlevels  = [self.nlevels(i) for i in range(nc)]
+    print df
+
+    # nc <- ncol(object)
+    # nr <- nrow(object)
+    # cc <- colnames(object)
+    # width <- max(nchar(cc))
+    # df <- as.data.frame(object[1L:10L,])
+    # isfactor <- as.data.frame(is.factor(object))[,1]
+    # num.levels <- as.data.frame(h2o.nlevels(object))[,1]
+    # lvls <- as.data.frame(h2o.levels(object))
+    # # header statement
+    # cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+    # l <- list()
+    # for( i in 1:nc ) {
+    #   cat("$ ", cc[i], rep(' ', width - max(stats::na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+    # first.10.rows <- df[,i]
+    # if( isfactor[i] ) {
+    # nl <- num.levels[i]
+    # lvls.print <- lvls[1L:min(nl,2L),i]
+    # cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
+    # cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
+    # } else
+    # cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+    # }
+    # }
 
   def as_data_frame(self, use_pandas=True):
     """
@@ -850,6 +895,7 @@ class H2OFrame:
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """
     Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR in computing bin width.
+
     :param breaks: breaks Can be one of the following: A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott." A
     single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width. Or,
     A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
@@ -917,6 +963,7 @@ class H2OFrame:
     Categorical Interaction Feature Creation in H2O.
     Creates a frame in H2O with n-th order interaction features between categorical columns, as specified by
     the user.
+
     :param factors: factors Factor columns (either indices or column names).
     :param pairwise: Whether to create pairwise interactions between factors (otherwise create one
     higher-order interaction). Only applicable if there are 3 or more factors.
@@ -1105,23 +1152,13 @@ class H2OFrame:
     else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
 
   def _update(self):
-    # get ncols,nrows,names and exclude everything else
-    # frames_ex = ["row_offset", "row_count", "checksum", "default_percentiles", "compatible_models",
-    #              "vec_ids","chunk_summary","distribution_summary"]
-    # columns_ex = ["missing_count", "zero_count", "positive_infinity_count", "negative_infinity_count",
-    #               "mins", "maxs", "mean", "sigma", "type", "domain", "data", "string_data",
-    #               "precision", "histogram_bins", "histogram_base", "histogram_stride", "percentiles"]
-    #
-    # frames_ex = "frames/" + ",frames/".join(frames_ex)
-    # columns_ex = "frames/columns/" + ",frames/columns/".join(columns_ex)
-    # exclude="?_exclude_fields={},{}".format(frames_ex,columns_ex)
     res = h2o.frame(self._id)["frames"][0]  # TODO: exclude here?
     self._nrows = res["rows"]
     self._ncols = len(res["columns"])
     self._col_names = [c["label"] for c in res["columns"]]
     self._computed=True
     self._ast=None
-    #### DO NOT ADD METHODS HERE!!! ####
+  #### DO NOT ADD METHODS HERE!!! ####
 
 # private static methods
 
@@ -1145,11 +1182,9 @@ def _check_lists_of_lists(python_obj):
 
 def _handle_python_lists(python_obj):
   cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
-  # do we have a list of lists: [[...], ..., [...]] ?
-  lol = _is_list_of_lists(python_obj)
+  lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
   if lol:
-    # must be a list of flat lists, raise ValueError if not
-    _check_lists_of_lists(python_obj)
+    _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
     # have list of lists, each list is a row
     # length of the longest list is the number of columns
     cols = max([len(l) for l in python_obj])
@@ -1166,15 +1201,12 @@ def _handle_numpy_array(python_obj):       return _handle_python_lists(python_ob
 def _handle_pandas_data_frame(python_obj): return _handle_numpy_array(python_obj=python_obj.as_matrix())
 def _handle_python_dicts(python_obj):
   header = python_obj.keys()
-  # is this a valid header?
-  is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
+  is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
   if not is_valid:
     raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
-  # check that each value entry is a flat list/tuple
-  for k in python_obj:
+  for k in python_obj:  # check that each value entry is a flat list/tuple
     v = python_obj[k]
-    # if value is a tuple/list, then it must be flat
-    if isinstance(v, (tuple, list)):
+    if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
       if _is_list_of_lists(v):
         raise ValueError("Values in the dictionary must be flattened!")
 

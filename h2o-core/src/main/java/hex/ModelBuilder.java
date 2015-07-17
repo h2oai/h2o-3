@@ -7,11 +7,8 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MRUtils;
+import water.util.*;
 import static water.util.RandomUtils.getRNG;
-import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -28,7 +25,7 @@ import java.util.Random;
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
 
   /** All the parameters required to build the model. */
-  public final P _parms;
+  public P _parms;
   private P parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
@@ -224,10 +221,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public Job<M> computeCrossValidation() {
-    assert _valid == null;
-    final Key<Frame> origTrainFrameKey = _parms._train;
     final Frame origTrainFrame = train();
-    final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
 
     // Step 1: Assign each row to a fold
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
@@ -253,6 +247,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final long actualSeed = seed;
       Log.info("Creating " + N + " cross-validation splits with random number seed: " + actualSeed);
       foldAssignment = origTrainFrame.anyVec().makeZero();
+      final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
       new MRTask() {
         @Override
         public void map(Chunk foldAssignment) {
@@ -277,7 +272,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Key[] modelKeys = new Key[N];
 
     // Step 2: Make 2*N binary weight vectors
-
     final String origWeightsName = _parms._weights_column;
     final Vec[] weights = new Vec[2*N];
     final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
@@ -326,60 +320,57 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final String weightName = "weights";
 
       // Training/Validation share the same data, but will have exclusive weights
-      final Frame cvTrain = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      final Frame cvTrain = new Frame(Key.make(identifier+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
       cvTrain.add(weightName, weights[2*i]);
       DKV.put(cvTrain);
-      final Frame cvVal = new Frame(Key.make(identifier+"_"+origTrainFrameKey.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      final Frame cvVal = new Frame(Key.make(identifier+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
       cvVal.add(weightName, weights[2*i+1]);
       DKV.put(cvVal);
 
       modelKeys[i] = Key.make(identifier);
 
-      _dest = modelKeys[i];
-      _parms._weights_column = weightName;
-      _parms._train = cvTrain._key;
-      _parms._valid = cvVal._key;
-      _state = JobState.CREATED;
-      modifyParmsForCrossValidationSplits(i, N);
+      // Build CV model - launch a separate Job
+      Model m;
+      {
+        ModelBuilder<M, P, O> cvModel = (ModelBuilder<M, P, O>) this.clone();
+        cvModel._dest = modelKeys[i];
+        cvModel._key = Key.make(_key.toString() + "_cv" + i);
+        cvModel._state = JobState.CREATED;
+        cvModel._description = identifier;
 
-      Job<M> cvModel = trainModelImpl(-1);
-      Model m = cvModel.get();
+        // Fix up some parameters
+        cvModel._parms = (P)_parms.clone();
+        cvModel._parms._weights_column = weightName;
+        cvModel._parms._train = cvTrain._key;
+        cvModel._parms._valid = cvVal._key;
+        cvModel.modifyParmsForCrossValidationSplits(i, N);
 
-      Frame adaptFr = new Frame(cvVal);
-      m.adaptTestForTrain(adaptFr, true, !isSupervised());
-      mb[i] = m.scoreMetrics(adaptFr);
-
-      if (!_parms._keep_cross_validation_splits) {
-        weights[2*i].remove();
-        weights[2*i+1].remove();
-        DKV.remove(cvTrain._key);
-        DKV.remove(cvVal._key);
-        if (origWeightsName == null) origWeight.remove();
+        cvModel.trainModelImpl(-1);
+        m = cvModel.get();
+        cvModel.remove(); //keep the cv jobs around
       }
-      Model.cleanup_adapt(adaptFr, cvVal);
-      DKV.remove(adaptFr._key);
-      cvModel.remove();
 
-//      new TAtomic<JobList>() {
-//        @Override public JobList atomic(JobList old) {
-//          if( old == null ) old = new JobList();
-//          Key[] jobs = old._jobs;
-//          old._jobs = Arrays.copyOf(jobs, jobs.length - 1);
-//          return old;
-//        }
-//      }.invoke(LIST);
+      // holdout scoring
+      {
+        Frame adaptFr = new Frame(cvVal);
+        m.adaptTestForTrain(adaptFr, true, !isSupervised());
+        mb[i] = m.scoreMetrics(adaptFr);
+
+        if (!_parms._keep_cross_validation_splits) {
+          weights[2 * i].remove();
+          weights[2 * i + 1].remove();
+          DKV.remove(cvTrain._key);
+          DKV.remove(cvVal._key);
+          if (origWeightsName == null) origWeight.remove();
+        }
+        Model.cleanup_adapt(adaptFr, cvVal);
+        DKV.remove(adaptFr._key);
+      }
     }
 
     Log.info("Building main model.");
-    _dest = origDest;
-    _parms._weights_column = origWeightsName;
-    _parms._train = origTrainFrameKey;
     _state = JobState.CREATED;
     _deleteProgressKey = true; //delete progress after the main model is done
-    _parms._valid = null; //(cross-)validation metrics get stitched together below
-    if (_parms._fold_column == null) {
-      _parms._nfolds = N; //let the main model know that it is built with cross-validation (no early stopping, etc.)
-    }
     modifyParmsForCrossValidationMainModel(N);
 
     Job<M> main = trainModelImpl(-1);
@@ -395,13 +386,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 //    }.invoke(LIST);
 
     Log.info("Computing " + N + "-fold cross-validation metrics.");
-    mainModel._output._crossValidationModels = new Key[N];
+    mainModel._output._cross_validation_models = new Key[N];
     for (int i=0; i<N; ++i) {
       if (i>0) mb[0].reduce(mb[i]);
-      mainModel._output._crossValidationModels[i] = modelKeys[i];
+      mainModel._output._cross_validation_models[i] = modelKeys[i];
     }
-    mainModel._output._validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
-    mainModel._output._validation_metrics._description = N + "-fold cross-validation on training data";
+    mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
+    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
     DKV.put(mainModel);
     return main;
   }
@@ -733,9 +724,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
-      }
-      if (_parms._nfolds > 1) {
-        error("_nfolds", "nfolds > 1 is not supported if a validation dataset is provided.");
       }
     } else {
       _valid = null;

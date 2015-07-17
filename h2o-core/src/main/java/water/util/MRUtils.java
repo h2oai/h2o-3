@@ -163,8 +163,12 @@ public class MRUtils {
 
     // given these sampling ratios, and the original class distribution, this is the expected number of resulting rows
     float numrows = 0;
-    for (int i=0; i<sampling_ratios.length; ++i)
+    for (int i=0; i<sampling_ratios.length; ++i) {
       numrows += sampling_ratios[i] * dist[i];
+    }
+    if (Float.isNaN(numrows)) {
+      throw new IllegalArgumentException("Error during sampling - too few points?");
+    }
 
     final long actualnumrows = Math.min(maxrows, Math.round(numrows)); //cap #rows at maxrows
     assert(actualnumrows >= 0); //can have no matching rows in case of sparse data where we had to fill in a makeZero() vector
