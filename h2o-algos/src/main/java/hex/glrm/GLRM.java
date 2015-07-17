@@ -19,10 +19,7 @@ import hex.svd.SVD;
 import hex.svd.SVDModel;
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -616,6 +613,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncolX;         // Number of cols in X (k)
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final int _weightId;
 
     // Output
     double _loss;    // Loss evaluated on A - XY using new X (and current Y)
@@ -633,6 +631,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // dinfo contains [A,X,W], but we only use its info on A (cols 1 to ncolA)
       assert dinfo._cats <= ncolA;
       _dinfo = dinfo;
+      _weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
       _normSub = normSub;
       _normMul = normMul;
     }
@@ -640,12 +639,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
+      Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
       Random rand = RandomUtils.getRNG(_parms._seed + cs[0].start());
       _loss = _xreg = 0;
 
       for(int row = 0; row < cs[0]._len; row++) {
         double[] grad = new double[_ncolX];
         double[] xnew = new double[_ncolX];
+
+        // Additional user-specified weight on loss for this row
+        double cweight = chkweight.atd(row);
+        assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
 
         // Copy old working copy of X to current X if requested
         if(_update) {
@@ -673,7 +677,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double[][] ytsub = yt_block(_yt,j,_dinfo);
           for(int k = 0; k < _ncolX; k++) {
             for(int c = 0; c < weight.length; c++)
-              grad[k] += weight[c] * ytsub[c][k];
+              grad[k] += cweight * weight[c] * ytsub[c][k];
           }
         }
 
@@ -690,7 +694,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xold(cs,k,_ncolA).atd(row) * _yt[yidx][k];
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
+          double weight = cweight * _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             grad[k] += weight * _yt[yidx][k];
         }
@@ -724,6 +728,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double xy = ArrayUtils.innerProduct(xnew, _yt[idx_ynum(js,_dinfo)]);
           _loss += _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
         }
+        _loss *= cweight;
       }
     }
 
@@ -743,6 +748,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncolX;         // Number of cols in X (k)
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final int _weightId;
 
     // Output
     double[][] _ytnew;  // New Y matrix
@@ -761,6 +767,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // dinfo contains [A,X,W], but we only use its info on A (cols 1 to ncolA)
       assert dinfo._cats <= ncolA;
       _dinfo = dinfo;
+      _weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
       _normSub = normSub;
       _normMul = normMul;
     }
@@ -768,6 +775,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       _ytnew = new double[_ytold.length][_ncolX];
+      Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
 
       // Categorical columns
       for(int j = 0; j < _dinfo._cats; j++) {
@@ -775,6 +783,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for(int row = 0; row < cs[0]._len; row++) {
           double a = cs[j].atd(row);
           if(Double.isNaN(a)) continue;   // Skip missing observations in column
+          double cweight = chkweight.atd(row);
+          assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
           // double[] xy = new double[_dinfo._catLvls[j].length];
@@ -786,10 +796,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
 
           // Gradient for level p is x_i weighted by \grad_p L_{i,j}(x_i * Y_j, A_{i,j})
-          double[] weight = _parms.mlgrad(xy, (int)a);
+          double[] weight = _parms.mlgrad(xy, (int) a);
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++)
-              _ytnew[idx_ycat(j,level,_dinfo)][k] += weight[level] * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
+              _ytnew[idx_ycat(j,level,_dinfo)][k] += cweight * weight[level] * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
           }
         }
       }
@@ -804,13 +814,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double a = cs[j].atd(row);
           if(Double.isNaN(a)) continue;   // Skip missing observations in column
 
+          // Additional user-specified weight on loss for this row
+          double cweight = chkweight.atd(row);
+          assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
+
           // Inner product x_i * y_j
           double xy = 0;
           for(int k = 0; k < _ncolX; k++)
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold[yidx][k];
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = _parms.lgrad(xy, (a - _normSub[js]) * _normMul[js]);
+          double weight = cweight * _parms.lgrad(xy, (a - _normSub[js]) * _normMul[js]);
           for(int k = 0; k < _ncolX; k++)
             _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
         }
@@ -850,6 +864,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncolX;         // Number of cols in X (k)
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final int _weightId;
     final boolean _regX;      // Should I calculate regularization of (old) X matrix?
 
     // Output
@@ -870,14 +885,20 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       assert dinfo._cats <= ncolA;
       _dinfo = dinfo;
+      _weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
       _normSub = normSub;
       _normMul = normMul;
     }
 
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
+      Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
 
       for(int row = 0; row < cs[0]._len; row++) {
+        // Additional user-specified weight on loss for this row
+        double cweight = chkweight.atd(row);
+        assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
+
         // Categorical columns
         for(int j = 0; j < _dinfo._cats; j++) {
           double a = cs[j].atd(row);
@@ -906,6 +927,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt[idx_ynum(js,_dinfo)][k];
           _loss += _parms.loss(xy, (a - _normSub[js]) * _normMul[js]);
         }
+        _loss *= cweight;
 
         // Calculate regularization term for old X if requested
         if(_regX) {
