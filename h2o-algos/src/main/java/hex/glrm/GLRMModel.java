@@ -46,8 +46,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       L2, L1, NonNegative, OneSparse, UnitOneSparse
     }
 
-    public final boolean hasClosedForm() {
-      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
+    public final boolean hasClosedForm(DataInfo tinfo) {
+      long na_cnt = 0;
+      Vec[] vecs = tinfo._adaptedFrame.vecs();
+      for(int i = 0; i < vecs.length; i++)
+        na_cnt += vecs[i].naCnt();
+
+      return (na_cnt == 0 && _loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
               && (_gamma_y == 0 || _regularization_y == GLRMParameters.Regularizer.L2));
     }
 

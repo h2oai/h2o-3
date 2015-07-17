@@ -264,7 +264,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
-          if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm())
+          if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm(tinfo))
             initialXKmeans(dinfo, km);
         } finally {
           if (job != null) job.remove();
@@ -459,7 +459,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Use closed form solution for X if L2 loss and regularization
         double[][] yt = initialXY(tinfo, dinfo);
         yt = ArrayUtils.transpose(yt);
-        if (na_cnt == 0 && _parms.hasClosedForm())
+        if (_parms.hasClosedForm(tinfo))
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
