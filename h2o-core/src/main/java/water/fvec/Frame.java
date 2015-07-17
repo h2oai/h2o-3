@@ -1115,8 +1115,18 @@ public class Frame extends Lockable<Frame> {
    * @return The fresh copy of fr.
    */
   public Frame deepCopy(String keyName) {
-    DoCopyFrame t = new DoCopyFrame(this.vecs()).doAll(this);
-    return keyName==null ? new Frame(names(),t._vecs) : new Frame(Key.make(keyName),names(),t._vecs);
+    return new MRTask() {
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        for(int col=0;col<cs.length;++col)
+          for(int row=0;row<cs[0]._len;++row) {
+            if( cs[col].isNA(row) ) ncs[col].addNA();
+            else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
+            else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
+            else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
+            else ncs[col].addNum(cs[col].atd(row));
+          }
+      }
+    }.doAll(this.numCols(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
   }
 
   // _vecs put into kv store already
