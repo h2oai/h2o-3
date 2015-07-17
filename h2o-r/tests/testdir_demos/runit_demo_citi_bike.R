@@ -88,7 +88,7 @@ split_fit_predict <- function(data) {
                  learn_rate        = 0.1)
   
   # Run DRF
-  drf <- h2o.randomForest(x = myX, build_tree_one_node = T,
+  drf <- h2o.randomForest(x = myX,
                           y = myY,
                           training_frame    = train,
                           validation_frame  = test,
