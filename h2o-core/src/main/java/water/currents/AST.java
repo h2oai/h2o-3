@@ -126,6 +126,7 @@ abstract public class AST extends Iced {
     init(new ASTRowSlice());
     init(new ASTRunif());
     init(new ASTTmpAssign());
+    init(new ASTMerge());
 
     // Functional data mungers
     init(new ASTApply());
