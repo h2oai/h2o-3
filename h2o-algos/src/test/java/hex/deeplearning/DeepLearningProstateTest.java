@@ -112,7 +112,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                         0,
                                         2,
                                 }) {
-                                  if (n_folds != 0 && vf != 0) continue;
                                   for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
                                     for (boolean overwrite_with_best_model : new boolean[]{false, true}) {
                                       for (int train_samples_per_iteration : new int[]{
@@ -200,8 +199,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
 
                                             if (n_folds != 0) {
-                                              assert(model1._output._validation_metrics != null);
+                                              assert(model1._output._cross_validation_metrics != null);
+                                            } else {
+                                              assert(model1._output._cross_validation_metrics == null);
                                             }
+
                                           }
 
                                           assert(model1.model_info().get_params()._l1 == 0);
