@@ -975,7 +975,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             int iter1 = 0;
 
             // coordinate descent loop
-            while (iter1++ < 100) {
+            while (iter1++ < 200) {
               Frame fr2 = new Frame();
               fr2.add("w", w);
               fr2.add("z", z);
@@ -1025,13 +1025,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     beta[i+_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
                             / (denums[i+_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                    }
-                    else if (i == 0 && !intercept){ // previous one is the last categorical variable
+                else if (i == 0 && !intercept){ // previous one is the last categorical variable
                     int prev_level_num = _activeData.numStart()-_activeData._catOffsets[_activeData._cats-1];
                     fr3.add("xjm1", _activeData._adaptedFrame.vec(_activeData._cats-1)); // add previous categorical variable
-                    stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] {betaold[ _activeData.numStart()+ i]},
+                    stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] {betaold[ _activeData.numStart()]},
                             Arrays.copyOfRange(beta,_activeData._catOffsets[_activeData._cats-1],_activeData.numStart() ), null, _activeData._catLvls[_activeData._cats-1]).doAll(fr3);
-                    beta[i+_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
-                            / (denums[i+_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                    beta[_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                            / (denums[_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                   }
               }
 
@@ -1058,10 +1058,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
             double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false);
 
+            _taskInfo._beta = beta;
+            System.out.println("iter1 = " + iter1);
             if (linf < _parms._beta_epsilon)
               break;
-
-            _taskInfo._beta = beta;
 
           }
           System.out.println("iter2 = " + iter2);
@@ -1290,9 +1290,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       assert _rowFilter != null;
       _start_time = System.currentTimeMillis();
 
-      if(Math.abs(_parms._lambda[_lambdaId] - 0.030035459652215782) <0.001)
+      if(Math.abs(_parms._lambda[_lambdaId] - 0.030035459652215813) < 0.001)
         System.out.println();
-
+     // _taskInfo._allIn = true;
       int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1], _taskInfo._ginfo._gradient);
       _taskInfo._activeCols = activeCols;
       _activeData = _dinfo.filterExpandedColumns(activeCols);

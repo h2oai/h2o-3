@@ -948,6 +948,7 @@ public abstract class GLMTask  {
           active_level = (int) xChunk.at8(i); // only need to change one temp value per observation.
           if (_catLvls_old != null)  // some levels are ignored?
             active_level = Arrays.binarySearch(_catLvls_old, active_level);
+
           active_level_p = (int) xpChunk.at8(i); // both cat
           if (_catLvls_new != null)  // some levels are ignored?
             active_level_p = Arrays.binarySearch(_catLvls_new, active_level_p);
@@ -978,12 +979,8 @@ public abstract class GLMTask  {
             ztildaChunk.set(i, ztildaChunk.atd(i) - betaold + valp * betanew); //
             _temp[0] += wChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
           } else {
-           // if (_interceptold) // beta_1
               ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
-           // else // any other beta_k
-           //   ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
-
-            if(active_level >=0 )
+           if(active_level >=0 ) // if the active level for that observation is an "inactive column" don't want to add contribution to temp for that observation.
             _temp[active_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
            }
 
