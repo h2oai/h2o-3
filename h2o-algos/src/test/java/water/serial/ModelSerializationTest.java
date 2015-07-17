@@ -38,7 +38,7 @@ public class ModelSerializationTest extends TestUtil {
   @Test public void testSimpleModel() throws IOException {
     // Create a model
     BlahModel.BlahParameters params = new BlahModel.BlahParameters();
-    BlahModel.BlahOutput output = new BlahModel.BlahOutput(false, false);
+    BlahModel.BlahOutput output = new BlahModel.BlahOutput(false, false, false);
 
     Model model = new BlahModel(Key.make("BLAHModel"), params, output);
     DKV.put(model._key, model);
@@ -205,8 +205,8 @@ public class ModelSerializationTest extends TestUtil {
 
     static class BlahOutput extends Model.Output {
 
-      public BlahOutput(boolean hasWeights, boolean hasOffset) {
-        super(hasWeights, hasOffset);
+      public BlahOutput(boolean hasWeights, boolean hasOffset, boolean hasFold) {
+        super(hasWeights, hasOffset, hasFold);
       }
     }
   }

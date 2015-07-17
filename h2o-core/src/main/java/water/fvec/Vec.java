@@ -520,6 +520,19 @@ public class Vec extends Keyed<Vec> {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
+  /** Make a new vector initialized to increasing integers, starting with `min`.
+   *  @return A new vector initialized to increasing integers, starting with `min`.
+   */
+  public static Vec makeSeq(final long min, long len, boolean redistribute) {
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs)
+          for (int r = 0; r < c._len; r++)
+            c.set(r, r + min + c._start);
+      }
+    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
+  }
+
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
    *  @return A new vector initialized to increasing integers mod {@code repeat}.
    */

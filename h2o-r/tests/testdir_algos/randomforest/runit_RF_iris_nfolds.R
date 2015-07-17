@@ -7,9 +7,9 @@ test.RF.nfolds <- function(conn) {
     print(iris.nfolds)
 
     # Can't specify both nfolds >= 2 and validtaion at same time
-    expect_error(h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
-                                  ntrees = 50, nfolds = 5,
-                                  validation_frame = iris.hex))
+    iris.valid.nfolds <- h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
+                                  ntrees = 50, nfolds = 5, validation_frame = iris.hex)
+    print(iris.valid.nfolds)
     testEnd()
 }
 

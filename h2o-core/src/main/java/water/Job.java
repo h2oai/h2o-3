@@ -281,7 +281,7 @@ public class Job<T extends Keyed> extends Keyed {
     return p==null ? "" : p.progress_msg();
   }
 
-  protected Key _progressKey; //Key to store the Progress object under
+  protected Key<Progress> _progressKey; //Key to store the Progress object under
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
   /** Report new work done for this job */
@@ -293,7 +293,12 @@ public class Job<T extends Keyed> extends Keyed {
   /**
    * Helper class to store the job progress in the DKV
    */
-  public static class Progress extends Iced { // TODO: shouldn't this be a Keyed? And keys for it be Key<Progress> ?
+  public static class Progress extends Keyed<Progress> {
+    @Override
+    protected long checksum_impl() {
+      return 2134340823432L*_work + 9023742947234L*_worked+(long)(12343242340234L*_fraction_done)+_progress_msg.hashCode();
+    }
+
     // Progress methodology 1:  Specify total work up front and periodically tell when new units of work complete.
     private final long _work;
     private long _worked;
