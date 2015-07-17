@@ -39,7 +39,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     // Importance of principal components
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
-    public TwoDimTable _pc_importance;
+    public TwoDimTable _importance;
 
     // Number of categorical and numeric columns
     public int _ncats;

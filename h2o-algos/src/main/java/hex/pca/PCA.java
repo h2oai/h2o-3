@@ -125,10 +125,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         prop_var[i] = vars[i] / pca._output._total_variance;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
       }
-      pca._output._pc_importance = new TwoDimTable("Importance of components", null,
+      pca._output._importance = new TwoDimTable("Importance of components", null,
               new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][]{pca._output._std_deviation, prop_var, cum_var});
-      pca._output._model_summary = pca._output._pc_importance;
+      pca._output._model_summary = pca._output._importance;
     }
 
     protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {

@@ -38,7 +38,7 @@ print(paste("Imported n =", n, "rows"))
 heading("Running PCA on BigCross.data")
 cross.pca = h2o.prcomp(training_frame = cross.hex, k = 25, max_iterations = 1000)
 print(cross.pca@model$eigenvectors)
-print(cross.pca@model$pc_importance)
+print(cross.pca@model$importance)
 
 PASS_BANNER()
 

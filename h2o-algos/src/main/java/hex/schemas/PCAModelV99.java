@@ -7,7 +7,7 @@ public class PCAModelV99 extends ModelSchema<PCAModel, PCAModelV99, PCAModel.PCA
   public static final class PCAModelOutputV99 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV99> {
     // Output fields; input fields are in the parameters list
     @API(help = "Standard deviation and importance of each principal component")
-    public TwoDimTableBase pc_importance;
+    public TwoDimTableBase importance;
 
     @API(help = "Principal components matrix")
     public TwoDimTableBase eigenvectors;

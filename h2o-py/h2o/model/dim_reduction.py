@@ -26,7 +26,7 @@ class H2ODimReductionModel(ModelBase):
             print "matplotlib is required for this function!"
             return
 
-        variances = [s**2 for s in self._model_json['output']['pc_importance'].cell_values[0][1:]]
+        variances = [s**2 for s in self._model_json['output']['importance'].cell_values[0][1:]]
         plt.xlabel('Components')
         plt.ylabel('Variances')
         plt.title('Scree Plot')
