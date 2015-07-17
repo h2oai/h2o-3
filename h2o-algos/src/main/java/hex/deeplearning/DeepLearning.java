@@ -485,7 +485,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
 
         final long model_size = model.model_info().size();
-        int[] msg_sizes = new int[]{ (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
+        int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
         double[] microseconds_collective = new double[msg_sizes.length];
         NetworkTest.NetworkTester nt = new NetworkTest.NetworkTester(msg_sizes,null,microseconds_collective,model_size>1e6 ? 1 : 5 /*repeats*/,false,true /*only collectives*/);
         nt.compute2();
@@ -502,10 +502,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
 
         // target fraction of comm vs cpu time: 5%
-        double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : 0.05; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
+        double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : mp._target_ratio_comm_to_comp; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
 
         // estimate the time for communication (network) and training (compute)
-        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[0];
+        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[1];
         double time_per_row_us  = flops_overhead_per_row * model_size / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
 
         // compute the optimal number of training rows per iteration
@@ -518,6 +518,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi = tspi - tspi % numRows;
         tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
         tspi = Math.max(1, tspi); //at least 1 point
+        model.tspiGuess = tspi;
 
         if (!mp._quiet_mode) {
           Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
