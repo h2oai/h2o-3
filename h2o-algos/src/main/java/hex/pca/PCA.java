@@ -83,9 +83,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    // if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
-    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
-      _parms._loading_name = "PCALoading_" + Key.rand();
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
@@ -136,7 +133,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {
       // Fill PCA model with additional info needed for scoring
-      if(_parms._keep_loading) pca._output._loading_key = svd._output._u_key;
       pca._output._normSub = svd._output._normSub;
       pca._output._normMul = svd._output._normMul;
       pca._output._permutation = svd._output._permutation;
@@ -208,8 +204,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     // Main worker thread
     @Override protected void compute2() {
       PCAModel model = null;
-      DataInfo dinfo = null, xinfo = null;
-      Frame x = null;
+      DataInfo dinfo = null;
 
       try {
         init(true);   // Initialize parameters
@@ -256,8 +251,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Calculate standard deviation and projection as well
           parms._only_v = false;
-          parms._u_name = _parms._loading_name;
-          parms._keep_u = _parms._keep_loading;
+          parms._keep_u = false;
 
           SVDModel svd = null;
           SVD job = null;
@@ -339,8 +333,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         _parms.read_unlock_frames(PCA.this);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
-        if (xinfo != null) xinfo.remove();
-        if (x != null && !_parms._keep_loading) x.delete();
       }
       tryComplete();
     }

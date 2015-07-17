@@ -39,7 +39,6 @@ heading("Running PCA on BigCross.data")
 cross.pca = h2o.prcomp(training_frame = cross.hex, k = 25, max_iterations = 1000)
 print(cross.pca@model$eigenvectors)
 print(cross.pca@model$pc_importance)
-h2o.rm(cross.pca@model$loading_key$name)   # Remove loading matrix to free memory
 
 PASS_BANNER()
 

@@ -71,11 +71,7 @@ public class PCATest extends TestUtil {
           t.printStackTrace();
           throw new RuntimeException(t);
         } finally {
-          if( model != null ) {
-            if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-              model._output._loading_key.get().delete();
-            model.delete();
-          }
+          if( model != null ) model.delete();
         }
       }
     } finally {
@@ -127,11 +123,7 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -183,11 +175,7 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -235,11 +223,7 @@ public class PCATest extends TestUtil {
       if( fr2 != null ) fr2.delete();
       if( tr  != null ) tr .delete();
       if( te  != null ) te .delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 

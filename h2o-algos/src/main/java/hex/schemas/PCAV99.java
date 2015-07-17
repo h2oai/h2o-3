@@ -21,7 +21,6 @@ public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV9
 				"k",
 				"max_iterations",
 				"seed",
-				"loading_name",
 				"use_all_factor_levels",
                 "compute_metrics"
             };
@@ -40,9 +39,6 @@ public class PCAV99 extends ModelBuilderSchema<PCA,PCAV99,PCAV99.PCAParametersV9
 
     @API(help = "RNG seed for initialization", direction = API.Direction.INOUT)
     public long seed;
-
-    @API(help = "Frame key to save left singular vectors from SVD", direction = API.Direction.INPUT)
-    public String loading_name;
 
     @API(help = "Whether first factor level is included in each categorical expansion", direction = API.Direction.INOUT)
     public boolean use_all_factor_levels;
