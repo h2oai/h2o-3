@@ -2,11 +2,10 @@ package water.rapids;
 
 import water.*;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
+import water.util.IcedHashMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
 
 
 /** plyr's ddply: GroupBy by any other name.
@@ -157,20 +156,20 @@ public class ASTddply extends ASTOp {
   // Group description: unpacked selected double columns
   public static class Group extends ASTGroupBy.G {
     public Group() { super(); }
-    public Group(int len) { super(len); a=new IcedHMIntS<>(); }
+    public Group(int len) { super(len); a=new IcedHashMap<>(); }
     public Group( double ds[] ) { super(ds); }
 
-    IcedHMIntS<Integer,String> a;
+    IcedHashMap<Integer,String> a;
   }
 
 
   private static class Pass1A extends MRTask<Pass1A> {
     private final long _gbCols[];
-    IcedHM<Group,String> _grps;
+    IcedHashMap<Group,String> _grps;
     Pass1A(long[] cols) { _gbCols=cols; }
     @Override public void setupLocal() { }
     @Override public void map(Chunk[] c) {
-      _grps = new IcedHM<>();
+      _grps = new IcedHashMap<>();
       Group g = new Group(_gbCols.length);
       Group gOld;
       int start = (int)c[0].start();
@@ -189,8 +188,8 @@ public class ASTddply extends ASTOp {
     }
     @Override public void reduce(Pass1A t) {
       if( _grps!= t._grps ) {
-        IcedHM<Group,String> l = _grps;
-        IcedHM<Group,String> r = t._grps;
+        IcedHashMap<Group,String> l = _grps;
+        IcedHashMap<Group,String> r = t._grps;
         if( l.size() < r.size() ) { l=r; r=_grps; }
         for( Group rg: r.keySet() ) {
           if( l.containsKey(rg) ) {  // try to add it to the set on the left.. if left already has it, then combine
@@ -375,65 +374,6 @@ public class ASTddply extends ASTOp {
       }
       groupFrame.delete();
       tryComplete();
-    }
-  }
-
-  // custom serializer for <Group,String> pairs
-  private static class IcedHM<G extends Iced,S extends String> extends Iced {
-    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
-    IcedHM() { _m = new NonBlockingHashMap<>(); }
-    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
-    void put(G g, S i) { _m.put(g,i);}
-    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
-    boolean containsKey(G k) { return _m.containsKey(k); }
-    Set<G> keySet() { return _m.keySet(); }
-    int size() { return _m.size(); }
-    String get(G g) { return _m.get(g); }
-    G getk(G g) { return _m.getk(g); }
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      if( _m==null || _m.size()==0 ) return ab.put4(0);
-      else {
-        ab.put4(_m.size());
-        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
-      }
-      return ab;
-    }
-    @Override public IcedHM read_impl(AutoBuffer ab) {
-      int mLen;
-      if( (mLen=ab.get4())!=0 ) {
-        _m = new NonBlockingHashMap<>();
-        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
-      }
-      return this;
-    }
-  }
-
-  // custom serializer for <Integer,String> pairs
-  private static class IcedHMIntS<I extends Integer,S extends String> extends Iced {
-    private NonBlockingHashMap<Integer,String> _m; // the nbhm to (de)ser
-    IcedHMIntS() { _m = new NonBlockingHashMap<>(); }
-    String putIfAbsent(I k, S v) { return _m.putIfAbsent(k,v);}
-    void put(I g, S i) { _m.put(g,i);}
-    void putAll(IcedHMIntS<I,S> m) {_m.putAll(m._m);}
-    Set<Integer> keySet() { return _m.keySet(); }
-    int size() { return _m.size(); }
-    String get(I g) { return _m.get(g); }
-    Integer getk(I g) { return _m.getk(g); }
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      if( _m==null || _m.size()==0 ) return ab.put4(0);
-      else {
-        ab.put4(_m.size());
-        for(Integer g:_m.keySet()) { ab.put4(g); ab.putStr(_m.get(g)); }
-      }
-      return ab;
-    }
-    @Override public IcedHMIntS read_impl(AutoBuffer ab) {
-      int mLen;
-      if( (mLen=ab.get4())!=0 ) {
-        _m = new NonBlockingHashMap<>();
-        for( int i=0;i<mLen;++i ) _m.put(ab.get4(), ab.getStr());
-      }
-      return this;
     }
   }
 }
