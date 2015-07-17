@@ -6,7 +6,6 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.eclipse.jetty.util.Jetty;
 import org.reflections.Reflections;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
@@ -21,6 +20,9 @@ import water.util.PrettyPrint;
 import water.util.OSUtils;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -31,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
+import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -422,6 +425,7 @@ final public class H2O {
   //Google analytics performance measurement
   public static GoogleAnalytics GA;
   public static int CLIENT_TYPE_GA_CUST_DIM = 1;
+  public static int CLIENT_ID_GA_CUST_DIM = 2;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -1508,6 +1512,18 @@ final public class H2O {
     } else {
       try {
         GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
+        DefaultRequest defReq = GA.getDefaultRequest();
+        try {
+          String bakedGaId;
+          BufferedReader index = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream("gaid")));
+          while ((bakedGaId = index.readLine()) != null) {
+            if (!(bakedGaId.equals("index") || bakedGaId.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))) {
+              defReq.clientId(bakedGaId);
+            }
+          }
+        } catch (IOException ignore) {}
+        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
+        GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
         Log.POST(11, t.toString());
         StackTraceElement[] stes = t.getStackTrace();
