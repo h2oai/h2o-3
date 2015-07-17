@@ -192,7 +192,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Initialize Y and X matrices
     // tinfo = original training data A, dinfo = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, DataInfo dinfo) {
+    private double[][] initialXY(DataInfo tinfo, DataInfo dinfo, long na_cnt) {
       double[][] centers, centers_exp = null;
 
       if (null != _parms._user_points) { // User-specified starting points
@@ -264,7 +264,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
-          if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm(tinfo))
+          if(frob != 0 && !Double.isNaN(frob) && na_cnt == 0 && !_parms.hasClosedForm())
             initialXKmeans(dinfo, km);
         } finally {
           if (job != null) job.remove();
@@ -457,9 +457,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(dinfo._key, dinfo);
 
         // Use closed form solution for X if L2 loss and regularization
-        double[][] yt = initialXY(tinfo, dinfo);
+        double[][] yt = initialXY(tinfo, dinfo, na_cnt);
         yt = ArrayUtils.transpose(yt);
-        if (_parms.hasClosedForm(tinfo))
+        if (na_cnt == 0 && _parms.hasClosedForm())
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
