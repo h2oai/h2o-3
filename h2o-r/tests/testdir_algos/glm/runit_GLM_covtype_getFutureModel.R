@@ -19,15 +19,12 @@ test.GLM.covtype <- function(conn) {
   
   # L2: alpha=0, lambda=0
   covtype.h2o1=h2o.startGLMJob(y=myY, x=myX, training_frame=covtype.hex, family="binomial", alpha=0, lambda=0)
-  Log.info(cat("GLM (L2) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   
   # Elastic: alpha=0.5, lambda=1e-4
   covtype.h2o2=h2o.startGLMJob(y=myY, x=myX, training_frame=covtype.hex, family="binomial", alpha=0.5, lambda=1e-4)
-  Log.info(cat("GLM (Elastic) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
 
   # L1: alpha=1, lambda=1e-4
   covtype.h2o3=h2o.startGLMJob(y=myY, x=myX, training_frame=covtype.hex, family="binomial", alpha=1, lambda=1e-4)
-  Log.info(cat("GLM (L1) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
 
   covtype.h2o1 <- h2o.getFutureModel(covtype.h2o1)
   print(covtype.h2o1)
