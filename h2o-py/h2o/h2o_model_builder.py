@@ -5,6 +5,7 @@ This file builds H2O model
 from connection import H2OConnection
 from frame      import H2OFrame
 from job        import H2OJob
+from model.model_future import H2OModelFuture
 
 
 # Response variable model building
@@ -98,39 +99,49 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
 
   if y is not None: kwargs['response_column']=y._col_names[0]
 
-  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
+  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if
+                 kwargs[k] is not None])
 
-  # launch the job and poll
-  job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
+  # launch the job (only resolve the model if do_future is False)
+  do_future = "do_future" in kwargs.keys() and kwargs["do_future"]
+  if "do_future" in kwargs.keys(): kwargs.pop("do_future")
+  future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs),
+                                       job_type=(algo_url+" Model Build")), x)
+  if do_future: return future_model
+  else: return _resolve_model(future_model, **kwargs)
+
+def _resolve_model(future_model, **kwargs):
+  future_model.poll() # Wait for model-building to be complete
   if '_rest_version' in kwargs.keys():
-    model_json = H2OConnection.get_json("Models/"+job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+    model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key,
+                                        _rest_version=kwargs['_rest_version'])["models"][0]
   else:
-    model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]
+    model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
   model_type = model_json["output"]["model_category"]
   if model_type=="Binomial":
     from model.binomial import H2OBinomialModel
-    model = H2OBinomialModel(job.dest_key,model_json)
+    model = H2OBinomialModel(future_model.job.dest_key,model_json)
 
   elif model_type=="Clustering":
     from model.clustering import H2OClusteringModel
-    model = H2OClusteringModel(job.dest_key,model_json)
+    model = H2OClusteringModel(future_model.job.dest_key,model_json)
 
   elif model_type=="Regression":
     from model.regression import H2ORegressionModel
-    model = H2ORegressionModel(job.dest_key,model_json)
+    model = H2ORegressionModel(future_model.job.dest_key,model_json)
 
   elif model_type=="Multinomial":
     from model.multinomial import H2OMultinomialModel
-    model = H2OMultinomialModel(job.dest_key,model_json)
+    model = H2OMultinomialModel(future_model.job.dest_key,model_json)
 
   elif model_type=="AutoEncoder":
     from model.autoencoder import H2OAutoEncoderModel
-    model = H2OAutoEncoderModel(job.dest_key,model_json)
+    model = H2OAutoEncoderModel(future_model.job.dest_key,model_json)
 
   elif model_type=="DimReduction":
     from model.dim_reduction import H2ODimReductionModel
-    model = H2ODimReductionModel(job.dest_key,model_json)
+    model = H2ODimReductionModel(future_model.job.dest_key,model_json)
 
   else:
     print model_type
