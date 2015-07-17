@@ -39,6 +39,9 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Validation data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   ModelMetricsBase validation_metrics;
 
+  @API(help="Cross-validation model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
+  ModelMetricsBase cross_validation_metrics;
+
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
   public IcedHashMap.IcedHashMapStringString help;
 
