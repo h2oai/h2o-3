@@ -2,11 +2,10 @@ package water.rapids;
 
 import water.*;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
+import water.util.IcedHashMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
 
 
 /** plyr's ddply: GroupBy by any other name.
@@ -157,19 +156,20 @@ public class ASTddply extends ASTOp {
   // Group description: unpacked selected double columns
   public static class Group extends ASTGroupBy.G {
     public Group() { super(); }
-    public Group(int len) { super(len); a=new IcedHMIntS<>(); }
+    public Group(int len) { super(len); a=new IcedHashMap<>(); }
     public Group( double ds[] ) { super(ds); }
 
-    IcedHMIntS<Integer,String> a;
+    IcedHashMap<Integer,String> a;
   }
 
 
   private static class Pass1A extends MRTask<Pass1A> {
     private final long _gbCols[];
-    IcedHM<Group,String> _grps;
+    IcedHashMap<Group,String> _grps;
     Pass1A(long[] cols) { _gbCols=cols; }
-    @Override public void setupLocal() { _grps = new IcedHM<>(); }
+    @Override public void setupLocal() { }
     @Override public void map(Chunk[] c) {
+      _grps = new IcedHashMap<>();
       Group g = new Group(_gbCols.length);
       Group gOld;
       int start = (int)c[0].start();
@@ -179,11 +179,7 @@ public class ASTddply extends ASTOp {
         if( old_g==null ) {
           gOld=g;
           g= new Group(_gbCols.length);
-        } else {
-          gOld=_grps.getk(g);
-          if( gOld==null )
-            while( gOld==null ) gOld=_grps.getk(g);
-        }
+        } else gOld=_grps.getk(g);
         long cnt=gOld._N;
         while( !Group.CAS_N(gOld,cnt,cnt+1))
           cnt=gOld._N;
@@ -192,8 +188,8 @@ public class ASTddply extends ASTOp {
     }
     @Override public void reduce(Pass1A t) {
       if( _grps!= t._grps ) {
-        IcedHM<Group,String> l = _grps;
-        IcedHM<Group,String> r = t._grps;
+        IcedHashMap<Group,String> l = _grps;
+        IcedHashMap<Group,String> r = t._grps;
         if( l.size() < r.size() ) { l=r; r=_grps; }
         for( Group rg: r.keySet() ) {
           if( l.containsKey(rg) ) {  // try to add it to the set on the left.. if left already has it, then combine
@@ -224,8 +220,10 @@ public class ASTddply extends ASTOp {
       _tasks=new Pass2Task[_grps.length];
       _keys=new Key[_grps.length];
       for( int i=0;i<_grps.length;++i ) {
-        (_tasks[i]=new Pass2Task(this,i%numnodes,_grps[i],_fr._key)).fork();
-        _keys[i] = _tasks[i]._key;
+        int nodeID = i%numnodes;
+        H2ONode n = H2O.CLOUD.members()[nodeID];
+        Key key = Key.make(n);
+        (_tasks[i]=new Pass2Task(this,nodeID,_grps[i],_fr._key, n, _keys[i]=key)).fork();
       }
     }
   }
@@ -239,7 +237,7 @@ public class ASTddply extends ASTOp {
     Key _key;
     H2ONode _n;
     Key[] _subsetVecKeys;
-    Pass2Task(H2O.H2OCountedCompleter cc, int nodeID, Group g, Key frameKey) { super(cc); _nodeID=nodeID; _g=g; _frameKey=frameKey; _n=H2O.CLOUD.members()[_nodeID]; _key=Key.make(_n); }
+    Pass2Task(H2O.H2OCountedCompleter cc, int nodeID, Group g, Key frameKey, H2ONode n, Key key) { super(cc); _nodeID=nodeID; _g=g; _frameKey=frameKey; _n=n; _key=key; }
     @Override protected void compute2() {
       H2ONode n = H2O.CLOUD.members()[_nodeID];
       Futures fs = new Futures();
@@ -378,65 +376,6 @@ public class ASTddply extends ASTOp {
       }
       groupFrame.delete();
       tryComplete();
-    }
-  }
-
-  // custom serializer for <Group,String> pairs
-  private static class IcedHM<G extends Iced,S extends String> extends Iced {
-    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
-    IcedHM() { _m = new NonBlockingHashMap<>(); }
-    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
-    void put(G g, S i) { _m.put(g,i);}
-    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
-    boolean containsKey(G k) { return _m.containsKey(k); }
-    Set<G> keySet() { return _m.keySet(); }
-    int size() { return _m.size(); }
-    String get(G g) { return _m.get(g); }
-    G getk(G g) { return _m.getk(g); }
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      if( _m==null || _m.size()==0 ) return ab.put4(0);
-      else {
-        ab.put4(_m.size());
-        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
-      }
-      return ab;
-    }
-    @Override public IcedHM read_impl(AutoBuffer ab) {
-      int mLen;
-      if( (mLen=ab.get4())!=0 ) {
-        _m = new NonBlockingHashMap<>();
-        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
-      }
-      return this;
-    }
-  }
-
-  // custom serializer for <Integer,String> pairs
-  private static class IcedHMIntS<I extends Integer,S extends String> extends Iced {
-    private NonBlockingHashMap<Integer,String> _m; // the nbhm to (de)ser
-    IcedHMIntS() { _m = new NonBlockingHashMap<>(); }
-    String putIfAbsent(I k, S v) { return _m.putIfAbsent(k,v);}
-    void put(I g, S i) { _m.put(g,i);}
-    void putAll(IcedHMIntS<I,S> m) {_m.putAll(m._m);}
-    Set<Integer> keySet() { return _m.keySet(); }
-    int size() { return _m.size(); }
-    String get(I g) { return _m.get(g); }
-    Integer getk(I g) { return _m.getk(g); }
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      if( _m==null || _m.size()==0 ) return ab.put4(0);
-      else {
-        ab.put4(_m.size());
-        for(Integer g:_m.keySet()) { ab.put4(g); ab.putStr(_m.get(g)); }
-      }
-      return ab;
-    }
-    @Override public IcedHMIntS read_impl(AutoBuffer ab) {
-      int mLen;
-      if( (mLen=ab.get4())!=0 ) {
-        _m = new NonBlockingHashMap<>();
-        for( int i=0;i<mLen;++i ) _m.put(ab.get4(), ab.getStr());
-      }
-      return this;
     }
   }
 }

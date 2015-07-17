@@ -8,17 +8,17 @@
 #' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
+#' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
 #' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
-#'        Otherwise the first factor level is omittted (without loss of accuracy). Useful for
-#'        variable imporotances and auto-enabled for autoencoder.
+#'        Otherwise the first factor level is omitted (without loss of accuracy). Useful for
+#'        variable importances and auto-enabled for autoencoder.
 #' @param activation A string indicating the activation function to use. Must be either "Tanh",
 #'        "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
 #' @param hidden Hidden layer sizes (e.g. c(100,100))
-#' @param epochs How many times the dataset shoud be iterated (streamed), can be fractional
+#' @param epochs How many times the dataset should be iterated (streamed), can be fractional
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration.
 #'        Special values are: \bold{0} one epoch; \bold{-1} all available data (e.g., replicated
 #'        training data); or \bold{-2} auto-tuning (default)
@@ -31,22 +31,22 @@
 #' @param rate Learning rate (higher => less stable, lower => slower convergence)
 #' @param rate_annealing Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)}
 #' @param rate_decay Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1)})
-#' @param momentum_start Initial momentum at the beginning of traning (try 0.5)
+#' @param momentum_start Initial momentum at the beginning of training (try 0.5)
 #' @param momentum_ramp Number of training samples for which momentum increases
-#' @param momentum_stable Final momentum after ther amp is over (try 0.99)
+#' @param momentum_stable Final momentum after the amp is over (try 0.99)
 #' @param nesterov_accelerated_gradient \code{Logical}. Use Nesterov accelerated gradient
 #'        (recommended)
 #' @param input_dropout_ratio A fraction of the features for each training row to be omitted from
 #'        training in order to improve generalization (dimension sampling).
-#' @param hidden_dropout_ratios Input layer dropout ration (can improve generalization) specify one
+#' @param hidden_dropout_ratios Input layer dropout ratio (can improve generalization) specify one
 #'        value per hidden layer, defaults to 0.5
-#' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to
+#' @param l1 L1 regularization (can add stability and improve generalization, causes many weights to
 #'        become 0)
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to
 #'        be small)
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
-#' @param initial_weight_scale Unifrom: -value ... value, Normal: stddev
+#' @param initial_weight_scale Uniform: -value ... value, Normal: stddev
 #' @param loss Loss function: Automatic, CrossEntropy (for classification only), MeanSquare, Absolute
 #'        (experimental) or Huber (experimental)
 #' @param score_interval Shortest time interval (in secs) between model scoring
@@ -60,7 +60,7 @@
 #'        disable)
 #' @param quiet_mode Enable quiet mode for less output to standard output
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
-#' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ration computation(for
+#' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation(for
 #'        multi-class only, 0 to disable)
 #' @param balance_classes Balance training data class counts via over/under-sampling (for imbalanced
 #'        data)
@@ -74,7 +74,7 @@
 #' @param variable_importances Compute variable importances for input features (Gedeon method) - can
 #'        be slow for large networks)
 #' @param fast_mode Enable fast mode (minor approximations in back-propagation)
-#' @param ignore_const_cols Ignore constant columns (no information can be gained anwyay)
+#' @param ignore_const_cols Ignore constant columns (no information can be gained anyway)
 #' @param force_load_balance Force extra load balancing to increase training speed for small
 #'        datasets (to keep all cores busy)
 #' @param replicate_training_data Replicate the entire training dataset onto every node for faster
@@ -328,7 +328,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 
 #' Anomaly Detection via H2O Deep Learning Model
 #'
-#' Detect anomalies in a H2O dataset using a H2O deep learning model with
+#' Detect anomalies in an H2O dataset using an H2O deep learning model with
 #' auto-encoding.
 #'
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
@@ -357,7 +357,7 @@ h2o.anomaly <- function(object, data) {
 
 #' Feature Generation via H2O Deep Learning Model
 #'
-#' Extract the non-linea feature from an H2O data set using an H2O deep learning
+#' Extract the non-linear feature from an H2O data set using an H2O deep learning
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.

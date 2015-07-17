@@ -1521,7 +1521,7 @@ final public class H2O {
               defReq.clientId(bakedGaId);
             }
           }
-        } catch (IOException ignore) {}
+        } catch (Exception ignore) {}
         defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
