@@ -637,6 +637,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._nfolds > 1) {
       hide("_fold_column", "Fold column is ignored when nfolds > 1.");
     }
+    // hide cross-validation parameters unless cross-val is enabled
+    if (_parms._nfolds ==0 && _parms._fold_column == null) {
+      hide("_keep_cross_validation_splits", "Only for cross-validation.");
+      hide("_keep_cross_validation_predictions", "Only for cross-validation.");
+      hide("_fold_assignment", "Only for cross-validation.");
+    }
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
       _train.remove(_parms._ignored_columns);
