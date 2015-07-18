@@ -1223,7 +1223,7 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
       stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
 
-    sdevH2O <- as.numeric(x@model$pc_importance[1,])
+    sdevH2O <- h2o.sdev(x)
     if(missing(main))
       main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
     if(type == "barplot")
@@ -1232,6 +1232,17 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
       lines(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else
       stop("type must be either 'barplot' or 'lines'")
+}
+
+#'
+#' Retrieve the standard deviations of principal components
+#'
+#' @param object An \linkS4class{H2ODimReductionModel} object.
+#' @export
+h2o.sdev <- function(object) {
+  if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
+    stop("object must be a H2O PCA model")
+  as.numeric(object@model$importance[1,])
 }
 
 # Handles ellipses
