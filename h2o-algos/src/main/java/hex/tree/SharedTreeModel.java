@@ -46,6 +46,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public float _tweedie_power=1.5f;
   }
 
+  @Override
+  public double deviance(double w, double y, double f) {
+    return _parms._distribution.deviance(w, y, f);
+  }
+
   final public VarImp varImp() { return _output._varimp; }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {

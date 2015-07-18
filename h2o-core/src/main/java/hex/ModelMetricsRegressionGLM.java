@@ -13,7 +13,7 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression {
   public final double _AIC;
 
   public ModelMetricsRegressionGLM(Model model, Frame frame, double mse, double sigma, double resDev, double nullDev, double aic, long nDof, long rDof) {
-    super(model, frame, mse, sigma);
+    super(model, frame, mse, sigma, resDev);
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;

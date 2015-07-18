@@ -420,6 +420,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _output = output;  // Output won't be set if we're assert output != null;
   }
 
+  /**
+   * @param w observation weight
+   * @param y response
+   * @param f predicted value
+   * @return
+   */
+  public double deviance(double w, double y, double f) {
+    return Double.NaN;
+  }
 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
    *  intention here is that ModelBuilders can assume the test set has the same
