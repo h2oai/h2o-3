@@ -34,6 +34,7 @@
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "Random" or "Modulo"
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
@@ -69,6 +70,7 @@ h2o.gbm <- function(x, y, training_frame,
                     nfolds = 0,
                     fold_column = NULL,
                     fold_assignment = c("Random","Modulo"),
+                    keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -143,6 +145,7 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
   if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
   else            .h2o.createModel(training_frame@conn, 'gbm', parms)
 }

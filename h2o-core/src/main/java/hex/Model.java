@@ -58,6 +58,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds;
     public boolean _keep_cross_validation_splits;
+    public boolean _keep_cross_validation_predictions;
     public enum FoldAssignmentScheme {
       Random, Modulo
     }
@@ -231,8 +232,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
 
-    /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1) **/
+    /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
     Key _cross_validation_models[];
+    /** List of Keys to cross-validation predictions (if requested) **/
+    Key _cross_validation_predictions[];
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -714,7 +717,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
         double weight = weightsChunk.atd(row);
-        if (weight == 0) continue;
+        if (weight == 0) {
+          if (_makePreds) {
+            for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+              cpreds[c].addNum(0);
+          }
+          continue;
+        }
         double offset = offsetChunk.atd(row);
         double [] p = score0(chks, weight, offset, row, tmp, preds);
         if (_computeMetrics) {

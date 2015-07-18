@@ -9,7 +9,7 @@
 #~ be done with H2OFrame objects (this includes H2OFrame objects and ASTNode objects).
 
 # Result Types
-ARY    <- 0L
+ARY    <- 0
 NUM    <- 1L
 STR    <- 2L
 ARYNUM <- 3L

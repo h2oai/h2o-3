@@ -170,6 +170,14 @@ def ifelse(test,yes,no):
   """
   return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
 
+def get_future_model(future_model):
+  """
+  Waits for the future model to finish building, and then returns the model.
+
+  :param future_model: an H2OModelFuture object
+  :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
+  """
+  return h2o_model_builder._resolve_model(future_model)
 
 def get_model(model_id):
   """
@@ -704,6 +712,17 @@ def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
 
+def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW).
+  Note: this function is the same as glm(), but it doesn't block on model-build. Instead, it returns and H2OModelFuture
+  object immediately. The model can be retrieved from the H2OModelFuture object with get_future_model().
+
+  :return: H2OModelFuture
+  """
+
+  kwargs["do_future"] = True
+  return glm(x,y,validation_x,validation_y,**kwargs)
 
 def kmeans(x,validation_x=None,**kwargs):
   """
