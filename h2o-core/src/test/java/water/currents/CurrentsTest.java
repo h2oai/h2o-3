@@ -189,6 +189,12 @@ public class CurrentsTest extends TestUtil {
 
     tree = "({x . (var x x \"everything\")} a.hex)";
     checkTree(tree);
+
+    tree = "(table (trunc (cols a.hex 1)))";
+    checkTree(tree);
+
+    tree = "(table (cols a.hex 2))";
+    checkTree(tree);
   }
 
   private void checkTree(String tree) { checkTree(tree,false); }

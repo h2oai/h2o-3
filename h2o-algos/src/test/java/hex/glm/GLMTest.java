@@ -771,8 +771,8 @@ public class GLMTest  extends TestUtil {
     double[] d8 = MemoryManager.malloc8d(1000);
     double[] d9 = MemoryManager.malloc8d(1000);
 
-    int[] c1 = MemoryManager.malloc4(1000);
-    int[] c2 = MemoryManager.malloc4(1000);
+    long[] c1 = MemoryManager.malloc8(1000);
+    long[] c2 = MemoryManager.malloc8(1000);
     String[] dom = new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
     for (int i = 0; i < d1.length; ++i) {
       c1[i] = rnd.nextInt(dom.length);

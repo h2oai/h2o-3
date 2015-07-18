@@ -416,13 +416,13 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
-  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
+  public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
     Vec v = new Vec(vecKey,espc, domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
-    for(double d:vals)
+    for(long d:vals)
       nc.addNum(d);
     nc.close(fs);
     DKV.put(v._key,v,fs);
@@ -1189,7 +1189,7 @@ public class Vec extends Keyed<Vec> {
     private final int _s;
     private boolean[] _u;
     private long[] _d;
-    CollectDomainFast(int s) { _s=s; }
+    public CollectDomainFast(int s) { _s=s; }
     @Override protected void setupLocal() { _u=MemoryManager.mallocZ(_s+1); }
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
