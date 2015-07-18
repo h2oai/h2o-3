@@ -39,7 +39,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _sumsqe += w*err*err;       // Squared error
       assert !Double.isNaN(_sumsqe);
       _sumdeviance += m.deviance(w, yact[0], ds[0]);
-      assert !Double.isNaN(_sumdeviance);
       _count++;
       _wcount += w;
       _wY += w*yact[0];
