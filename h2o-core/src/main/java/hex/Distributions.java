@@ -18,7 +18,7 @@ public class Distributions {
     AUTO {
       @Override
       public double deviance(double w, double y, double f) {
-        throw new IllegalArgumentException();
+        return Double.NaN;
       }
 
       @Override
