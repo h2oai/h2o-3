@@ -48,6 +48,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   @Override
   public double deviance(double w, double y, double f) {
+    _parms._distribution.p = _parms._tweedie_power; //FIXME PUBDEV-1670: p isn't serialized properly as part of Enum
     return _parms._distribution.deviance(w, y, f);
   }
 
