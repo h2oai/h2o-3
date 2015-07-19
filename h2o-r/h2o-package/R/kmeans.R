@@ -65,10 +65,8 @@ h2o.kmeans <- function(training_frame, x, k,
 
   # Gather user input
   parms <- list()
-  args <- .verify_datacols(training_frame, x)
-  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
-  parms$ignored_columns <- args$x_ignore
-
+  if( !(missing(x)) )
+      parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
   if(!missing(k))
     parms$k <- k
   parms$training_frame <- training_frame
