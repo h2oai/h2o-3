@@ -18,7 +18,7 @@ public class Distributions {
     AUTO {
       @Override
       public double deviance(double w, double y, double f) {
-        throw new IllegalArgumentException();
+        return Double.NaN;
       }
 
       @Override
@@ -99,7 +99,7 @@ public class Distributions {
     bernoulli {
       @Override
       public double deviance(double w, double y, double f) {
-        return w * (y * f - log(1 + exp(f)));
+        return - 2 * w * (y * f - log(1 + exp(f)));
       }
 
       @Override
@@ -126,7 +126,7 @@ public class Distributions {
     poisson {
       @Override
       public double deviance(double w, double y, double f) {
-        return w * (y * f - exp(f));
+        return - 2 * w * (y * f - exp(f));
       }
 
       @Override
@@ -153,7 +153,7 @@ public class Distributions {
     gamma {
       @Override
       public double deviance(double w, double y, double f) {
-        return w * (y * exp(-f) + f);
+        return 2 * w * (y * exp(-f) + f);
       }
 
       @Override
@@ -181,7 +181,7 @@ public class Distributions {
       @Override
       public double deviance(double w, double y, double f) {
         assert(p>1 && p<2);
-        return w * (Math.pow(y, 2 - p) / ((1 - p) * (2 - p)) - y * exp(f * (1 - p)) / (1 - p) + exp(f * (2 - p)) / (2 - p));
+        return 2 * w * (Math.pow(y, 2 - p) / ((1 - p) * (2 - p)) - y * exp(f * (1 - p)) / (1 - p) + exp(f * (2 - p)) / (2 - p));
       }
 
       @Override

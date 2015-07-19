@@ -496,7 +496,12 @@ setMethod("match", "H2OFrame", h2o.match)
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 0L)
+setMethod("%in%", signature("H2OFrame", "character"), function(x, table) any(match(x, table, nomatch = 0)))
+
+# %in% method
+#' @rdname h2o.match
+#' @export
+setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) all(sapply(table,function(t) any(t==x))))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
@@ -1383,6 +1388,7 @@ setMethod("is.numeric", "H2OFrame", function(x) {
   else             .h2o.unary_frame_op("is.numeric", x )
 })
 
+
 #'
 #' Quantiles of H2O Data Frame.
 #'
@@ -1957,9 +1963,9 @@ h2o.cbind <- function(...) {
   klasses <- unlist(lapply(li, function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
   if( use.args ) {
-    .h2o.nary_frame_op("cbind %TRUE", .args=li)
+    .h2o.nary_frame_op("cbind %FALSE", .args=li)
   } else {
-    .h2o.nary_frame_op("cbind %TRUE", ...)
+    .h2o.nary_frame_op("cbind %FALSE", ...)
   }
 }
 

@@ -4,6 +4,7 @@ import hex.*;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 import water.util.TwoDimTable;

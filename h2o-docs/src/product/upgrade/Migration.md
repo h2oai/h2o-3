@@ -231,18 +231,18 @@ H2O Classic | H2O 3.0  | Model Type
 `@model$err` | `@model$scoring_history` | `all`
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
-`@model$auc` | `@model$training_metrics$AUC`  | `binomial`
-`@model$gini` | `@model$training_metrics$Gini`  | `binomial`
+`@model$confusion` | `@model$training_metrics@metrics$cm$table`  | `binomial` and `multinomial`
+`@model$auc` | `@model$training_metrics@metrics$AUC`  | `binomial`
+`@model$gini` | `@model$training_metrics@metrics$Gini`  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
-`@model$F1` | `@model$training_metrics$thresholds_and_metric_scores$f1`  | `binomial`
-`@model$F2` | `@model$training_metrics$thresholds_and_metric_scores$f2`  | `binomial`
-`@model$accuracy` | `@model$training_metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
+`@model$F1` | `@model$training_metrics@metrics$thresholds_and_metric_scores$f1`  | `binomial`
+`@model$F2` | `@model$training_metrics@metrics$thresholds_and_metric_scores$f2`  | `binomial`
+`@model$accuracy` | `@model$training_metrics@metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
 `@model$error` | &nbsp;  | `binomial`
-`@model$precision` | `@model$training_metrics$thresholds_and_metric_scores$precision`  | `binomial`
-`@model$recall` | `@model$training_metrics$thresholds_and_metric_scores$recall`  | `binomial`
-`@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
-`@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
+`@model$precision` | `@model$training_metrics@metrics$thresholds_and_metric_scores$precision`  | `binomial`
+`@model$recall` | `@model$training_metrics@metrics$thresholds_and_metric_scores$recall`  | `binomial`
+`@model$mcc` | `@model$training_metrics@metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
+`@model$max_per_class_err` | currently replaced by `@model$training_metrics@metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
 
 
 
@@ -425,7 +425,6 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
 `key` | `model_id`
 `validation` | `validation_frame`
 `class.sampling.factors` | `class_sampling_factors`
-`nfolds` |  `n_folds`
 `override_with_best_model` | `overwrite_with_best_model`
 `dlmodel@model$valid_class_error` | `@model$validation_metrics@$MSE`
 
@@ -459,7 +458,7 @@ H2O Classic  | H2O 3.0
 `key = "",` | `model_id = "",`
 `override_with_best_model,` | `overwrite_with_best_model = true,` 
 `classification = TRUE,` | 
-`nfolds = 0,` |  `n_folds = 0`
+`nfolds = 0,` |  `nfolds = 0`
 `validation,` | `validation_frame,` 
 `holdout_fraction = 0,` |  
 `checkpoint = " "` | `checkpoint,` 
@@ -526,10 +525,10 @@ H2O Classic | H2O 3.0  | Model Type
 ------------- | ------------- | ------------- 
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$train_class_error` | `@model$training_metrics@$MSE`  | `all`
+`@model$train_class_error` | `@model$training_metrics@metrics@$MSE`  | `all`
 `@model$valid_class_error` | `@model$validation_metrics@$MSE` | `all`|
 `@model$varimp` | `@model$_variable_importances` | `all`
-`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
+`@model$confusion` | `@model$training_metrics@metrics$cm$table`  | `binomial` and `multinomial`
 `@model$train_auc` | `@model$train_AUC`  | `binomial`
 &nbsp; | `@model$_validation_metrics` | `all`
 &nbsp; | `@model$_model_summary` | `all`
@@ -634,18 +633,18 @@ H2O Classic | H2O 3.0  | Model Type
 `@model$forest` | `@model$model_summary`  | `all`
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
-`@model$auc` | `@model$training_metrics$AUC`  | `binomial`
-`@model$gini` | `@model$training_metrics$Gini`  | `binomial`
+`@model$confusion` | `@model$training_metrics@metrics$cm$table`  | `binomial` and `multinomial`
+`@model$auc` | `@model$training_metrics@metrics$AUC`  | `binomial`
+`@model$gini` | `@model$training_metrics@metrics$Gini`  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
-`@model$F1` | `@model$training_metrics$thresholds_and_metric_scores$f1`  | `binomial`
-`@model$F2` | `@model$training_metrics$thresholds_and_metric_scores$f2`  | `binomial`
-`@model$accuracy` | `@model$training_metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
+`@model$F1` | `@model$training_metrics@metrics$thresholds_and_metric_scores$f1`  | `binomial`
+`@model$F2` | `@model$training_metrics@metrics$thresholds_and_metric_scores$f2`  | `binomial`
+`@model$accuracy` | `@model$training_metrics@metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
 `@model$Error` | `@model$Error`  | `binomial`
-`@model$precision` | `@model$training_metrics$thresholds_and_metric_scores$precision`  | `binomial`
-`@model$recall` | `@model$training_metrics$thresholds_and_metric_scores$recall`  | `binomial`
-`@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
-`@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
+`@model$precision` | `@model$training_metrics@metrics$thresholds_and_metric_scores$precision`  | `binomial`
+`@model$recall` | `@model$training_metrics@metrics$thresholds_and_metric_scores$recall`  | `binomial`
+`@model$mcc` | `@model$training_metrics@metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
+`@model$max_per_class_err` | currently replaced by `@model$training_metrics@metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
 
 
 ##Github Users
