@@ -393,11 +393,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info("Computing " + N + "-fold cross-validation metrics.");
     mainModel._output._cross_validation_models = new Key[N];
-    mainModel._output._cross_validation_predictions = new Key[N];
+    mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? new Key[N] : null;
     for (int i=0; i<N; ++i) {
       if (i>0) mb[0].reduce(mb[i]);
       mainModel._output._cross_validation_models[i] = modelKeys[i];
-      mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
+      if (_parms._keep_cross_validation_predictions)
+        mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
     }
     mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
