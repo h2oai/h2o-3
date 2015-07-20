@@ -33,6 +33,7 @@ class H2OFrame:
     :return: An instance of an H2OFrame object.
     """
     self._id        = _py_tmp_key()  # gets overwritten if a parse happens
+    self._keep      = False
     self._nrows     = None
     self._ncols     = None
     self._col_names = None
@@ -53,6 +54,7 @@ class H2OFrame:
     fr._ncols = res["total_column_count"]
     fr._id = res["frame_id"]["name"]
     fr._computed = True
+    fr._keep = True
     fr._col_names = [c["label"] for c in res["columns"]]
     return fr
 
@@ -108,7 +110,7 @@ class H2OFrame:
     self._upload_raw_data(tmp_path)      # actually upload the data to H2O
     os.remove(tmp_path)                  # delete the tmp file
 
-  def _handle_text_key(self, text_key, check_header=-1):
+  def _handle_text_key(self, text_key, check_header=None):
     """
     Handle result of upload_file
     :param test_key: A key pointing to raw text to be parsed
@@ -116,7 +118,7 @@ class H2OFrame:
     """
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
-    setup["check_header"] = check_header
+    if check_header is not None: setup["check_header"] = check_header
     parse = h2o.parse(setup, _py_tmp_key())
     self._computed=True
     self._id = parse["destination_frame"]["name"]
@@ -671,7 +673,9 @@ class H2OFrame:
   def __float__(self): return self._scalar()
 
   def __del__(self):
-    if self._computed: h2o.remove(self)
+    if not self._keep and self._computed: h2o.remove(self)
+
+  def keep(self): self._keep = True
 
   def drop(self, i):
     """
