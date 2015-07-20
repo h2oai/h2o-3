@@ -260,7 +260,7 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="http://0xdata.com/blog/2014/05/kv-store-memory-analytics-part-2-2/" target="_blank">KV Store Guide</a>: Learn more about performance characteristics when implementing new algorithms. 
 
 
-- <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. 
+- <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. **Note**: To access this link, you must have an [Atlassian account](https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com). 
 
 ---
 #Downloading H2O
