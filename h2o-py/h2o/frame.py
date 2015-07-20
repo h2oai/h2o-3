@@ -435,6 +435,7 @@ class H2OFrame:
     Generate summary of the frame on a per-Vec basis.
     :return: None
     """
+    self._eager()
     fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
     type = ["type"]
     mins = ["mins"]
