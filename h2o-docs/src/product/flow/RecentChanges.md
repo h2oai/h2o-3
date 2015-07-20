@@ -2,7 +2,7 @@
 
 ##H2O
 
-###Shannon (3.0.0.28) - 7/17/15
+###Simons (3.0.1.1) - 7/20/15
 
 ####New Features
 
@@ -11,9 +11,11 @@ The following changes represent features that have been added since the previous
 ##### Algorithms
 
 - [HEXDEV-214](https://0xdata.atlassian.net/browse/HEXDEV-214): Gamma distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/19d0eda15d589a6b75525bad94429f0547e15c1b)
+	- More distributions for GBM and DRF (regression only for now)- Poisson, Gamma, Tweedie, and Lognormal. At the high level, this is tantamount to supporting more distributions for each individual regression model in the ensemble. 
 - [HEXDEV-213](https://0xdata.atlassian.net/browse/HEXDEV-213): Tweedie distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/a5892087d08bcee9b8c017bd6173601d262d9f79)
 - [HEXDEV-212](https://0xdata.atlassian.net/browse/HEXDEV-212): Poisson distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/861322058519cc3455e924449cbe7dfdecf67514)
 - [PUBDEV-1704](https://0xdata.atlassian.net/browse/PUBDEV-1704): Accept a fold assignment vector
+- [PUBDEV-1115](https://0xdata.atlassian.net/browse/PUBDEV-1115): properly test PCA and mark it non-experimental
 
 #####Python
 
@@ -69,7 +71,16 @@ The following changes represent features that have been added since the previous
 - [PUBDEV-1295](https://0xdata.atlassian.net/browse/PUBDEV-1295): Python and R h2o clients need "prod" operator, like R's
 - [PUBDEV-1294](https://0xdata.atlassian.net/browse/PUBDEV-1294): Python and R h2o clients need "range" operator, like R's
 - [PUBDEV-1290](https://0xdata.atlassian.net/browse/PUBDEV-1290): Python and R h2o clients need "cummax", "cummin", "cumprod", and "cumsum" operators, like R's
-
+- [PUBDEV-1325](https://0xdata.atlassian.net/browse/PUBDEV-1325): Python needs h2o.clearLog, like in R
+- [PUBDEV-1349](https://0xdata.atlassian.net/browse/PUBDEV-1349): Python needs h2o.startLogging and h2o.stopLogging, like in R
+- [PUBDEV-1341](https://0xdata.atlassian.net/browse/PUBDEV-1341): Python needs h2o.openLog, like in R
+- [PUBDEV-1348](https://0xdata.atlassian.net/browse/PUBDEV-1348): Python needs h2o.startGLMJob, like in R
+- [PUBDEV-1331](https://0xdata.atlassian.net/browse/PUBDEV-1331): Python needs h2o.getFutureModel, like in R
+- [PUBDEV-1302](https://0xdata.atlassian.net/browse/PUBDEV-1302): Python needs "match" operator, like R's
+- [PUBDEV-1298](https://0xdata.atlassian.net/browse/PUBDEV-1298): Python needs "%in%" operator, like R's
+- [PUBDEV-1310](https://0xdata.atlassian.net/browse/PUBDEV-1310): Python needs "scale" operator, like R's
+- [PUBDEV-1297](https://0xdata.atlassian.net/browse/PUBDEV-1297): Python needs "all" operator, like R's
+- [GitHub](https://github.com/h2oai/h2o-3/commit/fbe17d13d5dfe258ff7c62def3e4e3869a5d25d5): add start_glm_job() and get_future_model() to python client. add H2OModelFuture class. add respective pyunit
 
 ##### R
 
@@ -93,7 +104,7 @@ The following changes represent features that have been added since the previous
 - [GitHub](https://github.com/h2oai/h2o-3/commit/3c7f296804d72b9b6940aaccc63f329383ab01fb): Add user_name. Add ExtensionHandler1.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0ddf0740ad2e13a2a45137b4d017775900066244): Added auth options to h2o.init(). 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0f9f71335e16a2632c3072782143f47657883129): Added H2O.calcNextUniqueModelId().
-
+- [GitHub](https://github.com/h2oai/h2o-3/commit/bc059e063205fcf051f474f8d97ff3ffd90ee066): Add ldap arg.
 
 ##### Web UI
 
@@ -116,6 +127,7 @@ The following changes are improvements to existing features (which includes chan
 - [PUBDEV-556](https://0xdata.atlassian.net/browse/PUBDEV-556): implement algo-agnostic cross-validation mechanism via a column of weights
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8001b5336960629b738da9df36261ca6c538e760): When initializing with kmeans++ set X to matrix of indicator columns corresponding to cluster assignments, unless closed form solution exists
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8c8fc92eb4a36cee5751597430687729f3527c60): Always print DL auto-tuning info for now.
+- [PUBDEV-1657](https://0xdata.atlassian.net/browse/PUBDEV-1657): pca: would be good to remove the redundant std dev from flow pca model object
 
 #####API
 
@@ -147,7 +159,7 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0047eea9b28d1842f8326917eafd41fcd655c988): Make Progress extend Keyed.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/4a0eda9a4fd798367a5133894459b7d165f89232): Make createServer() protected.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/2428fa3a6bc8178d5dfde323438acb29cc12a032): model_id should probably be a Key<Model>, not Key<Frame>.
-
+- [GitHub](https://github.com/h2oai/h2o-3/commit/1778487a41aa4ccc76b97c437fc1b7625784116a): Change Jetty version from 9 to 8 to get Java 6 compatibility back.
 
 #####Web UI
 
@@ -186,6 +198,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1629](https://0xdata.atlassian.net/browse/PUBDEV-1629): python client's tail() header incorrect [GitHub](https://github.com/h2oai/h2o-3/commit/a5055880e9f2f527e99a9811e695170c5c5e00dc)
 - [PUBDEV-1413](https://0xdata.atlassian.net/browse/PUBDEV-1413): intermittent assertion errors in `pyunit_citi_bike_small.py/pyunit_citi_bike_large.py`. Client apparently not notified
 - [PUBDEV-1590](https://0xdata.atlassian.net/browse/PUBDEV-1590): "Trying to unlock null" assertion during `pyunit_citi_bike_large.py`
+- [PUBDEV-1400](https://0xdata.atlassian.net/browse/PUBDEV-1400): match operator should take numerics
 
 #####R
 
