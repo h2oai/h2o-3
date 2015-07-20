@@ -154,15 +154,17 @@ Xiong, Hui, Junjie Wu, and Jian Chen. “K-means Clustering Versus Validation Me
 
 ###Introduction
 
-Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
+Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson and binomial distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
 The GLM suite includes:
 
 - Gaussian regression
 - Poisson regression
 - Binomial regression
-- Gamma regression
 
+<!---
+- Gamma regression
+-->
 
 ###Defining a GLM Model
 
@@ -173,10 +175,11 @@ The GLM suite includes:
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+<!---
 - **Nfolds**: Specify the number of folds for cross-validation. 
 
 - **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
-
+-->
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
@@ -189,7 +192,7 @@ The GLM suite includes:
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+- **Family**: Select the model type (Gaussian, Binomial, Poisson, or Tweedie).
 
 - **Tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
 
@@ -219,10 +222,11 @@ The GLM suite includes:
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
 
+<!---
 - **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
 
 - **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
-
+-->
 - **Intercept**: To include a constant term in the model, check this checkbox. This option is selected by default. 
 
 - **Objective_epsilon**: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
@@ -395,10 +399,11 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+<!---
 - **Nfolds**: Specify the number of folds for cross-validation. 
 
 - **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
-
+-->
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
@@ -441,10 +446,11 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
+<!---
 - **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
 
 - **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
-
+-->
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
 - **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
@@ -896,10 +902,11 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+<!---
 - **Nfolds**: Specify the number of folds for cross-validation. 
 
 - **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
-
+-->
 - **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
@@ -926,7 +933,7 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
+- **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, or tweedie.  
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -940,10 +947,11 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
+<!---
 - **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
 
 - **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
- 
+-->  
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
 - **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
@@ -1071,10 +1079,11 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+<!---
 - **Nfolds**: Specify the number of folds for cross-validation. 
 
 - **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
-
+-->
 - **Response_column**: Select the column to use as the independent variable.
 
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
@@ -1125,10 +1134,11 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
+<!---
 - **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
 
 - **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
-
+--> 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
 - **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 

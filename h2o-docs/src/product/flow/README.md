@@ -414,10 +414,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+<!---
 - **Nfolds**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) Specify the number of folds for cross-validation. 
 
 - **Fold_column**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) Select the column that contains the cross-validation fold index assignment per observation. 
-
+-->
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **User_points**: [(K-Means](#Kmeans) For K-Means, specify the number of initial cluster centers.  
@@ -448,13 +449,14 @@ The available options vary depending on the selected model. If an option is only
 
 - **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
+<!--
 - **Keep\_cross\_validation\_splits**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) To keep the cross-validation frames, check this checkbox. 
 
 - **Fold_assignment**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
-
+-->
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, or tweedie.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -482,7 +484,7 @@ The available options vary depending on the selected model. If an option is only
 - **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+- **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Tweedie).
 
 - **Tweedie_variance_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
 
