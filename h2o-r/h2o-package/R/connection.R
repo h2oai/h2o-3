@@ -241,8 +241,10 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 #'        and port of the server running H2O.
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
+#' \dontrun{
 #' localH2O <- h2o.init()
 #' h2o.clusterStatus(localH2O)
+#' }
 #' @export
 h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
