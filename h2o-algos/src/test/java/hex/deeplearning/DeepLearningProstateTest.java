@@ -156,7 +156,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p._overwrite_with_best_model = overwrite_with_best_model;
                                             p._epochs = epochs;
                                             p._loss = loss;
-                                            p._nfolds = n_folds;
+//                                            p._nfolds = n_folds;
                                             p._keep_cross_validation_splits = keep_cv_splits;
                                             p._seed = myseed;
                                             p._train_samples_per_iteration = train_samples_per_iteration;
@@ -200,11 +200,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                               else assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
                                             }
 
-                                            if (n_folds != 0) {
-                                              assert(model1._output._cross_validation_metrics != null);
-                                            } else {
+//                                            if (n_folds != 0) {
+//                                              assert(model1._output._cross_validation_metrics != null);
+//                                            } else {
                                               assert(model1._output._cross_validation_metrics == null);
-                                            }
+//                                            }
 
                                           }
 

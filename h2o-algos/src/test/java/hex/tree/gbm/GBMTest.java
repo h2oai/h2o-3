@@ -87,9 +87,9 @@ public class GBMTest extends TestUtil {
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, Distributions.Family.poisson);
 
-    basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-            false, Distributions.Family.gamma);
+//    basicGBM("./smalldata/junit/cars.csv",
+//            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+//            false, Distributions.Family.gamma);
 
     basicGBM("./smalldata/junit/cars.csv",
             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
@@ -1080,7 +1080,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNFold() {
     Frame tfr = null, vfr = null;
     GBMModel gbm = null;
@@ -1119,7 +1119,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
     GBMModel gbm1 = null;
@@ -1166,7 +1166,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsInvalidValues() {
     Frame tfr = null;
     GBMModel gbm1 = null;
@@ -1218,7 +1218,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsCVAndValidation() {
     Frame tfr = null, vfr = null;
     GBMModel gbm = null;
@@ -1257,7 +1257,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsConsecutiveModelsSame() {
     Frame tfr = null;
     Vec old = null;
@@ -1307,7 +1307,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNFoldAirline() {
     Frame tfr = null, vfr = null;
     GBMModel gbm = null;

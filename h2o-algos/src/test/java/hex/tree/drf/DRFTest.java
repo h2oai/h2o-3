@@ -924,7 +924,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNFoldBalanceClasses() {
     Frame tfr = null, vfr = null;
     DRFModel drf = null;
@@ -964,7 +964,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsOneVsRest() {
     Frame tfr = null;
     DRFModel drf1 = null;
@@ -1010,7 +1010,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsInvalidValues() {
     Frame tfr = null;
     DRFModel drf1 = null;
@@ -1069,7 +1069,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsCVAndValidation() {
     Frame tfr = null, vfr = null;
     DRFModel drf = null;
@@ -1107,7 +1107,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testNfoldsConsecutiveModelsSame() {
     Frame tfr = null;
     Vec old = null;
