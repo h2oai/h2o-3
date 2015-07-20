@@ -1,7 +1,8 @@
 package water.currents;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 import water.AutoBuffer;
 import water.MRTask;
 import water.fvec.*;
@@ -81,13 +82,43 @@ class ASTTable extends ASTPrim {
     // sparsely filled in.
     Vec vx = v2==null ? v1 : v2;
 
-    // Slow-pass group counting, very sparse hashtables
+    // Slow-pass group counting, very sparse hashtables.  Note that Vec v2 is
+    // used as the left-most arg, or OUTER dimension - which will be columns in
+    // the final result.
     SlowCnt sc = new SlowCnt().doAll(vx,v1);
 
-    int ncols = sc._col0s.size(); // Unique columns
+    // Get the column headers as sorted doubles
+    double dcols[] = collectDomain(sc._col0s);
+    
+    // Need the row headers as sorted doubles also, but these are scattered
+    // throughout the nested tables.  Fold 'em into 1 table.
+    NonBlockingHashMapLong rows = new NonBlockingHashMapLong();
+    for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); )
+      rows.putAll(sc._col0s.get(i.nextLong()));
+    double drows[] = collectDomain(rows);
+
+    // Now walk the columns one by one, building a Vec per column, building a
+    // Frame result.
 
 
     throw water.H2O.unimpl();
+  }
+
+  // Collect the unique longs from this NBHML, convert to doubles and return
+  // them as a sorted double[].
+  private static double[] collectDomain( NonBlockingHashMapLong ls ) {
+    int sz = ls.size();         // Uniques
+    double ds[] = new double[sz];
+    int x=0;
+    for( NonBlockingHashMapLong.IteratorLong i = iter(ls); i.hasNext(); )
+      ds[x++] = Double.longBitsToDouble(i.nextLong());
+    Arrays.sort(ds);
+    return ds;
+  }
+
+
+  private static NonBlockingHashMapLong.IteratorLong iter(NonBlockingHashMapLong nbhml) { 
+    return (NonBlockingHashMapLong.IteratorLong)nbhml.keySet().iterator();  
   }
 
   // Implementation is a double-dimension NBHML.  Each dimension key is the raw
@@ -164,12 +195,12 @@ class ASTTable extends ASTPrim {
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
-      for( NonBlockingHashMapLong.IteratorLong i = (NonBlockingHashMapLong.IteratorLong)_col0s.keySet().iterator(); i.hasNext(); ) {
+      for( NonBlockingHashMapLong.IteratorLong i = iter(_col0s); i.hasNext(); ) {
         long l = i.nextLong();
         double d = Double.longBitsToDouble(l);
         sb.append(d).append(": {");
         NonBlockingHashMapLong<AtomicLong> col1s = _col0s.get(l);
-        for( NonBlockingHashMapLong.IteratorLong j = (NonBlockingHashMapLong.IteratorLong)col1s.keySet().iterator(); j.hasNext(); ) {
+        for( NonBlockingHashMapLong.IteratorLong j = iter(col1s); j.hasNext(); ) {
           long l2 = j.nextLong();
           double d2 = Double.longBitsToDouble(l2);
           AtomicLong al = col1s.get(l2);
