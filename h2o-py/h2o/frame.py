@@ -2,7 +2,7 @@
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp
 from expr import h2o,ExprNode
-import gc, random
+import gc
 
 
 class H2OFrame:
@@ -102,13 +102,13 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()                 # write the header
-    csv_writer.writerows(data_to_write)      # write the data
-    tmp_file.close()                         # close the streams
-    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
-    os.remove(tmp_path)                      # delete the tmp file
+    csv_writer.writeheader()             # write the header
+    csv_writer.writerows(data_to_write)  # write the data
+    tmp_file.close()                     # close the streams
+    self._upload_raw_data(tmp_path)      # actually upload the data to H2O
+    os.remove(tmp_path)                  # delete the tmp file
 
-  def _handle_text_key(self, text_key):
+  def _handle_text_key(self, text_key, check_header=-1):
     """
     Handle result of upload_file
     :param test_key: A key pointing to raw text to be parsed
@@ -116,6 +116,7 @@ class H2OFrame:
     """
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
+    setup["check_header"] = check_header
     parse = h2o.parse(setup, _py_tmp_key())
     self._computed=True
     self._id = parse["destination_frame"]["name"]
@@ -125,11 +126,11 @@ class H2OFrame:
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
 
-  def _upload_raw_data(self, tmp_file_path, column_names):
+  def _upload_raw_data(self, tmp_file_path):
     fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
     dest_key = _py_tmp_key()                                                  # create a random name for the data
     h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
-    self._handle_text_key(dest_key)                                           # actually parse the data and setup self._vecs
+    self._handle_text_key(dest_key, 1)                                        # actually parse the data and setup self._vecs
 
   def __iter__(self):
     """
