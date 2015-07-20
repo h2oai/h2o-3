@@ -453,11 +453,10 @@ class H2OFrame:
     headers = self._col_names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
-  # def __repr__(self):
-  #   if self._vecs is None or self._vecs == []:
-  #     raise ValueError("Frame Removed")
-  #   self.show()
-  #   return ""
+  def __repr__(self):
+    if sys.gettrace() is None:
+      self.show()
+      return ""
 
   def as_date(self,format):
     """
