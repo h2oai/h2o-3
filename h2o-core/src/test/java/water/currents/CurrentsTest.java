@@ -193,6 +193,9 @@ public class CurrentsTest extends TestUtil {
     tree = "(table (trunc (cols a.hex 1)))";
     checkTree(tree);
 
+    tree = "(table (cols a.hex 1))";
+    checkTree(tree);
+
     tree = "(table (cols a.hex 1) (cols a.hex 2))";
     checkTree(tree);
   }

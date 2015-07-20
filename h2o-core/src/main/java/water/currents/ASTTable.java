@@ -1,7 +1,6 @@
 package water.currents;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import water.AutoBuffer;
 import water.MRTask;
@@ -26,7 +25,7 @@ class ASTTable extends ASTPrim {
       throw new IllegalArgumentException("table expects one or two columns");
 
     Vec vec2 = fr1.numCols()==2 ? fr1.vec(1) : fr2 != null ? fr2.vec(0) : null;
-    return slow_table(vec1,vec2);
+    return slow_table(vec1,vec2,fr1._names[0]);
   }
 
   // -------------------------------------------------------------------------
@@ -64,7 +63,7 @@ class ASTTable extends ASTPrim {
     long _cnts[];
     FastCnt( long min, int span ) { _min = min; _span = span; }
     @Override public void map( Chunk c ) {
-      _cnts = new long[(int)_span];
+      _cnts = new long[_span];
       for( int i=0; i<c._len; i++ ) 
         if( !c.isNA(i) ) 
           _cnts[(int)(c.at8(i)-_min)]++;
@@ -75,7 +74,7 @@ class ASTTable extends ASTPrim {
   // -------------------------------------------------------------------------
   // Count unique combos in 1 or 2 columns, where the values are not integers,
   // or cover a very large span.
-  private ValFrame slow_table( Vec v1, Vec v2 ) {
+  private ValFrame slow_table( Vec v1, Vec v2, String colname ) {
     // For simplicity, repeat v1 if v2 is missing; this will end up filling in
     // only the diagonal of a 2-D array (in what is otherwise a 1-D array).
     // This should be nearly the same cost as a 1-D array, since everything is
@@ -89,19 +88,53 @@ class ASTTable extends ASTPrim {
 
     // Get the column headers as sorted doubles
     double dcols[] = collectDomain(sc._col0s);
-    
+
+    // If this is the 1-column case (all counts on the diagonals), just build a
+    // 1-d result.
+    if( v2==null ) {
+      Frame res = new Frame();
+      Vec rowlabel = Vec.makeVec(dcols,Vec.VectorGroup.VG_LEN1.addVec());
+      rowlabel.setDomain(v1.domain());
+      res.add(colname,rowlabel);
+      long cnts[] = new long[dcols.length];
+      for( int col=0; col<dcols.length; col++ ) {
+        long lkey = Double.doubleToRawLongBits(dcols[col]);
+        NonBlockingHashMapLong<AtomicLong> colx = sc._col0s.get(lkey);
+        AtomicLong al = colx.get(lkey);
+        cnts[col] = al.get();
+      }
+      Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
+      res.add("Counts",vec);
+      return new ValFrame(res);
+    }
+
+    // 2-d table result.
+
     // Need the row headers as sorted doubles also, but these are scattered
     // throughout the nested tables.  Fold 'em into 1 table.
-    NonBlockingHashMapLong rows = new NonBlockingHashMapLong();
+    NonBlockingHashMapLong<AtomicLong> rows = new NonBlockingHashMapLong<>();
     for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); )
       rows.putAll(sc._col0s.get(i.nextLong()));
     double drows[] = collectDomain(rows);
 
     // Now walk the columns one by one, building a Vec per column, building a
-    // Frame result.
+    // Frame result.  Rowlabel for first column.
+    Frame res = new Frame();
+    Vec rowlabel = Vec.makeVec(drows,Vec.VectorGroup.VG_LEN1.addVec());
+    rowlabel.setDomain(v1.domain());
+    res.add(colname,rowlabel);
+    long cnts[] = new long[drows.length];
+    for( int col=0; col<dcols.length; col++ ) {
+      NonBlockingHashMapLong<AtomicLong> colx = sc._col0s.get(Double.doubleToRawLongBits(dcols[col]));
+      for( int row = 0; row<drows.length; row++ ) {
+        AtomicLong al = colx.get(Double.doubleToRawLongBits(drows[row]));
+        cnts[row] = al==null ? 0 : al.get();
+      }
+      Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
+      res.add(vx.isEnum() ? vx.domain()[col] : Double.toString(dcols[col]),vec);
+    }
 
-
-    throw water.H2O.unimpl();
+    return new ValFrame(res);
   }
 
   // Collect the unique longs from this NBHML, convert to doubles and return
@@ -125,7 +158,7 @@ class ASTTable extends ASTPrim {
   // long bits of the double column.  Bottoms out in an AtomicLong.
   private static class SlowCnt extends MRTask<SlowCnt> {
     transient NonBlockingHashMapLong<NonBlockingHashMapLong<AtomicLong>> _col0s;
-    @Override public void setupLocal() {  _col0s = new NonBlockingHashMapLong();  }
+    @Override public void setupLocal() {  _col0s = new NonBlockingHashMapLong<>();  }
 
     @Override public void map( Chunk c0, Chunk c1 ) {
       for( int i=0; i<c0._len; i++ ) {
@@ -141,7 +174,7 @@ class ASTTable extends ASTPrim {
         // Atomically fetch/create nested NBHM
         NonBlockingHashMapLong<AtomicLong> col1s = _col0s.get(l0);
         if( col1s == null ) {   // Speed filter pre-filled entries
-          col1s = new NonBlockingHashMapLong();
+          col1s = new NonBlockingHashMapLong<>();
           NonBlockingHashMapLong<AtomicLong> old = _col0s.putIfAbsent(l0,col1s);
           if( old != null ) col1s = old; // Lost race, use old value
         }

@@ -16,13 +16,16 @@ abstract class ASTUniOp extends ASTPrim {
     case Val.NUM: return new ValNum(op(val.getNum()));
     case Val.FRM: 
       Frame fr = val.getFrame();
-      if( fr.numCols() > 1 ) throw H2O.unimpl();
       return new ValFrame(new MRTask() {
-          @Override public void map( Chunk chk, NewChunk cres ) {
-            for( int i=0; i<chk._len; i++ )
-              cres.addNum(op(chk.atd(i)));
+          @Override public void map( Chunk cs[], NewChunk ncs[] ) {
+            for( int col=0; col<cs.length; col++ ) {
+              Chunk c = cs[col];
+              NewChunk nc = ncs[col];
+              for( int i=0; i<c._len; i++ )
+                nc.addNum(op(c.atd(i)));
+            }
           }
-        }.doAll(1,fr).outputFrame());
+        }.doAll(fr.numCols(),fr).outputFrame());
     case Val.STR: throw H2O.unimpl();
     default: throw H2O.fail();
     }
