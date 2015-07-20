@@ -100,6 +100,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "_nbins_cats must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    // START For rel-simons only
+    if (_parms._distribution == Distributions.Family.gamma) {
+      error("_distribution", "Gamma distribution is not yet released.");
+    }
+    // END
     if (_parms._distribution == Distributions.Family.tweedie) {
       _parms._distribution.tweedie.p = _parms._tweedie_power;
     }

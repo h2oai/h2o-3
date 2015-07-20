@@ -193,18 +193,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     }
-    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits()) :
-            // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-            start(new H2O.H2OCountedCompleter(){
-              @Override protected void compute2() {
-                computeCrossValidation();
-                tryComplete();
-              }
-              @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-                failed(ex);
-                return true;
-              }
-            }, (_parms._nfolds+1)*progressUnits());
+    return trainModelImpl(progressUnits());
+//    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits()) :
+//            // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
+//            start(new H2O.H2OCountedCompleter(){
+//              @Override protected void compute2() {
+//                computeCrossValidation();
+//                tryComplete();
+//              }
+//              @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+//                failed(ex);
+//                return true;
+//              }
+//            }, (_parms._nfolds+1)*progressUnits());
   }
 
   /**
@@ -620,6 +621,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    // START For rel-simons only
+    if (_parms._nfolds != 0 || _parms._fold_column != null) {
+      error("_nfolds", "N-fold cross-validation is not yet supported.");
+    }
+    // END
     if (_parms._nfolds < 0 || _parms._nfolds == 1) {
       error("_nfolds", "nfolds must be either 0 or >1.");
     }
