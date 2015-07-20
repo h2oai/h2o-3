@@ -49,7 +49,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f) {
       double mse = _sumsqe / _wcount;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma(), _sumdeviance));
+      double meanResDeviance = _sumdeviance / _wcount;
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma(), meanResDeviance));
     }
 
     public String toString() {return " mse = " + _sumsqe / _wcount;}
