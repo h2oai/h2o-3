@@ -72,6 +72,7 @@ public class Distributions {
     gaussian {
       @Override
       public double deviance(double w, double y, double f) {
+        f = link(f);
         return w * (y - f) * (y - f);
       }
 
@@ -99,6 +100,7 @@ public class Distributions {
     bernoulli {
       @Override
       public double deviance(double w, double y, double f) {
+        f = link(f);
         return - 2 * w * (y * f - log(1 + exp(f)));
       }
 
@@ -126,6 +128,7 @@ public class Distributions {
     poisson {
       @Override
       public double deviance(double w, double y, double f) {
+        f = link(f);
         return - 2 * w * (y * f - exp(f));
       }
 
@@ -153,6 +156,7 @@ public class Distributions {
     gamma {
       @Override
       public double deviance(double w, double y, double f) {
+        f = link(f);
         return 2 * w * (y * exp(-f) + f);
       }
 
@@ -181,6 +185,7 @@ public class Distributions {
       @Override
       public double deviance(double w, double y, double f) {
         assert(p>1 && p<2);
+        f = link(f);
         return 2 * w * (Math.pow(y, 2 - p) / ((1 - p) * (2 - p)) - y * exp(f * (1 - p)) / (1 - p) + exp(f * (2 - p)) / (2 - p));
       }
 
