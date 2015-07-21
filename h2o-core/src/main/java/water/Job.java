@@ -39,7 +39,7 @@ public class Job<T extends Keyed> extends Keyed {
     // In some cases we haven't stored to the DKV yet:
     new TAtomic<Job>() {
       @Override public Job atomic(Job old) {
-        if( old == null ) throw new H2OKeyNotFoundArgumentException(old._key);
+        if( old == null ) throw new H2OKeyNotFoundArgumentException((Key)null);
 
         old._messages = _messages;
         return old;
@@ -430,6 +430,10 @@ public class Job<T extends Keyed> extends Keyed {
         case WARN: Log.warn(field_name + ": " + message); break;
         case ERROR: Log.err(field_name + ": " + message); break;
       }
+    }
+
+    public MessageType getMessageType() {
+      return message_type;
     }
 
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }

@@ -5,9 +5,13 @@ import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.*;
-import water.util.*;
-import static water.util.RandomUtils.getRNG;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.FrameUtils;
+import water.util.Log;
+import water.util.MRUtils;
+import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -17,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import static water.util.RandomUtils.getRNG;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -747,6 +753,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = null;
       _vresponse = null;
     }
+
     assert(_weights != null == hasWeightCol());
     assert(_parms._weights_column != null == hasWeightCol());
     assert(_offset != null == hasOffsetCol());

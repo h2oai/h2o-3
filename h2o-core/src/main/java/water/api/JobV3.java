@@ -1,7 +1,9 @@
 package water.api;
 
-import hex.ModelBuilder;
-import water.*;
+import water.H2O;
+import water.Job;
+import water.Key;
+import water.Keyed;
 import water.api.KeyV3.JobKeyV3;
 import water.util.DocGen.HTML;
 import water.util.Log;
@@ -81,12 +83,23 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
     dest = KeyV3.forKeyedClass(dest_class, dest_key);
     exception = job._exception;
 
-    this.messages = new ValidationMessageBase[job._messages.length];
-    int i = 0;
-    for( ModelBuilder.ValidationMessage vm : job._messages ) {
-      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version
+    // NOTE: the message list can be getting longer in another thread; copy so we don't have a race.
+    Job.ValidationMessage[] vms = job._messages;
+    int num_messages = vms.length;
+    this.messages = new ValidationMessageBase[num_messages];
+    this.error_count = 0;
+
+    for( int i = 0; i < num_messages; ) {
+      Job.ValidationMessage vm = vms[i];
+      if (null == vm) {
+        break;
+      }
+      this.messages[i] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version
+      if (vm.getMessageType() == Job.ValidationMessage.MessageType.ERROR) {
+        this.error_count++;
+      }
+      i++;
     }
-    this.error_count = job.error_count();
 
     return (S) this;
   }
