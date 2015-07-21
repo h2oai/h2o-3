@@ -19,6 +19,7 @@ class CloudHandler extends Handler {
     }
 
     cloud.cloud_name = H2O.ARGS.name;
+    cloud.is_client  = H2O.ARGS.client;
     cloud.cloud_size = H2O.CLOUD.size();
     cloud.cloud_uptime_millis = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
     cloud.consensus = Paxos._commonKnowledge;
