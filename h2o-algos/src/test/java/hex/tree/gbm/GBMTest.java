@@ -57,6 +57,7 @@ public class GBMTest extends TestUtil {
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.26,mse,0.1);
       assertEquals(79152.26,gbm._output._scored_train[1]._mse,0.1);
+      assertEquals(79152.26,gbm._output._scored_train[1]._residual_deviance,0.1);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
