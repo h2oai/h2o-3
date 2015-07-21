@@ -46,10 +46,17 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       return ds;                // Flow coding
     }
 
+    public void reduce( MetricBuilderRegression mb ) {
+      super.reduce(mb);
+      _sumdeviance += mb._sumdeviance;
+    }
+
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f) {
       double mse = _sumsqe / _wcount;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma(), _sumdeviance));
+//      double resDeviance = _sumdeviance; //total residual deviance
+      double resDeviance = _sumdeviance / _wcount; //mean residual deviance
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma(), resDeviance));
     }
 
     public String toString() {return " mse = " + _sumsqe / _wcount;}
