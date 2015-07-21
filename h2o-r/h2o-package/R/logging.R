@@ -9,7 +9,7 @@ NULL
 #' @name zzz
 #' @examples
 #' h2o.shutdown(prompt=FALSE)
-#' Sys.sleep(2)
+#' Sys.sleep(3)
 NULL
 
 # Initialize functions for R logging
