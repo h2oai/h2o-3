@@ -50,18 +50,19 @@ public class DRFBasic extends TestNGUtil {
 		// remove headers
 		lines.removeAll(lines.subList(0, firstRow));
 
-		data = new Object[lines.size()][7];
+		data = new Object[lines.size()][8];
 		int r = 0;
 		for (String line : lines) {
 			String[] variables = line.trim().split(",", -1);
 
 			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
 			data[r][1] = variables[tcHeaders.indexOf("test_description")];
-			data[r][2] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][3] = variables[tcHeaders.indexOf("train_dataset_filename")];
-			data[r][4] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][5] = variables[tcHeaders.indexOf("validate_dataset_filename")];
-			data[r][6] = variables;
+			data[r][2] = variables[tcHeaders.indexOf("dataset_directory")];
+			data[r][3] = variables[tcHeaders.indexOf("train_dataset_id")];
+			data[r][4] = variables[tcHeaders.indexOf("train_dataset_filename")];
+			data[r][5] = variables[tcHeaders.indexOf("validate_dataset_id")];
+			data[r][6] = variables[tcHeaders.indexOf("validate_dataset_filename")];
+			data[r][7] = variables;
 
 			r++;
 		}
@@ -70,22 +71,27 @@ public class DRFBasic extends TestNGUtil {
 	}
 
 	@Test(dataProvider = "drfCases")
-	public void basic(String testcase_id, String test_description, String train_dataset_id,
+	public void basic(String testcase_id, String test_description, String dataset_directory, String train_dataset_id,
 			String train_dataset_filename, String validate_dataset_id, String validate_dataset_filename,
 			String[] rawInput) {
 
 		redirectStandardStreams();
 
 		try {
-			String errorMessage = validate(rawInput);
+			String invalidMessage = validate(rawInput);
+			String notImplMessage = checkImplemented(rawInput);
 
-			if (errorMessage == null) {
-				_basic(testcase_id, test_description, train_dataset_id, train_dataset_filename, validate_dataset_id,
-						validate_dataset_filename, toDRFParameters(rawInput), rawInput);
+			if (invalidMessage != null) {
+				System.out.println(invalidMessage);
+				Assert.fail(String.format(invalidMessage));
+			}
+			else if (notImplMessage != null) {
+				System.out.println(notImplMessage);
+				Assert.fail(String.format(notImplMessage));
 			}
 			else {
-				System.out.println("[INVALID] " + errorMessage);
-				Assert.fail(String.format("INVALID INPUT - this test is skipped."));
+				_basic(testcase_id, test_description, train_dataset_id, train_dataset_filename, validate_dataset_id,
+						validate_dataset_filename, toDRFParameters(rawInput), rawInput);
 			}
 		}
 		finally {
@@ -132,7 +138,6 @@ public class DRFBasic extends TestNGUtil {
 			drfModel = job.trainModel().get();
 
 			score = drfModel.score(trainFrame);
-			// Assert.assertTrue(model.testJavaScoring(score, trainFrame, 1e-15));
 			System.out.println("Test is passed.");
 		}
 		catch (IllegalArgumentException ex) {
@@ -192,6 +197,43 @@ public class DRFBasic extends TestNGUtil {
 			result = "_response_column is empty";
 		}
 
+		if (result != null) {
+			result = "[INVALID] " + result;
+		}
+
+		return result;
+	}
+
+	private static String checkImplemented(String[] input) {
+
+		System.out.println("check DRFParameters object with testcase: " + input[tcHeaders.indexOf("testcase_id")]);
+		String result = null;
+
+		if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_offset_column")].trim())) {
+			result = "offset_column is not implemented";
+		}
+		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_weights_column")].trim())) {
+			result = "weights_column is not implemented";
+		}
+		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_nfolds")].trim())) {
+			result = "nfolds is not implemented";
+		}
+		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("fold_column")].trim())) {
+			result = "fold_column is not implemented";
+		}
+		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("gaussian")].trim())
+				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("binomial")].trim())
+				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("multinomial")].trim())
+				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("poisson")].trim())
+				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("gamma")].trim())
+				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("tweedie")].trim())) {
+			result = "Only AUTO family is implemented";
+		}
+
+		if (result != null) {
+			result = "[NOT IMPL] " + result;
+		}
+
 		return result;
 	}
 
@@ -199,7 +241,6 @@ public class DRFBasic extends TestNGUtil {
 
 		System.out.println("Create DRFParameters object with testcase: " + input[tcHeaders.indexOf("testcase_id")]);
 
-		String pathFile = input[tcHeaders.indexOf("dataset_directory")] + "/testng/";
 		DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
 
 		// set AutoSet params
@@ -217,34 +258,62 @@ public class DRFBasic extends TestNGUtil {
 			drfParams._distribution = f;
 		}
 
+		String datasetDirectory = input[tcHeaders.indexOf("dataset_directory")].trim();
+		String train_dataset_id = input[tcHeaders.indexOf("train_dataset_id")].trim();
+		String train_dataset_filename = input[tcHeaders.indexOf("train_dataset_filename")].trim();
+		String validate_dataset_id = input[tcHeaders.indexOf("validate_dataset_id")].trim();
+		String validate_dataset_filename = input[tcHeaders.indexOf("validate_dataset_filename")].trim();
+
+		if ("bigdata".equals(datasetDirectory)) {
+			datasetDirectory = "bigdata/laptop/testng/";
+		}
+		else {
+			datasetDirectory = "smalldata/testng/";
+		}
+
 		Frame trainFrame = null;
 		Frame validateFrame = null;
 
 		// create train dataset
-		File train_dataset = find_test_file_static(pathFile + input[tcHeaders.indexOf("train_dataset_filename")]);
+		File train_dataset = find_test_file_static(datasetDirectory + train_dataset_filename);
 		System.out.println("Is train dataset exist? If no, abort the test.\n");
 		assert train_dataset.exists();
 		NFSFileVec nfs_train_dataset = NFSFileVec.make(train_dataset);
-		// Key key_train_dataset = Key.make(input[tcHeaders.indexOf("train_dataset_id")] + ".hex");
-		Key key_train_dataset = Key.make(input[tcHeaders.indexOf("testcase_id")] + "_train.hex");
-		trainFrame = ParseDataset.parse(key_train_dataset, nfs_train_dataset._key);
+		Key key_train_dataset = Key.make(train_dataset_id + ".hex");
+		
+		try {
+			trainFrame = ParseDataset.parse(key_train_dataset, nfs_train_dataset._key);
+		}
+		catch (Exception e) {
+			nfs_train_dataset.remove();
+			key_train_dataset.remove();
+			throw e;
+		}
 		drfParams._train = trainFrame._key;
 
 		// create validate dataset
-		if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("validate_dataset_filename")].trim())) {
-			File validate_dataset = find_test_file_static(pathFile
-					+ input[tcHeaders.indexOf("validate_dataset_filename")]);
+		if (StringUtils.isNotEmpty(validate_dataset_filename)) {
+			File validate_dataset = find_test_file_static(datasetDirectory + validate_dataset_filename);
 			assert validate_dataset.exists();
 			NFSFileVec nfs_validate_dataset = NFSFileVec.make(validate_dataset);
-			// Key key_validate_dataset = Key.make(input[tcHeaders.indexOf("validate_dataset_id")] + ".hex");
-			Key key_validate_dataset = Key.make(input[tcHeaders.indexOf("testcase_id")] + "_validate.hex");
-			validateFrame = ParseDataset.parse(key_validate_dataset, nfs_validate_dataset._key);
+			Key key_validate_dataset = Key.make(validate_dataset_id + ".hex");
+			
+			try {
+				validateFrame = ParseDataset.parse(key_validate_dataset, nfs_validate_dataset._key);
+			}
+			catch (Exception e) {
+				trainFrame.delete();
+				nfs_validate_dataset.remove();
+				key_validate_dataset.remove();
+				throw e;
+			}
+			
 			drfParams._valid = validateFrame._key;
 		}
 
 		return drfParams;
 	}
-	
+
 	private static Param[] params = new Param[] {
 		
 		new Param("_distribution", "Family", false, false),

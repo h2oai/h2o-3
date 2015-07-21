@@ -21,6 +21,9 @@ status_find_re = 'status=".*?"'
 invalid_status = 'status="INVALID"'
 invalid_key = '[INVALID]' #
 
+not_impl_status = 'status="NOT IMPL"'
+not_impl_key = '[NOT IMPL]' #
+
 
 def parse_argument():
     parser = argparse.ArgumentParser(description='Update TestNG report with INVALID status and test case name')
@@ -41,6 +44,9 @@ def update_testinfo(content):
 
     if invalid_key in reporter_out:
         content = re.sub(status_find_re, invalid_status, content)
+        
+    if not_impl_key in reporter_out:
+        content = re.sub(status_find_re, not_impl_status, content)
         
     return content
 
