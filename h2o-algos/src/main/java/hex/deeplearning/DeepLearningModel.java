@@ -228,6 +228,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
+    if (_output.getModelCategory() == ModelCategory.Regression) {
+      colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%.5f");
     }
@@ -242,6 +245,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     if (get_params()._valid != null) {
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+      if (_output.getModelCategory() == ModelCategory.Regression) {
+        colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+      }
       if (!_output.autoencoder) {
         colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%.5f");
       }
@@ -290,6 +296,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
+      if (_output.getModelCategory() == ModelCategory.Regression) {
+        table.set(row, col++, e.scored_train != null ? e.scored_train._residual_deviance : Double.NaN);
+      }
       if (!_output.autoencoder) {
         table.set(row, col++, e.scored_train != null ? e.scored_train._r2 : Double.NaN);
       }
@@ -304,6 +313,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       if (get_params()._valid != null) {
         table.set(row, col++, e.scored_valid != null ? e.scored_valid._mse : Double.NaN);
+        if (_output.getModelCategory() == ModelCategory.Regression) {
+          table.set(row, col++, e.scored_valid != null ? e.scored_valid._residual_deviance : Double.NaN);
+        }
         if (!_output.autoencoder) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._r2 : Double.NaN);
         }
