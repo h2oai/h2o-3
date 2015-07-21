@@ -5,6 +5,13 @@
 #' h2o.init()
 NULL
 
+#' Shutting down H2O for examples
+#' @name zzz
+#' @examples
+#' h2o.shutdown(prompt=FALSE)
+#' Sys.sleep(2)
+NULL
+
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {
