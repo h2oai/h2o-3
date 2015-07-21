@@ -723,6 +723,7 @@ class H2OFrame:
     :return: a list of frames
     """
     j = h2o.H2OConnection.post_json("SplitFrame", dataset=self._id, ratios=ratios, destination_frames=destination_frames)
+    h2o.H2OJob(j, "Split Frame").poll()
     return [h2o.get_frame(i["name"]) for i in j["destination_frames"]]
 
   # ddply in h2o
@@ -737,6 +738,7 @@ class H2OFrame:
   def group_by(self,cols,aggregates,order_by=None):
     """
     GroupBy
+
     :param cols: The columns to group on.
     :param a: A dictionary of aggregates having the following shape: \
     {"colname":[aggregate, column, naMethod]}\

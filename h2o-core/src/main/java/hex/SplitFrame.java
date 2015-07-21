@@ -42,8 +42,11 @@ public class SplitFrame extends Transformer<SplitFrame> {
     if (ratios.length > 1) {
       double sum = ArrayUtils.sum(ratios);
       if (sum <= 0.0) throw new IllegalArgumentException("Ratios sum has to be > 0!");
-      computedRatios = new double[ratios.length-1];
-      for (int i=0; i < ratios.length-1; i++) computedRatios[i] = ratios[i] / sum;
+      if( sum <= 1 ) computedRatios = ratios;
+      else {
+        computedRatios = new double[ratios.length - 1];
+        for (int i = 0; i < ratios.length - 1; i++) computedRatios[i] = ratios[i] / sum;
+      }
     } else {
       computedRatios = ratios;
     }
