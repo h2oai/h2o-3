@@ -3,6 +3,7 @@ package water.rapids;
 import water.*;
 import water.fvec.*;
 import water.util.IcedHashMap;
+import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -159,7 +160,7 @@ public class ASTddply extends ASTOp {
     public Group(int len) { super(len); a=new IcedHashMap<>(); }
     public Group( double ds[] ) { super(ds); }
 
-    IcedHashMap<Integer,String> a;
+    IcedHashMap<IcedInt,String> a;
   }
 
 
@@ -183,7 +184,7 @@ public class ASTddply extends ASTOp {
         long cnt=gOld._N;
         while( !Group.CAS_N(gOld,cnt,cnt+1))
           cnt=gOld._N;
-        gOld.a.put(start+i,"");
+        gOld.a.put(new IcedInt(start+i),"");
       }
     }
     @Override public void reduce(Pass1A t) {
@@ -243,7 +244,7 @@ public class ASTddply extends ASTOp {
       Futures fs = new Futures();
       long[] rows = new long[_g.a.size()];
       int i=0;
-      for(long l: _g.a.keySet() ) rows[i++]=l;
+      for(IcedInt l: _g.a.keySet() ) rows[i++]=l._val;
       BuildGroup b;
       fs.add(RPC.call(n, b=new BuildGroup(_key,rows,_frameKey)));
       fs.blockForPending();

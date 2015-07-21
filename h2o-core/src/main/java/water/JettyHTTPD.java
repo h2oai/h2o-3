@@ -573,7 +573,13 @@ public class JettyHTTPD {
 
         // Handle shutdown if it was requested.
         if (H2O.getShutdownRequested()) {
-          H2O.shutdown(0);
+          (new Thread() {
+            public void run() {
+              try { Thread.sleep(2000); }
+              catch (Exception ignore) {}
+              H2O.shutdown(0);
+            }
+          }).start();
         }
 
         endTransaction();
