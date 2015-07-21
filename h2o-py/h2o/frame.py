@@ -347,8 +347,12 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    if self.ncol()==1 or col is None: levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-    elif col is not None:             levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+    if self.ncol()==1 or col is None:
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
+      levels=[level for l in lol for level in l] if self.ncol()==1 else lol
+    elif col is not None:
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+      levels=[level for l in lol for level in l]
     else:                             levels=None
     return None if levels is None or levels==[] else levels
 
@@ -457,11 +461,10 @@ class H2OFrame:
     headers = self._col_names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
-  # def __repr__(self):
-  #   if self._vecs is None or self._vecs == []:
-  #     raise ValueError("Frame Removed")
-  #   self.show()
-  #   return ""
+  def __repr__(self):
+    if sys.gettrace() is None:
+      self.show()
+      return ""
 
   def as_date(self,format):
     """
@@ -585,7 +588,7 @@ class H2OFrame:
     else:
       cr = csv.reader(response)
       rows = []
-      for row in cr: rows.append(row)
+      for row in cr: rows.append([''] if row == [] else row)
       return rows
 
   # Find a named H2OVec and return the zero-based index for it.  Error is name is missing

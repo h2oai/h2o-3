@@ -66,6 +66,7 @@ h2o.exportHDFS <- function(data,path,force=FALSE) { h2o.exportFile(data,path,for
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
@@ -75,6 +76,7 @@ h2o.exportHDFS <- function(data,path,force=FALSE) { h2o.exportFile(data,path,for
 #' h2o.downloadCSV(iris.hex, myFile)
 #' file.info(myFile)
 #' file.remove(myFile)
+#' }
 #' @export
 h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
