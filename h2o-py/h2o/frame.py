@@ -584,7 +584,7 @@ class H2OFrame:
     else:
       cr = csv.reader(response)
       rows = []
-      for row in cr: rows.append(row)
+      for row in cr: rows.append([''] if row == [] else row)
       return rows
 
   # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
