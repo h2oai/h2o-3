@@ -8,6 +8,9 @@ import water.api.API.Direction;
  */
 public class ModelMetricsRegressionGLMV3 extends ModelMetricsRegressionV3<ModelMetricsRegressionGLM, ModelMetricsRegressionGLMV3> {
 
+  @API(help = "residual deviance", direction = Direction.OUTPUT)
+  public double residual_deviance;
+
   @API(help = "null deviance", direction = Direction.OUTPUT)
   public double null_deviance;
 

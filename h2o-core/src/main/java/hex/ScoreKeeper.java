@@ -29,7 +29,7 @@ public class ScoreKeeper extends Iced {
       _r2 = ((ModelMetricsSupervised)m).r2();
     }
     if (m instanceof ModelMetricsRegression) {
-      _residual_deviance = ((ModelMetricsRegression)m)._residual_deviance;
+      _residual_deviance = ((ModelMetricsRegression)m)._mean_residual_deviance;
     }
     if (m instanceof ModelMetricsBinomial) {
       _logloss = ((ModelMetricsBinomial)m)._logloss;
