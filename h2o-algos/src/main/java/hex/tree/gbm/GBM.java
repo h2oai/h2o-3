@@ -91,7 +91,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass >= 3) _parms._distribution = Distributions.Family.multinomial;
       } else if (_parms._distribution == Distributions.Family.poisson) {
         if (_response.min() < 0)
-          error("_respons e", "Response cannot be negative for Gamma distribution.");
+          error("_respons e", "Response cannot be negative for Poisson distribution.");
         _initialPrediction = poissonInitialValue();
       } else if (_parms._distribution == Distributions.Family.gamma) {
         if (_response.min() < 0)
@@ -101,7 +101,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
           error("_tweedie_power", "Tweedie power must be between 1 and 2.");
         if (_response.min() < 0)
-          error("_response", "Response cannot be negative for Gamma distribution.");
+          error("_response", "Response cannot be negative for Tweedie distribution.");
         _initialPrediction = tweedieInitialValue(_parms._tweedie_power);
       }
       if (hasOffsetCol() && isClassifier() && _parms._distribution == Distributions.Family.multinomial) {
