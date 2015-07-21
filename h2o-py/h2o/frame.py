@@ -349,7 +349,7 @@ class H2OFrame:
     """
     if self.ncol()==1 or col is None:
       lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-      levels=[level for l in lol for level in l]
+      levels=[level for l in lol for level in l] if self.ncol()==1 else lol
     elif col is not None:
       lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
       levels=[level for l in lol for level in l]
