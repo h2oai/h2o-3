@@ -235,10 +235,6 @@ function(ipPort) {
 
   Log.info("Check that H2O R package matches version on server\n")
   installDepPkgs()
-  library(h2o)
-  h2o.init(ip            = ipPort[[1]], 
-           port          = ipPort[[2]], 
-           startH2O      = FALSE)
 }
 
 checkNLoadPackages<-
