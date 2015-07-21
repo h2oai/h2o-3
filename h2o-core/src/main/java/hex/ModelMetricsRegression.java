@@ -22,7 +22,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   }
 
 
-  public static class MetricBuilderRegression extends MetricBuilderSupervised {
+  public static class MetricBuilderRegression<T extends MetricBuilderRegression<T>> extends MetricBuilderSupervised<T> {
     double _sumdeviance;
     public MetricBuilderRegression() {
       super(1,null); //this will make _work = new float[2];
@@ -46,7 +46,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       return ds;                // Flow coding
     }
 
-    public void reduce( MetricBuilderRegression mb ) {
+    @Override public void reduce( T mb ) {
       super.reduce(mb);
       _sumdeviance += mb._sumdeviance;
     }
