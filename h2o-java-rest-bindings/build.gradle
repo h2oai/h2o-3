@@ -11,6 +11,12 @@ dependencies {
     srcGenCompile project(":h2o-assembly")
 }
 
+dependencies {
+    compile 'com.squareup.retrofit:retrofit:1.9.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.0.0'
+    compile 'com.squareup.okhttp:okhttp:2.0.0'
+}
+
 def runner = new File("$rootDir/h2o-r/tests/run.py").canonicalPath
 
 // REST API Documentation generator

@@ -6,6 +6,11 @@ import water.Paxos;
 
 class CloudHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public CloudV3 head(int version, CloudV3 cloud) {
+    return cloud;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public CloudV3 status(int version, CloudV3 cloud) {
     // TODO: this really ought to be in the water package
     cloud.version = H2O.ABV.projectVersion();
