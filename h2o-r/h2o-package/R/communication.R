@@ -686,6 +686,10 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   0L
 }
 
+#'
+#' Check Client Mode Connection
+#'
+#' @export
 h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #-----------------------------------------------------------------------------------------------------------------------
