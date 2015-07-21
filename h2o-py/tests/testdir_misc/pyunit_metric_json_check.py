@@ -1,7 +1,7 @@
 # The purpose of this test is to detect a change in the _metric_json of MetricsBase objects. Many of the metric
 # accessors require _metric_json to have a particular form.
 import sys
-sys.path.insert(1, "..")
+sys.path.insert(1, "../../")
 import h2o
 
 def metric_json_check(ip, port):
