@@ -427,7 +427,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return
    */
   public double deviance(double w, double y, double f) {
-    return Double.NaN;
+    return Distributions.Family.gaussian.deviance(w, y, f);
   }
 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
