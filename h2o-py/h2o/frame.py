@@ -123,7 +123,7 @@ class H2OFrame:
     self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]
-    self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols)]
+    self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
@@ -435,6 +435,7 @@ class H2OFrame:
     Generate summary of the frame on a per-Vec basis.
     :return: None
     """
+    self._eager()
     fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
     type = ["type"]
     mins = ["mins"]
