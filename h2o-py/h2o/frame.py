@@ -347,8 +347,12 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    if self.ncol()==1 or col is None: levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-    elif col is not None:             levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+    if self.ncol()==1 or col is None:
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
+      levels=[level for l in lol for level in l]
+    elif col is not None:
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+      levels=[level for l in lol for level in l]
     else:                             levels=None
     return None if levels is None or levels==[] else levels
 
