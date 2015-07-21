@@ -1057,9 +1057,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
 
             double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false);
-
-            _taskInfo._beta = beta;
+            for (int i = 0 ; i < beta.length; ++i) {
+              System.out.print(beta[i] + " ");
+            }
+            System.out.println();
+            _taskInfo._beta = beta.clone();
             System.out.println("iter1 = " + iter1);
+
             if (linf < _parms._beta_epsilon)
               break;
 
@@ -1290,8 +1294,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       assert _rowFilter != null;
       _start_time = System.currentTimeMillis();
 
-      if(Math.abs(_parms._lambda[_lambdaId] - 0.030035459652215813) < 0.001)
-        System.out.println();
+      if(Math.abs(_parms._lambda[_lambdaId] - 0.0207 ) < 0.001) // 0.030035459652215813) < 0.001) //    0.02494
+              System.out.println();
      // _taskInfo._allIn = true;
       int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1], _taskInfo._ginfo._gradient);
       _taskInfo._activeCols = activeCols;

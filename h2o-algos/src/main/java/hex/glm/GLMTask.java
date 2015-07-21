@@ -918,8 +918,6 @@ public abstract class GLMTask  {
       Chunk ztildaChunk = chunks[cnt++];
       Chunk filterChunk = chunks[cnt++];
       Chunk xpChunk=null, xChunk=null;
-      double betanew = 0; // most recently updated prev variable
-      double betaold = 0; // old value of current variable being updated
 
       _temp = new double[_betaold.length];
       if (_interceptnew) {
@@ -940,49 +938,51 @@ public abstract class GLMTask  {
       // of the most recently updated variable before it (if also cat). If for an obs the active level corresponds to an inactive column, we just dont want to include
       // it - same if inactive level in most recently updated var. so set these to zero ( Wont be updating a betaj which is inactive) .
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+        double betanew = 0; // most recently updated prev variable
+        double betaold = 0; // old value of current variable being updated
         ++_nobs;
         if (filterChunk.atd(i) == 1) continue;
-        int active_level = 0, active_level_p = 0;
+        int observation_level = 0, observation_level_p = 0;
         double val = 1, valp = 1;
         if(_cat_num == 1) {
-          active_level = (int) xChunk.at8(i); // only need to change one temp value per observation.
-          if (_catLvls_old != null)  // some levels are ignored?
-            active_level = Arrays.binarySearch(_catLvls_old, active_level);
+          observation_level = (int) xChunk.at8(i); // only need to change one temp value per observation.
+          if (_catLvls_old != null)
+            observation_level = Arrays.binarySearch(_catLvls_old, observation_level);
 
-          active_level_p = (int) xpChunk.at8(i); // both cat
-          if (_catLvls_new != null)  // some levels are ignored?
-            active_level_p = Arrays.binarySearch(_catLvls_new, active_level_p);
+          observation_level_p = (int) xpChunk.at8(i); // both cat
+          if (_catLvls_new != null)
+            observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
         }
         else if(_cat_num == 2){
           val = xChunk.atd(i); // current num and previous cat
-          active_level_p = (int) xpChunk.at8(i);
-          if (_catLvls_new != null)  // some levels are ignored?
-            active_level_p = Arrays.binarySearch(_catLvls_new, active_level_p);
+          observation_level_p = (int) xpChunk.at8(i);
+          if (_catLvls_new != null)
+            observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
         }
         else if(_cat_num == 3){
           val = xChunk.atd(i); // both num
           valp = xpChunk.atd(i);
         }
         else if(_cat_num == 4){
-          active_level = (int) xChunk.at8(i); // current cat
-          if (_catLvls_old != null)  // some levels are ignored?
-            active_level = Arrays.binarySearch(_catLvls_old, active_level); // search to see if this level is active.
+          observation_level = (int) xChunk.at8(i); // current cat
+          if (_catLvls_old != null)
+            observation_level = Arrays.binarySearch(_catLvls_old, observation_level); // search to see if this level is active.
           valp = xpChunk.atd(i); //prev numeric
         }
 
-        if(active_level >= 0)
-         betaold = _betaold[active_level];
-        if(active_level_p>=0)
-         betanew = _betanew[active_level_p];
+        if(observation_level >= 0)
+         betaold = _betaold[observation_level];
+        if(observation_level_p >= 0)
+         betanew = _betanew[observation_level_p];
 
         if (_interceptnew) {
             ztildaChunk.set(i, ztildaChunk.atd(i) - betaold + valp * betanew); //
             _temp[0] += wChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
           } else {
-              ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
-           if(active_level >=0 ) // if the active level for that observation is an "inactive column" don't want to add contribution to temp for that observation.
-            _temp[active_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
-           }
+            ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
+            if(observation_level >=0 ) // if the active level for that observation is an "inactive column" don't want to add contribution to temp for that observation
+            _temp[observation_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
+         }
 
        }
 
@@ -1053,7 +1053,8 @@ public abstract class GLMTask  {
       Chunk zTilda = chunks[chunks.length-2];
       Chunk fChunk = chunks[chunks.length-1];
       chunks = Arrays.copyOf(chunks,chunks.length-4);
-      denums = new double[_dinfo.fullN()+1]; // full N is expanded
+      denums = new double[_dinfo.fullN()+1]; // full N is expanded variables with categories
+
       Row r = _dinfo.newDenseRow();
       for(int i = 0; i < chunks[0]._len; ++i) {
         if(fChunk.at8(i) == 1) continue;
