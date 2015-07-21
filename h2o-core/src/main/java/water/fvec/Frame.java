@@ -1218,13 +1218,15 @@ public class Frame extends Lockable<Frame> {
     return new CSVStream(headers, hex_string);
   }
 
-  private class CSVStream extends InputStream {
+  public class CSVStream extends InputStream {
     private final boolean _hex_string;
     byte[] _line;
     int _position;
+    public int _curChkIdx;
     long _row;
 
     CSVStream(boolean headers, boolean hex_string) {
+      _curChkIdx=0;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
@@ -1244,6 +1246,7 @@ public class Frame extends Lockable<Frame> {
         StringBuilder sb = new StringBuilder();
         Vec vs[] = vecs();
         for( int i = 0; i < vs.length; i++ ) {
+          _curChkIdx = vs[0].elem2ChunkIdx(_row);
           if(i > 0) sb.append(',');
           if(!vs[i].isNA(_row)) {
             if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');

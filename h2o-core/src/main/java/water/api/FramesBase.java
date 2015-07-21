@@ -33,6 +33,9 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends RequestSc
   @API(help="Overwrite existing file",json=false)
   public boolean force;
 
+  @API(help="Job for export file",direction=API.Direction.OUTPUT)
+  public JobV3 job;
+
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
   FrameBase[] frames;
