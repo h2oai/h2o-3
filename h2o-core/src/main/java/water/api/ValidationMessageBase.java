@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.ModelBuilder;
+import water.Job;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -50,7 +51,7 @@ public class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S e
   }
 
   public I createImpl() {
-    return (I) new ModelBuilder.ValidationMessage(ModelBuilder.ValidationMessage.MessageType.valueOf(message_type), field_name, message);
+    return (I) new ModelBuilder.ValidationMessage(Job.ValidationMessage.MessageType.valueOf(message_type), field_name, message);
   }
 
   // Version&Schema-specific filling from the implementation object

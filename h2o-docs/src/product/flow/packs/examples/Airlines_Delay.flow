@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "md",
+      "input": "# Predicting Airline Delays\n\nThe following is a demonstration of predicting potential flight delays using a publicly available airlines dataset. For this example, the dataset used is a small sample of what is more than two decades worth of flight data in order to ensure the download and import process would not take more than a minute or two.\n\n## The Data\n\nThe data comes originally from [RITA](http://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp) where it is described in detail. To use the entire 26 years worth of flight information to more accurately predict delays and cancellation please download one of the following and change the path to the data in the notebook: \n\n  * [2 Thousand Rows - 4.3MB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv)\n  * [5.8 Million Rows - 580MB](https://s3.amazonaws.com/h2o-airlines-unpacked/airlines_all.05p.csv)\n  * [152 Million Rows (Years: 1987-2013) - 14.5GB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears.1987.2013.csv)\n\n## Business Benefits\n\nThere are obvious benefits to predicting potential delays and logistic issues for a business. It helps the user make contingency plans and corrections to avoid undesirable outcomes. Recommendation engines can forewarn flyers of possible delays and rank flight options accordingly, other businesses might pay more for a flight to ensure certain shipments arrive on time, and airline carriers can use the information to better their flight plans. The goal is to have the machine take in all the possible factors that will affect a flight and return the probability of a flight being delayed."
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv\"]\n  destination_frame: \"allyears2k.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 31\n  single_quotes: false\n  column_names: [\"Year\",\"Month\",\"DayofMonth\",\"DayOfWeek\",\"DepTime\",\"CRSDepTime\",\"ArrTime\",\"CRSArrTime\",\"UniqueCarrier\",\"FlightNum\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"Origin\",\"Dest\",\"Distance\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"IsArrDelayed\",\"IsDepDelayed\"]\n  column_types: [\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"allyears2k.hex\""
+    },
+    {
+      "type": "md",
+      "input": "# Building a GLM Model\n\nNote:\n  * During import of the data, features **Year**, **Month**, **DayOfWeek**, and **FlightNum** were set to be parsed as enumerator or categorical rather than numeric columns.\n  * Run a logistic regression model by selecting \"binomial\" for parameter *Family*.\n  * Add some regularization by setting *alpha* to 0.5 and *lambda* to 1e-05."
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm_model\",\"training_frame\":\"allyears2k.hex\",\"ignored_columns\":[\"DayofMonth\",\"DepTime\",\"CRSDepTime\",\"ArrTime\",\"CRSArrTime\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"IsArrDelayed\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[0.5],\"lambda\":[0.00001],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm_model\""
+    },
+    {
+      "type": "md",
+      "input": "# Building a Deep Learning Model\n\nNote:\n  * During import of the data, features **Year**, **Month**, **DayOfWeek**, and **FlightNum** were set to be parsed as enumerator or categorical rather than numeric columns."
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning_model\",\"training_frame\":\"allyears2k.hex\",\"ignored_columns\":[\"DepTime\",\"CRSDepTime\",\"ArrTime\",\"CRSArrTime\",\"FlightNum\",\"TailNum\",\"ActualElapsedTime\",\"CRSElapsedTime\",\"AirTime\",\"ArrDelay\",\"DepDelay\",\"TaxiIn\",\"TaxiOut\",\"Cancelled\",\"CancellationCode\",\"Diverted\",\"CarrierDelay\",\"WeatherDelay\",\"NASDelay\",\"SecurityDelay\",\"LateAircraftDelay\",\"IsArrDelayed\"],\"ignore_const_cols\":true,\"response_column\":\"IsDepDelayed\",\"activation\":\"Rectifier\",\"hidden\":[200,200],\"epochs\":\"100\",\"variable_importances\":false,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_duty_cycle\":0.1,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":6765686131094811000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning_model\""
+    }
+  ]
+}
