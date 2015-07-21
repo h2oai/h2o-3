@@ -754,7 +754,7 @@ public class Vec extends Keyed<Vec> {
    *  on every Chunk index on the same node will probably trigger an OOM!  */
   public Value chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
-    assert checkMissing(cidx,val);
+    assert checkMissing(cidx,val) : "Missing chunk " + chunkKey(cidx);
     return val;
   }
 

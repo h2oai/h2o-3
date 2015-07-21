@@ -692,6 +692,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   }
 
   keepRunning <- TRUE
+  mystatus = ""
   tryCatch({
     while (keepRunning) {
       myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
@@ -707,6 +708,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
       job = jobs[[1]]
 
       status = job$status
+      mystatus <<- status
       stopifnot(is.character(status))
 
       # check failed up front...
@@ -760,6 +762,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
       message(paste0("\nJob ",job_key," was cancelled.\n"))
       return()
     })
+  print(paste0("Job ", job_key, " done: status: ", mystatus))
 }
 
 #------------------------------------ Utilities ------------------------------------#
