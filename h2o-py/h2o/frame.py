@@ -347,10 +347,10 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    if self.ncol()==1:    levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-    elif col is not None: levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
-    else: levels=None
-    return None if levels is None or levels==[] else [i[0] for i in levels]
+    if self.ncol()==1 or col is None: levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
+    elif col is not None:             levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+    else:                             levels=None
+    return None if levels is None or levels==[] else levels
 
   def nlevels(self, col=None):
     """
@@ -556,32 +556,18 @@ class H2OFrame:
     cn = df.pop(0)
     width = max([len(c) for c in cn])
     isfactor = [c.isfactor() for c in self]
-    nlevels  = [self.nlevels(i) for i in range(nc)]
-    print df
-
-    # nc <- ncol(object)
-    # nr <- nrow(object)
-    # cc <- colnames(object)
-    # width <- max(nchar(cc))
-    # df <- as.data.frame(object[1L:10L,])
-    # isfactor <- as.data.frame(is.factor(object))[,1]
-    # num.levels <- as.data.frame(h2o.nlevels(object))[,1]
-    # lvls <- as.data.frame(h2o.levels(object))
-    # # header statement
-    # cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-    # l <- list()
-    # for( i in 1:nc ) {
-    #   cat("$ ", cc[i], rep(' ', width - max(stats::na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
-    # first.10.rows <- df[,i]
-    # if( isfactor[i] ) {
-    # nl <- num.levels[i]
-    # lvls.print <- lvls[1L:min(nl,2L),i]
-    # cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
-    # cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
-    # } else
-    # cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
-    # }
-    # }
+    numlevels  = [self.nlevels(i) for i in range(nc)]
+    lvls = self.levels()
+    print "H2OFrame '{}': \t {} obs. of {} variables(s)".format(self._id,nr,nc)
+    for i in range(nc):
+      print "$ {} {}: ".format(cn[i], ' '*(width-max(0,len(cn[i])))),
+      if isfactor[i]:
+        nl = numlevels[i]
+        print "Factor w/ {} level(s) {},..: ".format(nl, '"' + '","'.join(zip(*lvls)[i]) + '"'),
+        print " ".join(it[0] for it in h2o.as_list(self[:10,i].match(list(zip(*lvls)[i])), False)[1:]),
+        print "..."
+      else:
+        print "num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:]))
 
   def as_data_frame(self, use_pandas=True):
     """
